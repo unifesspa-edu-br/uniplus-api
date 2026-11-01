@@ -11,7 +11,7 @@ internal static class FatosDerivadosCongeladosDeTeste
 
     public static IReadOnlyDictionary<string, FatoDerivadoCongelado> Padrao { get; } = new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal)
     {
-        ["FAIXA_ETARIA"] = new("FAIXA_ETARIA", "Faixa etária", "NUMERICO", "ESCALAR", "PESSOAL", Hipotese, Finalidade),
-        ["MODALIDADE"] = new("MODALIDADE", "Modalidade de concorrência", "CATEGORICO", "MULTIVALORADO", "INTERNO", Hipotese, Finalidade),
+        ["FAIXA_ETARIA"] = new("FAIXA_ETARIA", "Faixa etária", "Faixa de idade do candidato.", null, "NUMERICO", "ESCALAR", "PESSOAL", Hipotese, Finalidade),
+        ["MODALIDADE"] = new("MODALIDADE", "Modalidade de concorrência", "Modalidades em que o candidato concorre.", null, "CATEGORICO", "MULTIVALORADO", "INTERNO", Hipotese, Finalidade),
     };
 }

@@ -515,10 +515,10 @@ public sealed class ConferenciaDosEixosNosHandlersTests
 
         // Um fato que nenhuma versão publicada coletou, com a cópia velha do catálogo (PESSOAL).
         private static FatoColetado ItemNovo() =>
-            FatoColetado.Criar(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            FatoColetado.Criar(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
         private static FatoColetado Item(TipoRenderizacao tipo) =>
-            FatoColetado.Criar(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            FatoColetado.Criar(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
         private static DocumentoExigido ExigenciaComGatilho(Guid faseId) =>
             DocumentoExigido.Criar(

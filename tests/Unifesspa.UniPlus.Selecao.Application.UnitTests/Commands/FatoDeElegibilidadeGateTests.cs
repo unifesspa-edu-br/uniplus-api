@@ -169,7 +169,7 @@ public sealed class FatoDeElegibilidadeGateTests
             .IsSuccess.Should().BeTrue();
 
         Result itens = processo.DefinirItens(
-            [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!]);
+            [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
 
         processo.DefinirBonusRegional(

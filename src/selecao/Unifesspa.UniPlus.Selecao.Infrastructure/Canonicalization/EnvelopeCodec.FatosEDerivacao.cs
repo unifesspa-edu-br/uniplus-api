@@ -355,7 +355,7 @@ public sealed partial class EnvelopeCodec
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
                 "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "classificacaoProtecao", "hipoteseLegal", "finalidadeTratamento",
-                "precondicao", "valoresSelecionaveis");
+                "descricao", "componenteExibicao", "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -370,6 +370,8 @@ public sealed partial class EnvelopeCodec
             string classificacaoProtecao = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token);
             string hipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal);
             string finalidadeTratamento = leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento);
+            string descricao = leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato);
+            string? componenteExibicao = leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao);
             if (leitor.Falhou)
             {
                 return [];
@@ -379,6 +381,12 @@ public sealed partial class EnvelopeCodec
             {
                 return leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais.")) ?? [];
+            }
+
+            if (componenteExibicao is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(componenteExibicao))
+            {
+                return leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.componenteExibicao' fora do vocabulário de componentes de exibição.")) ?? [];
             }
 
             if (finalidade == FinalidadeFormulario.Nenhuma)
@@ -441,8 +449,8 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, classificacaoProtecao, hipoteseLegal, finalidadeTratamento, origemValores, etapaCodigo,
-                finalidade, formato, ajuda, pedirConfirmacao, restricoes, impedimento);
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, classificacaoProtecao, hipoteseLegal, finalidadeTratamento, descricao, origemValores, etapaCodigo,
+                finalidade, formato, ajuda, pedirConfirmacao, restricoes, impedimento, componenteExibicao);
             if (fatoColetado.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<FatoColetado>>(fatoColetado.Error!) ?? [];

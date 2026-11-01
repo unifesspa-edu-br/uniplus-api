@@ -132,6 +132,12 @@ public static class LimitesDoEnvelope
     /// <summary><c>DocumentoExigido.FinalidadeTratamento</c> — snapshot-copy da finalidade do tratamento de <c>TipoDocumento</c>.</summary>
     public const int FinalidadeTratamento = FormaDoItem.FinalidadeTratamentoMaxLength;
 
+    /// <summary><c>FatoColetado.Descricao</c> e a descrição do fato derivado — snapshot-copy da descrição do fato no catálogo.</summary>
+    public const int DescricaoDoFato = FormaDoItem.DescricaoDoFatoMaxLength;
+
+    /// <summary><c>FatoColetado.ComponenteExibicao</c> — token do componente de exibição do fato no catálogo.</summary>
+    public const int ComponenteExibicao = FormaDoItem.ComponenteExibicaoMaxLength;
+
     /// <summary><c>DocumentoExigido.HipoteseLegal</c> — snapshot-copy do token da hipótese legal de <c>TipoDocumento</c>.</summary>
     public const int HipoteseLegal = FormaDoItem.HipoteseLegalMaxLength;
 

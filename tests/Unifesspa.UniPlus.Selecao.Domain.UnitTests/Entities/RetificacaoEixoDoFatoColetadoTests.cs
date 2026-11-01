@@ -54,7 +54,7 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
         ProcessoSeletivo processo = Publicado();
         FatoColetado reescrito = FatoColetado.Criar(
             "TEM_RENDA", 0, "Outro rótulo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null,
-            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", ajuda: "Outra ajuda", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", ajuda: "Outra ajuda", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
         Result resultado = processo.DefinirItens([reescrito], Sessao, grupos: [Familia(1, Campo("MEMBRO_RENDA", 0))]);
 
@@ -126,11 +126,11 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
             faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, TipoRenderizacao tipo = TipoRenderizacao.Booleano, string classificacao = "PESSOAL") =>
-        FatoColetado.Criar(codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     /// <summary>O campo de grupo não declara seção: ela é a do grupo.</summary>
     private static FatoColetado Campo(string codigo, int ordem, TipoRenderizacao tipo = TipoRenderizacao.Booleano, string classificacao = "PESSOAL") =>
-        FatoColetado.Criar(codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, tipo, Obrigatoriedade.Sempre, null, classificacaoProtecao: classificacao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     private static GrupoColetado Familia(int ordem, params FatoColetado[] campos) =>
         GrupoColetado.Criar("FAMILIA", ordem, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre, [.. campos]).Value!;

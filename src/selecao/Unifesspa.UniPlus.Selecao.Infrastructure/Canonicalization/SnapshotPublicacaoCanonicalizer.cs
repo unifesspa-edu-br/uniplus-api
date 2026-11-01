@@ -372,8 +372,13 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <c>hipoteseLegal</c> e <c>finalidadeTratamento</c> a cada item de <c>fatosColetados</c>. Sempre
     /// presente, vazio quando o catálogo não tem fato derivado. Sem produção em ambiente nenhum:
     /// fixture nova, <c>0.0.40</c> deixa de ser reconhecida.
+    /// O bump para <c>0.0.42</c> acrescenta <c>descricao</c> e <c>componenteExibicao</c> a cada item de
+    /// <c>fatosColetados</c> e a cada fato de <c>fatosDerivados</c>: a descrição que o catálogo tinha e o
+    /// componente de exibição que o fato declarava quando a configuração foi publicada. A descrição é
+    /// sempre presente; o componente é nulo quando o fato não declara. Sem produção em ambiente nenhum:
+    /// fixture nova, <c>0.0.41</c> deixa de ser reconhecida.
     /// </remarks>
-    internal const string SchemaVersionAtual = "0.0.41";
+    internal const string SchemaVersionAtual = "0.0.42";
 
     /// <summary>
     /// Perfil de bytes sob o qual a emissão de hoje congela — as regras de ordenação, escape e
@@ -948,6 +953,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
             {
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(f.Codigo),
                 ["nome"] = HashCanonicalComputer.NormalizeNfc(f.Nome),
+                ["descricao"] = HashCanonicalComputer.NormalizeNfc(f.Descricao),
+                ["componenteExibicao"] = f.ComponenteExibicao,
                 ["dominio"] = f.Dominio,
                 ["cardinalidade"] = f.Cardinalidade,
                 ["classificacaoProtecao"] = f.ClassificacaoProtecao,
@@ -2151,6 +2158,8 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["classificacaoProtecao"] = fato.ClassificacaoProtecao,
                 ["hipoteseLegal"] = fato.HipoteseLegal,
                 ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(fato.FinalidadeTratamento),
+                ["descricao"] = HashCanonicalComputer.NormalizeNfc(fato.Descricao),
+                ["componenteExibicao"] = fato.ComponenteExibicao,
                 ["precondicao"] = SerializarDnf(fato.Precondicoes.Select(
                     static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
                 ["valoresSelecionaveis"] = ehFatoDeSelecao
