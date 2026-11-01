@@ -10,10 +10,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <c>VinculoDiscenteRecord</c> em Discentes).
 /// </summary>
 /// <remarks>
-/// <see cref="CpfCiphertext"/> guarda o envelope autenticado (nonce + tag + dados cifrados)
-/// produzido por <c>IUniPlusEncryptionService</c> — nunca texto claro. <see cref="CpfIndice"/> é o
-/// índice cego (HMAC) de <c>IUniPlusBlindIndexService</c>, que sustenta o índice único
-/// <c>(ProcessoSeletivoId, CpfIndice)</c>. As respostas ficam em <see cref="RespostaDaInscricaoRecord"/>,
+/// O CPF não é coluna da inscrição: é a resposta do fato <c>CPF</c>, gravada cifrada como as demais,
+/// de modo que o dado tem uma fonte só e a proteção congelada no processo o alcança.
+/// <see cref="CpfIndice"/> é o índice cego (HMAC) de <c>IUniPlusBlindIndexService</c>, que sustenta o índice único
+/// <c>(ProcessoSeletivoId, CpfIndice)</c> e o cruzamento com o INEP; não é dado exibido. As respostas ficam em <see cref="RespostaDaInscricaoRecord"/>,
 /// <see cref="EnderecoDaInscricaoRecord"/>, <see cref="OcorrenciaDeGrupoDaInscricaoRecord"/> e
 /// <see cref="AceiteDaInscricaoRecord"/> (ADR-0141). A tradução para/de
 /// <see cref="Domain.Entities.Inscricao"/> é responsabilidade exclusiva do
@@ -24,8 +24,6 @@ public sealed class InscricaoRecord : IIdentificavel
     public Guid Id { get; set; }
 
     public Guid ProcessoSeletivoId { get; set; }
-
-    public byte[] CpfCiphertext { get; set; } = null!;
 
     public byte[] CpfIndice { get; set; } = null!;
 

@@ -1249,7 +1249,6 @@ selecao.idempotency_cache.scope: Pessoal
 selecao.idempotency_cache.status: Interno
 selecao.inscricoes.cancelada_em: Interno
 selecao.inscricoes.cancelada_por: Pessoal
-selecao.inscricoes.cpf_ciphertext: Identificador
 selecao.inscricoes.cpf_indice: Identificador
 selecao.inscricoes.created_at: Interno
 selecao.inscricoes.emissor_token: Pessoal

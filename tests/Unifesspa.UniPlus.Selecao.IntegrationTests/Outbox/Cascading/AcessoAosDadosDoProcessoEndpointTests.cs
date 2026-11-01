@@ -353,13 +353,14 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     private static RespostasAdmitidas AdmitidasDoNome() => new(
         new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
         {
+            [ConjuntoBasicoDaInscricao.Cpf] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
             [ConjuntoBasicoDaInscricao.Nome] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
             [ConjuntoBasicoDaInscricao.DesejaNomeSocial] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
             [ConjuntoBasicoDaInscricao.NomeSocial] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
         },
         new HashSet<string>(StringComparer.Ordinal)
         {
-            ConjuntoBasicoDaInscricao.Nome, ConjuntoBasicoDaInscricao.DesejaNomeSocial, ConjuntoBasicoDaInscricao.NomeSocial,
+            ConjuntoBasicoDaInscricao.Cpf, ConjuntoBasicoDaInscricao.Nome, ConjuntoBasicoDaInscricao.DesejaNomeSocial, ConjuntoBasicoDaInscricao.NomeSocial,
         },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
         new HashSet<Guid>(),

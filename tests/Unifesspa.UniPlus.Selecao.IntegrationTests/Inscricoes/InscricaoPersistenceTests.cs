@@ -41,6 +41,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
     private static readonly Dictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new(StringComparer.Ordinal)
     {
+        ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
         ["NOME_SOCIAL"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
         ["DESEJA_NOME_SOCIAL"] = new(TipoDoValorDeResposta.Booleano, Multivalorado: false, Identificador: false),
         ["DATA_NASCIMENTO"] = new(TipoDoValorDeResposta.Data, Multivalorado: false, Identificador: false),
@@ -58,7 +59,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
     private static readonly RespostasAdmitidas Admitidas = new(
         DefinicoesDasRespostas,
-        new HashSet<string>(StringComparer.Ordinal) { "NOME_SOCIAL", "DESEJA_NOME_SOCIAL", "DATA_NASCIMENTO", "MODALIDADES", "ENDERECO_RESIDENCIAL", "RG_NUMERO", "SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL" },
+        new HashSet<string>(StringComparer.Ordinal) { "CPF", "NOME_SOCIAL", "DESEJA_NOME_SOCIAL", "DATA_NASCIMENTO", "MODALIDADES", "ENDERECO_RESIDENCIAL", "RG_NUMERO", "SEXO_CIVIL", "IDENTIDADE_GENERO", "ORIENTACAO_SEXUAL" },
         new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = new HashSet<string>(StringComparer.Ordinal) { "RG_NUMERO", "PARENTESCO" },
@@ -178,7 +179,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         await connection.OpenAsync();
         await using NpgsqlCommand command = connection.CreateCommand();
         command.CommandText = """
-            SELECT i.cpf_ciphertext, r.valor_texto, r.valor_cifrado
+            SELECT r.valor_texto, r.valor_cifrado
             FROM selecao.inscricoes i JOIN selecao.respostas_da_inscricao r ON r.inscricao_id = i.id
             WHERE i.id = @id AND r.fato_codigo = 'RG_NUMERO'
             """;
@@ -186,9 +187,46 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
 
-        Encoding.UTF8.GetString((byte[])reader["cpf_ciphertext"]).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
         reader["valor_texto"].Should().Be(DBNull.Value, "o número de documento nunca fica na coluna de texto em claro");
         Encoding.UTF8.GetString((byte[])reader["valor_cifrado"]).Should().NotContain("12.868.927-4");
+        await reader.CloseAsync();
+
+        await using NpgsqlCommand doCpf = connection.CreateCommand();
+        doCpf.CommandText = """
+            SELECT r.valor_texto, r.valor_cifrado,
+                   (SELECT count(*) FROM information_schema.columns
+                    WHERE table_schema = 'selecao' AND table_name = 'inscricoes' AND column_name LIKE 'cpf%') AS colunas_do_cpf
+            FROM selecao.respostas_da_inscricao r
+            WHERE r.inscricao_id = @id AND r.fato_codigo = 'CPF'
+            """;
+        doCpf.Parameters.AddWithValue("id", original.Id);
+        await using NpgsqlDataReader cpf = await doCpf.ExecuteReaderAsync();
+        (await cpf.ReadAsync()).Should().BeTrue("o CPF da inscrição é a resposta do fato CPF");
+        cpf["valor_texto"].Should().Be(DBNull.Value, "o CPF nunca fica em texto claro");
+        Encoding.UTF8.GetString((byte[])cpf["valor_cifrado"]).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
+        Convert.ToInt32(cpf["colunas_do_cpf"], System.Globalization.CultureInfo.InvariantCulture)
+            .Should().Be(1, "só o índice cego do CPF fica na inscrição");
+    }
+
+    [Fact(DisplayName = "O rascunho recém-iniciado volta do banco com o CPF lido da resposta, e a revelação o devolve")]
+    public async Task Rascunho_ReidrataECpfSaiDaResposta()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        Inscricao lida = (await leitura.ObterPorIdAsync(original.Id))!;
+
+        lida.Cpf.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
+        lida.Respostas["CPF"].GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
+        (await leitura.ObterCpfAsync(original.Id))!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
     }
 
     [Fact(DisplayName = "A identidade de gênero e a orientação sexual ficam cifradas na resposta e no comprovante, o sexo civil em claro, e o titular lê os valores de volta")]

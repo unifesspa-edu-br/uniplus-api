@@ -155,10 +155,17 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
                 Guid.CreateVersion7(), null, null,
                 situacao == SituacaoInscricao.Rascunho ? null : "000001",
                 cancelada ? DateTimeOffset.UtcNow : null, cancelada ? Betina : null, cancelada ? "a pedido do candidato" : null,
-                new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal),
+                new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)
+                {
+                    ["CPF"] = System.Text.Json.JsonSerializer.SerializeToElement(PersonasDeTeste.FernandaDrumond.Valor),
+                },
                 new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal),
                 new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal),
-                [], new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
+                [],
+                new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+                {
+                    ["CPF"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: true),
+                },
                 revisao: 1, DateTimeOffset.UtcNow, null);
             await scope.ServiceProvider.GetRequiredService<IInscricaoRepository>().AdicionarAsync(inscricao);
             await scope.ServiceProvider.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();

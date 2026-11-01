@@ -83,7 +83,6 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
             {
                 i.Id,
                 i.NumeroInscricao,
-                i.CpfCiphertext,
                 i.VersaoFormularioId,
                 i.OfertaCursoId,
                 i.OfertaCursoSegundaOpcaoId,
@@ -95,8 +94,8 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
             .LerAsync(_context.RespostasDaInscricao, ids, cancellationToken)
             .ConfigureAwait(false);
 
-        string[] cpfs = await DecifradorDeCpfsEmParalelo
-            .DecifrarAsync(_encryption, [.. inscricoes.Select(static i => i.CpfCiphertext)], cancellationToken)
+        Dictionary<Guid, string> cpfs = await CpfDaInscricao
+            .LerAsync(_context.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
             .ConfigureAwait(false);
 
         Dictionary<Guid, InscritoDoLote> resultado = [];
@@ -107,7 +106,7 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
             resultado[inscricao.Id] = new InscritoDoLote(
                 inscricao.NumeroInscricao,
                 nome,
-                Cpf.Mascarar(cpfs[i]),
+                Cpf.Mascarar(CpfDaInscricao.Exigir(cpfs, inscricao.Id)),
                 inscricao.VersaoFormularioId,
                 inscricao.OfertaCursoId,
                 inscricao.OfertaCursoSegundaOpcaoId);

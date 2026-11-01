@@ -118,9 +118,23 @@ public sealed class Inscricao : EntityBase
     /// </summary>
     public int Revisao { get; private set; }
 
+    /// <summary>
+    /// O CPF é número de documento: a resposta dele é sempre gravada cifrada como identificador, qualquer que seja a
+    /// classificação congelada no processo — reclassificar o fato não pode deixar o CPF em claro na inscrição nem no comprovante.
+    /// </summary>
+    private static readonly DefinicaoDaResposta DefinicaoDoCpf =
+        DefinicaoDaResposta.De(TipoRenderizacao.Texto, DefinicaoDaResposta.ClassificacaoIdentificador, fatoCodigo: ConjuntoBasicoDaInscricao.Cpf);
+
+    /// <summary>As definições admitidas pela versão, com a do CPF forçada a identificador cifrado.</summary>
+    private static Dictionary<string, DefinicaoDaResposta> ComCpfCifrado(IEnumerable<KeyValuePair<string, DefinicaoDaResposta>> definicoes) =>
+        new(definicoes, StringComparer.Ordinal) { [ConjuntoBasicoDaInscricao.Cpf] = DefinicaoDoCpf };
+
     private Inscricao() { }
 
-    /// <summary>Cria o rascunho na versão do formulário divulgada no instante do início.</summary>
+    /// <summary>
+    /// Cria o rascunho na versão do formulário divulgada no instante do início, já com a resposta do CPF da conta: a
+    /// inscrição não tem outra guarda do CPF, e é por essa resposta que ela volta a ser lida.
+    /// </summary>
     public static Result<Inscricao> Iniciar(
         Guid processoSeletivoId,
         Cpf cpf,
@@ -152,6 +166,14 @@ public sealed class Inscricao : EntityBase
             EmissorToken = emissorToken,
             Situacao = SituacaoInscricao.Rascunho,
             VersaoFormularioId = versaoFormularioId,
+            Respostas = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                [ConjuntoBasicoDaInscricao.Cpf] = JsonSerializer.SerializeToElement(cpf.Valor),
+            },
+            DefinicoesDasRespostas = new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
+            {
+                [ConjuntoBasicoDaInscricao.Cpf] = DefinicaoDoCpf,
+            },
             Revisao = 1,
         });
     }
@@ -462,7 +484,7 @@ public sealed class Inscricao : EntityBase
         Aceites = [.. Aceites.Where(a => admitidas.Termos.TryGetValue(a.Codigo, out TermoAdmitido? termo)
             && a.VersaoId == termo.VersaoId
             && string.Equals(a.HashVersao, termo.HashVersao, StringComparison.Ordinal))];
-        DefinicoesDasRespostas = admitidas.Definicoes;
+        DefinicoesDasRespostas = ComCpfCifrado(admitidas.Definicoes);
         Revisao++;
 
         return Result.Success();
@@ -518,7 +540,7 @@ public sealed class Inscricao : EntityBase
         Respostas = NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes);
         Grupos = NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes);
         Aceites = aceites;
-        DefinicoesDasRespostas = admitidas.Definicoes;
+        DefinicoesDasRespostas = ComCpfCifrado(admitidas.Definicoes);
         Revisao++;
 
         return Result.Success();
@@ -628,9 +650,9 @@ public sealed class Inscricao : EntityBase
             .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
         Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes), avaliacao.Formulario.Grupos);
         Aceites = aceites;
-        DefinicoesDasRespostas = admitidas.Definicoes.Concat(definicoesDoEnvio)
+        DefinicoesDasRespostas = ComCpfCifrado(admitidas.Definicoes.Concat(definicoesDoEnvio)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
-            .ToDictionary(static g => g.Key, static g => g.Last().Value, StringComparer.Ordinal);
+            .ToDictionary(static g => g.Key, static g => g.Last().Value, StringComparer.Ordinal));
         Situacao = SituacaoInscricao.Submetida;
         Revisao++;
 
@@ -969,11 +991,22 @@ public sealed class Inscricao : EntityBase
         }
     }
 
-    /// <summary>A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa.</summary>
+    /// <summary>
+    /// A inscrição é do CPF do token; a resposta do CPF não pode ser de outra pessoa nem ser removida: ela é a única
+    /// guarda do CPF da inscrição, e sem ela o rascunho não se reconstitui.
+    /// </summary>
     private IEnumerable<FieldError> RecusasDoCpf(IReadOnlyDictionary<string, JsonElement> respostas)
     {
-        if (!respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement valor) || valor.ValueKind == JsonValueKind.Null)
+        if (!respostas.TryGetValue(ConjuntoBasicoDaInscricao.Cpf, out JsonElement valor))
         {
+            yield break;
+        }
+
+        if (valor.ValueKind == JsonValueKind.Null)
+        {
+            yield return new FieldError(ConjuntoBasicoDaInscricao.Cpf, new DomainError(
+                InscricaoErrorCodes.CpfNaoPodeSerRemovido,
+                "O CPF faz parte da inscrição e não pode ser apagado. Informe o CPF da sua conta."));
             yield break;
         }
 

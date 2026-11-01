@@ -33,15 +33,6 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.Property(i => i.ProcessoSeletivoId)
             .HasComment("O processo seletivo desta inscrição.");
 
-        // Envelope autenticado (nonce + tag + dado) — nunca os 11 dígitos em texto claro. bytea
-        // evita a expansão de ~33% de uma codificação Base64 (ADR-0121, mesmo motivo de
-        // VinculoDiscenteRecord.CpfCiphertext).
-        builder.Property(i => i.CpfCiphertext)
-            .ClassificaComo(ClassificacaoDeProtecao.Identificador)
-            .HasColumnType("bytea")
-            .IsRequired()
-            .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado; nunca texto claro.");
-
         // Índice cego (HMAC) — determinístico por construção, nunca decifrado para buscar ou
         // garantir unicidade (ADR-0121, emenda de 2026-10-10).
         builder.Property(i => i.CpfIndice)

@@ -305,7 +305,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
 
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
-        iniciar.Value!.Respostas.Should().BeEmpty("a inscrição nasce em rascunho, sem resposta nenhuma");
+        iniciar.Value!.Respostas.Keys.Should().Equal(["CPF"], "a inscrição nasce em rascunho só com o CPF da conta");
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -565,7 +565,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await connection.OpenAsync();
         await using NpgsqlCommand command = connection.CreateCommand();
         command.CommandText = """
-            SELECT i.cpf_ciphertext, r.fato_codigo, r.valor_texto, r.valor_cifrado
+            SELECT r.fato_codigo, r.valor_texto, r.valor_cifrado
             FROM selecao.inscricoes i JOIN selecao.respostas_da_inscricao r ON r.inscricao_id = i.id
             WHERE i.id = @id AND r.fato_codigo IN ('RG_NUMERO', 'RG_NUMERO_MEMBRO')
             """;
@@ -576,7 +576,6 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             while (await reader.ReadAsync())
             {
                 linhas++;
-                Encoding.UTF8.GetString((byte[])reader["cpf_ciphertext"]).Should().NotContain(PersonasDeTeste.KevinCarvalho.Valor);
                 reader["valor_texto"].Should().Be(DBNull.Value, "o número de documento nunca fica na coluna de texto em claro");
                 Encoding.UTF8.GetString((byte[])reader["valor_cifrado"]).Should().NotContain("30.111.222-9").And.NotContain("40.333.444-5");
             }

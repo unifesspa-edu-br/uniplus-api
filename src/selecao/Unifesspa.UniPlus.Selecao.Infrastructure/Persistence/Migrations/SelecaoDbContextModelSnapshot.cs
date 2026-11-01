@@ -4690,12 +4690,6 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("cancelada_por")
                         .HasComment("O sub do token de quem cancelou; nulo se não foi cancelada.");
 
-                    b.Property<byte[]>("CpfCiphertext")
-                        .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("cpf_ciphertext")
-                        .HasComment("CPF cifrado em repouso (AES-GCM, ADR-0121) — envelope autenticado; nunca texto claro.");
-
                     b.Property<byte[]>("CpfIndice")
                         .IsRequired()
                         .HasColumnType("bytea")
