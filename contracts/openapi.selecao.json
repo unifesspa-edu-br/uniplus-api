@@ -3903,7 +3903,7 @@
         "x-uniplus-paginated": true
       }
     },
-    "/api/selecao/processos-seletivos/{id}/inscricoes/{inscricaoId}/cpf/revelacao": {
+    "/api/selecao/processos-seletivos/{id}/inscricoes/{inscricaoId}/campos/{fatoCodigo}/revelacao": {
       "post": {
         "tags": [
           "InscricoesDoProcesso"
@@ -3926,15 +3926,31 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "fatoCodigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Z][A-Z0-9_]{0,59}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "ocorrencia",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "application/vnd.uniplus.cpf-revelado-da-inscricao.v1\u002Bjson": {
+              "application/vnd.uniplus.campo-revelado-da-inscricao.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/CpfReveladoDto"
+                  "$ref": "#/components/schemas/CampoReveladoDto"
                 }
               }
             }
@@ -13019,6 +13035,21 @@
           }
         }
       },
+      "CampoReveladoDto": {
+        "required": [
+          "fatoCodigo",
+          "valor"
+        ],
+        "type": "object",
+        "properties": {
+          "fatoCodigo": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "string"
+          }
+        }
+      },
       "CancelamentoDaInscricaoRequest": {
         "required": [
           "motivo"
@@ -14125,17 +14156,6 @@
           },
           "podeRevelar": {
             "type": "boolean"
-          }
-        }
-      },
-      "CpfReveladoDto": {
-        "required": [
-          "cpfCompleto"
-        ],
-        "type": "object",
-        "properties": {
-          "cpfCompleto": {
-            "type": "string"
           }
         }
       },

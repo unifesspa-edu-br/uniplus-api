@@ -45,7 +45,7 @@ public sealed record ResourceContext
     public string? FatoCodigo { get; }
 
     /// <summary>Ocorrência do fato, quando o campo está num grupo que se repete; nula fora de grupo.</summary>
-    public int? Ocorrencia { get; }
+    public string? Ocorrencia { get; }
 
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
     public ClassificacaoDeProtecao Sensibilidade { get; }
@@ -58,7 +58,7 @@ public sealed record ResourceContext
         Guid? chamadaId,
         Guid? resourceId,
         string? fatoCodigo,
-        int? ocorrencia,
+        string? ocorrencia,
         Guid? inscricaoId)
     {
         ResourceTipo = resourceTipo;
@@ -87,7 +87,7 @@ public sealed record ResourceContext
         Guid? chamadaId = null,
         Guid? resourceId = null,
         string? fatoCodigo = null,
-        int? ocorrencia = null,
+        string? ocorrencia = null,
         Guid? inscricaoId = null)
     {
         if (string.IsNullOrWhiteSpace(resourceTipo))
@@ -129,11 +129,11 @@ public sealed record ResourceContext
                 "O código do fato, quando informado, não pode ser vazio."));
         }
 
-        if (ocorrencia is < 0 || (ocorrencia is not null && fatoCodigo is null))
+        if (ocorrencia is not null && (string.IsNullOrWhiteSpace(ocorrencia) || fatoCodigo is null))
         {
             return Result<ResourceContext>.Failure(new DomainError(
                 AuthorizationErrorCodes.ResourceContextOcorrenciaInvalida,
-                "A ocorrência exige o código do fato e não pode ser negativa."));
+                "A ocorrência exige o código do fato e não pode ser vazia."));
         }
 
         return Result<ResourceContext>.Success(new ResourceContext(

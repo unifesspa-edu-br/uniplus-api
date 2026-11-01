@@ -9,6 +9,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 internal sealed record GrupoDoProcesso(
     string Codigo, string Rotulo, string? Secao, int Ordem, IReadOnlyDictionary<string, FatoDoProcesso> Subitens);
 
+/// <summary>Um campo identificador do formulário congelado: o fato e o grupo repetível que o abriga, quando há.</summary>
+internal sealed record CampoIdentificador(string FatoCodigo, string? GrupoCodigo, bool EhCpf);
+
 /// <summary>
 /// Os fatos da inscrição como a versão do processo os congelou: os coletados (fora e dentro de grupo) e os derivados.
 /// Lê só o envelope congelado, nunca o catálogo vivo (a Seleção congela por cópia na publicação).
@@ -72,6 +75,31 @@ internal sealed record FatosDaVersao(
             StringComparer.Ordinal);
 
         return new FatosDaVersao(coletados, grupos, derivados);
+    }
+
+    /// <summary>
+    /// Os campos identificadores de código <paramref name="fatoCodigo"/>: com <paramref name="emGrupo"/>, um por grupo
+    /// repetível que o contém; sem ele, só o de fora de grupo. Quem pede a ocorrência de um grupo nunca recebe o campo da
+    /// raiz, e quem não a pede nunca recebe o de grupo. Vazio quando o fato não existe na versão ou não é classificado como
+    /// identificador. Só o campo assim
+    /// classificado se revela, e a resposta que o guarda é a cifrada com a chave dos identificadores: o handler não decide de
+    /// onde o valor vem. O mesmo fato pode estar em mais de um grupo; quem localiza a ocorrência escolhe o grupo.
+    /// </summary>
+    public IReadOnlyList<CampoIdentificador> Identificadores(string fatoCodigo, bool emGrupo)
+    {
+        if (!emGrupo)
+        {
+            return Coletados.TryGetValue(fatoCodigo, out FatoDoProcesso? fora) && fora.Classificacao == ClassificacaoDeProtecao.Identificador
+                ? [new CampoIdentificador(fatoCodigo, null, fora.EhCpf)]
+                : [];
+        }
+
+        return
+        [
+            .. Grupos
+                .Where(g => g.Subitens.TryGetValue(fatoCodigo, out FatoDoProcesso? membro) && membro.Classificacao == ClassificacaoDeProtecao.Identificador)
+                .Select(g => new CampoIdentificador(fatoCodigo, g.Codigo, g.Subitens[fatoCodigo].EhCpf)),
+        ];
     }
 
     private static FatoDoProcesso Derivado(FatoDerivadoCongelado derivado, EnvelopeReidratado envelope) =>

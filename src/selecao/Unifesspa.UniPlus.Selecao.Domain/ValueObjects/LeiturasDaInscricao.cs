@@ -28,3 +28,9 @@ public sealed record ResumoDaInscricaoDoProcesso(
     string? Nome,
     Cpf Cpf,
     DateTimeOffset? SubmetidaEm);
+
+/// <summary>
+/// A resposta cifrada de um campo identificador, localizada sem decifrar: a identidade da linha.
+/// </summary>
+/// <param name="RespostaId">A linha da resposta cifrada.</param>
+public sealed record RespostaIdentificadora(Guid RespostaId);

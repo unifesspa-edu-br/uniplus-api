@@ -107,13 +107,79 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 r.Id, r.ProcessoSeletivoId, r.Situacao, r.VersaoFormularioId, r.OfertaCursoId, r.OfertaCursoSegundaOpcaoId))
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<Cpf?> ObterCpfAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<RespostaIdentificadora?> LocalizarIdentificadorAsync(
+        Guid inscricaoId, string fatoCodigo, string? grupoCodigo, string? ocorrenciaId, CancellationToken cancellationToken = default)
     {
-        Dictionary<Guid, string> cpfs = await CpfDaInscricao
-            .LerAsync(_dbContext.RespostasDaInscricao.Where(r => r.InscricaoId == id), _encryption, cancellationToken)
+        ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
+
+        if (grupoCodigo is null)
+        {
+            Guid? raiz = await _dbContext.RespostasDaInscricao
+                .AsNoTracking()
+                .Where(r => r.InscricaoId == inscricaoId
+                    && r.FatoCodigo == fatoCodigo
+                    && r.OcorrenciaId == null
+                    && r.Origem == OrigemDaResposta.Informada
+                    && r.ValorCifrado != null)
+                .Select(static r => (Guid?)r.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return raiz is { } id ? new RespostaIdentificadora(id) : null;
+        }
+
+        if (ocorrenciaId is null)
+        {
+            return null;
+        }
+
+        Guid? ocorrencia = await _dbContext.OcorrenciasDeGrupoDaInscricao
+            .AsNoTracking()
+            .Where(o => o.InscricaoId == inscricaoId && o.GrupoCodigo == grupoCodigo && o.MembroId == ocorrenciaId)
+            .Select(static o => (Guid?)o.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (ocorrencia is null)
+        {
+            return null;
+        }
+
+        Guid? resposta = await _dbContext.RespostasDaInscricao
+            .AsNoTracking()
+            .Where(r => r.InscricaoId == inscricaoId
+                && r.FatoCodigo == fatoCodigo
+                && r.OcorrenciaId == ocorrencia
+                && r.Origem == OrigemDaResposta.Informada
+                && r.ValorCifrado != null)
+            .Select(static r => (Guid?)r.Id)
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return cpfs.TryGetValue(id, out string? cpf) ? ReidratarCpf(cpf) : null;
+        return resposta is { } respostaId ? new RespostaIdentificadora(respostaId) : null;
+    }
+
+    public async Task<string?> LerIdentificadorAsync(Guid respostaId, CancellationToken cancellationToken = default)
+    {
+        byte[] cifrado = await _dbContext.RespostasDaInscricao
+            .AsNoTracking()
+            .Where(r => r.Id == respostaId)
+            .Select(static r => r.ValorCifrado)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"A resposta identificadora {respostaId} não está cifrada.");
+
+        byte[] plano = await _encryption
+            .DecryptAsync(SelecaoEncryptionKeys.IdentificadoresAesGcm, cifrado, cancellationToken)
+            .ConfigureAwait(false);
+
+        JsonElement valor = JsonSerializer.Deserialize<JsonElement>(plano);
+
+        return valor.ValueKind switch
+        {
+            JsonValueKind.String => string.IsNullOrWhiteSpace(valor.GetString()) ? null : valor.GetString(),
+            JsonValueKind.Null or JsonValueKind.Undefined => null,
+            _ => valor.GetRawText(),
+        };
     }
 
     public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(

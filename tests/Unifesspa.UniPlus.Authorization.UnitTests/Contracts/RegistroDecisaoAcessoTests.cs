@@ -121,18 +121,18 @@ public sealed class RegistroDecisaoAcessoTests
     public void Registro_Revelacao_LevaOFatoEAOcorrencia()
     {
         ResourceContext resource = ResourceContext.From(
-            "inscricao", ClassificacaoDeProtecao.Identificador, resourceId: Guid.CreateVersion7(), fatoCodigo: "CPF", ocorrencia: 0).Value!;
+            "inscricao", ClassificacaoDeProtecao.Identificador, resourceId: Guid.CreateVersion7(), fatoCodigo: "CPF", ocorrencia: "membro-1").Value!;
 
         RegistroDecisaoAcesso registro = Permitido(resource);
 
         registro.FatoCodigo.Should().Be("CPF");
-        registro.Ocorrencia.Should().Be(0);
+        registro.Ocorrencia.Should().Be("membro-1");
     }
 
     [Fact(DisplayName = "Ocorrência sem código do fato é recusada")]
     public void ResourceContext_OcorrenciaSemFato_Recusa()
     {
-        Result<ResourceContext> resultado = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Interno, ocorrencia: 1);
+        Result<ResourceContext> resultado = ResourceContext.From("inscricao", ClassificacaoDeProtecao.Interno, ocorrencia: "membro-1");
 
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextOcorrenciaInvalida);
     }

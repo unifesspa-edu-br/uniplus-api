@@ -83,7 +83,7 @@ public sealed record RegistroDecisaoAcesso
     public string? FatoCodigo { get; }
 
     /// <summary>Ocorrência do fato revelado, quando o campo está num grupo que se repete.</summary>
-    public int? Ocorrencia { get; }
+    public string? Ocorrencia { get; }
 
     /// <summary>Se a decisão tem de ser registrada pela regra de sensibilidade (<see cref="Exige"/>).</summary>
     [JsonIgnore]
@@ -131,7 +131,7 @@ public sealed record RegistroDecisaoAcesso
         Guid? resourceId,
         Guid? inscricaoId,
         string? fatoCodigo,
-        int? ocorrencia,
+        string? ocorrencia,
         bool exigido,
         string origem,
         string? clienteOidc,

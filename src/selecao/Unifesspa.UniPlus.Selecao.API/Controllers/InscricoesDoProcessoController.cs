@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Application.DTOs;
 using Application.Permissoes;
-using Application.Queries.CpfDaInscricao;
+using Application.Queries.CampoDaInscricao;
 using Application.Queries.DocumentosDaInscricao;
 using Application.Queries.InscricoesDoProcesso;
 using Application.Services;
@@ -79,22 +79,30 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     }
 
     /// <summary>
-    /// Revela o CPF completo de UMA inscrição enviada, pela permissão própria de revelar CPF na unidade dona do processo;
-    /// consultar as inscrições não basta. É POST e sem corpo para que nenhum intermediário o pré-carregue ou o guarde, e
-    /// sem chave de idempotência porque a resposta, com o CPF, nunca deve ser reaproveitada de cache. Cada revelação
-    /// permitida fica no registro de decisões de acesso com a inscrição e a concessão usada. A inscrição que não existe,
-    /// a de outro processo, a em rascunho e a recusa por falta de permissão respondem o mesmo 404.
+    /// Revela o valor completo de UM campo identificador de uma inscrição enviada (o CPF, o número do RG, do passaporte e os
+    /// demais que o processo classificou assim), pela permissão de revelar identificadores na unidade dona do processo;
+    /// consultar as inscrições não basta. O campo é referido pelo código do fato, que não é dado pessoal, e pela ocorrência
+    /// quando está num grupo. É POST e sem corpo para que nenhum intermediário o pré-carregue ou o guarde, e sem chave de
+    /// idempotência porque a resposta, com o valor, nunca deve ser reaproveitada de cache. Cada revelação, permitida ou
+    /// negada, fica no registro de acessos com a inscrição, o código do fato e a ocorrência. A inscrição que não existe, a de
+    /// outro processo, a em rascunho, o campo que não é identificador e a recusa por falta de permissão respondem o mesmo 404.
     /// </summary>
-    [HttpPost("{inscricaoId:guid}/cpf/revelacao")]
-    [VendorMediaType(Resource = "cpf-revelado-da-inscricao", Versions = [1])]
-    [ProducesResponseType(typeof(CpfReveladoDto), StatusCodes.Status200OK)]
+    /// <param name="id">O processo seletivo.</param>
+    /// <param name="inscricaoId">A inscrição.</param>
+    /// <param name="fatoCodigo">O código do fato a revelar.</param>
+    /// <param name="ocorrencia">O identificador da ocorrência do grupo, quando o campo está em grupo.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    [HttpPost("{inscricaoId:guid}/campos/{fatoCodigo:regex(^[[A-Z]][[A-Z0-9_]]{{0,59}}$)}/revelacao")]
+    [VendorMediaType(Resource = "campo-revelado-da-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(CampoReveladoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> RevelarCpf(Guid id, Guid inscricaoId, CancellationToken cancellationToken)
+    public async Task<IActionResult> RevelarCampo(
+        Guid id, Guid inscricaoId, string fatoCodigo, [FromQuery] string? ocorrencia, CancellationToken cancellationToken)
     {
-        Result<CpfReveladoDto> resultado = await _queryBus
-            .Send(new RevelarCpfDaInscricaoQuery(id, inscricaoId), cancellationToken)
+        Result<CampoReveladoDto> resultado = await _queryBus
+            .Send(new RevelarCampoDaInscricaoQuery(id, inscricaoId, fatoCodigo, ocorrencia), cancellationToken)
             .ConfigureAwait(false);
         if (!resultado.IsSuccess)
         {
