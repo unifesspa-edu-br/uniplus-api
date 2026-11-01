@@ -151,6 +151,36 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         laudoComSensiveis.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Cada classificação do arquivo abre só com a sua permissão, sem hierarquia; a não resolvida exige a de sensíveis")]
+    public async Task Documentos_CadaClassificacaoExigeASuaPermissao()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Documentos_CadaClassificacaoExigeASuaPermissao));
+        (Guid Arquivo, PermissaoSelecao Exigida)[] arquivos =
+        [
+            (cenario.ArquivoPublico, PermissaoSelecao.DocumentosPublicosConsultar),
+            (cenario.ArquivoInterno, PermissaoSelecao.DocumentosInternosConsultar),
+            (cenario.ArquivoPessoal, PermissaoSelecao.DocumentosPessoaisConsultar),
+            (cenario.ArquivoIdentificador, PermissaoSelecao.DocumentosIdentificadoresConsultar),
+            (cenario.ArquivoSensivel, PermissaoSelecao.DocumentosSensiveisConsultar),
+            (cenario.ArquivoNaoResolvido, PermissaoSelecao.DocumentosSensiveisConsultar),
+        ];
+
+        foreach (PermissaoSelecao concedida in arquivos.Select(static a => a.Exigida).Distinct())
+        {
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
+            await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, concedida);
+
+            foreach ((Guid arquivo, PermissaoSelecao exigida) in arquivos)
+            {
+                using HttpResponseMessage resposta = await GetAsync(Leandro, cenario.RotaDoAcesso(arquivo));
+
+                resposta.StatusCode.Should().Be(
+                    exigida == concedida ? HttpStatusCode.OK : HttpStatusCode.NotFound,
+                    $"o arquivo que exige {exigida.Codigo} com só {concedida.Codigo} concedida");
+            }
+        }
+    }
+
     [Fact(DisplayName = "Arquivo de outra inscrição ou de outro processo responde o mesmo 404 de quem não tem a permissão")]
     public async Task Documento_DeOutraInscricaoOuProcesso_404()
     {
@@ -166,20 +196,20 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "Quem tem só documentos pessoais abre o RG com uma única decisão permitida e nenhuma negativa de documento sensível")]
+    [Fact(DisplayName = "Quem tem só documentos pessoais abre o documento pessoal com uma única decisão permitida e nenhuma negativa de documento sensível")]
     public async Task Documento_GravaUmaUnicaDecisaoDaPermissaoExigida()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Documento_GravaUmaUnicaDecisaoDaPermissaoExigida));
         await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.DocumentosPessoaisConsultar);
         await ConcederAsync(Betina, cenario.UnidadeId, PermissaoSelecao.DocumentosSensiveisConsultar);
 
-        using HttpResponseMessage rg = await GetAsync(Leandro, cenario.RotaDoAcesso(cenario.ArquivoPessoal));
-        IReadOnlyList<RegistroDecisaoAcesso> doRg = DecisoesDoDocumento(cenario);
+        using HttpResponseMessage pessoalAberto = await GetAsync(Leandro, cenario.RotaDoAcesso(cenario.ArquivoPessoal));
+        IReadOnlyList<RegistroDecisaoAcesso> doPessoal = DecisoesDoDocumento(cenario);
         using HttpResponseMessage laudo = await GetAsync(Betina, cenario.RotaDoAcesso(cenario.ArquivoSensivel));
         IReadOnlyList<RegistroDecisaoAcesso> todas = DecisoesDoDocumento(cenario);
 
-        rg.StatusCode.Should().Be(HttpStatusCode.OK);
-        RegistroDecisaoAcesso pessoal = doRg.Should().ContainSingle().Subject;
+        pessoalAberto.StatusCode.Should().Be(HttpStatusCode.OK);
+        RegistroDecisaoAcesso pessoal = doPessoal.Should().ContainSingle().Subject;
         pessoal.Permissao.Should().Be(PermissaoSelecao.DocumentosPessoaisConsultar.Codigo);
         pessoal.Permitido.Should().BeTrue();
         pessoal.InscricaoId.Should().Be(cenario.InscricaoId, "o registro do arquivo nomeia a inscrição, para a consulta por inscrição achá-lo");
@@ -259,7 +289,8 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     }
 
     private sealed record Cenario(
-        Guid ProcessoId, Guid UnidadeId, Guid InscricaoId, Guid ArquivoPessoal, Guid ArquivoSensivel, Guid InscricaoEmRascunho, Guid ArquivoDoRascunho)
+        Guid ProcessoId, Guid UnidadeId, Guid InscricaoId, Guid ArquivoPessoal, Guid ArquivoSensivel, Guid InscricaoEmRascunho, Guid ArquivoDoRascunho,
+        Guid ArquivoPublico, Guid ArquivoInterno, Guid ArquivoIdentificador, Guid ArquivoNaoResolvido)
     {
         public string RotaDoAcessoDoRascunho() =>
             $"/api/selecao/processos-seletivos/{ProcessoId}/inscricoes/{InscricaoEmRascunho}/documentos/arquivos/{ArquivoDoRascunho}/acesso";
@@ -269,8 +300,9 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// Um processo publicado de verdade, com uma exigência pessoal e outra sensível, e a inscrição enviada de Fernanda com um
-    /// arquivo verificado em cada uma, gravada na versão que a publicação congelou.
+    /// Um processo publicado de verdade, com uma exigência de cada classificação (pública, interna, pessoal, identificadora e
+    /// sensível), e a inscrição enviada de Fernanda com um arquivo verificado em cada uma, gravada na versão que a publicação
+    /// congelou. Mais um arquivo, de exigência fora da versão congelada, cuja classificação não se resolve.
     /// </summary>
     private async Task<Cenario> SemearCenarioAsync(string nome)
     {
@@ -292,6 +324,9 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
 
         Guid tipoPessoal = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "DOCUMENTO_PESSOAL");
         Guid tipoSensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
+        Guid tipoPublico = await SemearTipoAsync(ClassificacaoDeProtecao.Publico, "ARTIGO_PUBLICADO");
+        Guid tipoInterno = await SemearTipoAsync(ClassificacaoDeProtecao.Interno, "ATA_INTERNA");
+        Guid tipoIdentificador = await SemearTipoAsync(ClassificacaoDeProtecao.Identificador, "RG_IDENTIFICACAO");
         string rota = $"/api/selecao/processos-seletivos/{processoId}";
 
         using (HttpResponseMessage itens = await SendAdminAsync(HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{processoId}/formularios/INSCRICAO/itens", ItensDoFormulario()))
@@ -300,7 +335,11 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         }
 
         using (HttpResponseMessage exigencias = await SendAdminAsync(
-            HttpMethod.Put, $"{rota}/documentos-exigidos", new[] { Folha(faseId, tipoPessoal, []), Folha(faseId, tipoSensivel, [FatoSensivel]) }))
+            HttpMethod.Put, $"{rota}/documentos-exigidos", new[]
+            {
+                Folha(faseId, tipoPessoal, []), Folha(faseId, tipoSensivel, [FatoSensivel]), Folha(faseId, tipoPublico, []),
+                Folha(faseId, tipoInterno, []), Folha(faseId, tipoIdentificador, []),
+            }))
         {
             exigencias.StatusCode.Should().Be(HttpStatusCode.NoContent, await exigencias.Content.ReadAsStringAsync());
         }
@@ -342,12 +381,22 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         Guid arquivoPessoal = await AdicionarArquivoVerificadoAsync(documentos, inscricao.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("DOCUMENTO_PESSOAL", StringComparison.Ordinal)));
         Guid arquivoSensivel = await AdicionarArquivoVerificadoAsync(documentos, inscricao.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("LAUDO_MEDICO", StringComparison.Ordinal)));
 
+        Guid arquivoPublico = await AdicionarArquivoVerificadoAsync(documentos, inscricao.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("ARTIGO_PUBLICADO", StringComparison.Ordinal)));
+        Guid arquivoInterno = await AdicionarArquivoVerificadoAsync(documentos, inscricao.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("ATA_INTERNA", StringComparison.Ordinal)));
+        Guid arquivoIdentificador = await AdicionarArquivoVerificadoAsync(documentos, inscricao.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("RG_IDENTIFICACAO", StringComparison.Ordinal)));
+        DocumentoExigido foraDaVersao = DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "COMPROVANTE_FORA_DA_VERSAO", "Comprovante", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
+            [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+        Guid arquivoNaoResolvido = await AdicionarArquivoVerificadoAsync(documentos, inscricao.Id, foraDaVersao);
+
         Inscricao rascunho = Inscricao.Iniciar(processoId, PersonasDeTeste.KevinCarvalho, "sub-kevin", "https://idp.test", versaoId).Value!;
         await inscricoes.AdicionarAsync(rascunho);
         Guid arquivoDoRascunho = await AdicionarArquivoVerificadoAsync(documentos, rascunho.Id, exigidos.Single(d => d.TipoDocumentoCodigo.StartsWith("DOCUMENTO_PESSOAL", StringComparison.Ordinal)));
         await sp.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
 
-        return new Cenario(processoId, unidadeId, inscricao.Id, arquivoPessoal, arquivoSensivel, rascunho.Id, arquivoDoRascunho);
+        return new Cenario(processoId, unidadeId, inscricao.Id, arquivoPessoal, arquivoSensivel, rascunho.Id, arquivoDoRascunho,
+            arquivoPublico, arquivoInterno, arquivoIdentificador, arquivoNaoResolvido);
     }
 
     private static RespostasAdmitidas AdmitidasDoNome() => new(
