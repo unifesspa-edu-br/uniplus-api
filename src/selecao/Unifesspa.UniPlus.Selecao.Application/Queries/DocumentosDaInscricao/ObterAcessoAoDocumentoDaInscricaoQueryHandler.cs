@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -65,40 +66,32 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(logger);
 
-        Guid? unidade = await processoRepository
-            .ObterUnidadeAdministradoraAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         ArquivoDaApresentacao? arquivo = await documentoRepository.ObterArquivoAsync(query.ArquivoId, cancellationToken).ConfigureAwait(false);
-        VinculoDaInscricao? vinculo = arquivo is null || arquivo.InscricaoId != query.InscricaoId
-            ? null
-            : await inscricaoRepository.ObterVinculoAsync(arquivo.InscricaoId, cancellationToken).ConfigureAwait(false);
-        if (unidade is null
-            || arquivo is null
-            || vinculo is null
-            || vinculo.ProcessoSeletivoId != query.ProcessoSeletivoId
-            || vinculo.Situacao == SituacaoInscricao.Rascunho)
+        if (arquivo is null
+            || arquivo.InscricaoId != query.InscricaoId
+            || await AcessoAInscricao
+                .ConferirVinculoAsync(processoRepository, inscricaoRepository, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken)
+                .ConfigureAwait(false) is not Vinculo conferido)
         {
             return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
         }
 
         ClassificacaoDeProtecao classificacao = await ClassificacaoDaExigenciaAsync(
-                arquivo, vinculo, processoRepository, documentoRepository, registroCodecs, cancellationToken)
+                arquivo, conferido.Inscricao, processoRepository, documentoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
 
-        PermissaoSelecao permissao = PermissaoDoDocumento(classificacao);
-
-        ResultadoDoAcesso acesso = await AcessoAoProcesso
-            .VerificarNaUnidadeAsync(
-                verificador, unidade, query.ProcessoSeletivoId, permissao, ResourceTiposSelecao.DocumentoDaInscricao,
-                classificacao, cancellationToken, query.ArquivoId, inscricaoId: arquivo.InscricaoId)
-            .ConfigureAwait(false);
-        if (acesso is ResultadoDoAcesso.IdentidadeIncompleta or ResultadoDoAcesso.Impedido)
-        {
-            return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoProcesso.Recusa(acesso));
-        }
-
-        if (acesso != ResultadoDoAcesso.Permitido)
+        if (PortaDeProjecaoDaSelecao.Instancia.Requisito(NaturezaDoItem.Arquivo, classificacao) is not { } requisito)
         {
             return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
+        }
+
+        ResourceContext resource = AcessoAoProcesso.ResourceDoDocumento(
+            conferido.UnidadeId, query.ProcessoSeletivoId, arquivo.InscricaoId, query.ArquivoId, classificacao);
+        if (await AcessoAInscricao.DecidirAsync(verificador, conferido, requisito, resource, cancellationToken).ConfigureAwait(false)
+            is Recusada recusada)
+        {
+            return Result<AcessoArquivoDoCandidatoDto>.Failure(
+                AcessoAInscricao.Erro(recusada, AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado));
         }
 
         Result<AcessoArquivoDoCandidatoDto> emitido = await EmissaoDoAcessoAoArquivo
@@ -113,18 +106,6 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
 
         return emitido;
     }
-
-    /// <summary>
-    /// A permissão própria de cada classificação, sem hierarquia entre elas: quem precisa de mais de uma recebe todas.
-    /// </summary>
-    private static PermissaoSelecao PermissaoDoDocumento(ClassificacaoDeProtecao classificacao) => classificacao switch
-    {
-        ClassificacaoDeProtecao.Publico => PermissaoSelecao.DocumentosPublicosConsultar,
-        ClassificacaoDeProtecao.Interno => PermissaoSelecao.DocumentosInternosConsultar,
-        ClassificacaoDeProtecao.Pessoal => PermissaoSelecao.DocumentosPessoaisConsultar,
-        ClassificacaoDeProtecao.Identificador => PermissaoSelecao.DocumentosIdentificadoresConsultar,
-        _ => PermissaoSelecao.DocumentosSensiveisConsultar,
-    };
 
     /// <summary>
     /// A classificação congelada da exigência na versão da inscrição. A que não se resolve vale como sensível: na dúvida
@@ -142,7 +123,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
             .ObterApresentacaoAsync(arquivo.ApresentacaoId, cancellationToken).ConfigureAwait(false);
         if (apresentacao is null)
         {
-            return ClassificacaoDeProtecao.Sensivel;
+            return ClassificacoesDeProtecao.Resolvida(ClassificacaoDeProtecao.Nenhuma);
         }
 
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
@@ -154,9 +135,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
                 ? localizada.Exigencia.ClassificacaoProtecao
                 : null;
 
-        return congelada is { } resolvida && resolvida != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(resolvida)
-            ? resolvida
-            : ClassificacaoDeProtecao.Sensivel;
+        return ClassificacoesDeProtecao.Resolvida(congelada ?? ClassificacaoDeProtecao.Nenhuma);
     }
 
     [LoggerMessage(

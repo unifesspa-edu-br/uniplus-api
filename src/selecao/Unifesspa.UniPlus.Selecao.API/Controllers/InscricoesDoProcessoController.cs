@@ -55,10 +55,7 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     /// </summary>
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    [ExigePermissaoNoProcesso(
-        PermissaoSelecao.InscricoesConsultar,
-        ResourceTipo = ResourceTiposSelecao.Inscricao,
-        SensibilidadeDoResource = ClassificacaoDeProtecao.Pessoal)]
+    [ExigePermissaoNoProcesso(PermissaoSelecao.InscricoesConsultar, Alvo = AlvoDaPermissaoNoProcesso.Inscricoes)]
     [VendorMediaType(Resource = "inscricao-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<InscricaoDoProcessoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
