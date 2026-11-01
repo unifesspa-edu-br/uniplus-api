@@ -263,6 +263,27 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         modalidade.Tipo.Should().Be(TiposDeItem.Opcao);
     }
 
+    [Fact(DisplayName = "A data do envio sai só com a decisão Interno, e o primeiro envio só é consultado quando ela é permitida")]
+    public async Task DataDoEnvio_SaiSoComADecisaoInterna()
+    {
+        DateTimeOffset primeiro = new(2027, 1, 10, 9, 0, 0, TimeSpan.Zero);
+        InscricaoAdministrativaDeTeste cenario = DeFernanda().EnviadaEm(primeiro);
+        DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosInternosConsultar);
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        InscricaoAdministrativaDeTeste.Mundo mundoDeDiogo = cenario.Montar();
+        InscricaoAdministrativaDeTeste.Mundo mundoDeKevin = cenario.Montar();
+
+        InscricaoAdministrativaDto comInterno = (await Executar(cenario, mundoDeDiogo, diogo, cenario.ProcessoId, cenario.InscricaoId)).Value!;
+        InscricaoAdministrativaDto semInterno = (await Executar(cenario, mundoDeKevin, kevin, cenario.ProcessoId, cenario.InscricaoId)).Value!;
+
+        comInterno.SubmetidaEm.Should().Be(primeiro);
+        semInterno.SubmetidaEm.Should().BeNull();
+        JsonSerializer.Serialize(semInterno).Should().NotContain("submetidaEm");
+        await mundoDeDiogo.Inscricoes.Received(1).ObterPrimeirosEnviosAsync(
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == cenario.InscricaoId), Arg.Any<CancellationToken>());
+        await mundoDeKevin.Inscricoes.DidNotReceiveWithAnyArgs().ObterPrimeirosEnviosAsync(default!, default);
+    }
+
     [Fact(DisplayName = "Leandro com dados públicos e documentos públicos tem as duas decisões registradas, ainda que sejam classes abertas")]
     public async Task Registro_ClassesPublicas_SaoRegistradas()
     {

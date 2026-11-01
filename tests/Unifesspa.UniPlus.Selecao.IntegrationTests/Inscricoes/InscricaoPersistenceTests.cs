@@ -339,6 +339,37 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         relida.DefinicoesDasRespostas["ORIENTACAO_SEXUAL"].Should().Match<DefinicaoDaResposta>(static d => d.CifraIndividual && !d.Identificador);
     }
 
+    [Fact(DisplayName = "O primeiro envio é o menor instante entre os comprovantes da inscrição; a inscrição sem comprovante não consta")]
+    public async Task PrimeirosEnvios_DevolveOMenorInstanteESemComprovanteNaoConsta()
+    {
+        Inscricao reenviada = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
+        Inscricao semEnvio = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
+        DateTimeOffset primeiro = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+
+        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        {
+            InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+            ComprovanteInscricao correcao = reenviada.Submeter(
+                "000901", OfertaDoProcesso, null, Respostas(), SemGrupos(), [], Admitidas,
+                FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([reenviada.ETag]), primeiro.AddMinutes(30), []).Value!;
+            ComprovanteInscricao envio = reenviada.Submeter(
+                "000901", OfertaDoProcesso, null, Respostas(), SemGrupos(), [], Admitidas,
+                FormularioDeTeste.AvaliacaoSemOcultos, Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([reenviada.ETag]), primeiro, []).Value!;
+            await repositorio.AdicionarAsync(reenviada);
+            await repositorio.AdicionarAsync(semEnvio);
+            await repositorio.AdicionarComprovanteAsync(correcao);
+            await repositorio.AdicionarComprovanteAsync(envio);
+            await context.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        InscricaoRepository leitor = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+
+        IReadOnlyDictionary<Guid, DateTimeOffset> envios = await leitor.ObterPrimeirosEnviosAsync([reenviada.Id, semEnvio.Id]);
+
+        envios.Should().ContainSingle().Which.Should().Be(new KeyValuePair<Guid, DateTimeOffset>(reenviada.Id, primeiro));
+    }
+
     [Fact(DisplayName = "O envelope dos dados sensíveis copiado de outro comprovante é detectado na leitura")]
     public async Task DadoSensivel_EnvelopeTrocadoEntreComprovantes_ELidoComoAdulterado()
     {

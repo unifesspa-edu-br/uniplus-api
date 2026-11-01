@@ -182,6 +182,20 @@ public sealed class InscricaoRepository : IInscricaoRepository
         };
     }
 
+    public async Task<IReadOnlyDictionary<Guid, DateTimeOffset>> ObterPrimeirosEnviosAsync(
+        IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(inscricoes);
+
+        return await _dbContext.ComprovantesInscricao
+            .AsNoTracking()
+            .Where(c => inscricoes.Contains(c.InscricaoId))
+            .GroupBy(static c => c.InscricaoId)
+            .Select(static g => new { InscricaoId = g.Key, Primeiro = g.Min(static c => c.Instante) })
+            .ToDictionaryAsync(static g => g.InscricaoId, static g => g.Primeiro, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<(IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarEnviadasDoProcessoAsync(
         Guid processoSeletivoId,
         Guid? afterId,
@@ -207,12 +221,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 .ConfigureAwait(false)
             : [];
 
-        Dictionary<Guid, DateTimeOffset> primeirosEnvios = await _dbContext.ComprovantesInscricao
-            .AsNoTracking()
-            .Where(c => ids.Contains(c.InscricaoId))
-            .GroupBy(static c => c.InscricaoId)
-            .Select(static g => new { InscricaoId = g.Key, Primeiro = g.Min(static c => c.Instante) })
-            .ToDictionaryAsync(static g => g.InscricaoId, static g => g.Primeiro, cancellationToken)
+        IReadOnlyDictionary<Guid, DateTimeOffset> primeirosEnvios = await ObterPrimeirosEnviosAsync(ids, cancellationToken)
             .ConfigureAwait(false);
 
         Dictionary<Guid, string> cpfs = lerCpf

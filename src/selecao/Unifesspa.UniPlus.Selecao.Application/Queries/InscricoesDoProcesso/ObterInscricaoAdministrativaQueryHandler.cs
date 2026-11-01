@@ -135,17 +135,36 @@ public static class ObterInscricaoAdministrativaQueryHandler
         IReadOnlyList<ArquivoAdministrativoDto> arquivos = await ArquivosDaInscricaoAsync(
             inscricao.Id, envelope.Value!, documentoRepository, cancellationToken).ConfigureAwait(false);
 
+        DateTimeOffset? submetidaEm = await FixoAsync(
+            decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno,
+            () => PrimeiroEnvioAsync(inscricao.Id, inscricaoRepository, cancellationToken)).ConfigureAwait(false);
+
         return Result<InscricaoAdministrativaDto>.Success(new InscricaoAdministrativaDto(
             Fixo<Guid>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.Id),
             Fixo<SituacaoInscricao>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.Situacao),
             Fixo<Guid>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.OfertaCursoId),
             Fixo<Guid>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, inscricao.OfertaCursoSegundaOpcaoId),
             Fixo(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno, inscricao.NumeroInscricao),
+            submetidaEm,
             Fixo<DateTimeOffset>(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno, inscricao.CanceladaEm),
             Fixo(decisoes, NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal, inscricao.MotivoDoCancelamento),
             ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao, fatos, podeRevelar), decisoes),
             [.. ItensDaInscricao.Derivados(inscricao, fatos).Where(decisoes.Permite)],
             [.. arquivos.Where(decisoes.Permite)]));
+    }
+
+    /// <summary>Como <c>Fixo</c>, para o valor que se lê do repositório: a leitura só acontece quando a classe é permitida.</summary>
+    private static async Task<T?> FixoAsync<T>(
+        DecisoesDaProjecao decisoes, NaturezaDoItem natureza, ClassificacaoDeProtecao classe, Func<Task<T?>> ler)
+        where T : struct => decisoes.Permite(natureza, classe) ? await ler().ConfigureAwait(false) : null;
+
+    private static async Task<DateTimeOffset?> PrimeiroEnvioAsync(
+        Guid inscricaoId, IInscricaoRepository inscricaoRepository, CancellationToken cancellationToken)
+    {
+        IReadOnlyDictionary<Guid, DateTimeOffset> envios = await inscricaoRepository
+            .ObterPrimeirosEnviosAsync([inscricaoId], cancellationToken).ConfigureAwait(false);
+
+        return envios.TryGetValue(inscricaoId, out DateTimeOffset primeiro) ? primeiro : null;
     }
 
     private static T? Fixo<T>(DecisoesDaProjecao decisoes, NaturezaDoItem natureza, ClassificacaoDeProtecao classe, T? valor)
