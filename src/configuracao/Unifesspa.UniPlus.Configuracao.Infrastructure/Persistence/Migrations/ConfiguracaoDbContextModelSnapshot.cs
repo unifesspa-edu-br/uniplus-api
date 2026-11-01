@@ -1270,7 +1270,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_cardinalidade", "cardinalidade IN ('ESCALAR', 'MULTIVALORADO')");
 
-                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_classificacao_minima_do_dominio", "(sistema AND codigo = 'NOME_SOCIAL' AND dominio = 'TEXTO' AND classificacao_protecao = 'PUBLICO') OR (dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_classificacao_minima_do_dominio", "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
 
@@ -1902,7 +1902,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Ativo = true,
                             Binding = "CAMPO_FORMULARIO:NOME_SOCIAL",
                             Cardinalidade = "ESCALAR",
-                            ClassificacaoProtecao = "PUBLICO",
+                            ClassificacaoProtecao = "PESSOAL",
                             Codigo = "NOME_SOCIAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new string[0],

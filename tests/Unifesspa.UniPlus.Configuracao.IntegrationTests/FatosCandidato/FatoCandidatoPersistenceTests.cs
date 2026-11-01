@@ -276,7 +276,7 @@ public sealed class FatoCandidatoPersistenceTests
         formatos.Values.Should().OnlyContain(f => f == FormatoTexto.NomePessoa).And.HaveCount(3);
     }
 
-    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e atendimento são sensíveis; a modalidade e as opções de concorrer, internas; o nome social é público; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
+    [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e atendimento são sensíveis; a modalidade e as opções de concorrer, internas; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
     public async Task Seed_ClassificacaoDeProtecao()
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -291,8 +291,8 @@ public sealed class FatoCandidatoPersistenceTests
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CONCORRER_EP", "CONCORRER_PCD", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA", "CONCORRER_VAGA_POR_ACRESCIMO",
                 "MODALIDADE", "MODALIDADE_CONVOCACAO", "MODALIDADE_SEGUNDA_OPCAO");
-        fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Publico)
-            .Select(f => f.Codigo).Should().Equal("NOME_SOCIAL");
+        fatos.Should().NotContain(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Publico);
+        fatos.Single(f => f.Codigo == "NOME_SOCIAL").ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Pessoal);
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Identificador)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
                 "CPF", "PASSAPORTE_NUMERO", "RG_NUMERO", "RNM_NUMERO");
@@ -347,10 +347,10 @@ public sealed class FatoCandidatoPersistenceTests
             "a fonte do categórico e o formato do texto são obrigatórios também no banco — NULL não pode passar pelo IN");
     }
 
-    [Theory(DisplayName = "CHECK recusa texto público que não seja o nome social de sistema, via SQL cru")]
+    [Theory(DisplayName = "CHECK recusa texto público, inclusive o nome social de sistema, via SQL cru")]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task Check_RecusaTextoPublicoForaDoNomeSocial(bool sistema)
+    public async Task Check_RecusaTextoPublico(bool sistema)
     {
         await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
 
@@ -363,7 +363,7 @@ public sealed class FatoCandidatoPersistenceTests
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "só o nome social de sistema foge da classificação mínima do texto");
+            "nenhum texto, nem o nome social de sistema, foge da classificação mínima");
     }
 
     [Fact(DisplayName = "CHECK recusa classificação de proteção fora do domínio via SQL cru")]

@@ -38,7 +38,7 @@ O problema é classificar o nome social e o nome civil, definir como a preferên
 
 - **Listas de classificação e de resultado (públicas):** a identificação é feita pelo **número de inscrição** acompanhado de uma **forma abreviada do nome** — as iniciais dos primeiros nomes seguidas do último sobrenome por extenso (por exemplo, "M. L. Almeida" para "Maria Lima Almeida") —, derivada do **nome social** quando o candidato o prefere. O **nome completo não é exibido** nessas listas (minimização — LGPD, art. 6º, III).
 - **Pontos de identificação nominal** (convocação nominal, documento de identificação do candidato, atendimento): usa-se o **nome social** quando o candidato indicou um nome social; usa-se o **nome civil** quando não há nome social ou a preferência é pelo civil. O **nome civil nunca aparece em local público contra a preferência** do titular.
-- O **nome social preferido** é classificado como dado **público** (a forma de identificação que o titular escolheu tornar pública).
+- O **nome social preferido** é a forma de identificação **nos pontos de publicação** (listas, convocação nominal, atendimento): a publicação do certame tem base legal própria, que é a publicidade, e não passa pelo projetor de proteção de dados. Isso não classifica o campo para o acesso administrativo (veja a emenda ao fim).
 - O **nome civil** completo é dado **pessoal** (LGPD): visível ao próprio titular, a atores com permissão operacional explícita e a auditores sob escopo e base legal — **nunca** em exposição pública contra a preferência.
 - A **preferência de identificação** (social ou civil) é **persistida** como atributo do candidato, **não inferida** pela presença ou ausência do nome social.
 
@@ -207,3 +207,11 @@ para nome social nos pontos de identificação) não muda.
 - A regra de abreviação vigente (`RegrasDeNomeAbreviado.Vigente`, "iniciais_mais_ultimo_sobrenome") é identificador
   versionado e congelado por publicação (RN08): uma mudança futura na regra nunca reinterpreta um certame já
   publicado — recebe identificador novo.
+
+## Emenda: classificação do nome social na consulta administrativa
+
+O que esta decisão chama de "público" é a **forma de identificação nos pontos de publicação**, e não a classificação do dado para o acesso administrativo. Na consulta administrativa, o nome social é dado `Pessoal`, como o nome civil e todo texto do candidato (ADR-0153): o fato de sistema `NOME_SOCIAL` é `Pessoal`, e a avaliação cega, que só tem permissão sobre dados públicos, não recebe nenhum dos dois nomes.
+
+- **Listas de classificação e de resultado:** número de inscrição com o nome abreviado.
+- **Convocação nominal e atendimento:** o nome social, quando preferido.
+- Nenhum ponto de publicação decide a exibição do nome pela classificação do fato: decide pela regra de exibição desta ADR. O nome civil continua nunca aparecendo contra a preferência do titular.

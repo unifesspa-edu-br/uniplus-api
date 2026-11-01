@@ -256,13 +256,12 @@ public static class FatoCandidatoSeed
         // O conjunto básico que todo formulário de inscrição coleta: a identificação, a filiação e
         // os contatos do candidato. A UF do RG e a naturalidade têm as UFs e os municípios do Geo
         // como opções; o órgão emissor do RG, uma lista fechada, e o nome do órgão que falta nela. O
-        // nome social é público, porque é a identificação que o titular escolhe para aparecer
-        // (ADR-0082); os demais são pessoais.
+        // nome social é pessoal na consulta administrativa, como os demais (ADR-0082, ADR-0153).
         // O nome civil vem do login (gov.br) e é igual ao do token: não passa por regra de formato.
         DadoBasico(27, "NOME", "Nome", "Nome civil do candidato, como vem do login gov.br.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre),
         DadoBasico(28, "DESEJA_NOME_SOCIAL", "Deseja usar nome social", "Se o candidato deseja ser identificado pelo nome social no processo seletivo.", DominioFato.Booleano, FinalidadeIdentificacao),
         DadoBasico(29, FatoCandidato.CodigoDoNomeSocial, "Nome social", "Nome pelo qual o candidato prefere ser identificado e que aparece no lugar do nome civil.", DominioFato.Texto, FinalidadeIdentificacao,
-            formato: FormatoTexto.NomePessoa, classificacao: ClassificacaoDeProtecao.Publico),
+            formato: FormatoTexto.NomePessoa),
         DadoBasico(30, "CPF", "CPF", "Número do CPF do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Cpf,
             classificacao: ClassificacaoDeProtecao.Identificador),
         DadoBasico(31, "RG_NUMERO", "Número do RG", "Número do RG do candidato.", DominioFato.Texto, FinalidadeIdentificacao, formato: FormatoTexto.Livre,

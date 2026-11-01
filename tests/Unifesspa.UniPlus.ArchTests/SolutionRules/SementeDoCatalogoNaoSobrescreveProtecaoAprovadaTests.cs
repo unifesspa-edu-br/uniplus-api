@@ -24,11 +24,13 @@ public sealed partial class SementeDoCatalogoNaoSobrescreveProtecaoAprovadaTests
         ["tipo_documento"] = ["classificacao_protecao", "hipotese_legal", "finalidade_tratamento", "nome", "descricao"],
     };
 
-    // A única migration que pode tocar uma coluna protegida: torna a descrição obrigatória e a dá aos fatos semeados que não a tinham.
-    // Não toca a classificação, a hipótese legal, a finalidade nem o nome, e o fato sem a edição de um administrador é o único afetado.
+    // As migrations que podem tocar uma coluna protegida. A primeira torna a descrição obrigatória e a dá aos fatos semeados que não a
+    // tinham; a segunda reclassifica o nome social de sistema como pessoal, decisão da proteção de dados que a restrição do domínio
+    // passa a exigir da linha semeada. Nenhuma toca a hipótese legal, a finalidade nem o nome.
     private static readonly Dictionary<string, string[]> ColunasLiberadasPorMigration = new(StringComparer.Ordinal)
     {
         ["20261101065734_DeclaraComponenteDeExibicaoEDescricaoObrigatoriaDoFato.cs"] = ["descricao"],
+        ["20261101222613_NomeSocialPessoal.cs"] = ["classificacao_protecao"],
     };
 
     [Fact(DisplayName = "Nenhuma migration posterior ao circuito de aprovação reescreve a proteção, o nome ou a descrição de item do catálogo")]
