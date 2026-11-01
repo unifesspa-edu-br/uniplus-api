@@ -337,6 +337,20 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
                 && r.Permissao == PermissaoSelecao.DadosIdentificadoresRevelar.Codigo
                 && r.InscricaoId == inscricaoId)];
 
+    [Fact(DisplayName = "Serialização defensiva: a resposta que não passou pelo projetor sai sem nenhum campo classificado")]
+    public async Task Serializacao_OmiteCampoClassificadoSemDecisao()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Serializacao_OmiteCampoClassificadoSemDecisao));
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        using HttpResponseMessage resposta = await GetAsync(
+            Diogo, $"/api/selecao/_teste/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}/esquecida");
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        corpo.Should().Be("{}", "sem decisão permitida na requisição nenhum campo classificado sai");
+    }
+
     private IReadOnlyList<RegistroDecisaoAcesso> RegistrosDeDados(Guid processoId, PermissaoSelecao permissao) =>
         [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.ProcessoId == processoId && r.Permissao == permissao.Codigo && r.ResourceId is not null)];

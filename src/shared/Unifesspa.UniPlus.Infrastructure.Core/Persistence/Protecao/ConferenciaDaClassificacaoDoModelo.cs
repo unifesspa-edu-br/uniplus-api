@@ -42,6 +42,12 @@ public static class ConferenciaDaClassificacaoDoModelo
         return (violacoes, retrato.ToString());
     }
 
+    /// <summary>A classificação de cada coluna mapeada, por <c>schema.tabela.coluna</c>; a coluna sem classificação fica fora.</summary>
+    public static IReadOnlyDictionary<string, ClassificacaoDeProtecao> Classificacoes(IModel modelo) =>
+        Analisar(modelo).Colunas
+            .Where(static c => c.Value is not null)
+            .ToDictionary(static c => c.Key, static c => c.Value!.Value, StringComparer.Ordinal);
+
     private static (SortedDictionary<string, ClassificacaoDeProtecao?> Colunas, List<string> NaoConferidos, Dictionary<string, SortedSet<string>> SemDeclaracao) Analisar(IModel modelo)
     {
         ArgumentNullException.ThrowIfNull(modelo);

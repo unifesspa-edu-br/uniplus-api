@@ -62,6 +62,9 @@ public static class AutorizacaoServiceCollectionExtensions
         services.TryAddScoped<IDecisoesDaRequisicao, DecisoesDaRequisicaoHttp>();
         services.TryAddScoped<ProjetorDeItens>();
 
+        // Defesa secundária: o serializador omite o campo classificado sem decisão permitida na requisição.
+        services.AddOmissaoDeCampoClassificado();
+
         // O módulo de autorização declara as próprias permissões no mesmo formato dos
         // demais; a conferência do conjunto roda na subida (ADR-0151).
         services.AddCatalogoDePermissoes<PermissaoAutorizacao>();
