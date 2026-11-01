@@ -88,9 +88,10 @@ public sealed record TipoDeAtoCongelado(string Codigo, bool UnicoPorObjeto, bool
 }
 
 /// <summary>
-/// O fato derivado do catálogo como a publicação o congela (ADR-0154): o nome, o domínio e a
-/// cardinalidade, que dizem como ler o valor que a inscrição grava, e a proteção — classificação,
-/// hipótese legal e finalidade de tratamento —, copiadas do catálogo como o fato coletado copia.
+/// O fato derivado do catálogo como a publicação o congela (ADR-0154): o nome, a descrição e o componente
+/// de exibição, que dizem como mostrar o valor a quem analisa a inscrição, o domínio e a cardinalidade,
+/// que dizem como ler o valor que a inscrição grava, e a proteção — classificação, hipótese legal e
+/// finalidade de tratamento —, copiadas do catálogo como o fato coletado copia.
 /// </summary>
 /// <remarks>
 /// O derivado não é coletado, então o processo não tem item que o congele. Sem esta cópia, a consulta
@@ -98,6 +99,8 @@ public sealed record TipoDeAtoCongelado(string Codigo, bool UnicoPorObjeto, bool
 /// </remarks>
 /// <param name="Codigo">Código do fato derivado.</param>
 /// <param name="Nome">Nome do fato, o rótulo do item que o mostra.</param>
+/// <param name="Descricao">O que o dado significa, para quem analisa a inscrição.</param>
+/// <param name="ComponenteExibicao">Como a tela exibe o valor — token canônico (MOEDA, SITUACAO) —, ou <see langword="null"/> quando não declara.</param>
 /// <param name="Dominio">Domínio do valor — token canônico (CATEGORICO, BOOLEANO, NUMERICO, TEXTO, DATA, ENDERECO).</param>
 /// <param name="Cardinalidade">Cardinalidade — token canônico (ESCALAR, MULTIVALORADO).</param>
 /// <param name="ClassificacaoProtecao">Classificação de proteção — token canônico (PUBLICO, INTERNO, PESSOAL, IDENTIFICADOR, SENSIVEL).</param>
@@ -106,6 +109,8 @@ public sealed record TipoDeAtoCongelado(string Codigo, bool UnicoPorObjeto, bool
 public sealed record FatoDerivadoCongelado(
     string Codigo,
     string Nome,
+    string Descricao,
+    string? ComponenteExibicao,
     string Dominio,
     string Cardinalidade,
     string ClassificacaoProtecao,

@@ -114,6 +114,18 @@ public sealed class FatoColetado : EntityBase
     /// <summary>Para que o dado do fato é tratado; copiada do catálogo e congelada junto da classificação (ADR-0154).</summary>
     public string FinalidadeTratamento { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// O que o dado significa, para quem analisa a inscrição: copiada do
+    /// catálogo e congelada com a classificação. Não é a <see cref="Ajuda"/>, que orienta o candidato.
+    /// </summary>
+    public string Descricao { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Como a tela exibe o valor (token canônico: MOEDA, SITUACAO), copiado do catálogo e congelado com a
+    /// descrição; <see langword="null"/> quando o fato não declara e vale o padrão que a consulta resolve.
+    /// </summary>
+    public string? ComponenteExibicao { get; private set; }
+
     /// <summary>Se as opções do campo são as que o processo declara.</summary>
     public bool OpcoesDoProcesso => OrigemValores == OrigemValoresColeta.OpcoesDoProcesso;
 
@@ -145,6 +157,7 @@ public sealed class FatoColetado : EntityBase
         string classificacaoProtecao,
         string hipoteseLegal,
         string finalidadeTratamento,
+        string descricao,
         OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo,
         string? etapaCodigo = null,
         FinalidadeFormulario finalidade = FinalidadeFormulario.Nenhuma,
@@ -152,17 +165,19 @@ public sealed class FatoColetado : EntityBase
         string? ajuda = null,
         bool pedirConfirmacao = false,
         IReadOnlyList<RestricaoValor>? restricoes = null,
-        Impedimento? impedimento = null)
+        Impedimento? impedimento = null,
+        string? componenteExibicao = null)
     {
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentException.ThrowIfNullOrWhiteSpace(hipoteseLegal);
         ArgumentException.ThrowIfNullOrWhiteSpace(finalidadeTratamento);
+        ArgumentException.ThrowIfNullOrWhiteSpace(descricao);
         IReadOnlyList<RestricaoValor> restricoesDoItem = restricoes ?? [];
 
         IReadOnlyList<CondicaoPrecondicaoFato> condicoes = precondicoes ?? [];
         List<FieldError> erros = ConferirFormaEClassificacao(
             fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, condicoes.Select(static c => c.Fato), obrigatoriedade, restricoesDoItem,
-            impedimento, classificacaoProtecao);
+            impedimento, classificacaoProtecao, componenteExibicao);
 
         if (erros.Count > 0)
         {
@@ -185,6 +200,8 @@ public sealed class FatoColetado : EntityBase
             ClassificacaoProtecao = classificacaoProtecao,
             HipoteseLegal = hipoteseLegal.Trim(),
             FinalidadeTratamento = FinalidadeNormalizada(finalidadeTratamento),
+            Descricao = DescricaoNormalizada(descricao),
+            ComponenteExibicao = FormaDoItem.TextoOpcional(componenteExibicao),
             EtapaCodigo = string.IsNullOrWhiteSpace(etapaCodigo) ? null : etapaCodigo.Trim().Normalize(System.Text.NormalizationForm.FormC),
 
             // O processo atribui a finalidade ao definir os itens; quem remonta o envelope a informa.
@@ -207,11 +224,12 @@ public sealed class FatoColetado : EntityBase
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(copia.HipoteseLegal);
         ArgumentException.ThrowIfNullOrWhiteSpace(copia.FinalidadeTratamento);
+        ArgumentException.ThrowIfNullOrWhiteSpace(copia.Descricao);
 
         // A mesma forma e o mesmo vocabulário que Criar confere.
         List<FieldError> erros = ConferirFormaEClassificacao(
             FatoCodigo, Ordem, Rotulo, TipoRenderizacao, copia.Formato, Ajuda, _precondicoes.Select(static c => c.Fato), Obrigatoriedade, Restricoes,
-            Impedimento, copia.ClassificacaoProtecao);
+            Impedimento, copia.ClassificacaoProtecao, copia.ComponenteExibicao);
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
@@ -230,7 +248,8 @@ public sealed class FatoColetado : EntityBase
         Obrigatoriedade obrigatoriedade,
         IReadOnlyList<RestricaoValor> restricoes,
         Impedimento? impedimento,
-        string classificacaoProtecao)
+        string classificacaoProtecao,
+        string? componenteExibicao)
     {
         List<FieldError> erros = FormaDoItem.Conferir(
             fatoCodigo, ordem, rotulo, tipoRenderizacao, formato, ajuda, fatosDaPrecondicao, obrigatoriedade, restricoes, impedimento);
@@ -243,12 +262,19 @@ public sealed class FatoColetado : EntityBase
                 "Classificação de proteção de dados fora do vocabulário fechado.")));
         }
 
+        if (FormaDoItem.TextoOpcional(componenteExibicao) is { } componente && !DominioDoCatalogo.ComponentesDeExibicao.Contains(componente))
+        {
+            erros.Add(new("componenteExibicao", new DomainError(
+                FatoColetadoErrorCodes.ComponenteExibicaoInvalido,
+                "Componente de exibição fora do vocabulário fechado.")));
+        }
+
         return erros;
     }
 
     /// <summary>
-    /// Refaz as cópias do item tiradas do catálogo — origem dos valores, formato e proteção
-    /// (classificação, hipótese legal e finalidade). O rótulo, o tipo de campo e as regras do item são do processo e não mudam aqui; a
+    /// Refaz as cópias do item tiradas do catálogo — origem dos valores, formato, proteção
+    /// (classificação, hipótese legal e finalidade), descrição e componente de exibição. O rótulo, o tipo de campo e as regras do item são do processo e não mudam aqui; a
     /// cópia já foi conferida por <see cref="ConferirCopiaDoCatalogo"/>.
     /// </summary>
     internal void RecopiarDoCatalogo(CopiaDoItemNoCatalogo copia)
@@ -258,7 +284,23 @@ public sealed class FatoColetado : EntityBase
         ClassificacaoProtecao = copia.ClassificacaoProtecao;
         HipoteseLegal = copia.HipoteseLegal.Trim();
         FinalidadeTratamento = FinalidadeNormalizada(copia.FinalidadeTratamento);
+        Descricao = DescricaoNormalizada(copia.Descricao);
+        ComponenteExibicao = FormaDoItem.TextoOpcional(copia.ComponenteExibicao);
     }
+
+    /// <summary>
+    /// Adota do catálogo de hoje a descrição e o componente de exibição, que são apresentação: valem
+    /// também no fato que alguma versão publicada já coletou, e a proteção dele não muda.
+    /// </summary>
+    internal void RecopiarApresentacaoDoCatalogo(CopiaDoItemNoCatalogo copia)
+    {
+        Descricao = DescricaoNormalizada(copia.Descricao);
+        ComponenteExibicao = FormaDoItem.TextoOpcional(copia.ComponenteExibicao);
+    }
+
+    /// <summary>A descrição na forma em que o envelope a congela (NFC, sem espaço nas pontas).</summary>
+    private static string DescricaoNormalizada(string descricao) =>
+        descricao.Trim().Normalize(System.Text.NormalizationForm.FormC);
 
     /// <summary>A finalidade na forma em que o envelope a congela (NFC, sem espaço nas pontas).</summary>
     private static string FinalidadeNormalizada(string finalidade) =>
@@ -334,4 +376,5 @@ public static class FatoColetadoErrorCodes
     public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
     public const string PrecondicaoCitaFatoNaoColetado = "FatoColetado.PrecondicaoCitaFatoNaoColetado";
     public const string ClassificacaoProtecaoInvalida = "FatoColetado.ClassificacaoProtecaoInvalida";
+    public const string ComponenteExibicaoInvalido = "FatoColetado.ComponenteExibicaoInvalido";
 }

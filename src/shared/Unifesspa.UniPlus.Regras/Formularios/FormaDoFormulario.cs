@@ -28,6 +28,12 @@ public static class FormaDoItem
     /// <summary>A finalidade do tratamento copiada do catálogo.</summary>
     public const int FinalidadeTratamentoMaxLength = 500;
 
+    /// <summary>A descrição do fato, copiada do catálogo, que explica o dado a quem analisa a inscrição.</summary>
+    public const int DescricaoDoFatoMaxLength = 1000;
+
+    /// <summary>O token canônico do componente de exibição copiado do catálogo.</summary>
+    public const int ComponenteExibicaoMaxLength = 20;
+
     public const int AjudaMaxLength = 1000;
 
     /// <summary>A mensagem que explica ao candidato por que a resposta impede a inscrição.</summary>

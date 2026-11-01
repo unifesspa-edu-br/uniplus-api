@@ -114,7 +114,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         (VersaoConfiguracao divulgada, GrafoConfiguracao grafo) = MontarVersaoComItem(FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!);
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!);
         DivulgacaoDeTeste.ConfigurarDivulgada(processoRepository, registroCodecs, divulgada, grafo);
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
 
@@ -165,7 +165,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
@@ -191,7 +191,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao fixada, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         (VersaoConfiguracao divulgada, _) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", fixada.Id);
@@ -222,7 +222,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 10)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 10)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
@@ -254,7 +254,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = MontarVersaoComItem(FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!);
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!);
         Guid ofertaA = Guid.CreateVersion7();
         Guid ofertaB = Guid.CreateVersion7();
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
@@ -321,7 +321,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         FatoColetado item = FatoColetado.Criar(
             "ENDERECO_RESIDENCIAL", 0, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
@@ -358,7 +358,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
@@ -392,7 +392,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         FatoColetado item = FatoColetado.Criar(
             "DATA_NASCIMENTO", 0, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-            restricoes: [new FaixaDeData(LimiteDeData.NoEnvio(anos: -120, dias: 0), LimiteDeData.NoEnvio(anos: 0, dias: 0))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            restricoes: [new FaixaDeData(LimiteDeData.NoEnvio(anos: -120, dias: 0), LimiteDeData.NoEnvio(anos: 0, dias: 0))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
 
@@ -422,7 +422,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
@@ -461,7 +461,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(item);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
         Dictionary<string, JsonElement> semRespostas = new(StringComparer.Ordinal);
@@ -500,13 +500,13 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         FatoColetado itemDoTopo = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 10)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 10)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         GrupoColetado composicaoFamiliar = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 1, etapaCodigo: FormularioDeTeste.Secao, "Composição familiar",
             minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Sempre,
             [FatoColetado.Criar(
                 "RG_NUMERO_MEMBRO", 0, "RG do membro", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
+                classificacaoProtecao: "IDENTIFICADOR", formato: "LIVRE", restricoes: [new TamanhoTexto(1, 5)], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             FinalidadeFormulario.Inscricao).Value!;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = MontarVersaoComItem(itemDoTopo, [composicaoFamiliar]);
         Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);

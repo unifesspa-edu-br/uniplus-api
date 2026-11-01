@@ -64,5 +64,5 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
         new() { ["SEXO"] = new("SEXO", dominio, "DECLARADO", "ESCALAR", "INSCRICAO", "NENHUM", ["F"], [new ValorDominioDeclaradoCongelado("F", descricao, 0)]) };
 
     private static Domain.Entities.FatoColetado Item(string codigo) =>
-        Domain.Entities.FatoColetado.Criar(codigo, 0, codigo, Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+        Domain.Entities.FatoColetado.Criar(codigo, 0, codigo, Unifesspa.UniPlus.Regras.Enums.TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 }

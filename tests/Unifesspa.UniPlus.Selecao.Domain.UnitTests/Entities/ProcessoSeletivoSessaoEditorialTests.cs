@@ -258,13 +258,13 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         ProcessoSeletivo processo = ComSessaoAberta(out RascunhoRetificacao rascunho);
         int revisaoAntes = rascunho.Revisao;
 
-        processo.DefinirItens([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
+        processo.DefinirItens([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], PrecondicaoIfMatch.DeTags([rascunho.ETag]))
             .IsSuccess.Should().BeTrue();
         rascunho.Revisao.Should().Be(revisaoAntes + 1);
 
         // Publicado SEM sessão: bloqueado pela recusa geral de mutação pós-publicação.
         ProcessoSeletivo semSessao = NovoProcessoPublicado(out _);
-        Result recusa = semSessao.DefinirItens([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!], PrecondicaoIfMatch.Ausente);
+        Result recusa = semSessao.DefinirItens([FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], PrecondicaoIfMatch.Ausente);
         recusa.IsFailure.Should().BeTrue();
         recusa.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }

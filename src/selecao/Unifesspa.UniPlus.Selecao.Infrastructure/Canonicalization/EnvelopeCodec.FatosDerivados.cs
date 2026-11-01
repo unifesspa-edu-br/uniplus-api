@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 public sealed partial class EnvelopeCodec
 {
     /// <summary>
-    /// Os fatos derivados do catálogo, um por código, com o nome, o domínio, a cardinalidade e a
+    /// Os fatos derivados do catálogo, um por código, com o nome, a descrição, o domínio, a cardinalidade e a
     /// proteção sempre presentes: o bloco é a fonte da conferência da proteção das exigências e do que a
     /// consulta da inscrição diz de cada derivado, e a ausência de um campo não pode virar valor padrão.
     /// </summary>
@@ -31,9 +31,12 @@ public sealed partial class EnvelopeCodec
             string path = $"fatosDerivados[{i}]";
             JsonObject item = leitor.ItemObjeto(array, i, "fatosDerivados");
             leitor.ExigirChaves(
-                item, path, "codigo", "nome", "dominio", "cardinalidade", "classificacaoProtecao", "hipoteseLegal", "finalidadeTratamento");
+                item, path, "codigo", "nome", "descricao", "componenteExibicao", "dominio", "cardinalidade", "classificacaoProtecao", "hipoteseLegal",
+                "finalidadeTratamento");
             string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.Fato);
             string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.NomeDeCadastro);
+            string descricao = leitor.TextoNaoVazio(item, "descricao", path, LimitesDoEnvelope.DescricaoDoFato);
+            string? componente = leitor.TextoOpcional(item, "componenteExibicao", path, LimitesDoEnvelope.ComponenteExibicao);
             string dominio = leitor.TextoNaoVazio(item, "dominio", path, LimitesDoEnvelope.Token);
             string cardinalidade = leitor.TextoNaoVazio(item, "cardinalidade", path, LimitesDoEnvelope.Token);
             string classificacao = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token);
@@ -49,6 +52,7 @@ public sealed partial class EnvelopeCodec
                 : !DominioDoCatalogo.Dominios.Contains(dominio) ? "dominio"
                 : !DominioDoCatalogo.Cardinalidades.Contains(cardinalidade) ? "cardinalidade"
                 : !DominioDoCatalogo.HipotesesLegais.Contains(hipoteseLegal) ? "hipoteseLegal"
+                : componente is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(componente) ? "componenteExibicao"
                 : null;
             if (foraDoVocabulario is not null)
             {
@@ -57,7 +61,7 @@ public sealed partial class EnvelopeCodec
                     $"'{path}.{foraDoVocabulario}' fora do vocabulário fechado.")) ?? fatos;
             }
 
-            if (!fatos.TryAdd(codigo, new FatoDerivadoCongelado(codigo, nome, dominio, cardinalidade, classificacao, hipoteseLegal, finalidade)))
+            if (!fatos.TryAdd(codigo, new FatoDerivadoCongelado(codigo, nome, descricao, componente, dominio, cardinalidade, classificacao, hipoteseLegal, finalidade)))
             {
                 return leitor.Propagar<Dictionary<string, FatoDerivadoCongelado>>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,

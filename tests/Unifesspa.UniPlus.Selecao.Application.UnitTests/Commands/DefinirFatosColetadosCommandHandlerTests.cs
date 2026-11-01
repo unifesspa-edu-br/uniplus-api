@@ -99,10 +99,10 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         FatoColetado baixaRenda = FatoColetado.Criar(
             "BAIXA_RENDA", ConjuntoBasicoDaInscricao.Itens.Count - 3, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL",
-            etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", baixaRenda.Ordem + 1, FormularioDeTeste.Secao, "Composição familiar", 0, 10, null, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
+            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], PrecondicaoIfMatch.Ausente, [composicao])
@@ -136,10 +136,10 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         int fimDaSecao = ConjuntoBasicoDaInscricao.Itens.Count - 3;
         FatoColetado baixaRenda = FatoColetado.Criar(
             "BAIXA_RENDA", fimDaSecao + 3, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, "PESSOAL",
-            etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", fimDaSecao, FormularioDeTeste.Secao, "Composição familiar", 0, 10, null, Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
+            [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], PrecondicaoIfMatch.Ausente, [composicao])
@@ -221,7 +221,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
 
         processo.DefinirItens(
-            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
+            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
     }

@@ -43,15 +43,19 @@ internal sealed record ContextoDoCatalogo(
 
     /// <summary>
     /// A hipótese legal e a finalidade do fato: as que a versão publicada já congelou, se alguma o
-    /// coletou, e as do catálogo de hoje no fato novo. Corrigir o texto da finalidade no catálogo não
-    /// pode trocar o eixo de um fato já coletado.
+    /// coletou, e as do catálogo de hoje no fato novo; corrigir esses textos no catálogo não pode trocar o
+    /// eixo de um fato já coletado. A descrição e o componente de exibição são apresentação, não proteção:
+    /// vêm sempre do catálogo de hoje, e a retificação adota a correção.
     /// </summary>
-    public (string HipoteseLegal, string FinalidadeTratamento) ProtecaoDoItem(FatoCandidatoView view)
+    public TextosDoItem TextosDoItem(FatoCandidatoView view)
     {
         ArgumentNullException.ThrowIfNull(view);
 
         return Publicadas is not null && Publicadas.TentarObterEixosDoItem(view.Codigo, out EixosDoItemCongelado? eixos)
-            ? (eixos.HipoteseLegal, eixos.FinalidadeTratamento)
-            : (view.HipoteseLegal, view.FinalidadeTratamento);
+            ? new TextosDoItem(eixos.HipoteseLegal, eixos.FinalidadeTratamento, view.Descricao, view.ComponenteExibicao)
+            : new TextosDoItem(view.HipoteseLegal, view.FinalidadeTratamento, view.Descricao, view.ComponenteExibicao);
     }
 }
+
+/// <summary>Os textos que o item copia do fato no catálogo e congela com a proteção.</summary>
+internal sealed record TextosDoItem(string HipoteseLegal, string FinalidadeTratamento, string Descricao, string? ComponenteExibicao);

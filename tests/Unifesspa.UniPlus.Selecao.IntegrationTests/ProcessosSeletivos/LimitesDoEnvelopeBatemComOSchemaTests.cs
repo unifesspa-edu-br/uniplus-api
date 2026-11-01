@@ -109,6 +109,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("CodigoEtapaFormulario", LimitesDoEnvelope.CodigoEtapaFormulario, typeof(FatoColetado), nameof(FatoColetado.EtapaCodigo)),
         ("Token", LimitesDoEnvelope.Token, typeof(FatoColetado), nameof(FatoColetado.Formato)),
         ("AjudaDoCampo", LimitesDoEnvelope.AjudaDoCampo, typeof(FatoColetado), nameof(FatoColetado.Ajuda)),
+        ("DescricaoDoFato", LimitesDoEnvelope.DescricaoDoFato, typeof(FatoColetado), nameof(FatoColetado.Descricao)),
+        ("ComponenteExibicao", LimitesDoEnvelope.ComponenteExibicao, typeof(FatoColetado), nameof(FatoColetado.ComponenteExibicao)),
         ("NomeArquivoDoModelo", LimitesDoEnvelope.NomeArquivoDoModelo, typeof(ModeloDaExigencia), nameof(ModeloDaExigencia.NomeArquivo)),
         ("TituloEtapaFormulario", LimitesDoEnvelope.TituloEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Titulo)),
         ("TextoEtapaFormulario", LimitesDoEnvelope.TextoEtapaFormulario, typeof(EtapaFormulario), nameof(EtapaFormulario.Descricao)),

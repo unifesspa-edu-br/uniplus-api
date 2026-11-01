@@ -23,6 +23,8 @@ public sealed class CongelamentoDosFatosDerivadosTests
         {
             Codigo = codigo,
             Nome = $"Nome de {codigo}",
+            Descricao = $"Descrição de {codigo}.",
+            ComponenteExibicao = "SITUACAO",
             Origem = "DERIVADO",
             Dominio = "CATEGORICO",
             Cardinalidade = "MULTIVALORADO",
@@ -34,7 +36,7 @@ public sealed class CongelamentoDosFatosDerivadosTests
     private static FatoCandidatoView Declarado(string codigo) =>
         CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = codigo, Origem = "DECLARADO" };
 
-    [Fact(DisplayName = "A publicação congela só os fatos derivados do catálogo, com o nome, o domínio, a cardinalidade e a proteção")]
+    [Fact(DisplayName = "A publicação congela só os fatos derivados do catálogo, com o nome, a descrição, o componente, o domínio, a cardinalidade e a proteção")]
     public void Resolver_CongelaOsDerivadosDoCatalogo()
     {
         IReadOnlyDictionary<string, FatoDerivadoCongelado> congelados = CongelamentoDosFatosDerivados.Resolver(
@@ -42,7 +44,23 @@ public sealed class CongelamentoDosFatosDerivadosTests
 
         congelados.Keys.Should().Equal("MODALIDADE");
         congelados["MODALIDADE"].Should().Be(new FatoDerivadoCongelado(
-            "MODALIDADE", "Nome de MODALIDADE", "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade do catálogo."));
+            "MODALIDADE", "Nome de MODALIDADE", "Descrição de MODALIDADE.", "SITUACAO", "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade do catálogo."));
+    }
+
+    [Fact(DisplayName = "A retificação adota a descrição e o componente de hoje do derivado e mantém a proteção que a versão vigente congelou")]
+    public void Resolver_VersaoVigenteAdotaADescricaoEOComponente()
+    {
+        Dictionary<string, FatoDerivadoCongelado> daVersao = new(StringComparer.Ordinal)
+        {
+            ["MODALIDADE"] = new("MODALIDADE", "Modalidade", "Descrição congelada.", null, "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade."),
+        };
+
+        IReadOnlyDictionary<string, FatoDerivadoCongelado> congelados = CongelamentoDosFatosDerivados.Resolver(
+            [Derivado("MODALIDADE", "SENSIVEL") with { Descricao = "Descrição corrigida.", ComponenteExibicao = "MOEDA" }], daVersao);
+
+        congelados["MODALIDADE"].Descricao.Should().Be("Descrição corrigida.");
+        congelados["MODALIDADE"].ComponenteExibicao.Should().Be("MOEDA");
+        congelados["MODALIDADE"].ClassificacaoProtecao.Should().Be("INTERNO");
     }
 
     [Fact(DisplayName = "O derivado sem a proteção aprovada não entra no envelope; aprovado depois, é congelado com a proteção aprovada")]
@@ -66,13 +84,13 @@ public sealed class CongelamentoDosFatosDerivadosTests
     {
         Dictionary<string, FatoDerivadoCongelado> daVersao = new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal)
         {
-            ["MODALIDADE"] = new("MODALIDADE", "Modalidade congelada", "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada."),
+            ["MODALIDADE"] = new("MODALIDADE", "Modalidade congelada", "Descrição congelada.", null, "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada."),
         };
 
         IReadOnlyDictionary<string, FatoDerivadoCongelado> congelados = CongelamentoDosFatosDerivados.Resolver(
             [Derivado("MODALIDADE", "SENSIVEL"), Derivado("FAIXA_ETARIA", "PESSOAL")], daVersao);
 
-        congelados["MODALIDADE"].Should().BeSameAs(daVersao["MODALIDADE"]);
+        congelados["MODALIDADE"].Should().Be(daVersao["MODALIDADE"] with { Descricao = "Descrição de MODALIDADE.", ComponenteExibicao = "SITUACAO" });
         congelados["FAIXA_ETARIA"].ClassificacaoProtecao.Should().Be("PESSOAL");
     }
 
@@ -81,7 +99,7 @@ public sealed class CongelamentoDosFatosDerivadosTests
     {
         Dictionary<string, FatoDerivadoCongelado> daVersao = new(StringComparer.Ordinal)
         {
-            ["FAIXA_ETARIA"] = new("FAIXA_ETARIA", "Faixa etária", "NUMERICO", "ESCALAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada."),
+            ["FAIXA_ETARIA"] = new("FAIXA_ETARIA", "Faixa etária", "Descrição congelada.", null, "NUMERICO", "ESCALAR", "PESSOAL", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada."),
         };
 
         IReadOnlyDictionary<string, FatoDerivadoCongelado> congelados = CongelamentoDosFatosDerivados.Resolver([Derivado("MODALIDADE", "INTERNO")], daVersao);
@@ -98,7 +116,7 @@ public sealed class CongelamentoDosFatosDerivadosTests
             new Dictionary<Guid, ExigenciaCongelada>(),
             new Dictionary<string, FatoDerivadoCongelado>(StringComparer.Ordinal)
             {
-                ["MODALIDADE"] = new("MODALIDADE", "Modalidade", "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade."),
+                ["MODALIDADE"] = new("MODALIDADE", "Modalidade", "Descrição congelada.", null, "CATEGORICO", "MULTIVALORADO", "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade."),
             });
 
         ProtecaoVigenteDoProcesso protecao = ProtecaoVigenteDasExigenciasDoProcesso.Montar(

@@ -59,5 +59,5 @@ public sealed class ImpedimentoNoFormularioTests
             impedimento: new Impedimento(
                 PredicadoDnf.CriarDeCondicoesAgrupadas(
                     [(0, CondicaoDnf.Criar(Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
-                "Quem tem vínculo com o PARFOR não pode se inscrever neste processo."), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+                "Quem tem vínculo com o PARFOR não pode se inscrever neste processo."), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 }

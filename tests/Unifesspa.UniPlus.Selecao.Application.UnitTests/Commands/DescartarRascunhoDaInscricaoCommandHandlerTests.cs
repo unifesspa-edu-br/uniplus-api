@@ -32,7 +32,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
 
     private static readonly FatoColetado Item = FatoColetado.Criar(
         "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+        classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     private static Inscricao NovoRascunho(Guid versaoFormularioId) =>
         Inscricao.Iniciar(ProcessoId, Dono, "sub-1", "https://issuer", versaoFormularioId).Value!;

@@ -1194,7 +1194,9 @@ selecao.fases_cronograma.unidade_responsavel_sigla: Interno
 selecao.fases_cronograma.updated_at: Interno
 selecao.fatos_coletados.ajuda: Interno
 selecao.fatos_coletados.classificacao_protecao: Interno
+selecao.fatos_coletados.componente_exibicao: Interno
 selecao.fatos_coletados.created_at: Interno
+selecao.fatos_coletados.descricao: Interno
 selecao.fatos_coletados.etapa_codigo: Interno
 selecao.fatos_coletados.fato_codigo: Interno
 selecao.fatos_coletados.finalidade: Interno

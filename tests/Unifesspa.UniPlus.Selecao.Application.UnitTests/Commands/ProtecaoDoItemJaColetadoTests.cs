@@ -13,8 +13,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O item de um fato que a versão publicada já coletou mantém a hipótese legal e a finalidade que ela
-/// congelou; corrigir o catálogo depois não troca o eixo na retificação.
+/// O item de um fato que a versão publicada já coletou mantém a hipótese legal e a finalidade que ela congelou,
+/// e adota a descrição e o componente de exibição de hoje; corrigir o catálogo depois não troca o eixo na retificação.
 /// </summary>
 public sealed class ProtecaoDoItemJaColetadoTests
 {
@@ -39,15 +39,18 @@ public sealed class ProtecaoDoItemJaColetadoTests
         {
             HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS",
             FinalidadeTratamento = finalidade,
+            Descricao = "Descrição corrigida no catálogo.",
+            ComponenteExibicao = "MOEDA",
         };
 
-    [Fact(DisplayName = "O fato já coletado mantém a finalidade e a hipótese que a versão publicada congelou, e não as do catálogo corrigido")]
+    [Fact(DisplayName = "O fato já coletado mantém a finalidade e a hipótese que a versão publicada congelou, e adota a descrição e o componente do catálogo corrigido")]
     public void FatoJaColetado_UsaOCongeladoNaVersao()
     {
         FatoCandidatoView catalogo = Catalogo("Identificação corrigida no catálogo.");
         ContextoDoCatalogo contexto = Contexto(catalogo, Publicadas("NOME_MAE", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Identificação do candidato."));
 
-        contexto.ProtecaoDoItem(catalogo).Should().Be(("CUMPRIMENTO_OBRIGACAO_LEGAL", "Identificação do candidato."));
+        contexto.TextosDoItem(catalogo).Should().Be(new TextosDoItem(
+            "CUMPRIMENTO_OBRIGACAO_LEGAL", "Identificação do candidato.", "Descrição corrigida no catálogo.", "MOEDA"));
     }
 
     [Fact(DisplayName = "Versões publicadas que congelaram os mesmos eixos: o item regravado os copia")]
@@ -61,7 +64,8 @@ public sealed class ProtecaoDoItemJaColetadoTests
             new Dictionary<string, IReadOnlyCollection<string>>(),
             new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> { ["NOME_MAE"] = [eixos, eixos] }));
 
-        contexto.ProtecaoDoItem(catalogo).Should().Be(("CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada."));
+        contexto.TextosDoItem(catalogo).Should().Be(new TextosDoItem(
+            "CUMPRIMENTO_OBRIGACAO_LEGAL", "Finalidade congelada.", "Descrição corrigida no catálogo.", "MOEDA"));
     }
 
     [Fact(DisplayName = "Versões publicadas que congelaram eixos diferentes: a retificação recusa o item, qualquer que seja a cópia")]
@@ -76,18 +80,19 @@ public sealed class ProtecaoDoItemJaColetadoTests
             new Dictionary<string, IReadOnlyCollection<EixosDoItemCongelado>> { ["NOME_MAE"] = [antiga, recente] });
         FatoColetado item = FatoColetado.Criar(
             "NOME_MAE", 0, "Nome da mãe", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL",
-            antiga.HipoteseLegal, antiga.FinalidadeTratamento, formato: "LIVRE").Value!;
+            antiga.HipoteseLegal, antiga.FinalidadeTratamento, ProtecaoDoFatoDeTeste.Descricao, formato: "LIVRE").Value!;
 
         publicadas.PrimeiroItemComEixoTrocado([item], []).Should().NotBeNull();
     }
 
-    [Fact(DisplayName = "O fato novo na retificação traz a hipótese e a finalidade do catálogo de hoje")]
+    [Fact(DisplayName = "O fato novo na retificação traz a hipótese, a finalidade, a descrição e o componente do catálogo de hoje")]
     public void FatoNovo_VemDoCatalogo()
     {
         FatoCandidatoView catalogo = Catalogo("Finalidade do catálogo.");
         ContextoDoCatalogo contexto = Contexto(catalogo, Publicadas("OUTRO_FATO", "CUMPRIMENTO_OBRIGACAO_LEGAL", "Outra."));
 
-        contexto.ProtecaoDoItem(catalogo).Should().Be(("EXECUCAO_POLITICAS_PUBLICAS", "Finalidade do catálogo."));
+        contexto.TextosDoItem(catalogo).Should().Be(new TextosDoItem(
+            "EXECUCAO_POLITICAS_PUBLICAS", "Finalidade do catálogo.", "Descrição corrigida no catálogo.", "MOEDA"));
     }
 
     [Fact(DisplayName = "A finalidade recopiada do catálogo fica sem espaço nas pontas e em NFC, como o envelope a congela")]
@@ -96,7 +101,7 @@ public sealed class ProtecaoDoItemJaColetadoTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Proteção do item", out _);
         FatoColetado item = FatoColetado.Criar(
             "CPF", 0, "CPF", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL",
-            ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, formato: "CPF").Value!;
+            ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, formato: "CPF").Value!;
         processo.DefinirItens([item]).IsSuccess.Should().BeTrue();
         IReadOnlyList<FatoCandidatoView> catalogo = [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "CPF"
             ? f with { HipoteseLegal = " EXECUCAO_POLITICAS_PUBLICAS ", FinalidadeTratamento = "  Identifica\u00e7\u00e3o: a\u0301.  " }
@@ -107,5 +112,24 @@ public sealed class ProtecaoDoItemJaColetadoTests
         FatoColetado recopiado = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
         recopiado.HipoteseLegal.Should().Be("EXECUCAO_POLITICAS_PUBLICAS");
         recopiado.FinalidadeTratamento.Should().Be("Identifica\u00e7\u00e3o: \u00e1.");
+    }
+
+    [Fact(DisplayName = "Retificar depois de corrigir a descrição no catálogo leva a descrição nova ao fato já coletado, sem mudar a proteção")]
+    public void Retificacao_AdotaADescricaoCorrigidaDoFatoJaColetado()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Proteção do item", out _);
+        FatoColetado item = FatoColetado.Criar(
+            "CPF", 0, "CPF", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, "PESSOAL",
+            ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, formato: "CPF").Value!;
+        processo.DefinirItens([item]).IsSuccess.Should().BeTrue();
+        IReadOnlyList<FatoCandidatoView> catalogo = [.. CatalogoDoConjuntoBasico.Fatos.Select(static f => f.Codigo == "CPF"
+            ? f with { Descricao = "Descrição corrigida no catálogo.", ComponenteExibicao = "MOEDA", FinalidadeTratamento = "Outra finalidade." }
+            : f)];
+
+        ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, new HashSet<string>(["CPF"], StringComparer.Ordinal)).IsSuccess.Should().BeTrue();
+
+        FatoColetado retificado = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
+        (retificado.Descricao, retificado.ComponenteExibicao).Should().Be(("Descrição corrigida no catálogo.", "MOEDA"));
+        retificado.FinalidadeTratamento.Should().Be(ProtecaoDoFatoDeTeste.Finalidade);
     }
 }

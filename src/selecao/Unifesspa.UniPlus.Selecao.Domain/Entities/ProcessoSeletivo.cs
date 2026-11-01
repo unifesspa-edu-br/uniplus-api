@@ -2583,7 +2583,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Refaz nos itens e nos campos de grupo as cópias que eles tiraram do catálogo — origem dos
     /// valores, formato e classificação de proteção — ao congelar uma versão, porque o catálogo é
     /// editável depois que a coleta foi definida. O fato que alguma versão publicada já coletou
-    /// não é recopiado. Só muda o processo se <see cref="ConferirCopiasDoCatalogo"/> não recusar
+    /// só adota a descrição e o componente de exibição; o resto da cópia não é recopiado. Só muda o processo se <see cref="ConferirCopiasDoCatalogo"/> não recusar
     /// nenhum item; do contrário devolve as recusas, sem caminho, e nada muda.
     /// </summary>
     public Result RecopiarItensDoCatalogo(
@@ -2597,7 +2597,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         foreach (FatoColetado item in _campos)
         {
-            if (!fatosJaColetados.Contains(item.FatoCodigo) && catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
+            if (!catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
+            {
+                continue;
+            }
+
+            if (fatosJaColetados.Contains(item.FatoCodigo))
+            {
+                item.RecopiarApresentacaoDoCatalogo(copia);
+            }
+            else
             {
                 item.RecopiarDoCatalogo(copia);
             }

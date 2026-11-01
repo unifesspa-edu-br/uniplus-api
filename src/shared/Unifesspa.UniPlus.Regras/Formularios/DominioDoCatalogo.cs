@@ -30,6 +30,12 @@ public static class DominioDoCatalogo
         "PROTECAO_DO_CREDITO", "PREVENCAO_A_FRAUDE",
     ];
 
+    /// <summary>
+    /// Os componentes de exibição que um fato declara, no vocabulário fechado da Configuração, para quem
+    /// congela o token sem alcançar o enum do catálogo.
+    /// </summary>
+    public static readonly IReadOnlyList<string> ComponentesDeExibicao = ["MOEDA", "SITUACAO"];
+
     public const string FonteGeoUf = "GEO_UF";
     public const string FonteGeoMunicipio = "GEO_MUNICIPIO";
     public const string FonteTiposDeficiencia = "TIPOS_DEFICIENCIA";

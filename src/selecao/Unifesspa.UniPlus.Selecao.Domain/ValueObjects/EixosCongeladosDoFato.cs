@@ -10,7 +10,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// de onde vêm as opções, o formato do texto e a proteção do dado.
 /// </summary>
 public sealed record EixosDoItemCongelado(
-    string TipoRenderizacao, string OrigemValores, string? Formato, string ClassificacaoProtecao, string HipoteseLegal, string FinalidadeTratamento)
+    string TipoRenderizacao,
+    string OrigemValores,
+    string? Formato,
+    string ClassificacaoProtecao,
+    string HipoteseLegal,
+    string FinalidadeTratamento)
 {
     public static EixosDoItemCongelado De(FatoColetado item)
     {

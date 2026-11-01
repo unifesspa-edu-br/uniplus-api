@@ -45,7 +45,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         Obrigatoriedade? obrigatoriedade = null, IReadOnlyList<CondicaoPrecondicaoFato>? exibicao = null, string secao = FormularioDeTeste.Secao) =>
         FatoColetado.Criar(
             EdicaoDoEnem.Fato, FormularioDeTeste.PrimeiraOrdemDeInscricao, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
-            obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
+            obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
 
     private static bool ItemOk(ProcessoSeletivo processo, string codigo) =>
         processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
@@ -158,7 +158,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         FatoColetado citaAEdicao = FatoColetado.Criar(
             "APELIDO", FormularioDeTeste.PrimeiraOrdemDeInscricao + 1, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre,
             [CondicaoPrecondicaoFato.Criar(0, EdicaoDoEnem.Fato, Operador.Igual, JsonSerializer.SerializeToElement("2026")).Value!],
-            "PESSOAL", formato: "LIVRE", etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
+            "PESSOAL", formato: "LIVRE", etapaCodigo: FormularioDeTeste.Secao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         Result itens = processo.DefinirItens([CampoDaEdicao(), citaAEdicao]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message ?? string.Join("; ", itens.Errors.Select(static e => e.Error.Message)));
 
