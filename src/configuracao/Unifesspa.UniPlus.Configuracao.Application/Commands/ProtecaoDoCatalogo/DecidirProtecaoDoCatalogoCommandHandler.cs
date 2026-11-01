@@ -28,6 +28,7 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
         DecidirProtecaoDoCatalogoCommand command,
         ITipoDocumentoRepository tipos,
         IFatoCandidatoRepository fatos,
+        IAtoDaProtecaoDoCatalogoRepository atos,
         IConfiguracaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -36,6 +37,7 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(tipos);
         ArgumentNullException.ThrowIfNull(fatos);
+        ArgumentNullException.ThrowIfNull(atos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -107,9 +109,10 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
             return Result.ValidationFailure(erros);
         }
 
-        string ator = userContext.UserId ?? "system";
+        AtorDoAto ator = AtorDoToken.De(userContext);
         DateTimeOffset agora = timeProvider.GetUtcNow();
         ClassificacaoDeProtecao recomendada = TokensDoFato.Classificacao(command.ClassificacaoRecomendada) ?? ClassificacaoDeProtecao.Nenhuma;
+        ClassificacaoDeProtecao? recomendadaDoAto = decisao == RecomendarAjuste ? recomendada : null;
         ProtecaoDeDados conferida = new(classificacaoConferida!.Value, command.FinalidadeTratamento!.Trim(), hipoteseConferida!.Value);
 
         if (cadastro == ProtecaoDoCatalogoMapping.Fato)
@@ -118,11 +121,13 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
                 command.ItemId,
                 fato => fato.Protecao != conferida
                     ? ProtecaoMudou()
-                    : Decidir(
-                        decisao,
-                        () => fato.AprovarProtecao(ator, agora),
-                        () => fato.RecomendarAjusteDaProtecao(recomendada, command.Justificativa, ator, agora),
-                        () => fato.ReprovarProtecao(command.Justificativa, ator, agora)),
+                    : Registrando(
+                        Decidir(
+                            decisao,
+                            () => fato.AprovarProtecao(ator.Sub, agora),
+                            () => fato.RecomendarAjusteDaProtecao(recomendada, command.Justificativa, ator.Sub, agora),
+                            () => fato.ReprovarProtecao(command.Justificativa, ator.Sub, agora)),
+                        () => atos.Registrar(fato, AtoDaDecisao(decisao), ator, agora, recomendadaDoAto, command.Justificativa)),
                 fatos,
                 unitOfWork,
                 cancellationToken).ConfigureAwait(false);
@@ -132,17 +137,38 @@ public static class DecidirProtecaoDoCatalogoCommandHandler
             command.ItemId,
             tipo => tipo.Protecao != conferida
                 ? ProtecaoMudou()
-                : Decidir(
-                    decisao,
-                    () => tipo.AprovarProtecao(ator, agora),
-                    () => tipo.RecomendarAjusteDaProtecao(recomendada, command.Justificativa, ator, agora),
-                    () => tipo.ReprovarProtecao(command.Justificativa, ator, agora)),
+                : Registrando(
+                    Decidir(
+                        decisao,
+                        () => tipo.AprovarProtecao(ator.Sub, agora),
+                        () => tipo.RecomendarAjusteDaProtecao(recomendada, command.Justificativa, ator.Sub, agora),
+                        () => tipo.ReprovarProtecao(command.Justificativa, ator.Sub, agora)),
+                    () => atos.Registrar(tipo, AtoDaDecisao(decisao), ator, agora, recomendadaDoAto, command.Justificativa)),
             tipos,
             unitOfWork,
             new DomainError(
                 ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia,
                 "O tipo de documento foi alterado concorrentemente; confira a proteção e decida de novo."),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private static AtoDaProtecao AtoDaDecisao(string? decisao) =>
+        decisao switch
+        {
+            Aprovar => AtoDaProtecao.Aprovacao,
+            RecomendarAjuste => AtoDaProtecao.AjusteRecomendado,
+            _ => AtoDaProtecao.Reprovacao,
+        };
+
+    // O ato só é registrado quando o circuito do item aceitou a decisão; a gravação o leva junto da mudança do item.
+    private static Result Registrando(Result decisao, Action registrar)
+    {
+        if (decisao.IsSuccess)
+        {
+            registrar();
+        }
+
+        return decisao;
     }
 
     private static Result Decidir(string? decisao, Func<Result> aprovar, Func<Result> recomendarAjuste, Func<Result> reprovar) =>

@@ -25,6 +25,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
 {
     private readonly ITipoDocumentoRepository _tipos = Substitute.For<ITipoDocumentoRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
+    private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     [Fact(DisplayName = "Aceitar a recomendação aprova o tipo como sensível, grava e avisa a proteção de dados")]
@@ -102,13 +103,45 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         modalidades.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
 
         (Result resposta, IEnumerable<object> mensagens) = await AceitarRecomendacaoDoFatoCandidatoCommandHandler.Handle(
-            new AceitarRecomendacaoDoFatoCandidatoCommand(corRaca.Id, [Caroline]), _fatos, precedencias, modelos, modalidades,
+            new AceitarRecomendacaoDoFatoCandidatoCommand(corRaca.Id, [Caroline]), _fatos, _atos, precedencias, modelos, modalidades,
             _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         corRaca.Should().BeEquivalentTo(new { ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel, Sistema = true, Codigo = "COR_RACA" });
         corRaca.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
         mensagens.Should().ContainSingle().Which.Should().BeOfType<EnviarEmail>().Which.CorpoTexto.Should().Contain("fato");
+        _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(ato =>
+            ato.Ato == AtoDaProtecao.Aceite && ato.Cadastro == CadastroDoCatalogo.Fato && ato.ItemCodigo == "COR_RACA"
+            && ato.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel));
+    }
+
+    [Fact(DisplayName = "O aceite do tipo registra o ato com a classificação aplicada e quem aceitou")]
+    public async Task Tipo_RegistraOAceite()
+    {
+        TipoDocumento laudo = TipoComAjusteRecomendado(ClassificacaoDeProtecao.Sensivel);
+        _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
+
+        await AceitarTipoAsync(laudo.Id);
+
+        _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(a =>
+            a.Ato == AtoDaProtecao.Aceite
+            && a.Cadastro == CadastroDoCatalogo.TipoDocumento
+            && a.ItemId == laudo.Id
+            && a.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel
+            && a.ClassificacaoRecomendada == null
+            && a.AtorSub == Isabella
+            && a.AtorNome == "Isabella Figueiredo"));
+    }
+
+    [Fact(DisplayName = "O aceite recusado não registra ato")]
+    public async Task Tipo_Recusado_NaoRegistraAto()
+    {
+        TipoDocumento laudo = NovoTipo();
+        _tipos.ObterPorIdAsync(laudo.Id, Arg.Any<CancellationToken>()).Returns(laudo);
+
+        await AceitarTipoAsync(laudo.Id);
+
+        _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
     }
 
     private static TipoDocumento TipoComAjusteRecomendado(ClassificacaoDeProtecao recomendada, string nome = "Laudo médico complementar")
@@ -121,6 +154,6 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
 
     private Task<(Result Resposta, IEnumerable<object> Mensagens)> AceitarTipoAsync(Guid id) =>
         AceitarRecomendacaoDoTipoDocumentoCommandHandler.Handle(
-            new AceitarRecomendacaoDoTipoDocumentoCommand(id, [Caroline]), _tipos, _unitOfWork,
+            new AceitarRecomendacaoDoTipoDocumentoCommand(id, [Caroline]), _tipos, _atos, _unitOfWork,
             UsuarioIsabella(), Relogio(), CancellationToken.None);
 }

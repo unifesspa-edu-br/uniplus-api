@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
+using System.Reflection;
+
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -26,6 +28,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
 {
     private readonly ITipoDocumentoRepository _tipos = Substitute.For<ITipoDocumentoRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
+    private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
     // O repositório devolve, dos ids pedidos, só os que estão pendentes.
@@ -260,10 +263,55 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "A solicitação registra um ato por item enviado, com quem enviou e a proteção do item")]
+    public async Task Handle_RegistraUmAtoPorItem()
+    {
+        TipoDocumento laudo = NovoTipo();
+        TipoDocumento comprovante = NovoTipo("COMPROVANTE_RESIDENCIA", "Comprovante de residência");
+        FatoCandidato fato = NovoFato();
+        PendentesDeTipo(laudo, comprovante);
+        PendentesDeFato(fato);
+
+        await EnviarAsync(
+            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter),
+            new[] { Caroline }, Tipo(laudo), Tipo(comprovante), Fato(fato));
+
+        IEnumerable<AtoDaProtecaoDoCatalogo> registrados = _atos.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IAtoDaProtecaoDoCatalogoRepository.Adicionar))
+            .Select(c => (AtoDaProtecaoDoCatalogo)c.GetArguments()[0]!);
+        registrados.Should().HaveCount(3).And.OnlyContain(a =>
+            a.Ato == AtoDaProtecao.Solicitacao
+            && a.AtorSub == Isabella
+            && a.AtorEmissor == Emissor
+            && a.AtorNome == "Isabella Figueiredo"
+            && a.Instante == Agora
+            && a.Justificativa == null
+            && a.ClassificacaoRecomendada == null);
+        registrados.Select(a => (a.Cadastro, a.ItemId, a.ItemCodigo)).Should().BeEquivalentTo(
+        [
+            (CadastroDoCatalogo.TipoDocumento, laudo.Id, "LAUDO_MEDICO_COMPLEMENTAR"),
+            (CadastroDoCatalogo.TipoDocumento, comprovante.Id, "COMPROVANTE_RESIDENCIA"),
+            (CadastroDoCatalogo.Fato, fato.Id, "TEM_RENDA"),
+        ]);
+    }
+
+    [Fact(DisplayName = "A solicitação recusada não registra ato")]
+    public async Task Handle_Recusada_NaoRegistraAto()
+    {
+        TipoDocumento pendente = NovoTipo();
+        TipoDocumento jaSolicitado = NovoTipo("COMPROVANTE_RESIDENCIA", "Comprovante de residência");
+        jaSolicitado.SolicitarAprovacaoDaProtecao(Isabella, Agora);
+        PendentesDeTipo(pendente, jaSolicitado);
+
+        await EnviarAsync(AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(pendente), Tipo(jaSolicitado));
+
+        _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
+    }
+
     private Task<(Result<SolicitacaoDaProtecaoDto> Resposta, IEnumerable<object> Mensagens)> EnviarAsync(
         AcessoAoCatalogoDeProtecao acesso,
         IReadOnlyList<string> destinatarios,
         params ItemParaSolicitarDto?[] itens) =>
         SolicitarAprovacaoDaProtecaoCommandHandler.Handle(
-            new SolicitarAprovacaoDaProtecaoCommand(acesso, destinatarios, itens), _tipos, _fatos, _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
+            new SolicitarAprovacaoDaProtecaoCommand(acesso, destinatarios, itens), _tipos, _fatos, _atos, _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
 }
