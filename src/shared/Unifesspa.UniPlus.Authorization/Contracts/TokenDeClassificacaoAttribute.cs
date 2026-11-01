@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Authorization.Projecao;
+namespace Unifesspa.UniPlus.Authorization.Contracts;
 
 /// <summary>
 /// Marca a propriedade de texto que sempre sai com o token canônico de uma classificação de proteção
