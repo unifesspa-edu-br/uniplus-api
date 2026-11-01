@@ -4909,6 +4909,84 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/configuracao/admin/fatos-candidato/{id}/protecao/atos": {
+      "get": {
+        "tags": [
+          "FatosCandidato"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.protecao-do-catalogo-ato.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AtoDaProtecaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/admin/fatos-candidato/{id}/ativacao": {
       "post": {
         "tags": [
@@ -9247,6 +9325,195 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/configuracao/admin/protecao-do-catalogo/decisoes": {
+      "get": {
+        "tags": [
+          "ProtecaoDoCatalogo"
+        ],
+        "parameters": [
+          {
+            "name": "ato",
+            "in": "query",
+            "description": "Decis\u00E3o: APROVACAO, AJUSTE_RECOMENDADO ou REPROVACAO. Repet\u00EDvel; sem o par\u00E2metro, as tr\u00EAs.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "cadastro",
+            "in": "query",
+            "description": "Cadastro do item: TIPO_DOCUMENTO ou FATO.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "de",
+            "in": "query",
+            "description": "Data inicial da decis\u00E3o, inclusive (AAAA-MM-DD), no fuso de Bel\u00E9m.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "ate",
+            "in": "query",
+            "description": "Data final da decis\u00E3o, inclusive (AAAA-MM-DD), no fuso de Bel\u00E9m.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "description": "Trecho do nome ou do c\u00F3digo do item. Insens\u00EDvel a caixa e a acentua\u00E7\u00E3o. At\u00E9 200 caracteres.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "minhas",
+            "in": "query",
+            "description": "Quando verdadeiro, s\u00F3 as decis\u00F5es de quem consulta.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Cursor opaco AES-GCM emitido pelo servidor no header Link da p\u00E1gina anterior. Ausente na primeira p\u00E1gina. Cliente trata como string opaca \u2014 n\u00E3o decodificar (ADR-0026, ADR-0031).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Tamanho m\u00E1ximo da janela de resultados. Limites configurados em CursorPaginationOptions; valores fora do range retornam 422 com code uniplus.pagination.limit_invalido (ADR-0026).",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "description": "Dire\u00E7\u00E3o de navega\u00E7\u00E3o keyset (ADR-0089): \u0027next\u0027 (default) avan\u00E7a, \u0027prev\u0027 retrocede. Normalmente o cliente apenas segue o cursor opaco do rel=\u0022prev\u0022/rel=\u0022next\u0022 do header Link \u2014 que j\u00E1 inclui o direction correto.",
+            "schema": {
+              "enum": [
+                "next",
+                "prev"
+              ],
+              "type": "string",
+              "default": "next"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Link": {
+                "description": "Links de navega\u00E7\u00E3o da pagina\u00E7\u00E3o (RFC 5988/8288). rel=\u0022self\u0022 sempre presente; rel=\u0022prev\u0022/rel=\u0022next\u0022 quando h\u00E1 p\u00E1gina anterior/pr\u00F3xima (ADR-0089). Cada link carrega o cursor opaco no par\u00E2metro \u0060cursor\u0060 e o \u0060direction\u0060 correspondente (ADR-0026).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Page-Size": {
+                "description": "Quantidade de itens retornados na p\u00E1gina atual (sempre menor ou igual ao limit efetivo).",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/vnd.uniplus.protecao-do-catalogo-decisao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisaoDaProtecaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-paginated": true
+      }
+    },
     "/api/configuracao/admin/protecao-do-catalogo/{cadastro}/{id}": {
       "get": {
         "tags": [
@@ -12686,6 +12953,84 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/configuracao/admin/tipos-documento/{id}/protecao/atos": {
+      "get": {
+        "tags": [
+          "TiposDocumento"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.protecao-do-catalogo-ato.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AtoDaProtecaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/tipos-etapa": {
       "get": {
         "tags": [
@@ -14208,6 +14553,55 @@
           },
           "rotulo": {
             "type": "string"
+          }
+        }
+      },
+      "AtoDaProtecaoDto": {
+        "required": [
+          "ato",
+          "instante",
+          "atorNome",
+          "classificacaoProtecao",
+          "hipoteseLegal",
+          "finalidadeTratamento",
+          "classificacaoRecomendada",
+          "justificativa"
+        ],
+        "type": "object",
+        "properties": {
+          "ato": {
+            "type": "string"
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atorNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "classificacaoProtecao": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
+          },
+          "finalidadeTratamento": {
+            "type": "string"
+          },
+          "classificacaoRecomendada": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "justificativa": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -17061,6 +17455,72 @@
           }
         }
       },
+      "DecisaoDaProtecaoDto": {
+        "required": [
+          "cadastro",
+          "itemId",
+          "itemCodigo",
+          "itemNome",
+          "ato",
+          "instante",
+          "atorNome",
+          "classificacaoProtecao",
+          "hipoteseLegal",
+          "finalidadeTratamento",
+          "classificacaoRecomendada",
+          "justificativa"
+        ],
+        "type": "object",
+        "properties": {
+          "cadastro": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itemCodigo": {
+            "type": "string"
+          },
+          "itemNome": {
+            "type": "string"
+          },
+          "ato": {
+            "type": "string"
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "atorNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "classificacaoProtecao": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
+          },
+          "finalidadeTratamento": {
+            "type": "string"
+          },
+          "classificacaoRecomendada": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "justificativa": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "DefinicaoDoFatoInput": {
         "required": [
           "pontoResolucao",
@@ -17172,7 +17632,8 @@
           "finalidadeTratamento",
           "aprovacao",
           "fato",
-          "tipoDocumento"
+          "tipoDocumento",
+          "atos"
         ],
         "type": "object",
         "properties": {
@@ -17226,6 +17687,12 @@
                 "$ref": "#/components/schemas/DetalheDoTipoDeDocumentoDto"
               }
             ]
+          },
+          "atos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AtoDaProtecaoDto"
+            }
           }
         }
       },

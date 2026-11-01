@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
+using Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.TiposDocumento;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -200,6 +201,26 @@ public sealed class TiposDocumentoController : ControllerBase
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Todos os atos registrados da proteção de dados do tipo — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. O tipo de documento não tem permissão de consulta administrativa (a leitura é pública), então exige a permissão de manutenção.
+    /// </summary>
+    [HttpGet("admin/tipos-documento/{id:guid}/protecao/atos")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-ato", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus
+            .Send(new ListarAtosDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.TipoDocumento, id), cancellationToken)
+            .ConfigureAwait(false);
+
+        return atos is null ? NotFound() : Ok(atos);
     }
 
     /// <summary>Remove (soft-delete) um tipo de documento. Exige a permissão de manutenção.</summary>

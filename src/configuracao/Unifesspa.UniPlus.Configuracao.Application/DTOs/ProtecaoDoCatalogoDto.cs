@@ -45,6 +45,7 @@ public sealed record SolicitacaoDaProtecaoDto(int TiposDeDocumento, int Fatos);
 /// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
 /// <param name="Fato">O que é o fato; nulo no tipo de documento.</param>
 /// <param name="TipoDocumento">O que o tipo de documento pede ao candidato; nulo no fato.</param>
+/// <param name="Atos">Todos os atos registrados do item, em ordem cronológica.</param>
 public sealed record DetalheDaProtecaoDoCatalogoDto(
     string Tipo,
     Guid Id,
@@ -56,7 +57,8 @@ public sealed record DetalheDaProtecaoDoCatalogoDto(
     string FinalidadeTratamento,
     AprovacaoDaProtecaoDto Aprovacao,
     DetalheDoFatoDto? Fato,
-    DetalheDoTipoDeDocumentoDto? TipoDocumento);
+    DetalheDoTipoDeDocumentoDto? TipoDocumento,
+    IReadOnlyList<AtoDaProtecaoDto> Atos);
 
 /// <summary>O fato, para quem avalia a proteção: o tipo do dado, como é exibido e os valores possíveis.</summary>
 /// <param name="Dominio">Token canônico do tipo do dado.</param>
@@ -79,3 +81,42 @@ public sealed record DetalheDoValorDoFatoDto(string Codigo, string? Descricao, s
 /// <param name="FormatosAceitos">Formatos de arquivo aceitos, quando o cadastro os define.</param>
 /// <param name="TamanhoMaximoMb">Tamanho máximo do arquivo em megabytes, quando o cadastro o define.</param>
 public sealed record DetalheDoTipoDeDocumentoDto(string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb);
+
+/// <summary>
+/// Um ato do circuito de aprovação da proteção de dados de um item do catálogo, registrado de forma permanente
+/// (ADR-0153). O nome de quem agiu é o que o token trazia no instante do ato; o identificador de quem agiu fica
+/// registrado e não sai na resposta.
+/// </summary>
+/// <param name="Ato">Token canônico: <c>SOLICITACAO</c>, <c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c>, <c>REPROVACAO</c> ou <c>ACEITE</c>.</param>
+/// <param name="AtorNome">Nome de quem agiu; nulo quando o token não trazia nome.</param>
+/// <param name="ClassificacaoProtecao">Classificação do item no instante do ato; na decisão, a que o aprovador conferiu.</param>
+/// <param name="ClassificacaoRecomendada">Token canônico da classificação recomendada, só no ajuste recomendado.</param>
+/// <param name="Justificativa">Motivo da decisão, no ajuste recomendado (se escrito) e na reprovação.</param>
+public sealed record AtoDaProtecaoDto(
+    string Ato,
+    DateTimeOffset Instante,
+    string? AtorNome,
+    string ClassificacaoProtecao,
+    string HipoteseLegal,
+    string FinalidadeTratamento,
+    string? ClassificacaoRecomendada,
+    string? Justificativa);
+
+/// <summary>
+/// Uma decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) com o item a que se refere. O
+/// código e o nome são os do item no instante da decisão.
+/// </summary>
+/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
+public sealed record DecisaoDaProtecaoDto(
+    string Cadastro,
+    Guid ItemId,
+    string ItemCodigo,
+    string ItemNome,
+    string Ato,
+    DateTimeOffset Instante,
+    string? AtorNome,
+    string ClassificacaoProtecao,
+    string HipoteseLegal,
+    string FinalidadeTratamento,
+    string? ClassificacaoRecomendada,
+    string? Justificativa);

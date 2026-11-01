@@ -51,9 +51,10 @@ internal static class ProtecaoDoCatalogoMapping
             fato.Aprovacao.ToDto());
     }
 
-    public static DetalheDaProtecaoDoCatalogoDto ToDetalheDaProtecao(this TipoDocumento tipo)
+    public static DetalheDaProtecaoDoCatalogoDto ToDetalheDaProtecao(this TipoDocumento tipo, IReadOnlyList<AtoDaProtecaoDoCatalogo> atos)
     {
         ArgumentNullException.ThrowIfNull(tipo);
+        ArgumentNullException.ThrowIfNull(atos);
         return new DetalheDaProtecaoDoCatalogoDto(
             TipoDocumento,
             tipo.Id,
@@ -65,12 +66,14 @@ internal static class ProtecaoDoCatalogoMapping
             tipo.FinalidadeTratamento,
             tipo.Aprovacao.ToDto(),
             Fato: null,
-            new DetalheDoTipoDeDocumentoDto(tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb));
+            new DetalheDoTipoDeDocumentoDto(tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb),
+            [.. atos.Select(static a => a.ToDto())]);
     }
 
-    public static DetalheDaProtecaoDoCatalogoDto ToDetalheDaProtecao(this FatoCandidato fato)
+    public static DetalheDaProtecaoDoCatalogoDto ToDetalheDaProtecao(this FatoCandidato fato, IReadOnlyList<AtoDaProtecaoDoCatalogo> atos)
     {
         ArgumentNullException.ThrowIfNull(fato);
+        ArgumentNullException.ThrowIfNull(atos);
         return new DetalheDaProtecaoDoCatalogoDto(
             Fato,
             fato.Id,
@@ -91,6 +94,40 @@ internal static class ProtecaoDoCatalogoMapping
                     .OrderBy(static v => v.Ordem)
                     .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
                     .Select(static v => new DetalheDoValorDoFatoDto(v.Codigo, v.Descricao, v.Orientacao))]),
-            TipoDocumento: null);
+            TipoDocumento: null,
+            [.. atos.Select(static a => a.ToDto())]);
+    }
+
+    public static AtoDaProtecaoDto ToDto(this AtoDaProtecaoDoCatalogo ato)
+    {
+        ArgumentNullException.ThrowIfNull(ato);
+        return new AtoDaProtecaoDto(
+            AtosDaProtecao.ParaTokenCanonico(ato.Ato),
+            ato.Instante,
+            ato.AtorNome,
+            ClassificacoesDeProtecao.ParaTokenCanonico(ato.ClassificacaoProtecao),
+            HipotesesLegaisTratamento.ParaTokenCanonico(ato.HipoteseLegal),
+            ato.FinalidadeTratamento,
+            ato.ClassificacaoRecomendada is { } recomendada ? ClassificacoesDeProtecao.ParaTokenCanonico(recomendada) : null,
+            ato.Justificativa);
+    }
+
+    public static DecisaoDaProtecaoDto ToDecisaoDto(this AtoDaProtecaoDoCatalogo ato)
+    {
+        ArgumentNullException.ThrowIfNull(ato);
+        AtoDaProtecaoDto dto = ato.ToDto();
+        return new DecisaoDaProtecaoDto(
+            CadastrosDoCatalogo.ParaTokenCanonico(ato.Cadastro),
+            ato.ItemId,
+            ato.ItemCodigo,
+            ato.ItemNome,
+            dto.Ato,
+            dto.Instante,
+            dto.AtorNome,
+            dto.ClassificacaoProtecao,
+            dto.HipoteseLegal,
+            dto.FinalidadeTratamento,
+            dto.ClassificacaoRecomendada,
+            dto.Justificativa);
     }
 }

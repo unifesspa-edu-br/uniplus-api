@@ -2235,5 +2235,17 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.aceite_de_item_reprovado",
                 "O item reprovado não tem recomendação a aceitar")),
+
+        new(ProtecaoDoCatalogoErrorCodes.AtoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.ato_invalido",
+                "Decisão fora do vocabulário das decisões registradas da proteção de dados")),
+
+        new(ProtecaoDoCatalogoErrorCodes.PeriodoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.periodo_invalido",
+                "A data inicial do período é posterior à final")),
     ];
 }
