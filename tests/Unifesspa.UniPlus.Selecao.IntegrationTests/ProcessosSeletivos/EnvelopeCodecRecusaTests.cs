@@ -1059,7 +1059,7 @@ public sealed class EnvelopeCodecRecusaTests
             "088/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
         const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
         JsonArray exigencias = envelope["documentosExigidos"]!["exigencias"]!.AsArray();
@@ -2257,6 +2257,49 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Fact(DisplayName = "Fato derivado congelado com classificação fora do vocabulário: recusa, e não uma proteção inventada")]
+    public void FatoDerivadoComClassificacaoForaDoVocabulario_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["fatosDerivados"]!.AsArray()[0]!.AsObject()["classificacaoProtecao"] = "SECRETO");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Theory(DisplayName = "Fato derivado congelado com domínio, cardinalidade ou hipótese legal fora do vocabulário: recusa")]
+    [InlineData("dominio")]
+    [InlineData("cardinalidade")]
+    [InlineData("hipoteseLegal")]
+    public void FatoDerivadoComTokenForaDoVocabulario_Recusa(string chave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["fatosDerivados"]!.AsArray()[0]!.AsObject()[chave] = "INVENTADO");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "Fato coletado congelado com hipótese legal fora do vocabulário: recusa")]
+    public void FatoColetadoComHipoteseLegalForaDoVocabulario_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["fatosColetados"]!.AsArray()[0]!.AsObject()["hipoteseLegal"] = "INVENTADA");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
+    [Fact(DisplayName = "Fato derivado congelado sem a hipótese legal no envelope: recusa, e não 'sem hipótese' por omissão")]
+    public void FatoDerivadoSemHipoteseLegal_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["fatosDerivados"]!.AsArray()[0]!.AsObject().Remove("hipoteseLegal"));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "Janela de recurso sem a declaração de instância superior no envelope: recusa, e não 'não admite' por omissão")]
     public void RegraRecursoSemAdmiteInstanciaSuperior_Recusa()
     {
@@ -2517,7 +2560,7 @@ public sealed class EnvelopeCodecRecusaTests
             processo, dados, EnvelopeCanonicoGoldenTests.HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         JsonObject envelope = JsonNode.Parse(Encoding.UTF8.GetString(congelado.Bytes))!.AsObject();
         adulterar(envelope);

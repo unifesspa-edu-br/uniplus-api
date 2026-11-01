@@ -27,7 +27,7 @@ public sealed class GrafoDependenciaConjuntaTests
         CondicaoPrecondicaoFato.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
     private static FatoColetado Declarado(string codigo, int ordem, params string[] citados) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. citados.Select(Precond)], classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. citados.Select(Precond)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo, params string[] citados) =>
         ConfiguracaoDerivacaoFato.Criar(codigo,
@@ -56,7 +56,7 @@ public sealed class GrafoDependenciaConjuntaTests
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
 
     private static FatoColetado NaFinalidade(FinalidadeFormulario finalidade, string codigo, int ordem, string secao) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao, finalidade: finalidade, classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, etapaCodigo: secao, finalidade: finalidade, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static int Posicao(GrafoDependenciaConjunta grafo, ClasseNoGrafo classe, string codigo) =>
         grafo.OrdemTopologica.ToList().FindIndex(n => n.Classe == classe && n.Codigo == codigo);

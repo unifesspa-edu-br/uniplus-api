@@ -331,7 +331,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
         ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
         Estado antes = Estado.De(processo);
         FatoColetado[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
-            $"FATO_{i}", i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL").Value!)];
+            $"FATO_{i}", i, "Campo", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, finalidade: FinalidadeFormulario.Inscricao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!)];
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(fatosColetados: itens));
 

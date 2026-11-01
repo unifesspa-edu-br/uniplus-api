@@ -17152,7 +17152,9 @@
           "valoresDominioDeclarados",
           "fonteValores",
           "ativo",
-          "classificacaoProtecao"
+          "classificacaoProtecao",
+          "hipoteseLegal",
+          "finalidadeTratamento"
         ],
         "type": "object",
         "properties": {
@@ -17215,6 +17217,12 @@
             "type": "boolean"
           },
           "classificacaoProtecao": {
+            "type": "string"
+          },
+          "hipoteseLegal": {
+            "type": "string"
+          },
+          "finalidadeTratamento": {
             "type": "string"
           },
           "formato": {

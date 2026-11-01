@@ -30,7 +30,7 @@ public sealed class VocabularioDeFatosTests
     public void Classificar_DominioNaoCitavel_Nulo(string dominio) =>
         VocabularioDeFatos.Classificar(new FatoCandidatoView(
             Guid.CreateVersion7(), "DADO_PESSOAL", "Dado pessoal", null, dominio, "DECLARADO", "ESCALAR",
-            ValoresDominio: null, "INSCRICAO", "CAMPO_FORMULARIO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL"))
+            ValoresDominio: null, "INSCRICAO", "CAMPO_FORMULARIO:DADO_PESSOAL", ValoresDominioDeclarados: null, FonteValores: null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade))
             .Should().BeNull();
 
     [Fact(DisplayName = "UF e município de residência são citáveis: a UF entre as 27 siglas, o município pelo código IBGE bem formado")]
@@ -90,7 +90,7 @@ public sealed class VocabularioDeFatosTests
 
     private static FatoCandidatoView Derivado(string codigo, string fonte) => new(
         Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "ESCALAR",
-        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ValoresDominio: null, "INSCRICAO", $"ATRIBUTO_CANDIDATO:{codigo}", ValoresDominioDeclarados: null, FonteValores: fonte, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     [Fact(DisplayName = "O domínio de contribuição de uma regra segue a fonte: valores do processo, ou todos os do catálogo")]
     public void DominioDeContribuicao_PelaFonte()
@@ -99,7 +99,7 @@ public sealed class VocabularioDeFatosTests
             Guid.CreateVersion7(), "FORMA_CONCLUSAO", "Forma de conclusão", null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
             ["REGULAR", "EJA"], "INSCRICAO", "REGRA_DERIVACAO:FORMA_CONCLUSAO",
             [new FatoValorDominioViewItem("REGULAR", "Regular", 0, true), new FatoValorDominioViewItem("EJA", "EJA", 1, false)],
-            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+            "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
         Dictionary<string, DominioDeValores> dinamicos = new(StringComparer.Ordinal)
         {
             ["MODALIDADE"] = DominioDeValores.Enumerado(["AC", "LB_PPI"]),
@@ -117,7 +117,7 @@ public sealed class VocabularioDeFatosTests
         ProcessoSeletivo processo = Processo();
         GrupoColetado grupo = GrupoColetado.Criar(
             "COMPOSICAO", 0, FormularioDeTeste.Secao, "Composição familiar", 0, 5, null, Obrigatoriedade.Sempre,
-            [FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!]).Value!;
+            [FatoColetado.Criar("CATEGORIA_RENDA", 0, "Categoria de renda", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!]).Value!;
         processo.DefinirItens([], grupos: [grupo], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         VocabularioDeFatos.QueOProcessoResolve(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA"), Agregado("SOB_GUARDA_NA_FAMILIA", "MENOR_SOB_GUARDA")])
@@ -143,7 +143,7 @@ public sealed class VocabularioDeFatosTests
 
     private static FatoCandidatoView Agregado(string codigo, string membro) => new(
         Guid.CreateVersion7(), codigo, codigo, null, "CATEGORICO", "DERIVADO", "MULTIVALORADO",
-        ValoresDominio: null, "HABILITACAO", $"AGREGACAO_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL");
+        ValoresDominio: null, "HABILITACAO", $"AGREGACAO_GRUPO:{membro}", ValoresDominioDeclarados: null, FonteValores: "PROCESSO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
     [Fact(DisplayName = "Os fatos cujos valores são modalidades são escolhidos pela fonte, não pelo código")]
     public void ComValoresDeModalidade_PelaFonte()

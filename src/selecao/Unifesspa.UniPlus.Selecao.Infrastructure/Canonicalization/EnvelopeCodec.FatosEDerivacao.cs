@@ -354,8 +354,8 @@ public sealed partial class EnvelopeCodec
             leitor.ExigirChaves(
                 item, path,
                 "fatoCodigo", "finalidade", "etapaCodigo", "ordem", "rotulo", "tipoRenderizacao", "obrigatoriedade", "ajuda",
-                "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "classificacaoProtecao", "precondicao",
-                "valoresSelecionaveis");
+                "pedirConfirmacao", "restricoes", "impedimento", "origemValores", "formato", "classificacaoProtecao", "hipoteseLegal", "finalidadeTratamento",
+                "precondicao", "valoresSelecionaveis");
 
             string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, LimitesDoEnvelope.Fato);
             FinalidadeFormulario finalidade = EstruturaFormulario.FinalidadeDoToken(leitor.TextoNaoVazio(item, "finalidade", path));
@@ -368,9 +368,17 @@ public sealed partial class EnvelopeCodec
             OrigemValoresColeta origemValores = leitor.Enumeracao<OrigemValoresColeta>(item, "origemValores", path);
             string? formato = leitor.TextoOpcional(item, "formato", path, LimitesDoEnvelope.Token);
             string classificacaoProtecao = leitor.TextoNaoVazio(item, "classificacaoProtecao", path, LimitesDoEnvelope.Token);
+            string hipoteseLegal = leitor.TextoNaoVazio(item, "hipoteseLegal", path, LimitesDoEnvelope.HipoteseLegal);
+            string finalidadeTratamento = leitor.TextoNaoVazio(item, "finalidadeTratamento", path, LimitesDoEnvelope.FinalidadeTratamento);
             if (leitor.Falhou)
             {
                 return [];
+            }
+
+            if (!DominioDoCatalogo.HipotesesLegais.Contains(hipoteseLegal))
+            {
+                return leitor.Propagar<IReadOnlyList<FatoColetado>>(new DomainError(
+                    ErrosCodecEnvelope.EnvelopeMalformado, $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais.")) ?? [];
             }
 
             if (finalidade == FinalidadeFormulario.Nenhuma)
@@ -433,7 +441,7 @@ public sealed partial class EnvelopeCodec
             }
 
             Result<FatoColetado> fatoColetado = FatoColetado.Criar(
-                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, classificacaoProtecao, origemValores, etapaCodigo,
+                fatoCodigo, ordem, rotulo, tipoRenderizacao, obrigatoriedade, precondicoes, classificacaoProtecao, hipoteseLegal, finalidadeTratamento, origemValores, etapaCodigo,
                 finalidade, formato, ajuda, pedirConfirmacao, restricoes, impedimento);
             if (fatoColetado.IsFailure)
             {

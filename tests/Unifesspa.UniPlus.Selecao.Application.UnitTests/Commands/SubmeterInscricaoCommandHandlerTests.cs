@@ -269,7 +269,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         FatoColetado item = FatoColetado.Criar(
             "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: []).Value!;
+            classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
         VersaoTermoEscolhida versaoDoTermo = new(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "Termo de veracidade", "Declaro que as informações são verdadeiras.",
@@ -752,13 +752,13 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
     /// <summary>Um booleano que, respondido "não", esconde o que depende dele.</summary>
     private static FatoColetado Pergunta(string fato, int ordem) => FatoColetado.Criar(
-        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL").Value!;
+        fato, ordem, fato, TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     /// <summary>Um texto opcional que só aparece com <paramref name="pergunta"/> respondida "sim".</summary>
     private static FatoColetado SoComSim(string fato, int ordem, string pergunta) => FatoColetado.Criar(
         fato, ordem, fato, TipoRenderizacao.Texto, Obrigatoriedade.Nunca,
         [CondicaoPrecondicaoFato.Criar(0, pergunta, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
-        classificacaoProtecao: "SENSIVEL", formato: "LIVRE").Value!;
+        classificacaoProtecao: "SENSIVEL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static async Task<(Result<ComprovanteInscricaoDto> Resultado, Inscricao Inscricao)> SubmeterComAsync(
         IReadOnlyList<FatoColetado> itens,
@@ -858,7 +858,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
                     processo,
                     [FatoColetado.Criar(
                         "RENDA_DECLARADA", 0, "Renda declarada", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null,
-                        classificacaoProtecao: "PESSOAL", formato: "LIVRE", finalidade: FinalidadeFormulario.IsencaoTaxa).Value!],
+                        classificacaoProtecao: "PESSOAL", formato: "LIVRE", finalidade: FinalidadeFormulario.IsencaoTaxa, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
                     finalidade: FinalidadeFormulario.IsencaoTaxa).IsSuccess.Should().BeTrue();
                 FormularioDeTeste.DefinirTermos(
                     processo,
@@ -938,7 +938,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             "DEPENDENTES", 2, FormularioDeTeste.Secao, "Dependentes", minimo: 0, maximo: null,
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar("TEM_DEPENDENTES", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
             Obrigatoriedade.Nunca,
-            [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!],
+            [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             FinalidadeFormulario.Inscricao).Value!;
 
         (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
@@ -1012,7 +1012,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
     private static readonly FatoColetado DataAteOEnvio = FatoColetado.Criar(
         "DATA_DO_EVENTO", 1, "Data do evento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL",
-        restricoes: [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))]).Value!;
+        restricoes: [new FaixaDeData(minima: null, LimiteDeData.NoEnvio(anos: 0, dias: 0))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static InscricaoRequest RequestComDataDoEvento(Cpf cpf, VersaoTermoEscolhida termo, GrafoConfiguracao grafo, string dataDoEvento)
     {

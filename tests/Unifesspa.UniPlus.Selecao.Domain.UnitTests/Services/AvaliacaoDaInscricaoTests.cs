@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// As modalidades em que o candidato concorre, pelas regras de aplicabilidade das modalidades
@@ -207,7 +208,7 @@ public sealed class AvaliacaoDaInscricaoTests
         RegrasDerivacaoFato egresso = RegrasDerivacaoFato.CriarBooleana(
             OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
         FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
-            f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
+            f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade,
             f == MunicipioDoBonus ? OrigemValoresColeta.MunicipiosDoBonus : OrigemValoresColeta.Catalogo,
             etapaCodigo: Secao, finalidade: FinalidadeFormulario.Inscricao).Value!)];
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
@@ -227,7 +228,7 @@ public sealed class AvaliacaoDaInscricaoTests
         if (municipioNoGrupo)
         {
             FatoColetado membro = FatoColetado.Criar(
-                MunicipioDoBonus, 0, "Município", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL",
+                MunicipioDoBonus, 0, "Município", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade,
                 OrigemValoresColeta.MunicipiosDoBonus).Value!;
             grupos = [GrupoColetado.Criar(GrupoDeMunicipios, 1, Secao, "Municípios", 0, 3, null, Obrigatoriedade.Sempre, [membro], FinalidadeFormulario.Inscricao).Value!];
             definicao = new DefinicaoFormulario(

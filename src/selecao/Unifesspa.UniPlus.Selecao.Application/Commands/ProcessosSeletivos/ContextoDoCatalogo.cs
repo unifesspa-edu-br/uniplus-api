@@ -27,7 +27,8 @@ internal sealed record ContextoDoCatalogo(
     IReadOnlyDictionary<string, FatoCandidatoView> Fatos,
     IReadOnlyDictionary<string, FatoDoCatalogo> FatosDasRegras,
     IReadOnlyDictionary<string, DescritorFatoCandidato> Vocabulario,
-    IReadOnlyDictionary<string, DominioDeValores> DominiosDinamicos)
+    IReadOnlyDictionary<string, DominioDeValores> DominiosDinamicos,
+    FatosDasVersoesPublicadas? Publicadas = null)
 {
     /// <summary>
     /// O contexto do catálogo lido para o processo: o domínio dos fatos categóricos cuja fonte é o
@@ -37,5 +38,20 @@ internal sealed record ContextoDoCatalogo(
         catalogo.ToDictionary(static f => f.Codigo, StringComparer.Ordinal),
         VocabularioDeFatos.ParaRegras(catalogo),
         VocabularioDeFatos.Descritores(catalogo),
-        VocabularioDeFatos.DominiosDinamicos(processo, catalogo));
+        VocabularioDeFatos.DominiosDinamicos(processo, catalogo),
+        processo.Rascunho?.FatosDasVersoesPublicadas);
+
+    /// <summary>
+    /// A hipótese legal e a finalidade do fato: as que a versão publicada já congelou, se alguma o
+    /// coletou, e as do catálogo de hoje no fato novo. Corrigir o texto da finalidade no catálogo não
+    /// pode trocar o eixo de um fato já coletado.
+    /// </summary>
+    public (string HipoteseLegal, string FinalidadeTratamento) ProtecaoDoItem(FatoCandidatoView view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+
+        return Publicadas is not null && Publicadas.TentarObterEixosDoItem(view.Codigo, out EixosDoItemCongelado? eixos)
+            ? (eixos.HipoteseLegal, eixos.FinalidadeTratamento)
+            : (view.HipoteseLegal, view.FinalidadeTratamento);
+    }
 }

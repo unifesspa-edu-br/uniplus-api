@@ -356,7 +356,7 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
     private static FatoColetado Campo(string fato, string? etapa = Secao) =>
         FatoColetado.Criar(
             fato, 0, $"Rótulo de {fato}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "PESSOAL",
-            etapaCodigo: etapa, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            etapaCodigo: etapa, finalidade: FinalidadeFormulario.Inscricao, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static DocumentoExigido Condicional(FaseCronograma fase, params (string Fato, bool Valor)[] atomos) =>
         DocumentoExigido.Criar(

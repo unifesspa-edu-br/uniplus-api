@@ -75,7 +75,7 @@ public sealed class CalendarioCongeladoRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes);
     }
@@ -134,7 +134,7 @@ public sealed class CalendarioCongeladoRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "a lista congelada basta para reproduzir a versão — a origem é rastreio, não dependência");

@@ -414,7 +414,7 @@ public sealed class RestauradorDeConfiguracaoTests
             new EntradaCanonicalizacao(
                 processo, dados, hashFixo, FusoInstitucional.ZoneId,
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashFixo, "user-sub-123", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -506,9 +506,9 @@ public sealed class RestauradorDeConfiguracaoTests
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.40", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.41", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -536,7 +536,7 @@ public sealed class RestauradorDeConfiguracaoTests
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }
 
@@ -566,7 +566,7 @@ public sealed class RestauradorDeConfiguracaoTests
             processo, dados, CorpusEnvelope.HashDocumento, FusoDaEpoca,
             ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
             CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
@@ -605,11 +605,11 @@ public sealed class RestauradorDeConfiguracaoTests
         // classificação do corpus exige na inscrição, e da opção pelas vagas de escola pública, de
         // que a opção pelas cotas depende.
         processo.DefinirItens([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
-            FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
+            FatoColetado.Criar("CONDICAO_ATENDIMENTO", 2, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
-            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], PrecondicaoIfMatch.Curinga, grupos: []).IsSuccess.Should().BeTrue();
 
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresSelecionaveis =
@@ -628,7 +628,7 @@ public sealed class RestauradorDeConfiguracaoTests
             new EntradaCanonicalizacao(processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
                 ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         // Publica DIRETAMENTE com os bytes já codificados acima — CorpusEnvelope.Publicar(..., CorpusEnvelope.ContextoRico())
         // recodificaria com CorpusEnvelope.ValoresSelecionaveisRicos() (sem CONDICAO_ATENDIMENTO)
@@ -679,7 +679,7 @@ public sealed class RestauradorDeConfiguracaoTests
                 processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
                 ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado reposto recanonicaliza, byte a byte, o que a versão congelou");
     }
 

@@ -169,7 +169,7 @@ public sealed class FatoDeElegibilidadeGateTests
             .IsSuccess.Should().BeTrue();
 
         Result itens = processo.DefinirItens(
-            [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!]);
+            [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
 
         processo.DefinirBonusRegional(
@@ -204,7 +204,7 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         FatoCandidatoView pedido = new(
             Guid.CreateVersion7(), Fato, "Pede o acréscimo", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
-            FormularioProcesso.CodigoFaseHabilitacao, $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL");
+            FormularioProcesso.CodigoFaseHabilitacao, $"CAMPO_FORMULARIO:{Fato}", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
         IFatoCandidatoReader reader = Substitute.For<IFatoCandidatoReader>();
         reader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[pedido]));
         return reader;

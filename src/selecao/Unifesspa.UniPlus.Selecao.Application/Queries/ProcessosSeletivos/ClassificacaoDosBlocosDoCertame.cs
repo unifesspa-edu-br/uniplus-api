@@ -73,6 +73,7 @@ public static class ClassificacaoDosBlocosDoCertame
         "algoritmoContagemPrazo",
         "versaoInterpretador",
         "tiposDeAto",
+        "fatosDerivados",
     };
 
     /// <summary>

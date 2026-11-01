@@ -3953,7 +3953,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
         new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
         new ItemConformidade("exigencia_finalidade_incoerente_com_a_fase", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: declara o formulário a que pertence, entre os que a sua fase responde", PendenciaDaFinalidadeDasExigencias() is null),
-        new ItemConformidade("exigencia_fato_comprovado_fora_do_processo", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: comprova só fatos que o processo coleta ou que constam do catálogo", PendenciaDoFatoComprovadoForaDoProcesso(protecao) is null),
+        new ItemConformidade("exigencia_fato_comprovado_fora_do_processo", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: comprova só fatos que o processo coleta ou que são derivados congelados na publicação", PendenciaDoFatoComprovadoForaDoProcesso(protecao) is null),
         new ItemConformidade("exigencia_menos_protegida_que_fato_comprovado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: o tipo de documento é tão protegido quanto o mais protegido dos fatos que a exigência comprova", PendenciaDaProtecaoDasExigencias(protecao) is null),
         new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
         new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
@@ -5719,8 +5719,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : exigencia.ClassificacaoProtecao;
 
     /// <summary>
-    /// Cada fato que uma exigência diz comprovar é coletado por algum formulário do processo ou é fato do
-    /// catálogo, como o derivado: só assim tem classificação congelada com que comparar.
+    /// Cada fato que uma exigência diz comprovar é coletado por algum formulário do processo ou é fato
+    /// derivado congelado na publicação: só assim tem classificação congelada com que comparar.
     /// </summary>
     private DomainError? PendenciaDoFatoComprovadoForaDoProcesso(ProtecaoVigenteDasExigencias? protecao)
     {
@@ -5729,12 +5729,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             foreach (string codigo in exigencia.FatosComprovados.Order(StringComparer.Ordinal))
             {
                 if (protecao is not null
-                    && !protecao.ClassificacaoDosFatosDoCatalogo.ContainsKey(codigo)
+                    && !protecao.ClassificacaoDosFatosDerivados.ContainsKey(codigo)
                     && !_campos.Any(f => string.Equals(f.FatoCodigo, codigo, StringComparison.Ordinal)))
                 {
                     return new DomainError(
                         DocumentoExigido.FatoComprovadoForaDoProcesso,
-                        $"A exigência do tipo de documento '{exigencia.TipoDocumentoCodigo}' comprova o fato '{codigo}', que o processo não coleta e que não consta do catálogo de fatos.");
+                        $"A exigência do tipo de documento '{exigencia.TipoDocumentoCodigo}' comprova o fato '{codigo}', que o processo não coleta e que não é fato derivado do catálogo.");
                 }
             }
         }
@@ -5767,9 +5767,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 {
                     nivel = daColeta.Max();
                 }
-                else if (protecao?.ClassificacaoDosFatosDoCatalogo.TryGetValue(codigo, out ClassificacaoDeProtecao doCatalogo) == true)
+                else if (protecao?.ClassificacaoDosFatosDerivados.TryGetValue(codigo, out ClassificacaoDeProtecao doDerivado) == true)
                 {
-                    nivel = doCatalogo;
+                    nivel = doDerivado;
                 }
                 else
                 {

@@ -12,6 +12,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -335,8 +336,6 @@ internal static class DerivabilidadeDeFato
     public const string FatoNaoDerivavel = "ConfiguracaoDerivacaoFato.FatoNaoDerivavel";
     public const string ContribuicaoIncoerenteComODominio = "ConfiguracaoDerivacaoFato.ContribuicaoIncoerenteComODominio";
 
-    private const string OrigemDerivado = "DERIVADO";
-
     private const string DominioCategorico = "CATEGORICO";
 
     /// <summary>
@@ -347,7 +346,7 @@ internal static class DerivabilidadeDeFato
     {
         ArgumentNullException.ThrowIfNull(fato);
 
-        return string.Equals(fato.Origem, OrigemDerivado, StringComparison.Ordinal)
+        return string.Equals(fato.Origem, DominioDoCatalogo.OrigemDerivada, StringComparison.Ordinal)
             && (string.Equals(fato.Dominio, DominioCategorico, StringComparison.Ordinal)
                 || string.Equals(fato.Dominio, VocabularioDeFatos.DominioBooleano, StringComparison.Ordinal))
             && string.Equals(fato.Binding, VinculoDeFato.De(VinculoDeFato.RegraDeDerivacao, fato.Codigo), StringComparison.Ordinal);

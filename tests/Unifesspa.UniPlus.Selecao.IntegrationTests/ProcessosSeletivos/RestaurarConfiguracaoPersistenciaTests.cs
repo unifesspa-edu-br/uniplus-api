@@ -139,7 +139,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
                 AgregadosDosGrupos: CorpusEnvelope.AgregadosRicos,
                 ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
             "o agregado que voltou do Postgres tem de recanonicalizar nos MESMOS bytes que o ato congelou — é a " +
@@ -367,7 +367,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
                 CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
                 AgregadosDosGrupos: CorpusEnvelope.AgregadosRicos,
                 ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
             "a etapa que o descarte devolve tem de ser a que o documento publicado descreve — janela, produtos, " +

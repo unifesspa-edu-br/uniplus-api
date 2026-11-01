@@ -86,7 +86,7 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
         ProcessoSeletivo processo = NovoProcessoConforme();
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         JsonObject esperado = new()
         {
@@ -115,7 +115,7 @@ public sealed class ConfiguracaoDivulgacaoCanonicalizacaoTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         // Literal, escrito à mão — independente de qualquer chamada de normalização do encoder
         // ou da entidade.

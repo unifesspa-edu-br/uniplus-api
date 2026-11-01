@@ -47,7 +47,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         FatoColetado nome = FormularioDeTeste.DadosBasicos()[0];
         FatoColetado nomeEmDados = FatoColetado.Criar(
             nome.FatoCodigo, FormularioDeTeste.PrimeiraOrdemDeInscricao, nome.Rotulo, nome.TipoRenderizacao, nome.Obrigatoriedade, null,
-            etapaCodigo: FormularioDeTeste.Secao, formato: nome.Formato, classificacaoProtecao: "PESSOAL").Value!;
+            etapaCodigo: FormularioDeTeste.Secao, formato: nome.Formato, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -94,7 +94,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
         processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
-            [FatoColetado.Criar("EMAIL", 0, "E-mail", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, formato: "EMAIL", classificacaoProtecao: "PESSOAL").Value!],
+            [FatoColetado.Criar("EMAIL", 0, "E-mail", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, formato: "EMAIL", classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirFormulario(

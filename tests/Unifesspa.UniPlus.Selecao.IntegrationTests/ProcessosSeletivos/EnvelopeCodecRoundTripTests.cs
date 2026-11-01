@@ -85,7 +85,7 @@ public sealed class EnvelopeCodecRoundTripTests
         processo.DefinirItens(
             [FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!],
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         processo.DefinirTermos([CorpusEnvelope.Termo("VERACIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
@@ -104,15 +104,15 @@ public sealed class EnvelopeCodecRoundTripTests
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
-            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
+            FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FatoColetado.Criar(
                 "TEM_BOLSA", 2, "Tem bolsa", TipoRenderizacao.Booleano,
                 Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas(
                     [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!),
-                null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true, classificacaoProtecao: "PESSOAL").Value!,
+                null, ajuda: "Renda por pessoa da família", pedirConfirmacao: true, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
-            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -165,15 +165,15 @@ public sealed class EnvelopeCodecRoundTripTests
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!,
-            FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, formato: "NOME_PESSOA", classificacaoProtecao: "PESSOAL").Value!,
-            FatoColetado.Criar("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
-            FatoColetado.Criar("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
+            FatoColetado.Criar("NOME_SOCIAL", 2, "Nome social", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, formato: "NOME_PESSOA", classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
+            FatoColetado.Criar("DATA_NASCIMENTO", 3, "Data de nascimento", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
+            FatoColetado.Criar("ENDERECO_RESIDENCIAL", 4, "Endereço residencial", TipoRenderizacao.Endereco, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FormularioDeTeste.CampoDaEdicaoDoEnem(5),
-            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 6, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 6, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
@@ -476,7 +476,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
                 envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: envelope.TiposDeAtoCongelados));
+                TiposDeAtoCongelados: envelope.TiposDeAtoCongelados, FatosDerivadosCongelados: envelope.FatosDerivadosCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
         // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
@@ -703,7 +703,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         return (congelado.Bytes, bytesMutados, recodificados);
     }
@@ -832,7 +832,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(fixture,
             "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
@@ -898,9 +898,9 @@ public sealed class EnvelopeCodecRoundTripTests
             FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: valoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.40", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.41", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -924,7 +924,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma exigência documental rica (condicaoGatilho, basesLegais, " +
@@ -1040,7 +1040,7 @@ public sealed class EnvelopeCodecRoundTripTests
         [
             GrupoColetado.Criar(
                 "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
-                [FatoColetado.Criar("SEM_RENDA", 0, "Sem renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!]).Value!,
+                [FatoColetado.Criar("SEM_RENDA", 0, "Sem renda", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!]).Value!,
         ]).IsSuccess.Should().BeTrue();
         NoExigencia folhaRenda = NoExigencia.CriarFolha(
             comprovanteRenda, 1, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
@@ -1059,8 +1059,8 @@ public sealed class EnvelopeCodecRoundTripTests
         const string hashDocumento = "2222222222222222222222222222222222222222222222222222222222222222";
 
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
-        congelado.SchemaVersion.Should().Be("0.0.40", "pré-condição: o codec corrente emite a forma única");
+            new EntradaCanonicalizacao(processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        congelado.SchemaVersion.Should().Be("0.0.41", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1089,7 +1089,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar uma árvore com grupo OU, cardinalidade qualificada e repetição por " +
@@ -1277,9 +1277,9 @@ public sealed class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = new(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos,
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.40", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.41", "pré-condição: o codec corrente emite a forma única");
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -1334,7 +1334,7 @@ public sealed class EnvelopeCodecRoundTripTests
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Value!.Bytes;
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Value!.Bytes;
 
         recodificado.Should().Equal(congelado.Bytes,
             "reidratar e recanonicalizar os seis conjuntos da issue #1067, todos povoados ao mesmo tempo, tem de " +
@@ -1436,7 +1436,7 @@ public sealed class EnvelopeCodecRoundTripTests
                 reidratado.Value.MetadadosFatosCongelados,
                 reidratado.Value.ValoresSelecionaveisCongelados,
                 reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados)).Value!.Bytes;
+                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
 
         recodificados.Should().NotEqual(congelado.Bytes,
             "o decoder tem de LER 'classificacao.baseadoEmEnem' — se o ignorasse, a recodificação traria o valor " +
@@ -1529,7 +1529,7 @@ public sealed class EnvelopeCodecRoundTripTests
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirItens(
             [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "FATO_OPCAO_DE_TESTE",
@@ -1565,7 +1565,7 @@ public sealed class EnvelopeCodecRoundTripTests
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
         processo.DefinirItens(
             [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "FATO_OPCAO_DE_TESTE",
@@ -1596,9 +1596,9 @@ public sealed class EnvelopeCodecRoundTripTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!,
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
              FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL").Value!],
+                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas(
             "FATO_OPCAO_DE_TESTE",

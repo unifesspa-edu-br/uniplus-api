@@ -143,7 +143,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
@@ -220,6 +220,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             "opcoesDeCurso",
             // A classificação, congelada, de cada tipo de ato que o cronograma declara — 33º bloco.
             "tiposDeAto",
+            "fatosDerivados",
         ];
         JsonObject objeto = payload.AsObject();
         foreach (string bloco in blocosEsperados)
@@ -316,7 +317,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dadosResult.Value!,
             canonico.Bytes,

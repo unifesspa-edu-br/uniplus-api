@@ -31,10 +31,10 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         CondicaoPrecondicaoFato.Criar(0, fato, Operador.Igual, Sim).Value!;
 
     private static FatoColetado Fato(string codigo, int ordem, params string[] cita) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)], classificacaoProtecao: "PESSOAL").Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [.. cita.Select(Cond)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static FatoColetado Texto(string codigo, int ordem, string? formato) =>
-        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: formato).Value!;
+        FatoColetado.Criar(codigo, ordem, codigo, TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", formato: formato, hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     [Fact(DisplayName = "A recópia do catálogo refaz a cópia do item novo e deixa o já coletado como está")]
     public void RecopiarItensDoCatalogo_RecopiaSoOQueNaoFoiColetado()
@@ -42,7 +42,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([Texto("CPF", 0, "CPF"), Texto("RG", 1, "LIVRE")], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
-        CopiaDoItemNoCatalogo copia(string formato) => new(OrigemValoresColeta.Catalogo, formato, "IDENTIFICADOR");
+        CopiaDoItemNoCatalogo copia(string formato) => new(OrigemValoresColeta.Catalogo, formato, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade);
 
         Result recopia = processo.RecopiarItensDoCatalogo(
             new Dictionary<string, CopiaDoItemNoCatalogo> { ["CPF"] = copia("CPF"), ["RG"] = copia("LIVRE") },
@@ -63,9 +63,9 @@ public sealed class ProcessoSeletivoFatosColetadosTests
 
         Dictionary<string, CopiaDoItemNoCatalogo> catalogo = new()
         {
-            ["CPF"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR"),
-            ["RG"] = new(OrigemValoresColeta.Catalogo, "LIVRE", "IDENTIFICADOR"),
-            ["NIS"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR"),
+            ["CPF"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade),
+            ["RG"] = new(OrigemValoresColeta.Catalogo, "LIVRE", "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade),
+            ["NIS"] = new(OrigemValoresColeta.Catalogo, null, "IDENTIFICADOR", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade),
         };
         HashSet<string> nenhum = new(StringComparer.Ordinal);
 
@@ -109,7 +109,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         FatoColetado.Criar(
             codigo, ordem, codigo, TipoRenderizacao.Booleano,
             Obrigatoriedade.Quando(PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(citado, Operador.Igual, valor ?? Sim).Value!)]).Value!),
-            null, classificacaoProtecao: "PESSOAL").Value!;
+            null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     [Fact(DisplayName = "Obrigatoriedade QUANDO que cita campo posterior é recusada, como a pré-condição")]
     public void ObrigatoriedadeCitaFatoPosterior_Recusada()
@@ -186,7 +186,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
     [Fact(DisplayName = "Fato citando a si mesmo é recusado na criação, antes de chegar ao grafo")]
     public void Autorreferencia_Recusada()
     {
-        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")], classificacaoProtecao: "PESSOAL");
+        Result<FatoColetado> resultado = FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Cond("PCD")], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.RegraAutorreferente);

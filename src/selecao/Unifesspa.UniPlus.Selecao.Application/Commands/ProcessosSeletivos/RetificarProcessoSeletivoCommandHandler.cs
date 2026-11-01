@@ -242,9 +242,10 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
         // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = await ProtecaoVigenteDasExigenciasDoProcesso
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = await ProtecaoVigenteDasExigenciasDoProcesso
             .MontarAsync(processo, tipoDocumentoReader, catalogoDeFatos, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false), cancellationToken)
             .ConfigureAwait(false);
+        ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
         processo.AplicarProtecaoVigente(protecaoDasExigencias);
 
         // O gate precede a canonicalização, igual à publicação (ADR-0109 D5) — a
@@ -435,7 +436,8 @@ public static class RetificarProcessoSeletivoCommandHandler
                 contexto.CalendarioVigente,
                 agregadosDosGrupos,
                 ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: tiposDeAtoCongelados.Value));
+                TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
+                FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados));
 
         string atorUsuarioSub = userContext.UserId ?? "system";
 

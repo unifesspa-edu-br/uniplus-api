@@ -205,10 +205,10 @@ public sealed class EnvelopeCanonicoGoldenTests
         // aresta do grafo conjunto — produção (campo→fato), pré-condição (COR_RACA gata RENDA),
         // derivação (RENDA→REGIME_DE_VAGA) e gatilho (MODALIDADE→exigência).
         processo.DefinirItens([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo exigido — a
@@ -377,7 +377,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
             ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia())));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     /// <summary>
     /// O agregado de referência COM a cascata de remanejamento configurada (Story #575) —
@@ -416,7 +416,7 @@ public sealed class EnvelopeCanonicoGoldenTests
             ProcessoDeReferenciaComCascata(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferenciaComCascata())));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferenciaComCascata()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     // ── CA-03 — política: a versão declarada e a forma congelada andam juntas ──
 
@@ -564,10 +564,10 @@ public sealed class EnvelopeCanonicoGoldenTests
 
         byte[] primeira = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Bytes;
         byte[] segunda = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: valoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Bytes;
 
         segunda.Should().Equal(primeira, "a projeção é pura — mesma entrada, mesmos bytes");
     }
@@ -587,7 +587,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         DadosEdital dados = DadosDeReferencia();
 
         Action canonicalizarSemDicionario = () => Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: MetadadosFatosDeReferencia(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            new EntradaCanonicalizacao(processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: MetadadosFatosDeReferencia(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         canonicalizarSemDicionario.Should().Throw<InvalidOperationException>()
             .WithMessage("*NACIONALIDADE*",
@@ -617,7 +617,7 @@ public sealed class EnvelopeCanonicoGoldenTests
                 processo, dados, HashFixo, FusoInstitucional.ZoneId,
                 MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
                 ValoresSelecionaveisCongelados: valoresComListaVazia,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         canonicalizarComListaVazia.Should().Throw<InvalidOperationException>()
             .WithMessage("*COR_RACA*",
@@ -672,7 +672,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, HashFixo, FusoInstitucional.ZoneId, MetadadosFatosCongelados: metadados, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         JsonArray valoresCorRaca = EnvelopeCodecRoundTripTests.Envelope(canonico)["fatosColetados"]!.AsArray()
             .Single(f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray();
@@ -735,14 +735,15 @@ public sealed class EnvelopeCanonicoGoldenTests
         switch (node)
         {
             case JsonObject obj:
-                if (obj.ContainsKey("codigo") && !obj.ContainsKey("origemId") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem") && !obj.ContainsKey("unicoPorObjeto"))
+                if (obj.ContainsKey("codigo") && !obj.ContainsKey("origemId") && !obj.ContainsKey("naturezaLegal") && !obj.ContainsKey("ordem") && !obj.ContainsKey("unicoPorObjeto") && !obj.ContainsKey("finalidadeTratamento"))
                 {
                     // `origemId` distingue o snapshot de TipoProcesso; `naturezaLegal`
                     // distingue a MODALIDADE (que também tem `codigo`, mas não é referência
                     // de regra) de uma referência do rol. `ordem` distingue a FASE do
                     // cronograma (Story #554, PR #903) pela mesma razão — nenhuma referência
                     // de regra tem `ordem`. `unicoPorObjeto` distingue a classificação congelada
-                    // de um tipo de ato, que tem `codigo` e não é referência de regra.
+                    // de um tipo de ato, que tem `codigo` e não é referência de regra. `finalidadeTratamento`
+                    // distingue o fato derivado congelado, que também tem `codigo`.
                     acumulador.Add((caminho, obj));
                 }
 
@@ -831,7 +832,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo))).Bytes;
+            new EntradaCanonicalizacao(processo, DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Bytes;
     }
 
     private static JsonObject EnvelopeComoObjeto() =>

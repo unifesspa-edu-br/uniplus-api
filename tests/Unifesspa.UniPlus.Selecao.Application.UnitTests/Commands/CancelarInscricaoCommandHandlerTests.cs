@@ -30,7 +30,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
 
     private static readonly FatoColetado Item = FatoColetado.Criar(
         "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
-        classificacaoProtecao: "PESSOAL", formato: "LIVRE").Value!;
+        classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!;
 
     private static IUserContext Usuario(string sub)
     {

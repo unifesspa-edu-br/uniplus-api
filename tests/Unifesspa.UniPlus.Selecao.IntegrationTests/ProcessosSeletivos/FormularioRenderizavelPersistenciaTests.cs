@@ -131,7 +131,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         processo.DefinirItens([
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -168,7 +168,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(valoresSelecionaveis),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
@@ -274,10 +274,10 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         ProcessoSeletivo processo = NovoProcessoComFatoDeSelecao(nameof(Handle_PressupostoDerivado_ApresentacaoCongeladaNaPublicacao));
         processo.DefinirItens(
         [
-            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL").Value!,
+            FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FatoColetado.Criar("ATENDIMENTO_NO_MUNICIPIO", 1, "Deseja atendimento no município?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, [
                 CondicaoPrecondicaoFato.Criar(0, "MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement("1504208")).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComOMunicipio("Município de residência")).Value!;
@@ -288,7 +288,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             processo, dados, hashDocumento, FusoInstitucional.ZoneId,
             ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
             ApresentacaoDosPressupostos: naPublicacao.ApresentacaoDosPressupostos,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
             hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -318,7 +318,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         new FatoCandidatoView(
             Guid.CreateVersion7(), "COR_RACA", "Cor ou raça", null, "CATEGORICO", "DECLARADO", "ESCALAR",
             [.. valores.Select(static v => v.Codigo)], "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", [.. valores], "GLOBAL",
-            Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
     ]);
 
     private static IReadOnlyList<FatoValorDominioViewItem> CorRacaComoCadastrada() =>
@@ -345,7 +345,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         DefinicaoAvaliavel naPublicacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, CatalogoComCorRaca([.. CorRacaComoCadastrada()])).Value!;
         SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
             processo, dados, hashDocumento, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: naPublicacao.ValoresSelecionaveis,
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo)));
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
             hashDocumento, "integration-test-user", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -404,7 +404,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
                 carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
                 new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
                 ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado)));
+                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dados, versaoAtual, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
                 documento.HashSha256!, "integration-test-user", "Correção do texto das opções", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
@@ -445,10 +445,10 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     [
         new FatoCandidatoView(
             Guid.CreateVersion7(), "ATENDIMENTO_NO_MUNICIPIO", "Atendimento no município", null, "BOOLEANO", "DECLARADO", "ESCALAR", null,
-            "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            "INSCRICAO", "CAMPO_FORMULARIO:ATENDIMENTO_NO_MUNICIPIO", null, null, Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
         new FatoCandidatoView(
             Guid.CreateVersion7(), "MUNICIPIO_RESIDENCIA", nomeDoMunicipio, null, "CATEGORICO", "DERIVADO", "ESCALAR", null,
-            "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL"),
+            "INSCRICAO", "SISTEMA:MUNICIPIO_RESIDENCIA", null, "GEO_MUNICIPIO", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade),
     ]);
 
     [Fact(DisplayName = "O pressuposto respondido na inscrição vem com a apresentação congelada dela; o calculado pelo sistema, com o rótulo e o tipo congelados do catálogo")]
@@ -473,10 +473,10 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         [
             FatoColetado.Criar("CERTIFICADO_EMITIDO", 0, "Certificado emitido", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
             FatoColetado.Criar("DECLARACAO_MAIORIDADE", 1, "Declaração de maioridade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, [
                 CondicaoPrecondicaoFato.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!,
-            ], classificacaoProtecao: "PESSOAL").Value!,
+            ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade).Value!,
         ], finalidade: FinalidadeFormulario.Habilitacao);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
 
