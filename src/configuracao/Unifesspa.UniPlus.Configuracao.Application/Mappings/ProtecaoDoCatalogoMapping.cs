@@ -48,4 +48,47 @@ internal static class ProtecaoDoCatalogoMapping
             HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal),
             fato.Aprovacao.ToDto());
     }
+
+    public static DetalheDaProtecaoDoCatalogoDto ToDetalheDaProtecao(this TipoDocumento tipo)
+    {
+        ArgumentNullException.ThrowIfNull(tipo);
+        return new DetalheDaProtecaoDoCatalogoDto(
+            TipoDocumento,
+            tipo.Id,
+            tipo.Codigo.Valor,
+            tipo.Nome,
+            tipo.Descricao,
+            ClassificacoesDeProtecao.ParaTokenCanonico(tipo.ClassificacaoProtecao),
+            HipotesesLegaisTratamento.ParaTokenCanonico(tipo.HipoteseLegal),
+            tipo.FinalidadeTratamento,
+            tipo.Aprovacao.ToDto(),
+            Fato: null,
+            new DetalheDoTipoDeDocumentoDto(tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb));
+    }
+
+    public static DetalheDaProtecaoDoCatalogoDto ToDetalheDaProtecao(this FatoCandidato fato)
+    {
+        ArgumentNullException.ThrowIfNull(fato);
+        return new DetalheDaProtecaoDoCatalogoDto(
+            Fato,
+            fato.Id,
+            fato.Codigo,
+            fato.Nome,
+            fato.Descricao,
+            ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
+            HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal),
+            fato.FinalidadeTratamento,
+            fato.Aprovacao.ToDto(),
+            new DetalheDoFatoDto(
+                DominiosFato.ParaTokenCanonico(fato.Dominio),
+                CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
+                fato.Sistema,
+                fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null,
+                [.. fato.ValoresDominioDeclarados
+                    .Where(static v => v.Ativo)
+                    .OrderBy(static v => v.Ordem)
+                    .ThenBy(static v => v.Codigo, StringComparer.Ordinal)
+                    .Select(static v => new DetalheDoValorDoFatoDto(v.Codigo, v.Descricao, v.Orientacao))]),
+            TipoDocumento: null);
+    }
 }

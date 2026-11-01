@@ -74,6 +74,30 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     }
 
     /// <summary>
+    /// O item da fila com o que a proteção de dados precisa ver para decidir, em qualquer situação da aprovação.
+    /// O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar, sem abrir a consulta
+    /// aos cadastros.
+    /// </summary>
+    [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-detalhe", Versions = [1])]
+    [ProducesResponseType(typeof(DetalheDaProtecaoDoCatalogoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> ObterDetalhe(string cadastro, Guid id, CancellationToken cancellationToken)
+    {
+        CadastroDaProtecaoDoCatalogo origem = string.Equals(cadastro, "fatos", StringComparison.OrdinalIgnoreCase) ? CadastroDaProtecaoDoCatalogo.Fato : CadastroDaProtecaoDoCatalogo.TipoDocumento;
+
+        DetalheDaProtecaoDoCatalogoDto? detalhe = await _queryBus
+            .Send(new ObterDetalheDaProtecaoDoCatalogoQuery(origem, id), cancellationToken)
+            .ConfigureAwait(false);
+
+        return detalhe is null ? NotFound() : Ok(detalhe);
+    }
+
+    /// <summary>
     /// Envia à proteção de dados, de uma vez, todos os tipos de documento e fatos pendentes dos cadastros que quem
     /// envia pode manter, e avisa por e-mail quem tem a permissão de aprovar. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
