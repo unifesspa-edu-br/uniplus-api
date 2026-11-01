@@ -25,7 +25,7 @@ public sealed class PortaDeProjecaoDaSelecaoTests
     [InlineData(NaturezaDoItem.Arquivo, ClassificacaoDeProtecao.Identificador, "selecao:documentos-identificadores:consultar")]
     [InlineData(NaturezaDoItem.Arquivo, ClassificacaoDeProtecao.Sensivel, "selecao:documentos-sensiveis:consultar")]
     public void Requisito_ParDoCatalogo_ResponderAPermissao(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao, string codigo) =>
-        PortaDeProjecaoDaSelecao.Instancia.Requisito(natureza, classificacao)!.Permissao.Should().Be(codigo);
+        new PortaDePermissaoPorPar<PermissaoSelecao>().Requisito(natureza, classificacao)!.Permissao.Should().Be(codigo);
 
     [Fact(DisplayName = "O acesso ao resource é interno, não libera item e a revelação de CPF não existe mais como permissão própria")]
     public void Catalogo_AcessoAoResourceNaoLiberaItem()

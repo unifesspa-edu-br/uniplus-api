@@ -15,6 +15,18 @@ public static class ProcessoSeletivoErrorCodes
     /// <summary>A pessoa tem a permissão, mas está inscrita no processo e não pode atuar nele; responde 403.</summary>
     public const string ImpedidoPorInscricaoNoProcesso = "ProcessoSeletivo.ImpedidoPorInscricaoNoProcesso";
 
+    /// <summary>O tipo de documento do vínculo aguarda a aprovação da proteção de dados e não aceita vínculo novo.</summary>
+    public const string TipoDocumentoNoVinculoComProtecaoPendente = "DocumentoExigido.TipoDocumentoComProtecaoPendente";
+
+    /// <summary>O tipo de documento do processo aguarda a aprovação da proteção de dados na publicação.</summary>
+    public const string TipoDocumentoComProtecaoPendente = "ProcessoSeletivo.TipoDocumentoComProtecaoPendente";
+
+    /// <summary>O fato do processo aguarda a aprovação da proteção de dados na publicação.</summary>
+    public const string FatoComProtecaoPendente = "ProcessoSeletivo.FatoComProtecaoPendente";
+
+    /// <summary>O tipo de documento do vínculo não existe mais no cadastro.</summary>
+    public const string TipoDocumentoDoVinculoNaoEncontrado = "DocumentoExigido.TipoDocumentoNaoEncontrado";
+
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
 
     public const string IdentificadorLegivelTamanho = "ProcessoSeletivo.IdentificadorLegivelTamanho";

@@ -47,6 +47,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
     public static async Task<Result<AcessoArquivoDoCandidatoDto>> Handle(
         ObterAcessoAoDocumentoDaInscricaoQuery query,
         IVerificadorDeAcesso verificador,
+        IPortaDePermissaoPorPar porta,
         IProcessoSeletivoRepository processoRepository,
         IInscricaoRepository inscricaoRepository,
         IDocumentoDaInscricaoRepository documentoRepository,
@@ -59,6 +60,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(porta);
         ArgumentNullException.ThrowIfNull(processoRepository);
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(documentoRepository);
@@ -80,7 +82,7 @@ public static partial class ObterAcessoAoDocumentoDaInscricaoQueryHandler
                 arquivo, conferido.Inscricao, processoRepository, documentoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
 
-        if (PortaDeProjecaoDaSelecao.Instancia.Requisito(NaturezaDoItem.Arquivo, classificacao) is not { } requisito)
+        if (porta.Requisito(NaturezaDoItem.Arquivo, classificacao) is not { } requisito)
         {
             return Result<AcessoArquivoDoCandidatoDto>.Failure(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
         }

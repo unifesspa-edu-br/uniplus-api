@@ -76,13 +76,6 @@ public static class ValoresCanonicos
     /// (<c>publico</c>, <c>interno</c>, <c>pessoal</c>, <c>identificador</c>, <c>sensivel</c>),
     /// que é o mesmo do campo <c>sensibilidade</c> do catálogo de permissões (ADR-0151).
     /// </summary>
-    public static string De(ClassificacaoDeProtecao sensibilidade) => sensibilidade switch
-    {
-        ClassificacaoDeProtecao.Publico => "publico",
-        ClassificacaoDeProtecao.Interno => "interno",
-        ClassificacaoDeProtecao.Pessoal => "pessoal",
-        ClassificacaoDeProtecao.Identificador => "identificador",
-        ClassificacaoDeProtecao.Sensivel => "sensivel",
-        _ => throw new InvalidEnumArgumentException(nameof(sensibilidade), (int)sensibilidade, typeof(ClassificacaoDeProtecao)),
-    };
+    public static string De(ClassificacaoDeProtecao sensibilidade) =>
+        ClassificacoesDeProtecao.ParaTokenCanonico(sensibilidade).ToLowerInvariant();
 }

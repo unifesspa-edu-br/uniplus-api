@@ -375,7 +375,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
 
         return ObterInscricaoAdministrativaQueryHandler.Handle(
             new ObterInscricaoAdministrativaQuery(processoId, inscricaoId),
-            persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao),
+            persona.Verificador, new ProjetorDeItens(persona.Verificador, _requisicao), new PortaDePermissaoPorPar<PermissaoSelecao>(),
             mundo.Processos, mundo.Inscricoes, mundo.Documentos, mundo.Codecs, CancellationToken.None);
     }
 }

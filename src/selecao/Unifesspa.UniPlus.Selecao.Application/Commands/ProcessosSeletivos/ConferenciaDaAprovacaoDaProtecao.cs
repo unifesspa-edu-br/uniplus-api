@@ -5,6 +5,7 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// A publicação e a retificação só congelam proteção que a proteção de dados aprovou (ADR-0153): o tipo de documento
@@ -20,11 +21,6 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 internal static class ConferenciaDaAprovacaoDaProtecao
 {
-    public const string CodigoDoTipoNoVinculo = "DocumentoExigido.TipoDocumentoComProtecaoPendente";
-    public const string CodigoDoTipoNaPublicacao = "ProcessoSeletivo.TipoDocumentoComProtecaoPendente";
-    public const string CodigoDoFatoNaPublicacao = "ProcessoSeletivo.FatoComProtecaoPendente";
-    public const string CodigoDoTipoExcluido = "DocumentoExigido.TipoDocumentoNaoEncontrado";
-
     public static Result Conferir(
         ProcessoSeletivo processo,
         IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos,
@@ -41,13 +37,13 @@ internal static class ConferenciaDaAprovacaoDaProtecao
             if (!tiposVivos.TryGetValue(tipoId, out TipoDocumentoView? tipo))
             {
                 erros.Add(new($"documentosExigidos.{tipoId}", new DomainError(
-                    CodigoDoTipoExcluido,
+                    ProcessoSeletivoErrorCodes.TipoDocumentoDoVinculoNaoEncontrado,
                     $"O tipo de documento {tipoId} exigido pelo processo não existe mais no cadastro; troque a exigência.")));
             }
             else if (!tipo.ProtecaoAprovada)
             {
                 erros.Add(new($"documentosExigidos.{tipo.Codigo}", new DomainError(
-                    CodigoDoTipoNaPublicacao,
+                    ProcessoSeletivoErrorCodes.TipoDocumentoComProtecaoPendente,
                     $"O tipo de documento '{tipo.Codigo}' ({tipo.Nome}) aguarda a aprovação da proteção de dados; "
                     + "falta a aprovação, ou o aceite da recomendação, para publicar.")));
             }
@@ -60,7 +56,7 @@ internal static class ConferenciaDaAprovacaoDaProtecao
             .OrderBy(static f => f.Codigo, StringComparer.Ordinal))
         {
             erros.Add(new($"fatos.{fato.Codigo}", new DomainError(
-                CodigoDoFatoNaPublicacao,
+                ProcessoSeletivoErrorCodes.FatoComProtecaoPendente,
                 $"O fato '{fato.Codigo}' ({fato.Nome}) aguarda a aprovação da proteção de dados; "
                 + "falta a aprovação, ou o aceite da recomendação, para publicar.")));
         }

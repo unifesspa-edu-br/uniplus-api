@@ -6,6 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Services;
 
+using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Selecao.Application.Permissoes;
+
 /// <summary>
 /// Registra os recursos da camada Application do módulo Seleção. CQRS roda
 /// integralmente sobre Wolverine (<c>ICommandBus</c>/<c>IQueryBus</c>) — esta
@@ -26,6 +29,9 @@ public static class SelecaoApplicationServiceRegistration
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
+
+        // A porta lida do catálogo do módulo, para o projetor saber qual permissão atende a cada par.
+        services.AddSingleton<IPortaDePermissaoPorPar, PortaDePermissaoPorPar<PermissaoSelecao>>();
 
         return services;
     }
