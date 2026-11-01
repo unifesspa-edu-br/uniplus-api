@@ -159,6 +159,56 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         corpo.Should().NotContain(PersonasDeTeste.NomeSocialFernandaDrumond).And.NotContain(PersonasDeTeste.FernandaDrumond.Mascarado);
     }
 
+    [Fact(DisplayName = "Detalhe: o arquivo e o dado de cada classe saem pela permissão dela, e cada acesso permitido fica registrado com a inscrição")]
+    public async Task Detalhe_ProjetaPelaPermissaoDaClasse()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_ProjetaPelaPermissaoDaClasse));
+        await ConcederAsync(
+            Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar,
+            PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosPublicosConsultar);
+
+        using HttpResponseMessage resposta = await GetAsync(
+            Diogo, $"/api/selecao/_teste/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        using JsonDocument json = JsonDocument.Parse(corpo);
+        json.RootElement.GetProperty("id").GetGuid().Should().Be(cenario.InscricaoId);
+        json.RootElement.TryGetProperty("numeroInscricao", out _).Should().BeFalse("o número é dado interno");
+        Guid[] arquivos = [.. json.RootElement.GetProperty("arquivos").EnumerateArray().Select(static a => a.GetProperty("arquivoId").GetGuid())];
+        arquivos.Should().Contain([cenario.ArquivoPessoal, cenario.ArquivoPublico])
+            .And.NotContain([cenario.ArquivoSensivel, cenario.ArquivoInterno, cenario.ArquivoIdentificador]);
+        corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.NomeFernandaDrumond);
+
+        string[] registradas = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.ProcessoId == cenario.ProcessoId && r.InscricaoId == cenario.InscricaoId && r.AtorSubject == Diogo)
+            .Select(static r => r.Permissao)];
+        registradas.Should().Contain([PermissaoSelecao.InscricoesConsultar.Codigo, PermissaoSelecao.DocumentosPessoaisConsultar.Codigo])
+            .And.NotContain(PermissaoSelecao.DocumentosSensiveisConsultar.Codigo, "a negativa do projetor é omissão silenciosa");
+    }
+
+    [Fact(DisplayName = "Detalhe: com dados pessoais o CPF de Fernanda sai mascarado, com o componente cpf, e nunca em claro")]
+    public async Task Detalhe_CpfSaiMascaradoComOComponente()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_CpfSaiMascaradoComOComponente));
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        using HttpResponseMessage resposta = await GetAsync(
+            Leandro, $"/api/selecao/_teste/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        using JsonDocument json = JsonDocument.Parse(corpo);
+        JsonElement cpf = json.RootElement.GetProperty("secoes").EnumerateArray()
+            .SelectMany(static s => s.GetProperty("itens").EnumerateArray())
+            .Single(static i => i.GetProperty("fatoCodigo").GetString() == "CPF");
+        cpf.GetProperty("componente").GetString().Should().Be("cpf");
+        cpf.GetProperty("valor").GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        cpf.GetProperty("podeRevelar").GetBoolean().Should().BeFalse();
+        cpf.GetProperty("descricao").GetString().Should().NotBeNullOrWhiteSpace();
+        corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.FernandaDrumond.Formatado);
+    }
+
     private IReadOnlyList<RegistroDecisaoAcesso> RegistrosDeDados(Guid processoId, PermissaoSelecao permissao) =>
         [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.ProcessoId == processoId && r.Permissao == permissao.Codigo && r.ResourceId is not null)];

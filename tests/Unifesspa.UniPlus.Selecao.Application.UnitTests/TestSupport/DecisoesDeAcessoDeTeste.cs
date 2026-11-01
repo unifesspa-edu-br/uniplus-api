@@ -28,6 +28,9 @@ internal sealed class DecisoesDeAcessoDeTeste
         Verificador.VerificarAsync(default!, default, default)
             .ReturnsForAnyArgs(chamada => Task.FromResult(
                 Decidir(chamada.ArgAt<PermissionRequirement>(0), chamada.ArgAt<ResourceContext?>(1)!).Resultado));
+        Verificador.PodeAsync(default!, default, default)
+            .ReturnsForAnyArgs(chamada => Task.FromResult(
+                _concedidas.Contains(chamada.ArgAt<PermissionRequirement>(0).Permissao) ? ResultadoDoAcesso.Permitido : ResultadoDoAcesso.Negado));
     }
 
     public string Persona { get; }
