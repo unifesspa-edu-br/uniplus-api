@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Email;
 
+using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 
 using DotNet.Testcontainers.Builders;
@@ -7,12 +8,14 @@ using DotNet.Testcontainers.Containers;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -78,6 +81,9 @@ public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
         set => Volatile.Write(ref _falhas, value);
     }
 
+    /// <summary>Falha no commit da transação do <c>ConfiguracaoDbContext</c> que alterou uma entidade, depois do outbox.</summary>
+    public FalhaNoCommitDaSolicitacao FalhaNoCommit { get; } = new();
+
     protected override IEnumerable<KeyValuePair<string, string?>> OverridesAdicionais() =>
     [
         new("Email:Smtp:Host", _hostSmtp),
@@ -94,6 +100,7 @@ public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
 
         builder.ConfigureTestServices(services =>
         {
+            services.ConfigureDbContext<ConfiguracaoDbContext>(opcoes => opcoes.AddInterceptors(FalhaNoCommit));
             services.RemoveAll<ITransporteDeEmail>();
             services.AddSingleton<ITransporteDeEmail>(sp => new TransporteQueFalhaAntes(
                 new SmtpTransporteDeEmail(
@@ -131,5 +138,60 @@ public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
 
             return real.EnviarAsync(mensagem, cancellationToken);
         }
+    }
+}
+
+/// <summary>
+/// Faz a transação que alterou uma entidade falhar no commit, uma vez, quando armada. O Wolverine grava o envelope do aviso
+/// no outbox depois que o handler retorna e antes do commit, na mesma transação; por isso a falha é lançada no commit, e
+/// antes de lançar ela conta, na mesma conexão e transação, os envelopes de e-mail já gravados.
+/// </summary>
+public sealed class FalhaNoCommitDaSolicitacao : SaveChangesInterceptor, IDbTransactionInterceptor
+{
+    private int _armada;
+    private int _disparos;
+    private int _envelopesNaTransacao;
+    private bool _alterouEntidade;
+
+    /// <summary>Quantas vezes a falha foi disparada.</summary>
+    public int Disparos => Volatile.Read(ref _disparos);
+
+    /// <summary>Envelopes de e-mail visíveis na transação no instante da falha: a prova de que o aviso entrou nela.</summary>
+    public int EnvelopesNaTransacao => Volatile.Read(ref _envelopesNaTransacao);
+
+    /// <summary>Arma a falha para o próximo commit de uma transação que alterou uma entidade existente.</summary>
+    public void Armar() => Volatile.Write(ref _armada, 1);
+
+    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+        DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(eventData);
+
+        if (eventData.Context!.ChangeTracker.Entries().Any(static e => e.State is Microsoft.EntityFrameworkCore.EntityState.Modified))
+        {
+            _alterouEntidade = true;
+        }
+
+        return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    async ValueTask<InterceptionResult> IDbTransactionInterceptor.TransactionCommittingAsync(
+        DbTransaction transaction, TransactionEventData eventData, InterceptionResult result, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(transaction);
+
+        if (_alterouEntidade && Interlocked.CompareExchange(ref _armada, 0, 1) == 1)
+        {
+            await using DbCommand contagem = transaction.Connection!.CreateCommand();
+            contagem.Transaction = transaction;
+            contagem.CommandText = "SELECT count(*) FROM wolverine.wolverine_outgoing_envelopes WHERE message_type ILIKE '%email%'";
+            Volatile.Write(ref _envelopesNaTransacao, Convert.ToInt32(await contagem.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture));
+            Interlocked.Increment(ref _disparos);
+            _alterouEntidade = false;
+
+            throw new InvalidOperationException("Falha no commit (simulada).");
+        }
+
+        return result;
     }
 }

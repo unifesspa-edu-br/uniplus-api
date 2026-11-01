@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.API;
 
 using System.Diagnostics.CodeAnalysis;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
@@ -49,5 +50,12 @@ public static class ConfiguracaoCodegenRegistration
         // leitores que a Seleção usa, também internal.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITermoConsentimentoReader>();
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoProcessoReader>();
+
+        // O verificador de acesso e a leitura dos titulares usam o AutorizacaoDbContext. Com service location e
+        // implementações internas, o detector de transação do Wolverine não percorre as dependências até esse segundo
+        // contexto, e o handler que decide o acesso fica com um único contexto transacional, o da Configuração (ADR-0098).
+        // Uma implementação pública seria percorrida e reintroduziria a ambiguidade de DbContext.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IVerificadorDeAcesso>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITitularesDaPermissao>();
     }
 }

@@ -76,5 +76,5 @@ public sealed class ListarProtecaoDoCatalogoQueryHandlerTests
 
     private Task<Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>>> ListarAsync(string? situacao, params PermissaoConfiguracao[] permissoes) =>
         ListarProtecaoDoCatalogoQueryHandler.Handle(
-            new ListarProtecaoDoCatalogoQuery(AcessoCom(permissoes), situacao), _tipos, _fatos, CancellationToken.None);
+            new ListarProtecaoDoCatalogoQuery(situacao), _tipos, _fatos, VerificadorCom(permissoes), CancellationToken.None);
 }

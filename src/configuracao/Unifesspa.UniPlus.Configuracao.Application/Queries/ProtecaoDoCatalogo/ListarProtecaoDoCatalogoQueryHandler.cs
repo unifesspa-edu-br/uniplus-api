@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Queries.ProtecaoDoCatalogo;
 
-using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -19,9 +20,11 @@ public static class ListarProtecaoDoCatalogoQueryHandler
         ListarProtecaoDoCatalogoQuery query,
         ITipoDocumentoRepository tipos,
         IFatoCandidatoRepository fatos,
+        IVerificadorDeAcesso verificador,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(tipos);
         ArgumentNullException.ThrowIfNull(fatos);
 
@@ -38,7 +41,13 @@ public static class ListarProtecaoDoCatalogoQueryHandler
             situacao = analisada;
         }
 
-        AcessoAoCatalogoDeProtecao acesso = query.Acesso;
+        Result<AcessoAoCatalogoDeProtecao> decidido = await AcessoAoCatalogoDeProtecao.VerificarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        if (decidido.IsFailure)
+        {
+            return Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>>.Failure(decidido.Error!);
+        }
+
+        AcessoAoCatalogoDeProtecao acesso = decidido.Value;
         if (!acesso.Algum)
         {
             return Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>>.Failure(AcessoAoCatalogoDeProtecao.SemPermissao);

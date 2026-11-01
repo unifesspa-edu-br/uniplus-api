@@ -7,6 +7,8 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
@@ -54,7 +56,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato(fato);
 
         (Result<SolicitacaoDaProtecaoDto> resposta, IEnumerable<object> mensagens) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter),
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter),
             new[] { Caroline, "leandro.viana@unifesspa.edu.br" }, Tipo(laudo), Tipo(comprovante), Fato(fato));
 
         resposta.Value.Should().Be(new SolicitacaoDaProtecaoDto(2, 1));
@@ -72,7 +74,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeTipo(laudo);
         PendentesDeFato();
 
-        (_, IEnumerable<object> mensagens) = await EnviarAsync(AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo));
+        (_, IEnumerable<object> mensagens) = await EnviarAsync(VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo));
 
         EnviarEmail email = mensagens.Should().ContainSingle().Which.Should().BeOfType<EnviarEmail>().Subject;
         email.CorpoTexto.Should().Contain("1 tipo de documento").And.NotContain(Isabella).And.NotContain("Laudo");
@@ -89,7 +91,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato(fato);
 
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter), new[] { Caroline }, Tipo(laudo));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter), new[] { Caroline }, Tipo(laudo));
 
         resposta.Value.Should().Be(new SolicitacaoDaProtecaoDto(1, 0));
         laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
@@ -105,7 +107,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeTipo(laudo);
 
         (Result<SolicitacaoDaProtecaoDto> resposta, IEnumerable<object> mensagens) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo), Tipo(laudo));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo), Tipo(laudo));
 
         resposta.Value.Should().Be(new SolicitacaoDaProtecaoDto(1, 0));
         mensagens.Should().ContainSingle();
@@ -118,7 +120,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         FatoCandidato fato = NovoFato();
 
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo), Fato(fato));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo), Fato(fato));
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo);
         await _tipos.DidNotReceiveWithAnyArgs().ListarPendentesPorIdAsync(default!, default);
@@ -129,7 +131,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     public async Task Handle_ListaVazia_Recusa()
     {
         (Result<SolicitacaoDaProtecaoDto> resposta, IEnumerable<object> mensagens) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline });
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline });
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SolicitacaoSemItem);
         mensagens.Should().BeEmpty();
@@ -140,7 +142,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     public async Task Handle_ItemNulo_RecusaNoCampo()
     {
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto?[] { null });
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto?[] { null });
 
         resposta.Errors.Should().ContainSingle(e => e.Field == "itens[0]")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);
@@ -154,7 +156,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeTipo(laudo);
 
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto(" TIPO_DOCUMENTO ", laudo.Id));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto(" TIPO_DOCUMENTO ", laudo.Id));
 
         resposta.Value.Should().Be(new SolicitacaoDaProtecaoDto(1, 0));
         await _tipos.Received(1).ListarPendentesPorIdAsync(
@@ -165,7 +167,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     public async Task Handle_ItemSemId_RecusaNoCampo()
     {
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline },
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline },
             new ItemParaSolicitarDto("TIPO_DOCUMENTO", Guid.NewGuid()), new ItemParaSolicitarDto("TIPO_DOCUMENTO", Guid.Empty));
 
         resposta.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
@@ -177,7 +179,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     public async Task Handle_CadastroInvalido_RecusaNoCampo()
     {
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto("MODALIDADE", Guid.NewGuid()));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, new ItemParaSolicitarDto("MODALIDADE", Guid.NewGuid()));
 
         resposta.Errors.Should().ContainSingle(e => e.Field == "itens[0].cadastro")
             .Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.CadastroInvalido);
@@ -187,7 +189,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     public async Task Handle_SemPermissao_Recusa()
     {
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar), new[] { Caroline });
+            VerificadorCom(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar), new[] { Caroline });
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -202,7 +204,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeTipo(pendente);
 
         (Result<SolicitacaoDaProtecaoDto> resposta, IEnumerable<object> mensagens) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline },
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline },
             Tipo(pendente), Tipo(jaSolicitado), new ItemParaSolicitarDto("TIPO_DOCUMENTO", Guid.NewGuid()));
 
         resposta.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -223,7 +225,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato();
 
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), Array.Empty<string>(), Tipo(laudo));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), Array.Empty<string>(), Tipo(laudo));
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemQuemAprove);
         laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
@@ -238,7 +240,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato();
 
         (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { "sem-arroba", " " }, Tipo(laudo));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { "sem-arroba", " " }, Tipo(laudo));
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemQuemAprove);
         laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
@@ -255,7 +257,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato();
 
         (Result<SolicitacaoDaProtecaoDto> resposta, IEnumerable<object> mensagens) = await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(pendente), Tipo(jaSolicitado));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(pendente), Tipo(jaSolicitado));
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
         mensagens.Should().BeEmpty();
@@ -273,7 +275,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato(fato);
 
         await EnviarAsync(
-            AcessoCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter),
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter),
             new[] { Caroline }, Tipo(laudo), Tipo(comprovante), Fato(fato));
 
         IEnumerable<AtoDaProtecaoDoCatalogo> registrados = _atos.ReceivedCalls()
@@ -303,15 +305,33 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         jaSolicitado.SolicitarAprovacaoDaProtecao(Isabella, Agora);
         PendentesDeTipo(pendente, jaSolicitado);
 
-        await EnviarAsync(AcessoCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(pendente), Tipo(jaSolicitado));
+        await EnviarAsync(VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(pendente), Tipo(jaSolicitado));
 
         _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
     }
 
+    [Fact(DisplayName = "Sem sujeito no token, o próprio handler recusa com identidade incompleta, sem ler nem gravar")]
+    public async Task Handle_SemSujeito_RecusaComIdentidadeIncompleta()
+    {
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.AvaliarAsync(default!, default, default).ReturnsForAnyArgs(SemSujeito.Instancia);
+
+        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(verificador, new[] { Caroline }, new ItemParaSolicitarDto("TIPO_DOCUMENTO", Guid.NewGuid()));
+
+        resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.IdentidadeIncompleta);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
     private Task<(Result<SolicitacaoDaProtecaoDto> Resposta, IEnumerable<object> Mensagens)> EnviarAsync(
-        AcessoAoCatalogoDeProtecao acesso,
+        IVerificadorDeAcesso verificador,
         IReadOnlyList<string> destinatarios,
-        params ItemParaSolicitarDto?[] itens) =>
-        SolicitarAprovacaoDaProtecaoCommandHandler.Handle(
-            new SolicitarAprovacaoDaProtecaoCommand(acesso, destinatarios, itens), _tipos, _fatos, _atos, _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
+        params ItemParaSolicitarDto?[] itens)
+    {
+        ITitularesDaPermissao titulares = Substitute.For<ITitularesDaPermissao>();
+        titulares.ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, Arg.Any<CancellationToken>()).Returns(destinatarios);
+
+        return SolicitarAprovacaoDaProtecaoCommandHandler.Handle(
+            new SolicitarAprovacaoDaProtecaoCommand(itens), _tipos, _fatos, _atos, _unitOfWork, verificador, titulares, UsuarioIsabella(), Relogio(),
+            CancellationToken.None);
+    }
 }
