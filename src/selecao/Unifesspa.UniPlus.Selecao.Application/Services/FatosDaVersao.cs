@@ -13,13 +13,15 @@ internal sealed record GrupoDoProcesso(
 internal sealed record CampoIdentificador(string FatoCodigo, string? GrupoCodigo, bool EhCpf);
 
 /// <summary>
-/// Os fatos da inscrição como a versão do processo os congelou: os coletados (fora e dentro de grupo) e os derivados.
+/// Os fatos da inscrição como a versão do processo os congelou: os coletados (fora e dentro de grupo) e os derivados,
+/// e o título que cada seção do formulário de inscrição tem na versão.
 /// Lê só o envelope congelado, nunca o catálogo vivo (a Seleção congela por cópia na publicação).
 /// </summary>
 internal sealed record FatosDaVersao(
     IReadOnlyDictionary<string, FatoDoProcesso> Coletados,
     IReadOnlyList<GrupoDoProcesso> Grupos,
-    IReadOnlyDictionary<string, FatoDoProcesso> Derivados)
+    IReadOnlyDictionary<string, FatoDoProcesso> Derivados,
+    IReadOnlyDictionary<string, string> TitulosDasSecoes)
 {
     /// <summary>Extrai os fatos da finalidade Inscrição do envelope reidratado.</summary>
     public static FatosDaVersao De(EnvelopeReidratado envelope)
@@ -74,7 +76,12 @@ internal sealed record FatosDaVersao(
             d => Derivado(d.Value, envelope),
             StringComparer.Ordinal);
 
-        return new FatosDaVersao(coletados, grupos, derivados);
+        Dictionary<string, string> titulos = envelope.Grafo.Formularios
+            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
+            .SelectMany(static f => f.Etapas)
+            .ToDictionary(static e => e.Codigo, static e => e.Titulo, StringComparer.Ordinal);
+
+        return new FatosDaVersao(coletados, grupos, derivados, titulos);
     }
 
     /// <summary>

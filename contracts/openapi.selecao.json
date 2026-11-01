@@ -22361,6 +22361,12 @@
           "codigo": {
             "type": "string"
           },
+          "titulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "itens": {
             "type": "array",
             "items": {

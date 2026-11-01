@@ -122,7 +122,8 @@ internal sealed class InscricaoAdministrativaDeTeste
         GrafoConfiguracao grafo = new(
             [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
             [.. processo.CriteriosDesempate], processo.Classificacao!, [], _exigencias, [], null,
-            fatosColetados: _fatos, gruposColetados: _grupos, numeroDeOpcoesDeCurso: 1);
+            fatosColetados: _fatos, gruposColetados: _grupos, numeroDeOpcoesDeCurso: 1,
+            formularios: [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!]);
         EnvelopeReidratado envelope = new(
             grafo, DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null, fatosDerivadosCongelados: _derivados);

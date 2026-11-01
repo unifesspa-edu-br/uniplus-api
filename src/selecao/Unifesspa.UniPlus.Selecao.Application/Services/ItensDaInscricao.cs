@@ -66,6 +66,7 @@ internal static class ItensDaInscricao
                         .Concat(grupos.Where(g => g.Secao == secao).Select(static g => g.Ordem)).Min(),
                     Dto: new SecaoDaInscricaoDto(
                         secao,
+                        fatos.TitulosDasSecoes.GetValueOrDefault(secao),
                         [.. itens.Where(i => i.Secao == secao).OrderBy(static i => i.Ordem).Select(static i => i.Item)],
                         [.. grupos.Where(g => g.Secao == secao).OrderBy(static g => g.Ordem).Select(static g => g.Grupo)])))
                 .OrderBy(static s => s.Ordem)
@@ -102,6 +103,7 @@ internal static class ItensDaInscricao
             .. secoes
                 .Select(s => new SecaoDaInscricaoDto(
                     s.Codigo,
+                    s.Titulo,
                     [.. s.Itens.Where(decisoes.Permite)],
                     [.. s.Grupos
                         .Select(g => new GrupoDaInscricaoDto(

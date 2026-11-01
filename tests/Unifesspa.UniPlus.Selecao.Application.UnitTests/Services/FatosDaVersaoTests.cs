@@ -14,7 +14,8 @@ public sealed class FatosDaVersaoTests
         FatosDaVersao fatos = new(
             new Dictionary<string, FatoDoProcesso>(),
             [Grupo("COMPOSICAO_FAMILIAR", Fato("RG_NUMERO", ClassificacaoDeProtecao.Identificador)), Grupo("RESPONSAVEIS", Fato("RG_NUMERO", ClassificacaoDeProtecao.Identificador))],
-            new Dictionary<string, FatoDoProcesso>());
+            new Dictionary<string, FatoDoProcesso>(),
+            new Dictionary<string, string>());
 
         fatos.Identificadores("RG_NUMERO", emGrupo: true).Select(static c => c.GrupoCodigo).Should().Equal("COMPOSICAO_FAMILIAR", "RESPONSAVEIS");
     }
@@ -25,7 +26,8 @@ public sealed class FatosDaVersaoTests
         FatosDaVersao fatos = new(
             new Dictionary<string, FatoDoProcesso> { ["RG_NUMERO"] = Fato("RG_NUMERO", ClassificacaoDeProtecao.Identificador) },
             [Grupo("COMPOSICAO_FAMILIAR", Fato("RG_NUMERO", ClassificacaoDeProtecao.Identificador))],
-            new Dictionary<string, FatoDoProcesso>());
+            new Dictionary<string, FatoDoProcesso>(),
+            new Dictionary<string, string>());
 
         fatos.Identificadores("RG_NUMERO", emGrupo: true).Select(static c => c.GrupoCodigo).Should().Equal("COMPOSICAO_FAMILIAR");
         fatos.Identificadores("RG_NUMERO", emGrupo: false).Select(static c => c.GrupoCodigo).Should().Equal((string?)null);
@@ -37,7 +39,8 @@ public sealed class FatosDaVersaoTests
         FatosDaVersao fatos = new(
             new Dictionary<string, FatoDoProcesso> { ["NOME"] = Fato("NOME", ClassificacaoDeProtecao.Pessoal) },
             [],
-            new Dictionary<string, FatoDoProcesso>());
+            new Dictionary<string, FatoDoProcesso>(),
+            new Dictionary<string, string>());
 
         fatos.Identificadores("NOME", emGrupo: false).Should().BeEmpty();
     }
@@ -60,7 +63,8 @@ public sealed class FatosDaVersaoTests
     private static FatosDaVersao Nomes(params (string Codigo, ClassificacaoDeProtecao Classificacao)[] nomes) => new(
         nomes.ToDictionary(static n => n.Codigo, static n => Fato(n.Codigo, n.Classificacao)),
         [],
-        new Dictionary<string, FatoDoProcesso>());
+        new Dictionary<string, FatoDoProcesso>(),
+        new Dictionary<string, string>());
 
     private static GrupoDoProcesso Grupo(string codigo, FatoDoProcesso membro) =>
         new(codigo, codigo, null, 0, new Dictionary<string, FatoDoProcesso> { [membro.Codigo] = membro });
