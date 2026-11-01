@@ -112,7 +112,7 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
             AuthorizationDecision decisao = await _decisao.DecidirSemRegistrarAsync(
                 sujeito, permissao, resource, contexto!, cancellationToken).ConfigureAwait(false);
             RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(sujeito, permissao, resource, contexto!, decisao);
-            resultado = Desfecho(decisao);
+            resultado = decisao.Resultado;
 
             if (decisao.Allowed)
             {
@@ -169,8 +169,8 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
             return desfecho;
         }
 
-        return Desfecho(await _decisao.DecidirSemRegistrarAsync(
-            sujeito!, permissao, resource ?? ResourceDaPropriaOperacao(permissao), contexto!, cancellationToken).ConfigureAwait(false));
+        return (await _decisao.DecidirSemRegistrarAsync(
+            sujeito!, permissao, resource ?? ResourceDaPropriaOperacao(permissao), contexto!, cancellationToken).ConfigureAwait(false)).Resultado;
     }
 
     /// <inheritdoc />
@@ -194,7 +194,7 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
             sujeito!, permissao, alvo, contexto!, cancellationToken).ConfigureAwait(false);
 
         return DecisaoDeAcesso.Tomada(
-            Desfecho(decisao),
+            decisao.Resultado,
             RegistroDecisaoAcesso.De(sujeito!, permissao, alvo, contexto!, decisao));
     }
 
@@ -277,19 +277,7 @@ public sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
         AuthorizationDecision decisao = await _decisao.DecideAsync(
             sujeito, permissao, resource, contexto, cancellationToken).ConfigureAwait(false);
 
-        return Desfecho(decisao);
-    }
-
-    private static ResultadoDoAcesso Desfecho(AuthorizationDecision decisao)
-    {
-        if (decisao.Allowed)
-        {
-            return ResultadoDoAcesso.Permitido;
-        }
-
-        return decisao.DenyReason!.Codigo == MotivoNegativa.ImpedidoPorInscricaoNoProcesso
-            ? ResultadoDoAcesso.Impedido
-            : ResultadoDoAcesso.Negado;
+        return decisao.Resultado;
     }
 
     // Sem resource informado, o alvo é a própria operação: o tipo é `operacao` e a

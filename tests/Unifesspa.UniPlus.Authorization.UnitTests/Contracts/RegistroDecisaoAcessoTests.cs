@@ -11,6 +11,8 @@ using static Unifesspa.UniPlus.Authorization.UnitTests.Decisao.CenariosDeDecisao
 
 public sealed class RegistroDecisaoAcessoTests
 {
+    private static readonly System.Text.Json.JsonSerializerOptions Json = new(System.Text.Json.JsonSerializerDefaults.Web);
+
     [Fact(DisplayName = "Uma decisão permitida gera um registro por inscrição, com a permissão e a sensibilidade da origem")]
     public void ParaCadaResource_GeraUmRegistroPorId()
     {
@@ -115,6 +117,24 @@ public sealed class RegistroDecisaoAcessoTests
         Action acao = () => negada.ParaCadaResource("inscricao", [Guid.CreateVersion7()]);
 
         acao.Should().Throw<InvalidOperationException>();
+    }
+
+    [Theory(DisplayName = "O registro grava o resultado no valor canônico; o impedimento por inscrição é impedido, e não negado")]
+    [InlineData(null, "permitido")]
+    [InlineData(Authorization.Enums.MotivoNegativa.SemConcessaoAplicavel, "negado")]
+    [InlineData(Authorization.Enums.MotivoNegativa.ImpedidoPorInscricaoNoProcesso, "impedido")]
+    public void De_ResultadoSerializaNoValorCanonico(Authorization.Enums.MotivoNegativa? motivo, string esperado)
+    {
+        AuthorizationDecision decisao = motivo is { } negativa
+            ? AuthorizationDecision.Negar(negativa)
+            : AuthorizationDecision.Permitir(Concessao());
+
+        RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(Sujeito(), Requisito(), Resource(), Requisicao(), decisao);
+
+        using System.Text.Json.JsonDocument json = System.Text.Json.JsonDocument.Parse(
+            System.Text.Json.JsonSerializer.Serialize(registro, Json));
+        json.RootElement.GetProperty("resultado").GetString().Should().Be(esperado);
+        registro.Permitido.Should().Be(esperado == "permitido");
     }
 
     [Fact(DisplayName = "O registro da revelação leva o código do fato e a ocorrência")]

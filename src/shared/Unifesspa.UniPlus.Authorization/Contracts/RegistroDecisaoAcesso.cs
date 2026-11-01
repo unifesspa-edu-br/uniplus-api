@@ -98,8 +98,15 @@ public sealed record RegistroDecisaoAcesso
     /// </summary>
     public string? ClienteOidc { get; }
 
-    /// <summary>Veredito da decisão.</summary>
-    public bool Permitido { get; }
+    /// <summary>
+    /// Desfecho da decisão, gravado no valor canônico: <c>permitido</c>, <c>negado</c> ou <c>impedido</c>. O impedido é
+    /// uma negativa com motivo próprio, e quem lê o registro não deve ter de reconhecê-lo pelo texto do motivo.
+    /// </summary>
+    [JsonConverter(typeof(ResultadoDoAcessoCanonicoConverter))]
+    public ResultadoDoAcesso Resultado { get; }
+
+    /// <summary>Veredito da decisão, derivado do <see cref="Resultado"/>.</summary>
+    public bool Permitido => Resultado == ResultadoDoAcesso.Permitido;
 
     /// <summary>Motivo canônico da negativa — presente se, e somente se, negada.</summary>
     public string? MotivoNegativa { get; }
@@ -135,7 +142,7 @@ public sealed record RegistroDecisaoAcesso
         bool exigido,
         string origem,
         string? clienteOidc,
-        bool permitido,
+        ResultadoDoAcesso resultado,
         string? motivoNegativa,
         string? fonteGrant,
         Guid? grantId,
@@ -160,7 +167,7 @@ public sealed record RegistroDecisaoAcesso
         Exigido = exigido;
         Origem = origem;
         ClienteOidc = clienteOidc;
-        Permitido = permitido;
+        Resultado = resultado;
         MotivoNegativa = motivoNegativa;
         FonteGrant = fonteGrant;
         GrantId = grantId;
@@ -208,7 +215,7 @@ public sealed record RegistroDecisaoAcesso
             Exige(requirement, resource),
             ValoresCanonicos.De(request.Origem),
             request.ClienteOidc,
-            decision.Allowed,
+            decision.Resultado,
             decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,
             grant is not null ? ValoresCanonicos.De(grant.Fonte) : null,
             grant?.GrantId,
