@@ -312,13 +312,13 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
     /// <summary>A proteção de dados nega a proteção do tipo e indica a classificação correta.</summary>
     public Result NegarProtecao(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
     {
-        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada);
+        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada, ClassificacaoProtecao, HipoteseLegal);
         return recusa.IsFailure ? recusa : Aprovacao.Negar(recomendada, ator, em);
     }
 
     /// <summary>
     /// O administrador aceita a recomendação da proteção de dados: o tipo passa à classificação
-    /// recomendada e fica aprovado, sem nova solicitação. A hipótese legal precisa caber nela.
+    /// recomendada e fica aprovado, sem nova solicitação. A negativa já recusou a recomendação que a hipótese legal não admite.
     /// </summary>
     public Result AceitarRecomendacaoDaProtecao(string ator, DateTimeOffset em)
     {
@@ -328,12 +328,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
             return Result.Failure(recomendada.Error!);
         }
 
-        if (!HipotesesLegaisTratamento.AdmiteClassificacao(HipoteseLegal, recomendada.Value))
-        {
-            return Result.Failure(AprovacaoDaProtecao.RecomendacaoIncompativelComAHipotese());
-        }
-
-        Result aceita = Aprovacao.AceitarRecomendacao(ator, em);
+        Result aceita = Aprovacao.AceitarRecomendacao(recomendada.Value, ator, em);
         if (aceita.IsSuccess)
         {
             ClassificacaoProtecao = recomendada.Value;
@@ -346,7 +341,7 @@ public sealed class TipoDocumento : SoftDeletableEntity, IAuditableEntity
         (CodigoTipoDocumento Codigo, string Nome, string? Descricao, string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb, string? TipoEquivalente, ProtecaoDeDados Protecao) campos)
     {
         // Só a proteção reinicia o circuito: o nome, a descrição e os demais campos não a alteram.
-        ProtecaoDeDados anterior = new(ClassificacaoProtecao, FinalidadeTratamento, HipoteseLegal);
+        ProtecaoDeDados anterior = Protecao;
 
         Codigo = campos.Codigo;
         Nome = campos.Nome;

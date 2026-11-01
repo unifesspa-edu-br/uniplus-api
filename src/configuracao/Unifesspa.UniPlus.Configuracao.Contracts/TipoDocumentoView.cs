@@ -16,6 +16,10 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <param name="ClassificacaoProtecao">Proteção que o documento exige, na escala única; a exigência a congela.</param>
 /// <param name="FinalidadeTratamento">Finalidade do tratamento do dado que o documento contém.</param>
 /// <param name="HipoteseLegal">Hipótese legal do tratamento (token canônico UPPER_SNAKE; ex.: "CUMPRIMENTO_OBRIGACAO_LEGAL").</param>
+/// <param name="ProtecaoAprovada">
+/// Se a proteção de dados aprovou a classificação, a finalidade e a hipótese legal do tipo (ADR-0153). O tipo sem a
+/// aprovação não aceita vínculo novo numa exigência e bloqueia a publicação e a retificação do processo que o usa.
+/// </param>
 public sealed record TipoDocumentoView(
     Guid Id,
     string Codigo,
@@ -23,4 +27,5 @@ public sealed record TipoDocumentoView(
     string Categoria,
     ClassificacaoDeProtecao ClassificacaoProtecao,
     string FinalidadeTratamento,
-    string HipoteseLegal);
+    string HipoteseLegal,
+    bool ProtecaoAprovada = true);

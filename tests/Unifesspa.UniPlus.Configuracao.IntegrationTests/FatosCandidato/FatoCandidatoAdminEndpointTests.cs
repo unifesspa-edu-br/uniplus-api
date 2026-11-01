@@ -353,7 +353,8 @@ public sealed class FatoCandidatoAdminEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{IdDeCorRaca}/definicao", DefinicaoCategorica()))
+        // A definição do fato de sistema é travada: COR_RACA é categórico, e o domínio não muda pela tela.
+        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{IdDeCorRaca}/definicao", DefinicaoBooleana()))
             .StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{Guid.NewGuid()}/definicao", DefinicaoCategorica()))
             .StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -382,6 +383,17 @@ public sealed class FatoCandidatoAdminEndpointTests
         using JsonDocument fato = await ObterAsync(client, id);
         fato.RootElement.GetProperty("dominio").GetString().Should().Be("BOOLEANO");
     }
+
+    private static object DefinicaoBooleana() => new
+    {
+        dominio = "BOOLEANO",
+        cardinalidade = "ESCALAR",
+        pontoResolucao = "INSCRICAO",
+        escopo = "CANDIDATO",
+        classificacaoProtecao = "SENSIVEL",
+        finalidadeTratamento = "Enquadramento na reserva de vagas.",
+        hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+    };
 
     private static object DefinicaoCategorica() => new
     {

@@ -214,4 +214,12 @@ public enum PermissaoConfiguracao
         "Consulta na área administrativa os tipos de processo seletivo, inclusive o que não está ativo ou publicado.",
         ClassificacaoDeProtecao.Interno)]
     TiposProcessoConsultar = 25,
+
+    /// <summary>Aprovar a proteção de dados do catálogo.</summary>
+    [Permissao(
+        "configuracao:protecao-do-catalogo:aprovar",
+        "Aprovar a proteção de dados do catálogo",
+        "Aprova ou nega a classificação, a finalidade e a hipótese legal de cada tipo de documento e de cada fato do catálogo, e recebe o aviso das solicitações e dos aceites.",
+        ClassificacaoDeProtecao.Interno)]
+    ProtecaoDoCatalogoAprovar = 26,
 }

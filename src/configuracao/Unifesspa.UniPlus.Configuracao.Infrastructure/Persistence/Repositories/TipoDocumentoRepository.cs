@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -54,6 +55,20 @@ public sealed class TipoDocumentoRepository : ITipoDocumentoRepository
         ArgumentNullException.ThrowIfNull(tipo);
         await _dbContext.TiposDocumento.AddAsync(tipo, cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<TipoDocumento>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken) =>
+        await _dbContext.TiposDocumento
+            .Where(t => t.Aprovacao.Situacao == SituacaoDaAprovacao.Pendente)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<TipoDocumento>> ListarSemProtecaoAprovadaAsync(CancellationToken cancellationToken) =>
+        await _dbContext.TiposDocumento
+            .AsNoTracking()
+            .Where(t => t.Aprovacao.Situacao != SituacaoDaAprovacao.Aprovada)
+            .OrderBy(t => t.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
     public void Remover(TipoDocumento tipo)
     {

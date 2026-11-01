@@ -61,6 +61,20 @@ public sealed class FatoCandidatoRepository : IFatoCandidatoRepository
         await _dbContext.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<FatoCandidato>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken) =>
+        await _dbContext.FatosCandidato
+            .Where(f => f.Aprovacao.Situacao == SituacaoDaAprovacao.Pendente)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<FatoCandidato>> ListarSemProtecaoAprovadaAsync(CancellationToken cancellationToken) =>
+        await _dbContext.FatosCandidato
+            .AsNoTracking()
+            .Where(f => f.Aprovacao.Situacao != SituacaoDaAprovacao.Aprovada)
+            .OrderBy(f => f.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public Task TravarRegrasPadraoParaEscritaAsync(CancellationToken cancellationToken) =>
         _dbContext.Database.ExecuteSqlRawAsync(
             "SELECT pg_advisory_xact_lock(hashtext('configuracao.regras_padrao_fato'));",

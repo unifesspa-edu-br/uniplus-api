@@ -89,5 +89,6 @@ internal sealed class TipoDocumentoReader : ITipoDocumentoReader
             t.Categoria,
             t.ClassificacaoProtecao,
             t.FinalidadeTratamento,
-            HipotesesLegaisTratamento.ParaTokenCanonico(t.HipoteseLegal));
+            HipotesesLegaisTratamento.ParaTokenCanonico(t.HipoteseLegal),
+            t.Aprovacao.EstaAprovada);
 }

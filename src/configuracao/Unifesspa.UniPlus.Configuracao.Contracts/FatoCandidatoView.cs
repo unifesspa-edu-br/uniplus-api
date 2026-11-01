@@ -53,6 +53,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// fato coletado e no derivado, como a classificação (ADR-0154).
 /// </param>
 /// <param name="FinalidadeTratamento">Para que o dado é tratado; congelada junto da hipótese legal (ADR-0154).</param>
+/// <param name="ProtecaoAprovada">
+/// Se a proteção de dados aprovou a classificação, a finalidade e a hipótese legal do fato (ADR-0153). O fato sem a
+/// aprovação não aceita vínculo novo no processo e bloqueia a publicação e a retificação do processo que o usa.
+/// </param>
 public sealed record FatoCandidatoView(
     Guid Id,
     string Codigo,
@@ -71,7 +75,8 @@ public sealed record FatoCandidatoView(
     string HipoteseLegal,
     string FinalidadeTratamento,
     string? Formato = null,
-    string Escopo = "CANDIDATO");
+    string Escopo = "CANDIDATO",
+    bool ProtecaoAprovada = true);
 
 /// <summary>
 /// Um valor do conjunto fechado de um <see cref="FatoCandidatoView"/> categórico

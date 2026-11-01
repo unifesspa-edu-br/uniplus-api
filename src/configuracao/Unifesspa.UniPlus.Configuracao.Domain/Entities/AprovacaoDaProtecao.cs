@@ -81,16 +81,21 @@ public sealed class AprovacaoDaProtecao
     internal Result<ClassificacaoDeProtecao> RecomendacaoAAceitar() =>
         Situacao == SituacaoDaAprovacao.Negada && ClassificacaoRecomendada is { } recomendada
             ? Result<ClassificacaoDeProtecao>.Success(recomendada)
-            : Result<ClassificacaoDeProtecao>.Failure(new DomainError(
-                ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
-                "Só o item negado pela proteção de dados tem recomendação a aceitar."));
+            : Result<ClassificacaoDeProtecao>.Failure(SemRecomendacao);
 
-    internal Result AceitarRecomendacao(string ator, DateTimeOffset em)
+    private static readonly DomainError SemRecomendacao = new(
+        ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
+        "Só o item negado pela proteção de dados tem recomendação a aceitar.");
+
+    /// <summary>
+    /// Aprova o item pela recomendação já lida por <see cref="RecomendacaoAAceitar"/>: só a partir de NEGADA, e só
+    /// com a classificação que a negativa indicou.
+    /// </summary>
+    internal Result AceitarRecomendacao(ClassificacaoDeProtecao aplicada, string ator, DateTimeOffset em)
     {
-        Result<ClassificacaoDeProtecao> recomendada = RecomendacaoAAceitar();
-        if (recomendada.IsFailure)
+        if (Situacao != SituacaoDaAprovacao.Negada || ClassificacaoRecomendada != aplicada)
         {
-            return Result.Failure(recomendada.Error!);
+            return Result.Failure(SemRecomendacao);
         }
 
         Situacao = SituacaoDaAprovacao.Aprovada;
@@ -112,17 +117,38 @@ public sealed class AprovacaoDaProtecao
         AceitaPor = null;
     }
 
-    /// <summary>A classificação recomendada pela negativa é obrigatória e pertence à escala.</summary>
-    internal static Result ConferirRecomendacao(ClassificacaoDeProtecao recomendada) =>
-        recomendada != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(recomendada)
-            ? Result.Success()
-            : Result.ValidationFailure([new FieldError("classificacaoRecomendada", new DomainError(
+    /// <summary>
+    /// A classificação recomendada pela negativa é obrigatória, pertence à escala, difere da que o item tem e cabe na
+    /// hipótese legal dele: a recomendação que o aceite não poderia aplicar é recusada na própria negativa, para o
+    /// aceite não ficar sem saída.
+    /// </summary>
+    internal static Result ConferirRecomendacao(
+        ClassificacaoDeProtecao recomendada, ClassificacaoDeProtecao atual, HipoteseLegalTratamento hipoteseLegal)
+    {
+        if (recomendada == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(recomendada))
+        {
+            return Recusa(
                 ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
-                "A negativa exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado."))]);
+                "A negativa exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado.");
+        }
 
-    internal static DomainError RecomendacaoIncompativelComAHipotese() =>
-        new(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal,
-            "A hipótese legal do item não cabe na classificação recomendada: edite o item e envie nova solicitação.");
+        if (recomendada == atual)
+        {
+            return Recusa(
+                ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual,
+                "A classificação recomendada é a que o item já tem: aprove o item, ou recomende a classificação correta.");
+        }
+
+        return HipotesesLegaisTratamento.AdmiteClassificacao(hipoteseLegal, recomendada)
+            ? Result.Success()
+            : Recusa(
+                ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal,
+                "A hipótese legal do item não cabe na classificação recomendada: o administrador não poderia aceitá-la. "
+                + "Recomende uma classificação que a hipótese admita.");
+    }
+
+    private static Result Recusa(string codigo, string mensagem) =>
+        Result.ValidationFailure([new FieldError("classificacaoRecomendada", new DomainError(codigo, mensagem))]);
 
     private void Decidir(string ator, DateTimeOffset em)
     {

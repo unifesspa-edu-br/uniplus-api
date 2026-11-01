@@ -145,7 +145,8 @@ internal sealed class FatoCandidatoReader : IFatoCandidatoReader
             HipotesesLegaisTratamento.ParaTokenCanonico(f.HipoteseLegal),
             f.FinalidadeTratamento,
             f.Formato is { } formato and not FormatoTexto.Nenhum ? FormatosTexto.ParaTokenCanonico(formato) : null,
-            EscoposFato.ParaTokenCanonico(f.Escopo));
+            EscoposFato.ParaTokenCanonico(f.Escopo),
+            f.Aprovacao.EstaAprovada);
     }
 
     private static IReadOnlyList<FatoValorDominioViewItem>? ParaValoresDominioDeclarados(

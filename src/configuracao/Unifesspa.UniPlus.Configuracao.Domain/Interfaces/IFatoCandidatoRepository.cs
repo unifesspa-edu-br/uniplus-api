@@ -24,6 +24,15 @@ public interface IFatoCandidatoRepository
     /// <summary>O catálogo inteiro, com os valores de domínio, sem rastreamento.</summary>
     Task<IReadOnlyList<FatoCandidato>> ListarTodosAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Os fatos pendentes de solicitação (criados ou com a proteção alterada e ainda fora de qualquer
+    /// solicitação), rastreados para a solicitação os enviar.
+    /// </summary>
+    Task<IReadOnlyList<FatoCandidato>> ListarPendentesDeSolicitacaoAsync(CancellationToken cancellationToken);
+
+    /// <summary>Os fatos que ainda não têm a proteção aprovada, sem rastreamento, por código.</summary>
+    Task<IReadOnlyList<FatoCandidato>> ListarSemProtecaoAprovadaAsync(CancellationToken cancellationToken);
+
     /// <summary>Serializa, até o fim da transação, as escritas de regras padrão do catálogo.</summary>
     Task TravarRegrasPadraoParaEscritaAsync(CancellationToken cancellationToken);
 }

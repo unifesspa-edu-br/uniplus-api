@@ -72,4 +72,7 @@ public static class ResourceTiposConfiguracao
 
     /// <summary>Tipo <c>oferta-curso</c>.</summary>
     public const string OfertaCurso = "oferta-curso";
+
+    /// <summary>Tipo <c>protecao-do-catalogo</c>.</summary>
+    public const string ProtecaoDoCatalogo = "protecao-do-catalogo";
 }

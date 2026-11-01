@@ -2144,6 +2144,13 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "uniplus.configuracao.protecao_do_catalogo.sem_permissao",
                 "Sem permissão sobre a proteção de dados do catálogo")),
 
+        new(ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.protecao_do_catalogo.conflito_de_concorrencia",
+                "Um item do catálogo foi alterado concorrentemente",
+                RetryableConflict: true)),
+
         new(TipoDocumentoErrorCodes.ConflitoDeConcorrencia,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
@@ -2151,10 +2158,40 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
                 "O tipo de documento foi alterado concorrentemente",
                 RetryableConflict: true)),
 
+        new(ProtecaoDoCatalogoErrorCodes.ProtecaoConferidaInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.protecao_conferida_invalida",
+                "A decisão exige a proteção conferida, dentro do vocabulário fechado")),
+
+        new(ProtecaoDoCatalogoErrorCodes.ProtecaoMudou,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.protecao_do_catalogo.protecao_mudou",
+                "A proteção do item mudou depois de conferida; releia o item")),
+
+        new(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.recomendacao_igual_a_atual",
+                "A classificação recomendada é a que o item já tem")),
+
         new(ProtecaoDoCatalogoErrorCodes.SituacaoInvalida,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.situacao_invalida",
                 "Situação fora do vocabulário da aprovação da proteção de dados")),
+
+        new(ProtecaoDoCatalogoErrorCodes.CadastroInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.cadastro_invalido",
+                "Cadastro do item fora do vocabulário da aprovação da proteção de dados")),
+
+        new(ProtecaoDoCatalogoErrorCodes.DecisaoInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.decisao_invalida",
+                "Decisão fora do vocabulário da aprovação da proteção de dados")),
     ];
 }

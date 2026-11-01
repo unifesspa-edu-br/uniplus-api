@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Application.Queries.FatosCandidato;
@@ -22,7 +24,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o
 /// catálogo de fatos do candidato (UNI-REQ-0077, UNI-REQ-0143, ADR-0136), e a manutenção pelo
 /// permissão de manter: cadastro de fato declarado e de derivado por regra, edição de
-/// nome e descrição, desativação, valores de domínio e regras padrão do derivado.
+/// nome e descrição, desativação, valores de domínio, regras padrão do derivado e aceite da
+/// recomendação da proteção de dados.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -37,9 +40,11 @@ public sealed class FatosCandidatoController : ControllerBase
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
+    private readonly ITitularesDaPermissao _titulares;
 
-    public FatosCandidatoController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper)
+    public FatosCandidatoController(ICommandBus commandBus, IQueryBus queryBus, IDomainErrorMapper mapper, ITitularesDaPermissao titulares)
     {
+        _titulares = titulares;
         _commandBus = commandBus;
         _queryBus = queryBus;
         _mapper = mapper;
@@ -245,6 +250,29 @@ public sealed class FatosCandidatoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
         return Enviar(new AtualizarFatoCandidatoCommand(id, request.Nome, request.Descricao), cancellationToken);
+    }
+
+    /// <summary>
+    /// Aceita a classificação que a proteção de dados recomendou ao negar o fato, inclusive o de sistema e o
+    /// semeado: o fato fica aprovado com ela, sem nova solicitação, e a proteção de dados é avisada.
+    /// </summary>
+    [HttpPost("admin/fatos-candidato/{id:guid}/aceite-da-recomendacao")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AceitarRecomendacao(Guid id, CancellationToken cancellationToken)
+    {
+        // Os destinatários do aviso vêm do módulo Autorização e são lidos antes do handler, que fica num único DbContext.
+        IReadOnlyList<string> destinatarios = await _titulares
+            .ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, cancellationToken)
+            .ConfigureAwait(false);
+
+        return await Enviar(new AceitarRecomendacaoDoFatoCandidatoCommand(id, destinatarios), cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>

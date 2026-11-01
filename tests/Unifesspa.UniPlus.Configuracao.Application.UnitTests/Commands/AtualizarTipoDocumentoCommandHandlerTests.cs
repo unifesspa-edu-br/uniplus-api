@@ -2,10 +2,14 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -47,6 +51,23 @@ public sealed class AtualizarTipoDocumentoCommandHandlerTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.NaoEncontrado);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "A corrida no índice único do código devolve CodigoJaExiste e descarta o rastreamento, para o save automático não estourar fora do catch")]
+    public async Task Handle_CorridaNoIndiceUnico_TraduzEDescartaRastreamento()
+    {
+        TipoDocumento existente = TipoExistente("CIN");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", "ix_tipo_documento_codigo_vivo")));
+
+        Result resultado = await AtualizarTipoDocumentoCommandHandler.Handle(
+            Comando(existente.Id), _repository, _categoriaRepository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(TipoDocumentoErrorCodes.CodigoJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Trocar para categoria ausente do cadastro é recusado sem persistir")]

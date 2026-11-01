@@ -640,6 +640,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return AlterarProtecaoDoFatoDeSistema(definicao, catalogo);
         }
 
+        ProtecaoDeDados protecaoAnterior = Protecao;
         bool agregado = FatoDeMembroAgregado is not null;
         bool derivado = DerivadoPorRegra;
         List<FieldError> erros = [];
@@ -761,7 +762,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.ValidationFailure(erros);
         }
 
-        if (Protecao != new ProtecaoDeDados(anteriores.Classificacao, anteriores.Finalidade, anteriores.Hipotese))
+        if (Protecao != protecaoAnterior)
         {
             Aprovacao.Reiniciar();
         }
@@ -779,13 +780,46 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// </summary>
     private Result AlterarProtecaoDoFatoDeSistema(DefinicaoDoFato definicao, CatalogoDeFatos catalogo)
     {
+        // O token que o vocabulário não conhece é erro de vocabulário no campo, e não troca de definição travada.
+        List<FieldError> foraDoVocabulario = [];
+        if (definicao.Dominio is { } dominioInformado && !Enum.IsDefined(dominioInformado))
+        {
+            foraDoVocabulario.Add(new("dominio", new DomainError(FatoCandidatoErrorCodes.DominioInvalido, "Domínio do fato fora do vocabulário fechado.")));
+        }
+
+        if (definicao.Cardinalidade is { } cardinalidadeInformada && !Enum.IsDefined(cardinalidadeInformada))
+        {
+            foraDoVocabulario.Add(new("cardinalidade", new DomainError(FatoCandidatoErrorCodes.CardinalidadeInvalida, "Cardinalidade do fato fora do vocabulário fechado.")));
+        }
+
+        if (definicao.Escopo is { } escopoInformado && !Enum.IsDefined(escopoInformado))
+        {
+            foraDoVocabulario.Add(new("escopo", new DomainError(FatoCandidatoErrorCodes.EscopoObrigatorio, "Escopo do fato fora do vocabulário fechado.")));
+        }
+
+        if (definicao.FonteValores is { } fonteInformada && !Enum.IsDefined(fonteInformada))
+        {
+            foraDoVocabulario.Add(new("fonteValores", new DomainError(FatoCandidatoErrorCodes.FonteValoresObrigatoria, "Fonte dos valores do fato fora do vocabulário fechado.")));
+        }
+
+        if (definicao.Formato is { } formatoInformado && !Enum.IsDefined(formatoInformado))
+        {
+            foraDoVocabulario.Add(new("formato", new DomainError(FatoCandidatoErrorCodes.FormatoObrigatorio, "Formato do fato fora do vocabulário fechado.")));
+        }
+
+        if (foraDoVocabulario.Count > 0)
+        {
+            return Result.ValidationFailure(foraDoVocabulario);
+        }
+
         bool tocaNaDefinicao =
             (definicao.Dominio is { } dominio && dominio != Dominio)
             || (definicao.Cardinalidade is { } cardinalidade && cardinalidade != Cardinalidade)
             || (definicao.FonteValores is { } fonte && fonte != FonteValores)
             || (definicao.Formato is { } formato && formato != Formato)
             || (definicao.Escopo is { } escopo && escopo != Escopo)
-            || !string.Equals(definicao.PontoResolucao?.Trim(), PontoResolucao, StringComparison.Ordinal);
+            || (!string.IsNullOrWhiteSpace(definicao.PontoResolucao)
+                && !string.Equals(definicao.PontoResolucao.Trim(), PontoResolucao, StringComparison.Ordinal));
         if (tocaNaDefinicao)
         {
             return Result.Failure(RecusaDaDefinicaoDoFatoDeSistema);
@@ -858,7 +892,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// </summary>
     public Result NegarProtecao(ClassificacaoDeProtecao recomendada, string ator, DateTimeOffset em)
     {
-        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada);
+        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada, ClassificacaoProtecao, HipoteseLegal);
         if (recusa.IsFailure)
         {
             return recusa;
@@ -876,8 +910,9 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     /// <summary>
     /// O administrador aceita a recomendação da proteção de dados: o fato passa à classificação
-    /// recomendada e fica aprovado, sem nova solicitação, inclusive o fato de sistema e o semeado. A
-    /// hipótese legal precisa caber nela, e o que depende do fato precisa continuar valendo.
+    /// recomendada e fica aprovado, sem nova solicitação, inclusive o fato de sistema e o semeado. O
+    /// que depende do fato precisa continuar valendo; a negativa já recusou a recomendação que a
+    /// hipótese legal não admite.
     /// </summary>
     public Result AceitarRecomendacaoDaProtecao(string ator, DateTimeOffset em, CatalogoDeFatos catalogo)
     {
@@ -889,18 +924,13 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.Failure(recomendada.Error!);
         }
 
-        if (!HipotesesLegaisTratamento.AdmiteClassificacao(HipoteseLegal, recomendada.Value))
-        {
-            return Result.Failure(AprovacaoDaProtecao.RecomendacaoIncompativelComAHipotese());
-        }
-
         Result troca = TrocarProtecao(recomendada.Value, FinalidadeTratamento, HipoteseLegal, catalogo);
         if (troca.IsFailure)
         {
             return troca;
         }
 
-        return Aprovacao.AceitarRecomendacao(ator, em);
+        return Aprovacao.AceitarRecomendacao(recomendada.Value, ator, em);
     }
 
     private bool NomeSocialPublico(ClassificacaoDeProtecao classificacao) =>
