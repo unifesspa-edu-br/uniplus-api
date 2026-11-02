@@ -318,10 +318,10 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         jsonDetalhe.RootElement.GetProperty("processo").GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
     }
 
-    [Fact(DisplayName = "Detalhe: quem só pode revelar recebe o item do CPF sem valor e com podeRevelar, e nenhum registro do identificador mascarado")]
-    public async Task Detalhe_SoRevelar_ItemSemValor()
+    [Fact(DisplayName = "Detalhe: quem só pode revelar, sem ver o identificador mascarado, não recebe o item do CPF")]
+    public async Task Detalhe_SoRevelar_SemItemDoCpf()
     {
-        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SoRevelar_ItemSemValor));
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SoRevelar_SemItemDoCpf));
         await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await GetAsync(
@@ -330,20 +330,35 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
-        JsonElement cpf = json.RootElement.GetProperty("secoes").EnumerateArray()
+        json.RootElement.GetProperty("secoes").EnumerateArray()
             .SelectMany(static s => s.GetProperty("itens").EnumerateArray())
-            .Single(static i => i.GetProperty("fatoCodigo").GetString() == "CPF");
-        cpf.TryGetProperty("valor", out _).Should().BeFalse("só o par do identificador libera o valor mascarado");
-        cpf.GetProperty("podeRevelar").GetBoolean().Should().BeTrue();
+            .Should().NotContain(static i => i.GetProperty("fatoCodigo").GetString() == "CPF");
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Mascarado);
-        RegistrosDeDados(cenario.ProcessoId, PermissaoSelecao.DadosIdentificadoresConsultar).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Revelar o CPF só com a permissão de revelar, sem a do identificador mascarado, responde 404, registra só a negativa da classe e não entrega o valor")]
+    public async Task Revelacao_SemAPermissaoDaClasse_404ESoANegativaDaClasse()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_SemAPermissaoDaClasse_404ESoANegativaDaClasse));
+        await ConcederAsync(Betina, cenario.UnidadeId, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Betina, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
+        RegistrosDaRevelacao(cenario, cenario.InscricaoId).Should().BeEmpty("nada foi revelado");
+        _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.AtorSubject == Betina && r.ProcessoId == cenario.ProcessoId && r.InscricaoId == cenario.InscricaoId
+                && r.Permissao == PermissaoSelecao.DadosIdentificadoresConsultar.Codigo)
+            .Should().ContainSingle().Which.Permitido.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Diogo revela o passaporte de Erick: recebe o número, sem cache, e fica registrado que revelou o campo daquela inscrição")]
     public async Task Revelacao_DoPassaporte_RevelaERegistra()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_DoPassaporte_RevelaERegistra));
-        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await SendAsync(
             Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoDeErick, FatoIdentificador), null);
@@ -369,7 +384,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     public async Task Revelacao_DeCampoEmGrupo_PelaOcorrencia()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_DeCampoEmGrupo_PelaOcorrencia));
-        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await SendAsync(
             Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoComGrupo, cenario.FatoDoGrupo, "membro-2"), null);
@@ -392,7 +407,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     public async Task Revelacao_DoCpf_UsaAMesmaOperacao()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_DoCpf_UsaAMesmaOperacao));
-        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await SendAsync(
             Diogo, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
@@ -407,7 +422,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     public async Task Revelacao_SemAPermissao_404ERegistraANegativa()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_SemAPermissao_404ERegistraANegativa));
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
 
         using HttpResponseMessage resposta = await SendAsync(
             Leandro, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
@@ -445,8 +460,8 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_ForaDoAlcance_404));
         Cenario outroProcesso = await SemearCenarioAsync(nameof(Revelacao_ForaDoAlcance_404) + "-outro");
-        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
-        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage outraUnidade = await SendAsync(
             Betina, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);
@@ -471,7 +486,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     public async Task Revelacao_ServidoraInscrita_Impedida()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_ServidoraInscrita_Impedida));
-        await ConcederAsync(Caroline, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await ConcederAsync(Caroline, cenario.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await SendAsync(
             Caroline, HttpMethod.Post, cenario.RotaDaRevelacao(cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf), null);

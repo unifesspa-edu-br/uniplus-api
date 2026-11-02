@@ -26,10 +26,11 @@ using Wolverine.Attributes;
 /// </summary>
 /// <remarks>
 /// A decisão é tomada aqui, e não na borda, para que a inscrição já esteja conferida quando o registro a nomear: a
-/// trilha nunca cita inscrição que não existe. Depois do vínculo, e antes de procurar a resposta, decide a permissão de
-/// revelar identificadores, que independe do acesso às inscrições, e registra os dois resultados, com o código do fato e a
-/// ocorrência pedidos. A resposta só é procurada com a permissão, de modo que a resposta existente e a ausente respondem o
-/// mesmo 404 a quem não a tem. A inscrição que não existe, a de outro processo, a em rascunho, o campo que não é
+/// trilha nunca cita inscrição que não existe. Depois do vínculo, e antes de procurar a resposta, exige a permissão da
+/// classe em que o identificador aparece (a que mostra o valor mascarado) e decide a de revelar identificadores, que
+/// independe do acesso às inscrições. A recusa da classe registra só a negativa, e nada é registrado como revelado. A de
+/// revelar registra os dois resultados, com o código do fato e a ocorrência pedidos. A resposta só é procurada com as duas
+/// permissões, de modo que a resposta existente e a ausente respondem o mesmo 404 a quem não as tem. A inscrição que não existe, a de outro processo, a em rascunho, o campo que não é
 /// identificador e a recusa por falta de permissão respondem o mesmo 404. O valor só é decifrado depois da decisão
 /// permitida, e o log traz quem revelou e qual campo, nunca o valor.
 /// </remarks>
@@ -72,6 +73,19 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
 
         ResourceContext resource = AcessoAoProcesso.ResourceDoCampo(
             conferido.UnidadeId, query.ProcessoSeletivoId, query.InscricaoId, query.FatoCodigo, query.Ocorrencia);
+        DecisaoDeAcesso daClasse = await verificador
+            .AvaliarAsync(PermissaoSelecao.DadosIdentificadoresConsultar.Requisito, resource, cancellationToken)
+            .ConfigureAwait(false);
+        if (daClasse is not DecisaoPermitida)
+        {
+            if (daClasse is DecisaoNegada)
+            {
+                await verificador.RegistrarDesfechoAsync([daClasse], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
+            }
+
+            return Result<CampoReveladoDto>.Failure(AcessoAInscricao.Erro(new Recusada(daClasse.Resultado), CampoNaoEncontrado));
+        }
+
         if (await AcessoAInscricao
             .DecidirAsync(verificador, conferido, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
             .ConfigureAwait(false) is Recusada recusada)

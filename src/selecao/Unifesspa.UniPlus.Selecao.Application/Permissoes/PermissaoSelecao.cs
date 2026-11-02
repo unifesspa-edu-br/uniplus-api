@@ -89,7 +89,7 @@ public enum PermissaoSelecao
     [Permissao(
         "selecao:dados-identificadores:revelar",
         "Revelar documento de identificação da inscrição",
-        "Ver o número completo de um documento de identificação, um candidato por vez, a pedido, com registro do acesso. Independe de ver o número mascarado.",
+        "Ver o número completo de um documento de identificação, um candidato por vez, a pedido, com registro do acesso. Exige também a permissão de ver o número mascarado.",
         ClassificacaoDeProtecao.Identificador,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]

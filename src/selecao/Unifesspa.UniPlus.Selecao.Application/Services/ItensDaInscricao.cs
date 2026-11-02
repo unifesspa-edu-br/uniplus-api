@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// O identificador mantém a classificação própria e carrega só o valor mascarado: a fonte sem a transformação nunca sai.
-/// O valor sai pelo par do identificador, e o item sem valor aparece para quem pode revelá-lo. A resposta ausente ou vazia
+/// O valor sai pelo par do identificador. A resposta ausente ou vazia
 /// não gera item. A classificação que não se resolve vale como sensível.
 /// </remarks>
 internal static class ItensDaInscricao
@@ -96,7 +96,7 @@ internal static class ItensDaInscricao
 
     /// <summary>
     /// Deixa só os itens que a decisão deixa aparecer, sem indício dos omitidos: a seção, o grupo e a ocorrência que ficam
-    /// sem item algum também saem. O item que aparece só pela capacidade perde o valor.
+    /// sem item algum também saem.
     /// </summary>
     public static IReadOnlyList<SecaoDaInscricaoDto> Permitidas(IReadOnlyList<SecaoDaInscricaoDto> secoes, IPermissoesDaProjecao decisoes)
     {

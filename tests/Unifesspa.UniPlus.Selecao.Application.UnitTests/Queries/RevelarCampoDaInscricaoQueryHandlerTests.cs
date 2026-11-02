@@ -22,6 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class RevelarCampoDaInscricaoQueryHandlerTests
 {
     private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
+    private static readonly string CodigoDaClasse = PermissaoSelecao.DadosIdentificadoresConsultar.Codigo;
 
     [Fact(DisplayName = "O fato de formato CPF é revelado formatado")]
     public async Task Revela_Cpf_Formatado()
@@ -69,7 +70,8 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
     {
         InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
         InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
-        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        DecisoesDeAcessoDeTeste kevin = new(
+            "kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
         if (respostaExiste)
         {
             mundo.Inscricoes.LocalizarIdentificadorAsync(cenario.InscricaoId, "CPF", null, null, Arg.Any<CancellationToken>())
@@ -86,8 +88,20 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
         await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
     }
 
-    [Fact(DisplayName = "Erick só com a permissão de revelar, sem consultar inscrições, revela o CPF")]
-    public async Task SoComRevelar_Revela()
+    [Fact(DisplayName = "Erick com a permissão de revelar e a do identificador mascarado, sem consultar inscrições, revela o CPF")]
+    public async Task ComAsDuasPermissoes_Revela()
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
+        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick);
+
+        resultado.Value!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Formatado);
+    }
+
+    [Fact(DisplayName = "Erick só com a permissão de revelar, sem a do identificador mascarado, não revela o CPF: 404, só a negativa da classe é registrada e a resposta nem é procurada")]
+    public async Task SoRevelar_SemAClasse_Recusa()
     {
         InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
         InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
@@ -95,7 +109,17 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
 
         Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick);
 
-        resultado.Value!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Formatado);
+        resultado.Error!.Code.Should().Be("Inscricao.CampoNaoEncontrado");
+        await erick.Verificador.Received(1).RegistrarDesfechoAsync(
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d =>
+                d.Count == 1 && d.Single() is DecisaoNegada && d.Single().Resultado == ResultadoDoAcesso.Negado
+                && ((DecisaoNegada)d.Single()).Requisito.Permissao == CodigoDaClasse),
+            IntencaoDoRegistro.Pedido,
+            Arg.Any<CancellationToken>());
+        await erick.Verificador.DidNotReceive().ExigirAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
+        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LerIdentificadorAsync(default, default);
     }
 
     private static InscricaoAdministrativaDeTeste CenarioComCpf() =>
@@ -116,7 +140,7 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
     {
         InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
 
-        return Revelar(cenario, Mundo(cenario, decifrado), new DecisoesDeAcessoDeTeste("diogo.souza", PermissaoSelecao.DadosIdentificadoresRevelar));
+        return Revelar(cenario, Mundo(cenario, decifrado), new DecisoesDeAcessoDeTeste("diogo.souza", PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar));
     }
 
     private static async Task<Result<CampoReveladoDto>> Revelar(
