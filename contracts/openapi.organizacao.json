@@ -439,11 +439,7 @@
             "schema": {
               "type": "array",
               "items": {
-                "pattern": "^-?(?:0|[1-9]\\d*)$",
-                "type": [
-                  "integer",
-                  "string"
-                ],
+                "type": "integer",
                 "format": "int32"
               }
             }
@@ -1527,20 +1523,16 @@
             "$ref": "#/components/schemas/CidadeReferenciaDto"
           },
           "latitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
           "longitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -1622,20 +1614,16 @@
             ]
           },
           "latitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
           "longitude": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
             "type": [
               "null",
-              "number",
-              "string"
+              "number"
             ],
             "format": "double"
           },
@@ -1863,11 +1851,9 @@
             ]
           },
           "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },

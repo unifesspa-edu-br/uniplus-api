@@ -17,7 +17,7 @@ using System.Text.Json.Serialization;
 /// </remarks>
 public static class JsonDoContrato
 {
-    /// <summary>Espelha o que <c>Program.cs</c> configura em <c>AddJsonOptions</c>/<c>ConfigureHttpJsonOptions</c>.</summary>
+    /// <summary>Espelha o que <c>AddUniPlusJsonOptions</c> configura nos hosts.</summary>
     public static JsonSerializerOptions Opcoes { get; } = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
