@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit exige tipo de teste público.")]
-public sealed class CatalogoDePermissoesNoHostTests
+public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
 {
     private const string Catalogo = "/api/autorizacao/permissoes";
     private const string Efetivas = "/api/autorizacao/permissoes/efetivas";
@@ -43,6 +43,17 @@ public sealed class CatalogoDePermissoesNoHostTests
     {
         _fixture = fixture;
     }
+
+    // As personas compartilham o banco da coleção: cada teste começa sem concessão alguma.
+    public async Task InitializeAsync()
+    {
+        foreach (string sub in new[] { Leandro, Betina })
+        {
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+        }
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "Todo enum de permissões do produto está registrado no catálogo da aplicação")]
     public void Enums_EstaoTodosRegistrados()
@@ -183,7 +194,6 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "A autorização precede a negociação de mídia: sem a permissão e com Accept inválido, 403 em problem+json, e não 406")]
     public async Task Catalogo_SemPermissaoComAcceptInvalido_403ProblemJson()
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Betina);
         using HttpClient client = Cliente(Betina);
         client.DefaultRequestHeaders.Accept.ParseAdd("text/csv");
 
@@ -239,7 +249,6 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "GET das efetivas devolve exatamente as permissões das concessões ativas, e o papel no token não entra")]
     public async Task Efetivas_DevolveSoAsDasConcessoes()
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
         await ConcessoesDeTeste.ConcederPermissoesAsync(
             _fixture.Factory.Services, Leandro, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
         using HttpClient client = Cliente(Leandro, papeisDeRealm: CodigoDoCatalogo);
@@ -258,7 +267,6 @@ public sealed class CatalogoDePermissoesNoHostTests
     [Fact(DisplayName = "GET das efetivas devolve lista vazia sem concessão, ainda que o token traga o papel mais amplo")]
     public async Task Efetivas_SemConcessao_ListaVazia()
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Betina);
         using HttpClient client = Cliente(Betina, papeisDeRealm: "plataforma-admin");
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Efetivas, UriKind.Relative));
