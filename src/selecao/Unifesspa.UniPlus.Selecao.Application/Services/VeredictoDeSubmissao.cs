@@ -3,8 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using System.Text.Json;
 
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Errors;
 using Domain.Services;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -36,13 +38,27 @@ public static class VeredictoDeSubmissao
         AvaliacaoFormulario avaliacao,
         IReadOnlyList<TermoExigidoFormulario> termosExigidos,
         IReadOnlyList<AceiteDeTermo> aceites,
-        DateOnly diaDoEnvio)
+        DateOnly diaDoEnvio) =>
+        [.. AvaliarDistinguindoOGeo(avaliacao, termosExigidos, aceites, diaDoEnvio, geo: null).Select(static r => r.Recusa)];
+
+    /// <summary>
+    /// O mesmo veredito, dizendo de cada recusa se ela só existe porque o Geo fora do ar deixou um derivado de residência
+    /// indeterminado: com o Geo de volta, a recusa pode deixar de valer, e por isso não orienta o candidato.
+    /// </summary>
+    /// <param name="geo">O que o Geo deixou indeterminado; nulo quando o Geo respondeu, e então nenhuma recusa depende dele.</param>
+    public static IReadOnlyList<RecusaDoVeredito> AvaliarDistinguindoOGeo(
+        AvaliacaoFormulario avaliacao,
+        IReadOnlyList<TermoExigidoFormulario> termosExigidos,
+        IReadOnlyList<AceiteDeTermo> aceites,
+        DateOnly diaDoEnvio,
+        DependenciaDoGeo? geo)
     {
         ArgumentNullException.ThrowIfNull(avaliacao);
         ArgumentNullException.ThrowIfNull(termosExigidos);
         ArgumentNullException.ThrowIfNull(aceites);
 
-        List<FieldError> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio)];
+        ClassificadorDoGeo classificador = new(geo);
+        List<RecusaDoVeredito> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio, classificador)];
 
         foreach (AvaliacaoGrupo grupo in avaliacao.Grupos)
         {
@@ -53,17 +69,19 @@ public static class VeredictoDeSubmissao
 
             if (!grupo.ContagemValida)
             {
-                recusas.Add(Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoContagemInvalida, "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido."));
+                recusas.Add(new RecusaDoVeredito(
+                    Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoContagemInvalida, "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido."),
+                    classificador.ContagemAbaixoDoMinimo(grupo)));
             }
 
             if (!grupo.OcorrenciaDoCandidatoValida)
             {
-                recusas.Add(Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoCandidatoAusente, "O grupo inclui o candidato, mas nenhuma ocorrência o representa."));
+                recusas.Add(Independente(Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoCandidatoAusente, "O grupo inclui o candidato, mas nenhuma ocorrência o representa.")));
             }
 
             if (grupo.Obrigatorio == Ternario.Verdadeiro && grupo.Estado == EstadoFato.Indeterminado)
             {
-                recusas.Add(Recusa(grupo.Codigo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O grupo '{grupo.Codigo}' é obrigatório e não tem ocorrência nenhuma."));
+                recusas.Add(Independente(Recusa(grupo.Codigo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O grupo '{grupo.Codigo}' é obrigatório e não tem ocorrência nenhuma.")));
             }
 
             HashSet<string> idsVistos = new(StringComparer.Ordinal);
@@ -71,10 +89,10 @@ public static class VeredictoDeSubmissao
             {
                 if (!idsVistos.Add(ocorrencia.Id))
                 {
-                    recusas.Add(Recusa($"{grupo.Codigo}.{ocorrencia.Id}", InscricaoErrorCodes.GrupoIdDuplicado, $"Duas ocorrências do grupo '{grupo.Codigo}' repetem o id '{ocorrencia.Id}'."));
+                    recusas.Add(Independente(Recusa($"{grupo.Codigo}.{ocorrencia.Id}", InscricaoErrorCodes.GrupoIdDuplicado, $"Duas ocorrências do grupo '{grupo.Codigo}' repetem o id '{ocorrencia.Id}'.")));
                 }
 
-                recusas.AddRange(ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, caminho: $"{grupo.Codigo}.{ocorrencia.Id}", diaDoEnvio));
+                recusas.AddRange(ProblemasDosItens(ocorrencia.Itens, ocorrencia.Fatos, caminho: $"{grupo.Codigo}.{ocorrencia.Id}", diaDoEnvio, classificador));
             }
         }
 
@@ -102,7 +120,7 @@ public static class VeredictoDeSubmissao
             if (!aceitoNaVersaoFixada)
             {
                 string campo = exigido?.Codigo ?? termo.Codigo;
-                recusas.Add(Recusa(campo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{campo}' é obrigatório e não foi aceito na versão fixada da inscrição."));
+                recusas.Add(Independente(Recusa(campo, InscricaoErrorCodes.TermoNaoAceito, $"O termo '{campo}' é obrigatório e não foi aceito na versão fixada da inscrição.")));
             }
         }
 
@@ -145,7 +163,7 @@ public static class VeredictoDeSubmissao
         {
             if (!ofertas.TryGetValue(fatoCodigo, out IReadOnlySet<string>? oferta)
                 || RespostaDeCampo.EstaVazia(valor)
-                || RespostaDeCampo.Codigos(valor) is not { } codigos
+                || RespostaDeCampo.Codigos(ValorDeMunicipio.ComoCodigo(valor)) is not { } codigos
                 || codigos.All(oferta.Contains))
             {
                 continue;
@@ -158,8 +176,8 @@ public static class VeredictoDeSubmissao
         }
     }
 
-    private static IEnumerable<FieldError> ProblemasDosItens(
-        IReadOnlyList<AvaliacaoItem> itens, IReadOnlyDictionary<string, FatoResolvido> fatos, string? caminho, DateOnly diaDoEnvio)
+    private static IEnumerable<RecusaDoVeredito> ProblemasDosItens(
+        IReadOnlyList<AvaliacaoItem> itens, IReadOnlyDictionary<string, FatoResolvido> fatos, string? caminho, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
     {
         foreach (AvaliacaoItem item in itens)
         {
@@ -172,20 +190,101 @@ public static class VeredictoDeSubmissao
 
             if (item.Impedido == Ternario.Verdadeiro)
             {
-                yield return Recusa(campo, InscricaoErrorCodes.Impedimento, $"A resposta de '{item.FatoCodigo}' impede a submissão desta inscrição.");
+                yield return Independente(Recusa(campo, InscricaoErrorCodes.Impedimento, $"A resposta de '{item.FatoCodigo}' impede a submissão desta inscrição."));
             }
 
             if (item.RestricoesVioladas.Count > 0)
             {
-                yield return RecusaDaResposta.De(campo, item, diaDoEnvio);
+                yield return new RecusaDoVeredito(RecusaDaResposta.De(campo, item, diaDoEnvio), classificador.RestricaoViolada(item));
             }
 
             if (fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? resolvido) && resolvido.Estado == EstadoFato.Indeterminado)
             {
-                yield return Recusa(campo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O item '{item.FatoCodigo}' é obrigatório e está sem resposta.");
+                yield return new RecusaDoVeredito(
+                    Recusa(campo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O item '{item.FatoCodigo}' é obrigatório e está sem resposta."),
+                    classificador.ItemObrigatorioAusente(item, campo));
             }
         }
     }
 
+    private static RecusaDoVeredito Independente(FieldError recusa) => new(recusa, DependeDoGeo: false);
+
+    /// <summary>
+    /// Diz quais recusas dependem do Geo: só as que a falta dele pode ter causado, por deixar indeterminado um derivado de
+    /// residência de que a regra depende. Sem a dependência do Geo, nenhuma recusa depende dele.
+    /// </summary>
+    private sealed class ClassificadorDoGeo(DependenciaDoGeo? geo)
+    {
+        private readonly Dictionary<string, DefinicaoItem> _itens = geo is null
+            ? []
+            : geo.Definicao.Etapas
+                .SelectMany(static e => e.Itens.Concat(e.Grupos.SelectMany(static g => g.Subitens)))
+                .ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
+
+        private readonly Dictionary<string, DefinicaoGrupo> _grupos = geo is null
+            ? []
+            : geo.Definicao.Etapas.SelectMany(static e => e.Grupos).ToDictionary(static g => g.Codigo, StringComparer.Ordinal);
+
+        /// <summary>
+        /// A obrigatoriedade saiu indeterminada, ou o campo foi respondido e uma restrição dele cita o derivado indeterminado, o
+        /// que o deixou sem resposta que valha. O campo obrigatório em definitivo e sem resposta não depende do Geo.
+        /// </summary>
+        public bool ItemObrigatorioAusente(AvaliacaoItem item, string campo) =>
+            geo is not null
+            && (item.Obrigatorio == Ternario.Indeterminado
+                || (geo.CamposRespondidos.Contains(campo)
+                    && _itens.TryGetValue(item.FatoCodigo, out DefinicaoItem? definicao)
+                    && definicao.Restricoes.Any(CitaDerivadoIndeterminado)));
+
+        public bool RestricaoViolada(AvaliacaoItem item) => geo is not null && item.RestricoesVioladas.Any(CitaDerivadoIndeterminado);
+
+        /// <summary>A contagem abaixo do mínimo, em grupo cuja obrigatoriedade saiu indeterminada; a acima do máximo não depende do Geo.</summary>
+        public bool ContagemAbaixoDoMinimo(AvaliacaoGrupo grupo) =>
+            geo is not null
+            && grupo.Obrigatorio == Ternario.Indeterminado
+            && _grupos.TryGetValue(grupo.Codigo, out DefinicaoGrupo? definicao)
+            && grupo.Ocorrencias.Count < definicao.Minimo;
+
+        private bool CitaDerivadoIndeterminado(RestricaoValor restricao) =>
+            restricao.FatosCitados.Any(geo!.DerivadosIndeterminados.Contains);
+    }
+
     private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
+}
+
+/// <summary>Uma recusa do veredito e se ela só existe por causa do Geo fora do ar (<see cref="DependenciaDoGeo"/>).</summary>
+public readonly record struct RecusaDoVeredito(FieldError Recusa, bool DependeDoGeo);
+
+/// <summary>
+/// O que o Geo fora do ar deixou indeterminado na avaliação: a definição do formulário, para saber o que cada regra cita, e os
+/// derivados de residência que ficaram indeterminados por causa dele e os campos que o candidato respondeu, pelo caminho
+/// (<c>FATO</c> ou <c>GRUPO.ocorrencia.FATO</c>).
+/// </summary>
+public sealed record DependenciaDoGeo(DefinicaoFormulario Definicao, IReadOnlySet<string> DerivadosIndeterminados, IReadOnlySet<string> CamposRespondidos)
+{
+    /// <summary>
+    /// A avaliação sem as modalidades que o Geo deixou sem decidir: a que falta responder e deriva de um derivado de residência
+    /// indeterminado pode deixar de faltar com o Geo de volta, e por isso não gera recusa. A que não concorre a nenhuma
+    /// modalidade está decidida, e a que falta responder por outro motivo também: essas seguem para as recusas.
+    /// </summary>
+    public ResultadoDaAvaliacaoDaInscricao SemAsModalidadesDoGeo(
+        ResultadoDaAvaliacaoDaInscricao avaliacao, ConfiguracaoAvaliavel daPrimeiraOpcao, ConfiguracaoAvaliavel? daSegundaOpcao)
+    {
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(daPrimeiraOpcao);
+
+        ModalidadesDeConcorrencia SemSeDependeDoGeo(ModalidadesDeConcorrencia modalidades, ConfiguracaoAvaliavel configuracao) =>
+            modalidades.Situacao == SituacaoDasModalidades.FaltaResponder
+            && AvaliacaoDaInscricao.DerivadosDoSistemaDaModalidade(configuracao).Overlaps(DerivadosIndeterminados)
+                ? ModalidadesDeConcorrencia.SemDerivacao
+                : modalidades;
+
+        return avaliacao with
+        {
+            Modalidades = SemSeDependeDoGeo(avaliacao.Modalidades, daPrimeiraOpcao),
+            ModalidadesSegundaOpcao = avaliacao.ModalidadesSegundaOpcao is { } daSegunda && daSegundaOpcao is not null
+                ? SemSeDependeDoGeo(daSegunda, daSegundaOpcao)
+                : avaliacao.ModalidadesSegundaOpcao,
+        };
+    }
 }

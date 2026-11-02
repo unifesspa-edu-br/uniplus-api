@@ -40,128 +40,88 @@ public sealed class DerivadosDoSistemaInscricaoTests
             origem = "geo-api",
         });
 
-    [Fact(DisplayName = "Sem DATA_NASCIMENTO nem ENDERECO_RESIDENCIAL, não deriva nada e não chama o Geo")]
-    public async Task CalcularAsync_SemRespostaNenhuma_NaoDerivaNada()
+    private static ConferenciaDosEnderecos SemEnderecoConferido(DomainError? geo = null) =>
+        new([], new Dictionary<string, CepResolvido>(StringComparer.Ordinal), geo);
+
+    private static ConferenciaDosEnderecos ComResidenciaResolvida(string codigoIbge, string cidade, string uf) =>
+        new([], new Dictionary<string, CepResolvido>(StringComparer.Ordinal) { ["ENDERECO_RESIDENCIAL"] = new(codigoIbge, cidade, uf, "logradouro") }, null);
+
+    [Fact(DisplayName = "Sem DATA_NASCIMENTO nem ENDERECO_RESIDENCIAL, não deriva nada")]
+    public void Calcular_SemRespostaNenhuma_NaoDerivaNada()
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+        DerivadosCalculados resultado = DerivadosDoSistemaInscricao.Calcular(Respostas(), new DateOnly(2026, 12, 10), SemEnderecoConferido());
 
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Should().BeEmpty();
-        await conferencia.DidNotReceive().ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        resultado.Valores.Should().BeEmpty();
+        resultado.Indeterminados.Should().BeEmpty();
     }
 
     [Theory(DisplayName = "FAIXA_ETARIA é a idade completa na data de referência, não na de hoje")]
     [InlineData("2008-12-11", 17)] // aniversário de 18 é um dia DEPOIS da referência
     [InlineData("2008-12-10", 18)] // aniversário de 18 é NA referência
     [InlineData("2008-12-09", 18)] // aniversário de 18 foi um dia ANTES da referência
-    public async Task CalcularAsync_ComDataNascimento_CalculaFaixaEtariaNaDataDeReferencia(string nascimento, int idadeEsperada)
+    public void Calcular_ComDataNascimento_CalculaFaixaEtariaNaDataDeReferencia(string nascimento, int idadeEsperada)
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+        DerivadosCalculados resultado = DerivadosDoSistemaInscricao.Calcular(
+            Respostas(("DATA_NASCIMENTO", Texto(nascimento))), new DateOnly(2026, 12, 10), SemEnderecoConferido());
 
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("DATA_NASCIMENTO", Texto(nascimento))), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!["FAIXA_ETARIA"].GetInt32().Should().Be(idadeEsperada);
+        resultado.Valores["FAIXA_ETARIA"].GetInt32().Should().Be(idadeEsperada);
     }
 
-    [Fact(DisplayName = "Sem data de referência no processo, a data de nascimento não vira faixa etária nem recusa, e nunca se calcula contra hoje")]
-    public async Task CalcularAsync_DataNascimentoSemReferenciaDoProcesso_NaoApuraFaixaEtaria()
+    [Fact(DisplayName = "Sem data de referência no processo ou com data de nascimento que não é data, não há faixa etária, e nunca se calcula contra hoje")]
+    public void Calcular_SemReferenciaOuComDataInvalida_NaoApuraFaixaEtaria()
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("DATA_NASCIMENTO", Texto("2008-12-10"))), dataReferenciaFatos: null, conferencia);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Should().NotContainKey("FAIXA_ETARIA");
+        DerivadosDoSistemaInscricao.Calcular(Respostas(("DATA_NASCIMENTO", Texto("2008-12-10"))), dataReferenciaFatos: null, SemEnderecoConferido())
+            .Valores.Should().NotContainKey("FAIXA_ETARIA");
+        DerivadosDoSistemaInscricao.Calcular(Respostas(("DATA_NASCIMENTO", Texto("não é uma data"))), new DateOnly(2026, 12, 10), SemEnderecoConferido())
+            .Valores.Should().NotContainKey("FAIXA_ETARIA");
     }
 
-    [Fact(DisplayName = "Data de nascimento que não é uma data válida recusa")]
-    public async Task CalcularAsync_DataNascimentoInvalida_Recusa()
+    [Fact(DisplayName = "A residência sai do que o Geo resolveu pelo CEP na conferência do endereço, com o nome da cidade, e não do que o candidato declarou")]
+    public void Calcular_EnderecoResolvidoPeloGeo_DerivaDoQueOGeoResolveu()
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
+        DerivadosCalculados resultado = DerivadosDoSistemaInscricao.Calcular(
+            Respostas(("ENDERECO_RESIDENCIAL", Endereco("40020000", "1504208", "PA"))), new DateOnly(2026, 12, 10),
+            ComResidenciaResolvida("2927408", "Salvador", "BA"));
 
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("DATA_NASCIMENTO", Texto("não é uma data"))), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Inscricao.DataNascimentoInvalida");
+        resultado.Valores["UF_RESIDENCIA"].GetString().Should().Be("BA");
+        resultado.Valores["MUNICIPIO_RESIDENCIA"].GetString().Should().Be("2927408");
+        resultado.Nomes["MUNICIPIO_RESIDENCIA"].Should().Be("Salvador");
+        resultado.Indeterminados.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Endereço confirmado pelo Geo deriva UF e município de residência do que o Geo confirmou")]
-    public async Task CalcularAsync_EnderecoConfirmadoPeloGeo_DerivaUfEMunicipio()
+    [Fact(DisplayName = "Endereço que a conferência não resolveu deixa a residência indeterminada, sem Geo próprio: a recusa é da conferência do endereço")]
+    public void Calcular_EnderecoNaoResolvido_DeixaIndeterminado()
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
+        DerivadosCalculados resultado = DerivadosDoSistemaInscricao.Calcular(
+            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), SemEnderecoConferido());
 
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!["UF_RESIDENCIA"].GetString().Should().Be("PA");
-        resultado.Value!["MUNICIPIO_RESIDENCIA"].GetString().Should().Be("1504208");
+        resultado.Valores.Should().NotContainKey("UF_RESIDENCIA").And.NotContainKey("MUNICIPIO_RESIDENCIA");
+        resultado.Indeterminados.Should().BeEquivalentTo(["UF_RESIDENCIA", "MUNICIPIO_RESIDENCIA"]);
+        resultado.GeoIndisponivel.Should().BeNull();
     }
 
-    [Fact(DisplayName = "CEP com máscara é apurado no Geo pelo CEP só com os dígitos")]
-    public async Task CalcularAsync_CepComMascara_ConsultaOGeoSemMascara()
+    [Fact(DisplayName = "Geo fora do ar na conferência do endereço deixa a residência indeterminada e diz que foi o Geo")]
+    public void Calcular_GeoForaDoAr_DizQueFoiOGeo()
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
+        DomainError fora = new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "O Geo não respondeu.");
 
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500-000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
+        DerivadosCalculados resultado = DerivadosDoSistemaInscricao.Calcular(
+            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), SemEnderecoConferido(fora));
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!["UF_RESIDENCIA"].GetString().Should().Be("PA");
+        resultado.Indeterminados.Should().BeEquivalentTo(["UF_RESIDENCIA", "MUNICIPIO_RESIDENCIA"]);
+        resultado.GeoIndisponivel.Should().Be(fora);
     }
 
-    [Fact(DisplayName = "Geo indisponível ou endereço divergente recusa a derivação, nunca aceita o que o candidato declarou")]
-    public async Task CalcularAsync_GeoRecusaOEndereco_Recusa()
+    [Fact(DisplayName = "A residência da inscrição enviada vem dos derivados gravados no envio, sem Geo; o que não foi gravado fica indeterminado e a modalidade não entra")]
+    public void ResidenciaGravada_VemDoEnvio()
     {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>())
-            .Returns(Result<string>.Failure(new DomainError("ConferenciaEnderecoGeo.CidadeDivergente", "O CEP informado resolve para uma cidade diferente da declarada.")));
+        IReadOnlyDictionary<string, FatoResolvido> fatos = DerivadosDoSistemaInscricao.ResidenciaGravada(
+            Respostas(("UF_RESIDENCIA", Texto("BA")), ("MODALIDADE", Texto("AC")), ("FAIXA_ETARIA", JsonSerializer.SerializeToElement(26))),
+            new HashSet<string>(["UF_RESIDENCIA", "MUNICIPIO_RESIDENCIA", "MODALIDADE", "FAIXA_ETARIA"], StringComparer.Ordinal));
 
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConferenciaEnderecoGeo.CidadeDivergente");
-    }
-
-    [Fact(DisplayName = "Endereço sem CEP, com a cidade escolhida manualmente, confere pelo município — nunca recusa por falta de CEP")]
-    public async Task CalcularAsync_EnderecoSemCepComCidade_ConfereProMunicipioEDeriva()
-    {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
-        JsonElement enderecoSemCep = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = "1504208", uf = "PA" } });
-
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("ENDERECO_RESIDENCIAL", enderecoSemCep)), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!["UF_RESIDENCIA"].GetString().Should().Be("PA");
-        resultado.Value!["MUNICIPIO_RESIDENCIA"].GetString().Should().Be("1504208");
-        await conferencia.DidNotReceive().ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Endereço sem cidade nenhuma recusa sem nem chamar o Geo")]
-    public async Task CalcularAsync_EnderecoSemCidade_RecusaSemChamarOGeo()
-    {
-        IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        JsonElement enderecoSemCidade = JsonSerializer.SerializeToElement(new { cep = "68500000" });
-
-        Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
-            Respostas(("ENDERECO_RESIDENCIAL", enderecoSemCidade)), new DateOnly(2026, 12, 10), conferencia);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("Inscricao.EnderecoResidencialInvalido");
-        await conferencia.DidNotReceive().ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
-        await conferencia.DidNotReceive().ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        fatos.Keys.Should().BeEquivalentTo(["UF_RESIDENCIA", "MUNICIPIO_RESIDENCIA"]);
+        fatos["UF_RESIDENCIA"].Valor!.Value.GetString().Should().Be("BA");
+        fatos["MUNICIPIO_RESIDENCIA"].Estado.Should().Be(EstadoFato.Indeterminado);
     }
 
     [Fact(DisplayName = "Fora do envio, o endereço que o Geo recusa deixa a residência indeterminada, sem recusar")]

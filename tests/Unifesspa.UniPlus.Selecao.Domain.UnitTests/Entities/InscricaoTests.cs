@@ -1172,9 +1172,9 @@ public sealed class InscricaoTests
 
         Result<ComprovanteInscricao> resultado = SubmeterCom(inscricao, avaliacao);
 
-        resultado.Errors.Select(static e => e.Error.Code).Should().Equal(
-            InscricaoErrorCodes.ModalidadeNaoDecidida, InscricaoErrorCodes.DocumentoObrigatorioAusente);
-        resultado.Errors[^1].Field.Should().Be($"documentos.{laudo.Id}");
+        resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
+            [InscricaoErrorCodes.ModalidadeNaoDecidida, InscricaoErrorCodes.DocumentoObrigatorioAusente]);
+        resultado.Errors.Should().Contain(e => e.Field == $"documentos.{laudo.Id}");
         inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
     }
 

@@ -83,7 +83,8 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
 
         Result<ResultadoDaAvaliacaoDaInscricao> avaliada = AvaliacaoDaInscricao.Avaliar(
             ConfiguracaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, montada.Value!),
-            new EntradaDaAvaliacaoDaInscricao(
+            EntradaDaAvaliacaoDaInscricao.Montar(
+                DefinicoesDasRespostas(processo),
                 simulacao.Respostas ?? new Dictionary<string, JsonElement>(),
                 ocorrencias,
                 RespostaDeCampo.ComoFatosConhecidos(simulacao.Pressupostos),
@@ -92,8 +93,8 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
                         .Where(static e => e is not null)
                         .Select(static e => DefinicaoDoProcesso.CodigoDaEtapa(EstruturaFormulario.FinalidadeDoToken(e.Finalidade), e.Etapa)),
                     StringComparer.Ordinal),
-                Envio: null,
-                Apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
+                envio: null,
+                apresentacoes: EntradaDaAvaliacaoDaInscricao.SemApresentacoes));
         if (avaliada.IsFailure)
         {
             return Result<PreVisualizacaoDoProcessoDto>.Failure(avaliada.Error!);
@@ -102,6 +103,18 @@ public static class PreVisualizarProcessoSeletivoQueryHandler
         return Result<PreVisualizacaoDoProcessoDto>.Success(new PreVisualizacaoDoProcessoDto(
             Formularios(processo, avaliada.Value!.Formulario),
             [.. avaliada.Value!.Documentos.Itens.Select(Documento)]));
+    }
+
+    /// <summary>A definição da resposta de cada fato e subitem que o processo coleta, em qualquer formulário, e a dos derivados do sistema.</summary>
+    private static IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas(ProcessoSeletivo processo)
+    {
+        Dictionary<string, DefinicaoDaResposta> definicoes = new(StringComparer.Ordinal);
+        foreach (FatoColetado fato in processo.FatosColetados.Concat(processo.GruposColetados.SelectMany(static g => g.Subitens)))
+        {
+            definicoes.TryAdd(fato.FatoCodigo, DefinicaoDaResposta.De(fato.TipoRenderizacao, fato.ClassificacaoProtecao, fato.Formato, fato.FatoCodigo));
+        }
+
+        return DerivadosDoSistemaInscricao.ComOsDerivados(definicoes);
     }
 
     private static List<FormularioSimuladoDto> Formularios(ProcessoSeletivo processo, AvaliacaoFormulario avaliacao)

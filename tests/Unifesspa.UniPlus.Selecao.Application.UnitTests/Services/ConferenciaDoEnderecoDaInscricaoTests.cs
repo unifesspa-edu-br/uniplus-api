@@ -51,7 +51,7 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
             }),
         };
 
-    private static Task<Result<IReadOnlyList<FieldError>>> ConferirAsync(
+    private static Task<ConferenciaDosEnderecos> ConferirAsync(
         Dictionary<string, JsonElement> respostas, FakeConferenciaEnderecoGeo geo, bool aoEnviar) =>
         ConferenciaDoEnderecoDaInscricao.ConferirAsync(respostas, Admitidas, geo, aoEnviar);
 
@@ -60,9 +60,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     [InlineData(true)]
     public async Task CepNaoEncontrado_Recusa(bool aoEnviar)
     {
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), new FakeConferenciaEnderecoGeo(), aoEnviar);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(), new FakeConferenciaEnderecoGeo(), aoEnviar);
 
-        resultado.Value!.Should().ContainSingle().Which.Should().Match<FieldError>(
+        resultado.Recusas.Should().ContainSingle().Which.Should().Match<FieldError>(
             e => e.Field == Campo && e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoEncontrado
                 && e.Error.Message == "CEP não encontrado. Confira o seu CEP na busca dos Correios; se o seu bairro não tem CEP próprio, use o CEP geral da sua cidade e descreva o endereço real no complemento.");
     }
@@ -74,9 +74,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", "1501402", "PA");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), geo, aoEnviar);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(), geo, aoEnviar);
 
-        resultado.Value!.Should().ContainSingle(e => e.Field == Campo && e.Error.Code == InscricaoErrorCodes.EnderecoCepDeOutraCidade);
+        resultado.Recusas.Should().ContainSingle(e => e.Field == Campo && e.Error.Code == InscricaoErrorCodes.EnderecoCepDeOutraCidade);
     }
 
     [Fact(DisplayName = "CEP geral oficial (cep-geral) com logradouro e bairro digitados é aceito")]
@@ -84,9 +84,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "cep-geral");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(), geo, aoEnviar: true);
 
-        resultado.Value!.Should().BeEmpty();
+        resultado.Recusas.Should().BeEmpty();
     }
 
     [Theory(DisplayName = "CEP geral oficial sem logradouro ou sem bairro é recusado ao enviar")]
@@ -97,9 +97,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "cep-geral");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(logradouro, bairro), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(logradouro, bairro), geo, aoEnviar: true);
 
-        resultado.Value!.Should().ContainSingle(e => e.Field == Campo && e.Error.Code == codigo);
+        resultado.Recusas.Should().ContainSingle(e => e.Field == Campo && e.Error.Code == codigo);
     }
 
     [Theory(DisplayName = "CEP de origem não exata (faixa ou desconhecida), sem a confirmação do candidato, é recusado com a mensagem da confirmação")]
@@ -111,9 +111,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", origem);
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(), geo, aoEnviar: true);
 
-        resultado.Value!.Should().ContainSingle().Which.Should().Match<FieldError>(
+        resultado.Recusas.Should().ContainSingle().Which.Should().Match<FieldError>(
             e => e.Field == Campo && e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoConfirmado
                 && e.Error.Message == "O CEP informado não corresponde a uma rua cadastrada nos Correios. Confira o número; se o seu endereço usa o CEP geral da cidade ou do bairro, confirme no formulário.");
     }
@@ -123,9 +123,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-bairro");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(confirmado: true), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(confirmado: true), geo, aoEnviar: true);
 
-        resultado.Value!.Should().BeEmpty();
+        resultado.Recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "CEP de faixa sem confirmação e sem logradouro recusa só a confirmação: logradouro e bairro vêm depois")]
@@ -133,9 +133,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-cidade");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null), geo, aoEnviar: true);
 
-        resultado.Value!.Should().ContainSingle().Which.Error.Code.Should().Be(InscricaoErrorCodes.EnderecoCepNaoConfirmado);
+        resultado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(InscricaoErrorCodes.EnderecoCepNaoConfirmado);
     }
 
     [Fact(DisplayName = "CEP resolvido só por faixa e confirmado, mas sem logradouro nem bairro, é recusado")]
@@ -143,9 +143,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-cidade");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null, confirmado: true), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null, confirmado: true), geo, aoEnviar: true);
 
-        resultado.Value!.Select(e => e.Error.Code).Should().BeEquivalentTo(
+        resultado.Recusas.Select(e => e.Error.Code).Should().BeEquivalentTo(
             [InscricaoErrorCodes.EnderecoLogradouroObrigatorio, InscricaoErrorCodes.EnderecoBairroObrigatorio]);
     }
 
@@ -154,9 +154,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-cidade");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(confirmado: false), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(confirmado: false), geo, aoEnviar: true);
 
-        resultado.Value!.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoConfirmado);
+        resultado.Recusas.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoConfirmado);
     }
 
     [Theory(DisplayName = "CEP exato (logradouro ou grande usuário) aceita logradouro e bairro diferentes dos do Geo, ou em branco")]
@@ -166,9 +166,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", origem);
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(logradouro: "Outra Rua", bairro: null), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(logradouro: "Outra Rua", bairro: null), geo, aoEnviar: true);
 
-        resultado.Value!.Should().BeEmpty();
+        resultado.Recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O CEP de grande usuário, que chega sem bairro, não exige bairro nem confirmação")]
@@ -176,9 +176,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "grande-usuario");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(bairro: null), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(bairro: null), geo, aoEnviar: true);
 
-        resultado.Value!.Should().BeEmpty();
+        resultado.Recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "No rascunho, o CEP de faixa sem confirmação nem logradouro ainda é aceito: o candidato está preenchendo")]
@@ -186,9 +186,9 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-cidade");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null), geo, aoEnviar: false);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(logradouro: null, bairro: null), geo, aoEnviar: false);
 
-        resultado.Value!.Should().BeEmpty();
+        resultado.Recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A origem que o navegador declara não decide: vale a que o Geo devolve")]
@@ -196,26 +196,36 @@ public sealed class ConferenciaDoEnderecoDaInscricaoTests
     {
         FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", Paragominas, "PA", "faixa-cidade");
 
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(origemDoNavegador: "logradouro"), geo, aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(origemDoNavegador: "logradouro"), geo, aoEnviar: true);
 
-        resultado.Value!.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoConfirmado);
+        resultado.Recusas.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoConfirmado);
     }
 
-    [Fact(DisplayName = "Geo fora do ar ao enviar é falha fechada de indisponibilidade, nunca CEP não encontrado")]
-    public async Task GeoIndisponivel_AoEnviar_FalhaFechada()
+    [Fact(DisplayName = "Geo fora do ar ao enviar é indisponibilidade, nunca CEP não encontrado: o endereço não é recusado e quem chama decide")]
+    public async Task GeoIndisponivel_AoEnviar_DizQueOGeoFalhou()
     {
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), new FakeConferenciaEnderecoGeo().Indisponivel(), aoEnviar: true);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(), new FakeConferenciaEnderecoGeo().Indisponivel(), aoEnviar: true);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        resultado.GeoIndisponivel!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+        resultado.Recusas.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Geo fora do ar ao salvar adia a conferência: o rascunho não é recusado")]
     public async Task GeoIndisponivel_AoSalvar_AdiaAConferencia()
     {
-        Result<IReadOnlyList<FieldError>> resultado = await ConferirAsync(Endereco(), new FakeConferenciaEnderecoGeo().Indisponivel(), aoEnviar: false);
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(), new FakeConferenciaEnderecoGeo().Indisponivel(), aoEnviar: false);
 
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.Should().BeEmpty();
+        resultado.GeoIndisponivel.Should().BeNull();
+        resultado.Recusas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O nome da cidade do endereço conferido é o que o Geo resolveu, e não o que o navegador mandou")]
+    public async Task EnderecoConferido_GuardaONomeDoGeo()
+    {
+        FakeConferenciaEnderecoGeo geo = new FakeConferenciaEnderecoGeo().ComCep("68627476", "1501402", "PA", cidade: "Belém");
+
+        ConferenciaDosEnderecos resultado = await ConferirAsync(Endereco(codigoIbge: "1501402"), geo, aoEnviar: true);
+
+        resultado.Cidades.Should().ContainKey(Campo).WhoseValue.Should().Be(new CidadeConferida("1501402", "Belém", "PA"));
     }
 }

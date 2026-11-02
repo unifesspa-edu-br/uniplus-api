@@ -167,6 +167,19 @@ public static class AvaliacaoDaInscricao
         return Fechamento(configuracao.Definicao, alvos).Pressupostos.Where(DerivadosDoSistema.Dependencias.ContainsKey).ToHashSet(StringComparer.Ordinal);
     }
 
+    /// <summary>
+    /// Os derivados do sistema de que a modalidade deriva — só a modalidade, e não o resto da avaliação —, como a UF e o município
+    /// de residência. Vazio quando a configuração não deriva a modalidade.
+    /// </summary>
+    public static IReadOnlySet<string> DerivadosDoSistemaDaModalidade(ConfiguracaoAvaliavel configuracao)
+    {
+        ArgumentNullException.ThrowIfNull(configuracao);
+
+        return DerivaAModalidade(configuracao.Definicao)
+            ? Fechamento(configuracao.Definicao, [FatoDaModalidade]).Pressupostos.Where(DerivadosDoSistema.Dependencias.ContainsKey).ToHashSet(StringComparer.Ordinal)
+            : new HashSet<string>(StringComparer.Ordinal);
+    }
+
     private static bool DerivaAModalidade(DefinicaoFormulario definicao) =>
         definicao.Derivacoes.Any(static d => d.CodigoFato == FatoDaModalidade);
 

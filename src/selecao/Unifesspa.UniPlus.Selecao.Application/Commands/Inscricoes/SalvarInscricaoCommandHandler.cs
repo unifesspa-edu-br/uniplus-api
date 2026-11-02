@@ -142,14 +142,15 @@ public static class SalvarInscricaoCommandHandler
         // A mesma avaliação do envio e da consulta (ADR-0143), sem etapa concluída: o rascunho ainda
         // está sendo preenchido, e só o que o corpo traz é conferido. As restrições vêm do formulário,
         // que é um só para as duas opções; as modalidades por opção ficam para a avaliação devolvida.
-        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Value!.Configuracao, new EntradaDaAvaliacaoDaInscricao(
+        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Value!.Configuracao, EntradaDaAvaliacaoDaInscricao.Montar(
+            Services.DerivadosDoSistemaInscricao.ComOsDerivados(contexto.Value!.Admitidas.Definicoes),
             respostas,
             Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
             new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
             new HashSet<string>(StringComparer.Ordinal),
             envio,
             EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
-            NaFaseDaInscricao: true));
+            naFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
             return Result<InscricaoDto>.Failure(avaliacao.Error!);
@@ -163,17 +164,12 @@ public static class SalvarInscricaoCommandHandler
 
         // O CEP existir no Geo e ser da cidade declarada vale já no rascunho; o Geo fora do ar adia a
         // conferência para o envio, e o rascunho continua salvável.
-        Result<IReadOnlyList<FieldError>> doEndereco = await Services.ConferenciaDoEnderecoDaInscricao
+        Services.ConferenciaDosEnderecos doEndereco = await Services.ConferenciaDoEnderecoDaInscricao
             .ConferirAsync(respostas, contexto.Value!.Admitidas, conferenciaEnderecoGeo, aoEnviar: false, cancellationToken)
             .ConfigureAwait(false);
-        if (doEndereco.IsFailure)
+        if (doEndereco.Recusas.Count > 0)
         {
-            return Result<InscricaoDto>.Failure(doEndereco.Error!);
-        }
-
-        if (doEndereco.Value!.Count > 0)
-        {
-            return Result<InscricaoDto>.ValidationFailure(doEndereco.Value);
+            return Result<InscricaoDto>.ValidationFailure(doEndereco.Recusas);
         }
 
         Result salvar = inscricao.Salvar(

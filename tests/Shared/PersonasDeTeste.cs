@@ -25,6 +25,9 @@ internal static class PersonasDeTeste
     /// <summary>Kevin Anderson Carvalho — RG 25.062.156-3.</summary>
     public static Cpf KevinCarvalho => Cpf.Criar("332.573.503-76").Value!;
 
+    /// <summary>Erick Isaac Ramos — nascido e residente em Salvador (BA).</summary>
+    public static Cpf ErickIsaacRamos => Cpf.Criar("33434225927").Value!;
+
     /// <summary>Uma persona do portal, com os dados que um arquivo do INEP traz de cada candidato.</summary>
     public sealed record PessoaFicticia(string Nome, string Cpf, string Sexo, string DataDeNascimento, string Cidade, string Uf);
 

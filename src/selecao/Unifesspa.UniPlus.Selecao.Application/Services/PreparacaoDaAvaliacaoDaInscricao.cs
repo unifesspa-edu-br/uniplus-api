@@ -118,17 +118,36 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             grupos[codigo] = ocorrencias;
         }
 
-        IReadOnlyDictionary<string, FatoResolvido> derivados = await DerivadosDoSistemaInscricao.ApurarAsync(
-            respostas,
-            contexto.DataReferenciaFatos,
-            conferenciaEnderecoGeo,
-            AvaliacaoDaInscricao.DerivadosDoSistemaCitados(contexto.Configuracao),
-            cancellationToken).ConfigureAwait(false);
+        // A inscrição enviada diz da residência o que o envio conferiu no Geo: a consulta não reconfere, e o veredito não muda
+        // com o Geo. Só o endereço residencial novo no corpo é apurado de novo.
+        IReadOnlySet<string> citados = AvaliacaoDaInscricao.DerivadosDoSistemaCitados(contexto.Configuracao);
+        bool residenciaDoEnvio = !inscricao.EhRascunho && !TrazEnderecoResidencial(respostasRecebidas);
+        Dictionary<string, FatoResolvido> derivados = new(
+            await DerivadosDoSistemaInscricao.ApurarAsync(
+                respostas,
+                contexto.DataReferenciaFatos,
+                conferenciaEnderecoGeo,
+                residenciaDoEnvio ? citados.Except(DerivadosDoSistemaInscricao.FatosDaResidencia).ToHashSet(StringComparer.Ordinal) : citados,
+                cancellationToken).ConfigureAwait(false),
+            StringComparer.Ordinal);
+        if (residenciaDoEnvio)
+        {
+            foreach ((string fato, FatoResolvido resolvido) in DerivadosDoSistemaInscricao.ResidenciaGravada(inscricao.Derivados, citados))
+            {
+                derivados[fato] = resolvido;
+            }
+        }
 
         return AvaliacaoDaInscricaoPorOpcao.Avaliar(
             contexto,
-            new EntradaDaAvaliacaoDaInscricao(respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio,
+            EntradaDaAvaliacaoDaInscricao.Montar(
+                DerivadosDoSistemaInscricao.ComOsDerivados(contexto.Admitidas.Definicoes),
+                respostas, grupos, derivados, new HashSet<string>(StringComparer.Ordinal), envio,
                 arquivos.ApresentacoesVerificadas(),
-                NaFaseDaInscricao: true));
+                naFaseDaInscricao: true));
     }
+
+    private static bool TrazEnderecoResidencial(IReadOnlyDictionary<string, JsonElement> respostasRecebidas) =>
+        respostasRecebidas.TryGetValue(DerivadosDoSistemaInscricao.EnderecoResidencial, out JsonElement endereco)
+        && endereco.ValueKind != JsonValueKind.Null;
 }

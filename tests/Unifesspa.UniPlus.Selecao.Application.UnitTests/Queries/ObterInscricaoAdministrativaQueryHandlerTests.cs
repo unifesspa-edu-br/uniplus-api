@@ -13,13 +13,16 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.InscricaoAdministrativaDeTeste;
@@ -361,6 +364,31 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         JsonElement uf = resultado.Value!.Secoes.Single().Itens.Single().Valor!.Value;
         uf.GetProperty("codigo").GetString().Should().Be(valor);
         uf.GetProperty("rotulo").GetString().Should().Be("Pará");
+    }
+
+    [Fact(DisplayName = "O município gravado sai com o nome conferido no envio, na resposta, no subitem de grupo e no derivado, sem consulta ao Geo")]
+    public async Task Municipio_SaiComONomeGravado()
+    {
+        JsonElement salvador = ValorDeMunicipio.Gravado("2927408", "Salvador");
+        GrupoColetado locais = GrupoColetado.Criar(
+            "LOCAIS", 1, "DADOS", "Locais", minimo: 0, maximo: null, exibicao: null, Obrigatoriedade.Nunca,
+            [FatoColetado.Criar(
+                "LOCAL_MUNICIPIO", 0, "Município do local", TipoRenderizacao.Municipio, Obrigatoriedade.Nunca, null, "PESSOAL",
+                InscricaoAdministrativaDeTeste.Hipotese, ProtecaoDoFatoDeTeste.Finalidade, "Município do local",
+                restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")]).Value!],
+            FinalidadeFormulario.Inscricao).Value!;
+        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.ErickIsaacRamos)
+            .Fato("NATURALIDADE_MUNICIPIO", "PESSOAL", TipoRenderizacao.Municipio, salvador, restricoes: [new MunicipiosDaUf("NATURALIDADE_UF")])
+            .Grupo(locais, new OcorrenciaDeGrupoInscricao("local-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["LOCAL_MUNICIPIO"] = salvador }))
+            .Derivado("MUNICIPIO_RESIDENCIA", "Município de residência", "CATEGORICO", "PESSOAL", salvador);
+        DecisoesDeAcessoDeTeste isabella = new("isabella.figueiredo", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, isabella);
+
+        SecaoDaInscricaoDto secao = resultado.Value!.Secoes.Single();
+        secao.Itens.Single().Valor!.Value.GetRawText().Should().Be(salvador.GetRawText());
+        secao.Grupos.Single().Ocorrencias.Single().Itens.Single().Valor!.Value.GetProperty("rotulo").GetString().Should().Be("Salvador");
+        resultado.Value.Derivados.Single().Valor!.Value.GetProperty("rotulo").GetString().Should().Be("Salvador");
     }
 
     [Fact(DisplayName = "Fato derivado sai pelo nome, pela classificação e pelo tipo que a publicação congelou; o derivado sem aprovação fica de fora")]

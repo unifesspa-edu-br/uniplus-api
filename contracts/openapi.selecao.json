@@ -13427,10 +13427,12 @@
             "format": "uuid"
           },
           "respostas": {
-            "type": "object"
+            "type": "object",
+            "description": "As respostas por c\u00F3digo do fato. O munic\u00EDpio vem como objeto { \u0022codigo\u0022, \u0022rotulo\u0022 }, com o nome que o Geo conferiu no envio; a cidade do endere\u00E7o conferido pelo CEP traz o nome do Geo."
           },
           "derivados": {
-            "type": "object"
+            "type": "object",
+            "description": "O que o sistema calculou das respostas. O munic\u00EDpio de resid\u00EAncia vem na mesma forma do munic\u00EDpio das respostas: { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada."
           },
           "grupos": {
             "type": "object",
@@ -18221,10 +18223,12 @@
             }
           },
           "respostas": {
-            "type": "object"
+            "type": "object",
+            "description": "As respostas por c\u00F3digo do fato. O munic\u00EDpio vem como texto, o c\u00F3digo IBGE, no rascunho, e como objeto { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada, com o nome que o Geo conferiu no envio."
           },
           "derivados": {
-            "type": "object"
+            "type": "object",
+            "description": "O que o sistema calculou das respostas. O munic\u00EDpio de resid\u00EAncia vem na mesma forma do munic\u00EDpio das respostas: { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada."
           },
           "grupos": {
             "type": "object",

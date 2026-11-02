@@ -31,6 +31,9 @@ public sealed record DefinicaoDaResposta(
     /// <summary>A resposta é gravada cifrada: número de documento ou dado com cifra individual.</summary>
     public bool Cifrada => Identificador || CifraIndividual;
 
+    /// <summary>A resposta é um município: o código IBGE, com o nome que o Geo conferiu depois do envio.</summary>
+    public bool EhMunicipio => Tipo == TipoDoValorDeResposta.Municipio;
+
     /// <summary>O fato tem cifra individual: está na lista e é classificado como sensível.</summary>
     public static bool TemCifraIndividual(string? fatoCodigo, string classificacaoProtecao) =>
         fatoCodigo is not null
@@ -49,7 +52,8 @@ public sealed record DefinicaoDaResposta(
         {
             TipoRenderizacao.Booleano => new(TipoDoValorDeResposta.Booleano, false, identificador, null, cifra),
             TipoRenderizacao.Numero => new(TipoDoValorDeResposta.Numero, false, identificador, null, cifra),
-            TipoRenderizacao.SelecaoUnica or TipoRenderizacao.Municipio => new(TipoDoValorDeResposta.Codigo, false, identificador, null, cifra),
+            TipoRenderizacao.SelecaoUnica => new(TipoDoValorDeResposta.Codigo, false, identificador, null, cifra),
+            TipoRenderizacao.Municipio => new(TipoDoValorDeResposta.Municipio, false, identificador, null, cifra),
             TipoRenderizacao.SelecaoMultipla => new(TipoDoValorDeResposta.Codigo, true, identificador, null, cifra),
             TipoRenderizacao.Texto => new(TipoDoValorDeResposta.Texto, false, identificador, formato, cifra),
             TipoRenderizacao.Data => new(TipoDoValorDeResposta.Data, false, identificador, null, cifra),
@@ -95,7 +99,7 @@ public sealed record DefinicaoDaResposta(
     {
         TipoDoValorDeResposta.Booleano => valor.ValueKind is JsonValueKind.True or JsonValueKind.False,
         TipoDoValorDeResposta.Numero => valor.ValueKind == JsonValueKind.Number && valor.TryGetDecimal(out _),
-        TipoDoValorDeResposta.Codigo => valor.ValueKind == JsonValueKind.String
+        TipoDoValorDeResposta.Codigo or TipoDoValorDeResposta.Municipio => valor.ValueKind == JsonValueKind.String
             && valor.GetString() is { Length: > 0 and <= OpcaoDeclaradaFato.CodigoMaxLength },
         TipoDoValorDeResposta.Texto => valor.ValueKind == JsonValueKind.String,
         TipoDoValorDeResposta.Data => DiaDoCalendario.Ler(valor) is not null,

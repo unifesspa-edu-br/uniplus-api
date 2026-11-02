@@ -20,12 +20,13 @@ using Kernel.Results;
 public static class ConferenciaDoEnderecoDaInscricao
 {
     /// <summary>
-    /// Confere cada endereço respondido. O Geo fora do ar nunca vira "CEP não encontrado": ao enviar, é a
-    /// falha fechada <see cref="ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel"/> (como o município); ao
-    /// salvar, a conferência é adiada para o envio e o rascunho continua salvável.
+    /// Confere cada endereço respondido. O Geo fora do ar nunca vira "CEP não encontrado": ao enviar, o endereço
+    /// que o Geo não conferiu fica de fora e as conferências seguintes não esperam o Geo, e quem chama decide o que fazer com
+    /// o <see cref="ConferenciaDosEnderecos.GeoIndisponivel"/>; ao salvar, a conferência é adiada para o envio e o
+    /// rascunho continua salvável.
     /// </summary>
     /// <param name="aoEnviar">Envio: exige logradouro e bairro no CEP geral e não tolera Geo fora do ar.</param>
-    public static async Task<Result<IReadOnlyList<FieldError>>> ConferirAsync(
+    public static async Task<ConferenciaDosEnderecos> ConferirAsync(
         IReadOnlyDictionary<string, JsonElement> respostas,
         RespostasAdmitidas admitidas,
         IConferenciaEnderecoGeo conferencia,
@@ -37,6 +38,7 @@ public static class ConferenciaDoEnderecoDaInscricao
         ArgumentNullException.ThrowIfNull(conferencia);
 
         List<FieldError> recusas = [];
+        Dictionary<string, CepResolvido> resolvidos = new(StringComparer.Ordinal);
         foreach ((string codigo, DefinicaoDaResposta definicao) in admitidas.Definicoes)
         {
             if (definicao.Tipo != TipoDoValorDeResposta.Endereco
@@ -54,7 +56,7 @@ public static class ConferenciaDoEnderecoDaInscricao
                 {
                     if (aoEnviar)
                     {
-                        return Result<IReadOnlyList<FieldError>>.Failure(resolvido.Error);
+                        return new ConferenciaDosEnderecos(recusas, resolvidos, resolvido.Error);
                     }
 
                     continue;
@@ -66,10 +68,15 @@ public static class ConferenciaDoEnderecoDaInscricao
                 continue;
             }
 
+            int recusasAntes = recusas.Count;
             recusas.AddRange(RecusasDoCep(codigo, endereco, resolvido.Value!, aoEnviar));
+            if (recusas.Count == recusasAntes)
+            {
+                resolvidos[codigo] = resolvido.Value!;
+            }
         }
 
-        return Result<IReadOnlyList<FieldError>>.Success(recusas);
+        return new ConferenciaDosEnderecos(recusas, resolvidos, GeoIndisponivel: null);
     }
 
     private static IEnumerable<FieldError> RecusasDoCep(string codigo, EnderecoDeclarado endereco, CepResolvido resolvido, bool aoEnviar)
@@ -117,4 +124,16 @@ public static class ConferenciaDoEnderecoDaInscricao
                 "Informe o bairro do seu endereço: o CEP informado não identifica o bairro."));
         }
     }
+}
+
+/// <summary>
+/// O que a conferência dos endereços apurou: as recusas por campo; o que o Geo resolveu pelo CEP de cada endereço
+/// conferido sem recusa, pelo código do fato do endereço; e o erro do Geo quando ele ficou fora do ar.
+/// </summary>
+public sealed record ConferenciaDosEnderecos(
+    IReadOnlyList<FieldError> Recusas, IReadOnlyDictionary<string, CepResolvido> Resolvidos, DomainError? GeoIndisponivel)
+{
+    /// <summary>A cidade que o Geo resolveu de cada endereço conferido sem recusa, como a inscrição enviada a guarda.</summary>
+    public IReadOnlyDictionary<string, CidadeConferida> Cidades =>
+        Resolvidos.ToDictionary(static r => r.Key, static r => new CidadeConferida(r.Value.CodigoIbge, r.Value.Cidade, r.Value.Uf), StringComparer.Ordinal);
 }

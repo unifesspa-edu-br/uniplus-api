@@ -1591,6 +1591,7 @@ selecao.respostas_da_inscricao.valor_cifrado: Sensivel
 selecao.respostas_da_inscricao.valor_codigo: Sensivel
 selecao.respostas_da_inscricao.valor_data: Sensivel
 selecao.respostas_da_inscricao.valor_numero: Sensivel
+selecao.respostas_da_inscricao.valor_rotulo: Sensivel
 selecao.respostas_da_inscricao.valor_texto: Sensivel
 selecao.rol_de_regras.base_legal: Interno
 selecao.rol_de_regras.codigo: Interno

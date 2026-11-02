@@ -26,13 +26,15 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
             t.HasComment("Um valor respondido na inscrição, na coluna do tipo do fato, com a origem: informado pelo candidato ou derivado de outra resposta.");
             t.HasCheckConstraint(
                 "ck_respostas_da_inscricao_valor_do_tipo",
-                "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo BETWEEN 1 AND 5 AND ("
+                "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN (1, 2, 3, 4, 5, 7) AND ("
                 + "valor_cifrado IS NOT NULL"
                 + " OR (tipo = 1 AND valor_booleano IS NOT NULL)"
                 + " OR (tipo = 2 AND valor_numero IS NOT NULL)"
                 + " OR (tipo = 3 AND valor_codigo IS NOT NULL)"
                 + " OR (tipo = 4 AND valor_texto IS NOT NULL)"
-                + " OR (tipo = 5 AND valor_data IS NOT NULL))");
+                + " OR (tipo = 5 AND valor_data IS NOT NULL)"
+                + " OR (tipo = 7 AND valor_codigo IS NOT NULL))"
+                + " AND (valor_rotulo IS NULL OR (tipo = 7 AND valor_codigo IS NOT NULL))");
             t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN (1, 2)");
         });
 
@@ -46,6 +48,8 @@ internal sealed class RespostaDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.Property(r => r.Origem).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
         builder.Property(r => r.Tipo).ClassificaComo(ClassificacaoDeProtecao.Interno).HasConversion<int>().IsRequired();
         builder.Property(r => r.ValorCodigo).HasMaxLength(OpcaoDeclaradaFato.CodigoMaxLength);
+        builder.Property(r => r.ValorRotulo)
+            .HasComment("O nome que o Geo conferiu para o município de valor_codigo; nulo no rascunho e preenchido na inscrição enviada.");
 
         // As colunas de valor guardam valores de fatos de classes diferentes, cuja classificação real é a do
         // fato coletado da linha, resolvida pelo projetor: valem a mais alta, o padrão do tipo. Só a chave e

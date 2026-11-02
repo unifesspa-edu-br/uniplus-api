@@ -30,6 +30,12 @@ public sealed class RespostaDaInscricaoRecord
 
     public string? ValorCodigo { get; set; }
 
+    /// <summary>
+    /// O nome que o Geo conferiu para o município de <see cref="ValorCodigo"/>: nulo no rascunho, preenchido na inscrição
+    /// enviada. Só o município tem rótulo.
+    /// </summary>
+    public string? ValorRotulo { get; set; }
+
     public string? ValorTexto { get; set; }
 
     public DateOnly? ValorData { get; set; }

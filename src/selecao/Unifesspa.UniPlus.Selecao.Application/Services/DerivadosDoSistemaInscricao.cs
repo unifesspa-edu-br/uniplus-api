@@ -25,51 +25,71 @@ public static class DerivadosDoSistemaInscricao
     {
         ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
         ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
-        ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
     };
 
-    public static async Task<Result<IReadOnlyDictionary<string, JsonElement>>> CalcularAsync(
-        IReadOnlyDictionary<string, JsonElement> respostas,
-        DateOnly? dataReferenciaFatos,
-        IConferenciaEnderecoGeo conferencia,
-        CancellationToken cancellationToken = default)
+    /// <summary>As definições das respostas do formulário e as dos derivados do sistema, para a avaliação saber quais valores são município.</summary>
+    public static IReadOnlyDictionary<string, DefinicaoDaResposta> ComOsDerivados(IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes)
+    {
+        ArgumentNullException.ThrowIfNull(definicoes);
+
+        return new Dictionary<string, DefinicaoDaResposta>(definicoes, StringComparer.Ordinal)
+            .Concat(DefinicoesDasRespostas.Where(d => !definicoes.ContainsKey(d.Key)))
+            .ToDictionary(static d => d.Key, static d => d.Value, StringComparer.Ordinal);
+    }
+
+    /// <summary>O fato do endereço de que saem os derivados de residência.</summary>
+    public const string EnderecoResidencial = "ENDERECO_RESIDENCIAL";
+
+    private static readonly IReadOnlySet<string> SemDerivadosIndeterminados = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>Os derivados de residência: saem do endereço residencial e dependem do Geo.</summary>
+    public static readonly IReadOnlySet<string> FatosDaResidencia =
+        new HashSet<string>(["UF_RESIDENCIA", "MUNICIPIO_RESIDENCIA"], StringComparer.Ordinal);
+
+    /// <summary>
+    /// Calcula os derivados do envio. A residência sai do que o Geo resolveu pelo CEP do endereço residencial na conferência do
+    /// endereço, a mesma consulta, e nunca do que o candidato declarou. O endereço que a conferência não confirmou — recusado, ou
+    /// com o Geo fora do ar — não recusa aqui: os derivados de residência ficam indeterminados, e a recusa do endereço, quando há,
+    /// é da conferência dele. A data de nascimento que não é uma data não gera faixa etária: a recusa é da forma do corpo.
+    /// </summary>
+    /// <param name="respostas">As respostas do estado final do envio, inclusive o endereço residencial já recusado.</param>
+    /// <param name="enderecos">O que a conferência dos endereços apurou.</param>
+    public static DerivadosCalculados Calcular(
+        IReadOnlyDictionary<string, JsonElement> respostas, DateOnly? dataReferenciaFatos, ConferenciaDosEnderecos enderecos)
     {
         ArgumentNullException.ThrowIfNull(respostas);
-        ArgumentNullException.ThrowIfNull(conferencia);
+        ArgumentNullException.ThrowIfNull(enderecos);
 
-        Dictionary<string, JsonElement> derivados = new(StringComparer.Ordinal);
+        Dictionary<string, JsonElement> valores = new(StringComparer.Ordinal);
+        Dictionary<string, string> nomes = new(StringComparer.Ordinal);
 
-        Result<int?> faixaEtaria = FaixaEtaria(respostas, dataReferenciaFatos);
-        if (faixaEtaria.IsFailure)
+        if (FaixaEtaria(respostas, dataReferenciaFatos) is { } idade)
         {
-            return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(faixaEtaria.Error!);
+            valores["FAIXA_ETARIA"] = JsonSerializer.SerializeToElement(idade);
         }
 
-        if (faixaEtaria.Value is { } idade)
+        if (!respostas.ContainsKey(EnderecoResidencial))
         {
-            derivados["FAIXA_ETARIA"] = JsonSerializer.SerializeToElement(idade);
+            return new DerivadosCalculados(valores, nomes, SemDerivadosIndeterminados, GeoIndisponivel: null);
         }
 
-        Result<(string Uf, string Municipio)?> residencia = await ResidenciaAsync(respostas, conferencia, cancellationToken).ConfigureAwait(false);
-        if (residencia.IsFailure)
+        if (enderecos.Resolvidos.TryGetValue(EnderecoResidencial, out CepResolvido? resolvido))
         {
-            return Result<IReadOnlyDictionary<string, JsonElement>>.Failure(residencia.Error!);
+            valores["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(resolvido.Uf);
+            valores["MUNICIPIO_RESIDENCIA"] = JsonSerializer.SerializeToElement(resolvido.CodigoIbge);
+            nomes["MUNICIPIO_RESIDENCIA"] = resolvido.Cidade;
+            return new DerivadosCalculados(valores, nomes, SemDerivadosIndeterminados, GeoIndisponivel: null);
         }
 
-        if (residencia.Value is { } conferida)
-        {
-            derivados["UF_RESIDENCIA"] = JsonSerializer.SerializeToElement(conferida.Uf);
-            derivados["MUNICIPIO_RESIDENCIA"] = JsonSerializer.SerializeToElement(conferida.Municipio);
-        }
-
-        return Result<IReadOnlyDictionary<string, JsonElement>>.Success(derivados);
+        return new DerivadosCalculados(valores, nomes, FatosDaResidencia, enderecos.GeoIndisponivel);
     }
 
     /// <summary>
     /// Os derivados pedidos, como fatos conhecidos para a avaliação fora do envio: só os de
     /// <paramref name="pedidos"/>, para não consultar o Geo sem necessidade; o que não se consegue
     /// apurar — resposta ausente, endereço incompleto, Geo que recusa ou não responde — fica
-    /// indeterminado, sem recusar nada. Só o envio recusa (<see cref="CalcularAsync"/>).
+    /// indeterminado, sem recusar nada. Só o envio recusa.
     /// </summary>
     public static async Task<IReadOnlyDictionary<string, FatoResolvido>> ApurarAsync(
         IReadOnlyDictionary<string, JsonElement> respostas,
@@ -85,20 +105,20 @@ public static class DerivadosDoSistemaInscricao
         Dictionary<string, FatoResolvido> apurados = new(StringComparer.Ordinal);
         if (pedidos.Contains("FAIXA_ETARIA"))
         {
-            apurados["FAIXA_ETARIA"] = FaixaEtaria(respostas, dataReferenciaFatos) is { IsSuccess: true, Value: { } idade }
+            apurados["FAIXA_ETARIA"] = FaixaEtaria(respostas, dataReferenciaFatos) is { } idade
                 ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(idade))
                 : FatoResolvido.Indeterminado();
         }
 
-        if (pedidos.Contains("UF_RESIDENCIA") || pedidos.Contains("MUNICIPIO_RESIDENCIA"))
+        if (pedidos.Overlaps(FatosDaResidencia))
         {
-            Result<(string Uf, string Municipio)?> residencia = await ResidenciaAsync(respostas, conferencia, cancellationToken).ConfigureAwait(false);
-            bool conferida = residencia is { IsSuccess: true, Value: not null };
+            ResidenciaApurada residencia = await ResidenciaAsync(respostas, conferencia, cancellationToken).ConfigureAwait(false);
+            bool conferida = residencia.Conferida;
             apurados["UF_RESIDENCIA"] = conferida
-                ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Value!.Value.Uf))
+                ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Uf))
                 : FatoResolvido.Indeterminado();
             apurados["MUNICIPIO_RESIDENCIA"] = conferida
-                ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Value!.Value.Municipio))
+                ? FatoResolvido.Resolvido(JsonSerializer.SerializeToElement(residencia.Codigo))
                 : FatoResolvido.Indeterminado();
         }
 
@@ -106,52 +126,57 @@ public static class DerivadosDoSistemaInscricao
     }
 
     /// <summary>
-    /// A idade na data de referência; nula quando não há o que apurar — sem data de referência,
-    /// nenhuma regra do processo cita a faixa etária, e sem data de nascimento não há idade.
+    /// Os derivados de residência pedidos, como fatos conhecidos, a partir dos que o envio gravou: a inscrição enviada não
+    /// reconfere o endereço no Geo, porque o que ela diz da residência não muda com o Geo. O que o envio não gravou fica indeterminado.
     /// </summary>
-    private static Result<int?> FaixaEtaria(IReadOnlyDictionary<string, JsonElement> respostas, DateOnly? dataReferenciaFatos)
+    public static IReadOnlyDictionary<string, FatoResolvido> ResidenciaGravada(
+        IReadOnlyDictionary<string, JsonElement> derivadosGravados, IReadOnlySet<string> pedidos)
     {
-        if (dataReferenciaFatos is not { } referencia
-            || !respostas.TryGetValue("DATA_NASCIMENTO", out JsonElement dataNascimentoElemento))
-        {
-            return Result<int?>.Success(null);
-        }
+        ArgumentNullException.ThrowIfNull(derivadosGravados);
+        ArgumentNullException.ThrowIfNull(pedidos);
 
-        if (DiaDoCalendario.Ler(dataNascimentoElemento) is not { } nascimento)
-        {
-            return Result<int?>.Failure(new DomainError(
-                "Inscricao.DataNascimentoInvalida", "A data de nascimento não é uma data válida."));
-        }
-
-        return Result<int?>.Success(IdadeEmAnos(nascimento, referencia));
+        return FatosDaResidencia.Where(pedidos.Contains).ToDictionary(
+            static f => f,
+            f => derivadosGravados.TryGetValue(f, out JsonElement valor) ? FatoResolvido.Resolvido(valor) : FatoResolvido.Indeterminado(),
+            StringComparer.Ordinal);
     }
 
-    /// <summary>A UF e o município do endereço residencial, só depois de conferidos no Geo; nulo sem endereço.</summary>
-    private static async Task<Result<(string Uf, string Municipio)?>> ResidenciaAsync(
+    /// <summary>
+    /// A idade na data de referência; nula quando não há o que apurar — sem data de referência, nenhuma regra do processo cita
+    /// a faixa etária, sem data de nascimento não há idade, e a data inválida não gera idade.
+    /// </summary>
+    private static int? FaixaEtaria(IReadOnlyDictionary<string, JsonElement> respostas, DateOnly? dataReferenciaFatos) =>
+        dataReferenciaFatos is { } referencia
+        && respostas.TryGetValue("DATA_NASCIMENTO", out JsonElement dataNascimentoElemento)
+        && DiaDoCalendario.Ler(dataNascimentoElemento) is { } nascimento
+            ? IdadeEmAnos(nascimento, referencia)
+            : null;
+
+    /// <summary>
+    /// A UF e o município do endereço residencial, só depois de conferidos no Geo, fora do envio. O endereço sem a cidade que a
+    /// conferência exige, o que o Geo recusa e o que ele não confere por estar fora do ar ficam indeterminados.
+    /// </summary>
+    private static async Task<ResidenciaApurada> ResidenciaAsync(
         IReadOnlyDictionary<string, JsonElement> respostas, IConferenciaEnderecoGeo conferencia, CancellationToken cancellationToken)
     {
-        if (!respostas.TryGetValue("ENDERECO_RESIDENCIAL", out JsonElement enderecoElemento))
+        if (!respostas.TryGetValue(EnderecoResidencial, out JsonElement enderecoElemento))
         {
-            return Result<(string Uf, string Municipio)?>.Success(null);
+            return ResidenciaApurada.Indeterminada;
         }
 
         if (!EnderecoDeclarado.TentarLer(enderecoElemento, out EnderecoDeclarado endereco)
             || endereco is not { CidadeCodigoIbge: { Length: > 0 } codigoIbge, CidadeUf: { Length: > 0 } uf })
         {
-            return Result<(string Uf, string Municipio)?>.Failure(new DomainError(
-                "Inscricao.EnderecoResidencialInvalido", "O endereço residencial não tem a cidade que a conferência no Geo exige."));
+            return ResidenciaApurada.Indeterminada;
         }
 
-        // O envio recusa o endereço sem CEP antes de chegar aqui; o ramo por município serve à apuração
-        // fora do envio (ApurarAsync), que confere pela cidade e nunca recusa por falta de CEP.
+        // O ramo por município serve à apuração de quem ainda não tem CEP: confere pela cidade e nunca recusa por falta de CEP.
         Result<string> conferido = endereco.CepSomenteDigitos is { } cep
             ? await conferencia.ConferirCepAsync(cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
             : await conferencia.ConferirMunicipioAsync(codigoIbge, uf, cancellationToken).ConfigureAwait(false);
 
         // O pressuposto de elegibilidade é o que o Geo confirmou, nunca o que o candidato mandou.
-        return conferido.IsFailure
-            ? Result<(string Uf, string Municipio)?>.Failure(conferido.Error!)
-            : Result<(string Uf, string Municipio)?>.Success((uf, codigoIbge));
+        return conferido.IsSuccess ? new ResidenciaApurada(uf, codigoIbge) : ResidenciaApurada.Indeterminada;
     }
 
     /// <summary>Idade em anos completos na data de referência — nunca a de hoje.</summary>
@@ -165,4 +190,21 @@ public static class DerivadosDoSistemaInscricao
 
         return idade;
     }
+}
+
+/// <summary>
+/// Os derivados do envio: os valores, que são códigos; o nome que o Geo deu a cada derivado de município; os derivados de
+/// residência que ficaram indeterminados; e o erro do Geo quando foi ele fora do ar que os deixou assim.
+/// </summary>
+public sealed record DerivadosCalculados(
+    IReadOnlyDictionary<string, JsonElement> Valores,
+    IReadOnlyDictionary<string, string> Nomes,
+    IReadOnlySet<string> Indeterminados,
+    DomainError? GeoIndisponivel);
+
+internal sealed record ResidenciaApurada(string? Uf, string? Codigo)
+{
+    public static ResidenciaApurada Indeterminada { get; } = new(null, null);
+
+    public bool Conferida => Uf is not null;
 }

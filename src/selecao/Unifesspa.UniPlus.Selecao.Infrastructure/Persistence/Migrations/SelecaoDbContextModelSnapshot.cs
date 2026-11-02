@@ -4881,6 +4881,11 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("valor_numero");
 
+                    b.Property<string>("ValorRotulo")
+                        .HasColumnType("text")
+                        .HasColumnName("valor_rotulo")
+                        .HasComment("O nome que o Geo conferiu para o município de valor_codigo; nulo no rascunho e preenchido na inscrição enviada.");
+
                     b.Property<string>("ValorTexto")
                         .HasColumnType("text")
                         .HasColumnName("valor_texto");
@@ -4919,7 +4924,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_respostas_da_inscricao_origem", "origem IN (1, 2)");
 
-                            t.HasCheckConstraint("ck_respostas_da_inscricao_valor_do_tipo", "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo BETWEEN 1 AND 5 AND (valor_cifrado IS NOT NULL OR (tipo = 1 AND valor_booleano IS NOT NULL) OR (tipo = 2 AND valor_numero IS NOT NULL) OR (tipo = 3 AND valor_codigo IS NOT NULL) OR (tipo = 4 AND valor_texto IS NOT NULL) OR (tipo = 5 AND valor_data IS NOT NULL))");
+                            t.HasCheckConstraint("ck_respostas_da_inscricao_valor_do_tipo", "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN (1, 2, 3, 4, 5, 7) AND (valor_cifrado IS NOT NULL OR (tipo = 1 AND valor_booleano IS NOT NULL) OR (tipo = 2 AND valor_numero IS NOT NULL) OR (tipo = 3 AND valor_codigo IS NOT NULL) OR (tipo = 4 AND valor_texto IS NOT NULL) OR (tipo = 5 AND valor_data IS NOT NULL) OR (tipo = 7 AND valor_codigo IS NOT NULL)) AND (valor_rotulo IS NULL OR (tipo = 7 AND valor_codigo IS NOT NULL))");
                         });
                 });
 
