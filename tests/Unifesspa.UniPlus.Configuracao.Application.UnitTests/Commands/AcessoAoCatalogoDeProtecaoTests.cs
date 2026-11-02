@@ -27,7 +27,7 @@ public sealed class AcessoAoCatalogoDeProtecaoTests
 
         Result<AcessoAoCatalogoDeProtecao> acesso = await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, default);
 
-        acesso.Value.Should().Be(new AcessoAoCatalogoDeProtecao(ManterTipos: false, ManterFatos: false, Aprovar: true));
+        (acesso.Value.ManterTipos, acesso.Value.ManterFatos, acesso.Value.Aprovar).Should().Be((false, false, true));
         await _verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
     }
 

@@ -13,6 +13,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public readonly record struct AcessoAoCatalogoDeProtecao(bool ManterTipos, bool ManterFatos, bool Aprovar)
 {
+    private DecisaoDeAcesso? Tipos { get; init; }
+
+    private DecisaoDeAcesso? Fatos { get; init; }
+
     public bool Algum => ManterTipos || ManterFatos || Aprovar;
 
     public static DomainError SemPermissao { get; } = new(
@@ -42,13 +46,39 @@ public readonly record struct AcessoAoCatalogoDeProtecao(bool ManterTipos, bool 
         DecisaoDeAcesso fatos = await AvaliarAsync(verificador, PermissaoConfiguracao.FatosCandidatoManter, ResourceTiposConfiguracao.FatoCandidato, cancellationToken).ConfigureAwait(false);
         DecisaoDeAcesso aprovar = await AvaliarAsync(verificador, PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTiposConfiguracao.ProtecaoDoCatalogo, cancellationToken).ConfigureAwait(false);
 
-        AcessoAoCatalogoDeProtecao acesso = new(tipos is DecisaoPermitida, fatos is DecisaoPermitida, aprovar is DecisaoPermitida);
+        AcessoAoCatalogoDeProtecao acesso = new(tipos is DecisaoPermitida, fatos is DecisaoPermitida, aprovar is DecisaoPermitida)
+        {
+            Tipos = tipos,
+            Fatos = fatos,
+        };
         if (!acesso.Algum)
         {
             await verificador.RegistrarDesfechoAsync([tipos, fatos, aprovar], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
         }
 
         return Result<AcessoAoCatalogoDeProtecao>.Success(acesso);
+    }
+
+    /// <summary>
+    /// Grava a negativa de cada cadastro que o pedido alcançava e a pessoa não mantém, quando o pedido é recusado por
+    /// isso apesar de ela ter outra permissão do circuito. Sem nenhuma permissão, <see cref="VerificarAsync"/> já gravou
+    /// as três negativas.
+    /// </summary>
+    public Task RegistrarRecusaDosCadastrosAsync(
+        IVerificadorDeAcesso verificador, bool tipos, bool fatos, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        if (!Algum)
+        {
+            return Task.CompletedTask;
+        }
+
+        DecisaoDeAcesso[] negadas = [.. new[] { tipos ? Tipos : null, fatos ? Fatos : null }.OfType<DecisaoNegada>()];
+
+        return negadas.Length == 0
+            ? Task.CompletedTask
+            : verificador.RegistrarDesfechoAsync(negadas, IntencaoDoRegistro.Pedido, cancellationToken);
     }
 
     private static Task<DecisaoDeAcesso> AvaliarAsync(
