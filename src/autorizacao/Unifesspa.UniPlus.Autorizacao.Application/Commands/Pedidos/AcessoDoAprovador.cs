@@ -78,6 +78,23 @@ internal sealed record AcessoDoAprovador(
     }
 
     /// <summary>
+    /// Registra as negativas de quem pediu um pedido que não existe sem a permissão que o veria. A decisão é tomada sem
+    /// o id da rota, que é forjável e não existe: a trilha reconhece a sondagem pela ausência do id, e a resposta é a mesma
+    /// de quem não tem a permissão. Quem tem a permissão errou o link, e nada se registra.
+    /// </summary>
+    public static async Task RegistrarNegativasDoInexistenteAsync(
+        IVerificadorDeAcesso verificador, bool incluirAdministrar, CancellationToken cancellationToken)
+    {
+        AcessoDoAprovador? acesso = await ConsultarAsync(verificador, incluirAdministrar, pedidoId: null, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (acesso is { VeTodos: false })
+        {
+            await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
     /// Registra a decisão que governou o desfecho, permitida ou negada. Pergunta pelo acesso a uma fila ou a uma etapa
     /// tem uma permissão só, e é essa que a trilha recebe.
     /// </summary>

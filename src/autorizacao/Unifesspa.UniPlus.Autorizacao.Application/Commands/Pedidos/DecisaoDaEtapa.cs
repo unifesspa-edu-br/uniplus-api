@@ -40,10 +40,15 @@ internal sealed record DecisaoDaEtapa(PedidoDeConcessao Pedido, Perfil Perfil, P
 
         if (!acesso.Aprova)
         {
-            // Só se registra o acesso a um pedido que existe: o id da rota não entra na trilha se for forjado.
+            // O id da rota só entra na trilha se o pedido existe; o inexistente registra a negativa sem o id.
             if (await pedidos.ObterParaLeituraAsync(pedidoId, cancellationToken).ConfigureAwait(false) is not null)
             {
                 await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: false, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.SemPermissao());

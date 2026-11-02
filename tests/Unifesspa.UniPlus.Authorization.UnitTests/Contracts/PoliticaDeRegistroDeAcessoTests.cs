@@ -17,16 +17,16 @@ public sealed class PoliticaDeRegistroDeAcessoTests
     private static readonly PermissionRequirement Pessoal =
         Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "Lei nº 13.709/2018 (LGPD), art. 7º, III");
 
-    [Theory(DisplayName = "O pedido grava a decisão de dado pessoal, permitida ou negada, e não a de dado interno")]
-    [InlineData(ResultadoDoAcesso.Permitido, true)]
-    [InlineData(ResultadoDoAcesso.Negado, true)]
-    [InlineData(ResultadoDoAcesso.Impedido, true)]
-    public void Pedido_DadoPessoal_Grava(ResultadoDoAcesso resultado, bool grava)
+    [Theory(DisplayName = "O pedido grava a negativa de qualquer sensibilidade e a permitida só de dado pessoal")]
+    [InlineData(ResultadoDoAcesso.Negado, true, true)]
+    [InlineData(ResultadoDoAcesso.Impedido, true, true)]
+    [InlineData(ResultadoDoAcesso.Permitido, true, false)]
+    public void Pedido_GravaConformeSensibilidade(ResultadoDoAcesso resultado, bool gravaPessoal, bool gravaInterno)
     {
         PoliticaDeRegistroDeAcesso.Desfecho([DecisaoDeAcessoDeTeste.Tomada(resultado, Pessoal)], IntencaoDoRegistro.Pedido)
-            .Any().Should().Be(grava);
+            .Any().Should().Be(gravaPessoal);
         PoliticaDeRegistroDeAcesso.Desfecho([DecisaoDeAcessoDeTeste.Tomada(resultado, Interno)], IntencaoDoRegistro.Pedido)
-            .Should().BeEmpty();
+            .Any().Should().Be(gravaInterno);
     }
 
     [Fact(DisplayName = "Pedido com duas permitidas grava só a primeira que autorizou")]
@@ -107,15 +107,36 @@ public sealed class PoliticaDeRegistroDeAcessoTests
         PoliticaDeRegistroDeAcesso.Desfecho([permitida, SemSujeito.Instancia], IntencaoDoRegistro.Projecao).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A negativa por concessão em unidade exigida não é gravada")]
-    public void Pedido_ConcessaoEmUnidadeExigida_NaoGrava()
+    [Fact(DisplayName = "A negativa por concessão em unidade exigida é gravada")]
+    public void Pedido_ConcessaoEmUnidadeExigida_Grava()
     {
-        ResourceContext resource = Resource(ClassificacaoDeProtecao.Pessoal);
+        ResourceContext resource = Resource(ClassificacaoDeProtecao.Interno);
         RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(
-            Sujeito(), Pessoal, resource, Requisicao(), AuthorizationDecision.Negar(MotivoNegativa.ConcessaoEmUnidadeExigida));
+            Sujeito(), Interno, resource, Requisicao(), AuthorizationDecision.Negar(MotivoNegativa.ConcessaoEmUnidadeExigida));
 
-        PoliticaDeRegistroDeAcesso.Desfecho(
-            [DecisaoDeAcesso.Tomada(Pessoal, resource, registro)], IntencaoDoRegistro.Pedido).Should().BeEmpty();
+        PoliticaDeRegistroDeAcesso.Desfecho([DecisaoDeAcesso.Tomada(Interno, resource, registro)], IntencaoDoRegistro.Pedido)
+            .Should().ContainSingle().Which.MotivoNegativa.Should().Be("concessao_em_unidade_exigida");
+    }
+
+    [Fact(DisplayName = "Principal negada com alternativa permitida grava só a permitida")]
+    public void Pedido_PrincipalNegadaAlternativaPermitida_NaoGravaANegada()
+    {
+        DecisaoDeAcesso negada = DecisaoDeAcessoDeTeste.Tomada(ResultadoDoAcesso.Negado, Interno);
+        DecisaoDeAcesso permitida = DecisaoDeAcessoDeTeste.Tomada(ResultadoDoAcesso.Permitido, Interno);
+
+        PoliticaDeRegistroDeAcesso.Desfecho([negada, permitida], IntencaoDoRegistro.Pedido).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Principal e alternativa negadas gravam as duas negativas")]
+    public void Pedido_PrincipalEAlternativaNegadas_GravaAsDuas()
+    {
+        DecisaoDeAcesso[] negadas =
+        [
+            DecisaoDeAcessoDeTeste.Tomada(ResultadoDoAcesso.Negado, Interno),
+            DecisaoDeAcessoDeTeste.Tomada(ResultadoDoAcesso.Negado, Interno),
+        ];
+
+        PoliticaDeRegistroDeAcesso.Desfecho(negadas, IntencaoDoRegistro.Pedido).Should().HaveCount(2);
     }
 
     [Fact(DisplayName = "Por resource exibido grava a permitida de qualquer sensibilidade, um registro por id")]

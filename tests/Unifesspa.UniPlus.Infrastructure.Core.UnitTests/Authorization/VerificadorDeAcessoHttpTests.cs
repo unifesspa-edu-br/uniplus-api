@@ -69,7 +69,7 @@ public sealed class VerificadorDeAcessoHttpTests
             Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l => l.Count == 1 && l[0].Permitido), Arg.Any<CancellationToken>());
     }
 
-    [Theory(DisplayName = "O pedido grava uma decisão, permitida ou negada, quando a permissão é de dado pessoal ou mais restrito, e nenhuma quando é interna")]
+    [Theory(DisplayName = "O pedido grava a negativa de qualquer permissão e a permitida só quando a permissão é de dado pessoal ou mais restrito")]
     [InlineData(PermissaoAutorizacao.PerfisManter, true)]
     [InlineData(PermissaoAutorizacao.PerfisManter, false)]
     [InlineData(PermissaoAutorizacao.ConsultarCatalogo, true)]
@@ -80,7 +80,7 @@ public sealed class VerificadorDeAcessoHttpTests
     [InlineData(PermissaoAutorizacao.PedidosAprovarFuncional, false)]
     [InlineData(PermissaoAutorizacao.PedidosAprovarProtecaoDeDados, true)]
     [InlineData(PermissaoAutorizacao.PedidosAprovarProtecaoDeDados, false)]
-    public async Task Exigir_PermissoesDoCatalogoDeAutorizacao_GravamSoAsDeDadoPessoal(PermissaoAutorizacao permissao, bool permitida)
+    public async Task Exigir_PermissoesDoCatalogoDeAutorizacao_GravaANegativaEAPermitidaSoDeDadoPessoal(PermissaoAutorizacao permissao, bool permitida)
     {
         PermissionRequirement requisito = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Requisito;
         _decisao.DecidirAsync(default!, default!, default!, default!, default).ReturnsForAnyArgs(
@@ -88,8 +88,8 @@ public sealed class VerificadorDeAcessoHttpTests
 
         await _verificador.ExigirAsync(requisito);
 
-        // Só a permissão de dado pessoal ou mais restrito grava, e grava a decisão tomada, permitida ou negada.
-        int esperados = requisito.Sensibilidade >= ClassificacaoDeProtecao.Pessoal ? 1 : 0;
+        // A negativa grava sempre; a permitida, só quando a permissão é de dado pessoal ou mais restrito.
+        int esperados = !permitida || requisito.Sensibilidade >= ClassificacaoDeProtecao.Pessoal ? 1 : 0;
         await _registro.Received(esperados).RegistrarAsync(
             Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l =>
                 l.Count == 1 && l[0].Permissao == requisito.Permissao && l[0].Permitido == permitida),
@@ -162,7 +162,7 @@ public sealed class VerificadorDeAcessoHttpTests
             .Which.Registro.MotivoNegativa.Should().Be("contexto_obrigatorio_ausente");
     }
 
-    [Fact(DisplayName = "Em alguma unidade, a concessão só global que o ponto de decisão permitiria é negada com o motivo próprio, e a política não a grava")]
+    [Fact(DisplayName = "Em alguma unidade, a concessão só global que o ponto de decisão permitiria é negada com o motivo próprio, e a política a grava")]
     public async Task AvaliarEmAlgumaUnidade_SoConcessaoGlobalQuePermitiria_NegaPorConcessaoEmUnidadeExigida()
     {
         EffectiveGrant global = ConcessaoGlobal();
@@ -175,11 +175,13 @@ public sealed class VerificadorDeAcessoHttpTests
         decisoes.Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>()
             .Which.Registro.MotivoNegativa.Should().Be("concessao_em_unidade_exigida");
         await verificador.RegistrarDesfechoAsync(decisoes.ToArray(), IntencaoDoRegistro.Pedido);
-        await _registro.DidNotReceiveWithAnyArgs().RegistrarAsync(default!, default);
+        await _registro.Received(1).RegistrarAsync(
+            Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l => l.Count == 1 && l[0].MotivoNegativa == "concessao_em_unidade_exigida"),
+            Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Filtro com alternativa e só concessão global na alternativa: 403, e só a negativa da principal é gravada")]
-    public async Task Filtro_AlternativaComSoConcessaoGlobal_Responde403SemGravarANegativaDaAlternativa()
+    [Fact(DisplayName = "Filtro com alternativa e só concessão global na alternativa: 403, e as negativas da principal e da alternativa são gravadas")]
+    public async Task Filtro_AlternativaComSoConcessaoGlobal_Responde403EGravaAsDuasNegativas()
     {
         EffectiveGrant global = EffectiveGrant.From(
             "autorizacao:pedidos:aprovar-funcional", FonteGrant.Concessao, escopoInstitucional: true).Value!;
@@ -200,7 +202,11 @@ public sealed class VerificadorDeAcessoHttpTests
         contexto.Result.Should().BeOfType<ForbidResult>();
         await _registro.Received(1).RegistrarAsync(
             Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l =>
-                l.Count == 1 && !l[0].Permitido && l[0].Permissao == "autorizacao:concessoes:administrar"),
+                l.Count == 2
+                && l.All(static r => !r.Permitido)
+                && l[0].Permissao == "autorizacao:concessoes:administrar"
+                && l[1].Permissao == "autorizacao:pedidos:aprovar-funcional"
+                && l[1].MotivoNegativa == "concessao_em_unidade_exigida"),
             Arg.Any<CancellationToken>());
     }
 

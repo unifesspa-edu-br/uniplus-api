@@ -12,6 +12,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 internal static class VisibilidadeDoPedido
 {
     /// <summary>
+    /// Registra a negativa de quem pediu um pedido que não existe, para que a existência do pedido não apareça na
+    /// falha do registro: quem é recusado tem a mesma resposta nos dois casos.
+    /// </summary>
+    public static Task RegistrarInexistenteAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: true, cancellationToken);
+
+    /// <summary>
     /// Confere a visibilidade, ou devolve o erro que a borda responde: 401 para a identidade incompleta, 404 para
     /// quem não vê.
     /// </summary>

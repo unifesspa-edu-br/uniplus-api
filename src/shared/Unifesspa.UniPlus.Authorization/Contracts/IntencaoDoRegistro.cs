@@ -8,7 +8,7 @@ public enum IntencaoDoRegistro
 {
     /// <summary>
     /// Pedido que pode ser recusado. Grava a decisão que o autorizou (a primeira, havendo alternativas) ou, se nenhuma
-    /// autorizou, as negativas, desde que o dado alcançado seja pessoal ou mais restrito.
+    /// autorizou, as negativas, de qualquer sensibilidade; a decisão permitida só grava a partir do dado pessoal.
     /// </summary>
     Pedido = 0,
 

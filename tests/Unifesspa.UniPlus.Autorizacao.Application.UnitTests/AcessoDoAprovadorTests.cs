@@ -50,6 +50,27 @@ public sealed class AcessoDoAprovadorTests
         verificador.Gravados.Select(static g => g.Single().Chave).Distinct().Should().HaveCount(2);
     }
 
+    [Fact(DisplayName = "Pedido inexistente pedido sem permissão grava as negativas sem o id da rota")]
+    public async Task Inexistente_SemPermissao_GravaAsNegativasSemId()
+    {
+        VerificadorDeTeste verificador = new("paulo.nogueira", permitidas: []);
+
+        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: true, default);
+
+        IReadOnlyCollection<RegistroDecisaoAcesso> gravados = verificador.Gravados.Should().ContainSingle().Subject;
+        gravados.Should().HaveCount(3).And.OnlyContain(r => !r.Permitido && r.ResourceId == null);
+    }
+
+    [Fact(DisplayName = "Pedido inexistente pedido por quem tem a permissão de ver não grava nada")]
+    public async Task Inexistente_ComPermissao_NaoGrava()
+    {
+        VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional]);
+
+        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: true, default);
+
+        verificador.Gravados.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Autor não identificado recusa sem registrar acesso algum: a recusa não é de autorização")]
     public async Task AutorNaoIdentificado_NaoGrava()
     {
@@ -62,8 +83,8 @@ public sealed class AcessoDoAprovadorTests
         verificador.Gravados.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Sem permissão e com o id de um pedido que não existe, a recusa não deixa o id na trilha")]
-    public async Task SemPermissao_PedidoInexistente_NaoGrava()
+    [Fact(DisplayName = "Sem permissão e com o id de um pedido que não existe, a recusa grava as negativas sem o id forjado")]
+    public async Task SemPermissao_PedidoInexistente_GravaSemOId()
     {
         VerificadorDeTeste verificador = new("paulo.nogueira", permitidas: []);
 
@@ -71,7 +92,7 @@ public sealed class AcessoDoAprovadorTests
             Guid.CreateVersion7(), new PedidosInexistentes(), null!, verificador, null!, new Identidade("https://idp/x", "paulo.nogueira"), default);
 
         resultado.IsFailure.Should().BeTrue();
-        verificador.Gravados.Should().BeEmpty();
+        verificador.Gravados.Should().ContainSingle().Which.Should().OnlyContain(r => !r.Permitido && r.ResourceId == null);
     }
 
     [Fact(DisplayName = "Quem tem só a etapa funcional e pede a fila da proteção de dados é recusado e grava a negativa dela, não um permitido")]

@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Cada cadastro do módulo decide o acesso pela permissão concedida, e não pelo papel do token: quem tem a concessão
@@ -73,8 +74,12 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         string codigo = permissao.Codigo;
         List<RegistroDecisaoAcesso> decisoes = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
             .Where(r => r.PerfilId == perfil && r.Permissao == codigo)];
-        // Só a permissão de sensibilidade pessoal ou maior publica registro; a operacional decide sem gravar.
+        // O permitido só publica registro a partir da sensibilidade pessoal; a operacional decide sem gravar.
         decisoes.Should().OnlyContain(r => r.Permitido, codigo);
+        if (permissao.Requisito.Sensibilidade < ClassificacaoDeProtecao.Pessoal)
+        {
+            decisoes.Should().BeEmpty(codigo);
+        }
     }
 
     [Theory(DisplayName = "O administrador da plataforma sem concessão e a permissão de outro cadastro respondem 403")]
@@ -91,6 +96,10 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
         administrador.StatusCode.Should().Be(HttpStatusCode.Forbidden, permissao.Codigo);
         outroCadastro.StatusCode.Should().Be(HttpStatusCode.Forbidden, permissao.Codigo);
+        string codigo = permissao.Codigo;
+        _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados.Should().Contain(
+            r => r.AtorSubject == Leandro && r.Permissao == codigo && !r.Permitido && r.MotivoNegativa == "sem_concessao_aplicavel",
+            "toda negativa por falta de permissão é registrada, de qualquer sensibilidade");
     }
 
     [Theory(DisplayName = "Sem login a resposta é 401")]

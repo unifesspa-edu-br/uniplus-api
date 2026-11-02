@@ -47,6 +47,7 @@ public static class LerAnexoDoPedidoCommandHandler
         PedidoDeConcessao? pedido = await repository.ObterParaLeituraAsync(command.PedidoId, cancellationToken).ConfigureAwait(false);
         if (pedido is null)
         {
+            await VisibilidadeDoPedido.RegistrarInexistenteAsync(verificador, cancellationToken).ConfigureAwait(false);
             return Result<LeituraDoAnexoDto>.Failure(PedidoHandlerErros.NaoEncontrado());
         }
 
