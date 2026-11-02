@@ -300,7 +300,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.FernandaDrumond.Formatado);
     }
 
-    [Fact(DisplayName = "Só com o acesso às inscrições, a linha e o detalhe trazem o id e nenhum outro campo")]
+    [Fact(DisplayName = "Só com o acesso às inscrições, a linha e o detalhe trazem o id e o processo, e nenhum outro campo")]
     public async Task SoComAcesso_TrazSoOId()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(SoComAcesso_TrazSoOId));
@@ -313,8 +313,9 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         using JsonDocument jsonLista = JsonDocument.Parse(await lista.Content.ReadAsStringAsync());
         using JsonDocument jsonDetalhe = JsonDocument.Parse(await detalhe.Content.ReadAsStringAsync());
         jsonLista.RootElement.EnumerateArray().Select(static i => string.Join(",", i.EnumerateObject().Select(static p => p.Name)))
-            .Should().OnlyContain(static nomes => nomes == "id");
-        jsonDetalhe.RootElement.EnumerateObject().Select(static p => p.Name).Should().BeEquivalentTo(["id", "secoes", "derivados", "arquivos"]);
+            .Should().OnlyContain(static nomes => nomes == "id,processo");
+        jsonDetalhe.RootElement.EnumerateObject().Select(static p => p.Name).Should().BeEquivalentTo(["id", "processo", "secoes", "derivados", "arquivos"]);
+        jsonDetalhe.RootElement.GetProperty("processo").GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact(DisplayName = "Detalhe: quem só pode revelar recebe o item do CPF sem valor e com podeRevelar, e nenhum registro do identificador mascarado")]
@@ -497,7 +498,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
         json.RootElement.EnumerateObject().Select(static p => p.Name).Should().Equal(
-            ["id"], "sem decisão permitida na requisição só o id, que não é classificado, sai");
+            ["id", "processo"], "sem decisão permitida na requisição só o id e o processo, que não são classificados, saem");
     }
 
     private IReadOnlyList<RegistroDecisaoAcesso> RegistrosDeDados(Guid processoId, PermissaoSelecao permissao) =>

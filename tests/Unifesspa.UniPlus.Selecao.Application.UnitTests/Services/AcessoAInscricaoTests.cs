@@ -29,7 +29,7 @@ public sealed class AcessoAInscricaoTests
     private readonly IInscricaoRepository _inscricoes = Substitute.For<IInscricaoRepository>();
 
     public AcessoAInscricaoTests() =>
-        _processos.ObterUnidadeAdministradoraAsync(Processo, Arg.Any<CancellationToken>()).Returns(Unidade);
+        _processos.ObterUnidadeENomeAsync(Processo, Arg.Any<CancellationToken>()).Returns(new UnidadeENomeDoProcesso(Unidade, "PSR 2027"));
 
     [Fact(DisplayName = "A inscrição enviada deste processo é confirmada com a unidade dona")]
     public async Task ConferirVinculo_Enviada_ConfirmaComAUnidade()
@@ -61,7 +61,7 @@ public sealed class AcessoAInscricaoTests
     public async Task ConferirVinculo_ProcessoInexistente_NaoEncontra()
     {
         Vincular(Processo, SituacaoInscricao.Submetida);
-        _processos.ObterUnidadeAdministradoraAsync(Processo, Arg.Any<CancellationToken>()).Returns((Guid?)null);
+        _processos.ObterUnidadeENomeAsync(Processo, Arg.Any<CancellationToken>()).Returns((UnidadeENomeDoProcesso?)null);
 
         (await AcessoAInscricao.ConferirVinculoAsync(_processos, _inscricoes, Processo, Inscricao, default))
             .Should().Be(new NaoEncontrada(null));
@@ -119,5 +119,5 @@ public sealed class AcessoAInscricaoTests
             .Returns(new VinculoDaInscricao(Inscricao, processo, situacao, Guid.CreateVersion7(), null, null));
 
     private static Vinculo UmVinculo(Guid processo) =>
-        new(Unidade, new VinculoDaInscricao(Inscricao, processo, SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, null));
+        new(Unidade, "PSR 2027", new VinculoDaInscricao(Inscricao, processo, SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, null));
 }

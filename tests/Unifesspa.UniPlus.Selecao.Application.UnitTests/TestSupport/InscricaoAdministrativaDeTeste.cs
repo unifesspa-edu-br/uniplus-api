@@ -51,6 +51,10 @@ internal sealed class InscricaoAdministrativaDeTeste
 
     public Guid VersaoId { get; private set; }
 
+    public const string NomeDoProcesso = "PSR 2027";
+
+    public const string NomeDaOferta = "Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino";
+
     public Guid OfertaCursoId { get; } = Guid.CreateVersion7();
 
     public SituacaoInscricao Situacao { get; }
@@ -118,9 +122,9 @@ internal sealed class InscricaoAdministrativaDeTeste
     /// <summary>Entrega os repositórios e o codec que respondem pelo cenário montado.</summary>
     public Mundo Montar()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PSR 2027");
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso);
         GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
+            [.. processo.Etapas], processo.OfertaAtendimento!, [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], processo.BonusRegional,
             [.. processo.CriteriosDesempate], processo.Classificacao!, [], _exigencias, [], null,
             fatosColetados: _fatos, gruposColetados: _grupos, numeroDeOpcoesDeCurso: 1,
             formularios: [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!]);
@@ -134,6 +138,8 @@ internal sealed class InscricaoAdministrativaDeTeste
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(DecisoesDeAcessoDeTeste.UnidadeDona);
+        processos.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
+            .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, NomeDoProcesso));
         IReadOnlyList<VersaoConfiguracao> versoes = [versao];
         processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(versoes);
 

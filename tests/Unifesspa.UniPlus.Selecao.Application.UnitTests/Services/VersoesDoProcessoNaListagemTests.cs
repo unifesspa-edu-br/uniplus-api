@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// A proteção do nome de um processo é a classe mais alta entre as versões, e a base legal só vale quando todas a
 /// congelaram. Versão que não se lê vale como sensível sem base legal.
 /// </summary>
-public sealed class ClassificacaoDoNomeNoProcessoTests
+public sealed class VersoesDoProcessoNaListagemTests
 {
     private const string BasePessoal = VersoesDoNomeDeTeste.Hipotese;
 
@@ -29,8 +29,8 @@ public sealed class ClassificacaoDoNomeNoProcessoTests
         (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(ProcessoId,
             VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", BasePessoal), VersoesDoNomeDeTeste.VersaoComNome("SENSIVEL", BasePessoal));
 
-        (ClassificacaoDeProtecao classificacao, string? baseLegal) = await ClassificacaoDoNomeNoProcesso
-            .ResolverAsync(ProcessoId, processos, codecs, default);
+        LeituraDasVersoes leitura = await VersoesDoProcessoNaListagem.LerAsync(ProcessoId, processos, codecs, default);
+        (ClassificacaoDeProtecao classificacao, string? baseLegal) = (leitura.ClassificacaoDoNome, leitura.BaseLegalDoNome);
 
         classificacao.Should().Be(ClassificacaoDeProtecao.Sensivel);
         baseLegal.Should().Be(BasePessoal);
@@ -42,8 +42,8 @@ public sealed class ClassificacaoDoNomeNoProcessoTests
         (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(ProcessoId,
             VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", BasePessoal), VersoesDoNomeDeTeste.VersaoIlegivel());
 
-        (ClassificacaoDeProtecao classificacao, string? baseLegal) = await ClassificacaoDoNomeNoProcesso
-            .ResolverAsync(ProcessoId, processos, codecs, default);
+        LeituraDasVersoes leitura = await VersoesDoProcessoNaListagem.LerAsync(ProcessoId, processos, codecs, default);
+        (ClassificacaoDeProtecao classificacao, string? baseLegal) = (leitura.ClassificacaoDoNome, leitura.BaseLegalDoNome);
 
         (classificacao, baseLegal).Should().Be((ClassificacaoDeProtecao.Sensivel, (string?)null));
     }
@@ -53,8 +53,8 @@ public sealed class ClassificacaoDoNomeNoProcessoTests
     {
         (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(ProcessoId);
 
-        (ClassificacaoDeProtecao classificacao, string? baseLegal) = await ClassificacaoDoNomeNoProcesso
-            .ResolverAsync(ProcessoId, processos, codecs, default);
+        LeituraDasVersoes leitura = await VersoesDoProcessoNaListagem.LerAsync(ProcessoId, processos, codecs, default);
+        (ClassificacaoDeProtecao classificacao, string? baseLegal) = (leitura.ClassificacaoDoNome, leitura.BaseLegalDoNome);
 
         (classificacao, baseLegal).Should().Be((ClassificacaoDeProtecao.Sensivel, (string?)null));
     }
@@ -67,5 +67,5 @@ public sealed class ClassificacaoDoNomeNoProcessoTests
     [InlineData(ClassificacaoDeProtecao.Sensivel, " ", false)]
     [InlineData(ClassificacaoDeProtecao.Identificador, "CONSENTIMENTO", false)]
     public void EntraNosPares(ClassificacaoDeProtecao classificacao, string? baseLegal, bool entra) =>
-        ClassificacaoDoNomeNoProcesso.EntraNosPares(classificacao, baseLegal).Should().Be(entra);
+        VersoesDoProcessoNaListagem.EntraNosPares(classificacao, baseLegal).Should().Be(entra);
 }

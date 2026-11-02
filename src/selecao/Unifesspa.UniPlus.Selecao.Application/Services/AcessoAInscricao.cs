@@ -31,15 +31,15 @@ public static class AcessoAInscricao
         ArgumentNullException.ThrowIfNull(processos);
         ArgumentNullException.ThrowIfNull(inscricoes);
 
-        Guid? unidade = await processos.ObterUnidadeAdministradoraAsync(processoId, cancellationToken).ConfigureAwait(false);
+        UnidadeENomeDoProcesso? processo = await processos.ObterUnidadeENomeAsync(processoId, cancellationToken).ConfigureAwait(false);
         VinculoDaInscricao? vinculo = await inscricoes.ObterVinculoAsync(inscricaoId, cancellationToken).ConfigureAwait(false);
 
-        return unidade is { } dona
+        return processo is not null
             && vinculo is not null
             && vinculo.ProcessoSeletivoId == processoId
             && vinculo.Situacao != SituacaoInscricao.Rascunho
-            ? new Vinculo(dona, vinculo)
-            : new NaoEncontrada(unidade);
+            ? new Vinculo(processo.UnidadeId, processo.Nome, vinculo)
+            : new NaoEncontrada(processo?.UnidadeId);
     }
 
     /// <summary>
@@ -116,8 +116,9 @@ public abstract record ConferenciaDoVinculo
 
 /// <summary>A inscrição enviada deste processo, com a unidade dona dele.</summary>
 /// <param name="UnidadeId">A unidade que administra o processo.</param>
+/// <param name="ProcessoNome">O nome do processo, lido na mesma consulta da unidade.</param>
 /// <param name="Inscricao">O vínculo da inscrição com o processo e a versão fixada.</param>
-public sealed record Vinculo(Guid UnidadeId, VinculoDaInscricao Inscricao) : ConferenciaDoVinculo;
+public sealed record Vinculo(Guid UnidadeId, string ProcessoNome, VinculoDaInscricao Inscricao) : ConferenciaDoVinculo;
 
 /// <summary>A inscrição inexistente, de outro processo ou em rascunho.</summary>
 /// <param name="UnidadeDoProcesso">A unidade que administra o processo da rota; nula quando o processo não existe.</param>

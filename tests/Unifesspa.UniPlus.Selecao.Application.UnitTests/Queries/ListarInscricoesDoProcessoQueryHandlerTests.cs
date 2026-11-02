@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -16,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -29,6 +31,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 {
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
     private static readonly Guid Curso = Guid.CreateVersion7();
+    private static readonly Guid VersaoDoProcesso = Guid.CreateVersion7();
     private static readonly string CodigoPessoais = PermissaoSelecao.DadosPessoaisConsultar.Codigo;
     private static readonly string CodigoAcesso = PermissaoSelecao.InscricoesConsultar.Codigo;
     private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
@@ -84,7 +87,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         linha.Id.Should().NotBeEmpty();
         linha.NumeroInscricao.Should().Be("000001");
         linha.SubmetidaEm.Should().NotBeNull();
-        (linha.Situacao, linha.OfertaCursoId).Should().Be((null, null));
+        (linha.Situacao, linha.Ofertas).Should().Be((null, null));
     }
 
     [Fact(DisplayName = "Isabella com o identificador mascarado lista o CPF mascarado sem revelação, e o registro de cada linha leva o identificador")]
@@ -142,7 +145,7 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         InscricaoDoProcessoDto linha = resultado.Items.Single();
         linha.Situacao.Should().Be(SituacaoInscricao.Submetida);
-        linha.OfertaCursoId.Should().Be(Curso);
+        linha.Ofertas.Should().Equal(new OfertaEscolhidaDto(Curso, null, 1));
         (linha.Nome, linha.Cpf, linha.NumeroInscricao, linha.SubmetidaEm).Should().Be((null, null, null, null));
     }
 
@@ -156,7 +159,8 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
 
         InscricaoDoProcessoDto linha = resultado.Items.Single();
         linha.Id.Should().NotBeEmpty();
-        (linha.Situacao, linha.OfertaCursoId, linha.Nome, linha.Cpf, linha.NumeroInscricao).Should().Be((null, null, null, null, null));
+        linha.Processo.Nome.Should().Be("PSR 2027");
+        (linha.Situacao, linha.Ofertas, linha.Nome, linha.Cpf, linha.NumeroInscricao).Should().Be((null, null, null, null, null));
         await kevin.Verificador.Received(1).RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoAcesso),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
@@ -249,7 +253,8 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     public async Task NomeSensivelSemBaseLegal_NaoSaiNemELido()
     {
         IProcessoSeletivoRepository semVersoes = Substitute.For<IProcessoSeletivoRepository>();
-        semVersoes.ObterUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(DecisoesDeAcessoDeTeste.UnidadeDona);
+        semVersoes.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
+            .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, "PSR 2027"));
         semVersoes.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
         DecisoesDeAcessoDeTeste persona = new(
             "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosSensiveisConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
@@ -287,7 +292,8 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
     public async Task SemVersao_NomeVaiComoSensivel()
     {
         IProcessoSeletivoRepository semVersoes = Substitute.For<IProcessoSeletivoRepository>();
-        semVersoes.ObterUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(DecisoesDeAcessoDeTeste.UnidadeDona);
+        semVersoes.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
+            .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, "PSR 2027"));
         semVersoes.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
         Paginar([Resumo(1)]);
@@ -356,6 +362,45 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Página com inscrições de duas versões: cada linha nomeia as ofertas pela sua versão, com uma leitura de versões e nenhuma por inscrição")]
+    public async Task DuasVersoes_CadaLinhaUsaOsNomesDaSuaVersao()
+    {
+        (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) primeira = VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese);
+        (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) segunda = VersoesDoNomeDeTeste.VersaoComNome("PESSOAL", VersoesDoNomeDeTeste.Hipotese);
+        (IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope codecs) = VersoesDoNomeDeTeste.Processo(ProcessoId, primeira, segunda);
+        Guid ofertaDaPrimeira = VersoesDoNomeDeTeste.OfertaDa(primeira.Envelope);
+        Guid ofertaDaSegunda = VersoesDoNomeDeTeste.OfertaDa(segunda.Envelope);
+        DecisoesDeAcessoDeTeste persona = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
+        _inscricoes.ListarEnviadasDoProcessoAsync(
+                ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns((
+                (IReadOnlyList<ResumoDaInscricaoDoProcesso>)
+                [
+                    Resumo(1) with { VersaoFormularioId = primeira.Versao.Id, OfertaCursoId = ofertaDaPrimeira, OfertaCursoSegundaOpcaoId = ofertaDaSegunda },
+                    Resumo(2) with { VersaoFormularioId = segunda.Versao.Id, OfertaCursoId = ofertaDaSegunda },
+                ],
+                (Guid?)null,
+                (Guid?)null));
+
+        IReadOnlyList<InscricaoDoProcessoDto> linhas = (await Listar(persona, processos, codecs)).Items;
+
+        linhas[0].Ofertas!.Select(static o => (o.Nome is not null, o.Ordem)).Should().Equal((true, 1), (false, 2));
+        linhas[1].Ofertas!.Select(static o => (o.Nome is not null, o.Ordem)).Should().Equal((true, 1));
+        await processos.Received(1).ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Sem dados públicos as ofertas da linha são omitidas e o processo sai")]
+    public async Task SemDadosPublicos_OmiteAsOfertas()
+    {
+        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosInternosConsultar);
+        Paginar([Resumo(1)]);
+
+        InscricaoDoProcessoDto linha = (await Listar(erick)).Items.Single();
+
+        linha.Ofertas.Should().BeNull();
+        linha.Processo.Should().Be(new ProcessoDaInscricaoDto(ProcessoId, "PSR 2027"));
+    }
+
     private Task<ListarInscricoesDoProcessoResult> Listar(DecisoesDeAcessoDeTeste persona) => Listar(persona, _processos, _codecs);
 
     private Task<ListarInscricoesDoProcessoResult> Listar(
@@ -370,6 +415,6 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
             .Returns((pagina, (Guid?)null, (Guid?)null));
 
     private static ResumoDaInscricaoDoProcesso Resumo(int numero) => new(
-        Guid.CreateVersion7(), $"{numero:000000}", SituacaoInscricao.Submetida, Curso, null,
+        Guid.CreateVersion7(), $"{numero:000000}", SituacaoInscricao.Submetida, VersaoDoProcesso, Curso, null,
         PersonasDeTeste.NomeFernandaDrumond, PersonasDeTeste.FernandaDrumond, DateTimeOffset.UtcNow);
 }

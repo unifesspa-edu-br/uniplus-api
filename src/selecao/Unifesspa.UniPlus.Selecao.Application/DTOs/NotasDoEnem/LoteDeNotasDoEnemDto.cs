@@ -87,7 +87,7 @@ public sealed record OcorrenciaDoLoteDto(
     string? NomeDoCandidato,
     string? CpfMascarado,
     string? Sexo,
-    IReadOnlyList<OpcaoDeCursoDoLoteDto>? OpcoesDeCurso)
+    IReadOnlyList<OfertaEscolhidaDto>? Ofertas)
 {
     public static OcorrenciaDoLoteDto De(OcorrenciaDoLoteDeNotas ocorrencia, DetalheDoLoteDeNotas detalhe)
     {
@@ -110,7 +110,7 @@ public sealed record OcorrenciaDoLoteDto(
             inscrito?.Nome ?? ocorrencia.Nome,
             inscrito?.CpfMascarado ?? ocorrencia.CpfMascarado,
             ocorrencia.Sexo,
-            inscricaoId is { } o ? detalhe.OpcoesDe(o) : null);
+            inscricaoId is { } o ? detalhe.OfertasDe(o) : null);
     }
 }
 
@@ -121,7 +121,7 @@ public sealed record AusenteDoLoteDto(
     string? NomeDoCandidato,
     string? CpfMascarado,
     IReadOnlyList<string> Areas,
-    IReadOnlyList<OpcaoDeCursoDoLoteDto>? OpcoesDeCurso)
+    IReadOnlyList<OfertaEscolhidaDto>? Ofertas)
 {
     public static AusenteDoLoteDto De(Guid inscricaoId, IReadOnlyList<string> areas, DetalheDoLoteDeNotas detalhe)
     {
@@ -130,20 +130,17 @@ public sealed record AusenteDoLoteDto(
 
         InscritoDoLote? inscrito = detalhe.Inscrito(inscricaoId);
         return new AusenteDoLoteDto(
-            inscricaoId, inscrito?.NumeroDeInscricao, inscrito?.Nome, inscrito?.CpfMascarado, areas, detalhe.OpcoesDe(inscricaoId));
+            inscricaoId, inscrito?.NumeroDeInscricao, inscrito?.Nome, inscrito?.CpfMascarado, areas, detalhe.OfertasDe(inscricaoId));
     }
 }
-
-/// <summary>Um curso escolhido pelo inscrito: a ordem da opção (1ª ou 2ª) e a oferta como o edital a nomeou.</summary>
-public sealed record OpcaoDeCursoDoLoteDto(int Ordem, string Oferta);
 
 /// <summary>O que se lê por inscrição para legendar um lote: identificação, ausências e cursos.</summary>
 public sealed record DetalheDoLoteDeNotas(
     IReadOnlyDictionary<Guid, InscritoDoLote> Inscritos,
     IReadOnlyDictionary<Guid, IReadOnlyList<string>> AusentesPorInscricao,
-    IReadOnlyDictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>> OpcoesDeCursoPorInscricao)
+    IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> OfertasPorInscricao)
 {
-    public IReadOnlyList<OpcaoDeCursoDoLoteDto>? OpcoesDe(Guid inscricaoId) => OpcoesDeCursoPorInscricao.GetValueOrDefault(inscricaoId);
+    public IReadOnlyList<OfertaEscolhidaDto>? OfertasDe(Guid inscricaoId) => OfertasPorInscricao.GetValueOrDefault(inscricaoId);
 
     public InscritoDoLote? Inscrito(Guid inscricaoId) => Inscritos.GetValueOrDefault(inscricaoId);
 }

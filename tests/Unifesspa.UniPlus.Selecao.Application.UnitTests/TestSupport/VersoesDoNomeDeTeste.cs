@@ -24,6 +24,10 @@ internal static class VersoesDoNomeDeTeste
         return (versao, montado.Codecs.Reidratar(versao));
     }
 
+    /// <summary>A oferta de curso que a versão nomeia.</summary>
+    public static Guid OfertaDa(Result<EnvelopeReidratado> envelope) =>
+        envelope.Value!.Grafo.DistribuicaoVagas.Single().OfertaCursoOrigemId;
+
     public static (VersaoConfiguracao Versao, Result<EnvelopeReidratado> Envelope) VersaoIlegivel() =>
         (VersaoComNome("PESSOAL", Hipotese).Versao, Result<EnvelopeReidratado>.Failure(new DomainError("Codec.Ilegivel", "Versão ilegível.")));
 
@@ -32,6 +36,8 @@ internal static class VersoesDoNomeDeTeste
     {
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterUnidadeAdministradoraAsync(processoId, Arg.Any<CancellationToken>()).Returns(DecisoesDeAcessoDeTeste.UnidadeDona);
+        processos.ObterUnidadeENomeAsync(processoId, Arg.Any<CancellationToken>())
+            .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, "PSR 2027"));
         IReadOnlyList<VersaoConfiguracao> todas = [.. versoes.Select(static v => v.Versao)];
         processos.ObterVersoesAsync(processoId, Arg.Any<CancellationToken>()).Returns(todas);
 

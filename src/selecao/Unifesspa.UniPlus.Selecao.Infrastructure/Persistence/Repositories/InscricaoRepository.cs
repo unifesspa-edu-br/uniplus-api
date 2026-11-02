@@ -237,6 +237,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 record.Id,
                 record.NumeroInscricao,
                 record.Situacao,
+                record.VersaoFormularioId,
                 record.OfertaCursoId,
                 record.OfertaCursoSegundaOpcaoId,
                 nomes.GetValueOrDefault(record.Id),
