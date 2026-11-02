@@ -13,6 +13,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
@@ -461,6 +462,44 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             Func<Task> ler = async () => await repositorioDeLeitura.ObterComprovantesAsync([original.Id]);
             await ler.Should().ThrowAsync<InvalidOperationException>();
         }
+    }
+
+    [Fact(DisplayName = "A listagem lê o nome social de quem o usa no lugar do civil, e não lê nome algum quando o nome não é pedido")]
+    public async Task ListarEnviadas_LeONomeSocialNoLugarDoCivilSoQuandoPedido()
+    {
+        Guid processo = Guid.CreateVersion7();
+        Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
+        RespostasAdmitidas admitidasComNome = new(
+            new Dictionary<string, DefinicaoDaResposta>(DefinicoesDasRespostas, StringComparer.Ordinal)
+            {
+                ["NOME"] = new(TipoDoValorDeResposta.Texto, Multivalorado: false, Identificador: false),
+            },
+            new HashSet<string>(StringComparer.Ordinal) { "NOME", "NOME_SOCIAL", "DESEJA_NOME_SOCIAL" },
+            new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
+            new HashSet<Guid> { OfertaDoProcesso },
+            new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal),
+            NomeCivilDoLogin: PersonasDeTeste.NomeFernandaDrumond,
+            NomeSocialDoLogin: "Ariel Drumond");
+        Result<ComprovanteInscricao> envio = original.Submeter(
+            "000654", OfertaDoProcesso, null,
+            Respostas(("NOME", PersonasDeTeste.NomeFernandaDrumond), ("DESEJA_NOME_SOCIAL", true), ("NOME_SOCIAL", "Ariel Drumond")),
+            SemGrupos(), [], admitidasComNome, FormularioDeTeste.AvaliacaoSemOcultos,
+            Respostas(("FAIXA_ETARIA", 25)), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow, []);
+        envio.IsSuccess.Should().BeTrue(string.Join("; ", envio.Errors.Select(static e => e.Field + ":" + e.Error.Code)));
+        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        {
+            await new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
+            await writeContext.SaveChangesAsync();
+        }
+
+        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        InscricaoRepository repositorio = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+
+        (IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) comNome = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, 10, PaginationDirection.Next, lerNome: true, lerCpf: false);
+        (IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) semNome = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, 10, PaginationDirection.Next, lerNome: false, lerCpf: false);
+
+        comNome.Itens.Single().Nome.Should().Be("Ariel Drumond");
+        semNome.Itens.Single().Nome.Should().BeNull();
     }
 
     [Fact(DisplayName = "Cada valor fica na coluna do tipo, com a origem: informado pelo candidato ou derivado")]
