@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// arquivo (ADR-0153). Os campos fixos da entidade são opcionais e omitidos quando a pessoa não os pode ver; as respostas
 /// do formulário são itens todos da mesma forma, e o item que a pessoa não pode ver não vem, sem indicação nem contagem.
 /// </summary>
-/// <param name="Id">A identidade da inscrição.</param>
+/// <param name="Id">A identidade da inscrição: sai sempre que o acesso à inscrição foi concedido, porque é com ela que se abre o detalhe.</param>
 /// <param name="Situacao">Rascunho, submetida ou cancelada.</param>
 /// <param name="OfertaCursoId">A oferta de curso da primeira opção.</param>
 /// <param name="OfertaCursoSegundaOpcaoId">A oferta de curso da segunda opção, quando há.</param>
@@ -25,9 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Derivados">O que o sistema calculou das respostas.</param>
 /// <param name="Arquivos">Os arquivos enviados, só os metadados: abrir o arquivo é outra operação, com a permissão da classe dele.</param>
 public sealed record InscricaoAdministrativaDto(
-    [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.id")]
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Guid? Id,
+    Guid Id,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.situacao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     SituacaoInscricao? Situacao,

@@ -18003,6 +18003,7 @@
       },
       "InscricaoAdministrativaDto": {
         "required": [
+          "id",
           "secoes",
           "derivados",
           "arquivos"
@@ -18010,10 +18011,7 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "uuid"
           },
           "situacao": {
@@ -18087,13 +18085,13 @@
         }
       },
       "InscricaoDoProcessoDto": {
+        "required": [
+          "id"
+        ],
         "type": "object",
         "properties": {
           "id": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "uuid"
           },
           "numeroInscricao": {
