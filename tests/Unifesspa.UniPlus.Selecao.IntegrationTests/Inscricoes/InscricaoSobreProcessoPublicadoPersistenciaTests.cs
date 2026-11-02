@@ -1245,10 +1245,10 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     private static IConferenciaEnderecoGeo GeoQueConfirma()
     {
         IConferenciaEnderecoGeo geo = Substitute.For<IConferenciaEnderecoGeo>();
-        geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
-        geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
+        geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result<CepResolvido>.Success(new CepResolvido("1504208", "PA", "logradouro")));
+            .Returns(Result<CepResolvido>.Success(new CepResolvido("1504208", "Marabá", "PA", "logradouro")));
         return geo;
     }
 

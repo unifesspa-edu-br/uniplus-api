@@ -12,9 +12,9 @@ public interface IConferenciaEnderecoGeo
 {
     /// <summary>
     /// Confere que <paramref name="cep"/> resolve a uma cidade cujo código IBGE e UF batem os
-    /// declarados pelo candidato.
+    /// declarados pelo candidato, e devolve o nome da cidade que o Geo resolveu.
     /// </summary>
-    Task<Result> ConferirCepAsync(
+    Task<Result<string>> ConferirCepAsync(
         string cep, string cidadeCodigoIbgeDeclarada, string ufDeclarada, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -26,19 +26,21 @@ public interface IConferenciaEnderecoGeo
     Task<Result<CepResolvido>> ResolverCepAsync(string cep, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Confere que o município (sem CEP — ex.: naturalidade) pertence à UF declarada.
+    /// Confere que o município (sem CEP — ex.: naturalidade) pertence à UF declarada, e devolve o nome
+    /// do município que o Geo tem para o código.
     /// </summary>
-    Task<Result> ConferirMunicipioAsync(
+    Task<Result<string>> ConferirMunicipioAsync(
         string cidadeCodigoIbgeDeclarado, string ufDeclarada, CancellationToken cancellationToken = default);
 }
 
 /// <summary>O que o Geo resolveu para um CEP.</summary>
+/// <param name="Cidade">O nome da cidade, como o Geo o devolve.</param>
 /// <param name="Origem">
 /// A estratégia que resolveu o CEP, como o Geo a declara: <c>logradouro</c>, <c>grande-usuario</c> e
 /// <c>cep-geral</c> são resolução exata; qualquer outra (as de faixa, em que o número não corresponde a
 /// um CEP cadastrado, ou uma desconhecida) exige a confirmação do candidato.
 /// </param>
-public sealed record CepResolvido(string CodigoIbge, string Uf, string Origem)
+public sealed record CepResolvido(string CodigoIbge, string Cidade, string Uf, string Origem)
 {
     public const string OrigemLogradouro = "logradouro";
     public const string OrigemGrandeUsuario = "grande-usuario";

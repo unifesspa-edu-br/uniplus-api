@@ -144,7 +144,7 @@ public static class DerivadosDoSistemaInscricao
 
         // O envio recusa o endereço sem CEP antes de chegar aqui; o ramo por município serve à apuração
         // fora do envio (ApurarAsync), que confere pela cidade e nunca recusa por falta de CEP.
-        Result conferido = endereco.CepSomenteDigitos is { } cep
+        Result<string> conferido = endereco.CepSomenteDigitos is { } cep
             ? await conferencia.ConferirCepAsync(cep, codigoIbge, uf, cancellationToken).ConfigureAwait(false)
             : await conferencia.ConferirMunicipioAsync(codigoIbge, uf, cancellationToken).ConfigureAwait(false);
 

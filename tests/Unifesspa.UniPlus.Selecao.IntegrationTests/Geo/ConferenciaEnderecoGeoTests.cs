@@ -64,8 +64,8 @@ public sealed class ConferenciaEnderecoGeoTests
         RegistroDeLog registro = new();
         ConferenciaEnderecoGeo conferencia = new(geo, registro);
 
-        Result cep = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
-        Result municipio = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+        Result<string> cep = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> municipio = await conferencia.ConferirMunicipioAsync("1504208", "PA");
 
         cep.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
         municipio.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -122,17 +122,17 @@ public sealed class ConferenciaEnderecoGeoTests
         }
     }
 
-    [Fact(DisplayName = "CEP que resolve para a cidade e UF declaradas confere")]
-    public async Task ConferirCep_ResolveParaDeclarado_Confere()
+    [Fact(DisplayName = "CEP que resolve para a cidade e UF declaradas confere e devolve o nome da cidade que o Geo resolveu")]
+    public async Task ConferirCep_ResolveParaDeclarado_ConfereEDevolveONome()
     {
         IGeoApi geo = Substitute.For<IGeoApi>();
         geo.ResolverCepAsync("68500000", Arg.Any<CancellationToken>())
             .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Marabá", "1504208", "PA", "logradouro")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
-        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Should().Be("Marabá");
     }
 
     [Fact(DisplayName = "Resolver o CEP devolve a origem que o Geo declarou, para distinguir o CEP só de faixa")]
@@ -145,7 +145,7 @@ public sealed class ConferenciaEnderecoGeoTests
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
         Result<CepResolvido> resultado = await conferencia.ResolverCepAsync("68627476");
 
-        resultado.Value.Should().Be(new CepResolvido("1505502", "PA", "faixa-cidade"));
+        resultado.Value.Should().Be(new CepResolvido("1505502", "Paragominas", "PA", "faixa-cidade"));
         resultado.Value!.ExigeConfirmacao.Should().BeTrue();
     }
 
@@ -173,7 +173,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Resposta(HttpStatusCode.OK, new CepResolvidoResponse("Belém", "1501402", "PA", "logradouro")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.CidadeDivergente);
@@ -187,7 +187,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Resposta<CepResolvidoResponse>(HttpStatusCode.NotFound, null));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirCepAsync("00000000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("00000000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve);
@@ -201,7 +201,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Task.FromException<ApiResponse<CepResolvidoResponse>>(new HttpRequestException("timeout")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -215,7 +215,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Task.FromException<ApiResponse<CepResolvidoResponse>>(new TimeoutRejectedException()));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -229,7 +229,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Task.FromException<ApiResponse<CidadeDetalheResponse>>(new BrokenCircuitException()));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -243,7 +243,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Resposta<CepResolvidoResponse>(HttpStatusCode.OK, null));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -257,23 +257,36 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Resposta<CidadeDetalheResponse>(HttpStatusCode.OK, null));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
 
-    [Fact(DisplayName = "Município cuja UF bate a declarada confere")]
-    public async Task ConferirMunicipio_UfBate_Confere()
+    [Fact(DisplayName = "Município cuja UF bate a declarada confere e devolve o nome que o Geo tem")]
+    public async Task ConferirMunicipio_UfBate_ConfereEDevolveONome()
     {
         IGeoApi geo = Substitute.For<IGeoApi>();
         geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>())
             .Returns(Resposta(HttpStatusCode.OK, new CidadeDetalheResponse("1504208", "Marabá", "PA")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
 
-        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Should().Be("Marabá");
+    }
+
+    [Fact(DisplayName = "Município que o Geo devolve sem nome é falha fechada: o nome gravado vem sempre do Geo")]
+    public async Task ConferirMunicipio_SemNome_FalhaFechada()
+    {
+        IGeoApi geo = Substitute.For<IGeoApi>();
+        geo.ObterCidadeAsync("1504208", Arg.Any<CancellationToken>())
+            .Returns(Resposta(HttpStatusCode.OK, new CidadeDetalheResponse("1504208", " ", "PA")));
+
+        ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+
+        resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
 
     [Fact(DisplayName = "Município cuja UF não bate a declarada é divergência")]
@@ -284,7 +297,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Resposta(HttpStatusCode.OK, new CidadeDetalheResponse("1504208", "Marabá", "PA")));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "SP");
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("1504208", "SP");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente);
@@ -298,7 +311,7 @@ public sealed class ConferenciaEnderecoGeoTests
             .Returns(Resposta<CidadeDetalheResponse>(HttpStatusCode.NotFound, null));
 
         ConferenciaEnderecoGeo conferencia = new(geo, NullLogger<ConferenciaEnderecoGeo>.Instance);
-        Result resultado = await conferencia.ConferirMunicipioAsync("9999999", "PA");
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("9999999", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado);
