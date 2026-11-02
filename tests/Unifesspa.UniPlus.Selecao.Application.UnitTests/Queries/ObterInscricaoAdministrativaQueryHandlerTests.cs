@@ -95,7 +95,6 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
     [Theory(DisplayName = "O item do identificador depende de consultar o mascarado e de poder revelar: valor e podeRevelar de cada combinação")]
     [InlineData(true, true, true, true)]
     [InlineData(true, false, true, false)]
-    [InlineData(false, true, false, true)]
     public async Task Identificador_PorConsultarERevelar(bool consultar, bool revelar, bool comValor, bool podeRevelar)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(CpfDeErick)
@@ -158,14 +157,14 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         JsonSerializer.Serialize(resultado.Value).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain("***.598.363-**");
     }
 
-    [Fact(DisplayName = "Só revelar: o item sai sem valor, a capacidade não grava registro e a revelação não é pedida na consulta")]
-    public async Task Identificador_SoRevelar_NaoGravaRegistroDeIdentificador()
+    [Fact(DisplayName = "Só revelar, sem o identificador mascarado: o item é omitido, nada do identificador é registrado e a revelação não é pedida na consulta")]
+    public async Task Identificador_SoRevelar_OmiteOItemENaoGravaRegistroDeIdentificador()
     {
         DecisoesDeAcessoDeTeste diogo = new("diogo.souza", Permissoes(consultar: false, revelar: true));
 
         Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), diogo);
 
-        JsonSerializer.Serialize(resultado.Value!.Secoes.Single().Itens.Single(static i => i.FatoCodigo == "CPF")).Should().NotContain("valor");
+        resultado.Value!.Secoes.SelectMany(static s => s.Itens).Should().NotContain(static i => i.FatoCodigo == "CPF");
         await diogo.Verificador.DidNotReceive().RegistrarDesfechoAsync(
             Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.OfType<DecisaoPermitida>().Any(x => x.Registro.Permissao == CodigoIdentificadores)),
             Arg.Any<IntencaoDoRegistro>(),
