@@ -104,8 +104,13 @@ public sealed record ItemDeRespostaDto : ItemClassificado
     /// <summary>Como exibir: padrao, cpf, identificador, moeda ou situacao.</summary>
     public required string Componente { get; init; }
 
-    /// <summary>O valor, na forma que o <see cref="Tipo"/> define.</summary>
-    public required JsonElement Valor { get; init; }
+    /// <summary>
+    /// O valor, na forma que o <see cref="Tipo"/> define. Ausente no item que aparece só para quem pode revelá-lo: o
+    /// identificador, para quem não tem a permissão de ver o valor mascarado.
+    /// </summary>
+    [ValorDoItem]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? Valor { get; init; }
 
     /// <summary>
     /// Se a pessoa pode revelar o valor completo do identificador; falso nos demais itens. Vem da consulta de capacidade,

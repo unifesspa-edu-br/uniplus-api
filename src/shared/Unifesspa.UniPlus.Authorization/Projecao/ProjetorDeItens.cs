@@ -29,15 +29,28 @@ public sealed class ProjetorDeItens
     /// libera. Os pares sem permissão no módulo e os negados ficam de fora; as decisões permitidas são guardadas na
     /// requisição para a serialização defensiva e são registradas por <see cref="RegistrarAsync"/> quando exercidas.
     /// </summary>
+    public Task<DecisoesDaProjecao> DecidirAsync(
+        IPortaDePermissaoPorPar porta,
+        ResourceContext resource,
+        IEnumerable<(NaturezaDoItem Natureza, ClassificacaoDeProtecao Classificacao)> pares,
+        CancellationToken cancellationToken) =>
+        DecidirAsync(porta, resource, pares, [], cancellationToken);
+
+    /// <summary>
+    /// Como a sobrecarga sem capacidades, guardando também as capacidades que o módulo já avaliou: o item do par aparece
+    /// pela capacidade, sem o valor. A capacidade entra aqui, e não depois, para estar na cópia que a serialização lê.
+    /// </summary>
     public async Task<DecisoesDaProjecao> DecidirAsync(
         IPortaDePermissaoPorPar porta,
         ResourceContext resource,
         IEnumerable<(NaturezaDoItem Natureza, ClassificacaoDeProtecao Classificacao)> pares,
+        IEnumerable<(NaturezaDoItem Natureza, ClassificacaoDeProtecao Classificacao)> capacidades,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(porta);
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(pares);
+        ArgumentNullException.ThrowIfNull(capacidades);
 
         Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> permitidas = [];
         foreach ((NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) in pares
@@ -58,7 +71,7 @@ public sealed class ProjetorDeItens
             }
         }
 
-        DecisoesDaProjecao decisoes = new(permitidas);
+        DecisoesDaProjecao decisoes = new(permitidas, capacidades);
         _requisicao.Guardar(decisoes);
 
         return decisoes;

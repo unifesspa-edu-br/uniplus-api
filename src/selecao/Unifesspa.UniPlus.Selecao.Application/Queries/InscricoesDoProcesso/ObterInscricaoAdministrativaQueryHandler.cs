@@ -31,10 +31,10 @@ using Wolverine.Attributes;
 /// não é carregado.
 /// </para>
 /// <para>
-/// Nível 2: o handler pede as decisões de todas as classes de dado, menos o identificador, e de todas as de arquivo, sem
+/// Nível 2: o handler pede as decisões de todas as classes de dado e de todas as de arquivo, sem
 /// olhar o conteúdo, e registra só as permitidas: o registro significa acesso autorizado à classe naquela inscrição, e não
-/// dado entregue. Quem não pode ver um item o recebe omitido, sem indicação. A requisição só segue depois de gravados os
-/// registros.
+/// dado entregue. Quem não pode ver um item o recebe omitido, sem indicação; o identificador de quem só pode revelá-lo vem
+/// sem valor. A requisição só segue depois de gravados os registros.
 /// </para>
 /// </remarks>
 public static class ObterInscricaoAdministrativaQueryHandler
@@ -44,6 +44,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
         (NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico),
         (NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno),
         (NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal),
+        (NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador),
         (NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel),
         (NaturezaDoItem.Arquivo, ClassificacaoDeProtecao.Publico),
         (NaturezaDoItem.Arquivo, ClassificacaoDeProtecao.Interno),
@@ -110,8 +111,12 @@ public static class ObterInscricaoAdministrativaQueryHandler
             return Result<InscricaoAdministrativaDto>.Failure(envelope.Error!);
         }
 
+        bool podeRevelar = await verificador
+            .PodeAsync(PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
+            .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
+
         DecisoesDaProjecao decisoes = await projetor
-            .DecidirAsync(porta, resource, ClassesPedidas, cancellationToken).ConfigureAwait(false);
+            .DecidirAsync(porta, resource, ClassesPedidas, CapacidadesDe(podeRevelar), cancellationToken).ConfigureAwait(false);
         await projetor.RegistrarAsync(decisoes, cancellationToken).ConfigureAwait(false);
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
@@ -119,11 +124,6 @@ public static class ObterInscricaoAdministrativaQueryHandler
         {
             return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
         }
-
-        bool podeRevelar = decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal)
-            && await verificador
-                .PodeAsync(PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
-                .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
 
         FatosDaVersao fatos = FatosDaVersao.De(envelope.Value!);
         IReadOnlyList<ArquivoAdministrativoDto> arquivos = await ArquivosDaInscricaoAsync(
@@ -143,9 +143,12 @@ public static class ObterInscricaoAdministrativaQueryHandler
             Fixo<DateTimeOffset>(decisoes, nameof(InscricaoAdministrativaDto.CanceladaEm), inscricao.CanceladaEm),
             Fixo(decisoes, nameof(InscricaoAdministrativaDto.MotivoDoCancelamento), inscricao.MotivoDoCancelamento),
             ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao, fatos, podeRevelar), decisoes),
-            [.. ItensDaInscricao.Derivados(inscricao, fatos).Where(decisoes.Permite)],
-            [.. arquivos.Where(decisoes.Permite)]));
+            ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao, fatos), decisoes),
+            [.. arquivos.Where(decisoes.ItemSai)]));
     }
+
+    private static (NaturezaDoItem, ClassificacaoDeProtecao)[] CapacidadesDe(bool podeRevelar) =>
+        podeRevelar ? [(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador)] : [];
 
     /// <summary>
     /// Como <c>Fixo</c>, para o valor que se lê do repositório: a leitura só acontece quando a propriedade é permitida.

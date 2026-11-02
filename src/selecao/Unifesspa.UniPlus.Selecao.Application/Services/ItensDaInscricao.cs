@@ -16,8 +16,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// a proteção deste item" para a consulta administrativa; a permissão que decide a saída é do projetor.
 /// </summary>
 /// <remarks>
-/// O identificador sai mascarado e classificado como pessoal, lido da resposta identificadora sob a decisão pessoal: a
-/// fonte sem a transformação nunca sai. A classificação que não se resolve vale como sensível.
+/// O identificador mantém a classificação própria e carrega só o valor mascarado: a fonte sem a transformação nunca sai.
+/// O valor sai pelo par do identificador, e o item sem valor aparece para quem pode revelá-lo. A resposta ausente ou vazia
+/// não gera item. A classificação que não se resolve vale como sensível.
 /// </remarks>
 internal static class ItensDaInscricao
 {
@@ -33,9 +34,9 @@ internal static class ItensDaInscricao
         List<(int Ordem, string Secao, ItemDeRespostaDto Item)> itens = [];
         foreach ((string codigo, JsonElement valor) in inscricao.Respostas)
         {
-            if (fatos.Coletados.TryGetValue(codigo, out FatoDoProcesso? fato))
+            if (fatos.Coletados.TryGetValue(codigo, out FatoDoProcesso? fato) && Item(fato, valor, podeRevelar) is { } item)
             {
-                itens.Add((fato.Ordem, fato.Secao ?? string.Empty, Item(fato, valor, podeRevelar)));
+                itens.Add((fato.Ordem, fato.Secao ?? string.Empty, item));
             }
         }
 
@@ -54,7 +55,8 @@ internal static class ItensDaInscricao
                     [.. o.Respostas
                         .Where(r => grupo.Subitens.ContainsKey(r.Key))
                         .OrderBy(r => grupo.Subitens[r.Key].Ordem)
-                        .Select(r => Item(grupo.Subitens[r.Key], r.Value, podeRevelar))])),
+                        .Select(r => Item(grupo.Subitens[r.Key], r.Value, podeRevelar))
+                        .OfType<ItemDeRespostaDto>()])),
             ];
             grupos.Add((grupo.Ordem, grupo.Secao ?? string.Empty, new GrupoDaInscricaoDto(grupo.Codigo, grupo.Rotulo, daOcorrencia)));
         }
@@ -86,13 +88,14 @@ internal static class ItensDaInscricao
             .. inscricao.Derivados
                 .Where(d => fatos.Derivados.ContainsKey(d.Key))
                 .OrderBy(static d => d.Key, StringComparer.Ordinal)
-                .Select(d => Item(fatos.Derivados[d.Key], d.Value, podeRevelar: false)),
+                .Select(d => Item(fatos.Derivados[d.Key], d.Value, podeRevelar: false))
+                .OfType<ItemDeRespostaDto>(),
         ];
     }
 
     /// <summary>
-    /// Deixa só os itens que a decisão permite, sem indício dos omitidos: a seção, o grupo e a ocorrência que ficam sem
-    /// item algum também saem.
+    /// Deixa só os itens que a decisão deixa aparecer, sem indício dos omitidos: a seção, o grupo e a ocorrência que ficam
+    /// sem item algum também saem. O item que aparece só pela capacidade perde o valor.
     /// </summary>
     public static IReadOnlyList<SecaoDaInscricaoDto> Permitidas(IReadOnlyList<SecaoDaInscricaoDto> secoes, IPermissoesDaProjecao decisoes)
     {
@@ -105,34 +108,57 @@ internal static class ItensDaInscricao
                 .Select(s => new SecaoDaInscricaoDto(
                     s.Codigo,
                     s.Titulo,
-                    [.. s.Itens.Where(decisoes.Permite)],
+                    Visiveis(s.Itens, decisoes),
                     [.. s.Grupos
                         .Select(g => new GrupoDaInscricaoDto(
                             g.Codigo, g.Rotulo,
                             [.. g.Ocorrencias
-                                .Select(o => new OcorrenciaDaInscricaoDto(o.Id, [.. o.Itens.Where(decisoes.Permite)]))
+                                .Select(o => new OcorrenciaDaInscricaoDto(o.Id, Visiveis(o.Itens, decisoes)))
                                 .Where(static o => o.Itens.Count > 0)]))
                         .Where(static g => g.Ocorrencias.Count > 0)]))
                 .Where(static s => s.Itens.Count > 0 || s.Grupos.Count > 0),
         ];
     }
 
-    private static ItemDeRespostaDto Item(FatoDoProcesso fato, JsonElement bruto, bool podeRevelar)
+    /// <summary>Os itens que a decisão deixa aparecer, cada um com o valor só se o par dele foi permitido.</summary>
+    public static IReadOnlyList<ItemDeRespostaDto> Visiveis(IEnumerable<ItemDeRespostaDto> itens, IPermissoesDaProjecao decisoes)
+    {
+        ArgumentNullException.ThrowIfNull(itens);
+        ArgumentNullException.ThrowIfNull(decisoes);
+
+        return [.. itens.Where(decisoes.ItemSai).Select(i => decisoes.ValorSai(i) ? i : i with { Valor = null })];
+    }
+
+    /// <remarks>
+    /// O CPF sai sempre mascarado, qualquer que seja a classificação congelada: o completo só sai pela revelação. Assim,
+    /// reclassificar o CPF não abre o valor a quem consulta os dados da classe.
+    /// </remarks>
+    private static ItemDeRespostaDto? Item(FatoDoProcesso fato, JsonElement bruto, bool podeRevelar)
     {
         bool identificador = fato.Classificacao == ClassificacaoDeProtecao.Identificador;
-        return new ItemDeRespostaDto(
-            identificador ? ClassificacaoDeProtecao.Pessoal : fato.Classificacao,
-            fato.BaseLegal)
+        if (identificador && !Respondido(bruto))
+        {
+            return null;
+        }
+
+        return new ItemDeRespostaDto(fato.Classificacao, fato.BaseLegal)
         {
             FatoCodigo = fato.Codigo,
             Rotulo = fato.Rotulo,
             Descricao = fato.Descricao,
             Tipo = fato.Tipo,
             Componente = fato.Componente,
-            Valor = identificador ? Mascarado(bruto, fato.EhCpf) : Valor(fato, bruto),
+            Valor = identificador || (fato.EhCpf && Respondido(bruto)) ? Mascarado(bruto, fato.EhCpf) : Valor(fato, bruto),
             PodeRevelar = identificador && podeRevelar,
         };
     }
+
+    private static bool Respondido(JsonElement bruto) => bruto.ValueKind switch
+    {
+        JsonValueKind.Undefined or JsonValueKind.Null => false,
+        JsonValueKind.String => !string.IsNullOrWhiteSpace(bruto.GetString()),
+        _ => true,
+    };
 
     private static JsonElement Mascarado(JsonElement bruto, bool ehCpf)
     {

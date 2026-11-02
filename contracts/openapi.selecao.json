@@ -18388,7 +18388,6 @@
           "descricao",
           "tipo",
           "componente",
-          "valor",
           "podeRevelar"
         ],
         "type": "object",
@@ -18409,7 +18408,14 @@
             "type": "string"
           },
           "valor": {
-            "$ref": "#/components/schemas/JsonElement"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
           },
           "podeRevelar": {
             "type": "boolean"

@@ -73,7 +73,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
         DecisoesDaProjecao decisoes = await projetor
             .DecidirAsync(porta, resource, classes, cancellationToken).ConfigureAwait(false);
         NomeClassificadoDto modeloDoNome = new(classeDoNome, baseLegalDoNome) { Valor = string.Empty };
-        bool saiONome = nomeEntra && decisoes.Permite(modeloDoNome);
+        bool saiONome = nomeEntra && decisoes.ItemSai(modeloDoNome);
         bool saiOCpf = decisoes.PermitePropriedade<InscricaoDoProcessoDto>(nameof(InscricaoDoProcessoDto.Cpf));
 
         (IReadOnlyList<ResumoDaInscricaoDoProcesso> inscricoes, Guid? anteriorAfterId, Guid? proximoAfterId) = await inscricaoRepository

@@ -17,7 +17,7 @@ public sealed class PortaDeProjecaoDaSelecaoTests
     [InlineData(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Publico, "selecao:dados-publicos:consultar")]
     [InlineData(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Interno, "selecao:dados-internos:consultar")]
     [InlineData(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal, "selecao:dados-pessoais:consultar")]
-    [InlineData(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador, "selecao:dados-identificadores:revelar")]
+    [InlineData(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador, "selecao:dados-identificadores:consultar")]
     [InlineData(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel, "selecao:dados-sensiveis:consultar")]
     [InlineData(NaturezaDoItem.Arquivo, ClassificacaoDeProtecao.Publico, "selecao:documentos-publicos:consultar")]
     [InlineData(NaturezaDoItem.Arquivo, ClassificacaoDeProtecao.Interno, "selecao:documentos-internos:consultar")]
@@ -36,6 +36,15 @@ public sealed class PortaDeProjecaoDaSelecaoTests
         acesso.Natureza.Should().Be(NaturezaDoItem.Nenhuma);
         acesso.Requisito.Sensibilidade.Should().Be(ClassificacaoDeProtecao.Interno);
         definicoes.Should().NotContain(static d => d.Codigo == "selecao:inscricoes:revelar-cpf");
+    }
+
+    [Fact(DisplayName = "Revelar é ação sem natureza e consultar o identificador mascarado é o par de dado: as duas convivem na subida")]
+    public void Catalogo_RevelarEConsultarIdentificadorConvivem()
+    {
+        IReadOnlyList<DefinicaoDePermissao> definicoes = CatalogoDePermissoes<PermissaoSelecao>.Todas();
+
+        definicoes.Single(static d => d.Codigo == "selecao:dados-identificadores:revelar").Natureza.Should().Be(NaturezaDoItem.Nenhuma);
+        definicoes.Single(static d => d.Codigo == "selecao:dados-identificadores:consultar").Natureza.Should().Be(NaturezaDoItem.Dado);
     }
 
     [Fact(DisplayName = "As ações de importar notas e gerar o envio ao INEP não participam da projeção")]

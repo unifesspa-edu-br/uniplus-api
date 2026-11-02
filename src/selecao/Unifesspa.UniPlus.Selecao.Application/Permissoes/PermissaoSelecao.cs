@@ -85,14 +85,13 @@ public enum PermissaoSelecao
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosSensiveisConsultar = 7,
 
-    /// <summary>Revelar os dados identificadores de uma inscrição.</summary>
+    /// <summary>Revelar o valor completo de um dado identificador de uma inscrição.</summary>
     [Permissao(
         "selecao:dados-identificadores:revelar",
-        "Revelar dados identificadores da inscrição",
-        "Revela, um por vez, o CPF e os demais números de documento de uma inscrição de processo seletivo da unidade proprietária.",
+        "Revelar documento de identificação da inscrição",
+        "Ver o número completo de um documento de identificação, um candidato por vez, a pedido, com registro do acesso. Independe de ver o número mascarado.",
         ClassificacaoDeProtecao.Identificador,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
-        Natureza = NaturezaDoItem.Dado,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DadosIdentificadoresRevelar = 8,
 
@@ -195,7 +194,7 @@ public enum PermissaoSelecao
     [Permissao(
         "selecao:dados-pessoais:consultar",
         "Consultar dados pessoais das inscrições",
-        "Consulta os dados pessoais das inscrições dos processos seletivos da unidade proprietária, como o nome e o CPF mascarado.",
+        "Consulta os dados pessoais das inscrições dos processos seletivos da unidade proprietária, como o nome.",
         ClassificacaoDeProtecao.Pessoal,
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         Natureza = NaturezaDoItem.Dado,
@@ -212,4 +211,15 @@ public enum PermissaoSelecao
         Natureza = NaturezaDoItem.Dado,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DadosSensiveisConsultar = 20,
+
+    /// <summary>Consultar os dados identificadores mascarados das inscrições.</summary>
+    [Permissao(
+        "selecao:dados-identificadores:consultar",
+        "Consultar documentos de identificação mascarados das inscrições",
+        "Ver os números dos documentos de identificação do candidato (CPF, RG, passaporte) mascarados.",
+        ClassificacaoDeProtecao.Identificador,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        Natureza = NaturezaDoItem.Dado,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DadosIdentificadoresConsultar = 21,
 }

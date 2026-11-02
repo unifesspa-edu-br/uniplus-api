@@ -57,6 +57,18 @@ public sealed class ProjetorDeItensTests
             Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "As capacidades avaliadas pelo módulo ficam nas decisões guardadas na requisição, sem virar decisão de par")]
+    public async Task Decidir_GuardaAsCapacidadesNaRequisicao()
+    {
+        (NaturezaDoItem, ClassificacaoDeProtecao) identificador = (NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador);
+
+        DecisoesDaProjecao decisoes = await _projetor.DecidirAsync(Porta(), _inscricao, [], [identificador], default);
+
+        decisoes.TemCapacidade(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador).Should().BeTrue();
+        decisoes.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador).Should().BeFalse();
+        _requisicao.TemCapacidade(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador).Should().BeTrue();
+    }
+
     [Fact(DisplayName = "A decisão permitida de dado público também é registrada, ainda que a regra de sensibilidade não a exija")]
     public async Task Registrar_DecisaoPublica_EhRegistrada()
     {
