@@ -85,7 +85,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
         {
             await AcessoAInscricao
                 .RegistrarNegativaDoInexistenteAsync(
-                    verificador, conferencia, query.ProcessoSeletivoId, PermissaoSelecao.InscricoesConsultar.Requisito, cancellationToken)
+                    verificador, conferencia, query.ProcessoSeletivoId, [PermissaoSelecao.InscricoesConsultar.Requisito], cancellationToken)
                 .ConfigureAwait(false);
             return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
         }

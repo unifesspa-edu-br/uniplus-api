@@ -154,7 +154,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Lista_GravaUmRegistroPorInscricaoExibida));
         await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
 
         using HttpResponseMessage comDadosPessoais = await GetAsync(Diogo, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");
         IReadOnlyList<RegistroDecisaoAcesso> doDiogo = RegistrosDeDados(cenario.ProcessoId, PermissaoSelecao.DadosPessoaisConsultar);
@@ -438,7 +438,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     public async Task Revelacao_InscricaoInexistenteSemAPermissao_RegistraANegativaSemId()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_InscricaoInexistenteSemAPermissao_RegistraANegativaSemId));
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
         Guid inexistente = Guid.CreateVersion7();
 
         using HttpResponseMessage resposta = await SendAsync(

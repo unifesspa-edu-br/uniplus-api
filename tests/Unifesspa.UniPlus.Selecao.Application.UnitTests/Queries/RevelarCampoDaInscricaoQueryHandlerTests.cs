@@ -42,12 +42,16 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
         resultado.IsFailure.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Inscrição que não existe, pedida sem a permissão de revelar, responde 404 e registra a negativa sem o id do resource")]
-    public async Task Inexistente_SemAPermissao_RegistraANegativaSemId()
+    [Theory(DisplayName = "Inscrição que não existe, pedida por quem não tem a permissão da classe ou a de revelar, responde 404 e registra só a primeira negada, sem o id do resource")]
+    [InlineData(false, "selecao:dados-identificadores:consultar")]
+    [InlineData(true, "selecao:dados-identificadores:revelar")]
+    public async Task Inexistente_SemAPermissao_RegistraAPrimeiraNegadaSemId(bool comAClasse, string negada)
     {
         InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond);
         InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
-        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.DadosPessoaisConsultar);
+        DecisoesDeAcessoDeTeste kevin = comAClasse
+            ? new("kevin.carvalho", PermissaoSelecao.DadosIdentificadoresConsultar)
+            : new("kevin.carvalho", PermissaoSelecao.DadosIdentificadoresRevelar);
 
         Result<CampoReveladoDto> resultado = await RevelarCampoDaInscricaoQueryHandler.Handle(
             new RevelarCampoDaInscricaoQuery(cenario.ProcessoId, Guid.CreateVersion7(), "CPF", null),
@@ -57,10 +61,10 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
         resultado.IsFailure.Should().BeTrue();
         IReadOnlyCollection<DecisaoDeAcesso> entregues = ((IReadOnlyCollection<DecisaoDeAcesso>)kevin.Verificador.ReceivedCalls()
             .Single(static c => c.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.RegistrarDesfechoAsync)).GetArguments()[0]!);
-        DecisaoNegada negada = entregues.Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject;
-        negada.Registro.Permissao.Should().Be(PermissaoSelecao.DadosIdentificadoresRevelar.Codigo);
-        negada.Registro.ResourceId.Should().BeNull();
-        negada.Registro.FatoCodigo.Should().BeNull();
+        DecisaoNegada registrada = entregues.Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject;
+        registrada.Registro.Permissao.Should().Be(negada);
+        registrada.Registro.ResourceId.Should().BeNull();
+        registrada.Registro.FatoCodigo.Should().BeNull();
     }
 
     [Theory(DisplayName = "Sem a permissão de revelar, a resposta existente e a ausente dão o mesmo 404, decidido antes de procurar a resposta")]

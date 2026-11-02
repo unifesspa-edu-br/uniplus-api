@@ -66,7 +66,11 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
         {
             await AcessoAInscricao
                 .RegistrarNegativaDoInexistenteAsync(
-                    verificador, conferencia, query.ProcessoSeletivoId, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, cancellationToken)
+                    verificador,
+                    conferencia,
+                    query.ProcessoSeletivoId,
+                    [PermissaoSelecao.DadosIdentificadoresConsultar.Requisito, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito],
+                    cancellationToken)
                 .ConfigureAwait(false);
             return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
         }
