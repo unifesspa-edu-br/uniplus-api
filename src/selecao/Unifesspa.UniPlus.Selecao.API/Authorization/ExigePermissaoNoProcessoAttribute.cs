@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// do catálogo (<c>ExigePermissao</c>) não serve a estas permissões porque não conhece a unidade dona do processo.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthorizationFilter
+public sealed class ExigePermissaoNoProcessoAttribute : Attribute, IAsyncAuthorizationFilter, IExigeAutorizacaoAlemDoLogin
 {
     private readonly PermissaoSelecao _permissao;
 

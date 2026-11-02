@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// identidade está incompleta.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public sealed class ExigeLeituraDoProcessoAttribute : Attribute, IAsyncAuthorizationFilter
+public sealed class ExigeLeituraDoProcessoAttribute : Attribute, IAsyncAuthorizationFilter, IExigeAutorizacaoAlemDoLogin
 {
     /// <inheritdoc />
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
