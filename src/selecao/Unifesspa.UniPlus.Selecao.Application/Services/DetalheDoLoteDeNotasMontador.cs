@@ -5,6 +5,7 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Interfaces;
 
+using DTOs;
 using DTOs.NotasDoEnem;
 
 /// <summary>Monta o lote com as ocorrências e os ausentes, para a importação e para a consulta.</summary>
@@ -37,10 +38,10 @@ public static class DetalheDoLoteDeNotasMontador
         ];
 
         IReadOnlyDictionary<Guid, InscritoDoLote> inscritos = await lotes.ObterInscritosAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
-        IReadOnlyDictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>> opcoes = await NomesDasOfertasDoLote
+        IReadOnlyDictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>> ofertas = await OfertasEscolhidas
             .ResolverAsync(lote.ProcessoSeletivoId, inscritos, processoSeletivoRepository, registroCodecs, cancellationToken)
             .ConfigureAwait(false);
 
-        return LoteDeNotasDoEnemDto.De(lote, vigente, new DetalheDoLoteDeNotas(inscritos, ausentes, opcoes), ausentes.Count);
+        return LoteDeNotasDoEnemDto.De(lote, vigente, new DetalheDoLoteDeNotas(inscritos, ausentes, ofertas), ausentes.Count);
     }
 }

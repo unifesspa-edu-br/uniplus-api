@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.DTOs.NotasDoEnem;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -35,7 +36,7 @@ public sealed class LoteDeNotasDoEnemDtoTests
                 [parcial] = [AreaDoEnem.Matematica],
                 [total] = AreaDoEnem.Todas,
             },
-            new Dictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>>());
+            new Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>>());
 
         LoteDeNotasDoEnemDto dto = LoteDeNotasDoEnemDto.De(LoteVazio(), vigente: true, detalhe, totalDeInscritosAusentes: 2);
 
@@ -56,7 +57,7 @@ public sealed class LoteDeNotasDoEnemDtoTests
         DetalheDoLoteDeNotas detalhe = new(
             new Dictionary<Guid, InscritoDoLote> { [comNumero] = new("UNI-0001", "Pessoa", "***.333.444-**", Guid.CreateVersion7(), null, null) },
             new Dictionary<Guid, IReadOnlyList<string>> { [semNumero] = [AreaDoEnem.Redacao], [comNumero] = [AreaDoEnem.Redacao] },
-            new Dictionary<Guid, IReadOnlyList<OpcaoDeCursoDoLoteDto>>());
+            new Dictionary<Guid, IReadOnlyList<OfertaEscolhidaDto>>());
 
         LoteDeNotasDoEnemDto dto = LoteDeNotasDoEnemDto.De(LoteVazio(), vigente: true, detalhe, totalDeInscritosAusentes: 2);
 

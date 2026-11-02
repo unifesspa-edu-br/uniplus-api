@@ -31,7 +31,8 @@ public sealed class RespostaSemProjetorDeTesteController : ControllerBase
     [HttpGet("esquecida")]
     public IActionResult ObterSemProjetor(Guid id, Guid inscricaoId) =>
         Ok(new InscricaoDoProcessoDto(
-            inscricaoId, "000001", SituacaoInscricao.Submetida, Guid.CreateVersion7(), null,
+            inscricaoId, new ProcessoDaInscricaoDto(id, "Processo de teste"), "000001", SituacaoInscricao.Submetida,
+            [new OfertaEscolhidaDto(Guid.CreateVersion7(), "Medicina", 1)],
             new NomeClassificadoDto(ClassificacaoDeProtecao.Pessoal, baseLegal: null) { Valor = "Ariel Drumond" },
             new CpfMascaradoDto("***.598.363-**", PodeRevelar: false), DateTimeOffset.UtcNow));
 }

@@ -46,18 +46,19 @@ public static class ListarInscricoesDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
-        Guid? unidade = await processoRepository
-            .ObterUnidadeAdministradoraAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
-        if (unidade is not { } dona)
+        UnidadeENomeDoProcesso? processo = await processoRepository
+            .ObterUnidadeENomeAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        if (processo is null)
         {
             return new ListarInscricoesDoProcessoResult([], null, null);
         }
 
-        ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(dona, query.ProcessoSeletivoId, inscricaoId: null);
+        ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(processo.UnidadeId, query.ProcessoSeletivoId, inscricaoId: null);
 
-        (ClassificacaoDeProtecao classeDoNome, string? baseLegalDoNome) = await ClassificacaoDoNomeNoProcesso
-            .ResolverAsync(query.ProcessoSeletivoId, processoRepository, registroCodecs, cancellationToken).ConfigureAwait(false);
-        bool nomeEntra = ClassificacaoDoNomeNoProcesso.EntraNosPares(classeDoNome, baseLegalDoNome);
+        LeituraDasVersoes versoes = await VersoesDoProcessoNaListagem
+            .LerAsync(query.ProcessoSeletivoId, processoRepository, registroCodecs, cancellationToken).ConfigureAwait(false);
+        (ClassificacaoDeProtecao classeDoNome, string? baseLegalDoNome) = (versoes.ClassificacaoDoNome, versoes.BaseLegalDoNome);
+        bool nomeEntra = VersoesDoProcessoNaListagem.EntraNosPares(classeDoNome, baseLegalDoNome);
 
         // Da classe mais alta para a mais baixa: a ordem em que a linha exerce a decisão que fica registrada. Os pares
         // vêm do que o DTO declara, mais a classe do nome, que é a congelada nas versões do processo.
@@ -83,7 +84,8 @@ public static class ListarInscricoesDoProcessoQueryHandler
 
         await RegistrarUmPorInscricaoAsync(verificador, decisoes, classes, resource, inscricoes, cancellationToken).ConfigureAwait(false);
 
-        InscricaoDoProcessoDto[] items = [.. inscricoes.Select(i => Projetar(i, decisoes, modeloDoNome, saiONome))];
+        ProcessoDaInscricaoDto daListagem = new(query.ProcessoSeletivoId, processo.Nome);
+        InscricaoDoProcessoDto[] items = [.. inscricoes.Select(i => Projetar(i, daListagem, versoes, decisoes, modeloDoNome, saiONome))];
 
         return new ListarInscricoesDoProcessoResult(items, anteriorAfterId, proximoAfterId);
     }
@@ -121,17 +123,26 @@ public static class ListarInscricoesDoProcessoQueryHandler
     }
 
     private static InscricaoDoProcessoDto Projetar(
-        ResumoDaInscricaoDoProcesso i, DecisoesDaProjecao decisoes, NomeClassificadoDto modeloDoNome, bool saiONome)
+        ResumoDaInscricaoDoProcesso i,
+        ProcessoDaInscricaoDto processo,
+        LeituraDasVersoes versoes,
+        DecisoesDaProjecao decisoes,
+        NomeClassificadoDto modeloDoNome,
+        bool saiONome)
     {
         T? Fixo<T>(string campo, T? valor)
             where T : struct => decisoes.PermitePropriedade<InscricaoDoProcessoDto>(campo) ? valor : null;
 
         return new(
             i.Id,
+            processo,
             decisoes.PermitePropriedade<InscricaoDoProcessoDto>(nameof(InscricaoDoProcessoDto.NumeroInscricao)) ? i.NumeroInscricao : null,
             Fixo<SituacaoInscricao>(nameof(InscricaoDoProcessoDto.Situacao), i.Situacao),
-            Fixo<Guid>(nameof(InscricaoDoProcessoDto.OfertaCursoId), i.OfertaCursoId),
-            Fixo<Guid>(nameof(InscricaoDoProcessoDto.OfertaCursoSegundaOpcaoId), i.OfertaCursoSegundaOpcaoId),
+            decisoes.PermitePropriedade<InscricaoDoProcessoDto>(nameof(InscricaoDoProcessoDto.Ofertas))
+                ? OfertasEscolhidas.Montar(
+                    i.OfertaCursoId, i.OfertaCursoSegundaOpcaoId,
+                    versoes.NomesDasOfertasPorVersao.GetValueOrDefault(i.VersaoFormularioId) ?? new Dictionary<Guid, string>())
+                : null,
             saiONome && i.Nome is { } nome ? modeloDoNome with { Valor = nome } : null,
             decisoes.PermitePropriedade<InscricaoDoProcessoDto>(nameof(InscricaoDoProcessoDto.Cpf)) && i.Cpf is { } cpf
                 ? new CpfMascaradoDto(cpf.Mascarado, PodeRevelar: false)

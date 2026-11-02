@@ -233,11 +233,26 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         InscricaoAdministrativaDto dto = resultado.Value!;
         dto.Id.Should().Be(cenario.InscricaoId);
         dto.Situacao.Should().Be(SituacaoInscricao.Submetida);
-        dto.OfertaCursoId.Should().Be(cenario.OfertaCursoId);
+        dto.Ofertas.Should().Equal(new OfertaEscolhidaDto(cenario.OfertaCursoId, InscricaoAdministrativaDeTeste.NomeDaOferta, 1));
+        dto.Processo.Should().Be(new ProcessoDaInscricaoDto(cenario.ProcessoId, InscricaoAdministrativaDeTeste.NomeDoProcesso));
         dto.NumeroInscricao.Should().BeNull("o número é dado interno");
         dto.Secoes.Single().Itens.Single().FatoCodigo.Should().Be("RESUMO_DO_ARTIGO");
         dto.Arquivos.Single().NomeDoDocumento.Should().Be("Documento ARTIGO_PUBLICADO");
         JsonSerializer.Serialize(dto).Should().NotContain(PersonasDeTeste.NomeKevinCarvalho).And.NotContain("***.");
+    }
+
+    [Fact(DisplayName = "Sem dados públicos as ofertas são omitidas, mas o id e o processo saem")]
+    public async Task SemDadosPublicos_OmiteAsOfertas()
+    {
+        InscricaoAdministrativaDeTeste cenario = DeFernanda();
+        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosInternosConsultar);
+
+        InscricaoAdministrativaDto dto = (await Consultar(cenario, erick)).Value!;
+
+        dto.Ofertas.Should().BeNull();
+        dto.Id.Should().Be(cenario.InscricaoId);
+        dto.Processo.Nome.Should().Be(InscricaoAdministrativaDeTeste.NomeDoProcesso);
+        JsonSerializer.Serialize(dto).Should().NotContain("ofertas");
     }
 
     [Fact(DisplayName = "Derivado sensível sem base legal congelada não sai, mesmo para quem tem a permissão de dados sensíveis")]

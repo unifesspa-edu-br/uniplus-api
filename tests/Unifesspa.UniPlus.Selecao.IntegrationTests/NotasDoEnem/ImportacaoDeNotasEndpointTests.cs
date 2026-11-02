@@ -272,7 +272,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         semInscrito.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[5]));
         semInscrito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[5].Nome);
         semInscrito.GetProperty("sexo").GetString().Should().Be(Pessoas[5].Sexo[..1]);
-        semInscrito.GetProperty("opcoesDeCurso").ValueKind.Should().Be(JsonValueKind.Null);
+        semInscrito.GetProperty("ofertas").ValueKind.Should().Be(JsonValueKind.Null);
 
         raiz.GetProperty("totalDeInscritosAusentes").GetInt32().Should().Be(2);
         JsonElement[] ausentes = [.. raiz.GetProperty("ausentes").EnumerateArray()];
@@ -301,8 +301,8 @@ public sealed class ImportacaoDeNotasEndpointTests
     }
 
     private static string[] OpcoesDe(JsonElement elemento) =>
-        [.. elemento.GetProperty("opcoesDeCurso").EnumerateArray()
-            .Select(o => $"{o.GetProperty("ordem").GetInt32()}:{o.GetProperty("oferta").GetString()}")];
+        [.. elemento.GetProperty("ofertas").EnumerateArray()
+            .Select(o => $"{o.GetProperty("ordem").GetInt32()}:{o.GetProperty("nome").GetString()}")];
 
     [Fact(DisplayName = "lote inexistente da edição é 404")]
     public async Task Obter_LoteInexistente_NaoEncontrado()

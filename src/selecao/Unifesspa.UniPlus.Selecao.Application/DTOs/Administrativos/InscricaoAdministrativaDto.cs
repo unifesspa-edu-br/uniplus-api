@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -15,8 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <param name="Id">A identidade da inscrição: sai sempre que o acesso à inscrição foi concedido, porque é com ela que se abre o detalhe.</param>
 /// <param name="Situacao">Rascunho, submetida ou cancelada.</param>
-/// <param name="OfertaCursoId">A oferta de curso da primeira opção.</param>
-/// <param name="OfertaCursoSegundaOpcaoId">A oferta de curso da segunda opção, quando há.</param>
+/// <param name="Processo">O processo seletivo da inscrição.</param>
+/// <param name="Ofertas">As ofertas que o candidato escolheu, na ordem da escolha, nomeadas pela versão do formulário da inscrição.</param>
 /// <param name="NumeroInscricao">O número gerado no primeiro envio.</param>
 /// <param name="SubmetidaEm">O instante do primeiro envio.</param>
 /// <param name="CanceladaEm">O instante do cancelamento, quando cancelada.</param>
@@ -26,15 +27,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Arquivos">Os arquivos enviados, só os metadados: abrir o arquivo é outra operação, com a permissão da classe dele.</param>
 public sealed record InscricaoAdministrativaDto(
     Guid Id,
+    ProcessoDaInscricaoDto Processo,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.situacao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     SituacaoInscricao? Situacao,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_id")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Guid? OfertaCursoId,
-    [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_segunda_opcao_id")]
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Guid? OfertaCursoSegundaOpcaoId,
+    IReadOnlyList<OfertaEscolhidaDto>? Ofertas,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.inscricoes.numero_inscricao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? NumeroInscricao,

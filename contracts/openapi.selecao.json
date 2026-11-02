@@ -12722,7 +12722,7 @@
           "nomeDoCandidato",
           "cpfMascarado",
           "areas",
-          "opcoesDeCurso"
+          "ofertas"
         ],
         "type": "object",
         "properties": {
@@ -12754,13 +12754,13 @@
               "type": "string"
             }
           },
-          "opcoesDeCurso": {
+          "ofertas": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/OpcaoDeCursoDoLoteDto"
+              "$ref": "#/components/schemas/OfertaEscolhidaDto"
             }
           }
         }
@@ -18004,6 +18004,7 @@
       "InscricaoAdministrativaDto": {
         "required": [
           "id",
+          "processo",
           "secoes",
           "derivados",
           "arquivos"
@@ -18013,6 +18014,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "processo": {
+            "$ref": "#/components/schemas/ProcessoDaInscricaoDto"
           },
           "situacao": {
             "oneOf": [
@@ -18024,19 +18028,14 @@
               }
             ]
           },
-          "ofertaCursoId": {
+          "ofertas": {
             "type": [
               "null",
-              "string"
+              "array"
             ],
-            "format": "uuid"
-          },
-          "ofertaCursoSegundaOpcaoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
+            "items": {
+              "$ref": "#/components/schemas/OfertaEscolhidaDto"
+            }
           },
           "numeroInscricao": {
             "type": [
@@ -18086,13 +18085,17 @@
       },
       "InscricaoDoProcessoDto": {
         "required": [
-          "id"
+          "id",
+          "processo"
         ],
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "processo": {
+            "$ref": "#/components/schemas/ProcessoDaInscricaoDto"
           },
           "numeroInscricao": {
             "type": [
@@ -18110,19 +18113,14 @@
               }
             ]
           },
-          "ofertaCursoId": {
+          "ofertas": {
             "type": [
               "null",
-              "string"
+              "array"
             ],
-            "format": "uuid"
-          },
-          "ofertaCursoSegundaOpcaoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
+            "items": {
+              "$ref": "#/components/schemas/OfertaEscolhidaDto"
+            }
           },
           "nome": {
             "oneOf": [
@@ -19703,7 +19701,7 @@
           "nomeDoCandidato",
           "cpfMascarado",
           "sexo",
-          "opcoesDeCurso"
+          "ofertas"
         ],
         "type": "object",
         "properties": {
@@ -19755,13 +19753,13 @@
               "string"
             ]
           },
-          "opcoesDeCurso": {
+          "ofertas": {
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/OpcaoDeCursoDoLoteDto"
+              "$ref": "#/components/schemas/OfertaEscolhidaDto"
             }
           }
         }
@@ -19894,6 +19892,34 @@
           }
         }
       },
+      "OfertaEscolhidaDto": {
+        "required": [
+          "id",
+          "nome",
+          "ordem"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ordem": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "OfertaRecursoDto": {
         "required": [
           "id",
@@ -19975,26 +20001,6 @@
             "type": "string"
           },
           "cursoGrau": {
-            "type": "string"
-          }
-        }
-      },
-      "OpcaoDeCursoDoLoteDto": {
-        "required": [
-          "ordem",
-          "oferta"
-        ],
-        "type": "object",
-        "properties": {
-          "ordem": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "oferta": {
             "type": "string"
           }
         }
@@ -20587,6 +20593,22 @@
           "retryable": {
             "type": "boolean",
             "description": "Presente e \u0060true\u0060 quando o conflito descreve uma corrida que j\u00E1 passou: a mesma requisi\u00E7\u00E3o, repetida sem altera\u00E7\u00E3o, pode agora ser aceita. A aus\u00EAncia \u00E9 o default conservador do servidor \u2014 diz que o conflito n\u00E3o foi declarado retent\u00E1vel, n\u00E3o que repetir esteja descartado; nesse caso vale a descri\u00E7\u00E3o da pr\u00F3pria resposta."
+          }
+        }
+      },
+      "ProcessoDaInscricaoDto": {
+        "required": [
+          "id",
+          "nome"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
           }
         }
       },

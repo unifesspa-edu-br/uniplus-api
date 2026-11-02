@@ -135,9 +135,13 @@ public static class ObterInscricaoAdministrativaQueryHandler
 
         return Result<InscricaoAdministrativaDto>.Success(new InscricaoAdministrativaDto(
             inscricao.Id,
+            new ProcessoDaInscricaoDto(query.ProcessoSeletivoId, conferido.ProcessoNome),
             Fixo<SituacaoInscricao>(decisoes, nameof(InscricaoAdministrativaDto.Situacao), inscricao.Situacao),
-            Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.OfertaCursoId), inscricao.OfertaCursoId),
-            Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.OfertaCursoSegundaOpcaoId), inscricao.OfertaCursoSegundaOpcaoId),
+            decisoes.PermitePropriedade<InscricaoAdministrativaDto>(nameof(InscricaoAdministrativaDto.Ofertas))
+                ? OfertasEscolhidas.Montar(
+                    inscricao.OfertaCursoId, inscricao.OfertaCursoSegundaOpcaoId,
+                    OfertasEscolhidas.NomesDe(ContextoDaVersaoFixadaResolver.OfertasDaVersao(envelope.Value!.Grafo)))
+                : null,
             Fixo(decisoes, nameof(InscricaoAdministrativaDto.NumeroInscricao), inscricao.NumeroInscricao),
             submetidaEm,
             Fixo<DateTimeOffset>(decisoes, nameof(InscricaoAdministrativaDto.CanceladaEm), inscricao.CanceladaEm),

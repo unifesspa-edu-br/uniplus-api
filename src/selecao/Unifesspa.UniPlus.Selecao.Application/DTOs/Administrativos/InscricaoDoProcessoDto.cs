@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -14,13 +15,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Id">A identidade da inscrição: sai sempre que o acesso à inscrição foi concedido, porque é com ela que se abre o detalhe.</param>
 /// <param name="NumeroInscricao">O número gerado no primeiro envio.</param>
 /// <param name="Situacao">Submetida ou cancelada.</param>
-/// <param name="OfertaCursoId">A oferta de curso da primeira opção.</param>
-/// <param name="OfertaCursoSegundaOpcaoId">A oferta de curso da segunda opção, quando há.</param>
+/// <param name="Processo">O processo seletivo, o mesmo em todas as linhas: a coleção não tem envelope para carregá-lo.</param>
+/// <param name="Ofertas">As ofertas que o candidato escolheu, na ordem da escolha, nomeadas pela versão do formulário da inscrição.</param>
 /// <param name="Nome">O nome exibido, como item classificado pela proteção que as versões do processo congelaram para ele.</param>
 /// <param name="Cpf">O CPF no padrão <c>***.999.999-**</c>; o completo só se revela pela permissão própria, no detalhe.</param>
 /// <param name="SubmetidaEm">O instante do primeiro envio.</param>
 public sealed record InscricaoDoProcessoDto(
     Guid Id,
+    ProcessoDaInscricaoDto Processo,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.inscricoes.numero_inscricao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? NumeroInscricao,
@@ -29,10 +31,7 @@ public sealed record InscricaoDoProcessoDto(
     SituacaoInscricao? Situacao,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_id")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Guid? OfertaCursoId,
-    [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.oferta_curso_segunda_opcao_id")]
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Guid? OfertaCursoSegundaOpcaoId,
+    IReadOnlyList<OfertaEscolhidaDto>? Ofertas,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     NomeClassificadoDto? Nome,
     [property: ProtegidoComo(
