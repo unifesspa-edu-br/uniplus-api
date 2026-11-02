@@ -9,7 +9,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// Das decisões avaliadas por uma mesma pergunta, grava-se a permitida que autorizou; se nenhuma autorizou, as negadas,
-/// que são a tentativa real. O que se grava das permitidas depende da intenção. A decisão sem sujeito, em qualquer posição, anula o registro do desfecho.
+/// que são a tentativa real, de qualquer sensibilidade. O que se grava das permitidas depende da intenção. A decisão sem
+/// sujeito, em qualquer posição, anula o registro do desfecho.
 /// </remarks>
 public static class PoliticaDeRegistroDeAcesso
 {
@@ -61,17 +62,14 @@ public static class PoliticaDeRegistroDeAcesso
         (DecisaoPermitida, IntencaoDoRegistro.Projecao or IntencaoDoRegistro.PorResourceExibido) => true,
         (DecisaoNegada, IntencaoDoRegistro.Projecao or IntencaoDoRegistro.PorResourceExibido) => false,
 
-        // A alternativa que exige concessão em unidade e só encontrou concessão global não afirma uma tentativa sobre
-        // o dado: a trilha não a recebe.
-        (DecisaoNegada { Registro.MotivoNegativa: var motivo }, _)
-            when motivo == ValoresCanonicos.De(MotivoNegativa.ConcessaoEmUnidadeExigida) => false,
+        // A negativa de um pedido grava em qualquer sensibilidade: é a tentativa de alguém, e a trilha não pode perdê-la.
+        (DecisaoNegada, _) => true,
         (DecisaoPermitida p, _) => Pessoal(p.Requisito, p.Resource),
-        (DecisaoNegada n, _) => Pessoal(n.Requisito, n.Resource),
         _ => false,
     };
 
-    // Só o dado pessoal, identificador ou sensível exige registro de quem decide por pedido; as demais decisões não
-    // gravam, para que a autorização operacional não dependa do destino do registro.
+    // Só o dado pessoal, identificador ou sensível exige registro da decisão permitida de um pedido; a operação do dia a
+    // dia sobre dado menos sensível não grava, para não depender do destino do registro.
     private static bool Pessoal(PermissionRequirement requisito, ResourceContext resource) =>
         RegistroDecisaoAcesso.SensibilidadeEfetiva(requisito, resource) >= ClassificacaoDeProtecao.Pessoal;
 

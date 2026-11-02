@@ -58,6 +58,46 @@ public sealed class FalhaAoRegistrarAcessoTests
         corpo.Should().Contain("uniplus.autorizacao.registro_de_acesso.falha_ao_gravar").And.NotContain("banco fora");
     }
 
+    [Fact(DisplayName = "Com o registro indisponível, o pedido inexistente pedido sem permissão responde 503, como o existente")]
+    public async Task PedidoInexistente_RegistroIndisponivel_503()
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, "paulo.nogueira");
+        await using WebApplicationFactory<HostAssemblyMarker> comFalha = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IRegistroOperacionalRestrito>();
+                services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
+            }));
+        using HttpClient paulo = comFalha.CreateClient();
+        paulo.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        paulo.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "paulo.nogueira");
+        paulo.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "paulo.nogueira");
+        paulo.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
+        string pedido = $"/api/autorizacao/pedidos-de-concessao/{Guid.CreateVersion7()}";
+
+        using HttpResponseMessage leitura = await paulo.GetAsync(new Uri(pedido, UriKind.Relative));
+        using HttpResponseMessage anexo = await paulo.GetAsync(new Uri($"{pedido}/anexos/{Guid.CreateVersion7()}", UriKind.Relative));
+        using HttpResponseMessage aprovacao = await Enviar(paulo, $"{pedido}/aprovacoes", new { });
+        using HttpResponseMessage recusa = await Enviar(paulo, $"{pedido}/recusa", new { motivo = "Sem justificativa de acesso." });
+
+        foreach (HttpResponseMessage resposta in new[] { leitura, anexo, aprovacao, recusa })
+        {
+            resposta.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, await resposta.Content.ReadAsStringAsync());
+        }
+    }
+
+    private static async Task<HttpResponseMessage> Enviar(HttpClient client, string rota, object corpo)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative))
+        {
+            Content = System.Net.Http.Json.JsonContent.Create(corpo),
+        };
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+
+        return await client.SendAsync(request);
+    }
+
     private sealed class RegistroQueFalha : IRegistroOperacionalRestrito
     {
         public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken) =>

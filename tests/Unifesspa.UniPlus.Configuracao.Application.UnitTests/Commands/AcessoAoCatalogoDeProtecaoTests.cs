@@ -45,18 +45,17 @@ public sealed class AcessoAoCatalogoDeProtecaoTests
             Arg.Any<CancellationToken>());
     }
 
-    [Theory(DisplayName = "As negativas das três permissões do catálogo não geram registro, porque as três são de dado interno")]
-    [InlineData(IntencaoDoRegistro.Pedido)]
-    public async Task SemNenhuma_NaoGeraRegistro(IntencaoDoRegistro intencao)
+    [Fact(DisplayName = "As três negativas do catálogo geram um registro cada, ainda que as permissões sejam de dado interno")]
+    public async Task SemNenhuma_GeraUmRegistroPorNegativa()
     {
         Avaliar();
         IReadOnlyCollection<DecisaoDeAcesso>? entregues = null;
-        _verificador.RegistrarDesfechoAsync(Arg.Do<IReadOnlyCollection<DecisaoDeAcesso>>(d => entregues = d), intencao, Arg.Any<CancellationToken>())
+        _verificador.RegistrarDesfechoAsync(Arg.Do<IReadOnlyCollection<DecisaoDeAcesso>>(d => entregues = d), IntencaoDoRegistro.Pedido, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, default);
 
-        PoliticaDeRegistroDeAcesso.Desfecho(entregues!, intencao).Should().BeEmpty();
+        PoliticaDeRegistroDeAcesso.Desfecho(entregues!, IntencaoDoRegistro.Pedido).Should().HaveCount(3);
     }
 
     [Fact(DisplayName = "Token sem sujeito recusa com identidade incompleta, e não com falta de permissão")]

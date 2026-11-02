@@ -146,10 +146,20 @@ public sealed class ExigePermissaoAttributeTests
             .Last().Resultado.Should().Be(segunda, "sem unidade que permita, vale o desfecho da última avaliada");
     }
 
-    [Fact(DisplayName = "Permissão operacional não registra, permitida ou negada")]
-    public async Task OnAuthorizationAsync_PermissaoOperacional_NaoRegistra()
+    [Fact(DisplayName = "Permissão operacional registra a negativa")]
+    public async Task OnAuthorizationAsync_PermissaoOperacionalNegada_Registra()
     {
         Principal(Decisao(ResultadoDoAcesso.Negado));
+
+        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo).OnAuthorizationAsync(Contexto());
+
+        Registrados().Should().ContainSingle().Which.Permitido.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Permissão operacional permitida não registra")]
+    public async Task OnAuthorizationAsync_PermissaoOperacionalPermitida_NaoRegistra()
+    {
+        Principal(Decisao(ResultadoDoAcesso.Permitido));
 
         await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConsultarCatalogo).OnAuthorizationAsync(Contexto());
 

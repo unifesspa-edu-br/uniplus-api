@@ -79,6 +79,7 @@ public static class ObterPedidoDeConcessaoQueryHandler
         PedidoDeConcessao? pedido = await repository.ObterParaLeituraAsync(id, cancellationToken).ConfigureAwait(false);
         if (pedido is null)
         {
+            await VisibilidadeDoPedido.RegistrarInexistenteAsync(verificador, cancellationToken).ConfigureAwait(false);
             return Result<PedidoDeConcessao>.Failure(PedidoHandlerErros.NaoEncontrado());
         }
 
