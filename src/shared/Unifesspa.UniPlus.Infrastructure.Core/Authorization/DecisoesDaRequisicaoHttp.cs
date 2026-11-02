@@ -45,4 +45,8 @@ public sealed class DecisoesDaRequisicaoHttp : IDecisoesDaRequisicao
     /// <inheritdoc />
     public bool Permite(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
         Ler(_httpContextAccessor.HttpContext).Permite(natureza, classificacao);
+
+    /// <inheritdoc />
+    public bool TemCapacidade(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
+        Ler(_httpContextAccessor.HttpContext).TemCapacidade(natureza, classificacao);
 }

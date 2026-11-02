@@ -25,11 +25,13 @@ using Wolverine.Attributes;
 /// vez, com a mesma decisão e o mesmo registro de qualquer outro acesso.
 /// </summary>
 /// <remarks>
-/// A decisão é tomada aqui, e não na borda, para que a inscrição e o campo já estejam conferidos quando o registro os
-/// nomear: a trilha nunca cita inscrição ou campo que não existem. Decide a permissão de revelar identificadores e registra
-/// os dois resultados, com o código do fato e a ocorrência. A inscrição que não existe, a de outro processo, a em
-/// rascunho, o campo que não é identificador e a recusa por falta de permissão respondem o mesmo 404. O valor só é
-/// decifrado depois da decisão permitida, e o log traz quem revelou e qual campo, nunca o valor.
+/// A decisão é tomada aqui, e não na borda, para que a inscrição já esteja conferida quando o registro a nomear: a
+/// trilha nunca cita inscrição que não existe. Depois do vínculo, e antes de procurar a resposta, decide a permissão de
+/// revelar identificadores, que independe do acesso às inscrições, e registra os dois resultados, com o código do fato e a
+/// ocorrência pedidos. A resposta só é procurada com a permissão, de modo que a resposta existente e a ausente respondem o
+/// mesmo 404 a quem não a tem. A inscrição que não existe, a de outro processo, a em rascunho, o campo que não é
+/// identificador e a recusa por falta de permissão respondem o mesmo 404. O valor só é decifrado depois da decisão
+/// permitida, e o log traz quem revelou e qual campo, nunca o valor.
 /// </remarks>
 public static partial class RevelarCampoDaInscricaoQueryHandler
 {
@@ -68,6 +70,15 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
             return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
         }
 
+        ResourceContext resource = AcessoAoProcesso.ResourceDoCampo(
+            conferido.UnidadeId, query.ProcessoSeletivoId, query.InscricaoId, query.FatoCodigo, query.Ocorrencia);
+        if (await AcessoAInscricao
+            .DecidirAsync(verificador, conferido, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
+            .ConfigureAwait(false) is Recusada recusada)
+        {
+            return Result<CampoReveladoDto>.Failure(AcessoAInscricao.Erro(recusada, CampoNaoEncontrado));
+        }
+
         VinculoDaInscricao vinculo = conferido.Inscricao;
 
         Result<VersaoConfiguracao> versao = await VersaoFixadaDaInscricaoResolver
@@ -98,16 +109,6 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
         if (campo is null || resposta is null)
         {
             return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
-        }
-
-        ResourceContext resource = AcessoAoProcesso.ResourceDoCampo(
-            conferido.UnidadeId, query.ProcessoSeletivoId, query.InscricaoId, campo.FatoCodigo,
-            campo.GrupoCodigo is null ? null : query.Ocorrencia);
-        if (await AcessoAInscricao
-            .DecidirAsync(verificador, conferido, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
-            .ConfigureAwait(false) is Recusada recusada)
-        {
-            return Result<CampoReveladoDto>.Failure(AcessoAInscricao.Erro(recusada, CampoNaoEncontrado));
         }
 
         string? bruto = await inscricaoRepository.LerIdentificadorAsync(resposta.RespostaId, cancellationToken).ConfigureAwait(false);

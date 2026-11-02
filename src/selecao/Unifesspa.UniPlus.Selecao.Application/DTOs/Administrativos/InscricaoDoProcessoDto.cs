@@ -38,7 +38,7 @@ public sealed record InscricaoDoProcessoDto(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     NomeClassificadoDto? Nome,
     [property: ProtegidoComo(
-        ClassificacaoDeProtecao.Pessoal,
+        ClassificacaoDeProtecao.Identificador,
         Fonte = "selecao.respostas_da_inscricao.valor_cifrado",
         Transformacao = TransformacoesDeProtecao.MascaraDoCpf)]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

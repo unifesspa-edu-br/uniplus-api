@@ -21,6 +21,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>A revelação devolve o CPF no formato de CPF e trata o valor decifrado vazio como campo não encontrado.</summary>
 public sealed class RevelarCampoDaInscricaoQueryHandlerTests
 {
+    private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
+
     [Fact(DisplayName = "O fato de formato CPF é revelado formatado")]
     public async Task Revela_Cpf_Formatado()
     {
@@ -60,15 +62,66 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
         negada.Registro.FatoCodigo.Should().BeNull();
     }
 
-    private static async Task<Result<CampoReveladoDto>> Revelar(string? decifrado)
+    [Theory(DisplayName = "Sem a permissão de revelar, a resposta existente e a ausente dão o mesmo 404, decidido antes de procurar a resposta")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SemRevelar_MesmoNaoEncontrado_AntesDeProcurarAResposta(bool respostaExiste)
     {
-        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        if (respostaExiste)
+        {
+            mundo.Inscricoes.LocalizarIdentificadorAsync(cenario.InscricaoId, "CPF", null, null, Arg.Any<CancellationToken>())
+                .Returns(new RespostaIdentificadora(Guid.CreateVersion7()));
+        }
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, kevin);
+
+        resultado.Error!.Code.Should().Be("Inscricao.CampoNaoEncontrado");
+        await kevin.Verificador.Received(1).ExigirAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar),
+            Arg.Is<ResourceContext?>(r => r!.FatoCodigo == "CPF" && r.InscricaoId == cenario.InscricaoId),
+            Arg.Any<CancellationToken>());
+        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
+    }
+
+    [Fact(DisplayName = "Erick só com a permissão de revelar, sem consultar inscrições, revela o CPF")]
+    public async Task SoComRevelar_Revela()
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
+        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick);
+
+        resultado.Value!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Formatado);
+    }
+
+    private static InscricaoAdministrativaDeTeste CenarioComCpf() =>
+        new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
             .Fato("CPF", "IDENTIFICADOR", TipoRenderizacao.Texto, null, formato: "CPF");
+
+    private static InscricaoAdministrativaDeTeste.Mundo Mundo(InscricaoAdministrativaDeTeste cenario, string? decifrado)
+    {
         InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
         mundo.Inscricoes.LocalizarIdentificadorAsync(cenario.InscricaoId, "CPF", null, null, Arg.Any<CancellationToken>())
             .Returns(new RespostaIdentificadora(Guid.CreateVersion7()));
         mundo.Inscricoes.LerIdentificadorAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(decifrado);
-        DecisoesDeAcessoDeTeste persona = new("diogo.souza", PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        return mundo;
+    }
+
+    private static Task<Result<CampoReveladoDto>> Revelar(string? decifrado)
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+
+        return Revelar(cenario, Mundo(cenario, decifrado), new DecisoesDeAcessoDeTeste("diogo.souza", PermissaoSelecao.DadosIdentificadoresRevelar));
+    }
+
+    private static async Task<Result<CampoReveladoDto>> Revelar(
+        InscricaoAdministrativaDeTeste cenario, InscricaoAdministrativaDeTeste.Mundo mundo, DecisoesDeAcessoDeTeste persona)
+    {
         IUserContext usuario = Substitute.For<IUserContext>();
 
         return await RevelarCampoDaInscricaoQueryHandler.Handle(

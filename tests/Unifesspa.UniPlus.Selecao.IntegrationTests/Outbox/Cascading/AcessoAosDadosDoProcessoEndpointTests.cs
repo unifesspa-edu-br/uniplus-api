@@ -122,12 +122,13 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         configurar.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact(DisplayName = "Com os dados públicos e pessoais a lista traz nome e CPF mascarado, só na unidade dona, e não abre documento")]
+    [Fact(DisplayName = "Com os dados públicos, pessoais e identificadores a lista traz nome e CPF mascarado, só na unidade dona, e não abre documento")]
     public async Task Inscricoes_ListaComCpfMascarado()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Inscricoes_ListaComCpfMascarado));
         await ConcederAsync(
-            Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+            Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar,
+            PermissaoSelecao.DadosIdentificadoresConsultar);
         await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.InscricoesConsultar);
 
         using HttpResponseMessage lista = await GetAsync(Leandro, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes");
@@ -277,11 +278,11 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
     private static string RotaDoDetalhe(Guid processoId, Guid inscricaoId) =>
         $"/api/selecao/processos-seletivos/{processoId}/inscricoes/{inscricaoId}";
 
-    [Fact(DisplayName = "Detalhe: com dados pessoais o CPF de Fernanda sai mascarado, com o componente cpf, e nunca em claro")]
+    [Fact(DisplayName = "Detalhe: com o identificador mascarado o CPF de Fernanda sai mascarado, com o componente cpf, e nunca em claro")]
     public async Task Detalhe_CpfSaiMascaradoComOComponente()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_CpfSaiMascaradoComOComponente));
-        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
 
         using HttpResponseMessage resposta = await GetAsync(
             Leandro, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
@@ -297,6 +298,27 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         cpf.GetProperty("podeRevelar").GetBoolean().Should().BeFalse();
         cpf.GetProperty("descricao").GetString().Should().NotBeNullOrWhiteSpace();
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.FernandaDrumond.Formatado);
+    }
+
+    [Fact(DisplayName = "Detalhe: quem só pode revelar recebe o item do CPF sem valor e com podeRevelar, e nenhum registro do identificador mascarado")]
+    public async Task Detalhe_SoRevelar_ItemSemValor()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SoRevelar_ItemSemValor));
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await GetAsync(
+            Diogo, $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes/{cenario.InscricaoId}");
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        using JsonDocument json = JsonDocument.Parse(corpo);
+        JsonElement cpf = json.RootElement.GetProperty("secoes").EnumerateArray()
+            .SelectMany(static s => s.GetProperty("itens").EnumerateArray())
+            .Single(static i => i.GetProperty("fatoCodigo").GetString() == "CPF");
+        cpf.TryGetProperty("valor", out _).Should().BeFalse("só o par do identificador libera o valor mascarado");
+        cpf.GetProperty("podeRevelar").GetBoolean().Should().BeTrue();
+        corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Mascarado);
+        RegistrosDeDados(cenario.ProcessoId, PermissaoSelecao.DadosIdentificadoresConsultar).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Diogo revela o passaporte de Erick: recebe o número, sem cache, e fica registrado que revelou o campo daquela inscrição")]
@@ -342,7 +364,8 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         json.RootElement.GetProperty("valor").GetString().Should().Be(RgDoSegundoResponsavel);
         semOcorrencia.StatusCode.Should().Be(HttpStatusCode.NotFound, "o campo em grupo exige a ocorrência");
         RegistroDecisaoAcesso decisao = RegistrosDaRevelacao(cenario, cenario.InscricaoComGrupo)
-            .Should().ContainSingle(r => r.Permitido).Subject;
+            .Should().ContainSingle(r => r.Ocorrencia == "membro-2").Subject;
+        decisao.Permitido.Should().BeTrue();
         decisao.FatoCodigo.Should().Be(cenario.FatoDoGrupo);
         decisao.Ocorrencia.Should().Be("membro-2");
     }
@@ -422,7 +445,8 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         }
 
         RegistrosDaRevelacao(cenario, cenario.InscricaoEmRascunho).Should().BeEmpty("a trilha nunca nomeia inscrição de outro processo nem em rascunho");
-        RegistrosDaRevelacao(cenario, cenario.InscricaoId).Should().OnlyContain(r => r.FatoCodigo == ConjuntoBasicoDaInscricao.Cpf, "o campo que não é identificador não gera decisão");
+        RegistrosDaRevelacao(cenario, cenario.InscricaoId).Should().Contain(
+            r => r.FatoCodigo == ConjuntoBasicoDaInscricao.Nome, "a decisão de revelar vem antes de procurar a resposta, ainda que o campo não seja identificador");
     }
 
     [Fact(DisplayName = "A servidora inscrita no processo, ainda que com a permissão de revelar, responde 403 impedida")]

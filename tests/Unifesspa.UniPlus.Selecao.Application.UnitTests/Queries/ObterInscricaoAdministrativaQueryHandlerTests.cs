@@ -38,6 +38,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
     private static readonly string CodigoPessoais = PermissaoSelecao.DadosPessoaisConsultar.Codigo;
     private static readonly string CodigoSensiveis = PermissaoSelecao.DadosSensiveisConsultar.Codigo;
     private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
+    private static readonly string CodigoIdentificadores = PermissaoSelecao.DadosIdentificadoresConsultar.Codigo;
 
     private readonly IDecisoesDaRequisicao _requisicao = Substitute.For<IDecisoesDaRequisicao>();
 
@@ -51,19 +52,19 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
             .Exigencia("LAUDO_MEDICO", ClassificacaoDeProtecao.Sensivel)
             .Exigencia("COMPROVANTE_RESIDENCIA", ClassificacaoDeProtecao.Pessoal);
 
-    [Fact(DisplayName = "Kevin com dados pessoais e sem sensíveis recebe nome e CPF mascarado, sem o tipo de deficiência e sem indício de omissão")]
+    [Fact(DisplayName = "Kevin com dados pessoais e identificadores e sem sensíveis recebe nome e CPF mascarado, sem o tipo de deficiência e sem indício de omissão")]
     public async Task DadoSensivel_OmitidoParaQuemNaoTemAPermissao()
     {
         InscricaoAdministrativaDeTeste cenario = DeFernanda();
         DecisoesDeAcessoDeTeste kevin = new(
-            "kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+            "kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
 
         Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, kevin);
 
         InscricaoAdministrativaDto dto = resultado.Value!;
         ItemDeRespostaDto[] itens = [.. dto.Secoes.SelectMany(static s => s.Itens)];
         itens.Select(static i => i.FatoCodigo).Should().BeEquivalentTo(["CPF", "NOME"]);
-        itens.Single(static i => i.FatoCodigo == "CPF").Valor.GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        itens.Single(static i => i.FatoCodigo == "CPF").Valor!.Value.GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
         JsonSerializer.Serialize(dto).Should().NotContain("BAIXA_VISAO").And.NotContain("TIPO_DEFICIENCIA");
     }
 
@@ -91,52 +92,114 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Diogo com a capacidade de revelar recebe o passaporte de Erick mascarado como identificador e podeRevelar verdadeiro, sem registro de revelação")]
-    public async Task Identificador_MascaradoComACapacidadeDeRevelar()
+    [Theory(DisplayName = "O item do identificador depende de consultar o mascarado e de poder revelar: valor e podeRevelar de cada combinação")]
+    [InlineData(true, true, true, true)]
+    [InlineData(true, false, true, false)]
+    [InlineData(false, true, false, true)]
+    public async Task Identificador_PorConsultarERevelar(bool consultar, bool revelar, bool comValor, bool podeRevelar)
     {
         InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(CpfDeErick)
             .Fato("PASSAPORTE_NUMERO", "IDENTIFICADOR", TipoRenderizacao.Texto, Texto("FX123456"));
-        DecisoesDeAcessoDeTeste diogo = new(
-            "diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        DecisoesDeAcessoDeTeste diogo = new("diogo.souza", Permissoes(consultar, revelar));
 
         Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, diogo);
 
         ItemDeRespostaDto passaporte = resultado.Value!.Secoes.Single().Itens.Single();
         passaporte.Componente.Should().Be(ComponentesDeItem.Identificador);
-        passaporte.Valor.GetString().Should().Be(ItensDaInscricao.MascaraTotal);
-        passaporte.PodeRevelar.Should().BeTrue();
+        passaporte.Classificacao.Should().Be(ClassificacaoDeProtecao.Identificador);
+        passaporte.PodeRevelar.Should().Be(podeRevelar);
+        if (comValor)
+        {
+            passaporte.Valor!.Value.GetString().Should().Be(ItensDaInscricao.MascaraTotal);
+        }
+        else
+        {
+            passaporte.Valor.Should().BeNull();
+        }
+
         JsonSerializer.Serialize(resultado.Value).Should().NotContain("FX123456");
-        await diogo.Verificador.DidNotReceive().ExigirAsync(
-            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
-        await diogo.Verificador.Received(1).PodeAsync(
-            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Kevin sem a capacidade de revelar recebe o CPF de Fernanda com o componente cpf, mascarado, e podeRevelar falso")]
+    [Fact(DisplayName = "Isabella com o identificador mascarado e sem revelar recebe o CPF de Fernanda com o componente cpf, mascarado, e podeRevelar falso")]
     public async Task Cpf_SemACapacidadeDeRevelar()
     {
-        DecisoesDeAcessoDeTeste kevin = new(
-            "kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+        DecisoesDeAcessoDeTeste isabella = new("isabella.nunes", Permissoes(consultar: true, revelar: false));
 
-        Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), kevin);
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), isabella);
 
         ItemDeRespostaDto cpf = resultado.Value!.Secoes.Single().Itens.Single(static i => i.FatoCodigo == "CPF");
         cpf.Componente.Should().Be(ComponentesDeItem.Cpf);
-        cpf.Valor.GetString().Should().Be("***.598.363-**");
+        cpf.Valor!.Value.GetString().Should().Be("***.598.363-**");
         cpf.PodeRevelar.Should().BeFalse();
-        cpf.Classificacao.Should().Be(ClassificacaoDeProtecao.Pessoal, "o identificador mascarado sai pela permissão de dados pessoais");
     }
 
-    [Fact(DisplayName = "Sem dados pessoais o identificador mascarado não sai: a fonte sem a transformação nunca sai")]
-    public async Task Identificador_SemDadosPessoais_NaoSai()
+    [Fact(DisplayName = "CPF reclassificado como pessoal continua mascarado para quem consulta dados pessoais, sem a opção de revelar")]
+    public async Task CpfReclassificadoComoPessoal_SaiMascarado()
     {
-        DecisoesDeAcessoDeTeste leandro = new(
-            "leandro.viana", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
+            .Fato("CPF", "PESSOAL", TipoRenderizacao.Texto, Texto(PersonasDeTeste.FernandaDrumond.Valor), ordem: 0, formato: "CPF");
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
 
-        Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), leandro);
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, kevin);
+
+        ItemDeRespostaDto cpf = resultado.Value!.Secoes.Single().Itens.Single(static i => i.FatoCodigo == "CPF");
+        cpf.Valor!.Value.GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        cpf.PodeRevelar.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Sem consultar nem revelar o item do identificador é omitido")]
+    public async Task Identificador_SemConsultarNemRevelar_Omitido()
+    {
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", Permissoes(consultar: false, revelar: false));
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), kevin);
+
+        resultado.Value!.Secoes.SelectMany(static s => s.Itens).Select(static i => i.FatoCodigo).Should().Equal("NOME");
+        JsonSerializer.Serialize(resultado.Value).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain("***.598.363-**");
+    }
+
+    [Fact(DisplayName = "Só revelar: o item sai sem valor, a capacidade não grava registro e a revelação não é pedida na consulta")]
+    public async Task Identificador_SoRevelar_NaoGravaRegistroDeIdentificador()
+    {
+        DecisoesDeAcessoDeTeste diogo = new("diogo.souza", Permissoes(consultar: false, revelar: true));
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), diogo);
+
+        JsonSerializer.Serialize(resultado.Value!.Secoes.Single().Itens.Single(static i => i.FatoCodigo == "CPF")).Should().NotContain("valor");
+        await diogo.Verificador.DidNotReceive().RegistrarDesfechoAsync(
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.OfType<DecisaoPermitida>().Any(x => x.Registro.Permissao == CodigoIdentificadores)),
+            Arg.Any<IntencaoDoRegistro>(),
+            Arg.Any<CancellationToken>());
+        await diogo.Verificador.DidNotReceive().ExigirAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Consultar o identificador mascarado publica a decisão do par (dado, identificador)")]
+    public async Task Identificador_Consultar_PublicaADecisao()
+    {
+        DecisoesDeAcessoDeTeste isabella = new("isabella.nunes", Permissoes(consultar: true, revelar: false));
+
+        await Consultar(DeFernanda(), isabella);
+
+        await isabella.Verificador.Received(1).RegistrarDesfechoAsync(
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d =>
+                d.OfType<DecisaoPermitida>().Any(x => x.Registro.Permissao == CodigoIdentificadores)),
+            IntencaoDoRegistro.Projecao,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Theory(DisplayName = "A resposta do identificador ausente ou vazia não gera item, nem para quem pode revelar")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Identificador_RespostaVazia_SemItem(string resposta)
+    {
+        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(CpfDeErick)
+            .Fato("PASSAPORTE_NUMERO", "IDENTIFICADOR", TipoRenderizacao.Texto, Texto(resposta));
+        DecisoesDeAcessoDeTeste diogo = new("diogo.souza", Permissoes(consultar: true, revelar: true));
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, diogo);
 
         resultado.Value!.Secoes.Should().BeEmpty();
-        JsonSerializer.Serialize(resultado.Value).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain("***.598.363-**");
     }
 
     [Fact(DisplayName = "Cada arquivo sai pela permissão da classe da exigência: com documentos sensíveis o laudo aparece e o comprovante de residência, não")]
@@ -235,7 +298,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         ItemDeRespostaDto renda = resultado.Value!.Secoes.Single().Itens.Single();
         renda.Componente.Should().Be("moeda");
         renda.Tipo.Should().Be(TiposDeItem.Numero);
-        renda.Valor.GetString().Should().Be("1234.56", "o número sai como texto decimal exato");
+        renda.Valor!.Value.GetString().Should().Be("1234.56", "o número sai como texto decimal exato");
     }
 
     [Fact(DisplayName = "Opção de seleção única sai como código e rótulo")]
@@ -249,7 +312,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
 
         ItemDeRespostaDto item = resultado.Value!.Secoes.Single().Itens.Single();
         item.Tipo.Should().Be(TiposDeItem.Opcao);
-        item.Valor.GetProperty("codigo").GetString().Should().Be("PARDA");
+        item.Valor!.Value.GetProperty("codigo").GetString().Should().Be("PARDA");
     }
 
     [Fact(DisplayName = "Fato derivado sai pelo nome, pela classificação e pelo tipo que a publicação congelou; o derivado sem aprovação fica de fora")]
@@ -397,6 +460,14 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
 
         await consultar.Should().ThrowAsync<RegistroDeAcessoNaoGravadoException>();
     }
+
+    private static PermissaoSelecao[] Permissoes(bool consultar, bool revelar) =>
+    [
+        PermissaoSelecao.InscricoesConsultar,
+        PermissaoSelecao.DadosPessoaisConsultar,
+        .. consultar ? [PermissaoSelecao.DadosIdentificadoresConsultar] : Array.Empty<PermissaoSelecao>(),
+        .. revelar ? [PermissaoSelecao.DadosIdentificadoresRevelar] : Array.Empty<PermissaoSelecao>(),
+    ];
 
     private Task<Result<InscricaoAdministrativaDto>> Consultar(InscricaoAdministrativaDeTeste cenario, DecisoesDeAcessoDeTeste persona) =>
         Executar(cenario, cenario.Montar(), persona, cenario.ProcessoId, cenario.InscricaoId);
