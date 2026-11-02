@@ -56,10 +56,15 @@ public static partial class RevelarCampoDaInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(logger);
 
-        if (await AcessoAInscricao
+        ConferenciaDoVinculo conferencia = await AcessoAInscricao
             .ConferirVinculoAsync(processoRepository, inscricaoRepository, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken)
-            .ConfigureAwait(false) is not Vinculo conferido)
+            .ConfigureAwait(false);
+        if (conferencia is not Vinculo conferido)
         {
+            await AcessoAInscricao
+                .RegistrarNegativaDoInexistenteAsync(
+                    verificador, conferencia, query.ProcessoSeletivoId, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, cancellationToken)
+                .ConfigureAwait(false);
             return Result<CampoReveladoDto>.Failure(CampoNaoEncontrado);
         }
 

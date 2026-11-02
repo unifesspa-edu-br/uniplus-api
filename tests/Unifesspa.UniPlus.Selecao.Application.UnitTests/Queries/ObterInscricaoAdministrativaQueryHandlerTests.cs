@@ -317,7 +317,7 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Inscrição de outro processo, inexistente ou em rascunho responde 404 sem decisão gravada nem leitura do conteúdo")]
+    [Fact(DisplayName = "Inscrição de outro processo, inexistente ou em rascunho, pedida por quem tem a permissão da rota, responde 404 sem registro nem leitura do conteúdo")]
     public async Task ForaDoAlcance_404SemDecisao()
     {
         InscricaoAdministrativaDeTeste rascunho = DeFernanda(SituacaoInscricao.Rascunho);
@@ -335,8 +335,40 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         }
 
         await diogo.Verificador.DidNotReceiveWithAnyArgs().ExigirAsync(default!, default, default);
-        await diogo.Verificador.DidNotReceiveWithAnyArgs().AvaliarAsync(default!, default, default);
+        await diogo.Verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
         await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+    }
+
+    [Fact(DisplayName = "Inscrição que não existe, pedida sem a permissão da rota, responde 404 e registra a negativa sem o id do resource")]
+    public async Task Inexistente_SemAPermissaoDaRota_RegistraANegativaSemId()
+    {
+        InscricaoAdministrativaDeTeste cenario = DeFernanda();
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.DadosPessoaisConsultar);
+
+        Result<InscricaoAdministrativaDto> resultado = await Executar(
+            cenario, cenario.Montar(), kevin, cenario.ProcessoId, Guid.CreateVersion7());
+
+        resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
+        IReadOnlyCollection<DecisaoDeAcesso> entregues = (IReadOnlyCollection<DecisaoDeAcesso>)kevin.Verificador.ReceivedCalls()
+            .Single(static c => c.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.RegistrarDesfechoAsync)).GetArguments()[0]!;
+        DecisaoNegada negada = entregues.Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject;
+        negada.Registro.Permissao.Should().Be(CodigoAcesso);
+        negada.Registro.ResourceId.Should().BeNull();
+        negada.Registro.MotivoNegativa.Should().Be("sem_concessao_aplicavel");
+    }
+
+    [Fact(DisplayName = "Processo da rota que não existe responde 404 sem decidir nem registrar")]
+    public async Task ProcessoInexistente_404SemRegistro()
+    {
+        InscricaoAdministrativaDeTeste cenario = DeFernanda();
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.DadosPessoaisConsultar);
+
+        Result<InscricaoAdministrativaDto> resultado = await Executar(
+            cenario, cenario.Montar(), kevin, Guid.CreateVersion7(), cenario.InscricaoId);
+
+        resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
+        await kevin.Verificador.DidNotReceiveWithAnyArgs().AvaliarAsync(default!, default, default);
+        await kevin.Verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
     }
 
     [Fact(DisplayName = "Sem a permissão de acesso à inscrição responde 404 e nada do conteúdo é carregado nem decidido por classe")]

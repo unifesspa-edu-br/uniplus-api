@@ -54,7 +54,7 @@ public sealed class AcessoAInscricaoTests
 
         ConferenciaDoVinculo conferencia = await AcessoAInscricao.ConferirVinculoAsync(_processos, _inscricoes, Processo, Inscricao, default);
 
-        conferencia.Should().BeSameAs(NaoEncontrada.Instancia);
+        conferencia.Should().Be(new NaoEncontrada(Unidade));
     }
 
     [Fact(DisplayName = "O processo inexistente não tem unidade dona, e a inscrição não é encontrada")]
@@ -64,7 +64,7 @@ public sealed class AcessoAInscricaoTests
         _processos.ObterUnidadeAdministradoraAsync(Processo, Arg.Any<CancellationToken>()).Returns((Guid?)null);
 
         (await AcessoAInscricao.ConferirVinculoAsync(_processos, _inscricoes, Processo, Inscricao, default))
-            .Should().BeSameAs(NaoEncontrada.Instancia);
+            .Should().Be(new NaoEncontrada(null));
     }
 
     [Theory(DisplayName = "Decidir devolve permitido ou a recusa com o desfecho que o ponto de decisão deu")]
