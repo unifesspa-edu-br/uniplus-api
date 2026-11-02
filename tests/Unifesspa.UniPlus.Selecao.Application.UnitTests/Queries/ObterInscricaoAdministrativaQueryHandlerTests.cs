@@ -146,6 +146,24 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         cpf.PodeRevelar.Should().BeFalse();
     }
 
+    [Theory(DisplayName = "Fernanda, que usa o nome social Ariel Drumond: o nome social é pessoal: sem dados pessoais o detalhe não o traz, e com eles traz")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NomeSocialPessoal_SaiSoComDadosPessoais(bool comDadosPessoais)
+    {
+        InscricaoAdministrativaDeTeste cenario = DeFernanda()
+            .Fato("NOME_SOCIAL", "PESSOAL", TipoRenderizacao.Texto, Texto("Ariel Drumond"), ordem: 3);
+        DecisoesDeAcessoDeTeste persona = comDadosPessoais
+            ? new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar)
+            : new("leandro.viana", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, persona);
+
+        string[] nomes = [.. resultado.Value!.Secoes.SelectMany(static s => s.Itens)
+            .Where(static i => i.FatoCodigo == "NOME_SOCIAL").Select(static i => i.Valor!.Value.GetString()!)];
+        nomes.Should().Equal(comDadosPessoais ? ["Ariel Drumond"] : []);
+    }
+
     [Fact(DisplayName = "Sem consultar nem revelar o item do identificador é omitido")]
     public async Task Identificador_SemConsultarNemRevelar_Omitido()
     {

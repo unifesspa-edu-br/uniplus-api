@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
+using System.Text.Json;
+
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -219,23 +221,31 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         resultado.Items.Single().Nome.Should().BeNull();
     }
 
-    [Theory(DisplayName = "Com o nome social coletado e pessoal como o civil, a avaliação cega não recebe nome algum e dados pessoais recebem")]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
-    public async Task NomeSocialPessoal_SaiSoComDadosPessoais(bool comDadosPessoais, bool recebeNome)
+    [Theory(DisplayName = "Fernanda, que usa o nome social Ariel Drumond, pessoal mesmo com o civil público: a avaliação cega não recebe nome algum, e dados pessoais recebem o nome social escolhido pela leitura")]
+    [InlineData(false, null)]
+    [InlineData(true, "Ariel Drumond")]
+    public async Task NomeSocialPessoal_SaiSoComDadosPessoais(bool comDadosPessoais, string? esperado)
     {
         InscricaoAdministrativaDeTeste.Mundo mundo = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond, processoId: ProcessoId)
-            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, null)
+            .Fato("NOME", "PUBLICO", TipoRenderizacao.Texto, null)
             .Fato("NOME_SOCIAL", "PESSOAL", TipoRenderizacao.Texto, null)
             .Montar();
         DecisoesDeAcessoDeTeste persona = comDadosPessoais
             ? new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar)
             : new("leandro.viana", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
-        Paginar([Resumo(1)]);
+        _inscricoes.ListarEnviadasDoProcessoAsync(
+                ProcessoId, null, 100, PaginationDirection.Next, Arg.Any<bool>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(chamada => (
+                (IReadOnlyList<ResumoDaInscricaoDoProcesso>)[Resumo(1) with { Nome = chamada.ArgAt<bool>(4) ? "Ariel Drumond" : null }],
+                (Guid?)null,
+                (Guid?)null));
 
         ListarInscricoesDoProcessoResult resultado = await Listar(persona, mundo.Processos, mundo.Codecs);
 
-        (resultado.Items.Single().Nome is not null).Should().Be(recebeNome);
+        resultado.Items.Single().Nome?.Valor.Should().Be(esperado);
+        JsonSerializer.Serialize(resultado.Items).Should().NotContain(PersonasDeTeste.NomeFernandaDrumond);
+        await _inscricoes.Received(1).ListarEnviadasDoProcessoAsync(
+            ProcessoId, null, 100, PaginationDirection.Next, Arg.Is<bool>(lerNome => lerNome == comDadosPessoais), Arg.Any<bool>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Se o processo congelou o nome como interno, a linha que exibe o CPF registra a decisão do identificador")]
