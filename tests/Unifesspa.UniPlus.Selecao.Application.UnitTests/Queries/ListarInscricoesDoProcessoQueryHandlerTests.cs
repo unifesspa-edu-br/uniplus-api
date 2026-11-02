@@ -219,6 +219,25 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         resultado.Items.Single().Nome.Should().BeNull();
     }
 
+    [Theory(DisplayName = "Com o nome social coletado e pessoal como o civil, a avaliação cega não recebe nome algum e dados pessoais recebem")]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task NomeSocialPessoal_SaiSoComDadosPessoais(bool comDadosPessoais, bool recebeNome)
+    {
+        InscricaoAdministrativaDeTeste.Mundo mundo = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond, processoId: ProcessoId)
+            .Fato("NOME", "PESSOAL", TipoRenderizacao.Texto, null)
+            .Fato("NOME_SOCIAL", "PESSOAL", TipoRenderizacao.Texto, null)
+            .Montar();
+        DecisoesDeAcessoDeTeste persona = comDadosPessoais
+            ? new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar)
+            : new("leandro.viana", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
+        Paginar([Resumo(1)]);
+
+        ListarInscricoesDoProcessoResult resultado = await Listar(persona, mundo.Processos, mundo.Codecs);
+
+        (resultado.Items.Single().Nome is not null).Should().Be(recebeNome);
+    }
+
     [Fact(DisplayName = "Se o processo congelou o nome como interno, a linha que exibe o CPF registra a decisão do identificador")]
     public async Task NomeCongeladoComoInterno_RegistraDadosPessoais()
     {
