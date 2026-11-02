@@ -62,10 +62,10 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         await CriarTopicoAsync(TopicoDoTeste);
     }
 
-    private async Task<string> CriarTopicoAsync(string nome)
+    private async Task<string> CriarTopicoAsync(string nome, int particoes = 1)
     {
         using IAdminClient admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = _bootstrap }).Build();
-        await admin.CreateTopicsAsync([new TopicSpecification { Name = nome, NumPartitions = 1, ReplicationFactor = 1 }]);
+        await admin.CreateTopicsAsync([new TopicSpecification { Name = nome, NumPartitions = particoes, ReplicationFactor = 1 }]);
         return nome;
     }
 
@@ -95,6 +95,44 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         json.RootElement.EnumerateArray().Should().OnlyContain(e =>
             e.GetProperty("registro").GetProperty("atorSubject").GetString() == "leandro.viana"
             && e.GetProperty("registro").GetProperty("inscricaoId").GetGuid() == e.GetProperty("registro").GetProperty("resourceId").GetGuid());
+    }
+
+    [Fact(DisplayName = "A mensagem chega com a execução como chave e com os cabeçalhos do lote")]
+    public async Task Mensagem_ChegaComAChaveEOsCabecalhos()
+    {
+        string topico = await CriarTopicoAsync($"cabecalhos-{Guid.NewGuid():N}");
+        Guid execucao = Guid.CreateVersion7();
+        using RegistroDeAcessoKafka registro = Criar(_bootstrap, TimeSpan.FromSeconds(20), topico: topico);
+
+        await registro.RegistrarAsync([Registro(execucaoId: execucao, clienteOidc: "selecao-web")], default);
+
+        Message<string, string> mensagem = Consumir(topico).Should().ContainSingle().Subject.Message;
+        mensagem.Key.Should().Be(execucao.ToString());
+        string Cabecalho(string nome) => System.Text.Encoding.UTF8.GetString(mensagem.Headers.GetLastBytes(nome));
+        Cabecalho("content-type").Should().Be("application/json");
+        Cabecalho("uniplus.tipo").Should().Be("registro-de-acesso.lote");
+        Cabecalho("uniplus.versao-schema").Should().Be("1");
+        Cabecalho("uniplus.execucao-id").Should().Be(execucao.ToString());
+        Cabecalho("uniplus.cliente-oidc").Should().Be("selecao-web");
+        Cabecalho("uniplus.quantidade").Should().Be("1");
+        Cabecalho("uniplus.resultado").Should().Be("permitido");
+        Cabecalho("uniplus.sensibilidade-maxima").Should().Be("identificador");
+    }
+
+    [Fact(DisplayName = "Dois lotes da mesma requisição caem na mesma partição, mesmo com várias partições no tópico")]
+    public async Task LotesDaMesmaRequisicao_CaemNaMesmaParticao()
+    {
+        string topico = await CriarTopicoAsync($"particoes-{Guid.NewGuid():N}", particoes: 3);
+        Guid execucao = Guid.CreateVersion7();
+        using RegistroDeAcessoKafka registro = Criar(_bootstrap, TimeSpan.FromSeconds(20), topico: topico);
+
+        await registro.RegistrarAsync([Registro(execucaoId: execucao)], default);
+        await registro.RegistrarAsync([Registro(execucaoId: execucao, fatoCodigo: "CPF")], default);
+
+        List<ConsumeResult<string, string>> recebidas = Consumir(topico, esperadas: 2);
+        recebidas.Should().HaveCount(2);
+        recebidas.Select(static m => m.Message.Key).Distinct().Should().ContainSingle().Which.Should().Be(execucao.ToString());
+        recebidas.Select(static m => m.Partition.Value).Distinct().Should().ContainSingle();
     }
 
     [Fact(DisplayName = "O registro da revelação leva o código do fato, e nunca o valor")]
@@ -200,7 +238,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         return (RegistroDeAcessoKafka)provedor.GetRequiredService<IRegistroOperacionalRestrito>();
     }
 
-    private List<ConsumeResult<string, string>> Consumir(string topico)
+    private List<ConsumeResult<string, string>> Consumir(string topico, int esperadas = 1)
     {
         ConsumerConfig config = new()
         {
@@ -215,7 +253,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         List<ConsumeResult<string, string>> recebidas = [];
         DateTime limite = DateTime.UtcNow.AddSeconds(30);
 
-        while (recebidas.Count == 0 && DateTime.UtcNow < limite)
+        while (recebidas.Count < esperadas && DateTime.UtcNow < limite)
         {
             if (consumidor.Consume(TimeSpan.FromSeconds(1)) is { } mensagem)
             {
@@ -232,7 +270,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         return recebidas;
     }
 
-    private static RegistroDecisaoAcesso Registro(string? fatoCodigo = null, string? clienteOidc = null)
+    private static RegistroDecisaoAcesso Registro(string? fatoCodigo = null, string? clienteOidc = null, Guid? execucaoId = null)
     {
         AuthorizationSubject sujeito = AuthorizationSubject.From(
             UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "leandro.viana").Value!, "jti-teste").Value!;
@@ -242,7 +280,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
             sujeito,
             PermissionRequirement.From("selecao:inscricoes:revelar-cpf", ClassificacaoDeProtecao.Identificador, "Lei nº 13.709/2018 (LGPD), art. 7º, III").Value!,
             ResourceContext.From("inscricao", ClassificacaoDeProtecao.Identificador, fatoCodigo: fatoCodigo).Value!,
-            AuthorizationRequestContext.From($"req-{Guid.NewGuid():N}", DateTimeOffset.UtcNow, OrigemRequisicao.Api, clienteOidc: clienteOidc).Value!,
+            AuthorizationRequestContext.From($"req-{Guid.NewGuid():N}", DateTimeOffset.UtcNow, OrigemRequisicao.Api, execucaoId: execucaoId, clienteOidc: clienteOidc).Value!,
             AuthorizationDecision.Permitir(concessao));
     }
 

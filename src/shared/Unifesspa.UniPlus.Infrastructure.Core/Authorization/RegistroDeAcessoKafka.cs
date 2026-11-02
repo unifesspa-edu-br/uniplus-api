@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 
+using System.Diagnostics;
 using System.Text.Json;
 
 using Confluent.Kafka;
@@ -17,9 +18,11 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 /// <remarks>
 /// A publicação é direta, sem o outbox do Wolverine, que gravaria na base da aplicação. Cada chamada vira uma única
 /// mensagem cujo valor é o lote, de modo que confirmou é o lote inteiro gravado, e não confirmou é nada gravado. A
-/// chave da mensagem resume as chaves dos registros; quem consome separa o lote e deduplica por <c>chave</c> de
+/// chave da mensagem é a execução do servidor que originou os registros: todos os lotes de uma requisição vão para a
+/// mesma partição, na ordem em que foram publicados. Quem consome separa o lote e deduplica por <c>chave</c> de
 /// registro. A deduplicação vale para a nova tentativa dentro da mesma execução; uma nova requisição do usuário é um
-/// novo acesso, com registros próprios. O valor leva o registro sem o dado, só o código do fato.
+/// novo acesso, com registros próprios. O valor leva o registro sem o dado, só o código do fato, e o schema dele é o
+/// versionado em <c>contracts/kafka/registro-de-acesso</c>.
 /// </remarks>
 public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito, IDisposable
 {
@@ -27,6 +30,7 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
 
     private readonly Func<IProducer<string, string>> _fabrica;
     private readonly Lock _trava = new();
+    private readonly TimeProvider _relogio;
     private readonly string _topico;
     private readonly TimeSpan _prazo;
     private IProducer<string, string> _produtor;
@@ -35,16 +39,19 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
     /// Cria o produtor com a configuração de <c>RegistroDeAcesso:Kafka</c>. Configuração inválida, inclusive sem
     /// bootstrap servers, lança <see cref="OptionsValidationException"/> ao ler as opções: não há registrador silencioso.
     /// </summary>
-    public RegistroDeAcessoKafka(IOptions<RegistroDeAcessoKafkaOptions> opcoes, ILogger<RegistroDeAcessoKafka> logger)
-        : this(Fabrica(opcoes, logger), opcoes.Value.Topico, opcoes.Value.PrazoDeConfirmacao)
+    public RegistroDeAcessoKafka(
+        IOptions<RegistroDeAcessoKafkaOptions> opcoes, ILogger<RegistroDeAcessoKafka> logger, TimeProvider relogio)
+        : this(Fabrica(opcoes, logger), opcoes.Value.Topico, opcoes.Value.PrazoDeConfirmacao, relogio)
     {
     }
 
-    internal RegistroDeAcessoKafka(Func<IProducer<string, string>> fabrica, string topico, TimeSpan prazo)
+    internal RegistroDeAcessoKafka(
+        Func<IProducer<string, string>> fabrica, string topico, TimeSpan prazo, TimeProvider? relogio = null)
     {
         _fabrica = fabrica;
         _topico = topico;
         _prazo = prazo;
+        _relogio = relogio ?? TimeProvider.System;
         _produtor = fabrica();
     }
 
@@ -58,18 +65,23 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
             return;
         }
 
+        // Lote com execuções diferentes é erro de quem o monta, e não falha de gravação: não vira 503.
+        Guid execucaoId = ExecucaoDoLote(registros);
         IProducer<string, string> produtor = ProdutorAtual();
 
         try
         {
-            // A chave de cada registro é calculada uma vez e serve ao lote e ao valor da mensagem.
+            // A chave de cada registro é calculada uma vez e serve ao valor da mensagem.
             EntradaDoLote[] entradas = [.. registros.Select(static r => new EntradaDoLote(r.Chave, r))];
-            string chaveDoLote = RegistroDecisaoAcesso.ResumoSha256(
-                string.Join('|', entradas.Select(static e => e.Chave).Order(StringComparer.Ordinal)));
 
             await produtor.ProduceAsync(
                 _topico,
-                new Message<string, string> { Key = chaveDoLote, Value = ValorDoLote(entradas) },
+                new Message<string, string>
+                {
+                    Key = execucaoId.ToString(),
+                    Value = ValorDoLote(entradas),
+                    Headers = CabecalhosDoRegistroDeAcesso.De(registros, _relogio.GetUtcNow(), Activity.Current),
+                },
                 cancellationToken).ConfigureAwait(false);
         }
         catch (Exception falha) when (falha is not OperationCanceledException)
@@ -83,6 +95,15 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
 
             throw new RegistroDeAcessoNaoGravadoException(falha);
         }
+    }
+
+    private static Guid ExecucaoDoLote(IReadOnlyList<RegistroDecisaoAcesso> registros)
+    {
+        Guid execucaoId = registros[0].ExecucaoId;
+
+        return registros.All(r => r.ExecucaoId == execucaoId)
+            ? execucaoId
+            : throw new InvalidOperationException("O lote do registro de acesso reúne registros de execuções diferentes.");
     }
 
     /// <summary>O valor da mensagem de um lote: o que o consumidor separa, registro a registro.</summary>
