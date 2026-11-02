@@ -11,13 +11,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O acesso de quem opera o processo a uma inscrição enviada, em duas fases que cada rota compõe na sua ordem: conferir
 /// que a inscrição existe, é deste processo e não é rascunho, sem decidir; e decidir a permissão sobre o resource que a
 /// rota monta com o que o vínculo revelou. O que não existe e o que a pessoa não pode ler respondem o mesmo erro da rota,
-/// para que nenhum revele o outro.
+/// para que nenhum revele o outro. A recusa por falta de permissão é registrada nos dois casos; só o registro de quem
+/// pediu o que não existe fica sem o id do resource.
 /// </summary>
 public static class AcessoAInscricao
 {
     /// <summary>
     /// Confere o vínculo da inscrição com o processo, sem decidir nem decifrar nada: a inscrição inexistente, a de outro
-    /// processo e a em rascunho são <see cref="NaoEncontrada"/>, porque não há resource sobre o qual decidir.
+    /// processo e a em rascunho são <see cref="NaoEncontrada"/>, porque não há resource sobre o qual decidir. A
+    /// não encontrada leva a unidade dona do processo, quando ele existe, para o registro de quem não podia consultar.
     /// </summary>
     public static async Task<ConferenciaDoVinculo> ConferirVinculoAsync(
         IProcessoSeletivoRepository processos,
@@ -37,7 +39,39 @@ public static class AcessoAInscricao
             && vinculo.ProcessoSeletivoId == processoId
             && vinculo.Situacao != SituacaoInscricao.Rascunho
             ? new Vinculo(dona, vinculo)
-            : NaoEncontrada.Instancia;
+            : new NaoEncontrada(unidade);
+    }
+
+    /// <summary>
+    /// Registra a negativa de quem pediu uma inscrição que não existe sem ter a permissão da rota na unidade dona do
+    /// processo, para que a sondagem apareça na trilha. O registro nomeia o motivo real e não leva o id do resource,
+    /// que não existe; a resposta ao cliente continua a mesma da inscrição sem permissão. Quem tem a permissão errou o
+    /// link, e o processo inexistente não tem unidade sobre a qual decidir: nenhum dos dois gera registro.
+    /// </summary>
+    public static async Task RegistrarNegativaDoInexistenteAsync(
+        IVerificadorDeAcesso verificador,
+        ConferenciaDoVinculo conferencia,
+        Guid processoId,
+        PermissionRequirement requisito,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(conferencia);
+        ArgumentNullException.ThrowIfNull(requisito);
+
+        if (conferencia is not NaoEncontrada { UnidadeDoProcesso: { } unidade })
+        {
+            return;
+        }
+
+        ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(unidade, processoId, inscricaoId: null);
+        DecisaoDeAcesso decisao = await verificador.AvaliarAsync(requisito, resource, cancellationToken).ConfigureAwait(false);
+
+        // O permitido sobre o que não existe não se grava: a política o gravaria como acesso a uma inscrição.
+        if (decisao is DecisaoNegada)
+        {
+            await verificador.RegistrarDesfechoAsync([decisao], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Decide a permissão sobre o resource montado a partir do vínculo conferido.</summary>
@@ -86,15 +120,8 @@ public abstract record ConferenciaDoVinculo
 public sealed record Vinculo(Guid UnidadeId, VinculoDaInscricao Inscricao) : ConferenciaDoVinculo;
 
 /// <summary>A inscrição inexistente, de outro processo ou em rascunho.</summary>
-public sealed record NaoEncontrada : ConferenciaDoVinculo
-{
-    private NaoEncontrada()
-    {
-    }
-
-    /// <summary>A única instância: o caso não carrega dado.</summary>
-    public static NaoEncontrada Instancia { get; } = new();
-}
+/// <param name="UnidadeDoProcesso">A unidade que administra o processo da rota; nula quando o processo não existe.</param>
+public sealed record NaoEncontrada(Guid? UnidadeDoProcesso) : ConferenciaDoVinculo;
 
 /// <summary>O desfecho da decisão sobre a inscrição.</summary>
 public abstract record AcessoNaInscricao

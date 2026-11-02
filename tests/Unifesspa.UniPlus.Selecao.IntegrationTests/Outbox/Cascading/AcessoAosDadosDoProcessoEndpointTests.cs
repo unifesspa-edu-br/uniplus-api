@@ -8,14 +8,18 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -199,11 +203,11 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
             .And.NotContain(PermissaoSelecao.DocumentosSensiveisConsultar.Codigo, "a negativa do projetor é omissão silenciosa");
     }
 
-    [Fact(DisplayName = "Detalhe: a inscrição que não existe, a de outro processo e o rascunho respondem 404 sem nenhuma decisão registrada")]
-    public async Task Detalhe_SemResource_404SemDecisao()
+    [Fact(DisplayName = "Detalhe: a inscrição que não existe, a de outro processo e o rascunho, pedidos por quem consulta inscrições, respondem 404 sem nenhuma decisão registrada")]
+    public async Task Detalhe_SemResourcePedidoPorQuemConsulta_404SemDecisao()
     {
-        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SemResource_404SemDecisao));
-        Cenario outroProcesso = await SemearCenarioAsync(nameof(Detalhe_SemResource_404SemDecisao) + "-outro");
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SemResourcePedidoPorQuemConsulta_404SemDecisao));
+        Cenario outroProcesso = await SemearCenarioAsync(nameof(Detalhe_SemResourcePedidoPorQuemConsulta_404SemDecisao) + "-outro");
         await ConcederAsync(
             Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar, PermissaoSelecao.DadosPessoaisConsultar);
 
@@ -224,7 +228,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
             .Should().BeEmpty("sem resource não há sobre o que decidir");
     }
 
-    [Fact(DisplayName = "Detalhe: sem consultar inscrições na unidade dona responde o mesmo 404, com a negativa registrada e nada do conteúdo")]
+    [Fact(DisplayName = "Detalhe: sem consultar inscrições na unidade dona responde o mesmo 404, com a negativa registrada, e a da inscrição inexistente leva a negativa sem o id")]
     public async Task Detalhe_SemAcessoAoResource_404ComNegativaRegistrada()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_SemAcessoAoResource_404ComNegativaRegistrada));
@@ -237,12 +241,29 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         (await resposta.Content.ReadAsStringAsync()).Should().NotContain(PersonasDeTeste.NomeFernandaDrumond);
         resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
         (await RecusaAsync(resposta)).Should().BeEquivalentTo(await RecusaAsync(inexistente), "a recusa não distingue a falta de permissão da inscrição que não existe");
-        RegistroDecisaoAcesso negativa = _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
-            .Where(r => r.AtorSubject == Betina && r.ProcessoId == cenario.ProcessoId)
-            .Should().ContainSingle("só o acesso ao resource é decidido, e o conteúdo não é carregado").Subject;
-        negativa.Permitido.Should().BeFalse();
-        negativa.Permissao.Should().Be(PermissaoSelecao.InscricoesConsultar.Codigo);
-        negativa.InscricaoId.Should().Be(cenario.InscricaoId);
+        RegistroDecisaoAcesso[] negativas = [.. _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.AtorSubject == Betina && r.ProcessoId == cenario.ProcessoId)];
+        negativas.Should().HaveCount(2, "só o acesso ao resource é decidido, e o conteúdo não é carregado").And.OnlyContain(r => !r.Permitido);
+        string consultar = PermissaoSelecao.InscricoesConsultar.Codigo;
+        negativas.Should().OnlyContain(r => r.Permissao == consultar);
+        negativas.Should().ContainSingle(r => r.InscricaoId == cenario.InscricaoId);
+        negativas.Should().ContainSingle(r => r.InscricaoId == null && r.ResourceId == null, "o consumidor reconhece a sondagem pela ausência do id");
+    }
+
+    [Fact(DisplayName = "Com o registro de acesso indisponível, a recusa do detalhe e a consulta permitida de dado pessoal respondem 503")]
+    public async Task Detalhe_RegistroIndisponivel_503()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Detalhe_RegistroIndisponivel_503));
+        await ConcederAsync(Betina, Guid.CreateVersion7(), PermissaoSelecao.InscricoesConsultar);
+        await ConcederAsync(Diogo, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPublicosConsultar);
+
+        using HttpResponseMessage recusada = await GetComRegistroIndisponivelAsync(Betina, RotaDoDetalhe(cenario.ProcessoId, cenario.InscricaoId));
+        using HttpResponseMessage inexistente = await GetComRegistroIndisponivelAsync(Betina, RotaDoDetalhe(cenario.ProcessoId, Guid.CreateVersion7()));
+        using HttpResponseMessage permitida = await GetComRegistroIndisponivelAsync(Diogo, RotaDoDetalhe(cenario.ProcessoId, cenario.InscricaoId));
+
+        recusada.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        inexistente.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, "a inscrição inexistente e a existente respondem o mesmo");
+        permitida.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
     }
 
     private static async Task<(int Status, string? Code, string? Type, string? Title, string? Detail)> RecusaAsync(HttpResponseMessage resposta)
@@ -355,6 +376,27 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         RegistroDecisaoAcesso negativa = RegistrosDaRevelacao(cenario, cenario.InscricaoId).Should().ContainSingle().Subject;
         negativa.Permitido.Should().BeFalse();
         negativa.FatoCodigo.Should().Be(ConjuntoBasicoDaInscricao.Cpf);
+    }
+
+    [Fact(DisplayName = "Revelação de inscrição que não existe, por quem não tem a permissão de revelar: 404 e negativa registrada sem o id da inscrição")]
+    public async Task Revelacao_InscricaoInexistenteSemAPermissao_RegistraANegativaSemId()
+    {
+        Cenario cenario = await SemearCenarioAsync(nameof(Revelacao_InscricaoInexistenteSemAPermissao_RegistraANegativaSemId));
+        await ConcederAsync(Leandro, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar);
+        Guid inexistente = Guid.CreateVersion7();
+
+        using HttpResponseMessage resposta = await SendAsync(
+            Leandro, HttpMethod.Post, cenario.RotaDaRevelacao(inexistente, ConjuntoBasicoDaInscricao.Cpf), null);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        RegistroDecisaoAcesso negativa = _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados
+            .Where(r => r.AtorSubject == Leandro && r.ProcessoId == cenario.ProcessoId
+                && r.Permissao == PermissaoSelecao.DadosIdentificadoresRevelar.Codigo)
+            .Should().ContainSingle().Subject;
+        negativa.Permitido.Should().BeFalse();
+        negativa.ResourceId.Should().BeNull();
+        negativa.InscricaoId.Should().BeNull();
+        negativa.FatoCodigo.Should().BeNull();
     }
 
     [Fact(DisplayName = "A permissão em outra unidade, a inscrição de outro processo, o rascunho e o campo que não é identificador respondem o mesmo 404")]
@@ -549,10 +591,35 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
 
     private Task<HttpResponseMessage> GetAsync(string sub, string rota, string? papel = null) => SendAsync(sub, HttpMethod.Get, rota, null, papel);
 
+    private async Task<HttpResponseMessage> GetComRegistroIndisponivelAsync(string sub, string rota)
+    {
+        await using WebApplicationFactory<HostAssemblyMarker> comFalha = _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IRegistroOperacionalRestrito>();
+                services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
+            }));
+        using HttpClient client = comFalha.CreateClient();
+
+        return await client.SendAsync(Requisicao(sub, HttpMethod.Get, rota, null, null));
+    }
+
+    private sealed class RegistroQueFalha : IRegistroOperacionalRestrito
+    {
+        public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken) =>
+            throw new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("broker fora"));
+    }
+
     private async Task<HttpResponseMessage> SendAsync(string sub, HttpMethod metodo, string rota, object? corpo, string? papel = null)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
+
+        return await client.SendAsync(Requisicao(sub, metodo, rota, corpo, papel));
+    }
+
+    private static HttpRequestMessage Requisicao(string sub, HttpMethod metodo, string rota, object? corpo, string? papel)
+    {
+        HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
         if (corpo is not null)
         {
             request.Content = JsonContent.Create(corpo);
@@ -570,7 +637,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
         }
 
-        return await client.SendAsync(request);
+        return request;
     }
 
     private sealed record Cenario(

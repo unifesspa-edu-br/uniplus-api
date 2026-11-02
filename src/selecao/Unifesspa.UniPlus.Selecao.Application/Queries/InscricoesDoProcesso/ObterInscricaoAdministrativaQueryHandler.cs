@@ -26,8 +26,8 @@ using Wolverine.Attributes;
 /// <remarks>
 /// <para>
 /// Nível 1: o handler lê só o vínculo da inscrição, sem decifrar nada. A inscrição que não existe, a de outro processo e
-/// a em rascunho respondem 404 sem decisão gravada, porque não há resource sobre o qual decidir. Com o vínculo
-/// confirmado, decide o acesso à inscrição, com os dois resultados registrados; sem permissão responde 404 e o conteúdo
+/// a em rascunho respondem 404: sem a permissão da rota na unidade dona, grava a negativa sem o id do resource; com ela,
+/// não grava nada. Com o vínculo confirmado, decide o acesso à inscrição, com os dois resultados registrados; sem permissão responde 404 e o conteúdo
 /// não é carregado.
 /// </para>
 /// <para>
@@ -77,10 +77,15 @@ public static class ObterInscricaoAdministrativaQueryHandler
         ArgumentNullException.ThrowIfNull(documentoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
-        if (await AcessoAInscricao
+        ConferenciaDoVinculo conferencia = await AcessoAInscricao
             .ConferirVinculoAsync(processoRepository, inscricaoRepository, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken)
-            .ConfigureAwait(false) is not Vinculo conferido)
+            .ConfigureAwait(false);
+        if (conferencia is not Vinculo conferido)
         {
+            await AcessoAInscricao
+                .RegistrarNegativaDoInexistenteAsync(
+                    verificador, conferencia, query.ProcessoSeletivoId, PermissaoSelecao.InscricoesConsultar.Requisito, cancellationToken)
+                .ConfigureAwait(false);
             return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
         }
 

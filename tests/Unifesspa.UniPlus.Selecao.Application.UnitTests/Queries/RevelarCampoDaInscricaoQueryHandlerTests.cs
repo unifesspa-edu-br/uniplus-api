@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -35,6 +37,27 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
         Result<CampoReveladoDto> resultado = await Revelar(decifrado);
 
         resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Inscrição que não existe, pedida sem a permissão de revelar, responde 404 e registra a negativa sem o id do resource")]
+    public async Task Inexistente_SemAPermissao_RegistraANegativaSemId()
+    {
+        InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond);
+        InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
+        DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.DadosPessoaisConsultar);
+
+        Result<CampoReveladoDto> resultado = await RevelarCampoDaInscricaoQueryHandler.Handle(
+            new RevelarCampoDaInscricaoQuery(cenario.ProcessoId, Guid.CreateVersion7(), "CPF", null),
+            kevin.Verificador, mundo.Processos, mundo.Inscricoes, mundo.Codecs,
+            Substitute.For<IUserContext>(), NullLogger.Instance, CancellationToken.None);
+
+        resultado.IsFailure.Should().BeTrue();
+        IReadOnlyCollection<DecisaoDeAcesso> entregues = ((IReadOnlyCollection<DecisaoDeAcesso>)kevin.Verificador.ReceivedCalls()
+            .Single(static c => c.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.RegistrarDesfechoAsync)).GetArguments()[0]!);
+        DecisaoNegada negada = entregues.Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject;
+        negada.Registro.Permissao.Should().Be(PermissaoSelecao.DadosIdentificadoresRevelar.Codigo);
+        negada.Registro.ResourceId.Should().BeNull();
+        negada.Registro.FatoCodigo.Should().BeNull();
     }
 
     private static async Task<Result<CampoReveladoDto>> Revelar(string? decifrado)
