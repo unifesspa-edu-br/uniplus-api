@@ -121,13 +121,13 @@ internal static class ItensDaInscricao
         ];
     }
 
-    /// <summary>Os itens que a decisão deixa aparecer, cada um com o valor só se o par dele foi permitido.</summary>
+    /// <summary>Os itens que a decisão deixa aparecer.</summary>
     public static IReadOnlyList<ItemDeRespostaDto> Visiveis(IEnumerable<ItemDeRespostaDto> itens, IPermissoesDaProjecao decisoes)
     {
         ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(decisoes);
 
-        return [.. itens.Where(decisoes.ItemSai).Select(i => decisoes.ValorSai(i) ? i : i with { Valor = null })];
+        return [.. itens.Where(decisoes.ItemSai)];
     }
 
     /// <remarks>
