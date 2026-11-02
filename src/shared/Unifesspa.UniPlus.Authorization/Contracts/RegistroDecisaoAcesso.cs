@@ -289,8 +289,8 @@ public sealed record RegistroDecisaoAcesso
     }
 
     /// <summary>
-    /// Chave do acesso: resumo SHA-256 da <see cref="Identidade"/>. É a chave da mensagem publicada, e o consumidor
-    /// deduplica por ela quando o mesmo acesso chega mais de uma vez.
+    /// Chave do acesso: resumo SHA-256 da <see cref="Identidade"/>. Vai no valor da mensagem publicada, e o consumidor
+    /// deduplica por ela quando o mesmo acesso chega mais de uma vez. A chave da mensagem é a execução.
     /// </summary>
     [JsonIgnore]
     public string Chave => ResumoSha256(Identidade);
