@@ -77,6 +77,19 @@ public sealed class DefinirOpcoesDeCursoEndpointTests
         (await LerNumeroGravadoAsync(api, processoId)).Should().Be(1);
     }
 
+    [Fact(DisplayName = "Número enviado como texto é recusado com 400, e nada é gravado")]
+    public async Task NumeroComoTexto_400()
+    {
+        (CascadingApiFactory api, Guid processoId) = await SemearRascunhoAsync(nameof(NumeroComoTexto_400));
+
+        HttpResponseMessage resposta = await PutAsync(api, processoId, new { numero = "2" });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.requisicao.malformada");
+        (await LerNumeroGravadoAsync(api, processoId)).Should().Be(1);
+    }
+
     private static async Task<HttpResponseMessage> PutAsync(CascadingApiFactory api, Guid processoId, object corpo)
     {
         using HttpRequestMessage request = new(

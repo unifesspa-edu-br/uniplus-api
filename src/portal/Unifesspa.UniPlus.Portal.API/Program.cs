@@ -29,22 +29,10 @@ const string nomeServicoPortal = UniPlusServiceNames.Portal;
 builder.Host.UseSerilog((context, loggerConfig) =>
     loggerConfig.ConfigurarSerilog(context.Configuration, nomeServicoPortal));
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.Converters.Add(
-            new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
-    });
+builder.Services.AddControllers();
 
-// Minimal API endpoints use a separate JSON options pipeline (ConfigureHttpJsonOptions),
-// not the MVC one above. Keep both in sync for consistent serialization across the API.
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-    options.SerializerOptions.Converters.Add(
-        new System.Text.Json.Serialization.JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy.CamelCase));
-});
+// Controllers e Minimal APIs têm pipelines JSON distintos; o método configura os dois.
+builder.Services.AddUniPlusJsonOptions();
 
 // TimeProvider — registrado explicitamente porque Selecao/Ingresso o ganham
 // indiretamente via AddCursorPagination/AddIdempotency, mas o Portal (esqueleto)
