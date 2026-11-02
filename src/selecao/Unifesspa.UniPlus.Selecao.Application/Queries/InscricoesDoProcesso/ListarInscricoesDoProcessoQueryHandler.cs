@@ -127,7 +127,7 @@ public static class ListarInscricoesDoProcessoQueryHandler
             where T : struct => decisoes.PermitePropriedade<InscricaoDoProcessoDto>(campo) ? valor : null;
 
         return new(
-            Fixo<Guid>(nameof(InscricaoDoProcessoDto.Id), i.Id),
+            i.Id,
             decisoes.PermitePropriedade<InscricaoDoProcessoDto>(nameof(InscricaoDoProcessoDto.NumeroInscricao)) ? i.NumeroInscricao : null,
             Fixo<SituacaoInscricao>(nameof(InscricaoDoProcessoDto.Situacao), i.Situacao),
             Fixo<Guid>(nameof(InscricaoDoProcessoDto.OfertaCursoId), i.OfertaCursoId),

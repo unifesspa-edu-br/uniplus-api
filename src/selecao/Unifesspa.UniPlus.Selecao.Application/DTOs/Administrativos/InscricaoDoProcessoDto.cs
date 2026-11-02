@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// classificação: o que a pessoa não pode ver não vem, sem indicação de que foi omitido (ADR-0153). Sem documento e
 /// sem o CPF completo.
 /// </summary>
-/// <param name="Id">A identidade da inscrição.</param>
+/// <param name="Id">A identidade da inscrição: sai sempre que o acesso à inscrição foi concedido, porque é com ela que se abre o detalhe.</param>
 /// <param name="NumeroInscricao">O número gerado no primeiro envio.</param>
 /// <param name="Situacao">Submetida ou cancelada.</param>
 /// <param name="OfertaCursoId">A oferta de curso da primeira opção.</param>
@@ -20,9 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Cpf">O CPF no padrão <c>***.999.999-**</c>; o completo só se revela pela permissão própria, no detalhe.</param>
 /// <param name="SubmetidaEm">O instante do primeiro envio.</param>
 public sealed record InscricaoDoProcessoDto(
-    [property: ProtegidoComo(ClassificacaoDeProtecao.Publico, Fonte = "selecao.inscricoes.id")]
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    Guid? Id,
+    Guid Id,
     [property: ProtegidoComo(ClassificacaoDeProtecao.Interno, Fonte = "selecao.inscricoes.numero_inscricao")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     string? NumeroInscricao,

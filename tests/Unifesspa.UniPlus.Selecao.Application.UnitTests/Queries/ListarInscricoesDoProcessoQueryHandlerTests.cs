@@ -73,6 +73,20 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
             Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Com dados internos e sem dados públicos a linha traz id, número e data")]
+    public async Task ComDadosInternos_TrazIdNumeroEData()
+    {
+        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosInternosConsultar);
+        Paginar([Resumo(1)]);
+
+        InscricaoDoProcessoDto linha = (await Listar(erick)).Items.Single();
+
+        linha.Id.Should().NotBeEmpty();
+        linha.NumeroInscricao.Should().Be("000001");
+        linha.SubmetidaEm.Should().NotBeNull();
+        (linha.Situacao, linha.OfertaCursoId).Should().Be((null, null));
+    }
+
     [Fact(DisplayName = "Isabella com o identificador mascarado lista o CPF mascarado sem revelação, e o registro de cada linha leva o identificador")]
     public async Task ComIdentificador_ListaOCpfMascarado()
     {
@@ -127,13 +141,12 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         ListarInscricoesDoProcessoResult resultado = await Listar(leandro);
 
         InscricaoDoProcessoDto linha = resultado.Items.Single();
-        linha.Id.Should().NotBeNull();
         linha.Situacao.Should().Be(SituacaoInscricao.Submetida);
         linha.OfertaCursoId.Should().Be(Curso);
         (linha.Nome, linha.Cpf, linha.NumeroInscricao, linha.SubmetidaEm).Should().Be((null, null, null, null));
     }
 
-    [Fact(DisplayName = "Só com a permissão de acesso a linha não traz nada útil, e o registro vai pela decisão do acesso ao resource")]
+    [Fact(DisplayName = "Só com a permissão de acesso a linha traz apenas o id, e o registro vai pela decisão do acesso ao resource")]
     public async Task SoComAcessoAoResource_LinhaVaziaERegistroDoAcesso()
     {
         DecisoesDeAcessoDeTeste kevin = new("kevin.carvalho", PermissaoSelecao.InscricoesConsultar);
@@ -142,7 +155,8 @@ public sealed class ListarInscricoesDoProcessoQueryHandlerTests
         ListarInscricoesDoProcessoResult resultado = await Listar(kevin);
 
         InscricaoDoProcessoDto linha = resultado.Items.Single();
-        (linha.Id, linha.Situacao, linha.OfertaCursoId, linha.Nome, linha.Cpf).Should().Be((null, null, null, null, null));
+        linha.Id.Should().NotBeEmpty();
+        (linha.Situacao, linha.OfertaCursoId, linha.Nome, linha.Cpf, linha.NumeroInscricao).Should().Be((null, null, null, null, null));
         await kevin.Verificador.Received(1).RegistrarParaCadaAsync(
             Arg.Is<DecisaoPermitida>(d => d.Registro.Permissao == CodigoAcesso),
             ResourceTiposSelecao.Inscricao, Arg.Any<IReadOnlyCollection<Guid>>(), true, Arg.Any<CancellationToken>());

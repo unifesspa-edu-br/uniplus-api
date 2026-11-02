@@ -134,7 +134,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
             () => PrimeiroEnvioAsync(inscricao.Id, inscricaoRepository, cancellationToken)).ConfigureAwait(false);
 
         return Result<InscricaoAdministrativaDto>.Success(new InscricaoAdministrativaDto(
-            Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.Id), inscricao.Id),
+            inscricao.Id,
             Fixo<SituacaoInscricao>(decisoes, nameof(InscricaoAdministrativaDto.Situacao), inscricao.Situacao),
             Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.OfertaCursoId), inscricao.OfertaCursoId),
             Fixo<Guid>(decisoes, nameof(InscricaoAdministrativaDto.OfertaCursoSegundaOpcaoId), inscricao.OfertaCursoSegundaOpcaoId),
