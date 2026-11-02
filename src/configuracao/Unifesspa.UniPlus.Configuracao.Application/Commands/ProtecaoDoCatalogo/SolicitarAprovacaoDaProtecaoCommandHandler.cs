@@ -57,6 +57,7 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         AcessoAoCatalogoDeProtecao acesso = decidido.Value;
         if (!acesso.ManterTipos && !acesso.ManterFatos)
         {
+            await acesso.RegistrarRecusaDosCadastrosAsync(verificador, tipos: true, fatos: true, cancellationToken).ConfigureAwait(false);
             return Recusa(AcessoAoCatalogoDeProtecao.SemPermissao);
         }
 
@@ -103,6 +104,9 @@ public static class SolicitarAprovacaoDaProtecaoCommandHandler
         HashSet<Guid> idsDeFatos = [.. itensDeFato.Select(static i => i.Id)];
         if ((idsDeTipos.Count > 0 && !acesso.ManterTipos) || (idsDeFatos.Count > 0 && !acesso.ManterFatos))
         {
+            await acesso
+                .RegistrarRecusaDosCadastrosAsync(verificador, tipos: idsDeTipos.Count > 0, fatos: idsDeFatos.Count > 0, cancellationToken)
+                .ConfigureAwait(false);
             return Recusa(AcessoAoCatalogoDeProtecao.SemPermissao);
         }
 

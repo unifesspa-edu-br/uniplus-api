@@ -119,12 +119,13 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         TipoDocumento laudo = NovoTipo();
         FatoCandidato fato = NovoFato();
 
-        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(laudo), Fato(fato));
+        IVerificadorDeAcesso verificador = VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter);
+        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(verificador, new[] { Caroline }, Tipo(laudo), Fato(fato));
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo);
         await _tipos.DidNotReceiveWithAnyArgs().ListarPendentesPorIdAsync(default!, default);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        NegativasRegistradas(verificador).Should().Equal(PermissaoConfiguracao.FatosCandidatoManter.Codigo);
     }
 
     [Fact(DisplayName = "A lista vazia é recusada com código próprio")]
@@ -188,12 +189,31 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     [Fact(DisplayName = "Sem permissão de manter nenhum dos cadastros a solicitação é recusada")]
     public async Task Handle_SemPermissao_Recusa()
     {
-        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(
-            VerificadorCom(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar), new[] { Caroline });
+        IVerificadorDeAcesso verificador = VerificadorCom(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar);
+        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(verificador, new[] { Caroline });
 
         resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        NegativasRegistradas(verificador).Should().BeEquivalentTo(
+            [PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo]);
     }
+
+    [Fact(DisplayName = "Sem nenhuma das três permissões, as três negativas são registradas uma vez só")]
+    public async Task Handle_SemNenhumaPermissao_RegistraAsTresNegativasUmaVez()
+    {
+        IVerificadorDeAcesso verificador = VerificadorCom();
+
+        await EnviarAsync(verificador, new[] { Caroline });
+
+        NegativasRegistradas(verificador).Should().HaveCount(3);
+    }
+
+    private static IEnumerable<string> NegativasRegistradas(IVerificadorDeAcesso verificador) =>
+        verificador.ReceivedCalls()
+            .Where(static c => c.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.RegistrarDesfechoAsync))
+            .SelectMany(static c => (IReadOnlyCollection<DecisaoDeAcesso>)c.GetArguments()[0]!)
+            .OfType<DecisaoNegada>()
+            .Select(static d => d.Registro.Permissao);
 
     [Fact(DisplayName = "O item que não existe, ou que já saiu de pendente, é recusado e nenhum outro da lista é enviado")]
     public async Task Handle_ItemNaoPendente_RecusaTudo()
