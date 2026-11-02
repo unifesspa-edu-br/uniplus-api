@@ -43,8 +43,9 @@ public static class AcessoAInscricao
     }
 
     /// <summary>
-    /// Registra a negativa de quem pediu uma inscrição que não existe sem ter a permissão da rota na unidade dona do
-    /// processo, para que a sondagem apareça na trilha. O registro nomeia o motivo real e não leva o id do resource,
+    /// Registra a negativa de quem pediu uma inscrição que não existe sem ter as permissões da rota na unidade dona do
+    /// processo, para que a sondagem apareça na trilha. As permissões são avaliadas na ordem em que a rota as exige, e só
+    /// a primeira negada é registrada. O registro nomeia o motivo real e não leva o id do resource,
     /// que não existe; a resposta ao cliente continua a mesma da inscrição sem permissão. Quem tem a permissão errou o
     /// link, e o processo inexistente não tem unidade sobre a qual decidir: nenhum dos dois gera registro.
     /// </summary>
@@ -52,12 +53,12 @@ public static class AcessoAInscricao
         IVerificadorDeAcesso verificador,
         ConferenciaDoVinculo conferencia,
         Guid processoId,
-        PermissionRequirement requisito,
+        IReadOnlyList<PermissionRequirement> requisitos,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(conferencia);
-        ArgumentNullException.ThrowIfNull(requisito);
+        ArgumentNullException.ThrowIfNull(requisitos);
 
         if (conferencia is not NaoEncontrada { UnidadeDoProcesso: { } unidade })
         {
@@ -65,12 +66,16 @@ public static class AcessoAInscricao
         }
 
         ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(unidade, processoId, inscricaoId: null);
-        DecisaoDeAcesso decisao = await verificador.AvaliarAsync(requisito, resource, cancellationToken).ConfigureAwait(false);
-
-        // O permitido sobre o que não existe não se grava: a política o gravaria como acesso a uma inscrição.
-        if (decisao is DecisaoNegada)
+        foreach (PermissionRequirement requisito in requisitos)
         {
-            await verificador.RegistrarDesfechoAsync([decisao], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
+            DecisaoDeAcesso decisao = await verificador.AvaliarAsync(requisito, resource, cancellationToken).ConfigureAwait(false);
+
+            // O permitido sobre o que não existe não se grava: a política o gravaria como acesso a uma inscrição.
+            if (decisao is DecisaoNegada)
+            {
+                await verificador.RegistrarDesfechoAsync([decisao], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
+                return;
+            }
         }
     }
 
