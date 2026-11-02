@@ -6,6 +6,7 @@ using Entities;
 
 using Enums;
 
+using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -48,6 +49,51 @@ public sealed record EntradaDaAvaliacaoDaInscricao(
     /// <summary>Sem documento enviado: o rascunho que ainda não tem arquivo, a pré-visualização e o salvamento.</summary>
     public static IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> SemApresentacoes { get; } =
         new Dictionary<Guid, IReadOnlyList<ApresentacaoDocumento>>();
+
+    /// <summary>
+    /// Monta a entrada entregando às regras o município sempre pelo código. A inscrição enviada guarda o município com o
+    /// nome conferido, e as regras comparam o código como texto: por aqui o objeto gravado nunca chega a elas, nas
+    /// respostas, nos subitens de grupo nem nos fatos já conhecidos.
+    /// </summary>
+    /// <param name="definicoes">A definição de cada resposta e de cada fato conhecido, pelo código do fato; diz quais são município.</param>
+    public static EntradaDaAvaliacaoDaInscricao Montar(
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaRespondida>> grupos,
+        IReadOnlyDictionary<string, FatoResolvido> fatosConhecidos,
+        IReadOnlySet<string> etapasConcluidas,
+        EnvioDasRespostas? envio,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        bool naFaseDaInscricao = false)
+    {
+        ArgumentNullException.ThrowIfNull(definicoes);
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(fatosConhecidos);
+
+        bool EhMunicipio(string fatoCodigo) => definicoes.TryGetValue(fatoCodigo, out DefinicaoDaResposta? definicao) && definicao.EhMunicipio;
+
+        Dictionary<string, JsonElement> ComoCodigos(IReadOnlyDictionary<string, JsonElement> valores) =>
+            valores.ToDictionary(
+                v => v.Key, v => EhMunicipio(v.Key) ? ValorDeMunicipio.ComoCodigo(v.Value) : v.Value, StringComparer.Ordinal);
+
+        return new EntradaDaAvaliacaoDaInscricao(
+            ComoCodigos(respostas),
+            grupos.ToDictionary(
+                static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaRespondida>)[.. g.Value.Select(o => new OcorrenciaRespondida(o.Id, ComoCodigos(o.Respostas)))],
+                StringComparer.Ordinal),
+            fatosConhecidos.ToDictionary(
+                f => f.Key,
+                f => EhMunicipio(f.Key) && f.Value is { Estado: EstadoFato.Resolvido, Valor: { } valor }
+                    ? FatoResolvido.Resolvido(ValorDeMunicipio.ComoCodigo(valor))
+                    : f.Value,
+                StringComparer.Ordinal),
+            etapasConcluidas,
+            envio,
+            apresentacoes,
+            naFaseDaInscricao);
+    }
 }
 
 /// <summary>

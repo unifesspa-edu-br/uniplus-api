@@ -522,7 +522,7 @@ public sealed class Inscricao : EntityBase
 
         List<FieldError> recusas =
         [
-            .. ConferirRespostas(respostas, grupos, admitidas),
+            .. RecusasDeForma(respostas, grupos, admitidas),
             .. RecusasDoCpf(respostas),
             .. RecusasDoNome(respostas, admitidas),
             .. RecusasDoNomeSocial(respostas, admitidas, aoEnviar: false),
@@ -570,6 +570,10 @@ public sealed class Inscricao : EntityBase
     /// <param name="avaliacao">A avaliação da inscrição sobre o estado final dela, com todas as etapas da inscrição concluídas.</param>
     /// <param name="derivados">Substituem os da submissão anterior; o candidato nunca os informa.</param>
     /// <param name="arquivosConfirmados">Os arquivos confirmados da inscrição, que o comprovante registra por exigência.</param>
+    /// <param name="municipiosConferidos">
+    /// Os nomes que o Geo conferiu no envio: a inscrição enviada guarda cada município com o nome, e a cidade de cada endereço
+    /// conferido pelo CEP com o nome do Geo. Município sem nome conferido é defeito de quem chama.
+    /// </param>
     public Result<ComprovanteInscricao> Submeter(
         string numeroGeradoSeNecessario,
         Guid? ofertaCursoId,
@@ -583,7 +587,8 @@ public sealed class Inscricao : EntityBase
         IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
         PrecondicaoIfMatch precondicao,
         DateTimeOffset instante,
-        IReadOnlyList<ArquivoConfirmado> arquivosConfirmados)
+        IReadOnlyList<ArquivoConfirmado> arquivosConfirmados,
+        MunicipiosConferidos? municipiosConferidos = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(numeroGeradoSeNecessario);
         ArgumentNullException.ThrowIfNull(respostas);
@@ -606,16 +611,9 @@ public sealed class Inscricao : EntityBase
 
         IReadOnlyList<FieldError> recusas =
         [
-            .. ConferirRespostas(respostas, grupos, admitidas),
-            .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
-            .. RecusasDoCpf(respostas),
-            .. RecusasDoNome(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
-            .. RecusasDoNomeSocial(MesclarPreservandoAusentes(Respostas, respostas), admitidas, aoEnviar: true),
-            .. RecusasDoEndereco(MesclarPreservandoAusentes(Respostas, respostas), admitidas),
-            .. RecusasDasOpcoesDeCurso(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas, aoEnviar: true),
+            .. RecusasDoEnvio(
+                respostas, grupos, aceites, admitidas, ofertaCursoId, ofertaCursoSegundaOpcaoId, derivados, definicoesDosDerivados, avaliacao),
             .. RecusasDasModalidades(avaliacao, ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas),
-            .. RecusasDosDocumentos(avaliacao.Documentos),
-            .. RecusasDosAceites(aceites, admitidas.Termos),
         ];
         if (recusas.Count > 0)
         {
@@ -644,11 +642,24 @@ public sealed class Inscricao : EntityBase
             definicoesDoEnvio[AvaliacaoDaInscricao.FatoDaModalidadeDaSegundaOpcao] = AvaliacaoDaInscricao.DefinicaoDaModalidade;
         }
 
-        Derivados = derivadosDoEnvio;
-        Respostas = SoAsQueSeAplicam(NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes), avaliacao.Formulario.Fatos)
-            .Where(r => !Derivados.ContainsKey(r.Key))
-            .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
-        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes), avaliacao.Formulario.Grupos);
+        MunicipiosConferidos conferidos = municipiosConferidos ?? MunicipiosConferidos.Nenhum;
+        Derivados = ComOsNomesConferidos(
+            derivadosDoEnvio, definicoesDoEnvio, (fato, _) => conferidos.DosDerivados.GetValueOrDefault(fato), SemEnderecosConferidos);
+        Respostas = ComOsNomesConferidos(
+            SoAsQueSeAplicam(NaFormaCanonica(MesclarPreservandoAusentes(Respostas, respostas), admitidas.Definicoes), avaliacao.Formulario.Fatos)
+                .Where(r => !Derivados.ContainsKey(r.Key))
+                .ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
+            admitidas.Definicoes, (_, codigo) => conferidos.DasRespostas.GetValueOrDefault(codigo), conferidos.DosEnderecos);
+        Grupos = GruposQueSeAplicam(NaFormaCanonicaNosGrupos(SemValoresNulos(GruposAposMesclar(grupos)), admitidas.Definicoes), avaliacao.Formulario.Grupos)
+            .ToDictionary(
+                static g => g.Key,
+                g => (IReadOnlyList<OcorrenciaDeGrupoInscricao>)
+                    [.. g.Value.Select(o => o with
+                    {
+                        Respostas = ComOsNomesConferidos(
+                            o.Respostas, admitidas.Definicoes, (_, codigo) => conferidos.DasRespostas.GetValueOrDefault(codigo), SemEnderecosConferidos),
+                    })],
+                StringComparer.Ordinal);
         Aceites = aceites;
         DefinicoesDasRespostas = ComCpfCifrado(admitidas.Definicoes.Concat(definicoesDoEnvio)
             .GroupBy(static f => f.Key, StringComparer.Ordinal)
@@ -678,6 +689,47 @@ public sealed class Inscricao : EntityBase
     }
 
     /// <summary>
+    /// As recusas que o agregado dá ao envio, menos as da modalidade (<see cref="RecusasDasModalidades"/>): a forma do corpo, o
+    /// CPF e o nome do titular, o nome social, o endereço, as opções de curso, os documentos e os aceites. Nenhuma depende do Geo.
+    /// O handler de envio as acumula com as dele antes de responder, e <see cref="Submeter"/> as confere de novo ao gravar.
+    /// </summary>
+    /// <param name="documentosEmVerificacao">Os documentos cujo arquivo ainda está em verificação: a falta deles pede para esperar.</param>
+    public IReadOnlyList<FieldError> RecusasDoEnvio(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
+        IReadOnlyList<AceiteDeTermo> aceites,
+        RespostasAdmitidas admitidas,
+        Guid? ofertaCursoId,
+        Guid? ofertaCursoSegundaOpcaoId,
+        IReadOnlyDictionary<string, JsonElement> derivados,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoesDosDerivados,
+        ResultadoDaAvaliacaoDaInscricao avaliacao,
+        IReadOnlySet<(Guid ExigenciaId, string? OcorrenciaId)>? documentosEmVerificacao = null)
+    {
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(aceites);
+        ArgumentNullException.ThrowIfNull(admitidas);
+        ArgumentNullException.ThrowIfNull(derivados);
+        ArgumentNullException.ThrowIfNull(definicoesDosDerivados);
+        ArgumentNullException.ThrowIfNull(avaliacao);
+
+        IReadOnlyDictionary<string, JsonElement> mescladas = MesclarPreservandoAusentes(Respostas, respostas);
+        return
+        [
+            .. RecusasDeForma(respostas, grupos, admitidas),
+            .. ConferirValores(derivados, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), definicoesDosDerivados, new Dictionary<string, IReadOnlySet<string>>()),
+            .. RecusasDoCpf(respostas),
+            .. RecusasDoNome(mescladas, admitidas),
+            .. RecusasDoNomeSocial(mescladas, admitidas, aoEnviar: true),
+            .. RecusasDoEndereco(mescladas, admitidas),
+            .. RecusasDasOpcoesDeCurso(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas, aoEnviar: true),
+            .. RecusasDosDocumentos(avaliacao.Documentos, documentosEmVerificacao),
+            .. RecusasDosAceites(aceites, admitidas.Termos),
+        ];
+    }
+
+    /// <summary>
     /// Um número de documento ausente do corpo preserva o valor gravado — ausência nunca apaga, só
     /// um valor enviado substitui. As demais chaves da entrada sempre valem; <c>null</c> apaga a
     /// resposta que o candidato limpou.
@@ -700,6 +752,47 @@ public sealed class Inscricao : EntityBase
         }
 
         return mesclado;
+    }
+
+    private static readonly IReadOnlyDictionary<string, CidadeConferida> SemEnderecosConferidos = new Dictionary<string, CidadeConferida>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// A inscrição enviada guarda cada município com o nome que o Geo conferiu, e a cidade de cada endereço conferido pelo CEP
+    /// como o Geo a resolveu — código, nome e UF: o que o navegador mandou como cidade é descartado.
+    /// </summary>
+    /// <param name="nomeDoMunicipio">O nome conferido do município, pelo fato e pelo código; nulo quando ele não foi conferido.</param>
+    /// <param name="cidadesDosEnderecos">A cidade que o Geo resolveu pelo CEP de cada endereço conferido, pelo fato do endereço.</param>
+    private static Dictionary<string, JsonElement> ComOsNomesConferidos(
+        IReadOnlyDictionary<string, JsonElement> valores,
+        IReadOnlyDictionary<string, DefinicaoDaResposta> definicoes,
+        Func<string, string, string?> nomeDoMunicipio,
+        IReadOnlyDictionary<string, CidadeConferida> cidadesDosEnderecos)
+    {
+        Dictionary<string, JsonElement> gravados = new(StringComparer.Ordinal);
+        foreach ((string fato, JsonElement valor) in valores)
+        {
+            DefinicaoDaResposta? definicao = definicoes.GetValueOrDefault(fato);
+            gravados[fato] = definicao switch
+            {
+                { EhMunicipio: true } => MunicipioConferido(fato, valor, nomeDoMunicipio),
+                { Tipo: TipoDoValorDeResposta.Endereco } when cidadesDosEnderecos.TryGetValue(fato, out CidadeConferida? cidade)
+                    && EnderecoDeclarado.TentarLer(valor, out EnderecoDeclarado endereco) =>
+                        (endereco with { CidadeCodigoIbge = cidade.CodigoIbge, CidadeNome = cidade.Nome, CidadeUf = cidade.Uf }).ParaJson(),
+                _ => valor,
+            };
+        }
+
+        return gravados;
+    }
+
+    private static JsonElement MunicipioConferido(string fato, JsonElement valor, Func<string, string, string?> nomeDoMunicipio)
+    {
+        string codigo = ValorDeMunicipio.Codigo(valor)
+            ?? throw new InvalidOperationException($"A resposta de '{fato}' não é um município: o envio a recusa antes de gravar.");
+        string nome = nomeDoMunicipio(fato, codigo)
+            ?? throw new InvalidOperationException($"O município '{codigo}' de '{fato}' não foi conferido no Geo: o envio não grava município sem nome conferido.");
+
+        return ValorDeMunicipio.Gravado(codigo, nome);
     }
 
     /// <summary>Cada resposta como é gravada, na forma canônica do formato do campo (<see cref="DefinicaoDaResposta.NaFormaCanonica"/>).</summary>
@@ -769,13 +862,18 @@ public sealed class Inscricao : EntityBase
     /// de grupo, e as de grupo, de subitem do grupo. O fato que existe só como subitem de grupo não é
     /// admitido no nível superior, porque ali nenhuma ocorrência o reclama e ele seria gravado, e
     /// entraria no comprovante, fora do escopo a que pertence. O que o formulário não conhece segue
-    /// recusado por <see cref="ConferirValores"/>.
+    /// recusado por <see cref="ConferirValores"/>. É pública para o handler de envio acumular as recusas de forma do
+    /// corpo com as demais antes de responder.
     /// </summary>
-    private static List<FieldError> ConferirRespostas(
+    public static List<FieldError> RecusasDeForma(
         IReadOnlyDictionary<string, JsonElement> respostas,
         IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos,
         RespostasAdmitidas admitidas)
     {
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(grupos);
+        ArgumentNullException.ThrowIfNull(admitidas);
+
         bool SoDeGrupo(string fato) => admitidas.Definicoes.ContainsKey(fato) && !admitidas.DoNivelSuperior.Contains(fato);
 
         List<FieldError> recusas = [.. respostas.Keys
@@ -879,9 +977,12 @@ public sealed class Inscricao : EntityBase
     /// que a inscrição não pode ter (ver <see cref="RecusasDasOpcoesDeCurso"/>) não é avaliada: a recusa
     /// dela já diz o que fazer.
     /// </summary>
-    private static IEnumerable<FieldError> RecusasDasModalidades(
+    public static IEnumerable<FieldError> RecusasDasModalidades(
         ResultadoDaAvaliacaoDaInscricao avaliacao, Guid? ofertaCursoId, Guid? ofertaCursoSegundaOpcaoId, RespostasAdmitidas admitidas)
     {
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(admitidas);
+
         if (avaliacao.ModalidadesSegundaOpcao is not { } daSegunda
             || !SegundaOpcaoAdmissivel(ofertaCursoId, ofertaCursoSegundaOpcaoId, admitidas))
         {

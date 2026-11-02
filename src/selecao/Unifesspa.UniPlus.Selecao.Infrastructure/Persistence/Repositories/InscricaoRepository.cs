@@ -472,6 +472,9 @@ public sealed class InscricaoRepository : IInscricaoRepository
             TipoDoValorDeResposta.Booleano => JsonSerializer.SerializeToElement(linha.ValorBooleano!.Value),
             TipoDoValorDeResposta.Numero => JsonSerializer.SerializeToElement(linha.ValorNumero!.Value),
             TipoDoValorDeResposta.Codigo => JsonSerializer.SerializeToElement(linha.ValorCodigo!),
+            TipoDoValorDeResposta.Municipio => linha.ValorRotulo is { } rotulo
+                ? ValorDeMunicipio.Gravado(linha.ValorCodigo!, rotulo)
+                : JsonSerializer.SerializeToElement(linha.ValorCodigo!),
             TipoDoValorDeResposta.Texto => JsonSerializer.SerializeToElement(linha.ValorTexto!),
             TipoDoValorDeResposta.Data => JsonSerializer.SerializeToElement(linha.ValorData!.Value),
             _ => throw new InvalidOperationException($"A resposta {linha.Id} tem um tipo sem coluna de valor ({linha.Tipo})."),
@@ -585,14 +588,16 @@ public sealed class InscricaoRepository : IInscricaoRepository
                     Origem = origem,
                     Tipo = definicao.Tipo,
                 };
-                await PreencherValorAsync(linha, valores[posicao], definicao, cancellationToken).ConfigureAwait(false);
+                await PreencherValorAsync(linha, valores[posicao], definicao, entity, cancellationToken).ConfigureAwait(false);
                 linhas.Respostas.Add(linha);
             }
         }
     }
 
-    private async Task PreencherValorAsync(RespostaDaInscricaoRecord linha, JsonElement valor, DefinicaoDaResposta definicao, CancellationToken cancellationToken)
+    private async Task PreencherValorAsync(
+        RespostaDaInscricaoRecord linha, JsonElement valor, DefinicaoDaResposta definicao, Inscricao entity, CancellationToken cancellationToken)
     {
+        (string Codigo, string? Rotulo)? municipio = definicao.EhMunicipio ? MunicipioGravavel(entity, linha.FatoCodigo, valor) : null;
         if (definicao.Cifrada)
         {
             linha.ValorCifrado = await _encryption
@@ -612,6 +617,9 @@ public sealed class InscricaoRepository : IInscricaoRepository
             case TipoDoValorDeResposta.Codigo:
                 linha.ValorCodigo = valor.GetString();
                 break;
+            case TipoDoValorDeResposta.Municipio:
+                (linha.ValorCodigo, linha.ValorRotulo) = municipio!.Value;
+                break;
             case TipoDoValorDeResposta.Texto:
                 linha.ValorTexto = valor.GetString();
                 break;
@@ -622,6 +630,16 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 throw new InvalidOperationException($"O tipo {definicao.Tipo} não tem coluna de valor.");
         }
     }
+
+    /// <summary>
+    /// O município na forma que a situação da inscrição grava: só o código no rascunho, e o código com o nome conferido na
+    /// inscrição enviada. A forma trocada é defeito de quem chama, e não resposta do candidato.
+    /// </summary>
+    private static (string Codigo, string? Rotulo) MunicipioGravavel(Inscricao entity, string fatoCodigo, JsonElement valor) =>
+        ValorDeMunicipio.TentarLer(valor, out string codigo, out string? rotulo) && (rotulo is null) == entity.EhRascunho
+            ? (codigo, rotulo)
+            : throw new InvalidOperationException(
+                $"A resposta de '{fatoCodigo}' da inscrição {entity.Id} não tem a forma de município que a situação {entity.Situacao} grava.");
 
     private async Task<LinhasDaInscricao> CarregarLinhasAsync(IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken)
     {
@@ -680,6 +698,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
                 para.ValorBooleano = de.ValorBooleano;
                 para.ValorNumero = de.ValorNumero;
                 para.ValorCodigo = de.ValorCodigo;
+                para.ValorRotulo = de.ValorRotulo;
                 para.ValorTexto = de.ValorTexto;
                 para.ValorData = de.ValorData;
                 para.ValorCifrado = de.ValorCifrado;

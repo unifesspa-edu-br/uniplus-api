@@ -6,7 +6,7 @@ public enum TipoDoValorDeResposta
     Booleano = 1,
     Numero = 2,
 
-    /// <summary>Valor de vocabulário fechado: opção categórica, município, UF. É o que a classificação filtra.</summary>
+    /// <summary>Valor de vocabulário fechado: opção categórica, UF. É o que a classificação filtra.</summary>
     Codigo = 3,
 
     /// <summary>Texto livre, como um nome.</summary>
@@ -14,4 +14,10 @@ public enum TipoDoValorDeResposta
 
     Data = 5,
     Endereco = 6,
+
+    /// <summary>
+    /// Município pelo código IBGE: o rascunho guarda só o código, e a inscrição enviada guarda o código com o nome que o
+    /// Geo conferiu no envio.
+    /// </summary>
+    Municipio = 7,
 }

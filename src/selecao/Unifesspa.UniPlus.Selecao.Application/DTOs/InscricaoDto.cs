@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using System.ComponentModel;
 using System.Text.Json;
 
 using Domain.Entities;
@@ -67,7 +68,9 @@ public sealed record InscricaoDto(
     Guid? OfertaCursoSegundaOpcaoId,
     int NumeroDeOpcoesDeCurso,
     IReadOnlyList<OfertaDeCursoCertameDto> Ofertas,
+    [property: Description("As respostas por código do fato. O município vem como texto, o código IBGE, no rascunho, e como objeto { \"codigo\", \"rotulo\" } na inscrição enviada, com o nome que o Geo conferiu no envio.")]
     IReadOnlyDictionary<string, JsonElement> Respostas,
+    [property: Description("O que o sistema calculou das respostas. O município de residência vem na mesma forma do município das respostas: { \"codigo\", \"rotulo\" } na inscrição enviada.")]
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,
@@ -130,7 +133,9 @@ public sealed record ComprovanteInscricaoDto(
     string HashIntegridade,
     Guid? OfertaCursoId,
     Guid? OfertaCursoSegundaOpcaoId,
+    [property: Description("As respostas por código do fato. O município vem como objeto { \"codigo\", \"rotulo\" }, com o nome que o Geo conferiu no envio; a cidade do endereço conferido pelo CEP traz o nome do Geo.")]
     IReadOnlyDictionary<string, JsonElement> Respostas,
+    [property: Description("O que o sistema calculou das respostas. O município de residência vem na mesma forma do município das respostas: { \"codigo\", \"rotulo\" } na inscrição enviada.")]
     IReadOnlyDictionary<string, JsonElement> Derivados,
     IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
     IReadOnlyList<AceiteDeTermoInput> Aceites,

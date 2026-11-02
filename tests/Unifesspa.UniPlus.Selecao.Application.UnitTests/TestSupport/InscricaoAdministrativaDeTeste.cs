@@ -62,12 +62,12 @@ internal sealed class InscricaoAdministrativaDeTeste
     public InscricaoAdministrativaDeTeste Fato(
         string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta, string? secao = "DADOS", int ordem = 0,
         string hipoteseLegal = Hipotese, string? formato = null, string? ajuda = null, string? componente = null, string? descricao = null,
-        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo)
+        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo, IReadOnlyList<RestricaoValor>? restricoes = null)
     {
         Result<FatoColetado> fato = FatoColetado.Criar(
             codigo, ordem, $"Rótulo de {codigo}", tipo, Obrigatoriedade.Nunca, null, classificacao, hipoteseLegal,
             ProtecaoDoFatoDeTeste.Finalidade, descricao ?? $"Descrição de {codigo}", origemValores, secao,
-            FinalidadeFormulario.Inscricao, formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null), ajuda, componenteExibicao: componente);
+            FinalidadeFormulario.Inscricao, formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null), ajuda, restricoes: restricoes, componenteExibicao: componente);
         _fatos.Add(fato.IsSuccess
             ? fato.Value!
             : throw new InvalidOperationException(string.Join("; ", fato.Errors.Select(e => e.Error.Message))));
@@ -76,6 +76,14 @@ internal sealed class InscricaoAdministrativaDeTeste
             _respostas[codigo] = valor;
         }
 
+        return this;
+    }
+
+    /// <summary>Um grupo repetível do formulário, com as ocorrências que o candidato respondeu.</summary>
+    public InscricaoAdministrativaDeTeste Grupo(GrupoColetado grupo, params OcorrenciaDeGrupoInscricao[] ocorrencias)
+    {
+        _grupos.Add(grupo);
+        _ocorrencias[grupo.Codigo] = ocorrencias;
         return this;
     }
 

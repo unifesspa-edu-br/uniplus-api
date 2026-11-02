@@ -18,6 +18,8 @@ public sealed class DefinicaoDaRespostaTests
     [InlineData(TipoDoValorDeResposta.Codigo, true, "\"LB_PPI\"", false)]
     [InlineData(TipoDoValorDeResposta.Codigo, false, "[\"LB_PPI\"]", false)]
     [InlineData(TipoDoValorDeResposta.Codigo, false, "\"\"", false)]
+    [InlineData(TipoDoValorDeResposta.Municipio, false, "\"2927408\"", true)]
+    [InlineData(TipoDoValorDeResposta.Municipio, false, "{\"codigo\":\"2927408\",\"rotulo\":\"Salvador\"}", false)]
     [InlineData(TipoDoValorDeResposta.Endereco, false, "{\"cep\":\"68500000\",\"cidade\":{\"codigoIbge\":\"1504208\",\"nome\":\"Marabá\",\"uf\":\"PA\"}}", true)]
     [InlineData(TipoDoValorDeResposta.Endereco, false, "{\"cep\":\"68500000\",\"campoDesconhecido\":\"x\"}", false)]
     public void Aceita_SoValorDoTipo(TipoDoValorDeResposta tipo, bool multivalorado, string json, bool aceito)
