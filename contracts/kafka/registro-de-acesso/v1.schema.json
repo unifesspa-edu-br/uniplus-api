@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/kafka/registro-de-acesso/v1.schema.json",
+  "title": "Lote do registro de acesso",
+  "description": "Valor da mensagem do tópico do registro de acesso, versão 1: um lote de registros, cada um com a chave de deduplicação. Propriedades adicionais são admitidas: um campo opcional novo não quebra o leitor da v1.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["chave", "registro"],
+    "properties": {
+      "chave": {
+        "description": "Chave do acesso: resumo SHA-256 em hexadecimal minúsculo. O consumidor deduplica por ela.",
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "registro": { "$ref": "#/$defs/registro" }
+    }
+  },
+  "$defs": {
+    "registro": {
+      "type": "object",
+      "required": [
+        "instante",
+        "atorEmissor",
+        "atorSubject",
+        "requestId",
+        "execucaoId",
+        "permissao",
+        "resourceTipo",
+        "sensibilidade",
+        "origem",
+        "resultado",
+        "permitido"
+      ],
+      "properties": {
+        "instante": {
+          "description": "Instante do acesso, em UTC.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "atorEmissor": {
+          "description": "Emissor do token de quem acessou.",
+          "type": "string"
+        },
+        "atorSubject": {
+          "description": "Subject opaco do token de quem acessou.",
+          "type": "string"
+        },
+        "requestId": {
+          "description": "Correlação enviada pelo cliente; não identifica o acesso.",
+          "type": "string"
+        },
+        "execucaoId": {
+          "description": "Execução do servidor, a mesma para todo acesso da mesma requisição. É a chave da mensagem.",
+          "type": "string",
+          "format": "uuid"
+        },
+        "permissao": {
+          "description": "Código da permissão exigida.",
+          "type": "string"
+        },
+        "resourceTipo": {
+          "description": "Tipo do resource alvo, em kebab-case.",
+          "type": "string"
+        },
+        "sensibilidade": {
+          "description": "Sensibilidade efetiva do dado alcançado.",
+          "enum": ["publico", "interno", "pessoal", "identificador", "sensivel"]
+        },
+        "unidadeProprietariaId": {
+          "description": "Unidade proprietária do resource, quando o escopo se aplica.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "processoId": {
+          "description": "Processo seletivo do resource, quando o escopo se aplica.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "chamadaId": {
+          "description": "Chamada do resource, quando o escopo se aplica.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "resourceId": {
+          "description": "Registro alvo da operação; ausente quando a decisão recai sobre um resource que não existe.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "inscricaoId": {
+          "description": "Inscrição a que o acesso se refere.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "fatoCodigo": {
+          "description": "Código do fato revelado; nunca o valor.",
+          "type": ["string", "null"]
+        },
+        "ocorrencia": {
+          "description": "Ocorrência do fato revelado, quando o campo está num grupo que se repete.",
+          "type": ["string", "null"]
+        },
+        "origem": {
+          "description": "Canal pelo qual a requisição chegou.",
+          "type": "string"
+        },
+        "clienteOidc": {
+          "description": "Client OIDC que obteve o token do acesso; nulo quando o token não o traz.",
+          "type": ["string", "null"]
+        },
+        "resultado": {
+          "description": "Desfecho da decisão. O impedido é uma negativa com motivo próprio.",
+          "enum": ["permitido", "negado", "impedido"]
+        },
+        "permitido": {
+          "description": "Veredito derivado do resultado.",
+          "type": "boolean"
+        },
+        "motivoNegativa": {
+          "description": "Motivo canônico da negativa; presente se, e somente se, o acesso foi negado. Motivo novo no vocabulário atualiza este enum.",
+          "enum": [
+            "multifator_nao_satisfeito",
+            "dupla_aprovacao_invalida",
+            "sem_concessao_aplicavel",
+            "concessao_expirada",
+            "fase_fechada",
+            "estado_do_resource_incompativel",
+            "escopo_de_auditoria_inativo",
+            "equipe_inativa_no_processo",
+            "atribuicao_documental_inativa",
+            "base_legal_ausente",
+            "conformidade_legal_nao_validada",
+            "contexto_obrigatorio_ausente",
+            "mecanismo_revogacao_degradado",
+            "impedido_por_inscricao_no_processo",
+            "concessao_em_unidade_exigida",
+            null
+          ]
+        },
+        "fonteGrant": {
+          "description": "Fonte canônica da concessão usada; presente se, e somente se, o acesso foi permitido.",
+          "type": ["string", "null"]
+        },
+        "grantId": {
+          "description": "Identificador da concessão usada, quando ela o possui.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "perfilId": {
+          "description": "Perfil de acesso da concessão usada, quando ela é de perfil.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
+        "escopoUnidadeId": {
+          "description": "Unidade do escopo da concessão usada; nulo quando o escopo é a instituição.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        }
+      }
+    }
+  }
+}

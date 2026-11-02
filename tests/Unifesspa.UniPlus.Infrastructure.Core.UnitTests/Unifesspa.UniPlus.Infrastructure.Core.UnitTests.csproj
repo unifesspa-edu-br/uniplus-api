@@ -16,6 +16,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +26,11 @@
   <!-- Schemas Avro embedded usados por SchemaRegistrationHostedServiceTests (#362) -->
   <ItemGroup>
     <EmbeddedResource Include="Messaging\SchemaRegistry\Resources\*.avsc" />
+  </ItemGroup>
+
+  <!-- Schema versionado do valor do registro de acesso, conferido contra o lote serializado. -->
+  <ItemGroup>
+    <None Include="..\..\contracts\kafka\registro-de-acesso\*.schema.json" Link="Contratos\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
