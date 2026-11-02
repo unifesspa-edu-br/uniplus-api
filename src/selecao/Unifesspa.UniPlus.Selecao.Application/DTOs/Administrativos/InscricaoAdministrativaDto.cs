@@ -102,10 +102,8 @@ public sealed record ItemDeRespostaDto : ItemClassificado
     public required string Componente { get; init; }
 
     /// <summary>
-    /// O valor, na forma que o <see cref="Tipo"/> define. Ausente no item que aparece só para quem pode revelá-lo: o
-    /// identificador, para quem não tem a permissão de ver o valor mascarado.
+    /// O valor, na forma que o <see cref="Tipo"/> define.
     /// </summary>
-    [ValorDoItem]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public JsonElement? Valor { get; init; }
 

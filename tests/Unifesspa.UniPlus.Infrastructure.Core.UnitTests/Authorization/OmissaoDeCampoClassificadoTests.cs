@@ -96,33 +96,6 @@ public sealed class OmissaoDeCampoClassificadoTests
         json.RootElement.GetProperty("itens").GetArrayLength().Should().Be(0);
     }
 
-    [Fact(DisplayName = "O item que aparece só pela capacidade sai sem valor, ainda que o valor esteja preenchido")]
-    public void ItemPelaCapacidade_SaiSemValor()
-    {
-        ComCapacidade((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador));
-        PaginaComValor pagina = new([new ItemComValor("CPF", ClassificacaoDeProtecao.Identificador, "***.598.363-**")]);
-
-        using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(pagina, _json));
-
-        JsonElement item = json.RootElement.GetProperty("itens").EnumerateArray().Single();
-        item.GetProperty("codigo").GetString().Should().Be("CPF");
-        item.TryGetProperty("valor", out _).Should().BeFalse("o par do identificador não foi permitido");
-    }
-
-    [Fact(DisplayName = "O item com o par permitido sai com o valor")]
-    public void ItemComOParPermitido_SaiComValor()
-    {
-        Permitir((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador));
-        PaginaComValor pagina = new([new ItemComValor("CPF", ClassificacaoDeProtecao.Identificador, "***.598.363-**")]);
-
-        using JsonDocument json = JsonDocument.Parse(JsonSerializer.Serialize(pagina, _json));
-
-        json.RootElement.GetProperty("itens").EnumerateArray().Single().GetProperty("valor").GetString().Should().Be("***.598.363-**");
-    }
-
-    private void ComCapacidade(params (NaturezaDoItem, ClassificacaoDeProtecao)[] pares) =>
-        new DecisoesDaRequisicaoHttp(_acessor).Guardar(new DecisoesDaProjecao(new Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida>(), pares));
-
     private void Permitir(params (NaturezaDoItem, ClassificacaoDeProtecao)[] pares) =>
         new DecisoesDaRequisicaoHttp(_acessor).Guardar(new DecisoesDaProjecao(pares.ToDictionary(static p => p, static _ => Decisao)));
 
@@ -135,25 +108,6 @@ public sealed class OmissaoDeCampoClassificadoTests
         string Livre);
 
     private sealed record Pagina(IReadOnlyList<Item> Itens);
-
-    private sealed record PaginaComValor(IReadOnlyList<ItemComValor> Itens);
-
-    private sealed record ItemComValor : ItemClassificado
-    {
-        public ItemComValor(string codigo, ClassificacaoDeProtecao classificacao, string valor)
-            : base(NaturezaDoItem.Dado, classificacao, null)
-        {
-            Codigo = codigo;
-            Valor = valor;
-        }
-
-        [JsonInclude]
-        public string Codigo { get; }
-
-        [ValorDoItem]
-        [JsonInclude]
-        public string? Valor { get; }
-    }
 
     private sealed record Item : ItemClassificado
     {

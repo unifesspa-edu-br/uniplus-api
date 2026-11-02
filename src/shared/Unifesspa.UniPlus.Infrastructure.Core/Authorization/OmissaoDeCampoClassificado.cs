@@ -57,12 +57,6 @@ internal static class OmissaoDeCampoClassificado
                 propriedade.ShouldSerialize = (objeto, valor) =>
                     decisoes().Permite(declaracao.Natureza, declaracao.Classificacao) && (anterior?.Invoke(objeto, valor) ?? true);
             }
-            else if (EhValorDoItem(propriedade))
-            {
-                Func<object, object?, bool>? anterior = propriedade.ShouldSerialize;
-                propriedade.ShouldSerialize = (objeto, valor) =>
-                    (objeto is not IItemClassificado item || decisoes().ValorSai(item)) && (anterior?.Invoke(objeto, valor) ?? true);
-            }
             else if (ElementoClassificado(propriedade.PropertyType) is { } elemento && propriedade.Get is { } ler)
             {
                 propriedade.Get = objeto => Filtrar(ler(objeto), elemento, decisoes());
@@ -78,7 +72,7 @@ internal static class OmissaoDeCampoClassificado
 
     /// <summary>
     /// Se a serialização pode omitir a propriedade: pela condição de <c>JsonIgnore</c> (nula ou default), pela classificação
-    /// declarada, por ser o valor de um item classificado ou por ser um item classificado único. É a regra única que o modificador aplica e o contrato OpenAPI
+    /// declarada ou por ser um item classificado único. É a regra única que o modificador aplica e o contrato OpenAPI
     /// espelha para não declarar como obrigatório o que a resposta omite. A lista de itens não entra: sai filtrada, não omitida.
     /// </summary>
     public static bool PodeOmitir(JsonPropertyInfo propriedade)
@@ -90,12 +84,8 @@ internal static class OmissaoDeCampoClassificado
                     .OfType<JsonIgnoreAttribute>()
                     .Any(static a => a.Condition is JsonIgnoreCondition.WhenWritingNull or JsonIgnoreCondition.WhenWritingDefault))
             || ProtegidoComoDe(propriedade) is not null
-            || EhValorDoItem(propriedade)
             || EhItemClassificadoUnico(propriedade);
     }
-
-    private static bool EhValorDoItem(JsonPropertyInfo propriedade) =>
-        propriedade.AttributeProvider is MemberInfo membro && Attribute.IsDefined(membro, typeof(ValorDoItemAttribute), inherit: true);
 
     private static ProtegidoComoAttribute? ProtegidoComoDe(JsonPropertyInfo propriedade) =>
         propriedade.AttributeProvider is MemberInfo membro

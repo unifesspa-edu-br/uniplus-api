@@ -8,40 +8,26 @@ public interface IPermissoesDaProjecao
 {
     /// <summary>Se a permissão do par foi concedida. A classificação que não se resolve vale como sensível.</summary>
     bool Permite(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao);
-
-    /// <summary>
-    /// Se a pessoa tem a capacidade sobre o par: a permissão de uma ação sobre ele (como revelar), que não é a decisão do
-    /// par e não libera o valor. A classificação que não se resolve vale como sensível.
-    /// </summary>
-    bool TemCapacidade(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao);
 }
 
 /// <summary>
 /// As decisões permitidas que o projetor tomou sobre um resource: por par (natureza, classificação), a decisão que o
-/// concedeu. A negativa não fica guardada: o par sem decisão permitida é omitido (ADR-0153). Guarda também as capacidades
-/// avaliadas, que deixam o item aparecer sem o valor.
+/// concedeu. A negativa não fica guardada: o par sem decisão permitida é omitido (ADR-0153).
 /// </summary>
 public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
 {
     private readonly IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> _permitidas;
-    private readonly HashSet<(NaturezaDoItem, ClassificacaoDeProtecao)> _capacidades;
 
     /// <summary>Nenhum par permitido: nada sai.</summary>
     public static DecisoesDaProjecao Vazia { get; } = new(new Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida>());
 
-    /// <summary>Cria as decisões a partir das permitidas por par e das capacidades avaliadas.</summary>
+    /// <summary>Cria as decisões a partir das permitidas por par.</summary>
     /// <param name="permitidas">A decisão permitida de cada par.</param>
-    /// <param name="capacidades">Os pares sobre os quais a pessoa tem a capacidade; nenhum quando omitido.</param>
-    public DecisoesDaProjecao(
-        IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> permitidas,
-        IEnumerable<(NaturezaDoItem Natureza, ClassificacaoDeProtecao Classificacao)>? capacidades = null)
+    public DecisoesDaProjecao(IReadOnlyDictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida> permitidas)
     {
         ArgumentNullException.ThrowIfNull(permitidas);
 
         _permitidas = permitidas;
-        _capacidades = (capacidades ?? [])
-            .Select(static c => (c.Natureza, ClassificacoesDeProtecao.Resolvida(c.Classificacao)))
-            .ToHashSet();
     }
 
     /// <summary>As decisões permitidas, uma por par.</summary>
@@ -51,15 +37,11 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
     public bool Permite(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
         _permitidas.ContainsKey((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
 
-    /// <inheritdoc />
-    public bool TemCapacidade(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
-        _capacidades.Contains((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
-
     /// <summary>A decisão permitida do par, ou <see langword="null"/> quando o par é omitido.</summary>
     public DecisaoPermitida? DecisaoDo(NaturezaDoItem natureza, ClassificacaoDeProtecao classificacao) =>
         _permitidas.GetValueOrDefault((natureza, ClassificacoesDeProtecao.Resolvida(classificacao)));
 
-    /// <summary>As decisões e as capacidades deste conjunto e as do outro; no mesmo par de decisão vale a deste.</summary>
+    /// <summary>As decisões deste conjunto e as do outro; no mesmo par de decisão vale a deste.</summary>
     public DecisoesDaProjecao Unir(DecisoesDaProjecao outra)
     {
         ArgumentNullException.ThrowIfNull(outra);
@@ -70,7 +52,7 @@ public sealed class DecisoesDaProjecao : IPermissoesDaProjecao
             uniao[par.Key] = par.Value;
         }
 
-        return new DecisoesDaProjecao(uniao, _capacidades.Union(outra._capacidades));
+        return new DecisoesDaProjecao(uniao);
     }
 }
 
@@ -95,24 +77,10 @@ public static class PermissoesDaProjecaoExtensions
     }
 
     /// <summary>
-    /// Se o item aparece na resposta: o par dele foi permitido ou a pessoa tem a capacidade sobre o par e, sendo sensível,
-    /// o item tem base legal congelada. O item sensível sem base legal não sai, mesmo para quem tem a permissão ou a
-    /// capacidade.
+    /// Se o item aparece na resposta, com o valor: o par dele foi permitido e, sendo sensível, o item tem base legal
+    /// congelada. O item sensível sem base legal não sai, mesmo para quem tem a permissão.
     /// </summary>
     public static bool ItemSai(this IPermissoesDaProjecao permissoes, IItemClassificado item)
-    {
-        ArgumentNullException.ThrowIfNull(permissoes);
-        ArgumentNullException.ThrowIfNull(item);
-
-        return TemBaseLegal(item)
-            && (permissoes.Permite(item.Natureza, item.Classificacao) || permissoes.TemCapacidade(item.Natureza, item.Classificacao));
-    }
-
-    /// <summary>
-    /// Se o valor do item sai: só o par permitido o libera, e a capacidade não. O item sensível sem base legal não tem
-    /// valor.
-    /// </summary>
-    public static bool ValorSai(this IPermissoesDaProjecao permissoes, IItemClassificado item)
     {
         ArgumentNullException.ThrowIfNull(permissoes);
         ArgumentNullException.ThrowIfNull(item);

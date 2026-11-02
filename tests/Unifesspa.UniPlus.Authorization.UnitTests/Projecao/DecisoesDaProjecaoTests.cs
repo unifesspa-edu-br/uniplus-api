@@ -16,9 +16,6 @@ public sealed class DecisoesDaProjecaoTests
     private static DecisoesDaProjecao Com(params (NaturezaDoItem, ClassificacaoDeProtecao)[] pares) =>
         new(pares.ToDictionary(static p => p, static _ => Permitida));
 
-    private static DecisoesDaProjecao SoComCapacidade(params (NaturezaDoItem, ClassificacaoDeProtecao)[] pares) =>
-        new(new Dictionary<(NaturezaDoItem, ClassificacaoDeProtecao), DecisaoPermitida>(), pares);
-
     [Fact(DisplayName = "Sem a decisão permitida do par o item não sai, e a permissão de dado não abre arquivo")]
     public void Permite_ParSemDecisao_Omite()
     {
@@ -45,32 +42,6 @@ public sealed class DecisoesDaProjecaoTests
 
         Com((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal)).ItemSai(naoResolvido).Should().BeFalse();
         Com((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel)).ItemSai(naoResolvido).Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "A capacidade deixa o item aparecer, mas só o par permitido libera o valor")]
-    public void Capacidade_ItemSaiSemValor()
-    {
-        Item identificador = new(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador, null);
-        DecisoesDaProjecao soCapacidade = SoComCapacidade((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador));
-
-        soCapacidade.ItemSai(identificador).Should().BeTrue();
-        soCapacidade.ValorSai(identificador).Should().BeFalse();
-        Com((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador)).ValorSai(identificador).Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "A capacidade não dispensa a base legal do item sensível")]
-    public void Capacidade_SensivelSemBaseLegal_NaoSai() =>
-        SoComCapacidade((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel))
-            .ItemSai(new Item(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Sensivel, null)).Should().BeFalse();
-
-    [Fact(DisplayName = "A união das decisões soma também as capacidades")]
-    public void Unir_SomaAsCapacidades()
-    {
-        DecisoesDaProjecao uniao = Com((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal))
-            .Unir(SoComCapacidade((NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador)));
-
-        uniao.TemCapacidade(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Identificador).Should().BeTrue();
-        uniao.Permite(NaturezaDoItem.Dado, ClassificacaoDeProtecao.Pessoal).Should().BeTrue();
     }
 
     private sealed record Item(NaturezaDoItem Natureza, ClassificacaoDeProtecao Classificacao, string? BaseLegal) : IItemClassificado;
