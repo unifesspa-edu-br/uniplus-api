@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// conferido ao construir o atributo, e a conferência de todos os usos é de um teste.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAuthorizationFilter
+public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAuthorizationFilter, IExigeAutorizacaoAlemDoLogin
     where TPermissao : struct, Enum
 {
     private readonly ResourceContext? _resource;
