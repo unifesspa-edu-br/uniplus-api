@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>Um grupo repetível do formulário congelado, com os fatos dos campos dele.</summary>
 internal sealed record GrupoDoProcesso(
@@ -52,7 +54,7 @@ internal sealed record FatosDaVersao(
             string.IsNullOrWhiteSpace(fato.HipoteseLegal) ? null : fato.HipoteseLegal,
             fato.EtapaCodigo,
             fato.Ordem,
-            Opcoes(fato.FatoCodigo, doProcesso, envelope),
+            fato.OrigemValores == OrigemValoresColeta.UnidadesFederativas ? NomesDasUfs() : Opcoes(fato.FatoCodigo, doProcesso, envelope),
             EhCpf(fato.FatoCodigo, fato.Formato));
 
         IEnumerable<FatoColetado> daInscricao = envelope.Grafo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao);
@@ -158,6 +160,22 @@ internal sealed record FatosDaVersao(
             Ordem: 0,
             DescricoesDoDominio(derivado.Codigo, envelope),
             EhCpf: false);
+
+    /// <summary>
+    /// O rótulo de cada UF, pela lista fixa do Kernel e não pelo que a versão congelou: a UF sai sempre pelo nome, venha o
+    /// valor como sigla ou como código IBGE.
+    /// </summary>
+    private static Dictionary<string, string> NomesDasUfs()
+    {
+        Dictionary<string, string> nomes = new(StringComparer.Ordinal);
+        foreach (UnidadeFederativa uf in UnidadesFederativas.Todas)
+        {
+            nomes[uf.Sigla] = uf.Nome;
+            nomes[uf.CodigoIbge] = uf.Nome;
+        }
+
+        return nomes;
+    }
 
     private static Dictionary<string, string> Opcoes(
         string fatoCodigo, Dictionary<string, Dictionary<string, string>> doProcesso, EnvelopeReidratado envelope)

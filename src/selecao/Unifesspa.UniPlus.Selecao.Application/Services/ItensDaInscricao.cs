@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -192,5 +193,6 @@ internal static class ItensDaInscricao
         municipio = e.CidadeNome,
         municipioCodigoIbge = e.CidadeCodigoIbge,
         uf = e.CidadeUf,
+        ufNome = UnidadesFederativas.PorSigla(e.CidadeUf)?.Nome,
     });
 }

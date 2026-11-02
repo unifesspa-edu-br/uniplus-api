@@ -61,11 +61,12 @@ internal sealed class InscricaoAdministrativaDeTeste
 
     public InscricaoAdministrativaDeTeste Fato(
         string codigo, string classificacao, TipoRenderizacao tipo, JsonElement? resposta, string? secao = "DADOS", int ordem = 0,
-        string hipoteseLegal = Hipotese, string? formato = null, string? ajuda = null, string? componente = null, string? descricao = null)
+        string hipoteseLegal = Hipotese, string? formato = null, string? ajuda = null, string? componente = null, string? descricao = null,
+        OrigemValoresColeta origemValores = OrigemValoresColeta.Catalogo)
     {
         Result<FatoColetado> fato = FatoColetado.Criar(
             codigo, ordem, $"Rótulo de {codigo}", tipo, Obrigatoriedade.Nunca, null, classificacao, hipoteseLegal,
-            ProtecaoDoFatoDeTeste.Finalidade, descricao ?? $"Descrição de {codigo}", OrigemValoresColeta.Catalogo, secao,
+            ProtecaoDoFatoDeTeste.Finalidade, descricao ?? $"Descrição de {codigo}", origemValores, secao,
             FinalidadeFormulario.Inscricao, formato ?? (tipo == TipoRenderizacao.Texto ? "LIVRE" : null), ajuda, componenteExibicao: componente);
         _fatos.Add(fato.IsSuccess
             ? fato.Value!
