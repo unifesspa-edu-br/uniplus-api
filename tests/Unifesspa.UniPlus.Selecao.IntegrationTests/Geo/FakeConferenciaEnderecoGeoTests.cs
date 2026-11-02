@@ -18,7 +18,7 @@ public sealed class FakeConferenciaEnderecoGeoTests
     {
         FakeConferenciaEnderecoGeo conferencia = new();
 
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve);
@@ -30,7 +30,7 @@ public sealed class FakeConferenciaEnderecoGeoTests
         FakeConferenciaEnderecoGeo conferencia = new FakeConferenciaEnderecoGeo()
             .ComCep("68500000", "1504208", "PA");
 
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -41,7 +41,7 @@ public sealed class FakeConferenciaEnderecoGeoTests
         FakeConferenciaEnderecoGeo conferencia = new FakeConferenciaEnderecoGeo()
             .ComMunicipio("1504208", "PA");
 
-        Result resultado = await conferencia.ConferirMunicipioAsync("1504208", "SP");
+        Result<string> resultado = await conferencia.ConferirMunicipioAsync("1504208", "SP");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente);
@@ -54,7 +54,7 @@ public sealed class FakeConferenciaEnderecoGeoTests
             .ComCep("68500000", "1504208", "PA")
             .Indisponivel();
 
-        Result resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> resultado = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);

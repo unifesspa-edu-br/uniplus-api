@@ -80,10 +80,10 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     private static IConferenciaEnderecoGeo ConferenciaQueAceitaTudo()
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
-        conferencia.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        conferencia.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
+        conferencia.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
         conferencia.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "PA", "logradouro")));
+            .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "Marabá", "PA", "logradouro")));
         return conferencia;
     }
 
@@ -613,7 +613,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         IConferenciaEnderecoGeo geo = ConferenciaQueAceitaTudo();
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "PA", "cep-geral")));
+            .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "Marabá", "PA", "cep-geral")));
 
         (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
 
@@ -638,7 +638,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         IConferenciaEnderecoGeo geo = ConferenciaQueAceitaTudo();
         geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, "UF divergente")));
+            .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, "UF divergente")));
 
         (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo, cep: null);
 

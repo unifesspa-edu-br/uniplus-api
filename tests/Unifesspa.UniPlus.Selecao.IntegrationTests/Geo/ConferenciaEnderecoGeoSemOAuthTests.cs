@@ -34,8 +34,8 @@ public sealed class ConferenciaEnderecoGeoSemOAuthTests
         await using AsyncServiceScope escopo = provedor.CreateAsyncScope();
         IConferenciaEnderecoGeo conferencia = escopo.ServiceProvider.GetRequiredService<IConferenciaEnderecoGeo>();
 
-        Result cep = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
-        Result municipio = await conferencia.ConferirMunicipioAsync("1504208", "PA");
+        Result<string> cep = await conferencia.ConferirCepAsync("68500000", "1504208", "PA");
+        Result<string> municipio = await conferencia.ConferirMunicipioAsync("1504208", "PA");
 
         cep.IsFailure.Should().BeTrue();
         cep.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);

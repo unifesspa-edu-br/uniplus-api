@@ -37,7 +37,7 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
         _logger = logger;
     }
 
-    public async Task<Result> ConferirCepAsync(
+    public async Task<Result<string>> ConferirCepAsync(
         string cep, string cidadeCodigoIbgeDeclarada, string ufDeclarada, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(cidadeCodigoIbgeDeclarada);
@@ -46,15 +46,15 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
         Result<CepResolvido> resolvido = await ResolverCepAsync(cep, cancellationToken).ConfigureAwait(false);
         if (resolvido.IsFailure)
         {
-            return Result.Failure(resolvido.Error!);
+            return Result<string>.Failure(resolvido.Error!);
         }
 
         bool bate = string.Equals(resolvido.Value!.CodigoIbge, cidadeCodigoIbgeDeclarada, StringComparison.Ordinal)
             && string.Equals(resolvido.Value.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase);
 
         return bate
-            ? Result.Success()
-            : Result.Failure(new DomainError(
+            ? Result<string>.Success(resolvido.Value.Cidade)
+            : Result<string>.Failure(new DomainError(
                 ConferenciaEnderecoGeoErrorCodes.CidadeDivergente,
                 "O CEP informado resolve para uma cidade diferente da declarada."));
     }
@@ -91,18 +91,18 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
                 return Result<CepResolvido>.Failure(ErroIndisponivel());
             }
 
-            if (resposta.Content is not { } corpo)
+            if (resposta.Content is not { } corpo || string.IsNullOrWhiteSpace(corpo.Cidade))
             {
                 LogRespostaSemCorpo(_logger, "cep", (int)resposta.StatusCode);
                 return Result<CepResolvido>.Failure(ErroIndisponivel());
             }
 
             // Origem ausente ou desconhecida nunca é "exata": o candidato terá de confirmar o CEP.
-            return Result<CepResolvido>.Success(new CepResolvido(corpo.CodigoIbge, corpo.Uf, corpo.Origem ?? string.Empty));
+            return Result<CepResolvido>.Success(new CepResolvido(corpo.CodigoIbge, corpo.Cidade, corpo.Uf, corpo.Origem ?? string.Empty));
         }
     }
 
-    public async Task<Result> ConferirMunicipioAsync(
+    public async Task<Result<string>> ConferirMunicipioAsync(
         string cidadeCodigoIbgeDeclarado, string ufDeclarada, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(cidadeCodigoIbgeDeclarado);
@@ -117,32 +117,32 @@ internal sealed partial class ConferenciaEnderecoGeo : IConferenciaEnderecoGeo
             or TimeoutRejectedException or BrokenCircuitException or GeoAutenticacaoException)
         {
             LogGeoIndisponivel(_logger, "cidade", excecao);
-            return Result.Failure(ErroIndisponivel());
+            return Result<string>.Failure(ErroIndisponivel());
         }
 
         using (resposta)
         {
             if (resposta.StatusCode == HttpStatusCode.NotFound)
             {
-                return Result.Failure(new DomainError(
+                return Result<string>.Failure(new DomainError(
                     ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, "O município informado não existe no Geo."));
             }
 
             if (!resposta.IsSuccessStatusCode)
             {
                 RegistrarRespostaSemSucesso(resposta, "cidade");
-                return Result.Failure(ErroIndisponivel());
+                return Result<string>.Failure(ErroIndisponivel());
             }
 
-            if (resposta.Content is not { } corpo)
+            if (resposta.Content is not { } corpo || string.IsNullOrWhiteSpace(corpo.Nome))
             {
                 LogRespostaSemCorpo(_logger, "cidade", (int)resposta.StatusCode);
-                return Result.Failure(ErroIndisponivel());
+                return Result<string>.Failure(ErroIndisponivel());
             }
 
             return string.Equals(corpo.Uf, ufDeclarada, StringComparison.OrdinalIgnoreCase)
-                ? Result.Success()
-                : Result.Failure(new DomainError(
+                ? Result<string>.Success(corpo.Nome)
+                : Result<string>.Failure(new DomainError(
                     ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente,
                     "O município informado não pertence à UF declarada."));
         }

@@ -96,7 +96,7 @@ public sealed class DerivadosDoSistemaInscricaoTests
     public async Task CalcularAsync_EnderecoConfirmadoPeloGeo_DerivaUfEMunicipio()
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result.Success());
+        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
 
         Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
             Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
@@ -110,7 +110,7 @@ public sealed class DerivadosDoSistemaInscricaoTests
     public async Task CalcularAsync_CepComMascara_ConsultaOGeoSemMascara()
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result.Success());
+        conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
 
         Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
             Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500-000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
@@ -124,7 +124,7 @@ public sealed class DerivadosDoSistemaInscricaoTests
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
         conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(new DomainError("ConferenciaEnderecoGeo.CidadeDivergente", "O CEP informado resolve para uma cidade diferente da declarada.")));
+            .Returns(Result<string>.Failure(new DomainError("ConferenciaEnderecoGeo.CidadeDivergente", "O CEP informado resolve para uma cidade diferente da declarada.")));
 
         Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
             Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia);
@@ -137,7 +137,7 @@ public sealed class DerivadosDoSistemaInscricaoTests
     public async Task CalcularAsync_EnderecoSemCepComCidade_ConfereProMunicipioEDeriva()
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
-        conferencia.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result.Success());
+        conferencia.ConferirMunicipioAsync("1504208", "PA", Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Marabá"));
         JsonElement enderecoSemCep = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = "1504208", uf = "PA" } });
 
         Result<IReadOnlyDictionary<string, JsonElement>> resultado = await DerivadosDoSistemaInscricao.CalcularAsync(
@@ -169,7 +169,7 @@ public sealed class DerivadosDoSistemaInscricaoTests
     {
         IConferenciaEnderecoGeo conferencia = Substitute.For<IConferenciaEnderecoGeo>();
         conferencia.ConferirCepAsync("68500000", "1504208", "PA", Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(new DomainError("ConferenciaEnderecoGeo.GeoIndisponivel", "O Geo não respondeu.")));
+            .Returns(Result<string>.Failure(new DomainError("ConferenciaEnderecoGeo.GeoIndisponivel", "O Geo não respondeu.")));
 
         IReadOnlyDictionary<string, FatoResolvido> apurados = await DerivadosDoSistemaInscricao.ApurarAsync(
             Respostas(("ENDERECO_RESIDENCIAL", Endereco("68500000", "1504208", "PA"))), new DateOnly(2026, 12, 10), conferencia,
