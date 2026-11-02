@@ -330,6 +330,22 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         item.Valor!.Value.GetProperty("codigo").GetString().Should().Be("PARDA");
     }
 
+    [Theory(DisplayName = "A UF sai pelo nome da lista fixa, venha o valor como sigla ou como código IBGE, ainda que a versão tenha congelado só a sigla")]
+    [InlineData("PA")]
+    [InlineData("15")]
+    public async Task Uf_SaiPeloNome(string valor)
+    {
+        InscricaoAdministrativaDeTeste cenario = new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
+            .Fato("NATURALIDADE_UF", "PESSOAL", TipoRenderizacao.SelecaoUnica, Texto(valor), origemValores: OrigemValoresColeta.UnidadesFederativas);
+        DecisoesDeAcessoDeTeste diogo = new("diogo.souza", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar);
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(cenario, diogo);
+
+        JsonElement uf = resultado.Value!.Secoes.Single().Itens.Single().Valor!.Value;
+        uf.GetProperty("codigo").GetString().Should().Be(valor);
+        uf.GetProperty("rotulo").GetString().Should().Be("Pará");
+    }
+
     [Fact(DisplayName = "Fato derivado sai pelo nome, pela classificação e pelo tipo que a publicação congelou; o derivado sem aprovação fica de fora")]
     public async Task Derivado_SaiPeloQueAPublicacaoCongelou()
     {
