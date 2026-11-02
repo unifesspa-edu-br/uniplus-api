@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
+
 /// <summary>
 /// Declara no contrato as respostas de <b>autorização</b> — <c>401</c> e <c>403</c> — e o
 /// <b>requisito de segurança</b> em toda operação de controller protegida por
@@ -25,6 +27,11 @@ using Microsoft.OpenApi;
 /// dezenas de atributos copiados pelos módulos, é o que faz um endpoint protegido novo herdar o
 /// contrato correto sem o autor ter de saber disso. Uma action que já declara o próprio 401/403 —
 /// com uma descrição mais específica — não é sobrescrita.
+/// </para>
+/// <para>
+/// O <c>403</c> só entra quando a rota exige algo além do login: um <c>[Authorize]</c> com papel ou
+/// política, ou um filtro que carrega <see cref="IExigeAutorizacaoAlemDoLogin"/>. A rota que exige
+/// apenas estar autenticado responde <c>401</c> sem token e nunca <c>403</c>.
 /// </para>
 /// <para>
 /// Pela mesma detecção sai o <c>security</c> da operação, apontando para o esquema que
@@ -110,8 +117,16 @@ public sealed class AuthorizationOperationTransformer : IOpenApiOperationTransfo
 
         operation.Responses ??= [];
 
+        bool exigeAlemDoLogin = ExigeAlemDoLogin(metadata);
+
         foreach ((string status, string description) in AuthorizationResponses)
         {
+            // O 403 é a recusa de quem se identificou; a rota que só exige o login nunca o emite.
+            if (status == "403" && !exigeAlemDoLogin)
+            {
+                continue;
+            }
+
             // An action that already declares its own 401/403 knows its cause — do not overwrite.
             if (operation.Responses.ContainsKey(status))
             {
@@ -137,4 +152,9 @@ public sealed class AuthorizationOperationTransformer : IOpenApiOperationTransfo
 
         return Task.CompletedTask;
     }
+
+    private static bool ExigeAlemDoLogin(IList<object> metadata) =>
+        metadata.OfType<IExigeAutorizacaoAlemDoLogin>().Any()
+        || metadata.OfType<IAuthorizeData>().Any(
+            dado => !string.IsNullOrWhiteSpace(dado.Roles) || !string.IsNullOrWhiteSpace(dado.Policy));
 }

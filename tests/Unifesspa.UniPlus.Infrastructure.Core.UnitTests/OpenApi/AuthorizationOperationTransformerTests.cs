@@ -11,25 +11,56 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 public sealed class AuthorizationOperationTransformerTests
 {
     [Fact]
-    public async Task TransformAsync_Should_Add401And403WithProblemDetails_WhenActionIsAuthorized()
+    public async Task TransformAsync_Should_Add401WithProblemDetails_AndNot403_WhenActionOnlyRequiresLogin()
     {
         OpenApiOperation operation = new();
 
         await new AuthorizationOperationTransformer().TransformAsync(
             operation, Context([new AuthorizeAttribute()]), CancellationToken.None);
 
-        foreach (string status in new[] { "401", "403" })
-        {
-            operation.Responses.Should().ContainKey(status);
-            OpenApiMediaType media = operation.Responses[status].Content!["application/problem+json"];
-            media.Schema.Should().BeOfType<OpenApiSchemaReference>()
-                .Which.Reference!.Id.Should().Be("ProblemDetails", "o servidor emite ProblemDetails nesses status");
-        }
+        OpenApiMediaType media = operation.Responses!["401"].Content!["application/problem+json"];
+        media.Schema.Should().BeOfType<OpenApiSchemaReference>()
+            .Which.Reference!.Id.Should().Be("ProblemDetails", "o servidor emite ProblemDetails nesse status");
+        operation.Responses.Should().NotContainKey("403", "quem só exige o login nunca recusa quem se identificou");
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_Add401And403WithProblemDetails_WhenAuthorizeRequiresRole()
+    {
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, Context([new AuthorizeAttribute { Roles = "plataforma-admin" }]), CancellationToken.None);
+
+        AssertDeclares401And403(operation);
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_Add401And403_WhenAuthorizeRequiresPolicy()
+    {
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, Context([new AuthorizeAttribute { Policy = "Instalacao" }]), CancellationToken.None);
+
+        AssertDeclares401And403(operation);
+    }
+
+    [Fact]
+    public async Task TransformAsync_Should_Add401And403_WhenFilterRequiresMoreThanLogin()
+    {
+        OpenApiOperation operation = new();
+
+        await new AuthorizationOperationTransformer().TransformAsync(
+            operation, Context([new AuthorizeAttribute(), new FiltroDePermissao()]), CancellationToken.None);
+
+        AssertDeclares401And403(operation);
     }
 
     [Fact]
@@ -64,7 +95,7 @@ public sealed class AuthorizationOperationTransformerTests
         OpenApiOperation operation = new() { Responses = new OpenApiResponses { ["403"] = own } };
 
         await new AuthorizationOperationTransformer().TransformAsync(
-            operation, Context([new AuthorizeAttribute()]), CancellationToken.None);
+            operation, Context([new AuthorizeAttribute { Roles = "plataforma-admin" }]), CancellationToken.None);
 
         operation.Responses["403"].Description.Should().Be("Descrição própria da action");
         operation.Responses.Should().ContainKey("401");
@@ -180,6 +211,19 @@ public sealed class AuthorizationOperationTransformerTests
 
         operation.Security.Should().ContainSingle();
     }
+
+    private static void AssertDeclares401And403(OpenApiOperation operation)
+    {
+        foreach (string status in new[] { "401", "403" })
+        {
+            operation.Responses.Should().ContainKey(status);
+            operation.Responses[status].Content!["application/problem+json"].Schema
+                .Should().BeOfType<OpenApiSchemaReference>()
+                .Which.Reference!.Id.Should().Be("ProblemDetails");
+        }
+    }
+
+    private sealed class FiltroDePermissao : IExigeAutorizacaoAlemDoLogin;
 
     private static OpenApiOperationTransformerContext Context(
         IList<object> metadata,
