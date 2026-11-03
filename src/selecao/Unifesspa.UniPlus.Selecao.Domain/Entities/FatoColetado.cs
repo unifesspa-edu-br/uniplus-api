@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -34,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// fica indeterminado, o fato o acompanha.
 /// </para>
 /// </remarks>
-public sealed class FatoColetado : EntityBase
+public sealed class FatoColetado : EntityBase, IParteDoProcesso
 {
     private readonly List<CondicaoPrecondicaoFato> _precondicoes = [];
 
@@ -346,7 +345,7 @@ public sealed class FatoColetado : EntityBase
         }
     }
 
-    internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     internal void VincularGrupo(Guid grupoColetadoId) => GrupoColetadoId = grupoColetadoId;

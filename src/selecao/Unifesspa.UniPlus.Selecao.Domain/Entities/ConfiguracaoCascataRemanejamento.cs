@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// regra no catálogo antes de montar esta entidade.
 /// </para>
 /// </remarks>
-public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
+public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IParteDoProcesso
 {
     /// <summary>Alinhado a <c>ConfiguracaoCascataRemanejamentoConfiguration</c> (varchar(60)).</summary>
     public const int FallbackMaxLength = 60;
@@ -203,6 +203,6 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase
         }
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

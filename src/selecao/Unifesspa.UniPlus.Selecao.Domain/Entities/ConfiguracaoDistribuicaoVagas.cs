@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="ProcessoSeletivo.DefinirDistribuicaoVagas"/>.
 /// </para>
 /// </remarks>
-public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
+public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
 {
     private const decimal PrMinimo = 0.5m;
     private const decimal PrMaximo = 1m;
@@ -583,7 +583,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase
     private sealed record QuadroMontado(
         IReadOnlyList<VagaOfertada> Vagas, int VrNominal, int VrFinal, int Estouro, bool CapadoEmVo, int TotalPublicado);
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>

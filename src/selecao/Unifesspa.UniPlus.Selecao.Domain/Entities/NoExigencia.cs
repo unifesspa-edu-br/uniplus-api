@@ -41,7 +41,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// própria (o requirement <c>Consequência por nó e fronteira ativa de emissão</c> da spec).
 /// </para>
 /// </remarks>
-public sealed class NoExigencia : EntityBase
+public sealed class NoExigencia : EntityBase, IParteDoProcesso
 {
 
     public const int QuantidadeMinimaPadrao = 1;
@@ -549,12 +549,12 @@ public sealed class NoExigencia : EntityBase
     }
 
     /// <summary>Vincula este nó (e toda a subárvore) ao processo — chamado na raiz por <see cref="ProcessoSeletivo.DefinirDocumentosExigidos"/>.</summary>
-    internal void VincularProcesso(Guid processoSeletivoId)
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId)
     {
         ProcessoSeletivoId = processoSeletivoId;
         foreach (NoExigencia filho in _filhos)
         {
-            filho.VincularProcesso(processoSeletivoId);
+            ((IParteDoProcesso)filho).VincularProcesso(processoSeletivoId);
         }
     }
 

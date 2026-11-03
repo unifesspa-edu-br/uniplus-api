@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// resultado importado, a classificação já vem pronta e não há o que citar.
 /// </para>
 /// </remarks>
-public sealed class ConfiguracaoBonusRegional : EntityBase
+public sealed class ConfiguracaoBonusRegional : EntityBase, IParteDoProcesso
 {
     private readonly List<ConfiguracaoBonusRegionalMunicipio> _municipios = [];
 
@@ -148,6 +148,6 @@ public sealed class ConfiguracaoBonusRegional : EntityBase
         return Result<ConfiguracaoBonusRegional>.Success(bonus);
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

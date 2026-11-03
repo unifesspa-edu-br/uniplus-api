@@ -49,7 +49,7 @@ using ValueObjects;
 /// inteiro.
 /// </para>
 /// </remarks>
-public sealed class FaseCronograma : EntityBase
+public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 {
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -599,7 +599,7 @@ public sealed class FaseCronograma : EntityBase
         UnidadeResponsavelNome = unidade?.Nome;
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>

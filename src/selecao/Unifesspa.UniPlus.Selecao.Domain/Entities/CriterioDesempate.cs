@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -24,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="EtapaProcesso"/>: a configuração em rascunho é substituível por
 /// inteiro (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>).
 /// </remarks>
-public sealed class CriterioDesempate : EntityBase
+public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
 {
     public Guid ProcessoSeletivoId { get; private set; }
     public int Ordem { get; private set; }
@@ -228,6 +227,6 @@ public sealed class CriterioDesempate : EntityBase
         && codigo.Length <= GrupoPesoAreaEnemCongelado.AreaCodigoMaxLength
         && codigo.All(static c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '_');
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

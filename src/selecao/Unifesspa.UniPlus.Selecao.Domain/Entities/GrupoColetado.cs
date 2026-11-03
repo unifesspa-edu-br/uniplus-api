@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// grupo. Como os itens, o campo pertence também ao processo, que guarda um produtor só por fato.
 /// O grupo ocupa uma posição na ordem dos itens; os campos têm ordem própria dentro dele.
 /// </remarks>
-public sealed class GrupoColetado : EntityBase
+public sealed class GrupoColetado : EntityBase, IParteDoProcesso
 {
     private readonly List<FatoColetado> _subitens = [];
 
@@ -134,12 +134,12 @@ public sealed class GrupoColetado : EntityBase
             .Concat(_subitens.SelectMany(static s => s.Condicoes));
 
     /// <summary>O grupo e os campos dele pertencem ao processo.</summary>
-    internal void VincularProcessoSeletivo(Guid processoSeletivoId)
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId)
     {
         ProcessoSeletivoId = processoSeletivoId;
         foreach (FatoColetado subitem in _subitens)
         {
-            subitem.VincularProcessoSeletivo(processoSeletivoId);
+            ((IParteDoProcesso)subitem).VincularProcesso(processoSeletivoId);
         }
     }
 

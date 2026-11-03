@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -212,7 +213,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _opcoesDeclaradas.RemoveAll(o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal));
         foreach (OpcaoDeclaradaFato opcao in opcoes)
         {
-            opcao.VincularProcesso(Id);
+            Vincular(opcao);
             _opcoesDeclaradas.Add(opcao);
         }
 
@@ -329,175 +330,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Substitui integralmente as etapas pontuadas do processo. O caráter e o
-    /// peso definem o divisor da média (<see cref="CalcularDivisorMedia"/>);
-    /// a <c>Ordem</c> é só a posição de apresentação no envelope congelado
-    /// (issue #1069) — não entra na fórmula da nota final.
+    /// Substitui integralmente as etapas pontuadas do processo. O caráter e o peso definem o divisor
+    /// da média (<see cref="CalcularDivisorMedia"/>); a <c>Ordem</c> é só a posição de apresentação
+    /// no envelope congelado e não entra na fórmula da nota final.
     /// </summary>
     public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        List<int> ordensInformadas = [.. etapas.Where(e => e.Ordem.HasValue).Select(e => e.Ordem!.Value)];
-        if (ordensInformadas.Distinct().Count() != ordensInformadas.Count)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.OrdemEtapaDuplicada",
-                "Cada etapa deve ter uma ordem única dentro do processo."));
-        }
-
-        // Antes da regra geral de "ao menos uma etapa compõe a nota": quem tem só a etapa do
-        // ENEM, sem peso, recebe a causa real. A classificação é gravada depois das etapas no
-        // fluxo de configuração: num processo novo ela ainda é nula aqui, e só então a
-        // coerência com ela fica para DefinirClassificacao conferir.
-        if (ValidarEtapaDeNotaDoEnem(etapas, Classificacao) is { } erroNotaDoEnem)
-        {
-            return Result.Failure(erroNotaDoEnem);
-        }
-
-        // §3.5 (Story #851, bicondicional fase×etapa): uma lista vazia é agora um estado
-        // VÁLIDO — o processo sem prova (SiSU, classificação importada) não tem etapa. A
-        // guarda "ao menos uma etapa compõe a nota" só vale QUANDO há etapas: sem ao menos
-        // uma que componha a nota, CalcularDivisorMedia() retorna 0 — um processo só com
-        // etapas eliminatórias (ou classificatórias sem peso) prepararia divisão por zero
-        // na fórmula da nota final (NOTA FINAL = Soma(Etapa×peso) / divisor). O caminho de
-        // lista vazia NÃO pula as guardas abaixo (desempate/eliminação órfãos) — elas
-        // continuam valendo mesmo removendo todas as etapas.
-        if (etapas.Count > 0 && !etapas.Any(e => e.ComponeNota))
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.NenhumaEtapaComponeNota",
-                "Ao menos uma etapa deve ter caráter classificatória ou ambas, com peso, para compor a nota final."));
-        }
-
-        // INV-B6 sobrevive a DefinirEtapas: um critério de desempate
-        // DESEMPATE-MAIOR-NOTA-ETAPA já configurado referencia uma etapa pelo
-        // Id (dentro do Args); trocar as etapas sem revalidar deixaria o
-        // critério apontando para uma etapa removida — desempate inexecutável.
-        // Rejeita a troca de etapas em vez de silenciosamente invalidar o
-        // desempate; o admin reconfigura o desempate primeiro.
-        List<Guid> novosIdsEtapas = [.. etapas.Select(e => e.Id)];
-        IEnumerable<(CriterioDesempate Criterio, ArgsDesempateMaiorNotaEtapa Args)> criteriosPorEtapa =
-            _criteriosDesempate
-                .Where(c => c.Args is ArgsDesempateMaiorNotaEtapa)
-                .Select(c => (Criterio: c, Args: (ArgsDesempateMaiorNotaEtapa)c.Args));
-        foreach ((CriterioDesempate criterio, ArgsDesempateMaiorNotaEtapa args) in criteriosPorEtapa)
-        {
-            if (!novosIdsEtapas.Contains(args.EtapaRef))
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EtapaReferenciadaPorDesempate",
-                    $"A etapa {args.EtapaRef} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate."));
-            }
-        }
-
-        // INV-B4 sobrevive à reconfiguração de etapas: uma classificação já definida
-        // referenciando uma etapa numa regra de eliminação não pode ficar órfã se a etapa
-        // referenciada for removida (mesma proteção do INV-B6 para critérios de desempate).
-        if (Classificacao is not null)
-        {
-            Guid? etapaOrfa = Classificacao.RegrasEliminacao
-                .Select(static r => r.Args.EtapaReferenciada())
-                .FirstOrDefault(etapaRef => etapaRef is { } id && !novosIdsEtapas.Contains(id));
-            if (etapaOrfa is not null)
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EtapaReferenciadaPorClassificacao",
-                    $"A etapa {etapaOrfa} é referenciada por uma regra de eliminação da classificação e não pode ser removida sem antes reconfigurar a classificação."));
-            }
-
-            // A etapa que continua existindo pode passar a ser a do ENEM, onde a ausência já
-            // é a falta em dia de prova.
-            if (Classificacao.RegrasEliminacao.Any(r => AusenciaNaEtapaDoEnem(r.Args, etapas)))
-            {
-                return Result.Failure(AusenciaNaEtapaDoEnemRecusada());
-            }
-        }
-
-        // Mesma proteção para a exigência documental que declara em que etapa da fase o
-        // documento é coletado: remover a etapa deixaria a exigência apontando para uma
-        // etapa que não existe mais, e a coleta não teria onde acontecer.
-        DocumentoExigido? exigenciaOrfa = _documentosExigidos
-            .FirstOrDefault(d => d.ExigidoNaEtapaId is { } etapaRef && !novosIdsEtapas.Contains(etapaRef));
-        if (exigenciaOrfa is not null)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.EtapaReferenciadaPorExigenciaDocumental",
-                $"A etapa {exigenciaOrfa.ExigidoNaEtapaId} coleta o documento {exigenciaOrfa.TipoDocumentoNome} e não pode ser removida sem antes reconfigurar a exigência."));
-        }
-
-        // Manter o Id não basta: a exigência declara a fase E a etapa em que o documento é
-        // coletado, e uma etapa que continua existindo mas passou a acontecer noutra fase
-        // deixaria a exigência dizendo que a habilitação é coletada no dia da prova. É a mesma
-        // invariante que a definição da exigência impõe, reconferida aqui porque só este
-        // caminho pode mover a etapa depois de ela já estar referenciada.
-        foreach (DocumentoExigido exigencia in _documentosExigidos)
-        {
-            if (exigencia.ExigidoNaEtapaId is not { } etapaRef)
-            {
-                continue;
-            }
-
-            EtapaProcesso? etapaNova = etapas.FirstOrDefault(e => e.Id == etapaRef);
-            FaseCronograma? faseDaExigencia = _cronogramaFases.FirstOrDefault(f => f.Id == exigencia.ExigidoNaFaseId);
-            if (etapaNova is null
-                || faseDaExigencia is null
-                || string.Equals(etapaNova.FaseCodigo, faseDaExigencia.Codigo, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            return Result.Failure(new DomainError(
-                "DocumentoExigido.EtapaNaoPertenceAFase",
-                $"A etapa {etapaRef} coleta o documento {exigencia.TipoDocumentoNome} na fase {faseDaExigencia.Codigo} e não pode passar para outra fase sem antes reconfigurar a exigência."));
-        }
-
-        // Cada etapa declara a fase a que pertence pelo código canônico; a raiz é quem
-        // resolve, porque só ela enxerga o cronograma. Código, e não id, porque o id da
-        // fase não sobrevive à reconciliação da restauração. Etapa sem código declarado
-        // continua aceita — é o formato anterior ao vínculo.
-        Dictionary<string, FaseCronograma> fasesPorCodigo = FasesPorCodigo(_cronogramaFases);
-        foreach (EtapaProcesso semFase in etapas)
-        {
-            if (semFase.FaseCodigo is { } codigo && !fasesPorCodigo.ContainsKey(codigo))
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.EtapaSemFaseNoCronograma",
-                    $"A etapa \"{semFase.Nome}\" declara a fase {codigo}, que não está no cronograma deste processo."));
-            }
-        }
-
-        // A etapa acontece DENTRO da fase que a abriga, e é a raiz quem confere: a etapa não
-        // enxerga o cronograma e a fase não enxerga as etapas, pelo mesmo motivo que só a raiz
-        // resolve o vínculo logo acima. Sem isto, o certame é gravável com uma prova marcada
-        // para antes de a fase que a contém começar.
-        if (ViolacaoDaJanelaDaEtapaNaFase(etapas, fasesPorCodigo) is { } etapaForaDaFase)
-        {
-            return Result.Failure(etapaForaDaFase);
-        }
-
-        // O ciclo recursal de cada etapa fecha dentro dela: o preliminar sem o definitivo do
-        // mesmo tipo deixaria a matéria aberta, e a etapa não tem fase concluinte que a feche.
-        List<FieldError> violacoesDoCiclo = ViolacoesDoFechamentoDoCicloDasEtapas(etapas);
-        if (violacoesDoCiclo.Count > 0)
-        {
-            return Result.ValidationFailure(violacoesDoCiclo);
-        }
-
-        _etapas.Clear();
-        foreach (EtapaProcesso etapa in etapas)
-        {
-            etapa.VincularProcesso(Id);
-            _etapas.Add(etapa);
-        }
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return EditarConferindo(precondicao,
+            () => RegrasDasEtapas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), etapas),
+            () => Substituir(_etapas, etapas));
     }
 
     /// <summary>
@@ -513,7 +356,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RecusaDaOfertaDeAtendimento(oferta),
             () =>
             {
-                oferta.VincularProcesso(Id);
+                Vincular(oferta);
                 OfertaAtendimento = oferta;
             });
     }
@@ -616,7 +459,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _distribuicaoVagas.Clear();
         foreach (ConfiguracaoDistribuicaoVagas configuracao in distribuicaoVagas)
         {
-            configuracao.VincularProcesso(Id);
+            Vincular(configuracao);
             _distribuicaoVagas.Add(configuracao);
         }
 
@@ -701,7 +544,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "Existe condição citando um município que deixaria a área do bônus regional — ajuste ou remova a condição antes de redefinir o bônus."));
         }
 
-        bonus?.VincularProcesso(Id);
+        Vincular(bonus);
         BonusRegional = bonus;
         AplicaBonusRegional = aplica;
         Rascunho?.IncrementarRevisao();
@@ -715,7 +558,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao, () =>
         {
-            configuracao?.VincularProcesso(Id);
+            Vincular(configuracao);
             ConfiguracaoDivulgacao = configuracao;
         });
 
@@ -726,7 +569,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao, () =>
         {
-            configuracao?.VincularProcesso(Id);
+            Vincular(configuracao);
             ConfiguracaoTaxaInscricao = configuracao;
         });
 
@@ -738,7 +581,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result DefinirCascataRemanejamento(ConfiguracaoCascataRemanejamento? cascata, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao, () =>
         {
-            cascata?.VincularProcesso(Id);
+            Vincular(cascata);
             Cascata = cascata;
         });
 
@@ -798,7 +641,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _criteriosDesempate.Clear();
         foreach (CriterioDesempate criterio in criterios)
         {
-            criterio.VincularProcesso(Id);
+            Vincular(criterio);
             _criteriosDesempate.Add(criterio);
         }
 
@@ -898,9 +741,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
                     $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo (INV-B4).")));
             }
-            else if (AusenciaNaEtapaDoEnem(regra.Args, _etapas))
+            else if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, _etapas))
             {
-                erros.Add(new($"regrasEliminacao[{indice}].etapaRef", AusenciaNaEtapaDoEnemRecusada()));
+                erros.Add(new($"regrasEliminacao[{indice}].etapaRef", RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()));
             }
         }
 
@@ -912,7 +755,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // porque o errors[] da resposta só carrega erro de campo (ADR-0023).
         DomainError? erroDasEtapas = null;
         DomainError? erroSemCalculoLocal = null;
-        if (ValidarEtapaDeNotaDoEnem(_etapas, classificacao) is { } erroNotaDoEnem)
+        if (RegrasDasEtapas.ValidarEtapaDeNotaDoEnem(_etapas, classificacao) is { } erroNotaDoEnem)
         {
             if (classificacao.CalculaPelosPesosPorAreaDoEnem)
             {
@@ -974,7 +817,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             _opcoesDeclaradas.RemoveAll(static o => string.Equals(o.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
         }
 
-        classificacao.VincularProcesso(Id);
+        Vincular(classificacao);
         Classificacao = classificacao;
         Rascunho?.IncrementarRevisao();
         return Result.Success();
@@ -1036,7 +879,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 return recusaDosItens;
             }
 
-            novo.VincularProcessoSeletivo(Id);
+            Vincular(novo);
             _formularios.Add(novo);
             if (itensIniciais is not null)
             {
@@ -1313,14 +1156,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
         else
         {
-            novo.VincularProcessoSeletivo(Id);
+            Vincular(novo);
             _formularios.Add(novo);
         }
 
         _campos.RemoveAll(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && daCopia.Contains(f.FatoCodigo)));
         foreach (FatoColetado item in copia.Itens)
         {
-            item.VincularProcessoSeletivo(Id);
+            Vincular(item);
             _campos.Add(item);
         }
 
@@ -1329,13 +1172,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         foreach (TermoExigidoFormulario termo in copia.Termos)
         {
-            termo.VincularProcessoSeletivo(Id);
+            Vincular(termo);
             _termosExigidos.Add(termo);
         }
 
         foreach (ConfiguracaoDerivacaoFato derivacao in copia.DerivacoesNovas)
         {
-            derivacao.VincularProcessoSeletivo(Id);
+            Vincular(derivacao);
             _regrasDerivacao.Add(derivacao);
         }
 
@@ -1382,7 +1225,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         foreach (TermoExigidoFormulario termo in termos)
         {
-            termo.VincularProcessoSeletivo(Id);
+            Vincular(termo);
             termo.VincularFinalidade(finalidade);
             _termosExigidos.Add(termo);
         }
@@ -1753,7 +1596,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // gravação das etapas recusa, e por um caminho que ninguém fecha adiante. Contra o
         // conjunto CANDIDATO, porque é ele que vai substituir o cronograma; a etapa cuja
         // fase está saindo não entra na conta, porque ela sai junto na poda em cascata.
-        if (ViolacaoDaJanelaDaEtapaNaFase(_etapas, FasesPorCodigo(fases)) is { } etapaForaDaFase)
+        if (JanelaDaEtapaNaFase.ViolacaoDaJanelaDaEtapaNaFase(_etapas, JanelaDaEtapaNaFase.FasesPorCodigo(fases)) is { } etapaForaDaFase)
         {
             return Result.Failure(etapaForaDaFase);
         }
@@ -1783,7 +1626,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _cronogramaFases.Clear();
         foreach (FaseCronograma fase in resultantes)
         {
-            fase.VincularProcesso(Id);
+            Vincular(fase);
             _cronogramaFases.Add(fase);
         }
 
@@ -1855,116 +1698,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private bool EtapaReferenciadaPorDesempate(Guid etapaId) =>
         _criteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
 
-    /// <summary>
-    /// A ausência à etapa do ENEM já é a falta em dia de prova do ENEM: a regra por etapa só
-    /// vale para as demais.
-    /// </summary>
-    private static bool AusenciaNaEtapaDoEnem(ArgsRegraEliminacao args, IEnumerable<EtapaProcesso> etapas) =>
-        args is ArgsElimAusenciaNaEtapa ausencia
-        && etapas.Any(e => e.Id == ausencia.EtapaRef && e.DeclaraNotaDoEnem);
-
-    private static DomainError AusenciaNaEtapaDoEnemRecusada() => new(
-        "ProcessoSeletivo.AusenciaNaEtapaDoEnem",
-        "A eliminação por ausência não se aplica à etapa de nota do ENEM, cuja falta é tratada pela eliminação por falta em dia de prova do ENEM.");
-
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
     private IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(Guid etapaId) =>
         (Classificacao?.RegrasEliminacao ?? [])
             .Select(static regra => regra.Args)
             .OfType<ArgsElimNotaMinimaEtapa>()
             .Where(args => args.EtapaRef == etapaId);
-
-    /// <summary>
-    /// As fases indexadas pelo código canônico, resolvendo a primeira quando duas o
-    /// repetem — a mesma escolha que a resolução do vínculo etapa × fase sempre fez.
-    /// </summary>
-    private static Dictionary<string, FaseCronograma> FasesPorCodigo(IEnumerable<FaseCronograma> fases)
-    {
-        Dictionary<string, FaseCronograma> porCodigo = new(StringComparer.Ordinal);
-        foreach (FaseCronograma fase in fases)
-        {
-            porCodigo.TryAdd(fase.Codigo, fase);
-        }
-
-        return porCodigo;
-    }
-
-    /// <summary>
-    /// A primeira etapa cuja janela própria não cabe na janela da fase que a abriga, ou
-    /// <see langword="null"/> quando toda etapa datada acontece dentro da fase que a hospeda.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// É a raiz quem confere, pelo mesmo motivo que só ela resolve o vínculo: a etapa não
-    /// enxerga o cronograma e a fase não enxerga as etapas. Sem esta invariante o certame é
-    /// publicável com uma prova marcada para antes de a fase que a contém começar, e o
-    /// envelope congela a incoerência.
-    /// </para>
-    /// <para>
-    /// Só compara o que os dois lados declararam. Fase sem janela não contém nada — exigir
-    /// data dela por causa da etapa inventaria obrigação que o cadastro não faz —, e etapa
-    /// sem janela acontece na janela da fase, que é o que a tela promete. Bordas coincidentes
-    /// passam: começar junto com a fase é o caso comum. A etapa que declara só um dos
-    /// extremos herda o outro da fase, e por isso o extremo declarado é conferido contra os
-    /// DOIS extremos da fase: uma prova que só diz "começa em 20 de março", numa fase que
-    /// terminou em 10, acontece inteira fora dela sem violar nenhuma das duas comparações
-    /// homônimas.
-    /// </para>
-    /// <para>
-    /// A etapa que declara uma fase ausente do conjunto é ignorada aqui: na gravação das
-    /// etapas ela já foi recusada por <c>EtapaSemFaseNoCronograma</c>, na gravação do
-    /// cronograma ela sai na poda em cascata, e na hidratação do EF não há a quem compará-la.
-    /// </para>
-    /// </remarks>
-    private static DomainError? ViolacaoDaJanelaDaEtapaNaFase(
-        IReadOnlyList<EtapaProcesso> etapas,
-        Dictionary<string, FaseCronograma> fasesPorCodigo)
-    {
-        foreach (EtapaProcesso etapa in etapas)
-        {
-            if (etapa.FaseCodigo is not { } codigoDaFase
-                || !fasesPorCodigo.TryGetValue(codigoDaFase, out FaseCronograma? fase))
-            {
-                continue;
-            }
-
-            if (etapa.Inicio is { } inicioDaEtapa)
-            {
-                if (fase.Inicio is { } inicioDaFase && inicioDaEtapa < inicioDaFase)
-                {
-                    return new DomainError(
-                        "ProcessoSeletivo.EtapaComecaAntesDaFase",
-                        $"A etapa \"{etapa.Nome}\" começa em {inicioDaEtapa:O}, antes da fase {codigoDaFase} ({inicioDaFase:O}) — a etapa acontece dentro da fase.");
-                }
-
-                if (fase.Fim is { } fimDaFaseParaOInicio && inicioDaEtapa > fimDaFaseParaOInicio)
-                {
-                    return new DomainError(
-                        "ProcessoSeletivo.EtapaForaDaJanelaDaFase",
-                        $"A etapa \"{etapa.Nome}\" começa em {inicioDaEtapa:O}, depois de a fase {codigoDaFase} ter terminado ({fimDaFaseParaOInicio:O}) — a etapa acontece dentro da fase.");
-                }
-            }
-
-            if (etapa.Fim is { } fimDaEtapa)
-            {
-                if (fase.Fim is { } fimDaFase && fimDaEtapa > fimDaFase)
-                {
-                    return new DomainError(
-                        "ProcessoSeletivo.EtapaTerminaDepoisDaFase",
-                        $"A etapa \"{etapa.Nome}\" termina em {fimDaEtapa:O}, depois da fase {codigoDaFase} ({fimDaFase:O}) — a etapa acontece dentro da fase.");
-                }
-
-                if (fase.Inicio is { } inicioDaFaseParaOFim && fimDaEtapa < inicioDaFaseParaOFim)
-                {
-                    return new DomainError(
-                        "ProcessoSeletivo.EtapaForaDaJanelaDaFase",
-                        $"A etapa \"{etapa.Nome}\" termina em {fimDaEtapa:O}, antes de a fase {codigoDaFase} ter começado ({inicioDaFaseParaOFim:O}) — a etapa acontece dentro da fase.");
-                }
-            }
-        }
-
-        return null;
-    }
 
     /// <summary>
     /// A recusa de citar o fato num gatilho de exigência da fase dada (UNI-REQ-0144, UNI-REQ-0077):
@@ -2289,14 +2028,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _documentosExigidos.Clear();
         foreach (DocumentoExigido item in folhas)
         {
-            item.VincularProcesso(Id);
+            Vincular(item);
             _documentosExigidos.Add(item);
         }
 
         _nosExigencia.Clear();
         foreach (NoExigencia raiz in raizes)
         {
-            raiz.VincularProcesso(Id);
+            Vincular(raiz);
         }
 
         foreach (NoExigencia no in todosOsNos)
@@ -2550,7 +2289,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _campos.RemoveAll(f => f.Finalidade == finalidade);
         foreach (FatoColetado fato in fatosColetados)
         {
-            fato.VincularProcessoSeletivo(Id);
+            Vincular(fato);
             fato.VincularFinalidade(finalidade);
             _campos.Add(fato);
         }
@@ -2567,7 +2306,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
         foreach (GrupoColetado grupo in grupos)
         {
-            grupo.VincularProcessoSeletivo(Id);
+            Vincular(grupo);
             grupo.VincularFinalidade(finalidade);
             _gruposColetados.Add(grupo);
             _campos.AddRange(grupo.Subitens);
@@ -2625,7 +2364,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _regrasDerivacao.Clear();
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
-            config.VincularProcessoSeletivo(Id);
+            Vincular(config);
             _regrasDerivacao.Add(config);
         }
 
@@ -3558,7 +3297,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
         new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", PendenciaDaAncoraDoRecursoDasEtapas() is null),
             new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", PendenciaDoRecorteDeCompetencia() is null),
-            new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", PendenciaDaJanelaDaEtapaNaFase() is null),
+            new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("cronograma_resultado_declarado_com_papel", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato classificado como resultado declara papel preliminar ou definitivo", PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is null),
         new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is null),
         new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is null),
@@ -4044,26 +3783,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // linhas, sem passar por nenhuma das duas. Sem esta metade, um certame gravado antes
         // de a invariante existir seria publicado com uma prova marcada para fora da fase que
         // a contém — e o envelope congelaria a incoerência no que vai ao Diário Oficial.
-        if (PendenciaDaJanelaDaEtapaNaFase() is { } pendenciaDaJanelaDaEtapa)
+        if (JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(EstadoDaConfiguracao.De(this)) is { } pendenciaDaJanelaDaEtapa)
         {
             return pendenciaDaJanelaDaEtapa;
         }
 
         return null;
     }
-
-    /// <summary>
-    /// A primeira etapa fora da janela da fase que a abriga no cronograma corrente, ou
-    /// <see langword="null"/> quando toda etapa datada acontece dentro da fase que a hospeda.
-    /// </summary>
-    /// <remarks>
-    /// O gate devolve o erro; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
-    /// item do checklist. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacaoDaJanelaDaEtapaNaFase"/>), que é a que as duas gravações chamam —
-    /// é o que mantém checklist e recusa bicondicionais.
-    /// </remarks>
-    private DomainError? PendenciaDaJanelaDaEtapaNaFase() =>
-        ViolacaoDaJanelaDaEtapaNaFase(_etapas, FasesPorCodigo(_cronogramaFases));
 
     /// <summary>
     /// A primeira pendência de um tipo de ato único por objeto declarado mais de uma vez no
@@ -4301,7 +4027,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         List<FieldError> violacoes =
         [
             .. ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]),
-            .. ViolacoesDoFechamentoDoCicloDasEtapas([.. _etapas]),
+            .. RegrasDasEtapas.ViolacoesDoFechamentoDoCicloDasEtapas([.. _etapas]),
         ];
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;
@@ -4447,32 +4173,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 violacoes.Add(new(campo, new DomainError(
                     "ProcessoSeletivo.FaseConcluinteComecaAntesDaConcluida",
                     $"A janela da fase '{concluinteCodigo}' começa em {inicioConcluinte:O}, antes de '{fase.Codigo}' ({inicioConcluida:O}) — a concluinte não pode começar antes da fase que ela encerra.")));
-            }
-        }
-
-        return violacoes;
-    }
-
-    /// <summary>
-    /// As violações do fechamento do ciclo recursal nas etapas, uma por matéria deixada aberta.
-    /// </summary>
-    /// <remarks>
-    /// A etapa não tem fase concluinte: o ciclo dela fecha dentro dela mesma. O preliminar de um
-    /// tipo de ato exige o definitivo do mesmo tipo na mesma etapa, pelo mesmo pareamento que as
-    /// fases usam (<see cref="CicloRecursal"/>). Sem I/O e sem navegação.
-    /// </remarks>
-    private static List<FieldError> ViolacoesDoFechamentoDoCicloDasEtapas(IReadOnlyList<EtapaProcesso> etapas)
-    {
-        List<FieldError> violacoes = [];
-
-        for (int indice = 0; indice < etapas.Count; indice++)
-        {
-            EtapaProcesso etapa = etapas[indice];
-            foreach (string tipo in etapa.TiposComCicloAberto())
-            {
-                violacoes.Add(new($"etapas[{indice}].produtos", new DomainError(
-                    ProcessoSeletivoErrorCodes.EtapaComPreliminarSemDefinitivo,
-                    $"A etapa '{etapa.Nome}' publica o resultado preliminar do ato '{tipo}' e não publica o definitivo do mesmo tipo — a etapa não tem fase concluinte, e o ciclo dela fecha dentro dela.")));
             }
         }
 
@@ -6243,78 +5943,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : null;
 
     /// <summary>
-    /// A etapa que declara nota de origem no ENEM (<see cref="EtapaProcesso.DeclaraNotaDoEnem"/>):
-    /// é no máximo uma por processo, porque a nota do ENEM é uma só por candidato; compõe a
-    /// média, porque é para gerar a nota final que o processo baseado em ENEM a declara; não
-    /// tem banca, porque ninguém atribui a nota e quem julga o recurso é declarado na fase de
-    /// recursos; e não declara produto nem recurso ancorado em ato, porque o resultado é
-    /// publicado pela fase e o recurso coletivo sobre a lista geral é o da regra de recurso da
-    /// fase — uma janela por fato. O parecer individual é admitido, não exigido: nesta etapa
-    /// ele é o espelho do cálculo gerado pelo sistema (notas por área, pesos do grupo
-    /// congelado, média), e é dele que corre o recurso individual ancorado na ciência. Só
-    /// convive com classificação baseada em ENEM <b>e</b> calculada pela média ponderada,
-    /// que é a fórmula em que ela entra como componente.
-    /// </summary>
-    /// <param name="classificacao">
-    /// <see langword="null"/> enquanto a classificação não foi gravada — aí a coerência
-    /// com ela ainda não é conferível, e fica para quando for.
-    /// </param>
-    private static DomainError? ValidarEtapaDeNotaDoEnem(
-        IEnumerable<EtapaProcesso> etapas,
-        ConfiguracaoClassificacao? classificacao)
-    {
-        List<EtapaProcesso> etapasDoEnem = [.. etapas.Where(static e => e.DeclaraNotaDoEnem)];
-        if (etapasDoEnem.Count == 0)
-        {
-            return null;
-        }
-
-        // A coerência com a classificação sai primeiro porque é ela que decide se a etapa pode
-        // existir no processo: recusar antes por outra causa levaria o operador a corrigir uma
-        // etapa que, sob esta classificação, ele teria de remover de todo modo.
-        bool classificacaoAdmiteNotaDoEnem = classificacao is null
-            || classificacao.CalculaPelosPesosPorAreaDoEnem;
-        if (!classificacaoAdmiteNotaDoEnem)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem",
-                $"A etapa \"{etapasDoEnem[0].Nome}\" tem a nota vinda do ENEM e exige classificação baseada em ENEM, calculada pela média ponderada.");
-        }
-
-        if (etapasDoEnem.Count > 1)
-        {
-            string nomes = string.Join(", ", etapasDoEnem.Select(static e => $"\"{e.Nome}\""));
-            return new DomainError(
-                "ProcessoSeletivo.EtapaNotaEnemDuplicada",
-                $"O processo admite uma única etapa de nota do ENEM, e declara {etapasDoEnem.Count}: {nomes}.");
-        }
-
-        EtapaProcesso etapaDoEnem = etapasDoEnem[0];
-        if (!etapaDoEnem.ComponeNota)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota",
-                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e precisa compor a média: declare caráter classificatória ou ambas e um peso.");
-        }
-
-        if (etapaDoEnem.Bancas.Count > 0)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.EtapaNotaEnemComBanca",
-                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e não admite banca: ninguém atribui a nota, e quem julga o recurso é declarado na fase de recursos.");
-        }
-
-        if (etapaDoEnem.Produtos.Count > 0 || etapaDoEnem.Recursos.Any(static r => r.Ancora == AncoraDoRecurso.AtoPublicado))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto",
-                $"A etapa \"{etapaDoEnem.Nome}\" tem a nota vinda do ENEM e não declara produto nem recurso ancorado em ato: o resultado é publicado pela fase, e o recurso coletivo sobre a lista geral é o da regra de recurso da fase. Na etapa cabe só o recurso individual, ancorado na ciência do candidato.");
-        }
-
-        return null;
-    }
-
-    /// <summary>
     /// Uma violação da coerência entre o desempate por área do ENEM e o quadro de pesos por
     /// área da classificação. Os índices são posições na lista de critérios e na ordem de
     /// áreas do critério, para que cada caminho de gravação monte o campo no formato do próprio
@@ -6570,7 +6198,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // Mesma regra de DefinirEtapas e DefinirClassificacao, na mesma posição de
         // DefinirEtapas: sem o espelho, um envelope restaurado reintroduziria o estado que os
         // caminhos de gravação recusam.
-        if (ValidarEtapaDeNotaDoEnem(grafo.Etapas, grafo.Classificacao) is { } erroNotaDoEnem)
+        if (RegrasDasEtapas.ValidarEtapaDeNotaDoEnem(grafo.Etapas, grafo.Classificacao) is { } erroNotaDoEnem)
         {
             return erroNotaDoEnem;
         }
@@ -6700,9 +6328,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"A regra de eliminação referencia a etapa {etapaRef}, que não existe na configuração restaurada (INV-B4).");
             }
 
-            if (AusenciaNaEtapaDoEnem(regra.Args, grafo.Etapas))
+            if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, grafo.Etapas))
             {
-                return AusenciaNaEtapaDoEnemRecusada();
+                return RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada();
             }
         }
 
@@ -7073,21 +6701,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _etapas.Clear();
         foreach (EtapaProcesso etapa in etapas)
         {
-            etapa.VincularProcesso(Id);
+            Vincular(etapa);
             _etapas.Add(etapa);
         }
 
-        grafo.OfertaAtendimento.VincularProcesso(Id);
+        Vincular(grafo.OfertaAtendimento);
         OfertaAtendimento = grafo.OfertaAtendimento;
 
         _distribuicaoVagas.Clear();
         foreach (ConfiguracaoDistribuicaoVagas configuracao in grafo.DistribuicaoVagas)
         {
-            configuracao.VincularProcesso(Id);
+            Vincular(configuracao);
             _distribuicaoVagas.Add(configuracao);
         }
 
-        grafo.BonusRegional?.VincularProcesso(Id);
+        Vincular(grafo.BonusRegional);
         BonusRegional = grafo.BonusRegional;
         // Versão publicada só existe se passou pelo gate: ter ou não o bônus era uma declaração.
         AplicaBonusRegional = grafo.BonusRegional is not null;
@@ -7096,17 +6724,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // não pode deixar o valor editado sobreviver.
         NumeroDeOpcoesDeCurso = grafo.NumeroDeOpcoesDeCurso;
 
-        grafo.CascataRemanejamento?.VincularProcesso(Id);
+        Vincular(grafo.CascataRemanejamento);
         Cascata = grafo.CascataRemanejamento;
 
         _criteriosDesempate.Clear();
         foreach (CriterioDesempate criterio in grafo.CriteriosDesempate)
         {
-            criterio.VincularProcesso(Id);
+            Vincular(criterio);
             _criteriosDesempate.Add(criterio);
         }
 
-        grafo.Classificacao.VincularProcesso(Id);
+        Vincular(grafo.Classificacao);
         Classificacao = grafo.Classificacao;
 
         // Termos exigidos (UNI-REQ-0086): mesma reconciliação dos fatos coletados abaixo — reusa a
@@ -7120,7 +6748,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             TermoExigidoFormulario termo = termosTracked.TryGetValue((congelado.Finalidade, congelado.Codigo), out TermoExigidoFormulario? vivo)
                 ? vivo
                 : congelado;
-            termo.VincularProcessoSeletivo(Id);
+            Vincular(termo);
             _termosExigidos.Add(termo);
         }
 
@@ -7128,13 +6756,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // acima — reatribuição direta (toggle por presença). Sem esta reposição, editar a
         // divulgação durante uma sessão de retificação e depois descartar deixaria o valor
         // editado na configuração viva, o mesmo defeito que a reposição de BonusRegional evita.
-        grafo.ConfiguracaoDivulgacao?.VincularProcesso(Id);
+        Vincular(grafo.ConfiguracaoDivulgacao);
         ConfiguracaoDivulgacao = grafo.ConfiguracaoDivulgacao;
 
         // Taxa de inscrição e isenção (issue #1112): mesmo padrão de reposição de
         // BonusRegional/Divulgacao acima. Sem esta reposição, editar a taxa durante uma sessão
         // de retificação e depois descartar deixaria o valor editado na configuração viva.
-        grafo.ConfiguracaoTaxaInscricao?.VincularProcesso(Id);
+        Vincular(grafo.ConfiguracaoTaxaInscricao);
         ConfiguracaoTaxaInscricao = grafo.ConfiguracaoTaxaInscricao;
 
         // Localidade (UNI-REQ-0111): repõe a que estava congelada, senão editar o município sob
@@ -7206,7 +6834,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _cronogramaFases.Clear();
         foreach (FaseCronograma fase in fases)
         {
-            fase.VincularProcesso(Id);
+            Vincular(fase);
             _cronogramaFases.Add(fase);
         }
 
@@ -7232,7 +6860,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _documentosExigidos.Clear();
         foreach (DocumentoExigido documento in documentosExigidos)
         {
-            documento.VincularProcesso(Id);
+            Vincular(documento);
             _documentosExigidos.Add(documento);
         }
 
@@ -7255,7 +6883,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 formulario = vivo;
             }
 
-            formulario.VincularProcessoSeletivo(Id);
+            Vincular(formulario);
             _formularios.Add(formulario);
         }
 
@@ -7288,7 +6916,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _nosExigencia.Clear();
         foreach (NoExigencia raiz in nosExigencia.Where(static n => n.NoPaiId is null))
         {
-            raiz.VincularProcesso(Id);
+            Vincular(raiz);
         }
 
         foreach (NoExigencia no in nosExigencia)
@@ -7328,7 +6956,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         foreach (FatoColetado congelado in grafo.FatosColetados)
         {
             FatoColetado fato = fatosTracked.TryGetValue(congelado.FatoCodigo, out FatoColetado? vivo) ? vivo : congelado;
-            fato.VincularProcessoSeletivo(Id);
+            Vincular(fato);
             _campos.Add(fato);
         }
 
@@ -7339,7 +6967,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         foreach (GrupoColetado congelado in grafo.GruposColetados)
         {
             GrupoColetado grupo = gruposTracked.TryGetValue((congelado.Finalidade, congelado.Codigo), out GrupoColetado? vivo) ? vivo : congelado;
-            grupo.VincularProcessoSeletivo(Id);
+            Vincular(grupo);
             _gruposColetados.Add(grupo);
             _campos.AddRange(grupo.Subitens);
         }
@@ -7351,7 +6979,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             ConfiguracaoDerivacaoFato config =
                 derivacoesTracked.TryGetValue(congelada.CodigoFato, out ConfiguracaoDerivacaoFato? viva) ? viva : congelada;
-            config.VincularProcessoSeletivo(Id);
+            Vincular(config);
             _regrasDerivacao.Add(config);
         }
 
@@ -7377,7 +7005,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     continue;
                 }
 
-                congelada.VincularProcesso(Id);
+                Vincular(congelada);
                 _opcoesDeclaradas.Add(congelada);
             }
         }
@@ -7506,16 +7134,20 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// aplicação e o avanço da revisão da sessão (ADR-0110 D4/D5, ADR-0125 §5). A aplicação só
     /// roda depois de a conferência passar e nunca falha.
     /// </summary>
-    private Result Editar(PrecondicaoIfMatch precondicao, Func<DomainError?> conferir, Action aplicar)
+    private Result Editar(PrecondicaoIfMatch precondicao, Func<DomainError?> conferir, Action aplicar) =>
+        EditarConferindo(precondicao, () => conferir() is { } recusa ? Result.Failure(recusa) : Result.Success(), aplicar);
+
+    private Result EditarConferindo(PrecondicaoIfMatch precondicao, Func<Result> conferir, Action aplicar)
     {
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
             return Result.Failure(bloqueio);
         }
 
-        if (conferir() is { } recusa)
+        Result conferencia = conferir();
+        if (conferencia.IsFailure)
         {
-            return Result.Failure(recusa);
+            return conferencia;
         }
 
         aplicar();
@@ -7525,4 +7157,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private Result Editar(PrecondicaoIfMatch precondicao, Action aplicar) =>
         Editar(precondicao, static () => null, aplicar);
+
+    private T? Vincular<T>(T? parte)
+        where T : class, IParteDoProcesso
+    {
+        parte?.VincularProcesso(Id);
+        return parte;
+    }
+
+    private void Substituir<T>(List<T> lista, IEnumerable<T> novas)
+        where T : class, IParteDoProcesso
+    {
+        lista.Clear();
+        foreach (T nova in novas)
+        {
+            Vincular(nova);
+            lista.Add(nova);
+        }
+    }
 }

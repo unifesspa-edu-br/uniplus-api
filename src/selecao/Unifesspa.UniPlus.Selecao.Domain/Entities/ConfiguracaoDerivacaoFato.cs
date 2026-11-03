@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A configuração da derivação de um fato num processo (Story #927): o código do fato derivado e a
@@ -24,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Application, no comando que define a regra.
 /// </para>
 /// </remarks>
-public sealed class ConfiguracaoDerivacaoFato : EntityBase
+public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
 {
     private readonly List<RegraDerivacaoConfigurada> _regras = [];
 
@@ -130,7 +129,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase
         return erros;
     }
 
-    internal void VincularProcessoSeletivo(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>

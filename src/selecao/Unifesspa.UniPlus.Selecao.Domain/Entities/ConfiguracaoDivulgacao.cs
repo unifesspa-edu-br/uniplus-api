@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// espúrio a cada requisição equivalente.
 /// </para>
 /// </remarks>
-public sealed class ConfiguracaoDivulgacao : EntityBase
+public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
 {
     /// <summary>O piso da divulgação pública — sempre presente, é o único campo do default minimizado.</summary>
     public const string NumeroInscricao = "numero_inscricao";
@@ -187,7 +187,7 @@ public sealed class ConfiguracaoDivulgacao : EntityBase
         return justificativa is null && camposPublicos.Count == 1 && camposPublicos[0] == NumeroInscricao;
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>

@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// marcados com a finalidade do formulário a que pertencem, porque o produtor único de cada fato e as
 /// condições vivas são regras do processo inteiro.
 /// </summary>
-public sealed class FormularioProcesso : EntityBase
+public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
 {
     public const int ModeloOrigemCodigoMaxLength = 60;
 
@@ -120,7 +120,7 @@ public sealed class FormularioProcesso : EntityBase
         ModeloOrigemCodigo = modeloCodigo.Trim();
     }
 
-    internal void VincularProcessoSeletivo(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 }
 
 /// <summary>

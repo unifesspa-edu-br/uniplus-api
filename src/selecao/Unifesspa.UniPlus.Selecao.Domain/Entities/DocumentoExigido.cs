@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// A idade máxima de emissão/formato/tamanho é entregue por task-irmã (PR #900) — não
 /// modelada aqui. A base legal 1:N (<see cref="BasesLegais"/>) chegou na PR #898 (issue #549).
 /// </remarks>
-public sealed class DocumentoExigido : EntityBase
+public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 {
     /// <summary>O tamanho de um código de fato (o mesmo do fato citado por uma condição de gatilho).</summary>
     public const int FatoComprovadoMaxLength = 60;
@@ -412,7 +412,7 @@ public sealed class DocumentoExigido : EntityBase
         HipoteseLegal = protecao.HipoteseLegal.Trim();
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>

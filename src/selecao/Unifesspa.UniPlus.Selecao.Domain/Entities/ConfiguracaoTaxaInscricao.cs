@@ -32,7 +32,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// nenhum deles não a oferece a ninguém.
 /// </para>
 /// </remarks>
-public sealed class ConfiguracaoTaxaInscricao : EntityBase
+public sealed class ConfiguracaoTaxaInscricao : EntityBase, IParteDoProcesso
 {
     /// <summary>Precisão/escala da coluna de valor monetário — espelhada em <c>LimitesDoEnvelope.PrecisaoTaxaInscricao</c>.</summary>
     public const int ValorPrecisao = 12;
@@ -142,6 +142,6 @@ public sealed class ConfiguracaoTaxaInscricao : EntityBase
         });
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

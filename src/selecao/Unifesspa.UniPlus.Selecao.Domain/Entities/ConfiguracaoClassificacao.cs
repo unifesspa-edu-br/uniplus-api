@@ -46,7 +46,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// consulta área fora dessa cópia.
 /// </para>
 /// </remarks>
-public sealed class ConfiguracaoClassificacao : EntityBase
+public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
 {
     public Guid ProcessoSeletivoId { get; private set; }
 
@@ -539,6 +539,6 @@ public sealed class ConfiguracaoClassificacao : EntityBase
         return erros;
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

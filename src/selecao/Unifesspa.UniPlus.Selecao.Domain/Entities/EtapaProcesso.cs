@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// existindo para a conformidade da Story #460 e é aposentada junto com o
 /// CRUD de Edital na #759.
 /// </remarks>
-public sealed class EtapaProcesso : EntityBase
+public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 {
     /// <summary>Alinhado a <c>EtapaProcessoConfiguration</c> (varchar(300)).</summary>
     public const int NomeMaxLength = 300;
@@ -736,7 +736,7 @@ public sealed class EtapaProcesso : EntityBase
         return Result.Success();
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>

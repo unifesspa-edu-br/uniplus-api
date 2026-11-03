@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="EntityBase"/> puro (sem soft-delete): ver justificativa em
 /// <see cref="EtapaProcesso"/>.
 /// </remarks>
-public sealed class OfertaAtendimentoEspecializado : EntityBase
+public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcesso
 {
     /// <summary>
     /// Código canônico da condição PcD no cadastro de condições de atendimento
@@ -204,6 +204,6 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase
         return erros;
     }
 
-    internal void VincularProcesso(Guid processoSeletivoId) =>
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 }

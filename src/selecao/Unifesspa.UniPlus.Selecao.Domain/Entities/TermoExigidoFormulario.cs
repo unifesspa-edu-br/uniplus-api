@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// termo é escolhido. A versão promovida é imutável no catálogo, então a cópia é o que o edital
 /// congela, e mudar o catálogo depois não altera o processo (ADR-0061).
 /// </remarks>
-public sealed class TermoExigidoFormulario : EntityBase
+public sealed class TermoExigidoFormulario : EntityBase, IParteDoProcesso
 {
     /// <summary>A forma de aceite que o catálogo ainda não definiu: a publicação a recusa.</summary>
     public const string FormaAceiteADefinir = "A_DEFINIR";
@@ -109,7 +109,7 @@ public sealed class TermoExigidoFormulario : EntityBase
     /// <summary>A forma de aceite ainda não foi definida no catálogo: o termo não pode ser publicado.</summary>
     public bool SemFormaDeAceite => string.Equals(FormaAceite, FormaAceiteADefinir, StringComparison.Ordinal);
 
-    internal void VincularProcessoSeletivo(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
 
     internal void VincularFinalidade(FinalidadeFormulario finalidade) => Finalidade = finalidade;
 }
