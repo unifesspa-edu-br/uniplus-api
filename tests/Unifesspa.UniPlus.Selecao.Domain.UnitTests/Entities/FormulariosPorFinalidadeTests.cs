@@ -278,6 +278,22 @@ public sealed class FormulariosPorFinalidadeTests
             });
     }
 
+    [Fact(DisplayName = "Estrutura recusada não esconde a recusa de exibição da seção: as duas saem juntas")]
+    public void Secao_EstruturaEExibicaoInvalidas_AcumulaAsDuasRecusas()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        IReadOnlyList<EtapaFormulario> semOBlocoDeRevisao = [.. EtapasComExibicao("RENDA_FORMAL").Take(3)];
+
+        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, semOBlocoDeRevisao, PrecondicaoIfMatch.Ausente);
+
+        resultado.Errors.Select(static e => e.Field).Should().Contain("etapas[2].exibicao")
+            .And.Contain(static campo => campo != "etapas[2].exibicao", "a estrutura recusada também é informada");
+    }
+
     [Fact(DisplayName = "Trocar os itens de modo que a seção passe a citar campo dela mesma é recusado")]
     public void Secao_ItensQueQuebramAExibicao_Recusa()
     {

@@ -100,19 +100,18 @@ public static class RegrasDosFormularios
     {
         IReadOnlyList<EtapaEstrutura> estrutura = [.. etapas.Select(static e => e.Estrutura)];
         List<FieldError> recusas = [.. EstruturaFormulario.ValidarEtapas(finalidade, estrutura)];
-        if (recusas.Count > 0)
+        if (recusas.Count == 0)
         {
-            return recusas;
+            // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os deixariam fora de
+            // seção, e a mensagem nomeia o item. Estrutura recusada suspende só esta conferência.
+            recusas.AddRange(EstruturaFormulario
+                .ValidarItens(
+                    estrutura,
+                    itensDaCriacao is null ? ItensDaFinalidade(estado, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
+                    secaoObrigatoria: false)
+                .Select(static recusa => recusa with { Field = "etapas" }));
         }
 
-        // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os deixariam fora de
-        // seção, e a mensagem nomeia o item.
-        recusas.AddRange(EstruturaFormulario
-            .ValidarItens(
-                estrutura,
-                itensDaCriacao is null ? ItensDaFinalidade(estado, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
-                secaoObrigatoria: false)
-            .Select(static recusa => recusa with { Field = "etapas" }));
         recusas.AddRange(RecusasDeExibicao(estado, finalidade, etapas, itensDaCriacao));
         return recusas;
     }
