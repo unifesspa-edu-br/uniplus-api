@@ -15,9 +15,11 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -899,26 +901,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ParaEstrutura(Itens.Where(f => f.Finalidade == finalidade), GruposDaFinalidade(finalidade));
 
     /// <summary>
-    /// Substitui integralmente o cronograma de fases do processo (Story #851, §3.7):
-    /// mesmo padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/> primeiro,
-    /// <see cref="Result"/> nunca exceção, substituição integral da coleção.
+    /// Substitui integralmente o cronograma de fases do processo. O grafo de precedências é parâmetro,
+    /// não navegação: o domínio não consulta a Configuração, o handler resolve o grafo vigente e o
+    /// passa pronto. Valida o que só a raiz prova (referências entre fases do mesmo cronograma e
+    /// contra as etapas do mesmo processo), sem exigir etapa para a fase que agrupa etapas, porque a
+    /// etapa pode ser declarada depois do cronograma.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>O grafo de precedências é parâmetro, não navegação</b> (ADR-0042): o domínio
-    /// nunca injeta <c>IPrecedenciaFaseReader</c> — o handler resolve o grafo vigente
-    /// (módulo Configuração, cross-módulo) e o passa já pronto.
-    /// </para>
-    /// <para>
-    /// Valida aqui o que só a raiz consegue provar (referências entre fases do MESMO
-    /// cronograma e contra as etapas do MESMO processo): ordem/fase-canônica únicas
-    /// (CA-06), a direção "fase de avaliação sem etapa" da bicondicional §3.5 (a
-    /// direção "etapa sem fase" é lazy — só aflora no gate de publicação, porque uma
-    /// etapa pode ser declarada DEPOIS do cronograma) e a precedência entre fases
-    /// (§3.3, CA-08/CA-09) — <b>ausência de uma das duas fases de uma aresta não é
-    /// violação</b> (contraprova CA-08).
-    /// </para>
-    /// </remarks>
     public Result DefinirCronogramaFases(
         IReadOnlyList<FaseCronograma> fases,
         IReadOnlyList<ArestaPrecedencia> precedencias,
@@ -927,410 +915,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(precedencias);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (fases.Count == 0)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.CronogramaFasesVazio",
-                "O processo deve ter ao menos uma fase no cronograma."));
-        }
-
-        List<int> ordens = [.. fases.Select(f => f.Ordem)];
-        if (ordens.Distinct().Count() != ordens.Count)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.OrdemFaseDuplicada",
-                "Cada fase deve ter uma ordem única dentro do cronograma."));
-        }
-
-        List<Guid> origens = [.. fases.Select(f => f.FaseCanonicaOrigemId)];
-        if (origens.Distinct().Count() != origens.Count)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.FaseCanonicaDuplicada",
-                "A mesma fase canônica não pode aparecer duas vezes no cronograma."));
-        }
-
-        // Story #554/issue #893 (CA-04): reconciliação por FaseCanonicaOrigemId.
-        // FaseCanonicaOrigemId é a identidade ESTÁVEL
-        // de uma fase no cronograma (índice único ux_fases_cronograma_processo_fase_canonica);
-        // Ordem é só um ATRIBUTO mutável dela (uma fase pode ser reordenada sem deixar de
-        // ser "a mesma fase"). Casar por Ordem (como as rodadas anteriores fizeram) confundia
-        // "reordenar" com "trocar de fase": uma redefinição que só troca a POSIÇÃO de duas
-        // fases já existentes (A@1,B@2 -> B@1,A@2) fazia a reconciliação RETARGETAR o
-        // FaseCanonicaOrigemId das linhas rastreadas, e o EF não consegue ordenar as duas
-        // instruções UPDATE resultantes (dependência circular: cada uma precisa que a outra
-        // rode primeiro para liberar o valor único) — estourava InvalidOperationException no
-        // SaveChanges, fora do Result pattern. Casar por identidade evita esse retargeting
-        // desnecessário; o guard de permutação cíclica de Ordem (abaixo) cobre o caso
-        // residual em que a PRÓPRIA Ordem trocada forma um ciclo fechado entre fases
-        // retidas. Substitui o guard bruto da PR #895/#547 (que bloqueava QUALQUER redefinição
-        // enquanto existisse exigência viva) por guards precisos: só recusa quando uma fase
-        // REALMENTE removida é referenciada por exigência viva (ExigidoNaFaseId ou
-        // IdadeMaximaEmissao.ReferenciaFaseId), ou quando uma fase SOBREVIVENTE perde
-        // PermiteComplementacao/o extremo âncora sendo referenciada.
-        Dictionary<Guid, FaseCronograma> fasesAntigasPorOrigem = _cronogramaFases.ToDictionary(f => f.FaseCanonicaOrigemId);
-        Dictionary<Guid, FaseCronograma> fasesNovasPorOrigem = fases.ToDictionary(f => f.FaseCanonicaOrigemId);
-
-        // O que sai do cronograma leva junto o que era só dele: as etapas que acontecem na
-        // fase e os documentos exigidos nela. Coletado aqui, aplicado depois das
-        // conferências — uma recusa mais adiante não pode deixar o agregado meio podado.
-        List<string> codigosRemovidos = [];
-
-        // O documento exigido numa fase que TAMBÉM está saindo sai junto com ela, pela poda em
-        // cascata aplicada mais abaixo. Contá-lo como referência viva recusaria uma remoção que
-        // o próprio comando resolve: remover duas fases de uma vez, com o documento de uma
-        // ancorado na janela da outra, é configuração legítima e ficava impossível. Só quem
-        // fica é que pode reclamar do que sai.
-        HashSet<Guid> fasesQueFicam = [.. fasesAntigasPorOrigem.Values
-            .Where(f => fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
-            .Select(f => f.Id)];
-        List<DocumentoExigido> documentosQueFicam =
-            [.. _documentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
-
-        foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values)
-        {
-            if (!fasesNovasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova))
-            {
-                // A exigência declarada NA fase removida é configuração dela, e sai junto —
-                // o operador que remove a fase não deveria ter de esvaziar a lista de
-                // documentos antes para conseguir removê-la. A remoção em cascata acontece
-                // depois de todas as conferências, ao aplicar o cronograma.
-                //
-                // A âncora de idade máxima é outra coisa: quem a declara é uma exigência de
-                // OUTRA fase, que apenas usa esta como marco temporal. Apagar a exigência
-                // alheia por tabela seria remover configuração que não é desta fase, e por
-                // isso aqui a recusa continua.
-                DocumentoExigido? ancoraDeOutraFase = documentosQueFicam.Find(d =>
-                    d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id);
-                if (ancoraDeOutraFase is not null)
-                {
-                    return Result.Failure(new DomainError(
-                        "FaseCronograma.ReferenciadaPorExigenciaViva",
-                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{ancoraDeOutraFase.TipoDocumentoNome}', exigido em outra fase, usa a janela dela como âncora de idade máxima de emissão."));
-                }
-
-                // A etapa que acontece na fase removida também sai junto — mas não se
-                // alguém de fora a referencia. Desempate e regra de eliminação são
-                // configuração do processo, não da fase, e apagá-los por tabela deixaria a
-                // classificação inexecutável sem que ninguém pedisse.
-                EtapaProcesso? etapaReferenciada = _etapas.Find(e =>
-                    string.Equals(e.FaseCodigo, antiga.Codigo, StringComparison.Ordinal)
-                    && EtapaReferenciadaPorClassificacaoOuDesempate(e.Id));
-                if (etapaReferenciada is not null)
-                {
-                    return Result.Failure(new DomainError(
-                        "FaseCronograma.EtapaDaFaseReferenciada",
-                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes."));
-                }
-
-                // O formulário é respondido na fase, mas não é configuração dela: removê-lo por
-                // tabela apagaria itens e termos que ninguém pediu para tirar.
-                if (_formularios.Find(f => f.FaseId == antiga.Id) is { } formularioDaFase)
-                {
-                    return Result.Failure(new DomainError(
-                        FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario,
-                        $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {EstruturaFormulario.ParaToken(formularioDaFase.Finalidade)} é respondido nela — troque a fase do formulário antes."));
-                }
-
-                codigosRemovidos.Add(antiga.Codigo);
-                continue;
-            }
-
-            bool perdeuPermiteComplementacao = antiga.PermiteComplementacao && !nova.PermiteComplementacao;
-            if (perdeuPermiteComplementacao && ExisteConsequenciaPendenciaReenvioNaFase(antiga.Id))
-            {
-                return Result.Failure(new DomainError(
-                    "FaseCronograma.PendenciaReenvioExigeComplementacao",
-                    $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por uma exigência (folha ou grupo) com consequência PENDENCIA_REENVIO."));
-            }
-
-            // Uma fase SOBREVIVENTE (mesma Ordem) cujo extremo
-            // âncora (Início/Fim) deixa de existir — a checagem eager de
-            // DefinirDocumentosExigidos só prova a coerência no INSTANTE da escrita da
-            // exigência; sem este guard, uma redefinição de cronograma POSTERIOR poderia
-            // apagar o extremo e deixar IdadeMaximaEmissao apontando para uma âncora
-            // irresolvível, silenciosamente. Mesma família de guard de
-            // ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente (PR #896), mas aqui é
-            // preventivo (na escrita do cronograma), não descoberto só na publicação.
-            bool perdeuInicio = antiga.Inicio is not null && nova.Inicio is null;
-            bool perdeuFim = antiga.Fim is not null && nova.Fim is null;
-            if ((perdeuInicio || perdeuFim) && documentosQueFicam.Exists(d =>
-                d.IdadeMaximaEmissao is { ReferenciaFaseId: { } refFaseId } idade
-                && refFaseId == antiga.Id
-                && ((perdeuInicio && idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase)
-                    || (perdeuFim && idade.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimFase))))
-            {
-                return Result.Failure(new DomainError(
-                    "IdadeMaximaEmissao.FaseExtremoAusente",
-                    $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder o extremo usado como âncora de idade máxima de emissão por um documento exigido configurado."));
-            }
-        }
-
-        // Mesma lacuna do guard eager de
-        // DefinirDocumentosExigidos — FIM_INSCRICAO não usa ReferenciaFaseId (a âncora é
-        // implícita: a fase com ColetaInscricao), então os guards por fase acima (que só
-        // olham ReferenciaFaseId) nunca pegam uma redefinição que deixa de ter QUALQUER
-        // fase de coleta com Fim definido, mesmo com exigência viva ancorada em
-        // FIM_INSCRICAO. É uma checagem GLOBAL, não por fase — não importa QUAL fase
-        // perdeu o papel, o que importa é se ainda sobra alguma no cronograma NOVO.
-        if (documentosQueFicam.Exists(d => d.IdadeMaximaEmissao?.ReferenciaTipo == ReferenciaTipoIdadeEmissao.FimInscricao)
-            && !fases.Any(f => f.ColetaInscricao && f.Fim is not null))
-        {
-            return Result.Failure(new DomainError(
-                "IdadeMaximaEmissao.FaseExtremoAusente",
-                "A redefinição do cronograma deixaria de ter uma fase que coleta inscrição com Fim definido, mas há documento exigido configurado com idade máxima de emissão ancorada em FIM_INSCRICAO."));
-        }
-
-        // Mesmo casando por identidade estável, uma
-        // PERMUTAÇÃO CÍCLICA de Ordem entre fases retidas (ex.: A@1,B@2 -> A@2,B@1, ou um
-        // ciclo de 3+) ainda pede que linhas TROQUEM valores cobertos pelo índice único
-        // ux_fases_cronograma_processo_ordem entre si — nenhuma ordem de UPDATE resolve um
-        // ciclo fechado num único SaveChanges (cada linha depende da outra liberar o valor
-        // primeiro). Detecta o ciclo em termos puramente de domínio (sem conhecer EF/SQL) e
-        // recusa com um erro nomeado, em vez de deixar a exceção do EF escapar do Result
-        // pattern. Uma cadeia que termina numa Ordem livre (nunca usada) ou na Ordem de uma
-        // fase REMOVIDA (que libera a linha via DELETE) não é um ciclo — só o é quando a
-        // cadeia volta a uma fase já visitada NA MESMA caminhada.
-        //
-        // O que não tem saída é a troca entre linhas RETIDAS, e não a substituição de uma
-        // coleção por inteiro: ali as linhas são outras, e o EF ordena os comandos sozinho,
-        // emitindo o DELETE que libera o slot antes do INSERT que o quer — é por isso que
-        // duas bancas da etapa trocam de código sem colidir, medido em
-        // EtapaBancaPersistenciaTests. Uma cadeia ABERTA de UPDATEs o EF também resolve, como
-        // mostra o deslocamento de ordens em DescarteAposDeslocamentoDeOrdemPersistenciaTests.
-        // Só o ciclo FECHADO não tem ordenação possível: são as mesmas duas linhas disputando
-        // o valor uma da outra, e o EF interrompe antes de emitir SQL, com "circular
-        // dependency was detected", medido em FaseOrdemPermutacaoPersistenciaTests.
-        //
-        // Há um caminho mais fundo, já usado no repositório: trocar o índice único por uma
-        // EXCLUDE constraint GiST DEFERRABLE INITIALLY DEFERRED, mantida fora do modelo do
-        // EF, que adia a checagem para o COMMIT e aceitaria o ciclo num SaveChanges só — é o
-        // que nos_exigencia faz com ex_nos_exigencia_irmaos_ordem. Enquanto fases_cronograma
-        // não fizer o mesmo, a permutação cíclica é recusada aqui e o operador tem de
-        // quebrá-la em duas chamadas.
-        Dictionary<int, Guid> origemAntigaPorOrdem = [];
-        foreach (FaseCronograma antiga in fasesAntigasPorOrigem.Values.Where(f => fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId)))
-        {
-            origemAntigaPorOrdem[antiga.Ordem] = antiga.FaseCanonicaOrigemId;
-        }
-
-        Dictionary<Guid, int> estadoDoNo = []; // 1 = na caminhada atual, 2 = concluído sem ciclo
-        foreach (Guid origemInicial in fasesAntigasPorOrigem.Keys)
-        {
-            if (estadoDoNo.ContainsKey(origemInicial))
-            {
-                continue;
-            }
-
-            List<Guid> caminho = [];
-            Guid? noAtual = origemInicial;
-            bool cicloFechado = false;
-
-            while (noAtual is { } no)
-            {
-                if (estadoDoNo.TryGetValue(no, out int estado))
-                {
-                    cicloFechado = estado == 1;
-                    break;
-                }
-
-                if (!fasesNovasPorOrigem.TryGetValue(no, out FaseCronograma? nova)
-                    || nova.Ordem == fasesAntigasPorOrigem[no].Ordem)
-                {
-                    break;
-                }
-
-                estadoDoNo[no] = 1;
-                caminho.Add(no);
-                noAtual = origemAntigaPorOrdem.TryGetValue(nova.Ordem, out Guid proximo) ? proximo : null;
-            }
-
-            foreach (Guid visitado in caminho)
-            {
-                estadoDoNo[visitado] = 2;
-            }
-
-            if (cicloFechado)
-            {
-                return Result.Failure(new DomainError(
-                    "FaseCronograma.PermutacaoDeOrdemNaoSuportada",
-                    "A redefinição do cronograma troca a Ordem entre fases já existentes formando um ciclo fechado (ex.: uma fase assume a Ordem de outra, que assume a Ordem da primeira) — isso não pode ser persistido em uma única chamada. Mova uma das fases para uma Ordem livre numa chamada separada antes de fechar o ciclo."));
-            }
-        }
-
-        // §3.5 — direção "fase de avaliação sem etapa": bloqueante e IMEDIATA (a fase que
-        // agrupa etapas existe se e somente se há etapa pontuada JÁ declarada no
-        // processo). A direção inversa ("etapa sem fase de avaliação") é validada no
-        // gate de publicação (PendenciaDoCronograma) — uma etapa pode ser declarada
-        // depois do cronograma, e bloquear aqui recusaria uma ordem de montagem legítima.
-        // A guarda "fase agrupadora exige etapa já declarada" saiu daqui: com o vínculo, a
-        // etapa só pode declarar a fase depois que a fase existe no cronograma, e exigi-la
-        // na gravação do cronograma fecharia um ciclo sem ordem possível. A bicondicional
-        // continua sendo cobrada no gate de publicação (PendenciaDoCronograma), que é onde
-        // ela sempre pôde ser lazy.
-
-        // §3.3 — precedência é dado de cadastro, não código: para toda aresta cujas DUAS
-        // fases estão presentes no cronograma, Ordem(A) < Ordem(B); e, quando a aresta não
-        // permite sobreposição e ambas têm janela, Fim(A) ≤ Inicio(B). A ausência de uma
-        // das duas fases NÃO é violação (CA-08) — o `continue` abaixo é a prova disso.
-        Dictionary<string, FaseCronograma> porCodigo = new(StringComparer.Ordinal);
-        foreach (FaseCronograma fase in fases)
-        {
-            porCodigo[fase.Codigo] = fase;
-        }
-
-        foreach (ArestaPrecedencia aresta in precedencias)
-        {
-            if (!porCodigo.TryGetValue(aresta.AntecessoraCodigo, out FaseCronograma? antecessora)
-                || !porCodigo.TryGetValue(aresta.SucessoraCodigo, out FaseCronograma? sucessora))
-            {
-                continue;
-            }
-
-            if (antecessora.Ordem >= sucessora.Ordem)
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.PrecedenciaFaseViolada",
-                    $"A fase '{aresta.AntecessoraCodigo}' (ordem {antecessora.Ordem}) precede '{aresta.SucessoraCodigo}' (ordem {sucessora.Ordem}) — a ordem declarada viola a precedência do cadastro."));
-            }
-
-            if (!aresta.PermiteSobreposicao
-                && antecessora.Fim is { } fimAntecessora
-                && sucessora.Inicio is { } inicioSucessora
-                && fimAntecessora > inicioSucessora)
-            {
-                return Result.Failure(new DomainError(
-                    "ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida",
-                    $"A janela da fase '{aresta.SucessoraCodigo}' ({sucessora.Inicio:O}–{sucessora.Fim:O}) se sobrepõe à da fase '{aresta.AntecessoraCodigo}' ({antecessora.Inicio:O}–{antecessora.Fim:O}), e o cadastro não permite sobreposição entre elas."));
-            }
-        }
-
-        // A conclusão do ciclo recursal por matéria: quem publica preliminar tem uma
-        // definitiva alcançável, própria ou de uma fase que não a anteceda. É invariante da
-        // RAIZ — só ela enxerga o cronograma inteiro — e roda sobre o conjunto CANDIDATO,
-        // não sobre o agregado corrente, porque é ele que vai substituir o cronograma.
-        // Acumula todas as violações (ADR-0125): duas fases podem estar mal declaradas ao
-        // mesmo tempo, e devolver só a primeira faria o operador descobrir a segunda numa
-        // segunda tentativa.
-        List<FieldError> violacoesDaConclusao = ViolacoesDaConclusaoDoCicloRecursal(fases);
-        if (violacoesDaConclusao.Count > 0)
-        {
-            return Result.ValidationFailure(violacoesDaConclusao);
-        }
-
-        // A etapa acontece dentro da fase que a abriga, e a fase é quem se move depois: a
-        // gravação das etapas confere a mesma coisa, mas só contra o cronograma daquele
-        // instante. Sem reconferir aqui, encolher a janela de uma fase que já hospeda uma
-        // prova datada deixa a prova pendurada fora dela — o inverso exato do caso que a
-        // gravação das etapas recusa, e por um caminho que ninguém fecha adiante. Contra o
-        // conjunto CANDIDATO, porque é ele que vai substituir o cronograma; a etapa cuja
-        // fase está saindo não entra na conta, porque ela sai junto na poda em cascata.
-        if (JanelaDaEtapaNaFase.ViolacaoDaJanelaDaEtapaNaFase(_etapas, JanelaDaEtapaNaFase.FasesPorCodigo(fases)) is { } etapaForaDaFase)
-        {
-            return Result.Failure(etapaForaDaFase);
-        }
-
-        // Reconciliação por FaseCanonicaOrigemId — a
-        // mesma chave de identidade do guard acima. Reusa a instância TRACKED existente
-        // (retargetando-a via AtualizarDe, preservando o Id) sempre que a fase
-        // canônica persiste no cronograma, independente de Ordem: evita tanto FK Restrict
-        // de documentos_exigidos.exigido_na_fase_id quanto o retargeting desnecessário do
-        // FaseCanonicaOrigemId que causava a colisão descrita acima — a essa altura, o
-        // guard de permutação cíclica já garantiu que a Ordem final de cada linha retida
-        // não fecha um ciclo com outra linha retida.
-        List<FaseCronograma> resultantes = [];
-        foreach (FaseCronograma nova in fases)
-        {
-            if (fasesAntigasPorOrigem.TryGetValue(nova.FaseCanonicaOrigemId, out FaseCronograma? existente))
-            {
-                existente.AtualizarDe(nova, [.. nova.Produtos]);
-                resultantes.Add(existente);
-            }
-            else
-            {
-                resultantes.Add(nova);
-            }
-        }
-
-        _cronogramaFases.Clear();
-        foreach (FaseCronograma fase in resultantes)
-        {
-            Vincular(fase);
-            _cronogramaFases.Add(fase);
-        }
-
-        PodarDependentesDasFasesRemovidas(codigosRemovidos, fasesAntigasPorOrigem, fasesNovasPorOrigem);
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return Editar(precondicao,
+            () => ReconciliacaoDoCronograma.Planejar(EstadoDaConfiguracao.De(this), fases, precedencias),
+            plano => plano.Aplicar(Colecoes(), Id));
     }
-
-    /// <summary>
-    /// Remove o que existia só por causa de uma fase que saiu do cronograma: as etapas que
-    /// aconteciam nela e os documentos exigidos nela, com os nós da árvore de satisfação que
-    /// os carregavam.
-    /// </summary>
-    /// <remarks>
-    /// Sem isso, a etapa ficava apontando para uma fase que não existe mais e a gravação
-    /// seguinte era recusada por <c>EtapaSemFaseNoCronograma</c> — o operador removia uma
-    /// fase e o passo travava, sem dizer o que fazer. Roda depois de todas as conferências e
-    /// depois da substituição da coleção, porque uma recusa no meio deixaria o agregado
-    /// podado pela metade.
-    /// </remarks>
-    private void PodarDependentesDasFasesRemovidas(
-        List<string> codigosRemovidos,
-        Dictionary<Guid, FaseCronograma> fasesAntigasPorOrigem,
-        Dictionary<Guid, FaseCronograma> fasesNovasPorOrigem)
-    {
-        if (codigosRemovidos.Count == 0)
-        {
-            return;
-        }
-
-        _etapas.RemoveAll(e => e.FaseCodigo is { } codigo
-            && codigosRemovidos.Contains(codigo, StringComparer.Ordinal));
-
-        // O Id da fase, e não o código, porque é por Id que a exigência a referencia.
-        HashSet<Guid> idsRemovidos = [.. fasesAntigasPorOrigem.Values
-            .Where(f => !fasesNovasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
-            .Select(static f => f.Id)];
-
-        HashSet<Guid> exigenciasRemovidas = [.. _documentosExigidos
-            .Where(d => idsRemovidos.Contains(d.ExigidoNaFaseId))
-            .Select(static d => d.Id)];
-        if (exigenciasRemovidas.Count == 0)
-        {
-            return;
-        }
-
-        _documentosExigidos.RemoveAll(d => exigenciasRemovidas.Contains(d.Id));
-
-        // A folha sai com o nó que a carregava; o grupo que ficou sem filho nenhum sai
-        // atrás, senão sobraria um "um destes documentos" sem documento algum.
-        _nosExigencia.RemoveAll(no => no.DocumentoExigidoId is { } id && exigenciasRemovidas.Contains(id));
-        while (_nosExigencia.RemoveAll(no => no.Tipo != TipoNo.Folha
-            && !_nosExigencia.Exists(filho => filho.NoPaiId == no.Id)) > 0)
-        {
-            // Um grupo pode ter ficado vazio porque o filho dele era outro grupo que acabou
-            // de sair: repete até a floresta parar de encolher.
-        }
-    }
-
-    /// <summary>
-    /// A etapa é referenciada por configuração que não pertence à fase dela — critério de
-    /// desempate por nota de etapa ou regra de eliminação que a cita.
-    /// </summary>
-    private bool EtapaReferenciadaPorClassificacaoOuDesempate(Guid etapaId) =>
-        EtapaReferenciadaPorDesempate(etapaId)
-        || (Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Args.EtapaReferenciada() == etapaId);
-
-    private bool EtapaReferenciadaPorDesempate(Guid etapaId) =>
-        _criteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
 
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
     private IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(Guid etapaId) =>
@@ -1653,7 +1241,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
 
             Guid? faseId = no.FaseComum();
-            if (faseId is { } faseIdValor && ValidarConsequenciaPendenciaReenvio(faseIdValor) is { } erroPendenciaReenvio)
+            if (faseId is { } faseIdValor && RegrasDasExigencias.ValidarConsequenciaPendenciaReenvio(EstadoDaConfiguracao.De(this), faseIdValor) is { } erroPendenciaReenvio)
             {
                 return Result.Failure(erroPendenciaReenvio);
             }
@@ -1810,18 +1398,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// congelamento é da publicação. A fase sem unidade, ou cuja unidade não veio em
     /// <paramref name="vivas"/>, fica como está.
     /// </summary>
-    public void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)
-    {
-        ArgumentNullException.ThrowIfNull(vivas);
-
-        foreach (FaseCronograma fase in _cronogramaFases)
-        {
-            if (fase.UnidadeResponsavelOrigemId is { } origemId && vivas.TryGetValue(origemId, out UnidadeResponsavelSnapshot? viva))
-            {
-                fase.RecopiarUnidadeResponsavel(viva);
-            }
-        }
-    }
+    public void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas) =>
+        ReconciliacaoDoCronograma.RecopiarUnidades(_cronogramaFases, vivas);
 
     /// <summary>
     /// Confere os itens e os grupos que o formulário passa a coletar, sem mutar o processo: o teto,
@@ -2327,33 +1905,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         DerivadosDoSistema.ComAsDoSistema(derivacoes.Select(static c => KeyValuePair.Create(c.CodigoFato, c.FatosCitados)));
 
     /// <summary>
-    /// Gate <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> (Story #920) — mesmo gate
-    /// para folha e grupo, forward (aqui, na escrita da exigência) e reverso (em
-    /// <see cref="DefinirCronogramaFases"/>, via <see cref="ExisteConsequenciaPendenciaReenvioNaFase"/>).
-    /// </summary>
-    private DomainError? ValidarConsequenciaPendenciaReenvio(Guid faseId)
-    {
-        FaseCronograma? fase = _cronogramaFases.FirstOrDefault(f => f.Id == faseId);
-        if (fase is null)
-        {
-            // FaseNaoPertenceAoProcesso já cobre a ausência — defesa em profundidade, não
-            // deveria ocorrer (a fase já foi validada acima nesta mesma chamada).
-            return null;
-        }
-
-        return fase.PermiteComplementacao
-            ? null
-            : new DomainError(
-                "DocumentoExigido.PendenciaReenvioExigeComplementacao",
-                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) não permite complementação — consequência PENDENCIA_REENVIO exige PermiteComplementacao.");
-    }
-
-    /// <summary>Lado reverso do gate acima — usado por <see cref="DefinirCronogramaFases"/> ao verificar se uma fase pode perder <c>PermiteComplementacao</c>, para folha OU grupo <c>OU</c>/<c>N-de</c>.</summary>
-    private bool ExisteConsequenciaPendenciaReenvioNaFase(Guid faseId) =>
-        _documentosExigidos.Any(d => d.ExigidoNaFaseId == faseId && d.ConsequenciaIndeferimento == "PENDENCIA_REENVIO")
-        || _nosExigencia.Any(n => n.Tipo == TipoNo.GrupoOu && n.Consequencia == "PENDENCIA_REENVIO" && n.FaseComum() == faseId);
-
-    /// <summary>
     /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR #896 —
     /// B-03 do plano). Presença (0..1) — <see langword="null"/> é estado válido enquanto
     /// nenhuma exigência tem gatilho por idade; a ausência só vira pendência de publicação
@@ -2722,7 +2273,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private bool EtapaTemNota(EtapaProcesso etapa) =>
         etapa.ComponeNota
         || etapa.NotaMinima.HasValue
-        || EtapaReferenciadaPorDesempate(etapa.Id)
+        || RegrasDasEtapas.EtapaReferenciadaPorDesempate(EstadoDaConfiguracao.De(this), etapa.Id)
         || EliminacoesPorNotaMinimaDaEtapa(etapa.Id).Any();
 
     /// <summary>
@@ -3407,157 +2958,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         List<FieldError> violacoes =
         [
-            .. ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]),
+            .. CicloRecursalDoCronograma.ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]),
             .. RegrasDasEtapas.ViolacoesDoFechamentoDoCicloDasEtapas([.. _etapas]),
         ];
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;
-    }
-
-    /// <summary>
-    /// As violações da conclusão do ciclo recursal, uma por fase mal declarada.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Três estados legítimos, e só eles: a fase que não publica preliminar não declara
-    /// conclusão; a que publica o definitivo de cada preliminar conclui a si mesma; a que
-    /// deixa algum preliminar sem o definitivo do mesmo tipo declara qual fase a conclui.
-    /// </para>
-    /// <para>
-    /// <b>A declaração vence a inferência.</b> Havendo <see cref="FaseCronograma.FaseConcluinteCodigo"/>,
-    /// é ela que é conferida — está no cronograma, publica definitiva, não antecede —, e a
-    /// única declaração recusada por si só é a fase apontando para si mesma, que não descreve
-    /// travessia nenhuma. A auto-conclusão só decide onde o operador não declarou nada.
-    /// </para>
-    /// <para>
-    /// <b>Matéria.</b> A matéria é o tipo de ato. A fase concluinte declarada fecha o ciclo de
-    /// cada matéria que a fase concluída deixa aberta, isto é, de cada preliminar sem o
-    /// definitivo do mesmo tipo na própria fase: ela precisa publicar o definitivo com o mesmo
-    /// tipo. O definitivo de outro tipo não fecha o ciclo e o deixaria aberto para sempre.
-    /// A auto-conclusão, quando nada é declarado, também é por matéria: a fase só conclui a si
-    /// mesma quando publica o definitivo de cada tipo cujo preliminar publica. A fase que
-    /// publica o resultado preliminar e só o gabarito definitivo deixa o ciclo do resultado
-    /// aberto e precisa declarar a concluinte.
-    /// </para>
-    /// <para>
-    /// Dentro de uma fase as checagens são encadeadas — não faz sentido conferir a ordem de
-    /// uma concluinte que não está no cronograma —, então a primeira recusa é a que orienta
-    /// e as seguintes não são avaliadas. Entre fases não há encadeamento: todas são
-    /// percorridas.
-    /// </para>
-    /// <para>
-    /// Sem I/O e sem navegação — só o que já está em memória (CA-11).
-    /// </para>
-    /// </remarks>
-    private static List<FieldError> ViolacoesDaConclusaoDoCicloRecursal(IReadOnlyList<FaseCronograma> fases)
-    {
-        List<FieldError> violacoes = [];
-
-        for (int indice = 0; indice < fases.Count; indice++)
-        {
-            FaseCronograma fase = fases[indice];
-            string campo = $"fases[{indice}].faseConcluinteCodigo";
-
-            if (!fase.PublicaResultadoPreliminar)
-            {
-                if (fase.FaseConcluinteCodigo is not null)
-                {
-                    violacoes.Add(new(campo, new DomainError(
-                        "ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar",
-                        $"A fase '{fase.Codigo}' declara a fase '{fase.FaseConcluinteCodigo}' como concluinte, mas não publica nenhum resultado preliminar — não há ciclo recursal a concluir.")));
-                }
-
-                continue;
-            }
-
-            if (fase.FaseConcluinteCodigo is not { } concluinteCodigo)
-            {
-                // Sem declaração, a fase conclui a si mesma só quando publica o definitivo de
-                // cada matéria que abre: o definitivo de outro tipo não fecha o ciclo.
-                if (fase.TiposComCicloAberto().FirstOrDefault() is { } tipoSemDefinitivoProprio)
-                {
-                    violacoes.Add(new(campo, new DomainError(
-                        "ProcessoSeletivo.ConclusaoNaoDeclarada",
-                        $"A fase '{fase.Codigo}' publica o resultado preliminar do ato '{tipoSemDefinitivoProprio}' e não publica o definitivo do mesmo tipo — publique-o na própria fase ou declare qual fase do cronograma a conclui.")));
-                }
-
-                continue;
-            }
-
-            // Apontar para si mesma não descreve travessia nenhuma: ou a fase conclui a
-            // própria matéria publicando a definitiva, e então não há o que declarar, ou não
-            // conclui, e a concluinte é outra fase.
-            if (string.Equals(concluinteCodigo, fase.Codigo, StringComparison.Ordinal))
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.ConclusaoDeclaradaEmFaseQueSeConclui",
-                    $"A fase '{fase.Codigo}' declara a si mesma como concluinte — a fase que encerra o ciclo recursal de outra é sempre distinta dela; para concluir o próprio ciclo, a fase publica o resultado definitivo e não declara concluinte.")));
-                continue;
-            }
-
-            FaseCronograma? concluinte = fases
-                .FirstOrDefault(f => string.Equals(f.Codigo, concluinteCodigo, StringComparison.Ordinal));
-            if (concluinte is null)
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.FaseConcluinteForaDoCronograma",
-                    $"A fase '{fase.Codigo}' declara '{concluinteCodigo}' como concluinte, e nenhuma fase do cronograma tem esse código.")));
-                continue;
-            }
-
-            if (!concluinte.PublicaResultadoDefinitivo)
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo",
-                    $"A fase '{concluinteCodigo}', declarada como concluinte de '{fase.Codigo}', não publica nenhum resultado definitivo.")));
-                continue;
-            }
-
-            string? tipoSemDefinitivo = fase.TiposComCicloAberto()
-                .FirstOrDefault(tipo => !concluinte.PublicaResultadoDefinitivoDe(tipo));
-            if (tipoSemDefinitivo is not null)
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo",
-                    $"A fase '{concluinteCodigo}', declarada como concluinte de '{fase.Codigo}', não publica o resultado definitivo do ato '{tipoSemDefinitivo}', o mesmo tipo do preliminar que '{fase.Codigo}' abre.")));
-                continue;
-            }
-
-            // O tipo que a fase já fecha sozinha não tem o que a concluinte fechar: com o
-            // definitivo nos dois lugares, o ciclo teria dois definitivos sem regra que diga qual
-            // o fecha.
-            string? tipoComDoisDefinitivos = fase.TiposFechadosNaPropriaFase()
-                .FirstOrDefault(concluinte.PublicaResultadoDefinitivoDe);
-            if (tipoComDoisDefinitivos is not null)
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    ProcessoSeletivoErrorCodes.ConclusaoDuplicada,
-                    $"A fase '{fase.Codigo}' já publica o resultado definitivo do ato '{tipoComDoisDefinitivos}', e a fase '{concluinte.Codigo}', declarada como concluinte, o publica também — o ciclo ficaria com dois definitivos. Remova a declaração da concluinte de '{fase.Codigo}' ou o definitivo repetido de uma das duas fases.")));
-                continue;
-            }
-
-            if (concluinte.Ordem <= fase.Ordem)
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.FaseConcluinteAntecedeAConcluida",
-                    $"A fase '{concluinteCodigo}' (ordem {concluinte.Ordem}) conclui '{fase.Codigo}' (ordem {fase.Ordem}) — a concluinte não pode anteceder a fase que ela encerra.")));
-                continue;
-            }
-
-            // A ordem já garante a precedência declarada; a janela é a segunda evidência, e
-            // só existe quando as duas fases a declaram (uma fase NA_EXECUCAO sem data é
-            // estado válido, §3.2).
-            if (fase.Inicio is { } inicioConcluida
-                && concluinte.Inicio is { } inicioConcluinte
-                && inicioConcluinte < inicioConcluida)
-            {
-                violacoes.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.FaseConcluinteComecaAntesDaConcluida",
-                    $"A janela da fase '{concluinteCodigo}' começa em {inicioConcluinte:O}, antes de '{fase.Codigo}' ({inicioConcluida:O}) — a concluinte não pode começar antes da fase que ela encerra.")));
-            }
-        }
-
-        return violacoes;
     }
 
     /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
@@ -6085,6 +5490,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => aplicar(plano!));
     }
 
+    private ColecoesDoProcesso Colecoes() => new(
+        _etapas, _cronogramaFases, _documentosExigidos, _nosExigencia, _campos, _gruposColetados,
+        _formularios, _termosExigidos, _opcoesDeclaradas, _regrasDerivacao, _distribuicaoVagas, _criteriosDesempate);
+
     private T? Vincular<T>(T? parte)
         where T : class, IParteDoProcesso
     {
@@ -6094,16 +5503,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private void Substituir<T>(List<T> lista, IEnumerable<T> novas)
         where T : class, IParteDoProcesso =>
-        Substituir(lista, static _ => true, novas);
+        PartesDoProcesso.Substituir(lista, novas, Id);
 
     private void Substituir<T>(List<T> lista, Predicate<T> substituidas, IEnumerable<T> novas)
-        where T : class, IParteDoProcesso
-    {
-        lista.RemoveAll(substituidas);
-        foreach (T nova in novas)
-        {
-            Vincular(nova);
-            lista.Add(nova);
-        }
-    }
+        where T : class, IParteDoProcesso =>
+        PartesDoProcesso.Substituir(lista, substituidas, novas, Id);
 }

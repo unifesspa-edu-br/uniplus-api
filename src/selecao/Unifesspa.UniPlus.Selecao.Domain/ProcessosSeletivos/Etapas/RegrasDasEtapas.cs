@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -268,4 +267,15 @@ internal static class RegrasDasEtapas
 
         return null;
     }
+
+    /// <summary>
+    /// A etapa é referenciada por configuração que não pertence à fase dela — critério de
+    /// desempate por nota de etapa ou regra de eliminação que a cita.
+    /// </summary>
+    internal static bool EtapaReferenciadaPorClassificacaoOuDesempate(EstadoDaConfiguracao estado, Guid etapaId) =>
+        EtapaReferenciadaPorDesempate(estado, etapaId)
+        || (estado.Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Args.EtapaReferenciada() == etapaId);
+
+    internal static bool EtapaReferenciadaPorDesempate(EstadoDaConfiguracao estado, Guid etapaId) =>
+        estado.CriteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
 }
