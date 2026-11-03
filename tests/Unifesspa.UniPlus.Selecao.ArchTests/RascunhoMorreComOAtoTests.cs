@@ -63,56 +63,61 @@ public sealed class RascunhoMorreComOAtoTests
                 + "nada apaga sozinho, porque ProcessoSeletivo é soft-deletable e o cascade nunca dispara");
     }
 
-    [Theory(DisplayName = "O handler não só recebe o repositório do rascunho — ele chama a exclusão")]
+    [Theory(DisplayName = "O handler não só recebe o repositório do rascunho — ele grava pela gravação que chama a exclusão")]
     [MemberData(nameof(ComandosQueRegistramAto))]
     public void HandlerChamaAExclusao(Type comando)
     {
         ArgumentNullException.ThrowIfNull(comando);
 
         // Injetar o repositório e não usá-lo passaria na verificação de assinatura acima e
-        // deixaria o rascunho para trás do mesmo jeito. O que interessa é a chamada.
+        // deixaria o rascunho para trás do mesmo jeito. O handler entrega a gravação a
+        // GravacaoDaVersaoCongelada, que é quem apaga: o que interessa é a cadeia de chamadas.
         string fonte = File.ReadAllText(CaminhoDoHandler(HandleDoComando(comando).DeclaringType!.Name));
 
-        fonte.Should().Contain("ApagarDoProcessoAsync",
-            $"o handler de {comando.Name} registra o ato e precisa apagar o rascunho da publicação");
+        Regex.IsMatch(fonte, @"GravacaoDaVersaoCongelada\s*\.\s*GravarAsync", RegexOptions.None, TimeSpan.FromSeconds(5)).Should().BeTrue(
+            $"o handler de {comando.Name} registra o ato e precisa gravar pela gravação que apaga o rascunho da publicação");
+        fonte.Should().Contain("rascunhoDePublicacaoRepository",
+            $"o handler de {comando.Name} entrega o repositório do rascunho à gravação");
     }
 
-    [Theory(DisplayName = "O handler não emite a exclusão do rascunho antes do primeiro flush")]
-    [MemberData(nameof(ComandosQueRegistramAto))]
-    public void HandlerApagaDepoisDeGravar(Type comando)
+    [Fact(DisplayName = "A gravação da versão congelada apaga o rascunho e só depois do primeiro flush")]
+    public void GravacaoApagaDepoisDeGravar()
     {
-        ArgumentNullException.ThrowIfNull(comando);
-
         // A exclusão é ExecuteDelete: SQL na hora, fora do rastreamento. Emitida antes do
         // flush, ela aposta que nada dali em diante recusa a operação — e quando alguma coisa
         // recusa, o operador recebe "nada foi publicado" com o bloco que transcreveu do Diário
         // Oficial já destruído, o do colega junto, porque a exclusão é por processo.
-        // Ordem, aqui, é a diferença entre apagar o que perdeu a razão de existir e apagar o
-        // que ainda vai ser preciso.
         // Sem os comentários: a guarda compara POSIÇÃO no texto, e prosa que cite a chamada
-        // deslocaria a âncora para antes do flush de verdade — um handler que apagasse cedo
-        // passaria, e a guarda diria o contrário. O que interessa é onde o CÓDIGO chama.
+        // deslocaria a âncora para antes do flush de verdade.
+        string fonte = SemComentariosDeLinha(File.ReadAllText(CaminhoDoHandler("GravacaoDaVersaoCongelada")));
+
+        // Exigir flush explícito é deliberado: quem apaga o rascunho precisa de um ponto no código
+        // onde já sabe que gravou, e não o `SaveChanges` que o Wolverine dispara depois que o
+        // handler acabou.
+        int primeiroFlush = fonte.IndexOf(".SalvarAlteracoesAsync(", StringComparison.Ordinal);
+        primeiroFlush.Should().BeGreaterThan(-1, "a exclusão do rascunho só é segura depois de um flush bem-sucedido");
+
+        MatchCollection exclusoes = Regex.Matches(fonte, @"\.ApagarDoProcessoAsync\(", RegexOptions.None, TimeSpan.FromSeconds(5));
+        exclusoes.Should().NotBeEmpty("a gravação da versão congelada é quem apaga o rascunho da publicação");
+        foreach (Match exclusao in exclusoes)
+        {
+            exclusao.Index.Should().BeGreaterThan(primeiroFlush,
+                "a gravação apaga o rascunho antes de gravar a versão — uma recusa posterior devolveria "
+                + "'nada foi publicado' com a transcrição do operador já apagada");
+        }
+    }
+
+    [Theory(DisplayName = "O handler não emite a exclusão do rascunho por conta própria")]
+    [MemberData(nameof(ComandosQueRegistramAto))]
+    public void HandlerNaoApagaPorContaPropria(Type comando)
+    {
+        ArgumentNullException.ThrowIfNull(comando);
+
         string fonte = SemComentariosDeLinha(
             File.ReadAllText(CaminhoDoHandler(HandleDoComando(comando).DeclaringType!.Name)));
 
-        // Âncora no PRIMEIRO flush, e é só isso que a guarda promete: a exclusão não vem antes
-        // de qualquer gravação. Onde o handler tem flush intermediário — o descarte da
-        // retificação repõe a configuração congelada antes de encerrar a sessão —, a ordem entre
-        // a exclusão e o flush FINAL é decidida pelo desenho do handler, que ali proíbe qualquer
-        // retorno de recusa depois do primeiro. Exigir flush explícito é deliberado: quem apaga
-        // o rascunho precisa de um ponto no código onde já sabe que gravou, e não o `SaveChanges`
-        // que o Wolverine dispara depois que o handler acabou.
-        int primeiroFlush = fonte.IndexOf(".SalvarAlteracoesAsync(", StringComparison.Ordinal);
-        primeiroFlush.Should().BeGreaterThan(-1,
-            $"a exclusão do rascunho só é segura depois de um flush bem-sucedido, e o handler de "
-            + $"{comando.Name} não tem nenhum");
-
-        foreach (Match exclusao in Regex.Matches(fonte, @"\.ApagarDoProcessoAsync\(", RegexOptions.None, TimeSpan.FromSeconds(5)))
-        {
-            exclusao.Index.Should().BeGreaterThan(primeiroFlush,
-                $"o handler de {comando.Name} apaga o rascunho antes de gravar a versão — uma recusa "
-                + "posterior devolveria 'nada foi publicado' com a transcrição do operador já apagada");
-        }
+        fonte.Should().NotContain(".ApagarDoProcessoAsync(",
+            $"a exclusão do rascunho de {comando.Name} fica na gravação, onde a ordem em relação ao flush é conferida");
     }
 
     /// <summary>

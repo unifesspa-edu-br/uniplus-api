@@ -320,133 +320,35 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(avaliavel.Error!), []);
         }
 
-        // UNI-REQ-0116: UMA leitura do calendário vigente por operação. A mesma resposta
-        // alimenta o gate da raiz e o bloco congelado do envelope — ler duas vezes abriria a
-        // janela em que o dataset muda entre validar e congelar, e a versão publicada
-        // carregaria um calendário que o gate não aprovou.
-        CalendarioVigenteView? calendarioVigente = await calendarioVigenteReader
-            .ObterVigenteAsync(cancellationToken)
-            .ConfigureAwait(false);
-        // Dataset vigente incoerente não aborta aqui: quem decide se ele importa é o gate da
-        // raiz, e só importa para processo cuja contagem distingue dia útil. Abortar antes
-        // recusaria também quem não usa o dado que está quebrado, e o checklist ficaria verde
-        // para um processo que a publicação recusa.
-        Result<CalendarioDiasUteisCongelado?> calendarioResult =
-            LeituraDoCalendarioVigente.Traduzir(calendarioVigente);
-
-        var contexto = new ContextoDeContagemDePrazos(
-            calendarioResult.IsSuccess ? calendarioResult.Value : null,
-
-            FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null,
-            FusoInstitucional: fusoInstitucional);
-
-        SnapshotCanonico canonico = canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(
-                processo,
-                dados,
-                documento.HashSha256!,
-                fusoResult.Value!.Id,
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
-                conformidadeLegal.Value,
-                metadadosFatosResult.Value,
-                valoresSelecionaveisResult.Value,
-                contexto.CalendarioVigente,
-                agregadosDosGrupos,
-                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
-                FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados));
-
         string atorUsuarioSub = userContext.UserId ?? "system";
 
-        Result<VersaoConfiguracao> retificarResult = processo.Retificar(
-            new PedidoDeCongelamento
-            {
-                Dados = dados,
-                Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!),
-                AtorUsuarioSub = atorUsuarioSub,
-                Clock = timeProvider,
-                Contexto = contexto,
-                FatosDeModalidade = fatosDeModalidade,
-                TiposDeAtoUnicos = tiposDeAtoUnicos,
-            },
-            versaoAtual,
-            motivo);
+        PedidoDeCongelamento pedido = await MontagemDoCongelamento
+            .MontarAsync(
+                calendarioVigenteReader, canonicalizer, timeProvider,
+                new EntradaCanonicalizacao(
+                    processo, dados, documento.HashSha256!, fusoResult.Value!.Id,
+                    new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
+                    conformidadeLegal.Value,
+                    metadadosFatosResult.Value,
+                    valoresSelecionaveisResult.Value,
+                    CalendarioDiasUteis: null,
+                    agregadosDosGrupos,
+                    ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
+                    TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
+                    FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados),
+                fusoInstitucional, atorUsuarioSub, fatosDeModalidade, tiposDeAtoUnicos, cancellationToken)
+            .ConfigureAwait(false);
+
+        Result<VersaoConfiguracao> retificarResult = processo.Retificar(pedido, versaoAtual, motivo);
         if (retificarResult.IsFailure)
         {
             return (Result.Failure(retificarResult.Error!), []);
         }
 
-        VersaoConfiguracao versao = retificarResult.Value!;
-
-        // A recusa vem antes de qualquer escrita (ADR-0125).
-        Result<AtoDoProcesso> registroDoAto = RegistroDoAtoDaVersao.Montar(
-            processo,
-            versao,
-            command.Ato,
-            tipoConferido,
-            dados,
-            documento.Id,
-            atoRetificadoId: versaoAtual.AtoCriadorId,
-            motivoRetificacao: motivo,
-            timeProvider);
-        if (registroDoAto.IsFailure)
-        {
-            return (Result.ValidationFailure(registroDoAto.Errors), []);
-        }
-
-        await processoSeletivoRepository
-            .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
+        return await GravacaoDaVersaoCongelada
+            .GravarAsync(
+                new VersaoCongelada(processo, retificarResult.Value!, command.Ato, tipoConferido, dados, documento, versaoAtual.AtoCriadorId, motivo),
+                processoSeletivoRepository, atoDoProcessoRepository, rascunhoDePublicacaoRepository, unitOfWork, timeProvider, cancellationToken)
             .ConfigureAwait(false);
-
-        // O registro do ato vai na mesma gravação da versão e do envio ao outbox: a consulta dos atos
-        // do processo lê só ele, e a confirmação do Publicações o encontra pelo id do ato.
-        await atoDoProcessoRepository.AdicionarAsync(registroDoAto.Value!, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
-        {
-            // Traduz violação de guard rail de banco (ADR-0102). Duas retificações
-            // concorrentes do mesmo processo elegem o MESMO ato criador como alvo e
-            // derivam o mesmo N+1: ux_versoes_configuracao_processo_numero e o trigger de
-            // sucessão (ck_versoes_configuracao_cadeia) deixam passar uma só, na mesma
-            // transação. É aqui que a linearidade da cadeia é garantida — Publicações
-            // também a barra, mas só no consumo da fila, depois do commit.
-            // Filtro do `when` garante que outras exceções propagam intactas.
-
-            // A recusa não devolve exceção: o envoltório de Handle descarta o rastreamento antes de o
-            // Wolverine salvar de novo (ADR-0119).
-            return (Result.Failure(erroVersao), []);
-        }
-
-        // Só com a versão gravada o rascunho perde a razão de existir, e só aqui sai do banco
-        // o nome de quem assinou. Apagar antes do flush punha a transcrição do operador numa
-        // aposta: ApagarDoProcessoAsync emite o DELETE na hora, e qualquer recusa daí em
-        // diante devolveria "nada foi publicado" com o bloco transcrito do Diário Oficial
-        // destruídos — inclusive o rascunho do colega, que a exclusão alcança por ser por
-        // processo. Todo caminho que registra ato apaga: nenhum ganha isso de graça, porque a
-        // raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
-        await rascunhoDePublicacaoRepository
-            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        // ADR-0108: a retificação segue a MESMA orquestração da abertura — a requisição do
-        // ato viaja no outbox, na transação que acabou de gravar a nova versão. O que muda
-        // é o par (ato retificado, motivo): em Publicações, retificar é publicar um ato que
-        // emenda outro (ADR-0103), e o ato emendado é o que criou a versão anterior — o
-        // mesmo alvo que o agregado elegeu, não o de maior data. O tipo do ato continua
-        // vindo declarado pelo operador: uma convocação retificada continua convocação.
-        return (Result.Success(), MensagensDaPublicacao.Montar(
-            processo,
-            versao,
-            command.Ato,
-            tipoConferido,
-            dados.Numero,
-            documento.HashSha256!,
-            atoRetificadoId: versaoAtual.AtoCriadorId,
-            motivoRetificacao: motivo));
     }
 }

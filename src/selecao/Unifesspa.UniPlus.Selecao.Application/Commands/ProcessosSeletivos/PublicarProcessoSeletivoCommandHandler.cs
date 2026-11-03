@@ -270,133 +270,33 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(avaliavel.Error!), []);
         }
 
-        // UNI-REQ-0116: UMA leitura do calendário vigente por operação. A mesma resposta
-        // alimenta o gate da raiz e o bloco congelado do envelope — ler duas vezes abriria a
-        // janela em que o dataset muda entre validar e congelar, e a versão publicada
-        // carregaria um calendário que o gate não aprovou.
-        CalendarioVigenteView? calendarioVigente = await calendarioVigenteReader
-            .ObterVigenteAsync(cancellationToken)
-            .ConfigureAwait(false);
-        // Dataset vigente incoerente não aborta aqui: quem decide se ele importa é o gate da
-        // raiz, e só importa para processo cuja contagem distingue dia útil. Abortar antes
-        // recusaria também quem não usa o dado que está quebrado, e o checklist ficaria verde
-        // para um processo que a publicação recusa.
-        Result<CalendarioDiasUteisCongelado?> calendarioResult =
-            LeituraDoCalendarioVigente.Traduzir(calendarioVigente);
-
-        var contexto = new ContextoDeContagemDePrazos(
-            calendarioResult.IsSuccess ? calendarioResult.Value : null,
-
-            FalhaDoCalendarioVigente: calendarioResult.IsFailure ? calendarioResult.Error : null,
-            FusoInstitucional: fusoInstitucional);
-
-        SnapshotCanonico canonico = canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(
-                processo, dados, documento.HashSha256!, fusoResult.Value!.Id,
-                Conformidade: conformidadeLegal.Value,
-                MetadadosFatosCongelados: metadadosFatosResult.Value,
-                ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value,
-                CalendarioDiasUteis: contexto.CalendarioVigente,
-                AgregadosDosGrupos: DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
-                ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
-                FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados));
-
         string atorUsuarioSub = userContext.UserId ?? "system";
 
-        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            new PedidoDeCongelamento
-            {
-                Dados = dados,
-                Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!),
-                AtorUsuarioSub = atorUsuarioSub,
-                Clock = timeProvider,
-                Contexto = contexto,
-                FatosDeModalidade = fatosDeModalidade,
-                TiposDeAtoUnicos = tiposDeAtoUnicos,
-            });
+        PedidoDeCongelamento pedido = await MontagemDoCongelamento
+            .MontarAsync(
+                calendarioVigenteReader, canonicalizer, timeProvider,
+                new EntradaCanonicalizacao(
+                    processo, dados, documento.HashSha256!, fusoResult.Value!.Id,
+                    Conformidade: conformidadeLegal.Value,
+                    MetadadosFatosCongelados: metadadosFatosResult.Value,
+                    ValoresSelecionaveisCongelados: valoresSelecionaveisResult.Value,
+                    AgregadosDosGrupos: DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo),
+                    ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
+                    TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
+                    FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados),
+                fusoInstitucional, atorUsuarioSub, fatosDeModalidade, tiposDeAtoUnicos, cancellationToken)
+            .ConfigureAwait(false);
+
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(pedido);
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);
         }
 
-        VersaoConfiguracao versao = publicarResult.Value!;
-
-        // A recusa vem antes de qualquer escrita (ADR-0125).
-        Result<AtoDoProcesso> registroDoAto = RegistroDoAtoDaVersao.Montar(
-            processo,
-            versao,
-            command.Ato,
-            tipoConferido,
-            dados,
-            documento.Id,
-            atoRetificadoId: null,
-            motivoRetificacao: null,
-            timeProvider);
-        if (registroDoAto.IsFailure)
-        {
-            return (Result.ValidationFailure(registroDoAto.Errors), []);
-        }
-
-        await processoSeletivoRepository
-            .AdicionarVersaoConfiguracaoAsync(versao, cancellationToken)
+        return await GravacaoDaVersaoCongelada
+            .GravarAsync(
+                new VersaoCongelada(processo, publicarResult.Value!, command.Ato, tipoConferido, dados, documento, AtoRetificadoId: null, MotivoRetificacao: null),
+                processoSeletivoRepository, atoDoProcessoRepository, rascunhoDePublicacaoRepository, unitOfWork, timeProvider, cancellationToken)
             .ConfigureAwait(false);
-
-        // O registro do ato vai na mesma gravação da versão e do envio ao outbox: a consulta dos atos
-        // do processo lê só ele, e a confirmação do Publicações o encontra pelo id do ato.
-        await atoDoProcessoRepository.AdicionarAsync(registroDoAto.Value!, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && VersaoConfiguracaoConstraintViolation.Traduzir(constraint) is { } erroVersao)
-        {
-            // Traduz violação de guard rail de banco (ADR-0102): a corrida de duas
-            // publicações concorrentes do mesmo processo cai em
-            // ux_versoes_configuracao_processo_numero — as duas derivam a versão 1, e o
-            // índice deixa passar uma só. É o backstop transacional que substitui o
-            // antigo índice de abertura única, e sem literal de tipo de ato no filtro.
-            // Filtro do `when` garante que outras exceções propagam intactas.
-
-            // A recusa não devolve exceção: o envoltório de Handle descarta o rastreamento antes de o
-            // Wolverine salvar de novo (ADR-0119).
-            return (Result.Failure(erroVersao), []);
-        }
-
-        // Só com a versão gravada o rascunho perde a razão de existir, e só aqui sai do banco
-        // o nome de quem assinou. Apagar antes do flush punha a transcrição do operador numa
-        // aposta: ApagarDoProcessoAsync emite o DELETE na hora, e qualquer recusa daí em
-        // diante devolveria "nada foi publicado" com o bloco transcrito do Diário Oficial
-        // destruídos — inclusive o rascunho do colega, que a exclusão alcança por ser por
-        // processo. Todo caminho que registra ato apaga: nenhum ganha isso de graça, porque a
-        // raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
-        await rascunhoDePublicacaoRepository
-            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        // ADR-0108: a requisição de registro do ato viaja como cascading message, junto dos
-        // domain events — o Wolverine instala o envelope no outbox DENTRO da transação que
-        // acabou de gravar a versão (ADR-0004). Ou os dois existem, ou nenhum.
-        //
-        // É essa atomicidade que a chamada síncrona não conseguia dar, e é o que impede o
-        // ato órfão: a vaga de linhagem do certame (ADR-0107) é monotônica, e um ato
-        // registrado para uma publicação que falhou depois deixaria o certame impublicável
-        // para sempre.
-        //
-        // O ato ainda não existe quando esta linha roda — e não precisa existir: o id é
-        // decidido pelo agregado, e a versão já o referencia por VALOR, sem chave
-        // estrangeira (ADR-0061). O documento normativo é de Publicações (ADR-0103/0105);
-        // Seleção guarda dele apenas o par {id, hash}.
-        return (Result.Success(), MensagensDaPublicacao.Montar(
-            processo,
-            versao,
-            command.Ato,
-            tipoConferido,
-            dados.Numero,
-            documento.HashSha256!,
-            atoRetificadoId: null,
-            motivoRetificacao: null));
     }
 }

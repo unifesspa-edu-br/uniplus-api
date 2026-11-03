@@ -27,6 +27,7 @@ public sealed class RascunhoNaoVazaNemEhLidoTests
         "PublicarProcessoSeletivoCommandHandler.cs",
         "RetificarProcessoSeletivoCommandHandler.cs",
         "FecharRetificacaoCommandHandler.cs",
+        "GravacaoDaVersaoCongelada.cs",
         "DescartarRetificacaoCommandHandler.cs",
     ];
 
@@ -56,6 +57,7 @@ public sealed class RascunhoNaoVazaNemEhLidoTests
                      "PublicarProcessoSeletivoCommandHandler.cs",
                      "RetificarProcessoSeletivoCommandHandler.cs",
                      "FecharRetificacaoCommandHandler.cs",
+                     "GravacaoDaVersaoCongelada.cs",
                  })
         {
             string fonte = File.ReadAllText(Path.Join(CaminhoDosComandos(), handler));
