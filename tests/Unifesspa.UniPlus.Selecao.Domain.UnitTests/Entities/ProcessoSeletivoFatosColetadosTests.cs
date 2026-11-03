@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -76,7 +77,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
         };
         HashSet<string> nenhum = new(StringComparer.Ordinal);
 
-        IReadOnlyList<RecusaDaCopiaDoItem> recusas = processo.ConferirCopiasDoCatalogo(catalogo, nenhum);
+        IReadOnlyList<RecusaDaCopiaDoItem> recusas = RegrasDaColeta.ConferirCopiasDoCatalogo(EstadoDaConfiguracao.De(processo), catalogo, nenhum);
         Result recopia = processo.RecopiarItensDoCatalogo(catalogo, nenhum);
 
         recusas.Select(static r => r.Item.FatoCodigo).Should().BeEquivalentTo("CPF", "NIS");

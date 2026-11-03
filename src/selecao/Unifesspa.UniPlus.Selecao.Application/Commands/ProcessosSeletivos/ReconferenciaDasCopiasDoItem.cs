@@ -10,6 +10,8 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Reconfere, ao congelar, o item do formulário contra o catálogo de hoje: o item é editável depois
@@ -69,7 +71,7 @@ internal static class ReconferenciaDasCopiasDoItem
             StringComparer.Ordinal);
         // A forma das cópias é conferida pelo agregado sem mudá-lo; o caminho e a orientação de cada
         // recusa são montados aqui, no mesmo percurso das demais.
-        ILookup<FatoColetado, FieldError> daForma = processo.ConferirCopiasDoCatalogo(copias, jaColetados)
+        ILookup<FatoColetado, FieldError> daForma = RegrasDaColeta.ConferirCopiasDoCatalogo(EstadoDaConfiguracao.De(processo), copias, jaColetados)
             .ToLookup<RecusaDaCopiaDoItem, FatoColetado, FieldError>(static r => r.Item, static r => r.Erro, (IEqualityComparer<FatoColetado>)ReferenceEqualityComparer.Instance);
 
         List<FieldError> erros = [];
