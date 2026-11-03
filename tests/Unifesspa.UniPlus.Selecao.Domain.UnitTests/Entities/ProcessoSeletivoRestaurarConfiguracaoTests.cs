@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -344,7 +345,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     {
         ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
         Estado antes = Estado.De(processo);
-        CriterioDesempate[] criterios = [.. Enumerable.Range(1, ProcessoSeletivo.CriteriosDesempateMaximo + 1).Select(static ordem =>
+        CriterioDesempate[] criterios = [.. Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo + 1).Select(static ordem =>
             CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!)];
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(criterios: criterios));

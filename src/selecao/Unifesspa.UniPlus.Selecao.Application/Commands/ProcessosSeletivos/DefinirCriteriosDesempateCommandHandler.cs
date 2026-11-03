@@ -14,6 +14,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
@@ -49,7 +50,7 @@ public static class DefinirCriteriosDesempateCommandHandler
 
         // Acima do teto a lista não é lida item a item: o validator não confere os itens dela,
         // e a recusa do agregado é a única resposta.
-        List<FieldError> quantidadeErros = ProcessoSeletivo.ValidarQuantidadeDeCriteriosDesempate(command.Criterios.Count);
+        List<FieldError> quantidadeErros = RegrasDoDesempate.ValidarQuantidadeDeCriteriosDesempate(command.Criterios.Count);
         bool resolverCriterios = quantidadeErros.Count == 0 && command.Criterios.Count > 0;
 
         // As leituras que não dependem do processo rodam antes de travá-lo para a mutação. O
@@ -119,7 +120,7 @@ public static class DefinirCriteriosDesempateCommandHandler
             {
                 erros.AddRange(resultado.Errors.Select(erro => erro with
                 {
-                    Field = ProcessoSeletivo.CampoDoCriterioDesempate(indice, erro.Field),
+                    Field = RegrasDoDesempate.CampoDoCriterioDesempate(indice, erro.Field),
                 }));
                 continue;
             }
@@ -129,8 +130,8 @@ public static class DefinirCriteriosDesempateCommandHandler
 
         if (erros.Count > 0)
         {
-            erros.AddRange(processo.ValidarCriteriosDesempate(informados));
-            return Result<MutacaoAceita>.ValidationFailure(processo.AnexarAreasAceitasDoDesempate(erros));
+            erros.AddRange(RegrasDoDesempate.ValidarCriteriosDesempate(EstadoDaConfiguracao.De(processo), informados));
+            return Result<MutacaoAceita>.ValidationFailure(RegrasDoDesempate.AnexarAreasAceitasDoDesempate(EstadoDaConfiguracao.De(processo), erros));
         }
 
         if (fatos is { } catalogoFatos)

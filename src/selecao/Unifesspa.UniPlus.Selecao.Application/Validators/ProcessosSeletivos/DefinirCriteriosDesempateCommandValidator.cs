@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Commands.ProcessosSeletivos;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.Desempate;
 
 using FluentValidation;
 
@@ -35,7 +36,7 @@ public sealed class DefinirCriteriosDesempateCommandValidator : AbstractValidato
 
         // Acima do teto os itens não são conferidos aqui: a lista é recusada inteira pelo
         // agregado, e conferir cada item faria a resposta crescer com a entrada.
-        When(static x => x.Criterios is not null && x.Criterios.Count <= ProcessoSeletivo.CriteriosDesempateMaximo, () =>
+        When(static x => x.Criterios is not null && x.Criterios.Count <= RegrasDoDesempate.CriteriosDesempateMaximo, () =>
         {
             RuleForEach(x => x.Criterios)
                 .NotNull()

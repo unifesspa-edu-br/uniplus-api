@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -1036,7 +1037,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         // Direto na lista: a gravação e a restauração recusam acima do teto, e o gate cobre o
         // rascunho que chega por outro caminho.
-        CriteriosDesempateDe(processo).AddRange(Enumerable.Range(1, ProcessoSeletivo.CriteriosDesempateMaximo + 1).Select(static ordem =>
+        CriteriosDesempateDe(processo).AddRange(Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo + 1).Select(static ordem =>
             CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!));
 
         SoEstesItensVermelhos(processo, "criterios_desempate_em_excesso");

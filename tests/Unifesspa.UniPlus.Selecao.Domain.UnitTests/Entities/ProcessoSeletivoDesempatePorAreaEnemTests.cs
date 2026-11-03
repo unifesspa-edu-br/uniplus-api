@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -190,7 +191,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        CriterioDesempate[] criterios = [.. Enumerable.Range(1, ProcessoSeletivo.CriteriosDesempateMaximo + 1).Select(static ordem => PorArea(ordem, "FISICA"))];
+        CriterioDesempate[] criterios = [.. Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo + 1).Select(static ordem => PorArea(ordem, "FISICA"))];
 
         Result result = processo.DefinirCriteriosDesempate(criterios, PrecondicaoIfMatch.Ausente);
 
@@ -205,12 +206,12 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        CriterioDesempate[] criterios = [.. Enumerable.Range(1, ProcessoSeletivo.CriteriosDesempateMaximo).Select(ordem =>
+        CriterioDesempate[] criterios = [.. Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo).Select(ordem =>
             PorArea(ordem, [.. Enumerable.Range(0, CriterioDesempate.AreasMaximo).Select(i => $"AREA_{ordem}_{i}")]))];
 
         Result result = processo.DefinirCriteriosDesempate(criterios, PrecondicaoIfMatch.Ausente);
 
-        result.Errors.Should().HaveCount(ProcessoSeletivo.CriteriosDesempateMaximo * CriterioDesempate.AreasMaximo);
+        result.Errors.Should().HaveCount(RegrasDoDesempate.CriteriosDesempateMaximo * CriterioDesempate.AreasMaximo);
         result.Errors.Count(static e => e.Error.Message.Contains("Áreas aceitas", StringComparison.Ordinal)).Should().Be(1);
         result.Errors[0].Error.Message.Should().Contain("Áreas aceitas: CIENCIAS_DA_NATUREZA");
         result.Errors.Sum(static e => e.Error.Message.Length).Should().BeLessThan(400 * 160,

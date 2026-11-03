@@ -7,6 +7,7 @@ using FluentValidation.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirCriteriosDesempateCommandValidatorTests
@@ -56,13 +57,13 @@ public sealed class DefinirCriteriosDesempateCommandValidatorTests
     [Fact(DisplayName = "No teto, as regras por item continuam valendo")]
     public void NoTeto_RegrasPorItemValem()
     {
-        CriterioDesempateInput[] criterios = [.. Enumerable.Range(1, ProcessoSeletivo.CriteriosDesempateMaximo).Select(static ordem =>
+        CriterioDesempateInput[] criterios = [.. Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo).Select(static ordem =>
             new CriterioDesempateInput(ordem, string.Empty, "v1", null, null, null, null, null))];
 
         ValidationResult result = new DefinirCriteriosDesempateCommandValidator().Validate(
             new DefinirCriteriosDesempateCommand(Guid.CreateVersion7(), criterios, PrecondicaoIfMatch.Ausente));
 
-        result.Errors.Should().HaveCount(ProcessoSeletivo.CriteriosDesempateMaximo)
+        result.Errors.Should().HaveCount(RegrasDoDesempate.CriteriosDesempateMaximo)
             .And.OnlyContain(static e => e.PropertyName.EndsWith(".RegraCodigo", StringComparison.Ordinal));
     }
 }
