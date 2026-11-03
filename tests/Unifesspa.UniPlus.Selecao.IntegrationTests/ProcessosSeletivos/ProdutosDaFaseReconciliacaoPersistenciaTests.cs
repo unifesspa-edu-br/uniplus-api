@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A reconciliação dos produtos por <c>ato_codigo</c> dentro de
-/// <c>FaseCronograma.AtualizarSnapshot</c>, contra Postgres real.
+/// <c>FaseCronograma.AtualizarDe</c>, contra Postgres real.
 /// </summary>
 /// <remarks>
 /// <c>ux_produtos_da_fase_ato</c> torna <c>(fase, ato_codigo)</c> único, e é isso que separa esta

@@ -1928,7 +1928,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // Reconciliação por FaseCanonicaOrigemId — a
         // mesma chave de identidade do guard acima. Reusa a instância TRACKED existente
-        // (retargetando-a via AtualizarSnapshot, preservando o Id) sempre que a fase
+        // (retargetando-a via AtualizarDe, preservando o Id) sempre que a fase
         // canônica persiste no cronograma, independente de Ordem: evita tanto FK Restrict
         // de documentos_exigidos.exigido_na_fase_id quanto o retargeting desnecessário do
         // FaseCanonicaOrigemId que causava a colisão descrita acima — a essa altura, o
@@ -1939,23 +1939,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         {
             if (fasesAntigasPorOrigem.TryGetValue(nova.FaseCanonicaOrigemId, out FaseCronograma? existente))
             {
-                existente.AtualizarSnapshot(
-                    nova.FaseCanonicaOrigemId,
-                    nova.Ordem,
-                    nova.Codigo,
-                    nova.OrigemData,
-                    nova.AgrupaEtapas,
-                    nova.PermiteComplementacao,
-                    nova.ColetaInscricao,
-                    nova.ColetaSolicitacaoIsencao,
-                    nova.Inicio,
-                    nova.Fim,
-                    [.. nova.Produtos],
-                    nova.FaseConcluinteCodigo,
-                    nova.EmiteParecerIndividual,
-                    [.. nova.BancasRequeridas],
-                    nova.RegraRecurso,
-                    nova.UnidadeResponsavel);
+                existente.AtualizarDe(nova, [.. nova.Produtos]);
                 resultantes.Add(existente);
             }
             else
@@ -7693,7 +7677,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <remarks>
     /// <para>
     /// O <c>Id</c> de <see cref="ProdutoDaFase"/> é congelado no envelope, e a reconciliação
-    /// dentro de <see cref="FaseCronograma.AtualizarSnapshot"/> é por <c>AtoCodigo</c>, feita
+    /// dentro de <see cref="FaseCronograma.AtualizarDe"/> é por <c>AtoCodigo</c>, feita
     /// já dentro de uma fase: ela não enxerga o cronograma inteiro e não tem como saber que a
     /// fase congelada caiu sobre outra fase viva. Quando isso acontece — a sessão editorial
     /// deslocou as ordens, e a reconciliação por Ordem passa a casar fases diferentes —,
@@ -7732,7 +7716,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// do preliminar para o definitivo sempre que este viesse primeiro — o recurso passaria a
     /// correr da publicação errada, e a snapshot preservaria o engano. A segunda etapa — do
     /// produto recriado para a instância rastreada que porventura sobreviva — é feita por
-    /// <c>FaseCronograma.AtualizarSnapshot</c>.
+    /// <c>FaseCronograma.AtualizarDe</c>.
     /// </remarks>
     private static void ReancorarRecursoNosProdutosRecriados(
         FaseCronograma congelada,
@@ -7775,26 +7759,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 // outro. Repor pela metade fazia o descarte da retificação relatar sucesso com
                 // a configuração viva ainda diferente do envelope publicado — exatamente o que
                 // o descarte existe para desfazer.
-                viva.ReporDadosCongelados(
-                    congelada.Nome,
-                    congelada.Carater,
-                    congelada.TipoEtapa,
-                    congelada.Peso,
-                    congelada.NotaMinima,
-                    congelada.Ordem,
-                    congelada.FaseCodigo,
-                    congelada.Inicio,
-                    congelada.Fim,
-                    congelada.EmiteParecerIndividual,
-                    [.. congelada.Produtos],
-                    [.. congelada.Bancas],
-                    [.. congelada.Recursos],
-                    congelada.NotaMaxima,
-                    congelada.PassoDoLancamento,
-                    congelada.FormaDeAvaliacao,
-                    congelada.RegraConsolidacao,
-                    congelada.ItensDeAvaliacao,
-                    congelada.EscalaDeAtendimento);
+                viva.ReporDe(congelada);
                 etapas.Add(viva);
             }
             else
@@ -7896,7 +7861,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // Cronograma de fases (Story #851): a reconciliação é por ORDEM, não por Id —
         // reusa a instância TRACKED cuja Ordem bate com a da fase congelada,
         // atualizando-a no lugar (mesmo cuidado que as etapas já tomam — ver a nota em
-        // FaseCronograma.AtualizarSnapshot). O que a sustenta é a identidade da linha, e
+        // FaseCronograma.AtualizarDe). O que a sustenta é a identidade da linha, e
         // não risco de colidir em ux_fases_cronograma_processo_ordem: um índice único sem
         // filtro entra no grafo de comandos do EF Core, que emite o DELETE liberando a
         // Ordem antes do INSERT que a quer — medido em EtapaBancaPersistenciaTests, sobre o
@@ -7923,23 +7888,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 IReadOnlyList<ProdutoDaFase> produtosDaViva = ProdutosParaAFaseViva(congelada, viva);
                 ReancorarRecursoNosProdutosRecriados(congelada, produtosDaViva);
 
-                viva.AtualizarSnapshot(
-                    congelada.FaseCanonicaOrigemId,
-                    congelada.Ordem,
-                    congelada.Codigo,
-                    congelada.OrigemData,
-                    congelada.AgrupaEtapas,
-                    congelada.PermiteComplementacao,
-                    congelada.ColetaInscricao,
-                    congelada.ColetaSolicitacaoIsencao,
-                    congelada.Inicio,
-                    congelada.Fim,
-                    produtosDaViva,
-                    congelada.FaseConcluinteCodigo,
-                    congelada.EmiteParecerIndividual,
-                    [.. congelada.BancasRequeridas],
-                    congelada.RegraRecurso,
-                    congelada.UnidadeResponsavel);
+                viva.AtualizarDe(congelada, produtosDaViva);
                 fases.Add(viva);
                 if (viva.Id != congelada.Id)
                 {

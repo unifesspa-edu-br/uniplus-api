@@ -610,7 +610,7 @@ public sealed class FaseCronograma : EntityBase
     /// não a decodificada) quanto pela redefinição ao vivo do cronograma
     /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
     /// <see cref="FaseCanonicaOrigemId"/> — a identidade estável de uma fase; aqui
-    /// <paramref name="ordem"/> PODE mudar, ao contrário do caminho de restauração).
+    /// <see cref="Ordem"/> PODE mudar, ao contrário do caminho de restauração).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -644,41 +644,24 @@ public sealed class FaseCronograma : EntityBase
     /// dia a banca passar a ser reconciliada, esta afirmação deixa de valer junto.
     /// </para>
     /// </remarks>
-    internal void AtualizarSnapshot(
-        Guid faseCanonicaOrigemId,
-        int ordem,
-        string codigo,
-        OrigemDataFase origemData,
-        bool agrupaEtapas,
-        bool permiteComplementacao,
-        bool coletaInscricao,
-        bool coletaSolicitacaoIsencao,
-        DateTimeOffset? inicio,
-        DateTimeOffset? fim,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        string? faseConcluinteCodigo,
-        bool emiteParecerIndividual,
-        IReadOnlyList<BancaRequerida> bancasRequeridas,
-        RegraRecursoFase? regraRecurso,
-        UnidadeResponsavelSnapshot? unidadeResponsavel)
+    internal void AtualizarDe(FaseCronograma origem, IReadOnlyList<ProdutoDaFase> produtos)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentNullException.ThrowIfNull(origem);
         ArgumentNullException.ThrowIfNull(produtos);
-        ArgumentNullException.ThrowIfNull(bancasRequeridas);
 
-        FaseCanonicaOrigemId = faseCanonicaOrigemId;
-        Ordem = ordem;
-        Codigo = codigo.Trim();
-        OrigemData = origemData;
-        AgrupaEtapas = agrupaEtapas;
-        PermiteComplementacao = permiteComplementacao;
-        ColetaInscricao = coletaInscricao;
-        ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao;
-        Inicio = EmUtc(inicio);
-        Fim = EmUtc(fim);
-        FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo);
-        EmiteParecerIndividual = emiteParecerIndividual;
-        DefinirUnidadeResponsavel(unidadeResponsavel);
+        FaseCanonicaOrigemId = origem.FaseCanonicaOrigemId;
+        Ordem = origem.Ordem;
+        Codigo = origem.Codigo.Trim();
+        OrigemData = origem.OrigemData;
+        AgrupaEtapas = origem.AgrupaEtapas;
+        PermiteComplementacao = origem.PermiteComplementacao;
+        ColetaInscricao = origem.ColetaInscricao;
+        ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
+        Inicio = EmUtc(origem.Inicio);
+        Fim = EmUtc(origem.Fim);
+        FaseConcluinteCodigo = NormalizarCodigo(origem.FaseConcluinteCodigo);
+        EmiteParecerIndividual = origem.EmiteParecerIndividual;
+        DefinirUnidadeResponsavel(origem.UnidadeResponsavel);
 
         // Duas passadas, porque a chave da linha é o par ato + papel e o papel é justamente
         // o que a edição pode trocar. A primeira casa o par inteiro — a linha que não mudou.
@@ -733,17 +716,17 @@ public sealed class FaseCronograma : EntityBase
         }
 
         _bancasRequeridas.Clear();
-        foreach (BancaRequerida banca in bancasRequeridas)
+        foreach (BancaRequerida banca in origem.BancasRequeridas)
         {
             banca.VincularFase(Id);
             _bancasRequeridas.Add(banca);
         }
 
-        RegraRecurso = regraRecurso;
-        if (regraRecurso is not null)
+        RegraRecurso = origem.RegraRecurso;
+        if (RegraRecurso is not null)
         {
-            regraRecurso.VincularFase(Id);
-            RemapearAncoraDoRecurso(regraRecurso, produtos);
+            RegraRecurso.VincularFase(Id);
+            RemapearAncoraDoRecurso(RegraRecurso, produtos);
         }
     }
 

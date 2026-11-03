@@ -407,52 +407,29 @@ public sealed class EtapaProcesso : EntityBase
     /// </para>
     /// <para>
     /// Chamada apenas pela reconciliação da restauração, em <c>ProcessoSeletivo.AplicarGrafo</c>.
+    /// Lê tudo da etapa <paramref name="congelada"/> decodificada do envelope.
     /// </para>
     /// </remarks>
-    internal void ReporDadosCongelados(
-        string nome,
-        CaraterEtapa carater,
-        TipoEtapaSnapshot tipoEtapa,
-        decimal? peso,
-        decimal? notaMinima,
-        int? ordem,
-        string? faseCodigo,
-        DateTimeOffset? inicio,
-        DateTimeOffset? fim,
-        bool emiteParecerIndividual,
-        IReadOnlyList<ProdutoDaEtapa> produtos,
-        IReadOnlyList<BancaDaEtapa> bancas,
-        IReadOnlyList<RecursoDaEtapa> recursos,
-        decimal? notaMaxima,
-        decimal? passoDoLancamento,
-        FormaDeAvaliacao? formaDeAvaliacao,
-        ReferenciaRegra? regraConsolidacao,
-        IReadOnlyList<ItemDeAvaliacao> itensDeAvaliacao,
-        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento)
+    internal void ReporDe(EtapaProcesso congelada)
     {
-        ArgumentNullException.ThrowIfNull(nome);
-        ArgumentNullException.ThrowIfNull(itensDeAvaliacao);
-        ArgumentNullException.ThrowIfNull(tipoEtapa);
-        ArgumentNullException.ThrowIfNull(produtos);
-        ArgumentNullException.ThrowIfNull(bancas);
-        ArgumentNullException.ThrowIfNull(recursos);
+        ArgumentNullException.ThrowIfNull(congelada);
 
-        Nome = nome.Trim();
-        Carater = carater;
-        TipoEtapa = tipoEtapa;
-        Peso = peso;
-        NotaMinima = notaMinima;
-        NotaMaxima = notaMaxima;
-        PassoDoLancamento = passoDoLancamento;
-        FormaDeAvaliacao = formaDeAvaliacao;
-        RegraConsolidacao = regraConsolidacao;
-        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento);
-        Ordem = ordem;
-        FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
-        Inicio = inicio?.ToUniversalTime();
-        ReporItensCongelados(itensDeAvaliacao);
-        Fim = fim?.ToUniversalTime();
-        EmiteParecerIndividual = emiteParecerIndividual;
+        Nome = congelada.Nome.Trim();
+        Carater = congelada.Carater;
+        TipoEtapa = congelada.TipoEtapa;
+        Peso = congelada.Peso;
+        NotaMinima = congelada.NotaMinima;
+        NotaMaxima = congelada.NotaMaxima;
+        PassoDoLancamento = congelada.PassoDoLancamento;
+        FormaDeAvaliacao = congelada.FormaDeAvaliacao;
+        RegraConsolidacao = congelada.RegraConsolidacao;
+        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(congelada.EscalaDeAtendimento);
+        Ordem = congelada.Ordem;
+        FaseCodigo = string.IsNullOrWhiteSpace(congelada.FaseCodigo) ? null : congelada.FaseCodigo.Trim();
+        Inicio = congelada.Inicio?.ToUniversalTime();
+        ReporItensCongelados(congelada.ItensDeAvaliacao);
+        Fim = congelada.Fim?.ToUniversalTime();
+        EmiteParecerIndividual = congelada.EmiteParecerIndividual;
 
         // Produtos em duas passadas, como na fase: a primeira casa o par ato + papel — a linha
         // que não mudou — e a segunda casa pelo ato entre as que sobraram, preservando o Id de
@@ -465,7 +442,7 @@ public sealed class EtapaProcesso : EntityBase
         List<ProdutoDaEtapa> reconciliados = [];
         List<ProdutoDaEtapa> semPar = [];
 
-        foreach (ProdutoDaEtapa congelado in produtos)
+        foreach (ProdutoDaEtapa congelado in congelada.Produtos)
         {
             // Sob a mesma normalização da gravação: o envelope congela o ato em NFC, e a linha
             // viva guarda o que o cliente escreveu. Casar ordinalmente faria a linha existente
@@ -518,20 +495,20 @@ public sealed class EtapaProcesso : EntityBase
         // acima. O tipo de origem é reposto na linha viva em vez de recriá-la.
         List<BancaDaEtapa> bancasVivas = [.. _bancas];
         List<BancaDaEtapa> bancasFinais = [];
-        foreach (BancaDaEtapa congelada in bancas)
+        foreach (BancaDaEtapa bancaCongelada in congelada.Bancas)
         {
-            string codigoCongelado = HashCanonicalComputer.NormalizeNfc(congelada.Codigo);
+            string codigoCongelado = HashCanonicalComputer.NormalizeNfc(bancaCongelada.Codigo);
             BancaDaEtapa? mesmoCodigo = bancasVivas.Find(
                 b => string.Equals(
                     HashCanonicalComputer.NormalizeNfc(b.Codigo), codigoCongelado, StringComparison.Ordinal));
             if (mesmoCodigo is null)
             {
-                bancasFinais.Add(congelada);
+                bancasFinais.Add(bancaCongelada);
                 continue;
             }
 
             bancasVivas.Remove(mesmoCodigo);
-            mesmoCodigo.ReporOrigem(congelada.TipoBancaOrigemId);
+            mesmoCodigo.ReporOrigem(bancaCongelada.TipoBancaOrigemId);
             bancasFinais.Add(mesmoCodigo);
         }
 
@@ -549,7 +526,7 @@ public sealed class EtapaProcesso : EntityBase
         // sintoma só apareceria muito depois, ao resolver o recurso de um ato publicado.
         List<RecursoDaEtapa> recursosVivos = [.. _recursos];
         List<RecursoDaEtapa> recursosFinais = [];
-        foreach (RecursoDaEtapa congelado in recursos)
+        foreach (RecursoDaEtapa congelado in congelada.Recursos)
         {
             Guid ancora = ancoraCongeladaParaViva.TryGetValue(congelado.ProdutoAncoraId, out Guid viva)
                 ? viva
@@ -594,7 +571,7 @@ public sealed class EtapaProcesso : EntityBase
     /// Não entra em <see cref="Criar"/> nem em <see cref="AtualizarDados"/>: quem chama confere
     /// numa passada própria, antes de qualquer mutação, para devolver de uma vez a recusa de
     /// todas as etapas do payload (ADR-0125). A restauração de uma versão congelada, que repõe
-    /// por <see cref="Reidratar"/> e <see cref="ReporDadosCongelados"/>, também não confere:
+    /// por <see cref="Reidratar"/> e <see cref="ReporDe"/>, também não confere:
     /// repor não é declarar, e o par caráter e sinalizadores volta como foi conferido ao congelar.
     /// </para>
     /// </remarks>

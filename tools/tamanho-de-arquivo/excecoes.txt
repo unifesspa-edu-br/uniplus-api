@@ -38,11 +38,11 @@
 544 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoClassificacao.cs
 696 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoDistribuicaoVagas.cs
 592 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/DocumentoExigido.cs
-1075 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/EtapaProcesso.cs
-829 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs
+1052 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/EtapaProcesso.cs
+812 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs
 1383 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/Inscricao.cs
 686 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/NoExigencia.cs
-8331 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs
+8280 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs
 591 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliacaoDaInscricao.cs
 447 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliadorConformidadeLegal.cs
 636 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/ResolvedorArvoreSatisfacao.cs

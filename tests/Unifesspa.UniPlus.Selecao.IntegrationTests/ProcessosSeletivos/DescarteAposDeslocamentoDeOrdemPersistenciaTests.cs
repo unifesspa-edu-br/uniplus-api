@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <remarks>
 /// <para>
 /// É o cruzamento de duas reconciliações que não conversam: <c>ProcessoSeletivo.AplicarGrafo</c>
-/// casa fase por <c>Ordem</c>, e <c>FaseCronograma.AtualizarSnapshot</c> casa produto por
+/// casa fase por <c>Ordem</c>, e <c>FaseCronograma.AtualizarDe</c> casa produto por
 /// <c>AtoCodigo</c> dentro da fase. Inserir uma fase no meio do cronograma faz a fase congelada
 /// de uma ordem cair sobre uma fase viva diferente, e o produto congelado — que carrega
 /// <c>Id</c> — passa a atravessar a fronteira da fase que o congelou.

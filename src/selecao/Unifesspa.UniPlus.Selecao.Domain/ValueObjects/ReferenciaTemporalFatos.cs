@@ -116,7 +116,7 @@ public sealed record ReferenciaTemporalFatos
     /// Corrige <see cref="FaseId"/> quando a reconciliação de <c>AplicarGrafo</c>
     /// (restauração da configuração congelada) reusa a instância VIVA de
     /// <see cref="Entities.FaseCronograma"/> em vez da decodificada (Ordem, não Id — ver
-    /// <see cref="Entities.FaseCronograma.AtualizarSnapshot"/>). Bypassa <see cref="Criar"/>
+    /// <see cref="Entities.FaseCronograma.AtualizarDe"/>). Bypassa <see cref="Criar"/>
     /// deliberadamente: a coerência tudo-ou-nada já foi verificada quando esta instância foi
     /// criada, e o remapeamento troca só o ponteiro, nunca o <see cref="Tipo"/> (Story #554,
     /// PR #903, achado de revisão).

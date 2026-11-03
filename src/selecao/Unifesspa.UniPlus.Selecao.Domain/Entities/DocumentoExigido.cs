@@ -419,7 +419,7 @@ public sealed class DocumentoExigido : EntityBase
     /// Corrige o ponteiro para a fase quando a reconciliação de <c>AplicarGrafo</c>
     /// (restauração da configuração congelada) reusa a instância VIVA de
     /// <see cref="Entities.FaseCronograma"/> em vez da decodificada (Ordem, não Id — ver
-    /// <see cref="Entities.FaseCronograma.AtualizarSnapshot"/>). Sem este remapeamento, um
+    /// <see cref="Entities.FaseCronograma.AtualizarDe"/>). Sem este remapeamento, um
     /// documento congelado com <see cref="ExigidoNaFaseId"/> apontando para o Id FROZEN da
     /// fase (agora trocado pelo Id da instância viva) ficaria referenciando uma fase
     /// ausente de <c>CronogramaFases</c> após a restauração (Story #554, PR #903, achado

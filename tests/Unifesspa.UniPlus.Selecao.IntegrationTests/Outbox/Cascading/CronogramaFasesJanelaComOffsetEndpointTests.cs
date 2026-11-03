@@ -106,7 +106,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         primeira.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Mesma fase canônica: DefinirCronogramaFases reconcilia a linha existente por
-        // FaseCanonicaOrigemId (AtualizarSnapshot) em vez de recriá-la.
+        // FaseCanonicaOrigemId (AtualizarDe) em vez de recriá-la.
         HttpResponseMessage segunda = await ctx.PutCronogramaFasesAsync(
             "2027-02-01T05:00:00-03:00", "2027-02-03T15:00:00-03:00");
         segunda.StatusCode.Should().Be(HttpStatusCode.NoContent);

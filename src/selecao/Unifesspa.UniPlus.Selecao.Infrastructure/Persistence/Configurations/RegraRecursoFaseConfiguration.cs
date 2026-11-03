@@ -44,7 +44,7 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         builder.Navigation(r => r.Args).IsRequired();
 
         // Coluna crua, sem FK para produtos_da_fase, ao contrário do que DocumentoExigido faz
-        // com fases_cronograma. A reconciliação de FaseCronograma.AtualizarSnapshot esvazia e
+        // com fases_cronograma. A reconciliação de FaseCronograma.AtualizarDe esvazia e
         // repõe a coleção de produtos, e uma FK obrigatória faz o EF ler a saída do produto
         // âncora da coleção como rompimento de relação obrigatória — o SaveChanges estoura
         // antes de a âncora ser remapeada, ainda que o estado final seja coerente. A

@@ -33,7 +33,7 @@ public sealed class ProdutoDaFaseConfiguration : IEntityTypeConfiguration<Produt
 
         // O par ato + papel declarado uma única vez por fase — a mesma matéria é publicada
         // uma vez como preliminar e outra como definitiva, então o ato sozinho não é chave.
-        // É a chave de reconciliação de FaseCronograma.AtualizarSnapshot e a chave de
+        // É a chave de reconciliação de FaseCronograma.AtualizarDe e a chave de
         // round-trip do envelope — a rejeição no domínio é check-then-act não-atômico, e
         // esta constraint é a defesa atômica.
         //
