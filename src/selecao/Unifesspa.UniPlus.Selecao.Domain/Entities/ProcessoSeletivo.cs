@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -6066,54 +6067,20 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Publica o processo (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T4): valida a transição e a
-    /// conformidade estrutural, abre a cadeia de <see cref="VersaoConfiguracao"/>
-    /// a partir dos bytes canônicos já produzidos pelo
-    /// <c>ISnapshotPublicacaoCanonicalizer</c> (Application — Domain não pode
-    /// chamá-lo, ver ADR-0042) e transita o status — tudo dentro deste método,
-    /// atomicamente em memória; o handler só persiste o resultado numa única
-    /// transação.
+    /// Publica o processo (UNI-REQ-0019): confere a transição e os portões de prontidão, abre a
+    /// versão 1 da configuração a partir dos bytes canônicos que a Application produziu (o Domain
+    /// não canonicaliza, ADR-0042) e transita o status, tudo em memória e atomicamente. O ato que
+    /// cria a versão tem o id decidido aqui, mas o documento vive em <c>Publicacoes</c>
+    /// (ADR-0103/0105, ADR-0108). Não recebe precondição: o rascunho não tem sessão.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A raiz <b>decide o identificador</b> do ato que cria a versão, mas não o
-    /// documento: o ato publicado vive no módulo <c>Publicacoes</c> (ADR-0103/0105) e
-    /// é registrado a partir da mensagem durável que sai desta mesma transação
-    /// (ADR-0108). É por isso que o id é decidido aqui e não lá — sem ele, a versão
-    /// não teria o que referenciar, e a reentrega da fila (at-least-once) criaria um
-    /// ato gêmeo em vez de reencontrar o mesmo.
-    /// </para>
-    /// <para>
-    /// A referência é <b>por valor</b>: a versão guarda o par <c>{id, hash}</c> do ato,
-    /// sem chave estrangeira (ADR-0061). Nada aqui sabe o que o ato <i>é</i> — o tipo
-    /// vem do catálogo de Publicações, e retificar é uma relação entre atos, nunca um
-    /// tipo (ADR-0103).
-    /// </para>
-    /// </remarks>
-    /// <param name="dados">Número, período de inscrição e referência ao documento confirmado.</param>
-    /// <param name="configuracaoCongeladaCanonica">Bytes canônicos (ADR-0100) já produzidos pelo canonicalizador da Application.</param>
-    /// <param name="schemaVersion">Versão do conjunto de blocos do snapshot (ADR-0100 item 8).</param>
-    /// <param name="algoritmoHash">Identificador do algoritmo de hash (ex.: <c>canonical-json/sha256@v1</c>).</param>
-    /// <param name="hashDocumento">Hash SHA-256 do documento publicado (T3, #784) — o hash do ato criador.</param>
-    /// <param name="atorUsuarioSub">Sub do usuário autenticado responsável pela publicação (via <c>IUserContext</c>, nunca input do command).</param>
-    /// <param name="clock">Relógio injetado (ADR-0068) — nunca lido implicitamente.</param>
-    public Result<VersaoConfiguracao> Publicar(
-        DadosEdital dados,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioSub,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
+    public Result<VersaoConfiguracao> Publicar(PedidoDeCongelamento pedido)
     {
-        ArgumentNullException.ThrowIfNull(dados);
-        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
-        ArgumentNullException.ThrowIfNull(clock);
-        ArgumentNullException.ThrowIfNull(contexto);
-        ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(pedido.Dados, "dados");
+        ArgumentNullException.ThrowIfNull(pedido.Documento.Canonico, "configuracaoCongeladaCanonica");
+        ArgumentNullException.ThrowIfNull(pedido.Clock, "clock");
+        ArgumentNullException.ThrowIfNull(pedido.Contexto, "contexto");
+        ArgumentNullException.ThrowIfNull(pedido.TiposDeAtoUnicos, "tiposDeAtoUnicos");
 
         if (Status != StatusProcesso.Rascunho)
         {
@@ -6122,158 +6089,34 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível publicar um processo em rascunho — status atual: {Status}."));
         }
 
-        // O endereço público e a chave no acervo derivam do identificador legível: sem ele, a
-        // versão gerada não teria como ser encontrada pelo público. Vale para as três transições
-        // que geram versão, como a localidade logo abaixo.
-        if (PendenciaDoIdentificadorLegivel() is { } pendenciaIdentificador)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaIdentificador);
-        }
-
-        // Localidade (UNI-REQ-0111): a versão publicada congela o município cujo calendário rege a
-        // contagem dos prazos, e sem ele a janela de recurso não se recalcula. Desde que a
-        // localidade é exigida na criação, chegar aqui sem ela não é estado alcançável pelo fluxo
-        // público — a recusa fica como invariante da raiz, defendendo contra caminho de escrita que
-        // a contorne, e porque o requisito exige a recusa nomeada nas três transições que geram
-        // versão. Publicar cobre a inicial; SucederVersao cobre a retificação e o fechamento.
-        if (PendenciaDaLocalidade() is { } pendenciaLocalidade)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaLocalidade);
-        }
-
-        // Convenção de contagem (UNI-REQ-0112): exigida só quando alguma contagem do
-        // certame distingue dia útil. Escolher em silêncio produziria versão imutável cujo
-        // prazo o sistema teria decidido no lugar do edital.
-        if (PendenciaDoAlgoritmoDeContagem() is { } pendenciaAlgoritmo)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaAlgoritmo);
-        }
-
-        if (PendenciaDoCalendarioVigente(contexto) is { } pendenciaCalendario)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCalendario);
-        }
-
-        if (PendenciaDeConformidade() is { } pendencia)
+        if (ProntidaoParaCongelar.PrimeiraPendencia(PortoesDeCongelamento(pedido)) is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
-        if (PendenciaDoCronograma(contexto.FusoInstitucional) is { } pendenciaCronograma)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
-        }
-
-        if (PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoUnico);
-        }
-
-        if (PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is { } pendenciaDoResultadoSemPapel)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaDoResultadoSemPapel);
-        }
-
-        if (PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is { } pendenciaDoTipoQueCongela)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoQueCongela);
-        }
-
-        if (PendenciaDaCascata() is { } pendenciaCascata)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
-        }
-
-        if (PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
-        }
-
-        // UMA leitura do relógio para o ato e para a versão que ele cria. O instante
-        // que o ProcessoPublicadoEvent publica é o do ato, de modo que resolver a
-        // configuração NESSE instante (ADR-0075: o ato é avaliado contra o que vigia
-        // quando ocorreu) tem de cair dentro da vigência da versão que o próprio ato
-        // criou. Duas leituras deixariam a vigência alguns ticks à frente e aflorariam
-        // VigenteAusente.
-        DateTimeOffset instantePublicacao = clock.GetUtcNow();
-
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            Id,
-            configuracaoCongeladaCanonica,
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId: NovoIdDeAto(instantePublicacao),
-            atoCriadorHash: hashDocumento,
-            atorUsuarioSub,
-            instantePublicacao);
-
+        (VersaoConfiguracao versao, ProcessoPublicadoEvent publicado) = EmissaoDeVersao.Abrir(Id, pedido);
         Status = StatusProcesso.Publicado;
-
-        AddDomainEvent(new ProcessoPublicadoEvent(
-            Id,
-            versao.AtoCriadorId,
-            versao.Id,
-            versao.HashConfiguracao,
-            versao.AtoCriadorHash,
-            // OccurredOn é o instante em que o fato ocorreu — o do SISTEMA, que é o da
-            // vigência da versão. NÃO a data que o documento declara: ela é informada pelo
-            // operador (ADR-0108) e pode ser retroativa (importação de acervo). Um consumidor
-            // que resolvesse a configuração vigente no instante do ato (ADR-0075) usando a data
-            // documental cairia antes da vigência e não acharia a versão que o próprio ato
-            // criou — foi o defeito que a #803 corrigiu, e usar a data declarada aqui o
-            // ressuscitaria por outra porta.
-            versao.VigenteAPartirDe));
-
+        AddDomainEvent(publicado);
         return Result<VersaoConfiguracao>.Success(versao);
     }
 
     /// <summary>
-    /// Retifica um processo já publicado (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103): decide o ato que
-    /// emenda o ato criador da <see cref="VersaoConfiguracao"/> corrente e sucede
-    /// essa versão — a anterior permanece intocada (append-only). O status continua
-    /// Publicado. Os bytes canônicos já vêm do <c>ISnapshotPublicacaoCanonicalizer</c>
-    /// (Application) com o bloco de retificação incluído; esta raiz não os produz
-    /// (ADR-0042).
+    /// Retifica de uma vez um processo publicado, sem sessão editorial (ADR-0101/0103): emite o ato
+    /// que emenda o ato criador da <paramref name="versaoAtual"/> e a sucede, e a versão anterior
+    /// fica intocada. Retificar é uma relação entre atos, e não um tipo. O alvo é inferido da cadeia
+    /// de versões, nunca da data documental, que pode regredir sem mover o topo da cadeia.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Retificar <b>não é um tipo de ato</b>: é uma relação entre atos (ADR-0103). O que
-    /// muda em relação à abertura é só o par (ato emendado, motivo) — o tipo do ato
-    /// continua vindo declarado pelo operador, e uma convocação retificada continua
-    /// convocação.
-    /// </para>
-    /// <para>
-    /// O alvo é o ato criador da versão corrente, e o servidor o <b>infere</b> — o cliente
-    /// nunca o informa (ADR-0101). Ele é lido da CADEIA DE VERSÕES, não da data documental:
-    /// é a versão que ordena a configuração, e a data pode regredir (relógio do host,
-    /// importação de acervo) sem que isso mova o topo da cadeia.
-    /// </para>
-    /// </remarks>
-    /// <param name="versaoAtual">Versão de configuração corrente do processo (maior <c>NumeroVersao</c>), carregada pelo handler — <see cref="VersaoConfiguracao"/> é agregado próprio, não coleção desta raiz.</param>
-    /// <param name="motivo">Justificativa obrigatória do ato de retificação (ADR-0101).</param>
-    public Result<VersaoConfiguracao> Retificar(
-        DadosEdital dados,
-        VersaoConfiguracao versaoAtual,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioSub,
-        string motivo,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
+    /// <param name="versaoAtual">A versão corrente, carregada pelo handler: <see cref="VersaoConfiguracao"/> é agregado próprio.</param>
+    /// <param name="motivo">Justificativa obrigatória do ato (ADR-0101).</param>
+    public Result<VersaoConfiguracao> Retificar(PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo)
     {
-        // A ordem é a de sempre, e ela importa: os contratos do método (argumentos não nulos)
-        // e o estado do certame são conferidos ANTES da sessão editorial. Antepor a recusa por
-        // `RetificacaoJaAberta` faria um `dados` nulo deixar de lançar, e um processo em estado
-        // inválido deixar de acusar a transição — o atalho passaria a mentir sobre o motivo da
-        // recusa, e mudaria de comportamento numa Feature que prometeu não tocá-lo.
-        ArgumentNullException.ThrowIfNull(dados);
+        // Os argumentos e o status são conferidos antes da sessão: antepor a recusa de sessão já
+        // aberta faria um `dados` nulo deixar de lançar e um estado inválido deixar de acusar a transição.
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(pedido.Dados, "dados");
         ArgumentNullException.ThrowIfNull(versaoAtual);
-        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
-        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(pedido.Documento.Canonico, "configuracaoCongeladaCanonica");
+        ArgumentNullException.ThrowIfNull(pedido.Clock, "clock");
 
         if (Status != StatusProcesso.Publicado)
         {
@@ -6282,56 +6125,24 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"Só é possível retificar um processo publicado — status atual: {Status}."));
         }
 
-        // O atalho atômico e a sessão editorial retificam o MESMO ato — o criador da versão
-        // corrente. Deixá-los correr juntos publicaria a versão N+1 a partir da configuração
-        // viva (que a sessão está no meio de editar), e o rascunho sobreviveria apontando
-        // para uma base que deixou de ser o topo da cadeia: fechá-lo depois emendaria um ato
-        // já emendado. A recusa é invariante do agregado, não `if` do handler (ADR-0110 D7).
+        // O atalho e a sessão retificam o mesmo ato; correndo juntos, a versão seguinte sairia da
+        // configuração viva que a sessão está editando (ADR-0110 D7).
         if (Rascunho is not null)
         {
             return Result<VersaoConfiguracao>.Failure(GuardaDeEdicao.RetificacaoJaAberta());
         }
 
-        return SucederVersao(
-            dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, motivo, clock, contexto, fatosDeModalidade, tiposDeAtoUnicos);
+        return SucederVersao(pedido, versaoAtual, motivo);
     }
 
     /// <summary>
-    /// <b>Fecha</b> a sessão editorial: congela a versão N+1 <b>com a configuração editada</b>
-    /// e encerra a sessão — na mesma transação (ADR-0110).
+    /// Fecha a sessão editorial: congela a versão seguinte com a configuração editada e encerra a
+    /// sessão, na mesma transação (ADR-0110). O motivo vem do rascunho, onde foi normalizado uma
+    /// única vez. A sessão só morre depois de a versão estar decidida: se o congelamento for
+    /// recusado, ela segue aberta para o administrador corrigir e tentar de novo.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// É <b>aqui</b> que a Feature entrega o que ela existe para entregar. Abrir e descartar
-    /// deixam o certame como estava; só o fechamento faz a configuração alterada virar
-    /// documento — e é o que desbloqueia as dimensões que faltam ao Módulo Seleção.
-    /// </para>
-    /// <para>
-    /// <b>O motivo vem do rascunho</b>, não do chamador: ele foi declarado na abertura,
-    /// normalizado uma única vez, e é o mesmo que o bloco <c>retificacao</c> do envelope
-    /// congela. Recebê-lo de novo aqui abriria a porta para os dois divergirem.
-    /// </para>
-    /// <para>
-    /// <b>A sessão só morre depois de a versão estar decidida.</b> Se o congelamento for
-    /// recusado — conformidade insuficiente, cadeia quebrada —, o rascunho <b>permanece
-    /// aberto</b> e o administrador corrige e tenta de novo. Encerrá-la antes faria uma
-    /// recusa de negócio destruir a sessão inteira.
-    /// </para>
-    /// </remarks>
     public Result<VersaoConfiguracao> FecharRetificacao(
-        DadosEdital dados,
-        VersaoConfiguracao versaoAtual,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioSub,
-        PrecondicaoIfMatch precondicao,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
+        PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 
@@ -6340,9 +6151,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
-        Result<VersaoConfiguracao> versao = SucederVersao(
-            dados, versaoAtual, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash,
-            hashDocumento, atorUsuarioSub, Rascunho!.Motivo, clock, contexto, fatosDeModalidade, tiposDeAtoUnicos);
+        Result<VersaoConfiguracao> versao = SucederVersao(pedido, versaoAtual, Rascunho!.Motivo);
         if (versao.IsFailure)
         {
             return versao;
@@ -6427,36 +6236,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
 
     /// <summary>
-    /// O núcleo comum do <b>atalho atômico</b> (<see cref="Retificar"/>) e do
-    /// <b>fechamento da sessão</b> (<see cref="FecharRetificacao"/>): sucede a cadeia de
-    /// versões, decide o ato que emenda o anterior e drena o evento.
+    /// O núcleo comum do atalho atômico (<see cref="Retificar"/>) e do fechamento da sessão
+    /// (<see cref="FecharRetificacao"/>): os dois congelam a mesma coisa, a configuração viva, e só
+    /// diferem na origem do motivo e no destino da sessão.
     /// </summary>
-    /// <remarks>
-    /// Os dois caminhos congelam <b>a mesma coisa</b> — a configuração viva, no estado em que
-    /// ela está. O que os distingue é <b>de onde vem o motivo</b> e <b>o que acontece com a
-    /// sessão</b>; tudo o mais é idêntico, e duplicá-lo faria as duas cadeias divergirem no
-    /// dia em que uma delas mudasse.
-    /// </remarks>
-    private Result<VersaoConfiguracao> SucederVersao(
-        DadosEdital dados,
-        VersaoConfiguracao versaoAtual,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioSub,
-        string motivo,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos)
+    private Result<VersaoConfiguracao> SucederVersao(PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo)
     {
-        ArgumentNullException.ThrowIfNull(dados);
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(pedido.Dados, "dados");
         ArgumentNullException.ThrowIfNull(versaoAtual);
-        ArgumentNullException.ThrowIfNull(contexto);
-        ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
-        ArgumentNullException.ThrowIfNull(clock);
-        ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
+        ArgumentNullException.ThrowIfNull(pedido.Contexto, "contexto");
+        ArgumentNullException.ThrowIfNull(pedido.Documento.Canonico, "configuracaoCongeladaCanonica");
+        ArgumentNullException.ThrowIfNull(pedido.Clock, "clock");
+        ArgumentNullException.ThrowIfNull(pedido.TiposDeAtoUnicos, "tiposDeAtoUnicos");
 
         if (Status != StatusProcesso.Publicado)
         {
@@ -6472,9 +6264,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "O motivo da retificação é obrigatório."));
         }
 
-        // A cadeia de versões não atravessa certames: uma versão corrente de
-        // outro processo emendaria a configuração de um certame na de outro, e a
-        // numeração — derivada dela — sairia do lugar.
+        // A cadeia de versões não atravessa certames: a numeração deriva dela.
         if (versaoAtual.ProcessoSeletivoId != Id)
         {
             return Result<VersaoConfiguracao>.Failure(new DomainError(
@@ -6482,130 +6272,30 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "A versão corrente informada pertence a outro Processo Seletivo."));
         }
 
-        // O checklist vale para as DUAS transições que congelam. A retificação também
-        // abre uma versão append-only e vinculante; congelar configuração incompleta
-        // aqui produz um documento irreparável, exatamente como na publicação. Mesma
-        // fonte, mesmo DomainError.
-        // O endereço público e a chave no acervo derivam do identificador legível: sem ele, a
-        // versão gerada não teria como ser encontrada pelo público. Vale para as três transições
-        // que geram versão, como a localidade logo abaixo.
-        if (PendenciaDoIdentificadorLegivel() is { } pendenciaIdentificador)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaIdentificador);
-        }
-
-        // Localidade (UNI-REQ-0111): a versão publicada congela o município cujo calendário rege a
-        // contagem dos prazos, e sem ele a janela de recurso não se recalcula. Desde que a
-        // localidade é exigida na criação, chegar aqui sem ela não é estado alcançável pelo fluxo
-        // público — a recusa fica como invariante da raiz, defendendo contra caminho de escrita que
-        // a contorne, e porque o requisito exige a recusa nomeada nas três transições que geram
-        // versão. Publicar cobre a inicial; SucederVersao cobre a retificação e o fechamento.
-        if (PendenciaDaLocalidade() is { } pendenciaLocalidade)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaLocalidade);
-        }
-
-        // Convenção de contagem (UNI-REQ-0112): exigida só quando alguma contagem do
-        // certame distingue dia útil. Escolher em silêncio produziria versão imutável cujo
-        // prazo o sistema teria decidido no lugar do edital.
-        if (PendenciaDoAlgoritmoDeContagem() is { } pendenciaAlgoritmo)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaAlgoritmo);
-        }
-
-        if (PendenciaDoCalendarioVigente(contexto) is { } pendenciaCalendario)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCalendario);
-        }
-
-        if (PendenciaDeConformidade() is { } pendencia)
+        // O mesmo checklist vale para as duas transições que sucedem: uma versão vinculante
+        // congelada com configuração incompleta é irreparável, como na publicação.
+        if (ProntidaoParaCongelar.PrimeiraPendencia(PortoesDeCongelamento(pedido)) is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
 
-        if (PendenciaDoCronograma(contexto.FusoInstitucional) is { } pendenciaCronograma)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCronograma);
-        }
-
-        if (PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is { } pendenciaDoTipoUnico)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoUnico);
-        }
-
-        if (PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is { } pendenciaDoResultadoSemPapel)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaDoResultadoSemPapel);
-        }
-
-        if (PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is { } pendenciaDoTipoQueCongela)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaDoTipoQueCongela);
-        }
-
-        if (PendenciaDaCascata() is { } pendenciaCascata)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaCascata);
-        }
-
-        if (PendenciaPreCanonicalizacao(fatosDeModalidade) is { } pendenciaPreCanonicalizacao)
-        {
-            return Result<VersaoConfiguracao>.Failure(pendenciaPreCanonicalizacao);
-        }
-
-        // Uma única leitura do relógio para o ato e para a versão que ele cria — ver a nota
-        // em Publicar.
-        //
-        // E ela é ANCORADA na vigência da anterior antes de qualquer uso. Quando o relógio
-        // regride (ajuste NTP em degrau), Suceder já ancorava a VIGÊNCIA; se o id do ato
-        // nascesse do instante cru, as duas grandezas descreveriam instantes diferentes — e o
-        // Guid v7 do ato novo, que carrega o timestamp nos 48 bits mais significativos,
-        // ordenaria ANTES do ato que ele emenda. A ordenação cronológica por id (ADR-0032),
-        // de que a paginação por keyset depende, inverteria a cadeia.
-        DateTimeOffset agora = clock.GetUtcNow();
-        DateTimeOffset instantePublicacao = agora < versaoAtual.VigenteAPartirDe
-            ? versaoAtual.VigenteAPartirDe
-            : agora;
-
-        // ADR-0101/0104: a retificação emenda o ato que criou a VERSÃO CORRENTE — o
-        // topo da cadeia de configuração —, e não o ato de maior data documental.
-        // Ordenar o alvo por data seria frágil: a data é declarada pelo operador, e um
-        // acervo migrado (ou um relógio que regrediu) pode dar ao ato mais NOVO uma data
-        // mais ANTIGA. O topo por data e o topo por versão divergiriam, e uma cadeia
-        // perfeitamente linear ficaria irretificável. É a versão que ordena a
-        // configuração (ADR-0104) — inclusive para decidir o que se retifica.
-        //
-        // A linearidade da cadeia é garantida na MESMA transação por
-        // ux_versoes_configuracao_ato_criador (um ato cria no máximo uma versão) e pelo
-        // trigger de sucessão (ck_versoes_configuracao_cadeia). Publicações também a
-        // barra, mas só no consumo da fila — backstop, não guard rail transacional.
-        VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
-            versaoAtual,
-            configuracaoCongeladaCanonica,
-            schemaVersion,
-            algoritmoHash,
-            atoCriadorId: NovoIdDeAto(instantePublicacao),
-            atoCriadorHash: hashDocumento,
-            atoCriadorRetificaId: versaoAtual.AtoCriadorId,
-            atorUsuarioSub,
-            instantePublicacao);
-
-        // Reaproveita ProcessoPublicadoEvent (não um evento distinto): o fato de
-        // negócio drenado é "novo ato + nova versão da configuração", idêntico em
-        // forma ao da abertura — o payload serve aos dois. Evita um segundo schema
-        // Avro/tópico sem consumidor. O nome do membro EditalId é o histórico: ele é
-        // contrato do envelope durável e do schema Avro, e o valor sempre foi o do
-        // ato criador.
-        AddDomainEvent(new ProcessoPublicadoEvent(
-            Id,
-            versao.AtoCriadorId,
-            versao.Id,
-            versao.HashConfiguracao,
-            versao.AtoCriadorHash,
-            versao.VigenteAPartirDe));
-
+        (VersaoConfiguracao versao, ProcessoPublicadoEvent publicado) = EmissaoDeVersao.Suceder(Id, versaoAtual, pedido);
+        AddDomainEvent(publicado);
         return Result<VersaoConfiguracao>.Success(versao);
     }
+
+    private ProntidaoParaCongelar.Portoes PortoesDeCongelamento(PedidoDeCongelamento pedido) => new(
+        IdentificadorLegivel: PendenciaDoIdentificadorLegivel,
+        Localidade: PendenciaDaLocalidade,
+        AlgoritmoDeContagem: PendenciaDoAlgoritmoDeContagem,
+        CalendarioVigente: () => PendenciaDoCalendarioVigente(pedido.Contexto),
+        Conformidade: PendenciaDeConformidade,
+        Cronograma: () => PendenciaDoCronograma(pedido.Contexto.FusoInstitucional),
+        TipoDeAtoUnico: () => PendenciaDoTipoDeAtoUnico(pedido.TiposDeAtoUnicos),
+        ResultadoSemPapel: () => PendenciaDoResultadoSemPapel(pedido.TiposDeAtoUnicos),
+        TipoQueCongelaDeclaradoComoResultado: () => PendenciaDoTipoQueCongelaDeclaradoComoResultado(pedido.TiposDeAtoUnicos),
+        Cascata: PendenciaDaCascata,
+        PreCanonicalizacao: () => PendenciaPreCanonicalizacao(pedido.FatosDeModalidade));
 
     /// <summary>
     /// Repõe integralmente a configuração viva a partir do grafo reconstruído de uma
@@ -7891,21 +7581,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             }
         }
     }
-
-    /// <summary>
-    /// Decide o identificador do ato que cria uma versão. Guid v7 ancorado no
-    /// <b>mesmo instante</b> já lido para a versão (ADR-0068) — nunca num relógio
-    /// próprio: o id do ato e a vigência da versão que ele cria descrevem o mesmo
-    /// fato, e derivar cada um de uma leitura diferente os faria discordar.
-    /// </summary>
-    /// <remarks>
-    /// O id nasce aqui, e não em <c>Publicacoes</c>, porque a versão precisa
-    /// referenciá-lo dentro desta transação — antes de o ato existir fisicamente
-    /// (ADR-0108). É também o que torna a reentrega da fila (at-least-once)
-    /// idempotente: o segundo processamento tenta gravar o MESMO id, e a chave
-    /// primária o recusa.
-    /// </remarks>
-    private static Guid NovoIdDeAto(DateTimeOffset instante) => Guid.CreateVersion7(instante);
 
     /// <summary>
     /// Abre a <b>sessão editorial</b> sobre a configuração de um certame publicado

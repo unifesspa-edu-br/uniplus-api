@@ -12,13 +12,17 @@ using AwesomeAssertions;
 /// </summary>
 public sealed class GateEstruturalRegressaoTests
 {
-    [Fact(DisplayName = "PendenciaDeConformidade() continua chamado nos 5 pontos existentes — 2 no Domain (Publicar/SucederVersao), 3 nos handlers que congelam")]
+    [Fact(DisplayName = "PendenciaDeConformidade() continua nos 5 pontos — a prontidão do Domain (uma ordem, duas transições) e 3 handlers que congelam")]
     public void PendenciaDeConformidade_ContinuaNosCincoPontosOriginais()
     {
-        int chamadasNoDomain = ContarChamadas(CaminhoProcessoSeletivo());
-        chamadasNoDomain.Should().Be(2,
+        string raiz = File.ReadAllText(CaminhoProcessoSeletivo());
+        Regex.Count(raiz, @"PrimeiraPendencia\(").Should().Be(2,
             "Publicar() e SucederVersao() (o núcleo compartilhado de Retificar()/FecharRetificacao()) " +
             "são os dois pontos de defesa no Domain — a rede que ninguém contorna (ADR-0109 D5)");
+        Regex.Count(raiz, @"Conformidade:\s+PendenciaDeConformidade,").Should().Be(1,
+            "os dois pontos de defesa usam a mesma composição dos portões, montada num só lugar");
+        Regex.Count(File.ReadAllText(CaminhoProntidao()), @"portoes\.Conformidade\b").Should().Be(1,
+            "a prontidão avalia o portão de conformidade uma vez, na posição que a ordem manda");
 
         int chamadasNoPublicarHandler = ContarChamadas(CaminhoHandler("PublicarProcessoSeletivoCommandHandler.cs"));
         int chamadasNoRetificarHandler = ContarChamadas(CaminhoHandler("RetificarProcessoSeletivoCommandHandler.cs"));
@@ -44,8 +48,10 @@ public sealed class GateEstruturalRegressaoTests
         // SucederVersao, os três handlers) do uso em AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario), que testa
         // `PendenciaDaCascata() is null` só para exibição — mesma chamada, propósito
         // diferente, não é um sexto call site de bloqueio.
-        int chamadasNoDomain = ContarChamadasDeGate(CaminhoProcessoSeletivo());
-        chamadasNoDomain.Should().Be(2, "Publicar() e SucederVersao() são os dois pontos de defesa no Domain");
+        string raiz = File.ReadAllText(CaminhoProcessoSeletivo());
+        Regex.Count(raiz, @"Cascata:\s+PendenciaDaCascata,").Should().Be(1, "os dois pontos de defesa compartilham a composição dos portões");
+        Regex.Count(File.ReadAllText(CaminhoProntidao()), @"portoes\.Cascata\b").Should().Be(1,
+            "a prontidão avalia a cascata uma vez, antes da pré-canonicalização");
 
         int chamadasNoPublicarHandler = ContarChamadasDeGate(CaminhoHandler("PublicarProcessoSeletivoCommandHandler.cs"));
         int chamadasNoRetificarHandler = ContarChamadasDeGate(CaminhoHandler("RetificarProcessoSeletivoCommandHandler.cs"));
@@ -64,15 +70,22 @@ public sealed class GateEstruturalRegressaoTests
     /// é o que mantém checklist e recusa bicondicionais. Perder a terceira chamada devolve o
     /// defeito em que a publicação recusa por uma causa que o checklist declarava verde.
     /// </summary>
-    [Fact(DisplayName = "Localidade e convenção de contagem: dois gates no Domain e a projeção no checklist, sem antecipação nos handlers")]
+    [Fact(DisplayName = "Localidade e convenção de contagem: um portão na prontidão do Domain e a projeção no checklist, sem antecipação nos handlers")]
     public void ContagemDePrazos_TemGatesNaRaizEProjecaoNoChecklist()
     {
         string processoSeletivo = File.ReadAllText(CaminhoProcessoSeletivo());
 
-        Regex.Count(processoSeletivo, @"PendenciaDaLocalidade\(\)\s+is\s").Should().Be(3,
-            "Publicar() e SucederVersao() aplicam o gate, e AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado");
-        Regex.Count(processoSeletivo, @"PendenciaDoAlgoritmoDeContagem\(\)\s+is\s").Should().Be(3,
-            "mesma topologia da localidade — dois gates e uma projeção");
+        string prontidao = File.ReadAllText(CaminhoProntidao());
+
+        Regex.Count(processoSeletivo, @"PendenciaDaLocalidade\(\)\s+is\s").Should().Be(1,
+            "AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado que a prontidão aplica");
+        Regex.Count(processoSeletivo, @"Localidade:\s+PendenciaDaLocalidade,").Should().Be(1, "Publicar() e SucederVersao() aplicam o gate pela prontidão");
+        Regex.Count(prontidao, @"portoes\.Localidade\b").Should().Be(1);
+
+        Regex.Count(processoSeletivo, @"PendenciaDoAlgoritmoDeContagem\(\)\s+is\s").Should().Be(1,
+            "mesma topologia da localidade — o gate pela prontidão e a projeção no checklist");
+        Regex.Count(processoSeletivo, @"AlgoritmoDeContagem:\s+PendenciaDoAlgoritmoDeContagem,").Should().Be(1);
+        Regex.Count(prontidao, @"portoes\.AlgoritmoDeContagem\b").Should().Be(1);
 
         foreach (string handler in new[]
                  {
@@ -107,6 +120,11 @@ public sealed class GateEstruturalRegressaoTests
         Path.GetFullPath(Path.Join(
             Path.GetDirectoryName(origem)!, "..", "..",
             "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "Entities", "ProcessoSeletivo.cs"));
+
+    private static string CaminhoProntidao([CallerFilePath] string origem = "") =>
+        Path.GetFullPath(Path.Join(
+            Path.GetDirectoryName(origem)!, "..", "..",
+            "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "ProcessosSeletivos", "Publicacao", "ProntidaoParaCongelar.cs"));
 
     private static string CaminhoHandler(string arquivo, [CallerFilePath] string origem = "") =>
         Path.GetFullPath(Path.Join(

@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -360,7 +361,6 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
-
         // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
         // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
         // DERIVADO) — sem esta reconferência, um vínculo morto seria congelado numa versão
@@ -465,18 +465,18 @@ public static class FecharRetificacaoCommandHandler
         string atorUsuarioSub = userContext.UserId ?? "system";
 
         Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
-            dados,
+            new PedidoDeCongelamento
+            {
+                Dados = dados,
+                Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!),
+                AtorUsuarioSub = atorUsuarioSub,
+                Clock = timeProvider,
+                Contexto = contexto,
+                FatosDeModalidade = fatosDeModalidade,
+                TiposDeAtoUnicos = tiposDeAtoUnicos,
+            },
             versaoAtual,
-            canonico.Bytes,
-            canonico.SchemaVersion,
-            canonico.AlgoritmoHash,
-            documento.HashSha256!,
-            atorUsuarioSub,
-            command.Precondicao,
-            timeProvider,
-            contexto,
-            fatosDeModalidade,
-            tiposDeAtoUnicos);
+            command.Precondicao);
         if (fechamento.IsFailure)
         {
             return (Result.Failure(fechamento.Error!), []);

@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -286,7 +287,6 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
-
         // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
         // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
         // DERIVADO) — sem esta reconferência, um vínculo morto seria congelado numa versão
@@ -370,16 +370,16 @@ public static class PublicarProcessoSeletivoCommandHandler
         string atorUsuarioSub = userContext.UserId ?? "system";
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dados,
-            canonico.Bytes,
-            canonico.SchemaVersion,
-            canonico.AlgoritmoHash,
-            documento.HashSha256!,
-            atorUsuarioSub,
-            timeProvider,
-            contexto,
-            fatosDeModalidade,
-            tiposDeAtoUnicos);
+            new PedidoDeCongelamento
+            {
+                Dados = dados,
+                Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!),
+                AtorUsuarioSub = atorUsuarioSub,
+                Clock = timeProvider,
+                Contexto = contexto,
+                FatosDeModalidade = fatosDeModalidade,
+                TiposDeAtoUnicos = tiposDeAtoUnicos,
+            });
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);
