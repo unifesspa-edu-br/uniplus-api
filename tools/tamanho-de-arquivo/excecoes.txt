@@ -30,9 +30,9 @@
 847 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirDocumentosExigidosCommandHandler.cs
 767 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirEtapasCommandHandler.cs
 437 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DivulgarCertameAoRegistrarAtoHandler.cs
-546 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/FecharRetificacaoCommandHandler.cs
-467 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs
-545 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/RetificarProcessoSeletivoCommandHandler.cs
+507 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/FecharRetificacaoCommandHandler.cs
+438 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs
+489 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/RetificarProcessoSeletivoCommandHandler.cs
 514 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs
 1147 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ProjecaoDoCertamePublicado.cs
 544 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoClassificacao.cs

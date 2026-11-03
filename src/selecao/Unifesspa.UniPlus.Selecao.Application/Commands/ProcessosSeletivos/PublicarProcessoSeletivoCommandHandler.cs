@@ -113,46 +113,17 @@ public static class PublicarProcessoSeletivoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), []);
         }
 
-        Result<DocumentoAPublicar> conferenciaDoDocumento = await ConferenciaDoDocumentoDoEdital
-            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.DocumentoEditalId, "na publicação", cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoDocumento.IsFailure)
-        {
-            return (Result.Failure(conferenciaDoDocumento.Error!), []);
-        }
-
-        DocumentoAPublicar documento = conferenciaDoDocumento.Value!;
-
-        // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de
-        // Publicações recusaria tem de ser recusado AQUI, com 422, antes de qualquer escrita
-        // — senão o Edital sai publicado, o cliente recebe 204, e a recusa vira dead letter.
-        Result<TipoAtoPublicadoView> conferenciaDoAto = await ConferenciaDoTipoDeAto
-            .CongelaConfiguracaoAsync(tipoDeAtoReader, command.Ato, cancellationToken)
+        Result<AtoEDocumentoConferidos> conferenciaDoAto = await ConferenciaDoAtoEDoDocumento
+            .ConferirAsync(
+                documentoAPublicarRepository, processoSeletivoRepository, tipoDeAtoReader, vagaDeLinhagemReader,
+                command.ProcessoSeletivoId, command.DocumentoEditalId, command.Ato, "na publicação", cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoAto.IsFailure)
         {
             return (Result.Failure(conferenciaDoAto.Error!), []);
         }
 
-        // Os atributos CONFERIDOS viajam na mensagem: o catálogo é editável, e reler no
-        // consumo faria a decisão tomada aqui (que já devolveu 204) valer outra coisa.
-        TipoAtoPublicadoView tipoConferido = conferenciaDoAto.Value!;
-
-        // A vaga que a linhagem reserva sobre o certame (ADR-0107) é monotônica: ocupada,
-        // nunca se libera. Se já estiver tomada por outra linhagem, o registro do ato seria
-        // recusado no consumo da fila e o certame ficaria publicado sem ato — a recusa tem
-        // de vir agora.
-        IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
-            .ObterAtosCriadoresAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
-            .VagaDoObjetoAsync(vagaDeLinhagemReader, tipoConferido, command.ProcessoSeletivoId, atosDaLinhagem, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVaga.IsFailure)
-        {
-            return (Result.Failure(conferenciaDaVaga.Error!), []);
-        }
+        (DocumentoAPublicar documento, TipoAtoPublicadoView tipoConferido, IReadOnlyList<Guid> atosDaLinhagem) = conferenciaDoAto.Value;
 
         // Uma leitura só do catálogo (D4-bis), compartilhada pelos gates que dependem dos fatos
         // cujos valores são modalidades, pela reconferência de coletabilidade e pelos resolvedores

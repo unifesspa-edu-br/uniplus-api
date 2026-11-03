@@ -157,68 +157,29 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(bloqueio), []);
         }
 
-        Result<DocumentoAPublicar> conferenciaDoDocumento = await ConferenciaDoDocumentoDoEdital
-            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.DocumentoEditalId, "no fechamento da retificação", cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoDocumento.IsFailure)
-        {
-            return (Result.Failure(conferenciaDoDocumento.Error!), []);
-        }
-
-        DocumentoAPublicar documento = conferenciaDoDocumento.Value!;
-
-        Result<TipoAtoPublicadoView> conferenciaDoAto = await ConferenciaDoTipoDeAto
-            .CongelaConfiguracaoAsync(tipoDeAtoReader, command.Ato, cancellationToken)
+        Result<AtoEDocumentoConferidos> conferenciaDoAto = await ConferenciaDoAtoEDoDocumento
+            .ConferirAsync(
+                documentoAPublicarRepository, processoSeletivoRepository, tipoDeAtoReader, vagaDeLinhagemReader,
+                command.ProcessoSeletivoId, command.DocumentoEditalId, command.Ato, "no fechamento da retificação", cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoAto.IsFailure)
         {
             return (Result.Failure(conferenciaDoAto.Error!), []);
         }
 
-        TipoAtoPublicadoView tipoConferido = conferenciaDoAto.Value!;
+        (DocumentoAPublicar documento, TipoAtoPublicadoView tipoConferido, IReadOnlyList<Guid> atosDaLinhagem) = conferenciaDoAto.Value;
 
-        IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
-            .ObterAtosCriadoresAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<VersaoConfiguracao> linhagem = await ConferenciaDaLinhagemRetificavel
+            .ConferirAsync(
+                processoSeletivoRepository, vagaDeLinhagemReader, atoDoProcessoRepository, registroCodecs,
+                processo, versaoBaseEsperada: processo.Rascunho.VersaoBaseId, cancellationToken)
             .ConfigureAwait(false);
-
-        Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
-            .VagaDoObjetoAsync(vagaDeLinhagemReader, tipoConferido, command.ProcessoSeletivoId, atosDaLinhagem, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVaga.IsFailure)
+        if (linhagem.IsFailure)
         {
-            return (Result.Failure(conferenciaDaVaga.Error!), []);
+            return (Result.ValidationFailure(linhagem.Errors), []);
         }
 
-        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
-            .ObterVersaoAtualAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (versaoAtual is null || versaoAtual.Id != processo.Rascunho.VersaoBaseId)
-        {
-            return (Result.Failure(new DomainError(
-                "RascunhoRetificacao.BaseDesatualizada",
-                "A versão sobre a qual esta retificação foi aberta não é mais o topo da cadeia de configuração — "
-                + "o fechamento emendaria um ato que já foi emendado.")), []);
-        }
-
-        bool jaRetificado = await vagaDeLinhagemReader
-            .AtoJaFoiRetificadoAsync(versaoAtual.AtoCriadorId, cancellationToken)
-            .ConfigureAwait(false);
-        if (jaRetificado)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.AtoJaRetificado",
-                "O ato que esta retificação emendaria já foi retificado — a cadeia de atos é linear.")), []);
-        }
-
-        // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um
-        // preliminar já publicado abriu e que o definitivo ainda não fechou.
-        Result cicloRecursal = await ConferenciaDoCicloRecursalAberto
-            .ConferirAsync(atoDoProcessoRepository, registroCodecs, processo, versaoAtual, cancellationToken)
-            .ConfigureAwait(false);
-        if (cicloRecursal.IsFailure)
-        {
-            return (cicloRecursal, []);
-        }
+        VersaoConfiguracao versaoAtual = linhagem.Value!;
 
         // O motivo é o do RASCUNHO — declarado na abertura e normalizado uma vez só. É o
         // mesmo valor que o bloco `retificacao` do envelope congela e que viaja para o ato em

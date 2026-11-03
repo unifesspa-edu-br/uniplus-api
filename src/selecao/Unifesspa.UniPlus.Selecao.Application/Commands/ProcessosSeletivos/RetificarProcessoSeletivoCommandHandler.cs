@@ -119,85 +119,29 @@ public static class RetificarProcessoSeletivoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), []);
         }
 
-        Result<DocumentoAPublicar> conferenciaDoDocumento = await ConferenciaDoDocumentoDoEdital
-            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.DocumentoEditalId, "na retificação", cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoDocumento.IsFailure)
-        {
-            return (Result.Failure(conferenciaDoDocumento.Error!), []);
-        }
-
-        DocumentoAPublicar documento = conferenciaDoDocumento.Value!;
-
-        // O ato é registrado depois, por mensagem durável (ADR-0108). O que o catálogo de
-        // Publicações recusaria tem de ser recusado AQUI, com 422, antes de qualquer escrita
-        // — senão o Edital sai publicado, o cliente recebe 204, e a recusa vira dead letter.
-        Result<TipoAtoPublicadoView> conferenciaDoAto = await ConferenciaDoTipoDeAto
-            .CongelaConfiguracaoAsync(tipoDeAtoReader, command.Ato, cancellationToken)
+        Result<AtoEDocumentoConferidos> conferenciaDoAto = await ConferenciaDoAtoEDoDocumento
+            .ConferirAsync(
+                documentoAPublicarRepository, processoSeletivoRepository, tipoDeAtoReader, vagaDeLinhagemReader,
+                command.ProcessoSeletivoId, command.DocumentoEditalId, command.Ato, "na retificação", cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoAto.IsFailure)
         {
             return (Result.Failure(conferenciaDoAto.Error!), []);
         }
 
-        // Os atributos CONFERIDOS viajam na mensagem: o catálogo é editável, e reler no
-        // consumo faria a decisão tomada aqui (que já devolveu 204) valer outra coisa.
-        TipoAtoPublicadoView tipoConferido = conferenciaDoAto.Value!;
+        (DocumentoAPublicar documento, TipoAtoPublicadoView tipoConferido, IReadOnlyList<Guid> atosDaLinhagem) = conferenciaDoAto.Value;
 
-        // A vaga que a linhagem reserva sobre o certame (ADR-0107) é monotônica: ocupada,
-        // nunca se libera. Se já estiver tomada por outra linhagem, o registro do ato seria
-        // recusado no consumo da fila e o certame ficaria publicado sem ato — a recusa tem
-        // de vir agora.
-        IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
-            .ObterAtosCriadoresAsync(command.ProcessoSeletivoId, cancellationToken)
+        Result<VersaoConfiguracao> linhagem = await ConferenciaDaLinhagemRetificavel
+            .ConferirAsync(
+                processoSeletivoRepository, vagaDeLinhagemReader, atoDoProcessoRepository, registroCodecs,
+                processo, versaoBaseEsperada: null, cancellationToken)
             .ConfigureAwait(false);
-
-        Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
-            .VagaDoObjetoAsync(vagaDeLinhagemReader, tipoConferido, command.ProcessoSeletivoId, atosDaLinhagem, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVaga.IsFailure)
+        if (linhagem.IsFailure)
         {
-            return (Result.Failure(conferenciaDaVaga.Error!), []);
+            return (Result.ValidationFailure(linhagem.Errors), []);
         }
 
-        // A versão de configuração é agregado próprio (ADR-0104) — não coleção da
-        // raiz. O handler carrega a corrente (maior NumeroVersao) e a entrega a
-        // Retificar, que sucede a cadeia a partir dela. Sem versão corrente, ou o
-        // processo não foi publicado, ou está inconsistente — a mesma transição
-        // que Retificar barra, antecipada aqui para não canonicalizar em vão.
-        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
-            .ObterVersaoAtualAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (versaoAtual is null)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.TransicaoInvalida",
-                $"Só é possível retificar um processo publicado — status atual: {processo.Status}.")), []);
-        }
-
-        // A cadeia de atos é linear: um ato é emendado no máximo uma vez (ADR-0103). O ato que
-        // esta retificação vai emendar pode já ter sido emendado por fora — pelo endpoint
-        // administrativo de Publicações. Sem conferir agora, o registro recusaria com
-        // RaizJaRetificada e a retificação ficaria publicada sem ato.
-        bool jaRetificado = await vagaDeLinhagemReader
-            .AtoJaFoiRetificadoAsync(versaoAtual.AtoCriadorId, cancellationToken)
-            .ConfigureAwait(false);
-        if (jaRetificado)
-        {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.AtoJaRetificado",
-                "O ato que esta retificação emendaria já foi retificado — a cadeia de atos é linear.")), []);
-        }
-
-        // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um
-        // preliminar já publicado abriu e que o definitivo ainda não fechou.
-        Result cicloRecursal = await ConferenciaDoCicloRecursalAberto
-            .ConferirAsync(atoDoProcessoRepository, registroCodecs, processo, versaoAtual, cancellationToken)
-            .ConfigureAwait(false);
-        if (cicloRecursal.IsFailure)
-        {
-            return (cicloRecursal, []);
-        }
+        VersaoConfiguracao versaoAtual = linhagem.Value!;
 
         // Normaliza o motivo UMA vez, aqui (Trim + NFC), e usa o mesmo valor
         // nos dois caminhos: o bloco 'retificacao' do snapshot e o
