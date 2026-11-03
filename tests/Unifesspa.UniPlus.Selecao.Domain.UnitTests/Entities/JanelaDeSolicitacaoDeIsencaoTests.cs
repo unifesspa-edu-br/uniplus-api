@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -119,7 +120,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         var contexto = new ContextoDeContagemDePrazos(
             CalendarioVigente: null, FusoInstitucional: Belem);
 
-        processo.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().Contain(i => i.Codigo == "cronograma_janela_de_isencao" && !i.Ok);
     }
 

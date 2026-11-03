@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -50,7 +51,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, "PESSOAL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao, OrigemValoresColeta.OpcoesDoProcesso, etapaCodigo: secao).Value!;
 
     private static bool ItemOk(ProcessoSeletivo processo, string codigo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(i => i.Codigo == codigo).Ok;
 
     private static PredicadoDnf SeCasado() =>
@@ -120,7 +121,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         IReadOnlyList<ItemConformidade> itens =
-            processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         itens.Should().NotContain(i => i.Codigo == ItemDasEdicoes);
         itens.Single(i => i.Codigo == ItemDoCampo).Ok.Should().BeTrue();
@@ -198,7 +199,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirTermos([termoSemForma], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        List<string> vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        List<string> vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code

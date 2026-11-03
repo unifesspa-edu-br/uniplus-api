@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -70,7 +71,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo, protecao);
 
     private static IEnumerable<string> VermelhosDoPainel(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, protecao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, protecao)
             .Where(i => !i.Ok).Select(i => i.Codigo);
 
     [Fact(DisplayName = "Exigência pessoal que comprova fato sensível é recusada, citando o tipo e o fato")]
@@ -83,7 +84,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         pendencia.Message.Should().Contain("ATESTADO_SIMPLES").And.Contain(FatoSensivel);
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().Contain(i => !i.Ok && i.Codigo == "exigencia_menos_protegida_que_fato_comprovado");
     }
 

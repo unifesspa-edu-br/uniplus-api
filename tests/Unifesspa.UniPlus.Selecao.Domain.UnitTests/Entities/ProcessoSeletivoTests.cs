@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -106,7 +107,7 @@ public sealed class ProcessoSeletivoTests
         result.IsSuccess.Should().BeTrue();
         // Só as etapas que pontuam (classificatória/ambas, com peso) entram
         // no divisor: 3 + 2 = 5. A eliminatória pura fica fora.
-        processo.CalcularDivisorMedia().Should().Be(5m);
+        EstadoDaConfiguracao.De(processo).CalcularDivisorMedia().Should().Be(5m);
     }
 
     [Fact(DisplayName = "DefinirEtapas com ordem duplicada é recusado")]

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -269,7 +270,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     }
 
     private static ItemConformidade ItemDoChecklist(ProcessoSeletivo processo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(static i => i.Codigo == "formulario_fato_ausente_de_versao_publicada");
 
     /// <summary><c>RENDA_DECLARADA</c> depende da dependência dada, direto ou por um derivado intermediário.</summary>

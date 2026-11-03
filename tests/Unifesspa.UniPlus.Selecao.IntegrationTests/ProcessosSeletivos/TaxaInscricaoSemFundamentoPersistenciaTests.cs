@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -53,7 +55,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         processo.ConfiguracaoTaxaInscricao!.Cobra.Should().BeTrue(
             "a adulteração mexe só nos fundamentos — a cobrança continua declarada");
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         checklist.Should().ContainSingle(i => i.Codigo == "taxa_inscricao_sem_fundamento_de_isencao")
             .Which.Ok.Should().BeFalse(
@@ -96,7 +98,7 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "taxa_inscricao_sem_fundamento_de_isencao")
             .Which.Ok.Should().BeTrue();
 

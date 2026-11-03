@@ -7,6 +7,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -100,7 +102,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
         TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     /// <summary>
@@ -246,7 +248,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
         Vermelhos(processo).Select(static i => i.Codigo).Should().BeEquivalentTo(
             "etapa_com_nota_sem_nota_maxima", "etapa_sem_nota_com_escala", "nota_minima_da_regra_acima_da_nota_maxima");
 
-        DomainError? pendencia = processo.PendenciaDeConformidade();
+        DomainError? pendencia = ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo));
         pendencia.Should().NotBeNull();
         pendencia!.Message.Should().Contain("\"Redação\"").And.Contain("\"Análise\"").And.Contain("\"Entrevista\"");
     }

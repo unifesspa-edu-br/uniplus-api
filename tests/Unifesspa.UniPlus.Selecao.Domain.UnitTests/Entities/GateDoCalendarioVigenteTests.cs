@@ -6,6 +6,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -151,7 +153,7 @@ public sealed class GateDoCalendarioVigenteTests
             .IsSuccess.Should().BeTrue();
 
         // Sem declarar a convenção: as duas causas coexistem, e o checklist mostra as duas.
-        string[] vermelhos = [.. processo.AvaliarConformidade(SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
         vermelhos.Should().Contain("algoritmo_contagem_prazo_nao_declarado")
             .And.Contain("calendario_vigente_ausente",
@@ -191,7 +193,7 @@ public sealed class GateDoCalendarioVigenteTests
         Publicar(comRecurso, contexto).Error!.Code.Should().Be("CalendarioVigente.FormaTerritorialInvalida",
             "quem depende do calendário é barrado pela causa real — dizer que não há calendário mandaria cadastrar um que já está lá");
 
-        comRecurso.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(comRecurso), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && !i.Ok,
                 "o checklist acusa a mesma pendência que bloqueia a publicação");
     }
@@ -209,7 +211,7 @@ public sealed class GateDoCalendarioVigenteTests
         Publicar(semRecurso, contexto).IsSuccess.Should().BeTrue(
             "o processo não tem contagem que distinga dia útil — o dado quebrado não é dele");
 
-        semRecurso.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(semRecurso), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && i.Ok,
                 "e o checklist concorda com a publicação, que é a bicondicionalidade");
     }
@@ -219,11 +221,11 @@ public sealed class GateDoCalendarioVigenteTests
     {
         ProcessoSeletivo processo = ProcessoComRecurso(UnidadePrazo.DiasUteis);
 
-        processo.AvaliarConformidade(SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && !i.Ok)
             .Which.Dimensao.Should().Be(DimensaoConformidade.ContagemDePrazos);
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(static i => i.Codigo == "calendario_vigente_ausente" && i.Ok);
 
         // O fuso não é gate — é defeito de instalação, com recusa 500 no handler —, mas o
@@ -232,7 +234,7 @@ public sealed class GateDoCalendarioVigenteTests
         var ambienteQuebrado = new ContextoDeContagemDePrazos(
             ComCalendario().CalendarioVigente, FusoInstitucional: null);
 
-        processo.AvaliarConformidade(ambienteQuebrado, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ambienteQuebrado, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(static i => i.Codigo == "fuso_institucional_nao_reconhecido" && !i.Ok);
 
         Publicar(processo, ambienteQuebrado).IsSuccess.Should().BeTrue(

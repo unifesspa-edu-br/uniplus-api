@@ -5,6 +5,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -107,7 +109,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         Result result = processo.DefinirEtapas([EtapaNotaEnem(peso: 6m), EtapaRedacao(peso: 4m)], PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        processo.CalcularDivisorMedia().Should().Be(10m);
+        EstadoDaConfiguracao.De(processo).CalcularDivisorMedia().Should().Be(10m);
     }
 
     [Fact(DisplayName = "Duas etapas de nota do ENEM no mesmo processo são recusadas")]

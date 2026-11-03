@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -71,7 +73,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadoresDeTeste.Retirar(processo);
 
-        IReadOnlyList<ItemConformidade> itens = processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         itens.Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().Equal("identificador_legivel_nao_declarado");

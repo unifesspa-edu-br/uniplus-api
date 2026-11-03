@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -64,7 +66,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             .Should().Contain(b => b.RecorteDeCompetencia.Count == 0,
                 "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeFalse(
                 "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
@@ -92,7 +94,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             .Should().OnlyContain(b => b.RecorteDeCompetencia.Count == 1,
                 "pré-condição: as duas bancas seguem com recorte declarado — o que mudou foi ele ser o mesmo");
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeFalse();
 
@@ -110,7 +112,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeTrue();
 

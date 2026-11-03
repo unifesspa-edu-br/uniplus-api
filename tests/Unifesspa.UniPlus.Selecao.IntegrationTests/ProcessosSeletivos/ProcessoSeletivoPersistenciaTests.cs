@@ -15,6 +15,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -82,7 +84,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.TipoProcessoOrigemId.Should().Be(TipoProcesso.SiSU.OrigemId);
         recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
         recarregado.Etapas.Should().HaveCount(2);
-        recarregado.CalcularDivisorMedia().Should().Be(5m);
+        EstadoDaConfiguracao.De(recarregado).CalcularDivisorMedia().Should().Be(5m);
         recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
             e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m
                 && e.FormaDeAvaliacao == FormaDeAvaliacao.Humana
@@ -290,7 +292,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.Should().NotBeNull();
         recarregado!.Etapas.Should().HaveCount(2);
         recarregado.Etapas.Select(e => e.Nome).Should().BeEquivalentTo(["Prova Objetiva", "Entrevista"]);
-        recarregado.CalcularDivisorMedia().Should().Be(5m);
+        EstadoDaConfiguracao.De(recarregado).CalcularDivisorMedia().Should().Be(5m);
     }
 
     [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis, reconstruindo o value object do motor")]

@@ -5,6 +5,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -39,7 +41,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo, tipos ?? TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto? tipos = null) =>
-        processo.AvaliarConformidade(contexto, FatosDeModalidadeDeTeste.DoCatalogo, tipos ?? TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, tipos ?? TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok).Select(static i => i.Codigo);
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(

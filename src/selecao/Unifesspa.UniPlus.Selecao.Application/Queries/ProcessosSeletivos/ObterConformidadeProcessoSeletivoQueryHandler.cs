@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Handler da <see cref="ObterConformidadeProcessoSeletivoQuery"/>: leitura
@@ -21,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// legais configuráveis aplicáveis ao processo.
 /// </summary>
 /// <remarks>
-/// O checklist em si vive em <c>ProcessoSeletivo.AvaliarConformidade()</c> (Domain) — bicondicional
+/// O checklist em si vive em <c>ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(ProcessoSeletivo))</c> (Domain) — bicondicional
 /// com os SEIS gates estruturais que <c>Publicar</c>/<c>Retificar</c> aplicam (issue #1092), não
 /// só o primeiro. Este handler apenas mapeia; a fonte única evita que a leitura pública e os gates
 /// de publicação divirjam.
@@ -39,7 +41,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// invariante de leitura única é do handler, não do endpoint.
 /// </para>
 /// <para>
-/// <b>Avisos.</b> Os avisos vêm de <c>ProcessoSeletivo.AvaliarAvisos()</c> e viajam em lista
+/// <b>Avisos.</b> Os avisos vêm de <c>ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(ProcessoSeletivo))</c> e viajam em lista
 /// própria: só esta consulta os calcula, nunca os gates de publicação e retificação.
 /// </para>
 /// </remarks>
@@ -146,7 +148,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
             .Montar(processo, tiposVivos, catalogoDeFatos, ProtecaoVigenteDasExigenciasDoProcesso.DaVersao(registroCodecs, versaoAtual)).Exigencias;
         Result aprovacaoDaProtecao = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, tiposVivos, catalogoDeFatos);
 
-        ItemConformidadeDto[] itens = [.. processo.AvaliarConformidade(contexto, fatosDeModalidade, tiposDeAtoUnicos, protecaoDasExigencias)
+        ItemConformidadeDto[] itens = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, fatosDeModalidade, tiposDeAtoUnicos, protecaoDasExigencias)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
         // O código do item é único no checklist: leva o alvo (o tipo ou o fato), porque vários itens pendentes dividem a
         // mesma invariante.
@@ -164,7 +166,7 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
                 Ok: false)];
         }
 
-        AvisoConformidadeDto[] avisos = [.. processo.AvaliarAvisos()
+        AvisoConformidadeDto[] avisos = [.. ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo))
             .Select(static aviso => new AvisoConformidadeDto(aviso.Codigo, aviso.Dimensao, aviso.Mensagem))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens, avisos);

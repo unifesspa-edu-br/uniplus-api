@@ -7,6 +7,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -308,7 +310,7 @@ public sealed class EtapaVinculadaAFaseTests
         // uma causa que o checklist declarava verde, e quem lê o painel não teria o que
         // corrigir.
         IReadOnlyList<ItemConformidade> checklist =
-            ProcessoConformeFactory.Criar().AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar()), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_etapa_fora_da_janela_da_fase")
             .Which.Ok.Should().BeTrue("o processo conforme não tem etapa pendurada fora da fase");

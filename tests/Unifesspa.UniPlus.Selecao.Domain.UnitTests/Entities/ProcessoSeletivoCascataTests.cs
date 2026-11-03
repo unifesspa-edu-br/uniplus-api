@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -294,7 +295,7 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
         CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)).Should().BeNull();
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
     }
 
     [Fact(DisplayName = "AvaliarConformidade com oferta federal sem cascata tem o item Cascata de remanejamento não-Ok")]
@@ -302,7 +303,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
     [Fact(DisplayName = "PendenciaDeConformidade (agregador genérico) fica Ok mesmo com a cascata pendente — só PendenciaDaCascata recusa")]
@@ -341,8 +342,8 @@ public sealed class ProcessoSeletivoCascataTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
-        processo.PendenciaDeConformidade().Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
+        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)).Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)).Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 }

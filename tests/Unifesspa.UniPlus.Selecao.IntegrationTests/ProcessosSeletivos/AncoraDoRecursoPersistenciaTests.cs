@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -63,7 +65,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO" && p.Papel == PapelProdutoFase.Definitivo).Id,
             "pré-condição: o EF hidratou a âncora incoerente sem passar por fábrica nenhuma");
 
-        IReadOnlyList<ItemConformidade> checklist = processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse(
@@ -89,7 +91,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse();
 
@@ -105,7 +107,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        processo.AvaliarConformidade(ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeTrue();
 

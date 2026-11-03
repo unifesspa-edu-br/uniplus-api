@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -816,7 +817,7 @@ public sealed class ProcessoSeletivoPublicarTests
                 ModalidadesFederaisLei12711.Ac, "ELIMINA", fatoDeModalidade: "MODALIDADE_CONVOCACAO"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(static i => i.Codigo == "exigencia_consequencia_incoerente_com_acao_da_vaga").Ok
             .Should().BeTrue("o convocado em AC não é o da cota, cuja ação de indeferimento é reclassificar");
     }
@@ -839,7 +840,7 @@ public sealed class ProcessoSeletivoPublicarTests
             basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Single(static i => i.Codigo == "exigencia_consequencia_incoerente_com_acao_da_vaga").Ok
             .Should().BeFalse("quem concorre na cota e foi convocado em AC recebe a exigência, e ELIMINA contraria a ação da cota");
     }
@@ -1050,7 +1051,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => i.Codigo == "exigencias_base_legal_nao_resolvida");
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => i.Codigo == "exigencias_base_legal_nao_resolvida");
     }
 
     [Fact(DisplayName = "CA-03 (semântica vazia): processo sem exigência que determina resultado tem o item satisfeito")]
@@ -1058,7 +1059,7 @@ public sealed class ProcessoSeletivoPublicarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Exigência que determina resultado sem base legal reprova o item")]
@@ -1069,7 +1070,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "CA-02: exigência com base RESOLVIDO satisfaz o item")]
@@ -1080,7 +1081,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Exigência com base só PENDENTE reprova o item")]
@@ -1091,7 +1092,7 @@ public sealed class ProcessoSeletivoPublicarTests
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "CA-05: reenviar o PUT rebaixando a única base resolvida para PENDENTE volta a reprovar o item")]
@@ -1101,12 +1102,12 @@ public sealed class ProcessoSeletivoPublicarTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
 
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Pendente)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "CA-05: reenviar o PUT sem a única base resolvida volta a reprovar o item")]
@@ -1116,12 +1117,12 @@ public sealed class ProcessoSeletivoPublicarTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId, BaseLegalDe(StatusBaseLegal.Resolvido)), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeTrue();
 
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaObrigatoriaCom(faseId), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Single(i => i.Codigo == "exigencias_base_legal_nao_resolvida").Ok.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Publicar bloqueia com ConformidadeInsuficiente quando exigência determina resultado sem base legal — antes de alcançar B-01")]

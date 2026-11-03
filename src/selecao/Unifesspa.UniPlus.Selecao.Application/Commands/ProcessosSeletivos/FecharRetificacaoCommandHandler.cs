@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
@@ -220,7 +221,7 @@ public static class FecharRetificacaoCommandHandler
 
         // O gate de conformidade precede a canonicalização (ADR-0109 D5) — a retificação
         // também congela uma versão append-only e vinculante.
-        if (processo.PendenciaDeConformidade() is { } pendencia)
+        if (ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)) is { } pendencia)
         {
             return (Result.Failure(pendencia), []);
         }

@@ -1,11 +1,28 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Errors;
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class RegrasDasEtapas
@@ -278,4 +295,11 @@ internal static class RegrasDasEtapas
 
     internal static bool EtapaReferenciadaPorDesempate(EstadoDaConfiguracao estado, Guid etapaId) =>
         estado.CriteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
+
+    /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
+    internal static IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(EstadoDaConfiguracao estado, Guid etapaId) =>
+        (estado.Classificacao?.RegrasEliminacao ?? [])
+            .Select(static regra => regra.Args)
+            .OfType<ArgsElimNotaMinimaEtapa>()
+            .Where(args => args.EtapaRef == etapaId);
 }

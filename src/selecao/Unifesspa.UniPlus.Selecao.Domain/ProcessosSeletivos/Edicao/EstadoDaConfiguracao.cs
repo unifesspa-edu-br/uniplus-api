@@ -84,6 +84,14 @@ public sealed record EstadoDaConfiguracao
     public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
         Formularios.FirstOrDefault(f => f.Finalidade == finalidade);
 
+    /// <summary>
+    /// Divisor da média da nota final: soma dos pesos das etapas que compõem
+    /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
+    /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
+    /// </summary>
+    public decimal CalcularDivisorMedia() =>
+        Etapas.Where(e => e.ComponeNota).Sum(e => e.Peso!.Value);
+
     public static EstadoDaConfiguracao De(ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(processo);

@@ -5,6 +5,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -51,7 +53,7 @@ public sealed class GateDeConformidadeTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        DomainError? pendencia = processo.PendenciaDeConformidade();
+        DomainError? pendencia = ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo));
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -63,7 +65,7 @@ public sealed class GateDeConformidadeTests
 
     [Fact(DisplayName = "PendenciaDeConformidade_ProcessoConforme — não há pendência")]
     public void PendenciaDeConformidade_ProcessoConforme() =>
-        ProcessoConforme().PendenciaDeConformidade().Should().BeNull();
+        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(ProcessoConforme())).Should().BeNull();
 
     /// <summary>
     /// <b>Contraprova do CA-09.</b> É o furo que esta story fecha: antes,
@@ -183,7 +185,7 @@ public sealed class GateDeConformidadeTests
     {
         ProcessoSeletivo processo = ProcessoConforme(declararTaxa: false);
 
-        DomainError? pendencia = processo.PendenciaDeConformidade();
+        DomainError? pendencia = ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo));
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");

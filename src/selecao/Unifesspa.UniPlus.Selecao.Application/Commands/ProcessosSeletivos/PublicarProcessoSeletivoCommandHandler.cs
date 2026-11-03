@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
@@ -162,7 +163,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         // obrigatória ausente falharia alto (D8) em vez de devolver o DomainError
         // que o contrato HTTP promete. A raiz reavalia — este é o guarda antecipado,
         // não a autoridade.
-        if (processo.PendenciaDeConformidade() is { } pendencia)
+        if (ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)) is { } pendencia)
         {
             return (Result.Failure(pendencia), []);
         }

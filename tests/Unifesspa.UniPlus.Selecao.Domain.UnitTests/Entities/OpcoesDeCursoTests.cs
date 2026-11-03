@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -21,8 +23,7 @@ public sealed class OpcoesDeCursoTests
     private const string CodigoAcimaDasOfertas = "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas";
     private const string MensagemAcimaDasOfertas = "Com 2 opções de curso, cadastre pelo menos dois cursos.";
 
-    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => processo
-        .AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
@@ -135,12 +136,12 @@ public sealed class OpcoesDeCursoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararOpcoesDeCurso: false);
 
         Vermelhos(processo).Should().Equal("opcoes_de_curso_nao_declaradas");
-        processo.PendenciaDeConformidade()!.Message.Should().Contain("Número de opções de curso");
+        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo))!.Message.Should().Contain("Número de opções de curso");
 
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().BeEmpty();
-        processo.PendenciaDeConformidade().Should().BeNull();
+        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)).Should().BeNull();
     }
 
     [Fact(DisplayName = "Estado com mais opções que cursos não publica: o gate recusa e o item acusa")]
@@ -152,7 +153,7 @@ public sealed class OpcoesDeCursoTests
         Hidratar(processo, 2);
 
         Vermelhos(processo).Should().Equal("opcoes_de_curso_acima_das_ofertas");
-        processo.PendenciaDeConformidade()!.Message.Should().Contain("Opções de curso");
+        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo))!.Message.Should().Contain("Opções de curso");
     }
 
     [Fact(DisplayName = "A regra vale na retificação: o fechamento recusa o estado com mais opções que cursos")]

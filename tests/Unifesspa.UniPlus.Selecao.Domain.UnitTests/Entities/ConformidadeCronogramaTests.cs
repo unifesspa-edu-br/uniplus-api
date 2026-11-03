@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -345,9 +346,9 @@ public sealed class ConformidadeCronogramaTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
         TiposDeAtoUnicosPorObjeto unicos = Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação");
 
-        duplicado.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(duplicado), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos)
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && !item.Ok);
-        unico.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(unico), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos)
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && item.Ok);
     }
 
@@ -440,7 +441,7 @@ public sealed class ConformidadeCronogramaTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
             FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
-        AvisoConformidade aviso = processo.AvaliarAvisos().Should().ContainSingle().Subject;
+        AvisoConformidade aviso = ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo)).Should().ContainSingle().Subject;
 
         aviso.Codigo.Should().Be(CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar);
         aviso.Dimensao.Should().Be(DimensaoConformidade.Cronograma);
@@ -459,7 +460,7 @@ public sealed class ConformidadeCronogramaTests
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.AvaliarAvisos().Should().ContainSingle().Which.Mensagem
+        ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo)).Should().ContainSingle().Which.Mensagem
             .Should().Contain("na fase 'CLASSIFICACAO' e na etapa 'Prova Objetiva' (ordem 1)");
     }
 
@@ -471,7 +472,7 @@ public sealed class ConformidadeCronogramaTests
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
 
-        processo.AvaliarAvisos().Should().BeEmpty();
+        ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Aviso: um único definitivo da fase concluinte que fecha dois ciclos não gera aviso")]
@@ -482,7 +483,7 @@ public sealed class ConformidadeCronogramaTests
             FaseQueConclui(2, "ANALISE_B", "CONCLUSAO", ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Preliminar)),
             FaseQueConclui(3, "CONCLUSAO", null, ProdutoDaFase.Criar("PARECER", PapelProdutoFase.Definitivo)));
 
-        processo.AvaliarAvisos().Should().BeEmpty();
+        ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Aviso nunca impede a publicação: o processo com o aviso publica e o checklist não tem item vermelho por causa dele")]
@@ -492,8 +493,8 @@ public sealed class ConformidadeCronogramaTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)),
             FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
-        processo.AvaliarAvisos().Should().NotBeEmpty();
-        processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo)).Should().NotBeEmpty();
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => i.Codigo.StartsWith("cronograma_", StringComparison.Ordinal)).Should().OnlyContain(static i => i.Ok);
         PublicarComUnicos(processo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
     }
