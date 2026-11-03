@@ -46,7 +46,7 @@ public sealed partial class RaizDoAgregadoTests
 
         string[] semDelegacao = [.. LerMetodos()
             .Where(m => m.Publico && !PortasSemPolitica.ContainsKey(m.Nome))
-            .Where(m => !EditarRegex().IsMatch(m.Corpo) && !politicas.Any(p => Regex.IsMatch(m.Corpo, $@"\b{p}\b")))
+            .Where(m => !EditarRegex().IsMatch(CorpoSemAssinatura(m.Corpo)) && !politicas.Any(p => Regex.IsMatch(CorpoSemAssinatura(m.Corpo), $@"\b{p}\b")))
             .Select(m => m.Nome)];
 
         semDelegacao.Should().BeEmpty("porta pública é Editar…(...) ou chamada de política, e não regra escrita na raiz");
@@ -86,9 +86,28 @@ public sealed partial class RaizDoAgregadoTests
     private static IEnumerable<string> NomesDasPoliticas() =>
         typeof(ProcessoSeletivo).Assembly.GetTypes()
             .Where(static t => t.Namespace is { } ns && ns.StartsWith("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos", StringComparison.Ordinal))
-            .Where(static t => !t.IsNested && !Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)))
+            .Where(static t => t.IsAbstract && t.IsSealed && !t.IsNested && !Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)))
             .Select(static t => t.Name)
-            .Where(static nome => nome is not ("EstadoDaConfiguracao" or "ColecoesDoProcesso" or "PartesDoProcesso"));
+            .Where(static nome => nome is not "PartesDoProcesso");
+
+    /// <summary>
+    /// O que vem depois da assinatura: o nome de uma política citado como tipo de parâmetro ou de retorno
+    /// não é delegação. A assinatura termina no parêntese que fecha a lista de parâmetros.
+    /// </summary>
+    private static string CorpoSemAssinatura(string metodo)
+    {
+        int profundidade = 0;
+        for (int i = 0; i < metodo.Length; i++)
+        {
+            profundidade += metodo[i] switch { '(' => 1, ')' => -1, _ => 0 };
+            if (profundidade == 0 && metodo[i] == ')')
+            {
+                return metodo[(i + 1)..];
+            }
+        }
+
+        return metodo;
+    }
 
     private static List<MetodoDaRaiz> LerMetodos()
     {
