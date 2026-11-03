@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -3005,116 +3006,35 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Result.Success();
     }
 
-    /// <summary>
-    /// Declara ou troca o identificador legível enquanto ele não consta em versão publicada.
-    /// Não há remoção: o certame sempre tem um identificador.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Antes da primeira publicação o endereço público ainda não existe, e o identificador é
-    /// livre. Depois dela, o que vale é a versão congelada: se a versão sobre a qual a sessão de
-    /// retificação foi aberta já traz o identificador, ele não muda mais — o endereço da página e
-    /// a chave do documento no acervo derivam dele, e o público já o conhece. Se não traz, a
-    /// sessão o declara (e pode corrigi-lo enquanto estiver aberta), e a versão que ela gerar o
-    /// congela; descartá-la repõe a ausência.
-    /// </para>
-    /// <para>
-    /// Fora da sessão, um processo publicado recusa a mutação pela regra geral
-    /// (<see cref="MutacaoBloqueada"/>).
-    /// </para>
-    /// <para>
-    /// A unicidade entre processos não é conferida aqui: depende de consulta, e fica com o
-    /// handler. O índice único do banco é a última defesa.
-    /// </para>
-    /// </remarks>
+    /// <summary>Declara ou troca o identificador legível; não há remoção, o certame sempre tem um.</summary>
     public Result DefinirIdentificadorLegivel(IdentificadorLegivel identificador, PrecondicaoIfMatch precondicao)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identificador.Valor, nameof(identificador));
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (Rascunho is { VersaoBaseComIdentificadorLegivel: true })
-        {
-            return Result.Failure(new DomainError(
-                ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
-                "O identificador legível já consta em versão publicada e não pode ser alterado."));
-        }
-
-        IdentificadorLegivel = identificador;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return Editar(precondicao,
+            () => ContagemDePrazos.RecusaDeTrocaDoIdentificador(Rascunho),
+            () => IdentificadorLegivel = identificador);
     }
 
     /// <summary>
-    /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111), em rascunho
-    /// ou sob sessão editorial aberta.
+    /// Redeclara o município cujo calendário rege a contagem dos prazos (UNI-REQ-0111). A atribuição
+    /// é incondicional de propósito: a igualdade de <see cref="LocalidadeRegente"/> considera só o
+    /// código IBGE, e comparar antes descartaria a correção de um nome de exibição divergente.
     /// </summary>
-    /// <remarks>
-    /// <para>A edição sob retificação só é segura porque a localidade agora participa do ciclo
-    /// editorial inteiro: entra no envelope congelado, é lida pelo decoder e é reposta por
-    /// <c>AplicarGrafo</c> no descarte. Enquanto o congelamento não existia, a escrita ficou
-    /// restrita ao rascunho — liberá-la antes teria deixado uma edição descartada governando quais
-    /// feriados incidem no prazo, e o fechamento publicaria os mesmos bytes apesar da configuração
-    /// diferente.</para>
-    /// <para>A atribuição é incondicional de propósito: como a igualdade de
-    /// <see cref="LocalidadeRegente"/> considera só o código IBGE, comparar antes de
-    /// atribuir descartaria silenciosamente a correção de um nome de exibição divergente,
-    /// que é justamente o caso em que a redeclaração serve para consertar o rótulo.</para>
-    /// </remarks>
-    public Result DefinirLocalidade(LocalidadeRegente localidade, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (localidade is null)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.LocalidadeAusente",
-                "A localidade que rege a contagem dos prazos é obrigatória."));
-        }
-
-        Localidade = localidade;
-        // Sem isto, alterar o município dentro da sessão não moveria o ETag, e uma escrita
-        // concorrente com revisão velha continuaria sendo aceita.
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+    public Result DefinirLocalidade(LocalidadeRegente localidade, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao,
+            () => ContagemDePrazos.RecusaDaLocalidadeAusente(localidade),
+            () => Localidade = localidade);
 
     /// <summary>
-    /// Declara a convenção de contagem que o certame usa nos prazos que distinguem dia
-    /// útil (UNI-REQ-0112), em rascunho ou sob sessão editorial aberta.
+    /// Declara a convenção de contagem dos prazos que distinguem dia útil (UNI-REQ-0112). A referência
+    /// chega resolvida contra o rol de regras: o <c>hash</c> ecoado do payload não provaria nada
+    /// sobre a definição aplicada.
     /// </summary>
-    /// <remarks>
-    /// A referência chega já resolvida contra o rol de regras: quem escolhe informa código
-    /// e versão, e o handler troca isso pela identidade completa antes de chegar aqui. A
-    /// raiz nunca monta a referência a partir do que veio na requisição — o <c>hash</c>
-    /// ecoado do payload não provaria nada sobre a definição aplicada.
-    /// </remarks>
-    public Result DefinirAlgoritmoContagemPrazo(ReferenciaRegra algoritmo, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (algoritmo is null)
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
-                "A convenção de contagem dos prazos é obrigatória."));
-        }
-
-        AlgoritmoContagemPrazo = algoritmo;
-        // Mesmo motivo do município: sem mover o ETag, trocar a convenção dentro da sessão
-        // deixaria passar escrita concorrente com revisão velha.
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+    public Result DefinirAlgoritmoContagemPrazo(ReferenciaRegra algoritmo, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao,
+            () => ContagemDePrazos.RecusaDaConvencaoAusente(algoritmo),
+            () => AlgoritmoContagemPrazo = algoritmo);
 
     /// <summary>A declaração do bônus existe e concorda com a configuração.</summary>
     private bool BonusRegionalDeclarado() =>
@@ -3199,130 +3119,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     private DomainError? PendenciaDoFatoDeElegibilidade() => RecusaDoFatoDeElegibilidade(SemCatalogo, SemCatalogo);
-
-    /// <summary>
-    /// Recusa gerar versão sem identificador legível: o certame publicado ficaria sem endereço
-    /// legível e sem chave no acervo público.
-    /// </summary>
-    private DomainError? PendenciaDoIdentificadorLegivel() =>
-        IdentificadorLegivel is null
-            ? new DomainError(
-                ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente,
-                "O identificador legível é obrigatório para gerar versão publicada.")
-            : null;
-
-    /// <summary>
-    /// Recusa gerar versão sem a localidade que rege a contagem dos prazos (UNI-REQ-0111).
-    /// </summary>
-    /// <remarks>
-    /// A localidade é exigida desde a criação, então chegar aqui sem ela não é estado
-    /// alcançável pelo fluxo público — a recusa fica como invariante da raiz, defendendo
-    /// contra caminho de escrita que a contorne, e porque o requisito exige a recusa nomeada
-    /// nas três transições que geram versão. É <b>também</b> a fonte única do item que
-    /// <see cref="AvaliarConformidade"/> projeta: uma segunda condição escrita lá poderia
-    /// divergir desta e devolver checklist verde para processo que a publicação recusa.
-    /// </remarks>
-    private DomainError? PendenciaDaLocalidade() =>
-        Localidade is null
-            ? new DomainError(
-                "ProcessoSeletivo.LocalidadeAusente",
-                "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada.")
-            : null;
-
-    /// <summary>
-    /// Recusa gerar versão quando alguma contagem do certame distingue dia útil e a
-    /// convenção não foi declarada (UNI-REQ-0112/UNI-REQ-0116).
-    /// </summary>
-    /// <remarks>
-    /// Basta existir regra de recurso para a dependência existir: toda regra declara prazo
-    /// de interposição, e as duas unidades declaráveis nele correm sobre dia útil — dias
-    /// úteis por definição, e horas porque só as horas situadas em dia útil avançam o
-    /// relógio. A suspensividade em dias úteis depende igualmente, mas nunca sozinha, já
-    /// que não existe suspensividade sem a regra que a carrega. Sem regra de recurso
-    /// nenhuma, não há o que contar e a declaração não é exigida.
-    /// </remarks>
-    private DomainError? PendenciaDoAlgoritmoDeContagem()
-    {
-        if (AlgoritmoContagemPrazo is not null)
-        {
-            return null;
-        }
-
-        return AlgumaContagemDistingueDiaUtil()
-            ? new DomainError(
-                "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
-                "O processo tem prazo de recurso cuja contagem distingue dia útil, e não declarou a convenção de contagem que usa.")
-            : null;
-    }
-
-    /// <summary>
-    /// Recusa gerar versão quando alguma contagem do certame distingue dia útil e não há
-    /// calendário de dias úteis vigente (UNI-REQ-0116).
-    /// </summary>
-    /// <remarks>
-    /// Mesmo gatilho de <see cref="PendenciaDoAlgoritmoDeContagem"/>, e pela mesma razão: toda
-    /// regra de recurso carrega prazo de interposição, e as duas unidades declaráveis nele
-    /// correm sobre dia útil. A diferença é a origem do dado — a convenção o processo declara,
-    /// o calendário vem do módulo Configuração e chega pelo contexto.
-    /// <para>
-    /// As duas causas são distintas e cada uma tem erro próprio: falta o dado que diz quais
-    /// dias são úteis, ou falta a convenção que diz como contá-los. Podem faltar ao mesmo
-    /// tempo, e reportar uma pela outra mandaria quem publica corrigir o lugar errado.
-    /// </para>
-    /// </remarks>
-    private DomainError? PendenciaDoCalendarioVigente(ContextoDeContagemDePrazos contexto)
-    {
-        if (contexto.CalendarioVigente is not null)
-        {
-            return null;
-        }
-
-        if (!AlgumaContagemDistingueDiaUtil())
-        {
-            return null;
-        }
-
-        // Dataset vigente existe, mas veio incoerente do cadastro: a causa é essa, não a
-        // ausência. Reportar "não há calendário" mandaria cadastrar um que já está lá.
-        if (contexto.FalhaDoCalendarioVigente is { } falha)
-        {
-            return falha;
-        }
-
-        return AlgumaContagemDistingueDiaUtil()
-            ? new DomainError(
-                "ProcessoSeletivo.CalendarioVigenteAusente",
-                "O processo tem prazo de recurso cuja contagem distingue dia útil, e não há calendário de dias úteis vigente cadastrado.")
-            : null;
-    }
-
-    /// <summary>
-    /// Se alguma contagem do certame distingue dia útil de não útil — o gatilho compartilhado
-    /// pelos gates do calendário e da convenção de contagem (UNI-REQ-0116).
-    /// </summary>
-    /// <remarks>
-    /// Basta existir regra de recurso, na fase ou na janela de uma etapa: toda regra declara
-    /// prazo de interposição, e as duas unidades declaráveis nele correm sobre dia útil — dias
-    /// úteis por definição, e horas porque só as horas situadas em dia útil avançam o relógio.
-    /// A suspensividade em dias úteis depende igualmente, mas nunca sozinha, já que não existe
-    /// suspensividade sem a regra que a carrega. A janela de solicitação de isenção não é
-    /// regra de recurso e não aciona nada disto.
-    /// </remarks>
-    private bool AlgumaContagemDistingueDiaUtil() => ContagemDistingueDiaUtil(_cronogramaFases, _etapas);
-
-    /// <summary>
-    /// Se alguma janela de recurso, da fase ou da etapa, conta prazo que distingue dia útil. É a
-    /// pergunta única de que o gate da convenção, o do calendário e a leitura do envelope
-    /// congelado dependem, para que nenhum deles olhe só um dos dois lugares onde o recurso mora.
-    /// </summary>
-    public static bool ContagemDistingueDiaUtil(IEnumerable<FaseCronograma> fases, IEnumerable<EtapaProcesso> etapas)
-    {
-        ArgumentNullException.ThrowIfNull(fases);
-        ArgumentNullException.ThrowIfNull(etapas);
-
-        return fases.Any(static fase => fase.RegraRecurso is not null)
-            || etapas.Any(static etapa => etapa.Recursos.Count > 0);
-    }
 
     /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
@@ -3687,8 +3483,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>
     /// Checklist de conformidade ESTRUTURAL do agregado (issue #1092): bicondicional com os
     /// gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
-    /// — <see cref="PendenciaDoIdentificadorLegivel"/>, <see cref="PendenciaDaLocalidade"/>,
-    /// <see cref="PendenciaDoAlgoritmoDeContagem"/>,
+    /// — <see cref="ContagemDePrazos.PendenciaDoIdentificadorLegivel"/>, <see cref="ContagemDePrazos.PendenciaDaLocalidade"/>,
+    /// <see cref="ContagemDePrazos.PendenciaDoAlgoritmoDeContagem"/>,
     /// <see cref="PendenciaDeConformidade"/>, <see cref="PendenciaDoCronograma"/>,
     /// <see cref="PendenciaDaCascata"/> e <see cref="PendenciaPreCanonicalizacao"/>. Todos os
     /// itens ficam <see langword="true"/> se e somente se esses gates não têm pendência —
@@ -3728,6 +3524,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
+        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(this);
         List<ViolacaoDoDesempatePorArea> desempate = ViolacoesDoDesempatePorAreaDoEnem();
 
         return
@@ -3737,10 +3534,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // ItensEstruturaisDeConformidade(), que alimenta o agregador: lá dentro, o
         // ConformidadeInsuficiente interceptaria a causa específica antes de ela ser
         // alcançada — mesma razão pela qual a cascata fica de fora.
-        new ItemConformidade("identificador_legivel_nao_declarado", DimensaoConformidade.Identificacao, "Identificador legível do certame", PendenciaDoIdentificadorLegivel() is null),
-        new ItemConformidade("localidade_nao_declarada", DimensaoConformidade.ContagemDePrazos, "Localidade que rege a contagem dos prazos", PendenciaDaLocalidade() is null),
-        new ItemConformidade("algoritmo_contagem_prazo_nao_declarado", DimensaoConformidade.ContagemDePrazos, "Convenção de contagem dos prazos de recurso", PendenciaDoAlgoritmoDeContagem() is null),
-        new ItemConformidade("calendario_vigente_ausente", DimensaoConformidade.ContagemDePrazos, "Calendário de dias úteis vigente", PendenciaDoCalendarioVigente(contexto) is null),
+        new ItemConformidade("identificador_legivel_nao_declarado", DimensaoConformidade.Identificacao, "Identificador legível do certame", ContagemDePrazos.PendenciaDoIdentificadorLegivel(estado) is null),
+        new ItemConformidade("localidade_nao_declarada", DimensaoConformidade.ContagemDePrazos, "Localidade que rege a contagem dos prazos", ContagemDePrazos.PendenciaDaLocalidade(estado) is null),
+        new ItemConformidade("algoritmo_contagem_prazo_nao_declarado", DimensaoConformidade.ContagemDePrazos, "Convenção de contagem dos prazos de recurso", ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(estado) is null),
+        new ItemConformidade("calendario_vigente_ausente", DimensaoConformidade.ContagemDePrazos, "Calendário de dias úteis vigente", ContagemDePrazos.PendenciaDoCalendarioVigente(estado, contexto) is null),
 
         // O fuso não é gate de publicação — zona irresolvível é defeito de instalação, mapeado
         // para 500, e quem publica não tem o que corrigir. Projetá-lo assim mesmo é o que evita
@@ -6284,18 +6081,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Result<VersaoConfiguracao>.Success(versao);
     }
 
-    private ProntidaoParaCongelar.Portoes PortoesDeCongelamento(PedidoDeCongelamento pedido) => new(
-        IdentificadorLegivel: PendenciaDoIdentificadorLegivel,
-        Localidade: PendenciaDaLocalidade,
-        AlgoritmoDeContagem: PendenciaDoAlgoritmoDeContagem,
-        CalendarioVigente: () => PendenciaDoCalendarioVigente(pedido.Contexto),
-        Conformidade: PendenciaDeConformidade,
-        Cronograma: () => PendenciaDoCronograma(pedido.Contexto.FusoInstitucional),
-        TipoDeAtoUnico: () => PendenciaDoTipoDeAtoUnico(pedido.TiposDeAtoUnicos),
-        ResultadoSemPapel: () => PendenciaDoResultadoSemPapel(pedido.TiposDeAtoUnicos),
-        TipoQueCongelaDeclaradoComoResultado: () => PendenciaDoTipoQueCongelaDeclaradoComoResultado(pedido.TiposDeAtoUnicos),
-        Cascata: PendenciaDaCascata,
-        PreCanonicalizacao: () => PendenciaPreCanonicalizacao(pedido.FatosDeModalidade));
+    private ProntidaoParaCongelar.Portoes PortoesDeCongelamento(PedidoDeCongelamento pedido)
+    {
+        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(this);
+        return new(
+            IdentificadorLegivel: () => ContagemDePrazos.PendenciaDoIdentificadorLegivel(estado),
+            Localidade: () => ContagemDePrazos.PendenciaDaLocalidade(estado),
+            AlgoritmoDeContagem: () => ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(estado),
+            CalendarioVigente: () => ContagemDePrazos.PendenciaDoCalendarioVigente(estado, pedido.Contexto),
+            Conformidade: PendenciaDeConformidade,
+            Cronograma: () => PendenciaDoCronograma(pedido.Contexto.FusoInstitucional),
+            TipoDeAtoUnico: () => PendenciaDoTipoDeAtoUnico(pedido.TiposDeAtoUnicos),
+            ResultadoSemPapel: () => PendenciaDoResultadoSemPapel(pedido.TiposDeAtoUnicos),
+            TipoQueCongelaDeclaradoComoResultado: () => PendenciaDoTipoQueCongelaDeclaradoComoResultado(pedido.TiposDeAtoUnicos),
+            Cascata: PendenciaDaCascata,
+            PreCanonicalizacao: () => PendenciaPreCanonicalizacao(pedido.FatosDeModalidade));
+    }
 
     /// <summary>
     /// Repõe integralmente a configuração viva a partir do grafo reconstruído de uma

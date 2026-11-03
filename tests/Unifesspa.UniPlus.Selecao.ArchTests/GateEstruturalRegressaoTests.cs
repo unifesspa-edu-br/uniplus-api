@@ -77,14 +77,14 @@ public sealed class GateEstruturalRegressaoTests
 
         string prontidao = File.ReadAllText(CaminhoProntidao());
 
-        Regex.Count(processoSeletivo, @"PendenciaDaLocalidade\(\)\s+is\s").Should().Be(1,
+        Regex.Count(processoSeletivo, @"PendenciaDaLocalidade\(estado\)\s+is\s").Should().Be(1,
             "AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado que a prontidão aplica");
-        Regex.Count(processoSeletivo, @"Localidade:\s+PendenciaDaLocalidade,").Should().Be(1, "Publicar() e SucederVersao() aplicam o gate pela prontidão");
+        Regex.Count(processoSeletivo, @"Localidade:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDaLocalidade\(estado\),").Should().Be(1, "Publicar() e SucederVersao() aplicam o gate pela prontidão");
         Regex.Count(prontidao, @"portoes\.Localidade\b").Should().Be(1);
 
-        Regex.Count(processoSeletivo, @"PendenciaDoAlgoritmoDeContagem\(\)\s+is\s").Should().Be(1,
+        Regex.Count(processoSeletivo, @"PendenciaDoAlgoritmoDeContagem\(estado\)\s+is\s").Should().Be(1,
             "mesma topologia da localidade — o gate pela prontidão e a projeção no checklist");
-        Regex.Count(processoSeletivo, @"AlgoritmoDeContagem:\s+PendenciaDoAlgoritmoDeContagem,").Should().Be(1);
+        Regex.Count(processoSeletivo, @"AlgoritmoDeContagem:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDoAlgoritmoDeContagem\(estado\),").Should().Be(1);
         Regex.Count(prontidao, @"portoes\.AlgoritmoDeContagem\b").Should().Be(1);
 
         foreach (string handler in new[]

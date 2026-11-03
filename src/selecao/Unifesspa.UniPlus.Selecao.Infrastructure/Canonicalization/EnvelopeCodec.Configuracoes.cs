@@ -606,7 +606,7 @@ public sealed partial class EnvelopeCodec
             // foi produzido por publicação legítima, e aceitá-lo restauraria configuração que o
             // gate recusa — o round-trip byte a byte não acusaria, porque o encoder reemitiria a
             // mesma ausência.
-            if (ProcessoSeletivo.ContagemDistingueDiaUtil(cronogramaFases, etapas))
+            if (Domain.ProcessosSeletivos.Prazos.ContagemDePrazos.ContagemDistingueDiaUtil(cronogramaFases, etapas))
             {
                 return leitor.Propagar<CalendarioDiasUteisCongelado?>(new DomainError(
                     ErrosCodecEnvelope.EnvelopeMalformado,
