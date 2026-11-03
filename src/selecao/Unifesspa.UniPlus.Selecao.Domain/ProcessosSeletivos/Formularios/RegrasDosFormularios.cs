@@ -171,6 +171,17 @@ public static class RegrasDosFormularios
                 "A retificação acrescenta formulário, mas não remove o que o edital publicou.")
             : null;
 
+    internal static void Remover(ColecoesDoProcesso colecoes, FormularioProcesso formulario)
+    {
+        ArgumentNullException.ThrowIfNull(colecoes);
+        ArgumentNullException.ThrowIfNull(formulario);
+
+        colecoes.Formularios.Remove(formulario);
+        colecoes.Campos.RemoveAll(f => f.Finalidade == formulario.Finalidade);
+        colecoes.GruposColetados.RemoveAll(g => g.Finalidade == formulario.Finalidade);
+        colecoes.TermosExigidos.RemoveAll(t => t.Finalidade == formulario.Finalidade);
+    }
+
     internal static Result<FormularioProcesso> ConferirRemocao(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade)
     {
         ArgumentNullException.ThrowIfNull(estado);

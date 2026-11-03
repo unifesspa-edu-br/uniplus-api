@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bonus;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
@@ -289,32 +290,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return Editar(
             precondicao,
-            () => RecusaDaOfertaDeAtendimento(oferta),
+            () => RegrasDaOfertaDeAtendimento.Recusa(EstadoDaConfiguracao.De(this), oferta),
             () =>
             {
                 Vincular(oferta);
                 OfertaAtendimento = oferta;
             });
-    }
-
-    // Condição e recurso são citados por código, não por Guid: só recusa se o novo conjunto de
-    // ofertas deixar de conter um código hoje referenciado por condição viva.
-    private DomainError? RecusaDaOfertaDeAtendimento(OfertaAtendimentoEspecializado oferta)
-    {
-        HashSet<string> novosCodigos = [.. oferta.Condicoes.Select(c => c.CondicaoCodigo)];
-        if (ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(EstadoDaConfiguracao.De(this), OfertaAtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
-                "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento.");
-        }
-
-        HashSet<string> novosRecursos = [.. oferta.Recursos.Select(static r => r.RecursoCodigo)];
-        return ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(EstadoDaConfiguracao.De(this), OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos)
-            ? new DomainError(
-                ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva,
-                "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento.")
-            : null;
     }
 
     /// <summary>
@@ -349,46 +330,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015). Aplicar exige a configuração, e não
     /// aplicar a recusa: a declaração e a configuração não podem divergir.
     /// </summary>
-    public Result DefinirBonusRegional(bool aplica, ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (aplica && bonus is null)
-        {
-            return Result.Failure(new DomainError(
-                ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
-                "O processo que aplica o bônus regional precisa da configuração do bônus."));
-        }
-
-        if (!aplica && bonus is not null)
-        {
-            return Result.Failure(new DomainError(
-                ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
-                "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
-        }
-
-        // Os campos com os municípios do bônus como opções referenciam o município pelo código
-        // IBGE: trocar a área ou remover o bônus não pode deixar de fora um município citado por
-        // condição viva, que nunca mais seria satisfeita.
-        HashSet<string> novosMunicipios = [.. (bonus?.Municipios ?? []).Select(static m => m.CodigoIbge)];
-        if (_campos
-            .Where(static f => f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
-            .Any(f => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(EstadoDaConfiguracao.De(this), f.FatoCodigo, novosMunicipios)))
-        {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
-                "Existe condição citando um município que deixaria a área do bônus regional — ajuste ou remova a condição antes de redefinir o bônus."));
-        }
-
-        Vincular(bonus);
-        BonusRegional = bonus;
-        AplicaBonusRegional = aplica;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+    public Result DefinirBonusRegional(bool aplica, ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao,
+            () => RegrasDoBonusRegional.Recusa(EstadoDaConfiguracao.De(this), aplica, bonus),
+            () =>
+            {
+                BonusRegional = Vincular(bonus);
+                AplicaBonusRegional = aplica;
+            });
 
     /// <summary>
     /// Define (ou remove) a divulgação pública do processo (UNI-REQ-0050). Nula, o processo volta ao
@@ -481,26 +430,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public Result RemoverFormulario(FinalidadeFormulario finalidade, PrecondicaoIfMatch precondicao)
     {
-        if (RegrasDosFormularios.RecusaDaRemocaoSobRetificacao(Rascunho) is { } recusaDaSessao)
-        {
-            return Result.Failure(recusaDaSessao);
-        }
-
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        Result<FormularioProcesso> remocao = RegrasDosFormularios.ConferirRemocao(EstadoDaConfiguracao.De(this), finalidade);
+        DomainError? recusa = RegrasDosFormularios.RecusaDaRemocaoSobRetificacao(Rascunho) ?? MutacaoBloqueada(precondicao);
+        Result<FormularioProcesso> remocao = recusa is null
+            ? RegrasDosFormularios.ConferirRemocao(EstadoDaConfiguracao.De(this), finalidade)
+            : Result<FormularioProcesso>.Failure(recusa);
         if (remocao.IsFailure)
         {
             return Result.Failure(remocao.Error!);
         }
 
-        _formularios.Remove(remocao.Value!);
-        _campos.RemoveAll(f => f.Finalidade == finalidade);
-        _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
-        _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
+        RegrasDosFormularios.Remover(Colecoes(), remocao.Value!);
         return Result.Success();
     }
 
@@ -599,7 +538,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(fatosJaColetados);
 
-        return RegrasDaColeta.RecopiarItensDoCatalogo(EstadoDaConfiguracao.De(this), catalogo, fatosJaColetados);
+        Result<PlanoDaRecopiaDoCatalogo> plano = RegrasDaColeta.PlanejarRecopia(EstadoDaConfiguracao.De(this), catalogo, fatosJaColetados);
+        if (plano.IsFailure)
+        {
+            return Result.ValidationFailure(plano.Errors);
+        }
+
+        plano.Value!.Aplicar();
+        return Result.Success();
     }
 
     /// <summary>
@@ -634,14 +580,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <c>EntityBase</c> puros, sem soft-delete, e o <c>Id</c> não é congelado no envelope nem
     /// referenciado por FK externa.
     /// </summary>
-    public void LimparColetaEDerivacaoParaRestauracao()
-    {
-        _campos.Clear();
-        _gruposColetados.Clear();
-        _regrasDerivacao.Clear();
-        _termosExigidos.Clear();
-        _formularios.Clear();
-    }
+    public void LimparColetaEDerivacaoParaRestauracao() =>
+        RegrasDaColeta.LimparParaRestauracao(Colecoes());
 
     /// <summary>
     /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação. Presença 0..1: nulo é estado

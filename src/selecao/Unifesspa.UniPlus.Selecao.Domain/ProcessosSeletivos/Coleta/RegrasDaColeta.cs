@@ -78,33 +78,30 @@ public static class RegrasDaColeta
         return Result.Success();
     }
 
-    internal static Result RecopiarItensDoCatalogo(
+    internal static void LimparParaRestauracao(ColecoesDoProcesso colecoes)
+    {
+        ArgumentNullException.ThrowIfNull(colecoes);
+
+        colecoes.Campos.Clear();
+        colecoes.GruposColetados.Clear();
+        colecoes.RegrasDerivacao.Clear();
+        colecoes.TermosExigidos.Clear();
+        colecoes.Formularios.Clear();
+    }
+
+    internal static Result<PlanoDaRecopiaDoCatalogo> PlanejarRecopia(
         EstadoDaConfiguracao estado, IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
     {
         IReadOnlyList<RecusaDaCopiaDoItem> recusas = ConferirCopiasDoCatalogo(estado, catalogo, fatosJaColetados);
         if (recusas.Count > 0)
         {
-            return Result.ValidationFailure([.. recusas.Select(static r => r.Erro)]);
+            return Result<PlanoDaRecopiaDoCatalogo>.ValidationFailure([.. recusas.Select(static r => r.Erro)]);
         }
 
-        foreach (FatoColetado item in estado.Campos)
-        {
-            if (!catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
-            {
-                continue;
-            }
-
-            if (fatosJaColetados.Contains(item.FatoCodigo))
-            {
-                item.RecopiarApresentacaoDoCatalogo(copia);
-            }
-            else
-            {
-                item.RecopiarDoCatalogo(copia);
-            }
-        }
-
-        return Result.Success();
+        return Result<PlanoDaRecopiaDoCatalogo>.Success(new PlanoDaRecopiaDoCatalogo(
+            [.. estado.Campos
+                .Where(item => catalogo.ContainsKey(item.FatoCodigo))
+                .Select(item => (item, catalogo[item.FatoCodigo], fatosJaColetados.Contains(item.FatoCodigo)))]));
     }
 
     /// <summary>
@@ -263,6 +260,25 @@ internal sealed record PlanoDaColeta(
             grupo.VincularFinalidade(Finalidade);
             colecoes.GruposColetados.Add(grupo);
             colecoes.Campos.AddRange(grupo.Subitens);
+        }
+    }
+}
+
+/// <summary>A cópia do catálogo que cada item recebe: só a apresentação, para o fato que uma versão publicada já coletou, ou a cópia inteira.</summary>
+internal sealed record PlanoDaRecopiaDoCatalogo(IReadOnlyList<(FatoColetado Item, CopiaDoItemNoCatalogo Copia, bool SoApresentacao)> Itens)
+{
+    internal void Aplicar()
+    {
+        foreach ((FatoColetado item, CopiaDoItemNoCatalogo copia, bool soApresentacao) in Itens)
+        {
+            if (soApresentacao)
+            {
+                item.RecopiarApresentacaoDoCatalogo(copia);
+            }
+            else
+            {
+                item.RecopiarDoCatalogo(copia);
+            }
         }
     }
 }
