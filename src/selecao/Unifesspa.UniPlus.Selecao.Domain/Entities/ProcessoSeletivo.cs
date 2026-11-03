@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -6288,7 +6289,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // já emendado. A recusa é invariante do agregado, não `if` do handler (ADR-0110 D7).
         if (Rascunho is not null)
         {
-            return Result<VersaoConfiguracao>.Failure(RetificacaoJaAberta());
+            return Result<VersaoConfiguracao>.Failure(GuardaDeEdicao.RetificacaoJaAberta());
         }
 
         return SucederVersao(
@@ -6334,7 +6335,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 
-        if (PendenciaDaSessaoEditorial(precondicao) is { } pendencia)
+        if (GuardaDeEdicao.PendenciaDaSessao(Status, Rascunho, precondicao) is { } pendencia)
         {
             return Result<VersaoConfiguracao>.Failure(pendencia);
         }
@@ -6374,7 +6375,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 
-        if (PendenciaDaSessaoEditorial(precondicao) is { } pendencia)
+        if (GuardaDeEdicao.PendenciaDaSessao(Status, Rascunho, precondicao) is { } pendencia)
         {
             return Result.Failure(pendencia);
         }
@@ -6424,25 +6425,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     private Guid? _versaoRestaurada;
 
-    /// <summary>
-    /// O que impede <b>encerrar</b> a sessão editorial (fechar ou descartar):
-    /// <see langword="null"/> quando ela pode ser encerrada.
-    /// </summary>
-    /// <remarks>
-    /// A ordem é a da ADR-0110 D9: a <b>inexistência</b> da sessão (409) precede a
-    /// <b>precondição</b> (428/412) — responder 412 para um rascunho que não existe mandaria
-    /// o cliente recarregar um ETag inexistente. A obrigatoriedade do <c>If-Match</c> aqui é
-    /// <b>incondicional</b>: as duas rotas existem <i>para</i> a sessão.
-    /// </remarks>
-    private DomainError? PendenciaDaSessaoEditorial(PrecondicaoIfMatch precondicao)
-    {
-        if (Rascunho is null)
-        {
-            return RetificacaoNaoAberta();
-        }
-
-        return MutacaoBloqueada(precondicao);
-    }
 
     /// <summary>
     /// O núcleo comum do <b>atalho atômico</b> (<see cref="Retificar"/>) e do
@@ -7984,7 +7966,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         if (Rascunho is not null)
         {
-            return Result<RascunhoRetificacao>.Failure(RetificacaoJaAberta());
+            return Result<RascunhoRetificacao>.Failure(GuardaDeEdicao.RetificacaoJaAberta());
         }
 
         Result<RascunhoRetificacao> rascunho = RascunhoRetificacao.Criar(
@@ -8010,7 +7992,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // rascunho que não existe mandaria o cliente recarregar um ETag inexistente.
         if (Rascunho is null)
         {
-            return Result.Failure(RetificacaoNaoAberta());
+            return Result.Failure(GuardaDeEdicao.RetificacaoNaoAberta());
         }
 
         // E daqui em diante é o MESMO guard dos seis Definir* — não uma checagem paralela.
@@ -8039,65 +8021,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public string? ETagDaSessaoEditorial => Rascunho?.ETag;
 
-    /// <summary>
-    /// <b>Allowlist</b> de mutação da configuração (ADR-0110 D4). O que era uma
-    /// <b>denylist de um elemento</b> — "bloqueia se, e só se, está publicado" — e por
-    /// isso <b>falhava aberta</b>: <see cref="StatusProcesso.Nenhum"/>,
-    /// <see cref="StatusProcesso.Encerrado"/> e <see cref="StatusProcesso.Cancelado"/>
-    /// eram silenciosamente mutáveis, e todo estado futuro nasceria mutável por omissão.
-    /// </summary>
-    /// <remarks>
-    /// <c>MutacaoPermitida() ⟺ Status == Rascunho || (Status == Publicado &amp;&amp; rascunho aberto)</c>
-    /// </remarks>
-    private bool MutacaoPermitida() =>
-        Status == StatusProcesso.Rascunho
-        || (Status == StatusProcesso.Publicado && Rascunho is not null);
-
-    /// <summary>
-    /// Guard único de todo <c>Definir*</c>: a allowlist acima <b>mais</b> a precondição de
-    /// concorrência quando há sessão editorial aberta. <see langword="null"/> quando a
-    /// mutação pode prosseguir.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>A obrigatoriedade do <c>If-Match</c> é condicional ao estado</b>, e é por isso
-    /// que ela vive aqui e não no filtro de transporte: os mesmos seis <c>Definir*</c>
-    /// servem um processo em <see cref="StatusProcesso.Rascunho"/> (pré-publicação — sem
-    /// sessão, e portanto sem ETag a fornecer) e a edição <b>durante</b> uma retificação
-    /// (com sessão, e com precondição obrigatória). Só quem carregou o agregado sabe em
-    /// qual dos dois está.
-    /// </para>
-    /// <para>
-    /// Os handlers chamam este guard <b>logo após</b> resolverem o 404 — antes de validar
-    /// payload —, porque a precondição precede a regra de negócio na ordem de avaliação
-    /// (D9). Mas ele continua sendo chamado <b>aqui dentro</b> por cada <c>Definir*</c>:
-    /// a antecipação dá a ordem correta, e o guard no domínio garante que ela não seja
-    /// contornável por um handler futuro que esqueça de antecipá-la.
-    /// </para>
-    /// </remarks>
-    public DomainError? MutacaoBloqueada(PrecondicaoIfMatch precondicao)
-    {
-        ArgumentNullException.ThrowIfNull(precondicao);
-
-        if (Status == StatusProcesso.Publicado && Rascunho is null)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
-                "Processo publicado não aceita mutação direta da configuração — utilize a retificação.");
-        }
-
-        if (!MutacaoPermitida())
-        {
-            return new DomainError(
-                "ProcessoSeletivo.MutacaoForaDeEstadoEditavel",
-                $"Um processo em {Status} não aceita mutação da configuração.");
-        }
-
-        // Processo em Rascunho: não há sessão editorial, e portanto não há ETag que o
-        // cliente pudesse fornecer. Exigir a precondição aqui quebraria toda a edição
-        // pré-publicação.
-        return Rascunho?.ConferirPrecondicao(precondicao);
-    }
+    /// <summary>A guarda de mutação da configuração (<see cref="GuardaDeEdicao.MutacaoBloqueada"/>).</summary>
+    public DomainError? MutacaoBloqueada(PrecondicaoIfMatch precondicao) =>
+        GuardaDeEdicao.MutacaoBloqueada(Status, Rascunho, precondicao);
 
     /// <summary>
     /// O protocolo comum de edição: a guarda de mutação, a conferência das regras sem efeito, a
@@ -8123,12 +8049,4 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private Result Editar(PrecondicaoIfMatch precondicao, Action aplicar) =>
         Editar(precondicao, static () => null, aplicar);
-
-    internal static DomainError RetificacaoJaAberta() => new(
-        "RascunhoRetificacao.JaAberta",
-        "Já existe uma retificação em curso neste processo — feche-a ou descarte-a antes de abrir outra.");
-
-    private static DomainError RetificacaoNaoAberta() => new(
-        "RascunhoRetificacao.NaoAberta",
-        "Não há retificação em curso neste processo.");
 }

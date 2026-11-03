@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 
-using System.Text;
-using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
@@ -11,9 +9,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
-using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// As seis operações que não passam pelo protocolo comum de edição: o congelamento as chama sobre
@@ -22,14 +18,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class OperacoesComProtocoloProprioTests
 {
-    private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-
     private static readonly Dictionary<string, CopiaDoItemNoCatalogo> CatalogoVazio = [];
 
     [Fact(DisplayName = "Recopiar os itens do catálogo funciona no processo publicado sem sessão e sem precondição")]
     public void RecopiarItensDoCatalogo_SemGuarda()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(out _);
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
 
         Result resultado = processo.RecopiarItensDoCatalogo(CatalogoVazio, new HashSet<string>());
 
@@ -39,7 +33,7 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Recopiar os itens do catálogo sob sessão não move a revisão")]
     public void RecopiarItensDoCatalogo_NaoMoveARevisao()
     {
-        ProcessoSeletivo processo = ProcessoEmSessao();
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.EmSessao();
 
         processo.RecopiarItensDoCatalogo(CatalogoVazio, new HashSet<string>()).IsSuccess.Should().BeTrue();
 
@@ -49,8 +43,8 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Recopiar as unidades das fases funciona sem sessão e sob sessão sem mover a revisão")]
     public void RecopiarUnidadesDasFases_SemGuardaESemRevisao()
     {
-        ProcessoSeletivo semSessao = ProcessoPublicado(out _);
-        ProcessoSeletivo emSessao = ProcessoEmSessao();
+        ProcessoSeletivo semSessao = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
+        ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
 
         semSessao.RecopiarUnidadesDasFases(new Dictionary<Guid, UnidadeResponsavelSnapshot>());
         emSessao.RecopiarUnidadesDasFases(new Dictionary<Guid, UnidadeResponsavelSnapshot>());
@@ -61,7 +55,7 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Remover formulário sob sessão recusa pela regra do rascunho, antes de olhar a precondição")]
     public void RemoverFormulario_SobSessaoRecusaAntesDaGuarda()
     {
-        ProcessoSeletivo processo = ProcessoEmSessao();
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.EmSessao();
         PrecondicaoIfMatch velha = PrecondicaoIfMatch.DeTags(["\"outra-sessao:1\""]);
 
         Result resultado = processo.RemoverFormulario(FinalidadeFormulario.Inscricao, velha);
@@ -73,7 +67,7 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Aplicar modelo sob sessão recusa pela regra do rascunho, antes de olhar a precondição")]
     public void AplicarModelo_SobSessaoRecusaAntesDaGuarda()
     {
-        ProcessoSeletivo processo = ProcessoEmSessao();
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.EmSessao();
         PrecondicaoIfMatch velha = PrecondicaoIfMatch.DeTags(["\"outra-sessao:1\""]);
 
         DomainError? recusa = processo.RecusaDeAplicacaoDeModelo(velha);
@@ -84,7 +78,7 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Aplicar modelo no processo publicado sem sessão recusa pela guarda")]
     public void AplicarModelo_PublicadoSemSessaoRecusaPelaGuarda()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(out _);
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
 
         DomainError? recusa = processo.RecusaDeAplicacaoDeModelo(PrecondicaoIfMatch.Ausente);
 
@@ -94,7 +88,7 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Limpar a coleta para a restauração funciona no processo publicado sem sessão")]
     public void LimparColeta_SemGuarda()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(out _);
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
 
         processo.LimparColetaEDerivacaoParaRestauracao();
 
@@ -105,7 +99,7 @@ public sealed class OperacoesComProtocoloProprioTests
     [Fact(DisplayName = "Aplicar a proteção vigente funciona no processo publicado sem sessão e exige a proteção")]
     public void AplicarProtecaoVigente_SemGuarda()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(out _);
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
 
         processo.AplicarProtecaoVigente(
             new ProtecaoVigenteDasExigencias(
@@ -113,32 +107,5 @@ public sealed class OperacoesComProtocoloProprioTests
         Action semProtecao = () => processo.AplicarProtecaoVigente(null!);
 
         semProtecao.Should().Throw<ArgumentNullException>();
-    }
-
-    private static ProcessoSeletivo ProcessoPublicado(out VersaoConfiguracao versao)
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            DadosEdital.Criar(
-                "001/2026",
-                new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-                new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-                Guid.CreateVersion7()).Value!,
-            Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString()), "1.1", "canonical-json/sha256@v1",
-            new string('a', 64), "user-sub-123", new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        processo.DequeueDomainEvents();
-        versao = publicacao.Value!;
-        return processo;
-    }
-
-    private static ProcessoSeletivo ProcessoEmSessao()
-    {
-        ProcessoSeletivo processo = ProcessoPublicado(out VersaoConfiguracao versao);
-        processo.AbrirRetificacao(
-            "Correção do prazo", versao, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
-        return processo;
     }
 }
