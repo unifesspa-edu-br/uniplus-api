@@ -231,25 +231,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         LocalidadeRegente localidade,
         IdentificadorLegivel identificadorLegivel)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
-        if (tipoProcesso is null)
-        {
-            throw new ArgumentException("Tipo do processo é obrigatório.", nameof(tipoProcesso));
-        }
-
-        if (origemCandidatos == OrigemCandidatos.Nenhuma)
-        {
-            throw new ArgumentException("Origem dos candidatos é obrigatória.", nameof(origemCandidatos));
-        }
-
-        if (unidadeAdministradoraOrigemId == Guid.Empty)
-        {
-            throw new ArgumentException("Unidade administradora é obrigatória.", nameof(unidadeAdministradoraOrigemId));
-        }
-
-        ArgumentNullException.ThrowIfNull(unidadeAdministradora);
-        ArgumentNullException.ThrowIfNull(localidade);
-        ArgumentException.ThrowIfNullOrWhiteSpace(identificadorLegivel.Valor, nameof(identificadorLegivel));
+        RegrasDaCriacao.Conferir(nome, tipoProcesso, origemCandidatos, unidadeAdministradoraOrigemId, unidadeAdministradora, localidade, identificadorLegivel);
 
         return new ProcessoSeletivo
         {
@@ -399,13 +381,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RegrasDaClassificacao.Planejar(EstadoDaConfiguracao.De(this), classificacao),
             plano =>
             {
-                foreach (OpcaoDeclaradaFato edicao in plano.EdicoesDoEnemARetirar)
-                {
-                    _opcoesDeclaradas.Remove(edicao);
-                }
-
-                Vincular(plano.Classificacao);
-                Classificacao = plano.Classificacao;
+                plano.RetirarEdicoes(Colecoes());
+                Classificacao = Vincular(plano.Classificacao);
             });
     }
 
