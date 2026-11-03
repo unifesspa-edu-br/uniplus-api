@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -48,6 +49,8 @@ public sealed partial class RaizDoAgregadoTests
     {
         ["EtapasDaFase"] = "consulta sobre a lista da própria raiz, sem regra",
         ["SombraParaVerificacao"] = "cópia da identidade sem configuração, sem regra",
+        ["FormularioDe"] = "consulta que só lê a vista da configuração, sem regra",
+        ["DerivacoesEfetivas"] = "consulta que só lê a vista da configuração, sem regra",
     };
 
     [Fact(DisplayName = "Nenhum método da raiz passa de 15 linhas, salvo os listados por nome e sem crescer")]
@@ -83,18 +86,41 @@ public sealed partial class RaizDoAgregadoTests
     [Fact(DisplayName = "A raiz só constrói DomainError nas transições e na sessão, nunca numa regra de configuração")]
     public void Raiz_NaoConstroiDomainErrorDeRegra()
     {
-        string[] construtores = [.. LerMetodos()
-            .Where(m => NovoDomainErrorRegex().IsMatch(m.Corpo) && !MetodosQueConstroemDomainError.ContainsKey(m.Nome))
-            .Select(m => m.Nome)];
+        string[] construtores = [.. LeitorDeIl.ChamadasPorMetodo(typeof(ProcessoSeletivo).Assembly)
+            .Where(static c => c.Caller.FullName is { } nome && DonoDoMetodo(nome) == typeof(ProcessoSeletivo).FullName)
+            .Where(static c => c.Callee is ConstructorInfo { DeclaringType.FullName: "Unifesspa.UniPlus.Kernel.Results.DomainError" })
+            .Select(static c => MetodoDeOrigem(c.Metodo))
+            .Where(static metodo => !MetodosQueConstroemDomainError.ContainsKey(metodo))
+            .Distinct(StringComparer.Ordinal)];
 
         construtores.Should().BeEmpty("a recusa de uma regra pertence à política que a confere");
+    }
+
+    private static string DonoDoMetodo(string nomeCompleto)
+    {
+        int aninhado = nomeCompleto.IndexOf('+', StringComparison.Ordinal);
+        return aninhado < 0 ? nomeCompleto : nomeCompleto[..aninhado];
+    }
+
+    /// <summary>O método escrito no fonte: a lambda ou a máquina de estado gerada é atribuída ao método que a declara.</summary>
+    private static string MetodoDeOrigem(MethodBase metodo)
+    {
+        Match gerado = MetodoGeradoRegex().Match(metodo.Name);
+        if (gerado.Success)
+        {
+            return gerado.Groups[1].Value;
+        }
+
+        Match tipoGerado = MetodoGeradoRegex().Match(metodo.DeclaringType!.Name);
+        return tipoGerado.Success ? tipoGerado.Groups[1].Value : metodo.Name;
     }
 
     private static IEnumerable<string> NomesDasPoliticas() =>
         typeof(ProcessoSeletivo).Assembly.GetTypes()
             .Where(static t => t.Namespace is { } ns && ns.StartsWith("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos", StringComparison.Ordinal))
             .Where(static t => !t.IsNested && !Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)))
-            .Select(static t => t.Name);
+            .Select(static t => t.Name)
+            .Where(static nome => nome is not ("EstadoDaConfiguracao" or "ColecoesDoProcesso" or "PartesDoProcesso"));
 
     private static List<MetodoDaRaiz> LerMetodos()
     {
@@ -160,8 +186,8 @@ public sealed partial class RaizDoAgregadoTests
     [GeneratedRegex(@"\bEditar(Conferindo)?(<\w+>)?\(")]
     private static partial Regex EditarRegex();
 
-    [GeneratedRegex(@"new DomainError\(")]
-    private static partial Regex NovoDomainErrorRegex();
+    [GeneratedRegex(@"^<(\w+)>")]
+    private static partial Regex MetodoGeradoRegex();
 
     private sealed record MetodoDaRaiz(string Nome, bool Publico, int Linhas, string Corpo);
 }
