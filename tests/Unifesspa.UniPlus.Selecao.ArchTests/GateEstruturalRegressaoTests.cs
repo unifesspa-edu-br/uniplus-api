@@ -106,7 +106,7 @@ public sealed class GateEstruturalRegressaoTests
     private static int ContarChamadasDeGate(string caminho)
     {
         string fonte = File.ReadAllText(caminho);
-        return Regex.Count(fonte, @"PendenciaDaCascata\(.*\)\s+is\s+\{");
+        return Regex.Count(fonte, @"\bPendenciaDaCascata\((?:[^()\n]|\([^()\n]*\))*\)\s+is\s+\{");
     }
 
     private static int ContarChamadas(string caminho)
@@ -114,7 +114,7 @@ public sealed class GateEstruturalRegressaoTests
         // Casa só o SITE DE CHAMADA (`PendenciaDeConformidade() is`), não a declaração do
         // método nem menções em xmldoc/comentário.
         string fonte = File.ReadAllText(caminho);
-        return Regex.Count(fonte, @"PendenciaDeConformidade\(.*\)\s+is\s");
+        return Regex.Count(fonte, @"\bPendenciaDeConformidade\((?:[^()\n]|\([^()\n]*\))*\)\s+is\s");
     }
 
     private static string CaminhoProcessoSeletivo([CallerFilePath] string origem = "") =>
