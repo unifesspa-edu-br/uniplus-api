@@ -186,35 +186,23 @@ public static class FecharRetificacaoCommandHandler
         // Publicações; lê-lo de outra fonte faria os dois divergirem.
         string motivo = processo.Rascunho.Motivo;
 
-        // Uma leitura só do catálogo (D4-bis), compartilhada pelos gates que dependem dos fatos
-        // cujos valores são modalidades, pela reconferência de coletabilidade e pelos resolvedores
-        // que congelam vocabulário de fato — duas leituras abririam janela para uma conferência
-        // aprovar sobre um catálogo e um resolvedor congelar sobre outro.
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader
-            .ListarAsync(cancellationToken)
+        Result<CatalogoConferido> conferenciaDoCatalogo = await ConferenciaDoCatalogoEDaProtecao
+            .ConferirAsync(processo, fatoCandidatoReader, tipoDocumentoReader, cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo =
-            catalogoDeFatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
-        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
-
-        // A proteção que o envelope congela precisa estar aprovada pela proteção de dados (ADR-0153), e a leitura dos
-        // tipos de documento que a confere é a mesma que a proteção congelada usa mais adiante.
-        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = await ProtecaoVigenteDasExigenciasDoProcesso
-            .LerTiposVivosAsync(processo, tipoDocumentoReader, cancellationToken)
-            .ConfigureAwait(false);
-        Result protecaoAprovada = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, tiposVivos, catalogoDeFatos);
-        if (protecaoAprovada.IsFailure)
+        if (conferenciaDoCatalogo.IsFailure)
         {
-            return (protecaoAprovada, []);
+            return (Result.ValidationFailure(conferenciaDoCatalogo.Errors), []);
         }
 
-        // O catálogo é editável depois que o item copiou dele a origem dos valores, o formato e a
-        // proteção, e os gates abaixo avaliam a cópia: ela é reconferida e recopiada antes deles. A unidade
-        // responsável de cada fase é conferida no cadastro vivo e recopiada no mesmo passo, porque o
-        // congelamento é da publicação.
-        Result copiasDoItem = ReconferenciaDasUnidadesDasFases.Combinar(
-            ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogoDeFatos, processo.Rascunho.FatosDasVersoesPublicadas.FatosJaColetados),
-            await ReconferenciaDasUnidadesDasFases.AplicarAsync(processo, unidadeResponsavelResolvedor, cancellationToken).ConfigureAwait(false));
+        CatalogoConferido catalogo = conferenciaDoCatalogo.Value!;
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = catalogo.Fatos;
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.PorCodigo;
+        FatosDeModalidade fatosDeModalidade = catalogo.FatosDeModalidade;
+        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = catalogo.TiposVivos;
+
+        Result copiasDoItem = await ReconferenciaDasCopiasEUnidades
+            .AplicarAsync(processo, catalogoDeFatos, processo.Rascunho.FatosDasVersoesPublicadas.FatosJaColetados, unidadeResponsavelResolvedor, cancellationToken)
+            .ConfigureAwait(false);
         if (copiasDoItem.IsFailure)
         {
             return (copiasDoItem, []);
@@ -322,37 +310,11 @@ public static class FecharRetificacaoCommandHandler
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }
 
-        // O catálogo pode reclassificar a Origem de um fato depois que ele já virou
-        // FatoColetado (ex.: a migration que reclassificou MODALIDADE de DECLARADO para
-        // DERIVADO) — sem esta reconferência, um vínculo morto seria congelado numa versão
-        // append-only e, pela doutrina do agregado, irreparável depois.
-        Result coletabilidadeDosFatos = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogoPorCodigo);
-        if (coletabilidadeDosFatos.IsFailure)
-        {
-            return (Result.Failure(coletabilidadeDosFatos.Error!), []);
-        }
-
-        // Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): mesmo congelamento de metadado de fato que a publicação de
-        // abertura já faz — a configuração EDITADA pela sessão pode conter gatilho de
-        // documento vivo (novo ou alterado), e congelar sem este bloco deixaria o metadado
-        // incompleto (vazio) para esta versão.
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
-            ResolvedorMetadadosFatosCongelados.Resolver(processo, catalogoPorCodigo);
+            ConferenciaFinalDosFatos.Conferir(processo, catalogoPorCodigo);
         if (metadadosFatosResult.IsFailure)
         {
             return (Result.Failure(metadadosFatosResult.Error!), []);
-        }
-
-        // Os fatos dos gatilhos continuam no processo e conhecidos até a fase de cada exigência:
-        // itens, formulários e derivações mudam depois que a exigência os citou.
-        if (ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo) is { } gatilhoIncoerente)
-        {
-            return (Result.Failure(gatilhoIncoerente), []);
-        }
-
-        if (ConferenciaDoFatoDeElegibilidade.Conferir(processo, catalogoPorCodigo) is { } elegibilidadeIncoerente)
-        {
-            return (Result.Failure(elegibilidadeIncoerente), []);
         }
 
         // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
