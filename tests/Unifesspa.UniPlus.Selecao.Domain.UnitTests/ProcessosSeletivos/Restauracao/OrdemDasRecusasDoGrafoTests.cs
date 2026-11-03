@@ -56,7 +56,7 @@ public sealed class OrdemDasRecusasDoGrafoTests
         resultado.Error!.Code.Should().Be(CodigoDaRecusa[problemas.Min()]);
     }
 
-    private static GrafoConfiguracao GrafoComProblemas(int[] problemas)
+    internal static GrafoConfiguracao GrafoComProblemas(int[] problemas)
     {
         List<EtapaProcesso> etapas = [];
         List<ConfiguracaoDistribuicaoVagas> distribuicao = [Oferta()];

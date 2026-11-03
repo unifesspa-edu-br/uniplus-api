@@ -19,4 +19,11 @@ internal static class PartesDoProcesso
             lista.Add(nova);
         }
     }
+
+    internal static void Vincular(IParteDoProcesso parte, Guid processoId)
+    {
+        ArgumentNullException.ThrowIfNull(parte);
+
+        parte.VincularProcesso(processoId);
+    }
 }
