@@ -2295,7 +2295,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// </summary>
     private static JsonObject SerializarGrafoDependencia(ProcessoSeletivo processo)
     {
-        Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
+        Result<GrafoDependenciaConjunta> grafo = Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.ConstruirGrafoDependencia(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo));
         if (grafo.IsFailure)
         {
             throw new InvalidOperationException(

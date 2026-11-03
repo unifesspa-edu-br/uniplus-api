@@ -5,6 +5,8 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -131,7 +133,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59)),
         ]);
 
-        Action semZona = () => processo.PendenciaDoCronograma(null);
+        Action semZona = () => PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), null);
 
         semZona.Should().Throw<InvalidOperationException>();
     }
@@ -150,7 +152,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             [FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59))],
             [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaDoCronograma(Belem)!.Code
+        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem)!.Code
             .Should().Be("ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias");
     }
 
@@ -160,7 +162,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         ProcessoSeletivo processo = ProcessoComCronograma(
             [FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes)]);
 
-        processo.PendenciaDoCronograma(Belem).Should().BeNull();
+        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem).Should().BeNull();
     }
 
     private static DomainError? Avaliar(
@@ -175,7 +177,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(aberturaIsencao, fimIsencao, recurso),
         ]);
 
-        return processo.PendenciaDoCronograma(Belem);
+        return PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem);
     }
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>

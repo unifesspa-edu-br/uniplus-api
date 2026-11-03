@@ -441,7 +441,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         // Fora dela, o campo de membro não está no universo e é recusado.
         IReadOnlySet<string>? universoEfetivo = fatosResolviveis is null
             ? null
-            : new HashSet<string>(fatosResolviveis.Concat(processo.CamposDoGrupo(grupoDaRepeticao)), StringComparer.Ordinal);
+            : new HashSet<string>(fatosResolviveis.Concat(Domain.ProcessosSeletivos.Exigencias.RegrasDasExigencias.CamposDoGrupo(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo), grupoDaRepeticao)), StringComparer.Ordinal);
 
         Result<IReadOnlyList<CondicaoGatilho>> condicoesResult = ResolverCondicoes(
             input.Condicoes, vocabularioFatos ?? new Dictionary<string, DescritorFatoCandidato>(), dominiosDinamicos, universoEfetivo);
@@ -606,7 +606,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        condicoes.Select(c => processo.RecusaDeFaseDoGatilho(c.Fato, exigidoNaFaseId, finalidade, pontoResolucaoPorFato, membroPorAgregado))
+        condicoes.Select(c => Domain.ProcessosSeletivos.Exigencias.FaseEfetivaDoFato.RecusaDeFaseDoGatilho(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo), c.Fato, exigidoNaFaseId, finalidade, pontoResolucaoPorFato, membroPorAgregado))
             .FirstOrDefault(static r => r is not null) is { } recusa
             ? Result.Failure(recusa)
             : Result.Success();

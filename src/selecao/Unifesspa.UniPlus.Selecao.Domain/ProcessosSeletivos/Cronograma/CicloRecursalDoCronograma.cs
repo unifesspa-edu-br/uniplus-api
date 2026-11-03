@@ -1,15 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class CicloRecursalDoCronograma
@@ -158,5 +157,119 @@ internal static class CicloRecursalDoCronograma
         }
 
         return violacoes;
+    }
+
+    /// <summary>
+    /// A primeira violação do recorte de competência no cronograma corrente, ou
+    /// <see langword="null"/> quando toda fase identifica cada banca que requer.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item só. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacoesDoRecorteDeCompetencia"/>), que por sua vez chama o predicado de
+    /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
+    /// também chamam.
+    /// </remarks>
+    internal static DomainError? PendenciaDoRecorteDeCompetencia(EstadoDaConfiguracao estado)
+    {
+        List<FieldError> violacoes = ViolacoesDoRecorteDeCompetencia([.. estado.CronogramaFases]);
+
+        return violacoes.Count > 0 ? violacoes[0].Error : null;
+    }
+
+    /// <summary>
+    /// As violações do recorte de competência, uma por banca mal declarada, com o campo que
+    /// localiza cada uma.
+    /// </summary>
+    /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
+    internal static List<FieldError> ViolacoesDoRecorteDeCompetencia(IReadOnlyList<FaseCronograma> fases)
+    {
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < fases.Count; indice++)
+        {
+            violacoes.AddRange(fases[indice].ViolacoesDoRecorteDeCompetencia()
+                .Select(violacao => violacao with { Field = $"fases[{indice}].{violacao.Field}" }));
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>
+    /// A primeira violação da âncora do prazo de recurso no cronograma corrente, ou
+    /// <see langword="null"/> quando toda fase que admite recurso ancora num produto
+    /// preliminar seu.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item só. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacoesDaAncoraDoRecurso"/>), que por sua vez chama o predicado de
+    /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
+    /// também chamam — não há um segundo <c>if</c> para lembrar de sincronizar.
+    /// </remarks>
+    internal static DomainError? PendenciaDaAncoraDoRecurso(EstadoDaConfiguracao estado)
+    {
+        List<FieldError> violacoes = ViolacoesDaAncoraDoRecurso([.. estado.CronogramaFases]);
+
+        return violacoes.Count > 0 ? violacoes[0].Error : null;
+    }
+
+    /// <summary>
+    /// A primeira violação da âncora das janelas de recurso das etapas, ou
+    /// <see langword="null"/> quando toda janela se ancora onde pode. Chama o mesmo predicado de
+    /// <see cref="EtapaProcesso"/> que a gravação das janelas chama.
+    /// </summary>
+    internal static DomainError? PendenciaDaAncoraDoRecursoDasEtapas(EstadoDaConfiguracao estado)
+    {
+        foreach (EtapaProcesso etapa in estado.Etapas)
+        {
+            if (etapa.ViolacaoDaAncoraDoRecurso() is { } violacao)
+            {
+                return violacao;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// As violações da âncora do prazo de recurso, uma por fase mal declarada, com o campo
+    /// que localiza cada uma.
+    /// </summary>
+    /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
+    internal static List<FieldError> ViolacoesDaAncoraDoRecurso(IReadOnlyList<FaseCronograma> fases)
+    {
+        List<FieldError> violacoes = [];
+
+        for (int indice = 0; indice < fases.Count; indice++)
+        {
+            if (fases[indice].ViolacaoDaAncoraDoRecurso() is { } violacao)
+            {
+                violacoes.Add(violacao with { Field = $"fases[{indice}].{violacao.Field}" });
+            }
+        }
+
+        return violacoes;
+    }
+
+    /// <summary>
+    /// A primeira violação da conclusão do ciclo recursal no cronograma corrente, ou
+    /// <see langword="null"/> quando todas as fases que abrem ciclo o fecham.
+    /// </summary>
+    /// <remarks>
+    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// item só. As duas metades vêm da MESMA travessia
+    /// (<see cref="ViolacoesDaConclusaoDoCicloRecursal"/>), que é o que mantém a
+    /// bicondicional de pé sem um segundo <c>if</c> para lembrar de sincronizar.
+    /// </remarks>
+    internal static DomainError? PendenciaDaConclusaoDoCicloRecursal(EstadoDaConfiguracao estado)
+    {
+        List<FieldError> violacoes =
+        [
+            .. CicloRecursalDoCronograma.ViolacoesDaConclusaoDoCicloRecursal([.. estado.CronogramaFases]),
+            .. RegrasDasEtapas.ViolacoesDoFechamentoDoCicloDasEtapas([.. estado.Etapas]),
+        ];
+
+        return violacoes.Count > 0 ? violacoes[0].Error : null;
     }
 }

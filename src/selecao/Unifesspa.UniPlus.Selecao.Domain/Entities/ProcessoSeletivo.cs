@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -557,7 +558,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 recusas.AddRange(EstruturaFormulario
                     .ValidarItens(
                         estrutura,
-                        itensDaCriacao is null ? ItensDaFinalidade(finalidade) : ParaEstrutura(itensDaCriacao, []),
+                        itensDaCriacao is null ? ItensDaFinalidade(finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
                         secaoObrigatoria: false)
                     .Select(static recusa => recusa with { Field = "etapas" }));
             }
@@ -565,17 +566,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais
             // ou, na criação, com os que o formulário recebe ao nascer.
             FatoColetado[] itens = [.. itensDaCriacao ?? [.. Itens.Where(f => f.Finalidade == finalidade)]];
-            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, FatosDaInscricao(Itens));
+            DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(EstadoDaConfiguracao.De(this), finalidade, itens, CitacoesDosFormularios.FatosDaInscricao(Itens));
             EtapaDoGrafo[] etapasDoGrafo = [.. etapas.Select(static e => e.ParaGrafo())];
             ItemDoGrafo[] itensDoGrafo = [.. itens.Select(static i => i.ParaGrafo())];
-            GrupoDoGrafo[] gruposDoGrafo = [.. GruposDaFinalidade(finalidade).Select(static g => g.ParaGrafo())];
+            GrupoDoGrafo[] gruposDoGrafo = [.. CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), finalidade).Select(static g => g.ParaGrafo())];
             for (int indice = 0; indice < etapas.Count; indice++)
             {
                 if ((GrafoDoFormulario.CitacaoInvalidaDaEtapa(
                             etapasDoGrafo[indice],
                             GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
                             dependencias)
-                        ?? CitacaoNaoGarantida(DoFormulario(finalidade, CitacoesDaSecao(etapas[indice])), finalidade, SemCatalogo)) is { } recusa)
+                        ?? CitacoesDosFormularios.CitacaoNaoGarantida(EstadoDaConfiguracao.De(this), CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDaSecao(etapas[indice])), finalidade, CitacoesDosFormularios.SemCatalogo)) is { } recusa)
                 {
                     recusas.Add(new($"etapas[{indice}].exibicao", recusa));
                 }
@@ -610,7 +611,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(FormularioInexistente(finalidade));
         }
 
-        if (finalidade == FinalidadeFormulario.Inscricao && CitacaoQueFicariaOrfa([]) is { } orfa)
+        if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(EstadoDaConfiguracao.De(this), []) is { } orfa)
         {
             return Result.Failure(orfa);
         }
@@ -672,8 +673,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         FormularioProcesso novo = formulario.Value!;
         HashSet<string> daCopia = new(copia.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(copia.Itens.Count, copia.Grupos))];
-        erros.AddRange(EstruturaFormulario.ValidarItens(novo.Estrutura, ParaEstrutura(copia.Itens, copia.Grupos), secaoObrigatoria: false));
+        List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(copia.Itens.Count, copia.Grupos))];
+        erros.AddRange(EstruturaFormulario.ValidarItens(novo.Estrutura, CitacoesDosFormularios.ParaEstrutura(copia.Itens, copia.Grupos), secaoObrigatoria: false));
         if (finalidade != FinalidadeFormulario.Inscricao)
         {
             erros.AddRange(Itens
@@ -746,18 +747,18 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
         GrupoColetado[] gruposFinais = [.. _gruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
         Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
-            MapaDeDerivacoes(derivacoesFinais);
+            CitacoesDosFormularios.MapaDeDerivacoes(derivacoesFinais);
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
-            : FatosDaInscricao(itensFinais);
+            : CitacoesDosFormularios.FatosDaInscricao(itensFinais);
 
-        if (ValidarGrafoDeFatos(novo.Etapas, copia.Itens, copia.Grupos, daInscricao, dependenciasDasDerivacoes) is { } grafo)
+        if (CitacoesDosFormularios.ValidarGrafoDeFatos(novo.Etapas, copia.Itens, copia.Grupos, daInscricao, dependenciasDasDerivacoes) is { } grafo)
         {
             return Result.ValidationFailure([new("itens", grafo)]);
         }
 
         erros.AddRange(FormaDoTermo.ConferirUnicidade([.. copia.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]));
-        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, copia.Itens, FatosDaInscricao(itensFinais), dependenciasDasDerivacoes);
+        DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(finalidade, copia.Itens, CitacoesDosFormularios.FatosDaInscricao(itensFinais), dependenciasDasDerivacoes);
         for (int indice = 0; indice < copia.Termos.Count; indice++)
         {
             if (GrafoDoFormulario.CitacaoInvalidaDoTermo(copia.Termos[indice].ParaGrafo(), dependencias) is { } recusa)
@@ -775,10 +776,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // recusada, e a que já era inválida fica para a publicação, como na escrita direta dos itens.
         // A cópia fora da inscrição não muda o que os outros formulários conhecem.
         IEnumerable<DomainError> orfasDosOutros = finalidade == FinalidadeFormulario.Inscricao
-            ? CitacoesQueFicariamOrfas(daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
+            ? CitacoesDosFormularios.CitacoesQueFicariamOrfas(EstadoDaConfiguracao.De(this), daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
             : [];
         FieldError[] orfas = [.. orfasDosOutros
-            .Concat(CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais, gruposFinais) is { } doNovo ? [doNovo] : [])
+            .Concat(CitacoesDosFormularios.CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais, gruposFinais) is { } doNovo ? [doNovo] : [])
             .Select(static recusa => new FieldError(string.Empty, recusa))];
         if (orfas.Length > 0)
         {
@@ -843,11 +844,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
-        DependenciasDoFormulario dependencias = DependenciasDe(finalidade, Itens.Where(f => f.Finalidade == finalidade), FatosDaInscricao(Itens));
+        DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(EstadoDaConfiguracao.De(this), finalidade, Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.FatosDaInscricao(Itens));
         for (int indice = 0; indice < termos.Count; indice++)
         {
             if ((GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias)
-                    ?? CitacaoNaoGarantida(DoFormulario(finalidade, CitacoesDoTermo(termos[indice])), finalidade, SemCatalogo)) is { } recusa)
+                    ?? CitacoesDosFormularios.CitacaoNaoGarantida(EstadoDaConfiguracao.De(this), CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDoTermo(termos[indice])), finalidade, CitacoesDosFormularios.SemCatalogo)) is { } recusa)
             {
                 erros.Add(new($"termos[{indice}]", recusa));
             }
@@ -898,7 +899,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Os itens e os grupos da finalidade, na forma que a estrutura confere.</summary>
     private IReadOnlyList<ItemEstrutura> ItensDaFinalidade(FinalidadeFormulario finalidade) =>
-        ParaEstrutura(Itens.Where(f => f.Finalidade == finalidade), GruposDaFinalidade(finalidade));
+        CitacoesDosFormularios.ParaEstrutura(Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), finalidade));
 
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo. O grafo de precedências é parâmetro,
@@ -928,345 +929,19 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             .Where(args => args.EtapaRef == etapaId);
 
     /// <summary>
-    /// A recusa de citar o fato num gatilho de exigência da fase dada (UNI-REQ-0144, UNI-REQ-0077):
-    /// nenhum documento é pedido antes de o fato ser conhecido. O fato fica conhecido na mais
-    /// tardia entre a fase do catálogo (<paramref name="pontoResolucaoPorFato"/>) e a fase do
-    /// formulário que o produz; o derivado por regra, não antes das suas dependências; e o agregado
-    /// sobre grupo repetível (<paramref name="membroPorAgregado"/>), não antes do fato de membro. Fato
-    /// produzido só pelo formulário de isenção só é citado por documento do formulário de isenção: a
-    /// habilitação usa, de outra finalidade, só fatos da inscrição. Inscrição e isenção podem dividir
-    /// a fase, e por isso a regra olha a finalidade da exigência, e não a fase.
+    /// Substitui integralmente a árvore de satisfação de documentos exigidos: as folhas
+    /// (<see cref="DocumentosExigidos"/>) e a árvore (<see cref="NosExigencia"/>). Confere o que só a
+    /// raiz prova — a fase de cada documento é viva no cronograma do processo e a consequência de
+    /// reenvio tem fase que permite complementação —, porque os invariantes da árvore já foram
+    /// validados ao montá-la em <see cref="NoExigencia.CriarGrupo"/>.
     /// </summary>
-    /// <remarks>
-    /// Fato que o processo não coleta, não deriva e o catálogo não situa não é recusado aqui: a
-    /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
-    /// fase do catálogo e a das dependências declaradas pelo mecanismo dele. A finalidade que falta
-    /// ou que a fase não responde também não é recusada aqui: a recusa que orienta é a da própria
-    /// finalidade, que a definição das exigências confere.
-    /// </remarks>
-    public DomainError? RecusaDeFaseDoGatilho(
-        string fato,
-        Guid exigidoNaFaseId,
-        FinalidadeFormulario? finalidadeDaExigencia,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(fato);
-        ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
-        ArgumentNullException.ThrowIfNull(membroPorAgregado);
-
-        if (_cronogramaFases.Find(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia
-            || Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(finalidadeDaExigencia, faseDaExigencia) is not null)
-        {
-            return null;
-        }
-
-        FaseEfetiva efetiva = FaseEfetivaDoFato(fato, pontoResolucaoPorFato, membroPorAgregado, []);
-        if (efetiva.Recusa is { } recusa)
-        {
-            return recusa;
-        }
-
-        if (efetiva.Fase is { } fase && fase.Ordem > faseDaExigencia.Ordem)
-        {
-            return new DomainError(
-                DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior,
-                $"O fato '{fato}' só é conhecido na fase '{fase.Codigo}' (ordem {fase.Ordem}), posterior à fase em que o documento é exigido (ordem {faseDaExigencia.Ordem}).");
-        }
-
-        if (finalidadeDaExigencia != FinalidadeFormulario.IsencaoTaxa
-            && DependeDeFatoSoDaIsencao(fato, membroPorAgregado, []))
-        {
-            return new DomainError(
-                DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade,
-                $"O fato '{fato}' vem do formulário de isenção e só é citado por documento exigido no formulário de isenção.");
-        }
-
-        // As exigências de uma finalidade seguem a versão do formulário dela; o fato de outra
-        // finalidade tem de ter sido coletado em todas as versões publicadas (UNI-REQ-0144).
-        return CitacaoNaoGarantida(
-            [($"o gatilho de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
-            finalidadeDaExigencia,
-            membroPorAgregado);
-    }
-
-    /// <summary>A fase em que o fato fica conhecido no processo, ou a recusa quando o catálogo o situa fora do cronograma.</summary>
-    private FaseEfetiva FaseEfetivaDoFato(
-        string fato,
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado,
-        HashSet<string> emAvaliacao)
-    {
-        FaseCronograma? maisTardia = null;
-        void Considerar(FaseCronograma? fase)
-        {
-            if (fase is not null && (maisTardia is null || fase.Ordem > maisTardia.Ordem))
-            {
-                maisTardia = fase;
-            }
-        }
-
-        if (pontoResolucaoPorFato.TryGetValue(fato, out string? ponto))
-        {
-            if (_cronogramaFases.Find(f => string.Equals(f.Codigo, ponto, StringComparison.Ordinal)) is not { } faseDoPonto)
-            {
-                return new FaseEfetiva(null, new DomainError(
-                    DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma,
-                    $"O fato '{fato}' resolve na fase '{ponto}', que não pertence ao cronograma deste processo."));
-            }
-
-            Considerar(faseDoPonto);
-        }
-
-        if (_campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
-            && FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario)
-        {
-            Considerar(_cronogramaFases.Find(f => f.Id == faseDoFormulario));
-        }
-
-        if (emAvaliacao.Add(fato))
-        {
-            foreach (string dependencia in DependenciasDoFato(fato, membroPorAgregado))
-            {
-                FaseEfetiva daDependencia = FaseEfetivaDoFato(dependencia, pontoResolucaoPorFato, membroPorAgregado, emAvaliacao);
-                if (daDependencia.Recusa is not null)
-                {
-                    return daDependencia;
-                }
-
-                Considerar(daDependencia.Fase);
-            }
-        }
-
-        return new FaseEfetiva(maisTardia, null);
-    }
-
-    /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência.</summary>
-    private bool DependeDeFatoSoDaIsencao(string fato, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao) =>
-        _campos.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
-        || (emAvaliacao.Add(fato)
-            && DependenciasDoFato(fato, membroPorAgregado).Any(d => DependeDeFatoSoDaIsencao(d, membroPorAgregado, emAvaliacao)));
-
-    /// <summary>
-    /// Os fatos de que o valor do fato depende no processo: os citados pela regra de derivação dele,
-    /// os declarados pelo mecanismo do derivado do sistema, ou o fato de membro, quando ele é
-    /// agregado sobre grupo repetível.
-    /// </summary>
-    private IEnumerable<string> DependenciasDoFato(string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        (DerivacoesEfetivas().FirstOrDefault(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
-            .Concat(DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? [])
-            .Concat(membroPorAgregado.TryGetValue(fato, out string? membro) ? [membro] : []);
-
-    private sealed record FaseEfetiva(FaseCronograma? Fase, DomainError? Recusa);
-
-    private static readonly IReadOnlyDictionary<string, string> SemCatalogo = new Dictionary<string, string>(StringComparer.Ordinal);
-
-    /// <summary>
-    /// A repetição por entidade nomeia um grupo do processo (<see cref="Services.ValidadorRepeticaoPorGrupo"/>)
-    /// conhecido até a fase da subárvore que repete: a fase do formulário do grupo, pela mesma regra
-    /// de fase e de formulário dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o
-    /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo.
-    /// </summary>
-    private DomainError? RecusaDaRepeticaoPorGrupo(IReadOnlyCollection<NoExigencia> nos)
-    {
-        if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, _gruposColetados) is { } semGrupo)
-        {
-            return semGrupo;
-        }
-
-        foreach (NoExigencia no in nos)
-        {
-            if (no.RepetePorEntidade is null
-                || no.FaseComum() is not { } fase
-                || !no.TentarFinalidadeComum(out FinalidadeFormulario? finalidade))
-            {
-                continue;
-            }
-
-            GrupoColetado grupo = _gruposColetados.Single(g => string.Equals(g.Codigo, no.RepetePorEntidade, StringComparison.Ordinal));
-            if (grupo.Subitens
-                    .Select(campo => RecusaDeFaseDoGatilho(campo.FatoCodigo, fase, finalidade, SemCatalogo, SemCatalogo))
-                    .FirstOrDefault(static r => r is not null) is { } recusa)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>A repetição por entidade de exigência viva que deixou de valer: o grupo saiu ou mudou de formulário.</summary>
-    private DomainError? PendenciaDaRepeticaoPorGrupo() => RecusaDaRepeticaoPorGrupo(_nosExigencia);
-
-    /// <summary>
-    /// Os campos do grupo pelo qual a folha do documento se repete, subindo pelos ancestrais; vazio
-    /// quando a folha não está numa subárvore repetida. São os fatos que o gatilho da folha cita além
-    /// dos do candidato.
-    /// </summary>
-    public IReadOnlySet<string> CamposDaRepeticao(Guid documentoExigidoId)
-    {
-        NoExigencia? no = _nosExigencia.Find(n => n.DocumentoExigidoId == documentoExigidoId);
-        while (no is { RepetePorEntidade: null, NoPaiId: { } paiId })
-        {
-            no = _nosExigencia.Find(n => n.Id == paiId);
-        }
-
-        return CamposDoGrupo(no?.RepetePorEntidade);
-    }
-
-    /// <summary>Os fatos dos campos do grupo repetível de código dado; vazio quando o processo não o tem.</summary>
-    public IReadOnlySet<string> CamposDoGrupo(string? codigoDoGrupo) =>
-        new HashSet<string>(
-            _gruposColetados.Where(g => string.Equals(g.Codigo, codigoDoGrupo, StringComparison.Ordinal))
-                .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
-            StringComparer.Ordinal);
-
-    /// <summary>
-    /// Substitui integralmente a árvore de satisfação de documentos exigidos do processo
-    /// (Story #554, PR #895; Story #920 — árvore E/OU substitui o grupo plano): mesmo
-    /// padrão dos demais <c>Definir*</c> — <see cref="MutacaoBloqueada"/> primeiro,
-    /// <see cref="Result"/> nunca exceção, substituição integral das DUAS coleções
-    /// (<see cref="DocumentosExigidos"/>, as folhas, e <see cref="NosExigencia"/>, a árvore).
-    /// </summary>
-    /// <remarks>
-    /// Valida aqui o que só a raiz consegue provar: cada <see cref="DocumentoExigido.ExigidoNaFaseId"/>
-    /// referencia uma fase viva do cronograma do MESMO processo (§2 da issue #547), e o gate
-    /// <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c> (forward — Story #920, fecha
-    /// lacuna que só existia no sentido reverso em <see cref="DefinirCronogramaFases"/>) para
-    /// folha OU grupo <c>OU</c>/<c>N-de</c>. Os invariantes da árvore em si (grupo não vazio,
-    /// sem ciclo, mesma fase, cardinalidade por tipo de nó) já foram validados em
-    /// <see cref="NoExigencia.CriarGrupo"/>, na montagem de <paramref name="raizes"/> — não
-    /// revalidados aqui. O gatilho DNF (<c>CondicaoGatilho</c>, PR #896), a base legal
-    /// (PR #898) e a idade/formato/tamanho (PR #900) não são tocados aqui.
-    /// </remarks>
-
-    public Result DefinirDocumentosExigidos(
-        IReadOnlyList<NoExigencia> raizes,
-        PrecondicaoIfMatch precondicao)
+    public Result DefinirDocumentosExigidos(IReadOnlyList<NoExigencia> raizes, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(raizes);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        List<NoExigencia> todosOsNos = [.. raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
-        List<DocumentoExigido> folhas = [.. todosOsNos
-            .Where(static no => no.Tipo == TipoNo.Folha)
-            .Select(static no => no.DocumentoExigido!)];
-
-        // Onde cada documento é coletado — fase do cronograma, e opcionalmente a etapa
-        // daquela fase. A conferência vive em Services.ValidadorVinculoDaExigencia porque a
-        // configuração congelada volta por um caminho próprio, que monta o mesmo grafo sem
-        // passar por aqui: guarda escrita só deste lado é guarda que o outro lado não tem.
-        if (Services.ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, _cronogramaFases, _etapas) is { } vinculoInvalido)
-        {
-            return Result.Failure(vinculoInvalido);
-        }
-
-        if (RecusaDaRepeticaoPorGrupo(todosOsNos) is { } repeticaoInvalida)
-        {
-            return Result.Failure(repeticaoInvalida);
-        }
-
-        foreach (DocumentoExigido item in folhas)
-        {
-            // Story #554/issue #893 (PR #900): âncora de fase de IdadeMaximaEmissao — mesma
-            // família de checagem estrutural de ReferenciaTemporalFatos (PR #896), mas EAGER
-            // (na escrita, não na publicação): a regra vive na exigência, e a exigência já
-            // está sendo escrita agora — não há razão para adiar. Fase viva do MESMO
-            // processo com o extremo correspondente não-nulo (sem fallback silencioso).
-            if (item.IdadeMaximaEmissao is { ReferenciaFaseId: { } referenciaFaseId } idadeComFase)
-            {
-                FaseCronograma? faseAncora = _cronogramaFases.FirstOrDefault(f => f.Id == referenciaFaseId);
-                if (faseAncora is null)
-                {
-                    return Result.Failure(new DomainError(
-                        "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
-                        $"A fase âncora {referenciaFaseId} da idade máxima de emissão não pertence ao cronograma deste processo."));
-                }
-
-                DateTimeOffset? extremo = idadeComFase.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? faseAncora.Inicio : faseAncora.Fim;
-                if (extremo is null)
-                {
-                    return Result.Failure(new DomainError(
-                        "IdadeMaximaEmissao.FaseExtremoAusente",
-                        $"A fase âncora da idade máxima de emissão não tem {(idadeComFase.ReferenciaTipo == ReferenciaTipoIdadeEmissao.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso."));
-                }
-            }
-            else if (item.IdadeMaximaEmissao is { ReferenciaTipo: ReferenciaTipoIdadeEmissao.FimInscricao })
-            {
-                // FIM_INSCRICAO não usa
-                // ReferenciaFaseId (a âncora é implícita — a fase com ColetaInscricao do
-                // PRÓPRIO cronograma, não uma fase escolhida pelo chamador), então o
-                // branch acima nunca a valida. Sem esta checagem, um PUT aceitava a regra
-                // num processo sem NENHUMA fase que coleta inscrição (ex.: importação
-                // externa) ou com a fase de coleta sem Fim definido, deixando-a
-                // irresolvível depois — mesmo sem gate de publicação para idade de
-                // emissão (issue #893 §1: é aviso, não bloqueio de presença).
-                // Nada no domínio impede MAIS de uma
-                // fase com ColetaInscricao — FirstOrDefault pegava a primeira, mesmo que
-                // outra (com Fim definido) resolvesse a regra; um processo com duas fases
-                // de coleta, a primeira sem Fim e a segunda com Fim, era um 422 falso. A
-                // pergunta certa é existencial (Any), não posicional — a mesma forma já
-                // usada pelo guard backward simétrico em DefinirCronogramaFases.
-                if (!_cronogramaFases.Any(f => f.ColetaInscricao))
-                {
-                    return Result.Failure(new DomainError(
-                        "IdadeMaximaEmissao.FaseNaoPertenceAoProcesso",
-                        "FIM_INSCRICAO exige uma fase do cronograma com ColetaInscricao, e o processo não tem nenhuma."));
-                }
-
-                if (!_cronogramaFases.Any(f => f.ColetaInscricao && f.Fim is not null))
-                {
-                    return Result.Failure(new DomainError(
-                        "IdadeMaximaEmissao.FaseExtremoAusente",
-                        "Nenhuma fase que coleta inscrição tem Fim definido — FIM_INSCRICAO não pode ser resolvido, sem fallback silencioso."));
-                }
-            }
-        }
-
-        // Story #920: gate PENDENCIA_REENVIO×PermiteComplementacao FORWARD, para folha e
-        // grupo OU/N-de — fecha lacuna que só existia no sentido reverso (DefinirCronogramaFases).
-        foreach (NoExigencia no in todosOsNos)
-        {
-            string? consequenciaDoNo = no.Tipo == TipoNo.Folha
-                ? no.DocumentoExigido!.ConsequenciaIndeferimento
-                : no.Consequencia;
-
-            if (consequenciaDoNo != "PENDENCIA_REENVIO")
-            {
-                continue;
-            }
-
-            Guid? faseId = no.FaseComum();
-            if (faseId is { } faseIdValor && RegrasDasExigencias.ValidarConsequenciaPendenciaReenvio(EstadoDaConfiguracao.De(this), faseIdValor) is { } erroPendenciaReenvio)
-            {
-                return Result.Failure(erroPendenciaReenvio);
-            }
-        }
-
-        _documentosExigidos.Clear();
-        foreach (DocumentoExigido item in folhas)
-        {
-            Vincular(item);
-            _documentosExigidos.Add(item);
-        }
-
-        _nosExigencia.Clear();
-        foreach (NoExigencia raiz in raizes)
-        {
-            Vincular(raiz);
-        }
-
-        foreach (NoExigencia no in todosOsNos)
-        {
-            _nosExigencia.Add(no);
-        }
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return Editar(precondicao,
+            () => RegrasDasExigencias.Planejar(EstadoDaConfiguracao.De(this), raizes),
+            plano => plano.Aplicar(Colecoes(), Id));
     }
 
     /// <summary>
@@ -1306,7 +981,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(fatosColetados);
 
         // Sem grupos informados, os do formulário ficam como estão; a lista vazia os remove.
-        grupos ??= [.. GruposDaFinalidade(finalidade)];
+        grupos ??= [.. CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), finalidade)];
 
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
         {
@@ -1408,7 +1083,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private Result ConferirFatosColetados(
         FormularioProcesso formulario, FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
     {
-        if (FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(fatosColetados.Count, grupos)) is [var excesso, ..])
+        if (FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(fatosColetados.Count, grupos)) is [var excesso, ..])
         {
             return Result.ValidationFailure([excesso]);
         }
@@ -1440,21 +1115,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
-            : FatosDaInscricao(Itens);
-        if (ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, grupos, daInscricao, DependenciasDasDerivacoes()) is { } erro)
+            : CitacoesDosFormularios.FatosDaInscricao(Itens);
+        if (CitacoesDosFormularios.ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, grupos, daInscricao, CitacoesDosFormularios.DependenciasDasDerivacoes(EstadoDaConfiguracao.De(this))) is { } erro)
         {
             return Result.Failure(erro);
         }
 
-        if (CitacaoNaoGarantida(
-                DoFormulario(finalidade, CitacoesDosCampos(fatosColetados, grupos).Select(static c => (c.Dono, c.Citado))),
+        if (CitacoesDosFormularios.CitacaoNaoGarantida(
+                EstadoDaConfiguracao.De(this),
+                CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDosCampos(fatosColetados, grupos).Select(static c => (c.Dono, c.Citado))),
                 finalidade,
-                SemCatalogo) is { } naoGarantida)
+                CitacoesDosFormularios.SemCatalogo) is { } naoGarantida)
         {
             return Result.Failure(naoGarantida);
         }
 
-        if (finalidade == FinalidadeFormulario.Inscricao && CitacaoQueFicariaOrfa(fatosColetados) is { } orfa)
+        if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(EstadoDaConfiguracao.De(this), fatosColetados) is { } orfa)
         {
             return Result.Failure(orfa);
         }
@@ -1490,7 +1166,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         IReadOnlyList<FieldError> itensForaDasSecoes = EstruturaFormulario.ValidarItens(
-            formulario.Estrutura, ParaEstrutura(fatosColetados, grupos), secaoObrigatoria: false);
+            formulario.Estrutura, CitacoesDosFormularios.ParaEstrutura(fatosColetados, grupos), secaoObrigatoria: false);
         return itensForaDasSecoes.Count > 0 ? Result.ValidationFailure(itensForaDasSecoes) : Result.Success();
     }
 
@@ -1606,303 +1282,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         _termosExigidos.Clear();
         _formularios.Clear();
     }
-
-    /// <summary>
-    /// Monta o grafo de dependência conjunto (Story #928, §6) a partir das dimensões da configuração
-    /// que o alimentam — os fatos coletados (campo + fato + regras do item), as regras de derivação
-    /// (fato derivado + dependências), as exigências (gatilho), as seções com exibição condicional e
-    /// os termos com condição — e valida a sua
-    /// aciclicidade sobre as quatro classes de aresta juntas. Projeção read-only, sem mutar o
-    /// agregado: um ciclo volta como erro nomeado, nunca lança. O congelamento do grafo no envelope e
-    /// a recusa de publicação por ciclo são da fatia de determinismo (§7).
-    /// </summary>
-    public Result<GrafoDependenciaConjunta> ConstruirGrafoDependencia() =>
-        GrafoDependenciaConjunta.Construir(FatosColetados, DerivacoesEfetivas(), _documentosExigidos, _formularios, _termosExigidos, _gruposColetados);
-
-    /// <summary>Os fatos coletados pela inscrição, que os formulários das outras finalidades podem citar.</summary>
-    private static HashSet<string> FatosDaInscricao(IEnumerable<FatoColetado> fatos) =>
-        new(fatos.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-
-    /// <summary>
-    /// Sob retificação, a primeira citação que usa, de outra finalidade, fato que o formulário dela
-    /// não coletou em todas as versões publicadas (UNI-REQ-0144): quem preencheu aquele formulário
-    /// numa versão anterior pode não o ter informado. Vale para o fato citado e para todo fato de que
-    /// ele depende: pela regra de derivação viva, pelo mecanismo do derivado do sistema ou, no
-    /// agregado sobre grupo repetível, pelo fato de membro. Fora da sessão, nula: nenhum candidato
-    /// preencheu versão anterior.
-    /// </summary>
-    /// <param name="citacoes">Cada fato citado, com quem o cita, como a mensagem o nomeia.</param>
-    /// <param name="finalidadePropria">
-    /// A finalidade de quem cita: os fatos dela seguem a versão do próprio formulário. Nula quando
-    /// quem cita não tem finalidade própria, e então todo fato de formulário precisa estar garantido.
-    /// </param>
-    private DomainError? CitacaoNaoGarantida(
-        IEnumerable<(string Citante, string Citado)> citacoes,
-        FinalidadeFormulario? finalidadePropria,
-        IReadOnlyDictionary<string, string> membroPorAgregado)
-    {
-        if (Rascunho?.FatosDasVersoesPublicadas is not { } publicadas)
-        {
-            return null;
-        }
-
-        foreach ((string citante, string citado) in citacoes)
-        {
-            if (FatoNaoGarantido(citado, finalidadePropria, publicadas, membroPorAgregado, []) is { } naoGarantido)
-            {
-                string anterior = EstruturaFormulario.ParaToken(naoGarantido.Produtora);
-                string sujeito = string.Equals(citado, naoGarantido.Fato, StringComparison.Ordinal)
-                    ? $"O fato '{citado}', citado por {citante}, não"
-                    : $"O fato '{citado}', citado por {citante}, depende de '{naoGarantido.Fato}', que não";
-                return new DomainError(
-                    "RascunhoRetificacao.FatoAusenteDeVersaoPublicada",
-                    $"{sujeito} é coletado pelo formulário de {anterior} em todas as versões publicadas do edital: quem preencheu esse formulário numa versão anterior não o informou.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O fato coletado por outra finalidade e fora do que ela garante, entre o fato e as dependências
-    /// dele. O fato coletado encerra a busca: ele não depende de outro.
-    /// </summary>
-    private (string Fato, FinalidadeFormulario Produtora)? FatoNaoGarantido(
-        string fato,
-        FinalidadeFormulario? finalidadePropria,
-        FatosDasVersoesPublicadas publicadas,
-        IReadOnlyDictionary<string, string> membroPorAgregado,
-        HashSet<string> emAvaliacao)
-    {
-        if (_campos.Find(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado)
-        {
-            return coletado.Finalidade != finalidadePropria && !publicadas.Garante(coletado.Finalidade, fato)
-                ? (fato, coletado.Finalidade)
-                : null;
-        }
-
-        if (!emAvaliacao.Add(fato))
-        {
-            return null;
-        }
-
-        foreach (string dependencia in DependenciasDoFato(fato, membroPorAgregado))
-        {
-            if (FatoNaoGarantido(dependencia, finalidadePropria, publicadas, membroPorAgregado, emAvaliacao) is { } naoGarantido)
-            {
-                return naoGarantido;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>As citações das regras de um formulário, com quem cita nomeado junto do formulário.</summary>
-    private static IEnumerable<(string Citante, string Citado)> DoFormulario(
-        FinalidadeFormulario finalidade, IEnumerable<(string Dono, string Citado)> citacoes) =>
-        citacoes.Select(c => ($"{c.Dono} do formulário de {EstruturaFormulario.ParaToken(finalidade)}", c.Citado));
-
-    /// <summary>
-    /// Sob retificação, a regra de formulário que usa, de outra finalidade, fato fora do que o
-    /// formulário dela coletou em todas as versões publicadas. A conferência das escritas alcança o que
-    /// cada uma escreve; esta alcança o que mudou depois, inclusive a regra de derivação que passou a
-    /// fazer um derivado citado depender de fato novo.
-    /// </summary>
-    private DomainError? PendenciaDeFatoAusenteDeVersaoPublicada() =>
-        _formularios
-            .Select(formulario => CitacaoNaoGarantida(
-                DoFormulario(
-                    formulario.Finalidade,
-                    CitacoesDoFormulario(
-                        formulario,
-                        [.. Itens.Where(f => f.Finalidade == formulario.Finalidade)],
-                        [.. GruposDaFinalidade(formulario.Finalidade)])
-                    .Select(static c => (c.Dono, c.Citado))),
-                formulario.Finalidade,
-                SemCatalogo))
-            .FirstOrDefault(static recusa => recusa is not null);
-
-    /// <summary>
-    /// Trocar os itens da inscrição não pode tirar um fato que uma regra de outra finalidade cita,
-    /// direta ou por um derivado: ela passaria a depender de uma resposta que ninguém pede. Só a
-    /// citação que a troca invalida é recusada; a que já era inválida fica para a publicação.
-    /// </summary>
-    private DomainError? CitacaoQueFicariaOrfa(IReadOnlyCollection<FatoColetado> novosDaInscricao) =>
-        CitacoesQueFicariamOrfas(
-            // Os itens novos ainda não têm a finalidade vinculada: valem pelo código.
-            new HashSet<string>(novosDaInscricao.Select(static f => f.FatoCodigo), StringComparer.Ordinal),
-            outra => [.. Itens.Where(f => f.Finalidade == outra)],
-            DependenciasDasDerivacoes()).FirstOrDefault();
-
-    /// <summary>
-    /// As citações das outras finalidades que uma mudança na inscrição, nos itens delas ou nas
-    /// derivações deixaria sem o fato citado: compara cada citação antes e depois e devolve só as
-    /// que a mudança invalida.
-    /// </summary>
-    private IEnumerable<DomainError> CitacoesQueFicariamOrfas(
-        IReadOnlySet<string> daInscricaoDepois,
-        Func<FinalidadeFormulario, FatoColetado[]> itensDepois,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoesDepois)
-    {
-        HashSet<string> atuais = FatosDaInscricao(Itens);
-        Dictionary<string, IReadOnlyCollection<string>> derivacoesAntes = DependenciasDasDerivacoes();
-        foreach (FormularioProcesso formulario in _formularios.Where(static f => f.Finalidade != FinalidadeFormulario.Inscricao))
-        {
-            FinalidadeFormulario outra = formulario.Finalidade;
-            FatoColetado[] itens = itensDepois(outra);
-            GrupoColetado[] grupos = [.. GruposDaFinalidade(outra)];
-            DependenciasDoFormulario antes = DependenciasDe(outra, Itens.Where(f => f.Finalidade == outra), atuais, derivacoesAntes);
-            DependenciasDoFormulario depois = DependenciasDe(outra, itens, daInscricaoDepois, derivacoesDepois);
-            foreach ((string dono, long posicao, string citado) in CitacoesDoFormulario(formulario, itens, grupos))
-            {
-                if (antes.Conferir(citado, posicao) is null && depois.Conferir(citado, posicao) is not null)
-                {
-                    yield return new DomainError(
-                        GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                        $"O fato '{citado}', citado por {dono} do formulário de {EstruturaFormulario.ParaToken(outra)}, deixaria de ser conhecido por ele.");
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Cada citação das regras do formulário, com quem cita e a posição de onde cita: as dos itens e
-    /// dos grupos dados, a exibição das seções e as condições dos termos da finalidade.
-    /// </summary>
-    private IEnumerable<(string Dono, long Posicao, string Citado)> CitacoesDoFormulario(
-        FormularioProcesso formulario, FatoColetado[] itens, GrupoColetado[] grupos) =>
-        CitacoesDosCampos(itens, grupos)
-            .Concat(formulario.Etapas.SelectMany(secao => CitacoesDaSecao(secao)
-                .Select(c => (c.Dono,
-                    GrafoDoFormulario.PosicaoDaEtapa(
-                        secao.ParaGrafo(),
-                        formulario.Etapas.Select(static e => e.ParaGrafo()),
-                        itens.Select(static i => i.ParaGrafo()),
-                        grupos.Select(static g => g.ParaGrafo())),
-                    c.Citado))))
-            .Concat(_termosExigidos.Where(t => t.Finalidade == formulario.Finalidade)
-                .SelectMany(static termo => CitacoesDoTermo(termo).Select(static c => (c.Dono, DependenciasDoFormulario.PosicaoDosTermos, c.Citado))));
-
-    /// <summary>As citações das regras dos itens e dos grupos, cada uma na posição do item ou do grupo que cita.</summary>
-    private static IEnumerable<(string Dono, long Posicao, string Citado)> CitacoesDosCampos(
-        IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        itens.SelectMany(static item => item.FatosCitados.Select(c => ($"o item '{item.FatoCodigo}'", (long)item.Ordem, c)))
-            .Concat(grupos.SelectMany(static grupo => CitacoesDeFora(grupo).Select(c => ($"o grupo '{grupo.Codigo}'", (long)grupo.Ordem, c))));
-
-    private static IEnumerable<(string Dono, string Citado)> CitacoesDaSecao(EtapaFormulario secao) =>
-        secao.FatosCitados.Select(c => ($"a exibição da seção '{secao.Codigo}'", c));
-
-    private static IEnumerable<(string Dono, string Citado)> CitacoesDoTermo(TermoExigidoFormulario termo) =>
-        termo.FatosCitados.Select(c => ($"o termo '{termo.Codigo}'", c));
-
-    /// <summary>
-    /// O grafo de coleta de um formulário. As regras de um campo citam campo anterior do mesmo
-    /// formulário, em outra finalidade um fato já coletado pela inscrição, que todo candidato
-    /// preenche antes, ou um derivado por regra cujas dependências estão todas entre esses
-    /// (UNI-REQ-0144, UNI-REQ-0145).
-    /// </summary>
-    private static DomainError? ValidarGrafoDeFatos(
-        IReadOnlyCollection<EtapaFormulario> etapas,
-        IReadOnlyList<FatoColetado> fatos,
-        IReadOnlyList<GrupoColetado> grupos,
-        HashSet<string> daInscricao,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
-        GrafoDoFormulario.ValidarColeta(
-            [.. fatos.Select(static f => f.ParaGrafo())],
-            [.. etapas.Select(static e => e.ParaGrafo())],
-            daInscricao,
-            derivacoes,
-            [.. grupos.Select(static g => g.ParaGrafo())]);
-
-    /// <summary>
-    /// Os fatos que o grupo cita fora dele: os da exibição e da obrigatoriedade do grupo e os que os
-    /// campos citam além dos campos do próprio grupo.
-    /// </summary>
-    private static IEnumerable<string> CitacoesDeFora(GrupoColetado grupo)
-    {
-        HashSet<string> doGrupo = new(grupo.Subitens.Select(static s => s.FatoCodigo), StringComparer.Ordinal);
-        return grupo.FatosCitados.Concat(grupo.Subitens.SelectMany(static s => s.FatosCitados).Where(c => !doGrupo.Contains(c)))
-            .Distinct(StringComparer.Ordinal);
-    }
-
-    /// <summary>Os grupos repetíveis do formulário da finalidade.</summary>
-    private IEnumerable<GrupoColetado> GruposDaFinalidade(FinalidadeFormulario finalidade) =>
-        _gruposColetados.Where(g => g.Finalidade == finalidade);
-
-    /// <summary>A quantidade que o teto do formulário conta: cada item, cada grupo e cada campo de grupo.</summary>
-    private static int QuantidadeNoTeto(int itens, IEnumerable<GrupoColetado> grupos) =>
-        FormaDoItem.QuantidadeNoTeto(itens, grupos.Select(static g => g.Subitens.Count));
-
-    /// <summary>Os itens e os grupos, na forma que a estrutura confere: o grupo ocupa uma posição na ordem dos itens.</summary>
-    private static IReadOnlyList<ItemEstrutura> ParaEstrutura(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        [.. itens.Select(static f => new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)), .. grupos.Select(static g => g.ParaEstrutura())];
-
-    /// <summary>
-    /// A primeira regra de item ou condição de termo que cita fato que o formulário dela não
-    /// conhece. É a mesma conferência da definição, repetida na publicação e na leitura do edital
-    /// congelado.
-    /// </summary>
-    public static DomainError? CitacaoInvalidaNosFormularios(
-        IEnumerable<FormularioProcesso> formularios,
-        IReadOnlyCollection<FatoColetado> fatos,
-        IReadOnlyCollection<TermoExigidoFormulario> termos,
-        IReadOnlyCollection<ConfiguracaoDerivacaoFato> derivacoes,
-        IReadOnlyCollection<GrupoColetado>? grupos = null)
-    {
-        ArgumentNullException.ThrowIfNull(formularios);
-        ArgumentNullException.ThrowIfNull(fatos);
-        ArgumentNullException.ThrowIfNull(termos);
-        ArgumentNullException.ThrowIfNull(derivacoes);
-
-        HashSet<string> daInscricao = FatosDaInscricao(fatos);
-        Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
-            MapaDeDerivacoes(derivacoes);
-        foreach (FormularioProcesso formulario in formularios)
-        {
-            FinalidadeFormulario finalidade = formulario.Finalidade;
-            FatoColetado[] itens = [.. fatos.Where(f => f.Finalidade == finalidade)];
-            DependenciasDoFormulario dependencias = DependenciasDe(finalidade, itens, daInscricao, dependenciasDasDerivacoes);
-            if (GrafoDoFormulario.CitacaoInvalida(
-                    [.. itens.Select(static i => i.ParaGrafo())],
-                    [.. formulario.Etapas.Select(static e => e.ParaGrafo())],
-                    termos.Where(t => t.Finalidade == finalidade).Select(static t => t.ParaGrafo()),
-                    dependencias,
-                    [.. (grupos ?? []).Where(g => g.Finalidade == finalidade).Select(static g => g.ParaGrafo())]) is { } recusa)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O que as regras do formulário da finalidade podem citar: os campos dele, na ordem; os da
-    /// inscrição, quando o formulário é de outra finalidade; e os derivados por regra desses.
-    /// </summary>
-    private DependenciasDoFormulario DependenciasDe(
-        FinalidadeFormulario finalidade, IEnumerable<FatoColetado> itens, IReadOnlySet<string> daInscricao) =>
-        DependenciasDe(finalidade, itens, daInscricao, DependenciasDasDerivacoes());
-
-    private static DependenciasDoFormulario DependenciasDe(
-        FinalidadeFormulario finalidade,
-        IEnumerable<FatoColetado> itens,
-        IReadOnlySet<string> daInscricao,
-        IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
-        GrafoDoFormulario.Dependencias(
-            itens.Select(static f => f.ParaGrafo()),
-            finalidade == FinalidadeFormulario.Inscricao ? new HashSet<string>(StringComparer.Ordinal) : daInscricao,
-            derivacoes);
-
-    private Dictionary<string, IReadOnlyCollection<string>> DependenciasDasDerivacoes() =>
-        MapaDeDerivacoes(DerivacoesEfetivas());
-
-    /// <summary>
-    /// As dependências de cada derivado que uma regra do formulário pode citar: os derivados por regra
-    /// do processo e os derivados do sistema, com as dependências declaradas pelo mecanismo deles.
-    /// </summary>
-    private static Dictionary<string, IReadOnlyCollection<string>> MapaDeDerivacoes(IEnumerable<ConfiguracaoDerivacaoFato> derivacoes) =>
-        DerivadosDoSistema.ComAsDoSistema(derivacoes.Select(static c => KeyValuePair.Create(c.CodigoFato, c.FatosCitados)));
 
     /// <summary>
     /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR #896 —
@@ -2022,7 +1401,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return null;
         }
 
-        FaseEfetiva efetiva = FaseEfetivaDoFato(fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(EstadoDaConfiguracao.De(this), fato, pontoResolucaoPorFato, membroPorAgregado, []);
         if (efetiva.Recusa is { } recusa)
         {
             return recusa;
@@ -2035,14 +1414,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.");
         }
 
-        return DependeDeFatoSoDaIsencao(fato, membroPorAgregado, [])
+        return FaseEfetivaDoFato.DependeDeFatoSoDaIsencao(EstadoDaConfiguracao.De(this), fato, membroPorAgregado, [])
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao,
                 $"O fato '{fato}', que decide quem recebe o acréscimo, depende do que só o formulário de isenção coleta.")
             : null;
     }
 
-    private DomainError? PendenciaDoFatoDeElegibilidade() => RecusaDoFatoDeElegibilidade(SemCatalogo, SemCatalogo);
+    private DomainError? PendenciaDoFatoDeElegibilidade() => RecusaDoFatoDeElegibilidade(CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo);
 
     /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
@@ -2378,7 +1757,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     public IReadOnlyList<AvisoConformidade> AvaliarAvisos() =>
     [
-        .. CicloRecursal.DefinitivosEmMaisDeUmLugar(DeclaracoesDeAtos())
+        .. CicloRecursal.DefinitivosEmMaisDeUmLugar(TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(this)))
             .Select(static repetido => new AvisoConformidade(
                 CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar,
                 DimensaoConformidade.Cronograma,
@@ -2457,21 +1836,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         .. ItensEstruturaisDeConformidade(),
 
         // ── PendenciaDoCronograma (Story #851 §3.4/§3.5) ──
-        new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !HaFaseDeAvaliacaoSemEtapa()),
-        new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !HaEtapaSemFaseDeAvaliacao()),
-        new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !HaInscricaoPropriaSemFaseDeColeta()),
-        new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", FaseQueColetaInscricaoSemJanela() is null),
-        new ItemConformidade("cronograma_fase_sem_unidade_responsavel", DimensaoConformidade.Cronograma, "Cronograma: toda fase tem a unidade responsável definida", FaseSemUnidadeResponsavel() is null),
-        new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", JanelaDeIsencaoConforme(contexto)),
-        new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !HaVagasSemFaseQueProduzResultado()),
-        new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase ou a etapa que publica resultado preliminar tem o definitivo do mesmo tipo de ato, na própria fase ou etapa ou na fase concluinte declarada", PendenciaDaConclusaoDoCicloRecursal() is null),
-        new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", PendenciaDaAncoraDoRecurso() is null),
-        new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", PendenciaDaAncoraDoRecursoDasEtapas() is null),
-            new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", PendenciaDoRecorteDeCompetencia() is null),
+        new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !PendenciasDoCronograma.HaFaseDeAvaliacaoSemEtapa(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !PendenciasDoCronograma.HaEtapaSemFaseDeAvaliacao(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !PendenciasDoCronograma.HaInscricaoPropriaSemFaseDeColeta(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", PendenciasDoCronograma.FaseQueColetaInscricaoSemJanela(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("cronograma_fase_sem_unidade_responsavel", DimensaoConformidade.Cronograma, "Cronograma: toda fase tem a unidade responsável definida", PendenciasDoCronograma.FaseSemUnidadeResponsavel(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", PendenciasDoCronograma.JanelaDeIsencaoConforme(EstadoDaConfiguracao.De(this), contexto)),
+        new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !PendenciasDoCronograma.HaVagasSemFaseQueProduzResultado(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase ou a etapa que publica resultado preliminar tem o definitivo do mesmo tipo de ato, na própria fase ou etapa ou na fase concluinte declarada", CicloRecursalDoCronograma.PendenciaDaConclusaoDoCicloRecursal(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecurso(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecursoDasEtapas(EstadoDaConfiguracao.De(this)) is null),
+            new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", CicloRecursalDoCronograma.PendenciaDoRecorteDeCompetencia(EstadoDaConfiguracao.De(this)) is null),
             new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(EstadoDaConfiguracao.De(this)) is null),
-        new ItemConformidade("cronograma_resultado_declarado_com_papel", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato classificado como resultado declara papel preliminar ou definitivo", PendenciaDoResultadoSemPapel(tiposDeAtoUnicos) is null),
-        new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", PendenciaDoTipoQueCongelaDeclaradoComoResultado(tiposDeAtoUnicos) is null),
-        new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is null),
+        new ItemConformidade("cronograma_resultado_declarado_com_papel", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato classificado como resultado declara papel preliminar ou definitivo", TiposDeAtoDoCronograma.PendenciaDoResultadoSemPapel(EstadoDaConfiguracao.De(this), tiposDeAtoUnicos) is null),
+        new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(EstadoDaConfiguracao.De(this), tiposDeAtoUnicos) is null),
+        new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(this), tiposDeAtoUnicos) is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(this)) is null),
@@ -2496,9 +1875,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
         new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciaDasRegrasDasModalidades(fatosDeModalidade.MembroPorAgregado) is null),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
-        new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", PendenciaDeFatoAusenteDeVersaoPublicada() is null),
+        new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
-        new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", PendenciaDaRepeticaoPorGrupo() is null),
+        new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", RegrasDasExigencias.PendenciaDaRepeticaoPorGrupo(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("formulario_edicao_enem_sem_classificacao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: só pedem a edição do ENEM quando a classificação é baseada em ENEM", EdicaoDoEnemSemClassificacaoEnem(_campos, Classificacao) is null),
         new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
         new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
@@ -2589,511 +1968,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Pendências do cronograma que não cabem no checklist booleano ORIGINAL de
-    /// <see cref="PendenciaDeConformidade"/> — cada uma tem o seu próprio <c>DomainError</c>
-    /// nomeado (Story #851 §3.4/§3.5, CA-11/CA-13/CA-14). Chamado por
-    /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/FecharRetificacao),
-    /// sempre <b>depois</b> de <see cref="PendenciaDeConformidade"/>.
-    /// </summary>
-    /// <remarks>
-    /// Issue #1092: cada <c>if</c> abaixo testa um predicado privado nomeado
-    /// (<c>Ha*</c>) em vez de uma expressão inline — <see cref="AvaliarConformidade"/>
-    /// chama os MESMOS quatro predicados para projetar um item por razão. A precedência
-    /// (qual falha é devolvida primeiro) continua decidida só aqui, pela ORDEM dos
-    /// <c>if</c>; o checklist não reordena nem filtra — só projeta todos os quatro.
-    /// <para>
-    /// Público porque o handler o antecipa antes de canonicalizar (issue #1350): sem isso, um
-    /// processo com fase de coleta sem janela E referência temporal irresolvível receberia pelo
-    /// endpoint a recusa da referência, diagnóstico obscuro para quem só precisa datar a inscrição.
-    /// </para>
-    /// </remarks>
-    public DomainError? PendenciaDoCronograma(TimeZoneInfo? fusoInstitucional)
-    {
-        // §3.5, direção "fase de avaliação sem etapa". Desde que a etapa passou a declarar a
-        // própria fase, a gravação do cronograma não recusa mais esse estado na hora — ele é
-        // legítimo enquanto se monta o certame, e quem o barra é este gate, na publicação.
-        if (HaFaseDeAvaliacaoSemEtapa())
-        {
-            return new DomainError(
-                "ProcessoSeletivo.AvaliacaoSemEtapa",
-                "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
-        }
-
-        // §3.5, direção "etapa sem fase de avaliação" — lazy por natureza (a etapa pode
-        // ser declarada depois do cronograma).
-        if (HaEtapaSemFaseDeAvaliacao())
-        {
-            return new DomainError(
-                "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
-                "O processo tem etapa pontuada, mas nenhuma fase do cronograma agrupa etapas.");
-        }
-
-        // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
-        if (HaInscricaoPropriaSemFaseDeColeta())
-        {
-            return new DomainError(
-                "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
-                "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição.");
-        }
-
-        // Issue #1350: a fase que coleta inscrição declara o prazo que o Edital publica, então
-        // ela precisa de janela mesmo quando a origem da data é NA_EXECUCAO. É a única exceção à
-        // §3.2 — nas demais fases, "sem data" continua sendo estado válido, porque a data não é
-        // fixada no edital e a unidade responsável a define na execução. Um Edital que admite inscrição sem
-        // prazo definido, esse não se sustenta.
-        if (FaseQueColetaInscricaoSemJanela() is { } faseSemJanela)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
-                $"A fase '{faseSemJanela.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período.");
-        }
-
-        if (FaseSemUnidadeResponsavel() is { } faseSemUnidade)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.FaseSemUnidadeResponsavel",
-                $"A fase '{faseSemUnidade.Codigo}' não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.");
-        }
-
-        if (PendenciaDaJanelaDeIsencao(fusoInstitucional) is { } pendenciaIsencao)
-        {
-            return pendenciaIsencao;
-        }
-
-        // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que
-        // produza resultado.
-        if (HaVagasSemFaseQueProduzResultado())
-        {
-            return new DomainError(
-                "ProcessoSeletivo.VagasSemFaseQueProduzResultado",
-                "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.");
-        }
-
-        // A conclusão do ciclo recursal por matéria. DefinirCronogramaFases já a recusa na
-        // escrita, mas o estado violado é materializável pela hidratação do EF, que não
-        // passa pela fábrica — mesmo raciocínio que já sustenta o item da taxa de inscrição
-        // sem fundamento de isenção. Sem esta metade, um certame carregado do banco nesse
-        // estado seria publicado com o ciclo recursal em aberto.
-        if (PendenciaDaConclusaoDoCicloRecursal() is { } pendenciaDaConclusao)
-        {
-            return pendenciaDaConclusao;
-        }
-
-        // A âncora do prazo de recurso, pela mesma razão: FaseCronograma.Criar a recusa na
-        // escrita, e o EF hidrata regras_recurso_fase e produtos_da_fase direto das linhas,
-        // sem passar pela fábrica. Sem esta metade, um certame carregado do banco com a
-        // âncora apontando para produto que não é preliminar seu congelaria uma versão cujo
-        // prazo de interposição não resolve — e a incoerência só apareceria na restauração,
-        // longe da causa.
-        if (PendenciaDaAncoraDoRecurso() is { } pendenciaDaAncora)
-        {
-            return pendenciaDaAncora;
-        }
-
-        // A mesma conferência para a janela de cada etapa, pela mesma razão: o EF hidrata
-        // recursos_da_etapa e produtos_da_etapa direto das linhas, sem passar pela gravação das
-        // janelas. A etapa com a janela ancorada fora dos preliminares dela não resolveria o
-        // prazo de interposição.
-        if (PendenciaDaAncoraDoRecursoDasEtapas() is { } pendenciaDaAncoraDaEtapa)
-        {
-            return pendenciaDaAncoraDaEtapa;
-        }
-
-        // O recorte de competência das bancas, pela mesma razão: FaseCronograma.Criar o
-        // recusa na escrita, e o EF hidrata bancas_requeridas e categorias_julgadas direto
-        // das linhas, sem passar pela fábrica. Sem esta metade, um certame carregado do
-        // banco com duas bancas do mesmo tipo indistinguíveis seria publicado sem dizer
-        // quem responde por qual matéria — e o defeito só apareceria no primeiro parecer ou
-        // no primeiro recurso, longe da causa.
-        if (PendenciaDoRecorteDeCompetencia() is { } pendenciaDoRecorte)
-        {
-            return pendenciaDoRecorte;
-        }
-
-        // A etapa dentro da janela da fase que a abriga, pela mesma razão: as duas gravações
-        // a recusam na escrita, e o EF hidrata etapas_processo e fases_cronograma direto das
-        // linhas, sem passar por nenhuma das duas. Sem esta metade, um certame gravado antes
-        // de a invariante existir seria publicado com uma prova marcada para fora da fase que
-        // a contém — e o envelope congelaria a incoerência no que vai ao Diário Oficial.
-        if (JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(EstadoDaConfiguracao.De(this)) is { } pendenciaDaJanelaDaEtapa)
-        {
-            return pendenciaDaJanelaDaEtapa;
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// A primeira pendência de um tipo de ato único por objeto declarado mais de uma vez no
-    /// processo — nos produtos das fases e das etapas e, quando há, no ato da própria
-    /// operação —, ou <see langword="null"/> quando cada um deles é declarado uma só vez.
-    /// </summary>
-    /// <remarks>
-    /// O tipo único só admite um ato por processo (ADR-0107): declará-lo duas vezes faz o
-    /// edital sair publicado, o primeiro ato ser registrado e o segundo ser recusado na fila
-    /// semanas depois, com o edital já congelado. O ato da publicação ou da retificação ocupa
-    /// a mesma vaga, então um produto do cronograma do mesmo tipo é declaração repetida. Declarar
-    /// o mesmo tipo como preliminar e como definitivo conta como duas declarações: o tipo único
-    /// é só o ato que sai uma vez no processo, sem preliminar e definitivo, e a matéria que sai
-    /// nos dois papéis ou em mais de um ciclo usa tipo não único. Quais tipos são únicos é dado do
-    /// catálogo, que chega em <paramref name="tiposUnicos"/> — o agregado não o conhece (ADR-0042).
-    /// </remarks>
-    public DomainError? PendenciaDoTipoDeAtoUnico(TiposDeAtoUnicosPorObjeto tiposUnicos)
-    {
-        ArgumentNullException.ThrowIfNull(tiposUnicos);
-
-        IEnumerable<DeclaracaoDeAto> declaracoes =
-        [
-            .. DeclaracoesDeAtos().Where(declaracao => tiposUnicos.EhUnico(declaracao.AtoCodigo)),
-            .. VagasJaReivindicadas(tiposUnicos),
-        ];
-
-        IGrouping<string, DeclaracaoDeAto>? repetido = declaracoes
-            .GroupBy(static declaracao => declaracao.AtoCodigo, StringComparer.Ordinal)
-            .FirstOrDefault(static grupo => grupo.Count() > 1);
-
-        if (repetido is null)
-        {
-            return null;
-        }
-
-        string onde = string.Join(" e ", repetido
-            .GroupBy(static declaracao => declaracao.Lugar, StringComparer.Ordinal)
-            .Select(static lugar => lugar.Count() > 1 ? $"{lugar.Key} ({lugar.Count()} vezes)" : lugar.Key));
-
-        return new DomainError(
-            ProcessoSeletivoErrorCodes.TipoDeAtoUnicoDeclaradoMaisDeUmaVez,
-            $"O tipo de ato '{tiposUnicos.NomeDe(repetido.Key)}' só pode ser publicado uma vez por processo e está declarado {onde}.");
-    }
-
-    /// <summary>
-    /// O primeiro produto declarado sem papel cujo tipo é resultado no catálogo, ou
-    /// <see langword="null"/>. O resultado sem preliminar é declarado definitivo: só o ato que
-    /// não é resultado fica sem papel (UNI-REQ-0157).
-    /// </summary>
-    /// <remarks>
-    /// A classificação é dado do catálogo e chega em <paramref name="tipos"/>. Tipo sem versão
-    /// vigente não tem classificação e fica de fora: quem o recusa é a conferência do tipo.
-    /// </remarks>
-    public DomainError? PendenciaDoResultadoSemPapel(TiposDeAtoUnicosPorObjeto tipos)
-    {
-        ArgumentNullException.ThrowIfNull(tipos);
-
-        foreach (DeclaracaoDeAto declaracao in DeclaracoesDeAtos())
-        {
-            if (tipos.ClassificacaoDe(declaracao.AtoCodigo)?.ViolacaoDoResultadoSemPapel(declaracao.AtoCodigo, declaracao.Papel, declaracao.Lugar) is { } violacao)
-            {
-                return violacao;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O primeiro produto declarado com papel cujo tipo congela a configuração, ou
-    /// <see langword="null"/>. A correção de um resultado não cria versão nova (UNI-REQ-0156),
-    /// então um tipo que congela não teria correção possível como item de resultado.
-    /// </summary>
-    public DomainError? PendenciaDoTipoQueCongelaDeclaradoComoResultado(TiposDeAtoUnicosPorObjeto tipos)
-    {
-        ArgumentNullException.ThrowIfNull(tipos);
-
-        foreach (DeclaracaoDeAto declaracao in DeclaracoesDeAtos())
-        {
-            if (tipos.ClassificacaoDe(declaracao.AtoCodigo)?.ViolacaoDoTipoQueCongelaComPapel(declaracao.AtoCodigo, declaracao.Papel, declaracao.Lugar) is { } violacao)
-            {
-                return violacao;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// As vagas que a operação e os atos já registrados reivindicam, uma por tipo: o ato da
-    /// operação e o ato já registrado do mesmo tipo são a mesma vaga — a retificação continua a
-    /// própria linhagem, não disputa com ela —, e por isso contam uma vez só.
-    /// </summary>
-    private static IEnumerable<DeclaracaoDeAto> VagasJaReivindicadas(TiposDeAtoUnicosPorObjeto tiposUnicos)
-    {
-        string? atoDaOperacao = tiposUnicos.AtoDaOperacaoCodigo;
-
-        foreach (string codigo in tiposUnicos.CodigosOcupados)
-        {
-            bool ocupaPeloAto = tiposUnicos.AtoDaOperacaoEhUnico && string.Equals(codigo, atoDaOperacao, StringComparison.Ordinal);
-            if (tiposUnicos.EhUnico(codigo) || ocupaPeloAto)
-            {
-                yield return new DeclaracaoDeAto(codigo, "no ato já registrado do processo");
-            }
-        }
-
-        if (atoDaOperacao is not null && tiposUnicos.AtoDaOperacaoEhUnico && !tiposUnicos.VagaOcupada(atoDaOperacao))
-        {
-            yield return new DeclaracaoDeAto(atoDaOperacao, "no ato que está sendo registrado");
-        }
-    }
-
-    /// <summary>
-    /// Cada produto que o cronograma declara, o das fases e o das etapas, com o lugar que o
-    /// declara. É a fonte única dos atos declarados: quem precisa saber quais tipos de ato o
-    /// processo cita lê daqui.
-    /// </summary>
-    /// <remarks>
-    /// A etapa é identificada pela ordem além do nome, porque o nome não é único: duas etapas
-    /// de mesmo nome em lugares distintos seriam contadas como uma.
-    /// </remarks>
-    public IReadOnlyList<DeclaracaoDeAto> DeclaracoesDeAtos() =>
-    [
-        .. _cronogramaFases.SelectMany(static fase => fase.Produtos
-            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na fase '{fase.Codigo}'", produto.Papel))),
-        .. _etapas.SelectMany(static etapa => etapa.Produtos
-            .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, $"na etapa '{etapa.Nome}' (ordem {etapa.Ordem?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "não definida"})", produto.Papel))),
-    ];
-
-    /// <summary>
-    /// A primeira violação do recorte de competência no cronograma corrente, ou
-    /// <see langword="null"/> quando toda fase identifica cada banca que requer.
-    /// </summary>
-    /// <remarks>
-    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
-    /// item só. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacoesDoRecorteDeCompetencia"/>), que por sua vez chama o predicado de
-    /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
-    /// também chamam.
-    /// </remarks>
-    private DomainError? PendenciaDoRecorteDeCompetencia()
-    {
-        List<FieldError> violacoes = ViolacoesDoRecorteDeCompetencia([.. _cronogramaFases]);
-
-        return violacoes.Count > 0 ? violacoes[0].Error : null;
-    }
-
-    /// <summary>
-    /// As violações do recorte de competência, uma por banca mal declarada, com o campo que
-    /// localiza cada uma.
-    /// </summary>
-    /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
-    private static List<FieldError> ViolacoesDoRecorteDeCompetencia(IReadOnlyList<FaseCronograma> fases)
-    {
-        List<FieldError> violacoes = [];
-
-        for (int indice = 0; indice < fases.Count; indice++)
-        {
-            violacoes.AddRange(fases[indice].ViolacoesDoRecorteDeCompetencia()
-                .Select(violacao => violacao with { Field = $"fases[{indice}].{violacao.Field}" }));
-        }
-
-        return violacoes;
-    }
-
-    /// <summary>
-    /// A primeira violação da âncora do prazo de recurso no cronograma corrente, ou
-    /// <see langword="null"/> quando toda fase que admite recurso ancora num produto
-    /// preliminar seu.
-    /// </summary>
-    /// <remarks>
-    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
-    /// item só. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacoesDaAncoraDoRecurso"/>), que por sua vez chama o predicado de
-    /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
-    /// também chamam — não há um segundo <c>if</c> para lembrar de sincronizar.
-    /// </remarks>
-    private DomainError? PendenciaDaAncoraDoRecurso()
-    {
-        List<FieldError> violacoes = ViolacoesDaAncoraDoRecurso([.. _cronogramaFases]);
-
-        return violacoes.Count > 0 ? violacoes[0].Error : null;
-    }
-
-    /// <summary>
-    /// A primeira violação da âncora das janelas de recurso das etapas, ou
-    /// <see langword="null"/> quando toda janela se ancora onde pode. Chama o mesmo predicado de
-    /// <see cref="EtapaProcesso"/> que a gravação das janelas chama.
-    /// </summary>
-    private DomainError? PendenciaDaAncoraDoRecursoDasEtapas()
-    {
-        foreach (EtapaProcesso etapa in _etapas)
-        {
-            if (etapa.ViolacaoDaAncoraDoRecurso() is { } violacao)
-            {
-                return violacao;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// As violações da âncora do prazo de recurso, uma por fase mal declarada, com o campo
-    /// que localiza cada uma.
-    /// </summary>
-    /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
-    private static List<FieldError> ViolacoesDaAncoraDoRecurso(IReadOnlyList<FaseCronograma> fases)
-    {
-        List<FieldError> violacoes = [];
-
-        for (int indice = 0; indice < fases.Count; indice++)
-        {
-            if (fases[indice].ViolacaoDaAncoraDoRecurso() is { } violacao)
-            {
-                violacoes.Add(violacao with { Field = $"fases[{indice}].{violacao.Field}" });
-            }
-        }
-
-        return violacoes;
-    }
-
-    /// <summary>
-    /// A primeira violação da conclusão do ciclo recursal no cronograma corrente, ou
-    /// <see langword="null"/> quando todas as fases que abrem ciclo o fecham.
-    /// </summary>
-    /// <remarks>
-    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
-    /// item só. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacoesDaConclusaoDoCicloRecursal"/>), que é o que mantém a
-    /// bicondicional de pé sem um segundo <c>if</c> para lembrar de sincronizar.
-    /// </remarks>
-    private DomainError? PendenciaDaConclusaoDoCicloRecursal()
-    {
-        List<FieldError> violacoes =
-        [
-            .. CicloRecursalDoCronograma.ViolacoesDaConclusaoDoCicloRecursal([.. _cronogramaFases]),
-            .. RegrasDasEtapas.ViolacoesDoFechamentoDoCicloDasEtapas([.. _etapas]),
-        ];
-
-        return violacoes.Count > 0 ? violacoes[0].Error : null;
-    }
-
-    /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
-    // §3.5 — a bicondicional por sinalizador sobrevive apenas para a etapa que NÃO
-    // declara a própria fase. Quando a etapa declara (EtapaProcesso.FaseCodigo), o
-    // vínculo é quem responde por onde ela vive, e qualquer fase pode subdividir-se —
-    // não só a que o cadastro marcava como agrupadora.
-    private bool HaFaseDeAvaliacaoSemEtapa() =>
-        _cronogramaFases.Any(f => f.AgrupaEtapas
-            && !_etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
-            && !_etapas.Any(static e => e.FaseCodigo is null));
-
-    private bool HaEtapaSemFaseDeAvaliacao() =>
-        _etapas.Any(static e => e.FaseCodigo is null)
-        && !_cronogramaFases.Any(static f => f.AgrupaEtapas);
-
-    /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
-    private bool HaInscricaoPropriaSemFaseDeColeta() =>
-        OrigemCandidatos == OrigemCandidatos.InscricaoPropria && !_cronogramaFases.Any(static f => f.ColetaInscricao);
-
-    /// <summary>
-    /// A projeção da janela para o checklist. Sem zona resolvida o item fica verde: quem recusa a
-    /// publicação nesse caso é <c>fuso_institucional_nao_reconhecido</c>, que já está vermelho pelo
-    /// mesmo motivo — a bicondicional continua de pé, com a causa nomeada uma vez só.
-    /// </summary>
-    private bool JanelaDeIsencaoConforme(ContextoDeContagemDePrazos contexto) =>
-        contexto.FusoInstitucional is null
-        || PendenciaDaJanelaDeIsencao(contexto.FusoInstitucional) is null;
-
-    /// <summary>
-    /// As três regras de contorno da janela de isenção (UNI-REQ-0106): abre junto com a inscrição,
-    /// fecha antes dela, e dura no mínimo cinco dias corridos.
-    /// </summary>
-    /// <remarks>
-    /// A contagem é em dias corridos e não passa pelo calendário de dias úteis nem pelo algoritmo de
-    /// contagem do processo — a janela é período do cronograma, não interposição de recurso. É o
-    /// ponto mais fácil de errar por analogia com o prazo recursal, que segue outro contrato.
-    /// </remarks>
-    private DomainError? PendenciaDaJanelaDeIsencao(TimeZoneInfo? fusoInstitucional)
-    {
-        if (_cronogramaFases.FirstOrDefault(static f => f.ColetaSolicitacaoIsencao) is not { } isencao)
-        {
-            return null;
-        }
-
-        if (isencao.Inicio is not { } inicioIsencao || isencao.Fim is not { } fimIsencao)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.JanelaDeIsencaoSemPrazo",
-                $"A fase '{isencao.Codigo}' abre a solicitação de isenção e precisa de início e fim definidos.");
-        }
-
-        // Sem zona resolvida a duração não é verificável, e deixar passar transformaria a ausência
-        // do fuso em permissão para publicar janela curta. A zona irresolvível já é recusada como
-        // defeito de instalação antes daqui; chegar sem ela é o handler não tê-la passado.
-        if (fusoInstitucional is not { } fuso)
-        {
-            throw new InvalidOperationException(
-                "A duração da janela de isenção depende do fuso institucional, e ele não foi informado ao gate do cronograma.");
-        }
-
-        // A duração é independente da inscrição, e por isso vem antes: um certame de importação
-        // externa não tem fase de coleta, e sem esta ordem publicaria janela de um dia sem que
-        // nada acusasse.
-        if (fimIsencao < UltimoInstanteDoQuintoDia(inicioIsencao, fuso))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias",
-                "A janela de solicitação de isenção precisa de ao menos cinco dias corridos, contados a partir do dia seguinte à abertura.");
-        }
-
-        // As duas regras seguintes posicionam a janela em relação às inscrições, e só existem
-        // quando há inscrição a que se referir.
-        if (FaseQueAncoraOPeriodoDeInscricao() is not { Inicio: { } inicioInscricao, Fim: { } fimInscricao })
-        {
-            return null;
-        }
-
-        if (inicioIsencao != inicioInscricao)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.JanelaDeIsencaoNaoAbreComAInscricao",
-                "A janela de solicitação de isenção abre no mesmo instante em que abrem as inscrições.");
-        }
-
-        if (fimIsencao >= fimInscricao)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.JanelaDeIsencaoNaoTerminaAntesDaInscricao",
-                "A solicitação de isenção precisa terminar antes do fim das inscrições — quem tem o pedido indeferido ainda se inscreve pagando.");
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O instante em que o quinto dia corrido se completa: o dia da abertura é excluído, o primeiro
-    /// é o dia seguinte, e o quinto só termina no último instante do dia, no fuso institucional.
-    /// </summary>
-    /// <remarks>
-    /// O piso é <c>23:59:59</c>, não o último tick do dia. A comparação é <c>&gt;=</c>, então uma
-    /// janela gravada com fração de segundo continua aceita; exigir o tick final é que recusaria o
-    /// caso comum, porque é em segundos que o operador declara a janela e que o envelope a congela.
-    /// </remarks>
-    private static DateTimeOffset UltimoInstanteDoQuintoDia(DateTimeOffset abertura, TimeZoneInfo fuso)
-    {
-        DateTime fimDoQuintoDiaLocal = TimeZoneInfo.ConvertTime(abertura, fuso).Date.AddDays(6).AddSeconds(-1);
-
-        return new DateTimeOffset(fimDoQuintoDiaLocal, fuso.GetUtcOffset(fimDoQuintoDiaLocal));
-    }
-
-    /// <summary>A fase que ancora o período de inscrição, quando existe e está sem janela (issue #1350).</summary>
-    /// <remarks>
-    /// Incide sobre a MESMA fase que <see cref="FaseQueAncoraOPeriodoDeInscricao"/> elege, e não
-    /// sobre "alguma fase de coleta": fossem conjuntos diferentes, a projeção poderia tirar o
-    /// período de uma fase enquanto a recusa olhasse outra.
-    /// </remarks>
-    private FaseCronograma? FaseQueColetaInscricaoSemJanela() =>
-        FaseQueAncoraOPeriodoDeInscricao() is { } ancora && (ancora.Inicio is null || ancora.Fim is null)
-            ? ancora
-            : null;
-
-    /// <summary>A primeira fase do cronograma, na ordem, sem unidade responsável.</summary>
-    private FaseCronograma? FaseSemUnidadeResponsavel() =>
-        _cronogramaFases.OrderBy(static f => f.Ordem).FirstOrDefault(static f => f.UnidadeResponsavelOrigemId is null);
-
-    /// <summary>Há vagas ofertadas (VoBase > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
-    private bool HaVagasSemFaseQueProduzResultado() =>
-        _distribuicaoVagas.Any(static d => d.VoBase > 0) && !_cronogramaFases.Any(static f => f.ProduzResultado);
-
-    /// <summary>
     /// Documentos exigidos, coerência de consequência e referência temporal de fatos —
     /// os três checáveis que <see cref="Publicar"/>/<see cref="SucederVersao"/> avaliam
     /// depois de <see cref="PendenciaDoCronograma"/>, agregados aqui para que o
@@ -3156,7 +2030,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return fatoCitado;
         }
 
-        if (PendenciaDeFatoAusenteDeVersaoPublicada() is { } fatoAusenteDeVersaoPublicada)
+        if (CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(EstadoDaConfiguracao.De(this)) is { } fatoAusenteDeVersaoPublicada)
         {
             return fatoAusenteDeVersaoPublicada;
         }
@@ -3166,7 +2040,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return campoOpcional;
         }
 
-        if (PendenciaDaRepeticaoPorGrupo() is { } repeticaoPorGrupo)
+        if (RegrasDasExigencias.PendenciaDaRepeticaoPorGrupo(EstadoDaConfiguracao.De(this)) is { } repeticaoPorGrupo)
         {
             return repeticaoPorGrupo;
         }
@@ -3279,7 +2153,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return null;
         }
 
-        HashSet<string> daInscricao = FatosDaInscricao(Itens);
+        HashSet<string> daInscricao = CitacoesDosFormularios.FatosDaInscricao(Itens);
         HashSet<string> camposDosGruposDaInscricao = new(
             _gruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
                 .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
@@ -3326,7 +2200,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         bool derivado = DerivacoesEfetivas().Any(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal))
             || DerivadosDoSistema.Dependencias.ContainsKey(fato);
         return derivado
-            ? DependenciasDoFato(fato, membroPorAgregado)
+            ? FaseEfetivaDoFato.DependenciasDoFato(EstadoDaConfiguracao.De(this), fato, membroPorAgregado)
                 .Select(d => FatoForaDaInscricao(d, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, emAvaliacao))
                 .FirstOrDefault(static d => d is not null)
             : fato;
@@ -3377,7 +2251,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
         // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
-        return CitacaoInvalidaNosFormularios(_formularios, FatosColetados, _termosExigidos, derivacoes, _gruposColetados);
+        return CitacoesDosFormularios.CitacaoInvalidaNosFormularios(_formularios, FatosColetados, _termosExigidos, derivacoes, _gruposColetados);
     }
 
     /// <summary>
@@ -3582,7 +2456,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private DomainError? PendenciaDosItensEmExcesso() =>
         _formularios.OrderBy(static f => f.Finalidade)
             .Select(f => FormaDoItem.ValidarQuantidade(
-                QuantidadeNoTeto(Itens.Count(i => i.Finalidade == f.Finalidade), GruposDaFinalidade(f.Finalidade))))
+                CitacoesDosFormularios.QuantidadeNoTeto(Itens.Count(i => i.Finalidade == f.Finalidade), CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), f.Finalidade))))
             .FirstOrDefault(static erros => erros.Count > 0) is [var excesso, ..]
             ? excesso.Error
             : null;
@@ -3636,7 +2510,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </remarks>
     private DomainError? PendenciaDoGrafoConjunto()
     {
-        Result<GrafoDependenciaConjunta> grafo = ConstruirGrafoDependencia();
+        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(this));
         return grafo.IsFailure ? grafo.Error : null;
     }
 
@@ -4111,27 +2985,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// A fase do cronograma que ancora o período de inscrição do Edital (issue #1350) — a de
-    /// menor <see cref="FaseCronograma.Ordem"/> entre as que coletam inscrição, ou
-    /// <see langword="null"/> quando o certame não coleta inscrição pelo sistema.
-    /// </summary>
-    /// <remarks>
-    /// Nada impede mais de uma fase com <see cref="FaseCronograma.ColetaInscricao"/>, e a coleção
-    /// preserva a ordem de ENTRADA, não a de <c>Ordem</c> — mesma armadilha que
-    /// <see cref="ResolverDataReferenciaFatos"/> documenta: o envelope escreve as fases ordenadas
-    /// por <c>Ordem</c>, então escolher posicionalmente faria a reidratação eleger outra fase e
-    /// quebrar o round-trip. <c>Ordem</c> é única por processo, o que torna a escolha determinística.
-    /// <para>
-    /// Havendo duas janelas de coleta, o período publicado é o da primeira. É consequência aceita:
-    /// a segunda janela (tipicamente remanejamento) não estende o período declarado no Edital.
-    /// </para>
-    /// </remarks>
-    public FaseCronograma? FaseQueAncoraOPeriodoDeInscricao() => _cronogramaFases
-        .Where(static f => f.ColetaInscricao)
-        .OrderBy(static f => f.Ordem)
-        .FirstOrDefault();
-
-    /// <summary>
     /// Publica o processo (UNI-REQ-0019): confere a transição e os portões de prontidão, abre a
     /// versão 1 da configuração a partir dos bytes canônicos que a Application produziu (o Domain
     /// não canonicaliza, ADR-0042) e transita o status, tudo em memória e atomicamente. O ato que
@@ -4358,10 +3211,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             AlgoritmoDeContagem: () => ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(estado),
             CalendarioVigente: () => ContagemDePrazos.PendenciaDoCalendarioVigente(estado, pedido.Contexto),
             Conformidade: PendenciaDeConformidade,
-            Cronograma: () => PendenciaDoCronograma(pedido.Contexto.FusoInstitucional),
-            TipoDeAtoUnico: () => PendenciaDoTipoDeAtoUnico(pedido.TiposDeAtoUnicos),
-            ResultadoSemPapel: () => PendenciaDoResultadoSemPapel(pedido.TiposDeAtoUnicos),
-            TipoQueCongelaDeclaradoComoResultado: () => PendenciaDoTipoQueCongelaDeclaradoComoResultado(pedido.TiposDeAtoUnicos),
+            Cronograma: () => PendenciasDoCronograma.PendenciaDoCronograma(estado, pedido.Contexto.FusoInstitucional),
+            TipoDeAtoUnico: () => TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(estado, pedido.TiposDeAtoUnicos),
+            ResultadoSemPapel: () => TiposDeAtoDoCronograma.PendenciaDoResultadoSemPapel(estado, pedido.TiposDeAtoUnicos),
+            TipoQueCongelaDeclaradoComoResultado: () => TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(estado, pedido.TiposDeAtoUnicos),
             Cascata: () => CoberturaDaCascata.PendenciaDaCascata(estado),
             PreCanonicalizacao: () => PendenciaPreCanonicalizacao(pedido.FatosDeModalidade));
     }
@@ -4593,7 +3446,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         }
 
         if (grafo.FatosColetados.Select(static f => f.Finalidade).Concat(grafo.GruposColetados.Select(static g => g.Finalidade)).Distinct().Order()
-                .Select(finalidade => FormaDoItem.ValidarQuantidade(QuantidadeNoTeto(
+                .Select(finalidade => FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(
                     grafo.FatosColetados.Count(f => f.Finalidade == finalidade), grafo.GruposColetados.Where(g => g.Finalidade == finalidade))))
                 .FirstOrDefault(static e => e.Count > 0) is [var itensEmExcesso, ..])
         {

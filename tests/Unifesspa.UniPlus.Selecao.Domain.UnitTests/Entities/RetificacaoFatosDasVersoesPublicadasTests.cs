@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -125,8 +127,8 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         Cenario cenario = Publicado();
 
-        cenario.Processo.RecusaDeFaseDoGatilho(Novo, cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
-        cenario.Processo.RecusaDeFaseDoGatilho(Novo, cenario.Inscricao.Id, FinalidadeFormulario.Inscricao, SemCatalogo, SemCatalogo)
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(cenario.Processo), Novo, cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(cenario.Processo), Novo, cenario.Inscricao.Id, FinalidadeFormulario.Inscricao, SemCatalogo, SemCatalogo)
             .Should().BeNull("as exigências da inscrição seguem a versão do próprio formulário");
     }
 
@@ -140,7 +142,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE", 0)], Sessao).IsSuccess.Should().BeTrue();
 
-        processo.RecusaDeFaseDoGatilho("COMPROVANTE", cenario.Matricula.Id, finalidadeDaExigencia: null, SemCatalogo, SemCatalogo)
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "COMPROVANTE", cenario.Matricula.Id, finalidadeDaExigencia: null, SemCatalogo, SemCatalogo)
             .Should().BeNull("ninguém preencheu a habilitação antes desta retificação");
     }
 
@@ -169,7 +171,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
             .IsSuccess.Should().BeTrue();
         AbrirSessao(processo, [primeira, VersoesPublicadasDeTeste.DoProcesso(processo)]);
 
-        DomainError? recusa = processo.RecusaDeFaseDoGatilho(fato, unica.Id, finalidade, SemCatalogo, SemCatalogo);
+        DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), fato, unica.Id, finalidade, SemCatalogo, SemCatalogo);
 
         (recusa is null).Should().Be(aceito);
         if (!aceito)
@@ -204,11 +206,11 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     {
         Cenario cenario = Publicado();
         cenario.Processo.DefinirRegrasDerivacao(Derivacoes(indireto: false, "TEM_RENDA"), Sessao).IsSuccess.Should().BeTrue();
-        cenario.Processo.RecusaDeFaseDoGatilho("RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(cenario.Processo), "RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo).Should().BeNull();
 
         cenario.Processo.DefinirRegrasDerivacao(Derivacoes(indireto: false, Novo), Sessao).IsSuccess.Should().BeTrue();
 
-        cenario.Processo.RecusaDeFaseDoGatilho("RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(cenario.Processo), "RENDA_DECLARADA", cenario.Habilitacao.Id, FinalidadeFormulario.Habilitacao, SemCatalogo, SemCatalogo)!.Code.Should().Be(FatoAusente);
     }
 
     [Fact(DisplayName = "O derivado usado só pela inscrição passa a depender de fato novo da inscrição sem recusa no fechamento")]

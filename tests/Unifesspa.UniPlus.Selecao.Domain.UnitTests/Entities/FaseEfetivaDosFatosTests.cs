@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -109,9 +111,9 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, FaseCronograma inscricao, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("COMPROVANTE_RENDA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, SemAgregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "COMPROVANTE_RENDA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        processo.RecusaDeFaseDoGatilho("COMPROVANTE_RENDA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "COMPROVANTE_RENDA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados).Should().BeNull();
     }
 
     [Fact(DisplayName = "O derivado fica conhecido na fase da sua dependência mais tardia")]
@@ -120,7 +122,7 @@ public sealed class FaseEfetivaDosFatosTests
         (ProcessoSeletivo processo, FaseCronograma inscricao, _, _) = Processo();
         DefinirDerivado(processo, "RENDA_COMPROVADA", "COMPROVANTE_RENDA");
 
-        processo.RecusaDeFaseDoGatilho("RENDA_COMPROVADA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, SemAgregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "RENDA_COMPROVADA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
     }
 
@@ -131,9 +133,9 @@ public sealed class FaseEfetivaDosFatosTests
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("DATA_NASCIMENTO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         Dictionary<string, string> catalogo = new(TudoNaInscricao, StringComparer.Ordinal) { ["FAIXA_ETARIA"] = "INSCRICAO" };
 
-        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", inscricao.Id, FinalidadeFormulario.Inscricao, catalogo, SemAgregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "FAIXA_ETARIA", inscricao.Id, FinalidadeFormulario.Inscricao, catalogo, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        processo.RecusaDeFaseDoGatilho("FAIXA_ETARIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, catalogo, SemAgregados).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "FAIXA_ETARIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, catalogo, SemAgregados).Should().BeNull();
     }
 
     [Fact(DisplayName = "O agregado fica conhecido na fase do formulário do grupo que tem o fato de membro")]
@@ -141,9 +143,9 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, FaseCronograma inscricao, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("RURAL_NA_FAMILIA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, Agregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "RURAL_NA_FAMILIA", inscricao.Id, FinalidadeFormulario.Inscricao, TudoNaInscricao, Agregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoResolvidoEmFasePosterior);
-        processo.RecusaDeFaseDoGatilho("RURAL_NA_FAMILIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, Agregados).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "RURAL_NA_FAMILIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, Agregados).Should().BeNull();
     }
 
     [Fact(DisplayName = "O agregado sobre grupo do formulário de isenção só é citado por documento do formulário de isenção")]
@@ -151,7 +153,7 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, _, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("BOLSISTA_NA_FAMILIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, Agregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "BOLSISTA_NA_FAMILIA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, Agregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
     }
 
@@ -182,9 +184,9 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, _, FaseCronograma isencao, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho("BOLSISTA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "BOLSISTA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
-        processo.RecusaDeFaseDoGatilho("BOLSISTA", isencao.Id, FinalidadeFormulario.IsencaoTaxa, TudoNaInscricao, SemAgregados).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "BOLSISTA", isencao.Id, FinalidadeFormulario.IsencaoTaxa, TudoNaInscricao, SemAgregados).Should().BeNull();
     }
 
     /// <summary>
@@ -198,7 +200,7 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, FaseCronograma compartilhada) = ProcessoComInscricaoEIsencaoNaMesmaFase();
 
-        DomainError? recusa = processo.RecusaDeFaseDoGatilho("BOLSISTA", compartilhada.Id, finalidade, TudoNaInscricao, SemAgregados);
+        DomainError? recusa = FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "BOLSISTA", compartilhada.Id, finalidade, TudoNaInscricao, SemAgregados);
 
         (recusa is null).Should().Be(aceito);
         if (!aceito)
@@ -217,7 +219,7 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, FaseCronograma compartilhada) = ProcessoComInscricaoEIsencaoNaMesmaFase();
 
-        processo.RecusaDeFaseDoGatilho("BOLSISTA", compartilhada.Id, finalidadeDaExigencia: null, TudoNaInscricao, SemAgregados).Should().BeNull();
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "BOLSISTA", compartilhada.Id, finalidadeDaExigencia: null, TudoNaInscricao, SemAgregados).Should().BeNull();
     }
 
     [Fact(DisplayName = "O derivado de fato da isenção também só é citado por documento do formulário de isenção")]
@@ -226,7 +228,7 @@ public sealed class FaseEfetivaDosFatosTests
         (ProcessoSeletivo processo, _, _, FaseCronograma habilitacao) = Processo();
         DefinirDerivado(processo, "ISENTO_POR_BOLSA", "BOLSISTA");
 
-        processo.RecusaDeFaseDoGatilho("ISENTO_POR_BOLSA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados)!.Code
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), "ISENTO_POR_BOLSA", habilitacao.Id, FinalidadeFormulario.Habilitacao, TudoNaInscricao, SemAgregados)!.Code
             .Should().Be(DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade);
     }
 
@@ -235,7 +237,7 @@ public sealed class FaseEfetivaDosFatosTests
     {
         (ProcessoSeletivo processo, _, _, FaseCronograma habilitacao) = Processo();
 
-        processo.RecusaDeFaseDoGatilho(
+        FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo),
                 "MODALIDADE_CONVOCACAO", habilitacao.Id, FinalidadeFormulario.Habilitacao, new Dictionary<string, string>(StringComparer.Ordinal) { ["MODALIDADE_CONVOCACAO"] = "RESULTADO_FINAL" }, SemAgregados)!
             .Code.Should().Be(DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma);
     }

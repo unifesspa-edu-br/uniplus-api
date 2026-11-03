@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -26,7 +28,7 @@ internal static class ResolucaoDoPeriodoDeInscricao
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        FaseCronograma? ancora = processo.FaseQueAncoraOPeriodoDeInscricao();
+        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(EstadoDaConfiguracao.De(processo));
 
         if (ancora is null)
         {

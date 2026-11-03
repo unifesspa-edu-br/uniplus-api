@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>A classificação congelada dos tipos de ato que o cronograma do teste declara.</summary>
 internal static class TiposDeAtoCongeladosDeTeste
@@ -14,7 +16,7 @@ internal static class TiposDeAtoCongeladosDeTeste
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        return processo.DeclaracoesDeAtos()
+        return TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(processo))
             .GroupBy(static d => d.AtoCodigo, StringComparer.Ordinal)
             .ToDictionary(
                 static g => g.Key,

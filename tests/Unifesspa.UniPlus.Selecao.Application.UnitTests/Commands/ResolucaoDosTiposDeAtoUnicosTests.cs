@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -181,7 +183,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.EhUnico("RESULTADO_X").Should().BeFalse("a marcação de único congelada vale, e não a do catálogo de hoje");
         resultado.Value.ClassificacaoDe("RESULTADO_X")!.CongelaConfiguracao.Should().BeFalse();
-        processo.PendenciaDoTipoQueCongelaDeclaradoComoResultado(resultado.Value).Should().BeNull();
+        TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(EstadoDaConfiguracao.De(processo), resultado.Value).Should().BeNull();
         await reader.Received(1).ListarVigentesAsync(
             Arg.Is<IReadOnlyCollection<string>>(c => c.Single() == "TIPO_NOVO"), Hoje, Arg.Any<CancellationToken>());
 
@@ -221,7 +223,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.EhUnico("RESULTADO_X").Should().BeFalse("a unicidade do item é a congelada");
         resultado.Value.AtoDaOperacaoEhUnico.Should().BeTrue("o ato da operação tem a vaga dele");
-        processo.PendenciaDoTipoQueCongelaDeclaradoComoResultado(resultado.Value).Should().BeNull();
+        TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(EstadoDaConfiguracao.De(processo), resultado.Value).Should().BeNull();
         CongelamentoDosTiposDeAto.Resolver(processo, resultado.Value).Value!["RESULTADO_X"].Should().Be(congelados["RESULTADO_X"]);
     }
 }

@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -259,7 +260,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             [Item("CONCORRER_RENDA", 0)],
             grupos: [Grupo("COMPOSICAO", 1, exibicao: Predicado("CONCORRER_RENDA", true), campos: Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
-        GrafoDependenciaConjunta grafo = processo.ConstruirGrafoDependencia().Value!;
+        GrafoDependenciaConjunta grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(processo)).Value!;
 
         grafo.Arestas.Should().Contain(new ArestaGrafoDependencia(
             TipoArestaGrafo.Precondicao, new NoGrafoDependencia(ClasseNoGrafo.Fato, "CONCORRER_RENDA"), new NoGrafoDependencia(ClasseNoGrafo.Campo, "PARENTESCO")));

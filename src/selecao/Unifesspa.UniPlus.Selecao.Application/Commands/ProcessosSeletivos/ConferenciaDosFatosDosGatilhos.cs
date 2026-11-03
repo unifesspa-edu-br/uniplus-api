@@ -5,6 +5,8 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 
 /// <summary>
 /// No congelamento, os fatos dos gatilhos de exigência são conferidos de novo contra o processo:
@@ -31,7 +33,7 @@ internal static class ConferenciaDosFatosDosGatilhos
 
         foreach (DocumentoExigido documento in processo.DocumentosExigidos)
         {
-            IReadOnlySet<string> camposDaRepeticao = processo.CamposDaRepeticao(documento.Id);
+            IReadOnlySet<string> camposDaRepeticao = RegrasDasExigencias.CamposDaRepeticao(EstadoDaConfiguracao.De(processo), documento.Id);
             foreach (string fato in documento.Condicoes.Select(static c => c.Fato).Distinct(StringComparer.Ordinal))
             {
                 if (!noProcesso.Contains(fato) && !camposDaRepeticao.Contains(fato))
@@ -41,7 +43,7 @@ internal static class ConferenciaDosFatosDosGatilhos
                         $"O fato '{fato}', citado pelo gatilho de um documento exigido, não é mais coletado nem derivado pelo processo.");
                 }
 
-                if (processo.RecusaDeFaseDoGatilho(fato, documento.ExigidoNaFaseId, documento.Finalidade, pontoResolucaoPorFato, membroPorAgregado) is { } recusa)
+                if (FaseEfetivaDoFato.RecusaDeFaseDoGatilho(EstadoDaConfiguracao.De(processo), fato, documento.ExigidoNaFaseId, documento.Finalidade, pontoResolucaoPorFato, membroPorAgregado) is { } recusa)
                 {
                     return recusa;
                 }

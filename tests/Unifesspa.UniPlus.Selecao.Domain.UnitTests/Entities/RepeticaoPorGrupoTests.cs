@@ -7,6 +7,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -122,7 +124,7 @@ public sealed class RepeticaoPorGrupoTests
         processo.DefinirDocumentosExigidos([repetido, NoExigencia.CriarFolha(avulso, 1).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.CamposDaRepeticao(certidao.Id).Should().BeEquivalentTo(["SOB_GUARDA"]);
-        processo.CamposDaRepeticao(avulso.Id).Should().BeEmpty();
+        RegrasDasExigencias.CamposDaRepeticao(EstadoDaConfiguracao.De(processo), certidao.Id).Should().BeEquivalentTo(["SOB_GUARDA"]);
+        RegrasDasExigencias.CamposDaRepeticao(EstadoDaConfiguracao.De(processo), avulso.Id).Should().BeEmpty();
     }
 }

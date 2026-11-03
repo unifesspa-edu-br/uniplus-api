@@ -6,6 +6,8 @@ using Domain.Entities;
 using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// A classificação, na data da publicação, de cada tipo de ato que o cronograma declara, para ir ao
@@ -51,7 +53,7 @@ internal static class CongelamentoDosTiposDeAto
         ArgumentNullException.ThrowIfNull(tipos);
 
         Dictionary<string, TipoDeAtoCongelado> congelados = new(StringComparer.Ordinal);
-        foreach (string codigo in processo.DeclaracoesDeAtos().Select(static d => d.AtoCodigo).Distinct(StringComparer.Ordinal))
+        foreach (string codigo in TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(processo)).Select(static d => d.AtoCodigo).Distinct(StringComparer.Ordinal))
         {
             if (tipos.ClassificacaoDe(codigo) is not { } classificacao)
             {

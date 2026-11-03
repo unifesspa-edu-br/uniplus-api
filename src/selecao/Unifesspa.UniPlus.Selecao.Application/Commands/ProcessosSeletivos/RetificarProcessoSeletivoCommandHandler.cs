@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
@@ -219,7 +220,7 @@ public static class RetificarProcessoSeletivoCommandHandler
 
         // Depois da resolução do fuso: a janela de isenção conta cinco dias corridos, e o quinto
         // dia só se completa no último instante do dia no fuso institucional.
-        if (processo.PendenciaDoCronograma(fusoInstitucional) is { } pendenciaCronograma)
+        if (PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), fusoInstitucional) is { } pendenciaCronograma)
         {
             return (Result.Failure(pendenciaCronograma), []);
         }

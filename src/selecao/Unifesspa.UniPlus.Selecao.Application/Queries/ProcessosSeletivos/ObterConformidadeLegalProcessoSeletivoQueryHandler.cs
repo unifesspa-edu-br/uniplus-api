@@ -13,6 +13,8 @@ using DTOs;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
 /// <summary>
 /// Handler da <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/>: mesma dupla de
@@ -155,7 +157,7 @@ public static class ObterConformidadeLegalProcessoSeletivoQueryHandler
         DateTimeOffset? periodoInscricaoInformado,
         IResolvedorFusoInstitucional resolvedorFuso)
     {
-        FaseCronograma? ancora = processo.FaseQueAncoraOPeriodoDeInscricao();
+        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(EstadoDaConfiguracao.De(processo));
 
         DateTimeOffset inicio;
         if (ancora is null)

@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -263,7 +265,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         OfertarModalidades(processo, ("AC", PredicadoDnf.SemClausula), ("AC_PCD", PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!));
 
-        Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
+        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(processo));
 
         grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
         grafo.Value!.Nos.Should().Contain(n => n.Classe == ClasseNoGrafo.Fato && n.Codigo == "MODALIDADE");
@@ -277,7 +279,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         // D1↔D2 só emerge quando as arestas de derivação são consideradas juntas.
         processo.DefinirRegrasDerivacao([DerivadoDe("D1", "D2"), DerivadoDe("D2", "D1")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result<GrafoDependenciaConjunta> grafo = processo.ConstruirGrafoDependencia();
+        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(processo));
 
         grafo.IsFailure.Should().BeTrue();
         grafo.Error!.Code.Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);

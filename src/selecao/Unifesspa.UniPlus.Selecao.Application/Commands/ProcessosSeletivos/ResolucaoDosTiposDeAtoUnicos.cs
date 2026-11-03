@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Reúne, para os gates de publicação e para o checklist, o que Publicações sabe sobre os tipos de
@@ -95,7 +97,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
             leitura.Unicos, ocupados, tipoDoAtoDaOperacao.Codigo, leitura.Classificacoes,
             tipoDoAtoDaOperacao.UnicoPorObjeto, tipoDoAtoDaOperacao.Nome);
 
-        return processo.PendenciaDoTipoDeAtoUnico(tipos) is { } pendencia
+        return TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), tipos) is { } pendencia
             ? Result<TiposDeAtoUnicosPorObjeto>.Failure(pendencia)
             : Result<TiposDeAtoUnicosPorObjeto>.Success(tipos);
     }
@@ -168,7 +170,7 @@ internal static class ResolucaoDosTiposDeAtoUnicos
 
         string[] codigos =
         [
-            .. processo.DeclaracoesDeAtos()
+            .. TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(processo))
                 .Select(static declaracao => declaracao.AtoCodigo)
                 .Concat(codigosOcupados)
                 .Where(codigo => !string.Equals(codigo, codigoJaConferido, StringComparison.Ordinal) && !jaCongelados.ContainsKey(codigo))
