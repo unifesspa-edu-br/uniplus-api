@@ -1,12 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
@@ -15,20 +14,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class PendenciasDoCronograma
 {
     /// <summary>
-    /// Pendências do cronograma que não cabem no checklist booleano ORIGINAL de
-    /// <see cref="PendenciaDeConformidade"/> — cada uma tem o seu próprio <c>DomainError</c>
-    /// nomeado (Story #851 §3.4/§3.5, CA-11/CA-13/CA-14). Chamado por
-    /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/FecharRetificacao),
-    /// sempre <b>depois</b> de <see cref="PendenciaDeConformidade"/>.
+    /// Pendências do cronograma que não cabem no checklist booleano de
+    /// <see cref="ChecklistDeConformidade.PendenciaDeConformidade"/>: cada uma tem o seu próprio <c>DomainError</c>
+    /// nomeado. Avaliado pela prontidão do congelamento, sempre depois da conformidade.
     /// </summary>
     /// <remarks>
-    /// Issue #1092: cada <c>if</c> abaixo testa um predicado privado nomeado
-    /// (<c>Ha*</c>) em vez de uma expressão inline — <see cref="AvaliarConformidade"/>
-    /// chama os MESMOS quatro predicados para projetar um item por razão. A precedência
-    /// (qual falha é devolvida primeiro) continua decidida só aqui, pela ORDEM dos
-    /// <c>if</c>; o checklist não reordena nem filtra — só projeta todos os quatro.
+    /// Cada <c>if</c> abaixo testa um predicado nomeado (<c>Ha*</c>) em vez de uma expressão inline, porque
+    /// <see cref="ChecklistDeConformidade.AvaliarConformidade"/> chama os mesmos predicados para projetar um
+    /// item por razão. A precedência (qual falha é devolvida primeiro) é decidida só aqui, pela ordem dos
+    /// <c>if</c>; o checklist não reordena nem filtra.
     /// <para>
-    /// Público porque o handler o antecipa antes de canonicalizar (issue #1350): sem isso, um
+    /// Público porque o handler o antecipa antes de canonicalizar: sem isso, um
     /// processo com fase de coleta sem janela E referência temporal irresolvível receberia pelo
     /// endpoint a recusa da referência, diagnóstico obscuro para quem só precisa datar a inscrição.
     /// </para>
@@ -64,9 +60,8 @@ public static class PendenciasDoCronograma
                 "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição.");
         }
 
-        // Issue #1350: a fase que coleta inscrição declara o prazo que o Edital publica, então
-        // ela precisa de janela mesmo quando a origem da data é NA_EXECUCAO. É a única exceção à
-        // §3.2 — nas demais fases, "sem data" continua sendo estado válido, porque a data não é
+        // A fase que coleta inscrição declara o prazo que o Edital publica, então precisa de
+        // janela mesmo quando a origem da data é NA_EXECUCAO. Nas demais fases, "sem data" é estado válido, porque a data não é
         // fixada no edital e a unidade responsável a define na execução. Um Edital que admite inscrição sem
         // prazo definido, esse não se sustenta.
         if (FaseQueColetaInscricaoSemJanela(estado) is { } faseSemJanela)
@@ -260,9 +255,9 @@ public static class PendenciasDoCronograma
         return new DateTimeOffset(fimDoQuintoDiaLocal, fuso.GetUtcOffset(fimDoQuintoDiaLocal));
     }
 
-    /// <summary>A fase que ancora o período de inscrição, quando existe e está sem janela (issue #1350).</summary>
+    /// <summary>A fase que ancora o período de inscrição, quando existe e está sem janela.</summary>
     /// <remarks>
-    /// Incide sobre a MESMA fase que <see cref="FaseQueAncoraOPeriodoDeInscricao"/> elege, e não
+    /// Incide sobre a MESMA fase que <see cref="ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao"/> elege, e não
     /// sobre "alguma fase de coleta": fossem conjuntos diferentes, a projeção poderia tirar o
     /// período de uma fase enquanto a recusa olhasse outra.
     /// </remarks>

@@ -1,15 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class CicloRecursalDoCronograma
 {
@@ -164,7 +162,7 @@ internal static class CicloRecursalDoCronograma
     /// <see langword="null"/> quando toda fase identifica cada banca que requer.
     /// </summary>
     /// <remarks>
-    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// O gate devolve uma; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item só. As duas metades vêm da MESMA travessia
     /// (<see cref="ViolacoesDoRecorteDeCompetencia"/>), que por sua vez chama o predicado de
     /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
@@ -201,7 +199,7 @@ internal static class CicloRecursalDoCronograma
     /// preliminar seu.
     /// </summary>
     /// <remarks>
-    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// O gate devolve uma; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item só. As duas metades vêm da MESMA travessia
     /// (<see cref="ViolacoesDaAncoraDoRecurso"/>), que por sua vez chama o predicado de
     /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
@@ -257,7 +255,7 @@ internal static class CicloRecursalDoCronograma
     /// <see langword="null"/> quando todas as fases que abrem ciclo o fecham.
     /// </summary>
     /// <remarks>
-    /// O gate devolve uma; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// O gate devolve uma; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item só. As duas metades vêm da MESMA travessia
     /// (<see cref="ViolacoesDaConclusaoDoCicloRecursal"/>), que é o que mantém a
     /// bicondicional de pé sem um segundo <c>if</c> para lembrar de sincronizar.

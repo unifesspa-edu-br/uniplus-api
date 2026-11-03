@@ -1,14 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -318,7 +317,7 @@ public static class RegrasDoDesempate
     /// As violações do desempate por área que o checklist e o gate de publicação projetam, na
     /// precedência do gate. Sob a média pelos pesos por área, a recusa por falta de quadro só
     /// surge sem quadro, que é pendência da resolução
-    /// (<see cref="ItensDaMediaPelosPesosPorAreaDoEnem"/>): repeti-la aqui daria duas pendências
+    /// (<see cref="ItensEstruturaisDeConformidade.ItensDaMediaPelosPesosPorAreaDoEnem"/>): repeti-la aqui daria duas pendências
     /// pela mesma causa, uma delas longe de onde se corrige. A gravação do desempate e a
     /// restauração recusam pela regra inteira.
     /// </summary>

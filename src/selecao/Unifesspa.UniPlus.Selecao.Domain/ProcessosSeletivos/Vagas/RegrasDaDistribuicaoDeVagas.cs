@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -97,7 +96,7 @@ public static class RegrasDaDistribuicaoDeVagas
     /// <summary>
     /// Aplicabilidade da concorrência dupla (Lei 14.723/2023, INV-B7):
     /// DERIVADA — <see langword="true"/> sse alguma modalidade selecionada em
-    /// <see cref="DistribuicaoVagas"/> tem
+    /// <see cref="ProcessoSeletivo.DistribuicaoVagas"/> tem
     /// <see cref="NaturezaLegalModalidade.CotaReservada"/>. Nunca um toggle
     /// livre nem um campo persistido — computada sob demanda a partir do
     /// estado corrente para nunca dessincronizar se a distribuição de vagas

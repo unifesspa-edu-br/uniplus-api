@@ -1,9 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -16,22 +14,18 @@ internal static class ConsequenciaDeIndeferimento
 {
     /// <summary>
     /// Coerência entre a consequência de indeferimento declarada em cada
-    /// <see cref="DocumentoExigido"/> e a ação da vaga (Story #554, PR #903, CA-05) — lida
-    /// de <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>, sem campo duplicado em
-    /// <see cref="DocumentoExigido"/>. Chamado por <see cref="Publicar"/> e por
-    /// <see cref="SucederVersao"/> (Retificar/FecharRetificacao), sempre <b>depois</b> de
-    /// <see cref="PendenciaDasExigenciasDocumentais"/>. Sem cache — recomputado a cada
-    /// chamada a partir da coleção real de <see cref="_documentosExigidos"/> e
-    /// <see cref="_distribuicaoVagas"/>, então uma mudança de gatilho ou de distribuição
-    /// de vagas entre versões é sempre reavaliada (contraprova "reavaliação após mudança
-    /// de gatilho").
+    /// <see cref="DocumentoExigido"/> e a ação da vaga, lida de
+    /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>, sem campo duplicado em
+    /// <see cref="DocumentoExigido"/>. Avaliada depois de
+    /// <see cref="ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais"/> e sem cache: uma mudança de
+    /// gatilho ou de distribuição de vagas entre versões é sempre reavaliada.
     /// </summary>
     /// <remarks>
     /// Duas checagens:
     /// <list type="bullet">
-    /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — hoje a única
-    /// vantagem modelada é <see cref="BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
-    /// <see cref="AplicaBonusRegional"/> é verdadeiro).</item>
+    /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — a única
+    /// vantagem modelada é <see cref="ProcessoSeletivo.BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
+    /// <see cref="ProcessoSeletivo.AplicaBonusRegional"/> é verdadeiro).</item>
     /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
     /// valores são modalidades (os mesmos do gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
     /// quando essa modalidade declara <c>AcaoQuandoIndeferido</c>, a consequência precisa
@@ -62,7 +56,7 @@ internal static class ConsequenciaDeIndeferimento
             }
         }
 
-        // Story #920: os mesmos dois gates, estendidos ao grupo OU/N-de com consequência
+        // os mesmos dois gates, estendidos ao grupo OU/N-de com consequência
         // própria (exigência de 1ª classe) — o alcance de modalidade é a união (OR) das
         // folhas descendentes (NoExigencia.PodeAlcancarModalidade).
         foreach (NoExigencia grupo in estado.NosExigencia.Where(static no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is not null))
@@ -114,19 +108,18 @@ internal static class ConsequenciaDeIndeferimento
         estado.DocumentosExigidos.Any(e => e.ConsequenciaIndeferimento is { } c
             && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(estado, e, fatosDeModalidade)) is not null);
 
-    /// <summary>Existe grupo OU/N-de com consequência própria REMOVE_VANTAGEM sem vantagem viva (Story #920).</summary>
+    /// <summary>Existe grupo OU/N-de com consequência própria REMOVE_VANTAGEM sem vantagem viva.</summary>
     internal static bool ExisteGrupoRemoveVantagemSemVantagemViva(EstadoDaConfiguracao estado) =>
         estado.NosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && ConsequenciaRemoveVantagemSemVantagemViva(estado, no.Consequencia));
 
-    /// <summary>Existe grupo OU/N-de com consequência própria incoerente com a ação de alguma modalidade alcançada (Story #920).</summary>
+    /// <summary>Existe grupo OU/N-de com consequência própria incoerente com a ação de alguma modalidade alcançada.</summary>
     internal static bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(EstadoDaConfiguracao estado, FatosDeModalidade fatosDeModalidade) =>
         estado.NosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is { } c
             && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(estado, no, fatosDeModalidade)) is not null);
 
     /// <summary>
-    /// Ponte entre os dois vocabulários fechados de "ação de indeferimento" — Story #554
-    /// (PR #903), achado de revisão: <see cref="DocumentoExigido.ConsequenciaIndeferimento"/>
-    /// usa <c>RECLASSIFICA_AC</c> (rol fechado desde a PR #895, issue #547), mas
+    /// Ponte entre os dois vocabulários fechados de "ação de indeferimento":
+    /// <see cref="DocumentoExigido.ConsequenciaIndeferimento"/> usa <c>RECLASSIFICA_AC</c>, mas
     /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/> — snapshot-copy do cadastro
     /// de <c>Modalidade</c> no módulo Configuração
     /// (<c>ck_modalidade_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
@@ -143,16 +136,14 @@ internal static class ConsequenciaDeIndeferimento
     /// factual de <see cref="DocumentoExigido.AplicavelPara"/> que o gate de conformidade
     /// legal usa (<see cref="Services.AvaliadorConformidadeLegal"/>) — aqui não há
     /// candidato real, só a pergunta "existe combinação de fatos em que este documento se
-    /// torna exigido para alguém nesta modalidade?" (Story #554, PR #903, achado de
-    /// revisão P2: <c>AplicavelPara</c> trataria qualquer gatilho não-modal, ex. só
-    /// <c>FAIXA_ETARIA</c>, como nunca alcançando nenhuma modalidade).
+    /// torna exigido para alguém nesta modalidade?".
     /// </summary>
     internal static IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(EstadoDaConfiguracao estado, DocumentoExigido exigencia, FatosDeModalidade fatosDeModalidade) =>
         estado.DistribuicaoVagas
             .SelectMany(static d => d.Modalidades)
             .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
 
-    /// <summary>Mesma checagem estrutural acima, para um nó de grupo (Story #920) — <see cref="NoExigencia.PodeAlcancarModalidade"/> é a união (OR) das folhas descendentes.</summary>
+    /// <summary>Mesma checagem estrutural acima, para um nó de grupo — <see cref="NoExigencia.PodeAlcancarModalidade"/> é a união (OR) das folhas descendentes.</summary>
     internal static IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(EstadoDaConfiguracao estado, NoExigencia no, FatosDeModalidade fatosDeModalidade) =>
         estado.DistribuicaoVagas
             .SelectMany(static d => d.Modalidades)

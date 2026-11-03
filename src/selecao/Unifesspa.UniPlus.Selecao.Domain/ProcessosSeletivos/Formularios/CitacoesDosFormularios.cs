@@ -1,13 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -17,7 +14,7 @@ public static class CitacoesDosFormularios
     internal static readonly IReadOnlyDictionary<string, string> SemCatalogo = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// Monta o grafo de dependência conjunto (Story #928, §6) a partir das dimensões da configuração
+    /// Monta o grafo de dependência conjunto a partir das dimensões da configuração
     /// que o alimentam — os fatos coletados (campo + fato + regras do item), as regras de derivação
     /// (fato derivado + dependências), as exigências (gatilho), as seções com exibição condicional e
     /// os termos com condição — e valida a sua

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -123,24 +122,15 @@ internal static class ProtecaoDasExigencias
     }
 
     /// <summary>
-    /// Pendências dos documentos exigidos (Story #554). Chamado por
-    /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/
-    /// FecharRetificacao), sempre <b>depois</b> de <see cref="PendenciaDoCronograma"/>.
+    /// Pendências dos documentos exigidos. Chamado por
+    /// a publicação e a sucessão de versão (retificação e fechamento da sessão), sempre
+    /// <b>depois</b> da pendência do cronograma.
     /// </summary>
     /// <remarks>
-    /// <b>CA-01</b> (Story #554, issue #547) — uma exigência <c>CONDICIONAL</c> sem
-    /// nenhuma condição de gatilho viva que <see cref="DocumentoExigido.DeterminaResultado"/>
-    /// é "exigência morta": nunca seria cobrada de ninguém. Desde a PR #896 (issue #892),
-    /// avalia a coleção REAL de <see cref="DocumentoExigido.Condicoes"/>.
-    /// <para>
-    /// A guarda fail-closed <b>B-01</b>, que bloqueava QUALQUER publicação com
-    /// <see cref="DocumentoExigido"/> configurado enquanto o bloco
-    /// <c>documentosExigidos.exigencias</c> do envelope era stub (PR #895..PR #900), foi
-    /// <b>removida na PR #903</b> (issue #548): o bloco rico a substitui, e o gate real
-    /// (<see cref="Services.AvaliadorConformidadeLegal.Avaliar"/>, predicado
-    /// <c>DocumentoObrigatorioParaModalidade</c>) passa a decidir com base no que está
-    /// realmente configurado, não mais reprovando por padrão conservador.
-    /// </para>
+    /// Uma exigência <c>CONDICIONAL</c> sem nenhuma condição de gatilho viva que
+    /// <see cref="DocumentoExigido.DeterminaResultado"/> é "exigência morta": nunca seria cobrada de
+    /// ninguém. A decisão sobre o que é exigido para cada modalidade é do gate de conformidade legal
+    /// (<see cref="Services.AvaliadorConformidadeLegal.Avaliar"/>), com base no que está configurado.
     /// </remarks>
     internal static DomainError? PendenciaDasExigenciasDocumentais(EstadoDaConfiguracao estado)
     {

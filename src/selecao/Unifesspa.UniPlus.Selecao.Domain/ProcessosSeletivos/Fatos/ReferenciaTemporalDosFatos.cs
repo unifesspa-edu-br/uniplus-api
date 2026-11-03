@@ -1,26 +1,20 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class ReferenciaTemporalDosFatos
@@ -40,7 +34,7 @@ public static class ReferenciaTemporalDosFatos
     }
 
     /// <summary>
-    /// A fase do cronograma que ancora o período de inscrição do Edital (issue #1350) — a de
+    /// A fase do cronograma que ancora o período de inscrição do Edital — a de
     /// menor <see cref="FaseCronograma.Ordem"/> entre as que coletam inscrição, ou
     /// <see langword="null"/> quando o certame não coleta inscrição pelo sistema.
     /// </summary>
@@ -66,9 +60,8 @@ public static class ReferenciaTemporalDosFatos
     }
 
     /// <summary>
-    /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
-    /// plano). Chamado por <see cref="Publicar"/> e por <see cref="SucederVersao"/>,
-    /// sempre <b>depois</b> de <see cref="PendenciaDasExigenciasDocumentais"/>.
+    /// Pendência de <see cref="ReferenciaTemporalFatos"/>, avaliada depois de
+    /// <see cref="ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais"/>.
     /// </summary>
     /// <remarks>
     /// Sem fallback silencioso (ADR-0111:235-236): se alguma regra — gatilho de exigência ou regra
@@ -76,7 +69,7 @@ public static class ReferenciaTemporalDosFatos
     /// precisa resolver para uma data concreta — política ausente, âncora de fase sem o
     /// extremo escolhido, ou <c>FIM_INSCRICAO</c> sem fase que colete inscrição com
     /// <c>Fim</c> definido bloqueiam a publicação. O congelamento da <c>DateOnly</c>
-    /// concreta é da PR #903; esta validação só prova que ela É resolvível.
+    /// concreta é do congelamento; esta validação só prova que ela É resolvível.
     /// </remarks>
     internal static DomainError? PendenciaDaReferenciaTemporalFatos(EstadoDaConfiguracao estado)
     {
@@ -112,9 +105,8 @@ public static class ReferenciaTemporalDosFatos
         }
         else if (referencia.Tipo == ReferenciaTipo.FimInscricao)
         {
-            // Achado de revisão (Story #554, PR #903): nada no domínio impede MAIS de uma
-            // fase com ColetaInscricao (mesma família de guard já corrigida para
-            // IdadeMaximaEmissao, PR #900) — a pergunta certa é existencial (Any), não posicional.
+            // Nada no domínio impede MAIS de uma fase com ColetaInscricao: a pergunta certa é
+            // existencial (Any), não posicional.
             if (ReferenciaTemporalFatosFimInscricaoIndisponivel(estado))
             {
                 return new DomainError(
@@ -161,8 +153,8 @@ public static class ReferenciaTemporalDosFatos
 
     /// <summary>
     /// Resolve <see cref="ReferenciaTemporalFatos"/> para a <see cref="DateOnly"/> concreta
-    /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR #903, B-03) — o
-    /// mesmo par (Tipo, âncora) que <see cref="PendenciaDaReferenciaTemporalFatos"/> já
+    /// que o envelope congela como <c>dataReferenciaFatos</c> — o
+    /// mesmo par (Tipo, âncora) que <see cref="ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos"/> já
     /// provou resolvível antes da transição chamar este método; aqui só se resolve, sem
     /// revalidar. A virada do dia UTC→local é a razão de existir deste método, em vez de o
     /// encoder ler <see cref="DateTimeOffset"/> cru.
@@ -225,7 +217,7 @@ public static class ReferenciaTemporalDosFatos
         {
             ReferenciaTipo.InicioFase => estado.CronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Inicio,
             ReferenciaTipo.FimFase => estado.CronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Fim,
-            // Achado de revisão (Story #554, PR #903): _cronogramaFases preserva a ORDEM DE
+            // A coleção de fases preserva a ORDEM DE
             // ENTRADA de DefinirCronogramaFases, mas o envelope escreve as fases ordenadas
             // por Ordem (canonicalização determinística) — havendo mais de uma fase de
             // coleta com Fim, a fase publicada dependeria da ordem em que o caller as

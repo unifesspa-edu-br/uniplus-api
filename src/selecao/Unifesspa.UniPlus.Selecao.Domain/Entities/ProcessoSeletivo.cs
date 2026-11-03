@@ -7,7 +7,6 @@ using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bonus;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
@@ -23,7 +22,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Restauracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -174,7 +172,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>As raízes das árvores de satisfação (<c>NoPaiId == null</c>).</summary>
     public IEnumerable<NoExigencia> RaizesDeExigencia => _nosExigencia.Where(static n => n.NoPaiId is null);
 
-    /// <summary>Âncora que resolve FAIXA_ETARIA; sem ela nenhum gatilho por idade pode existir (<see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
+    /// <summary>Âncora que resolve FAIXA_ETARIA; sem ela nenhum gatilho por idade pode existir (<see cref="ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos"/>).</summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
 
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
@@ -194,7 +192,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>O maior número de opções de curso que a inscrição admite.</summary>
     public const int MaximoDeOpcoesDeCurso = 2;
 
-    /// <summary>Cascata de remanejamento das cotas reservadas (UNI-REQ-0056); ausente significa nenhuma. É uma por processo, e a cobertura por oferta é conferida em <see cref="PendenciaDaCascata"/>.</summary>
+    /// <summary>Cascata de remanejamento das cotas reservadas (UNI-REQ-0056); ausente significa nenhuma. É uma por processo, e a cobertura por oferta é conferida em <see cref="CoberturaDaCascata.PendenciaDaCascata"/>.</summary>
     public ConfiguracaoCascataRemanejamento? Cascata { get; private set; }
 
     private readonly List<CriterioDesempate> _criteriosDesempate = [];
@@ -268,7 +266,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Substitui integralmente as etapas pontuadas do processo. O caráter e o peso definem o divisor
-    /// da média (<see cref="CalcularDivisorMedia"/>); a <c>Ordem</c> é só a posição de apresentação
+    /// da média (<see cref="EstadoDaConfiguracao.CalcularDivisorMedia"/>); a <c>Ordem</c> é só a posição de apresentação
     /// no envelope congelado e não entra na fórmula da nota final.
     /// </summary>
     public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas, PrecondicaoIfMatch precondicao)
@@ -568,11 +566,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Limpa a coleta de fatos e as regras de derivação como passo da <b>restauração fiel</b> no
-    /// descarte de uma retificação (Story #986). São as duas coleções que a edição sob retificação
+    /// descarte de uma retificação. São as duas coleções que a edição sob retificação
     /// tornou mutáveis e cuja reposição colidiria no índice único: uma sessão pode ter trocado
     /// ordens (0↔1) ou alterado pré-condições/regras, e repor as instâncias congeladas por cima
     /// das vivas colidiria no índice único de <c>Ordem</c>/código na mesma transação. As opções
-    /// declaradas (issue #1619) não passam por aqui: a reposição as reconcilia por chave, sem
+    /// declaradas não passam por aqui: a reposição as reconcilia por chave, sem
     /// colisão. A orquestração do descarte chama este método, faz um
     /// <c>SaveChanges</c> intermediário (os <c>DELETE</c>s saem primeiro) e só então aplica o grafo
     /// congelado (<c>INSERT</c> das instâncias reidratadas) — a reposição fiel de graça, sem
@@ -728,23 +726,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// <b>Descarta</b> a sessão editorial: o administrador abriu e desistiu (ADR-0110).
+    /// Descarta a sessão editorial: o administrador abriu e desistiu (ADR-0110).
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <b>Este método não repõe nada — e é o ponto mais delicado da Feature.</b> Ele
-    /// apenas <b>encerra</b> a sessão. A reposição da configuração congelada é da Application
-    /// (o Domain não canonicaliza — ADR-0042) e tem de acontecer <b>antes</b>, via
-    /// <c>IRestauradorDeConfiguracao</c>, que repõe <b>e prova</b> o round-trip byte a byte.
-    /// </para>
-    /// <para>
-    /// <b>Encerrar a sessão sem repor é o pior desfecho possível</b>, e é preciso dizê-lo
-    /// alto: enquanto a sessão existe, os seis <c>Definir*</c> escrevem <b>direto na
-    /// configuração viva</b> — não há staging. Uma sessão encerrada sem reposição deixaria o
-    /// certame de volta ao estado "publicado normal", servindo, em silêncio, uma configuração
-    /// que <b>nunca foi publicada</b> e que diverge do documento que o publicou. Um fitness
-    /// test prova que o único caller deste método restaura antes.
-    /// </para>
+    /// Este método só encerra a sessão; não repõe nada. A reposição da configuração congelada é da
+    /// Application (o Domain não canonicaliza, ADR-0042) e tem de vir antes, por
+    /// <c>IRestauradorDeConfiguracao</c>, que repõe e prova o round-trip byte a byte. Encerrar sem repor
+    /// deixaria o certame servindo, em silêncio, uma configuração editada que nunca foi publicada.
     /// </remarks>
     public Result DescartarRetificacao(PrecondicaoIfMatch precondicao)
     {
@@ -755,19 +743,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(pendencia);
         }
 
-        // O ESTADO INVÁLIDO É IRREPRESENTÁVEL, e não apenas desencorajado por um fitness test.
-        //
-        // Descartar sem repor devolveria o certame ao estado "publicado normal" servindo, em
-        // silêncio, a configuração EDITADA — que nunca foi publicada. Um teste textual de
-        // callers diz "ninguém faz isso hoje"; ele não diz "isso não pode acontecer". A
-        // diferença aparece no dia em que um caminho novo esquecer a reposição, e o defeito é
-        // dos que ninguém percebe: o status está certo, a versão congelada está intacta, e só
-        // a configuração viva está mentindo.
-        //
-        // A prova é o próprio agregado: RestaurarConfiguracaoCongelada — que só o
-        // IRestauradorDeConfiguracao chama, e que só repõe DEPOIS de provar o round-trip byte
-        // a byte — carimba aqui a versão que repôs. O descarte exige esse carimbo, e exige que
-        // ele seja o da versão que ESTA sessão tomou como base.
+        // Um teste textual de callers só diz que ninguém descarta sem repor; o carimbo torna isso
+        // irrepresentável. RestaurarConfiguracaoCongelada, que só repõe depois de provar o round-trip,
+        // carimba a versão que repôs, e o descarte exige o carimbo da versão-base desta sessão.
         if (_versaoRestaurada is null)
         {
             return Result.Failure(new DomainError(
@@ -789,14 +767,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// A versão cuja configuração foi <b>reposta e provada</b> nesta unidade de trabalho —
-    /// o carimbo que o descarte exige.
+    /// A versão cuja configuração foi reposta e provada nesta unidade de trabalho: o carimbo que o
+    /// descarte exige.
     /// </summary>
     /// <remarks>
-    /// <b>Transiente de propósito.</b> Não é persistido nem mapeado: ele vive apenas dentro da
-    /// transação, entre a reposição e o encerramento da sessão, e é justamente essa vida curta
-    /// que o torna uma prova — um flag que sobrevivesse ao escopo autorizaria um descarte
-    /// futuro com base numa restauração antiga.
+    /// Transiente de propósito: não é persistido nem mapeado. Um carimbo que sobrevivesse ao escopo
+    /// autorizaria um descarte futuro com base numa restauração antiga.
     /// </remarks>
     private Guid? _versaoRestaurada;
 
@@ -869,42 +845,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>
     /// Repõe integralmente a configuração viva a partir do grafo reconstruído de uma
-    /// <see cref="VersaoConfiguracao"/> congelada deste processo (ADR-0110 D2) — a
-    /// operação que torna o descarte de uma sessão editorial <b>verificável</b>: o que
-    /// volta é exatamente o que o documento publicado diz, não uma aproximação dele.
+    /// <see cref="VersaoConfiguracao"/> congelada deste processo (ADR-0110 D2): o descarte de uma sessão
+    /// editorial só é verificável se o que volta é exatamente o que o documento publicado diz.
     /// </summary>
     /// <remarks>
+    /// Não é um <c>Definir*</c> e não passa pela trava de mutação pós-publicação: devolve a configuração
+    /// ao que a versão já dizia. Exige o processo publicado, e a versão é a credencial (a raiz não conhece
+    /// a cadeia; o handler escolhe a vigente).
     /// <para>
-    /// <b>Não é um <c>Definir*</c>, e não passa pela trava de mutação pós-publicação.</b>
-    /// Os <c>Definir*</c> são edição — mudam o que a configuração diz. Esta reposição
-    /// é o contrário: devolve a configuração ao que a versão congelada já dizia. Por
-    /// isso ela exige o processo <b>publicado</b> (só aí existe versão a restaurar) e é
-    /// ancorada na própria evidência forense — <b>a versão é a credencial</b>, no mesmo
-    /// desenho de <see cref="Retificar"/>, que também recebe a versão corrente e confia
-    /// ao handler a escolha dela (<see cref="VersaoConfiguracao"/> é agregado próprio,
-    /// ADR-0104; a raiz não conhece a cadeia).
+    /// A reposição é integral e validada no estado final. Uma sequência de <c>Definir*</c> validaria
+    /// referências cruzadas contra o estado corrente e recusaria um grafo meio-construído, de modo que a
+    /// ordem das dimensões decidiria o resultado. Validado inteiro e só então aplicado, uma restauração
+    /// que falha não deixa o agregado meio-reposto.
     /// </para>
     /// <para>
-    /// <b>Reposição integral, validada no estado final.</b> Não é uma sequência de
-    /// <c>Definir*</c>: eles validam referências cruzadas contra o estado <i>corrente</i>
-    /// (o desempate contra as etapas de agora, a classificação contra as etapas de
-    /// agora) e recusariam um grafo meio-construído — a ordem em que as dimensões
-    /// entrassem decidiria se a reposição passa. Aqui o grafo é validado <b>inteiro,
-    /// como ele ficará</b>, e só então aplicado: uma restauração que falha não deixa o
-    /// agregado meio-reposto.
-    /// </para>
-    /// <para>
-    /// <b>Identidade (D2).</b> As etapas são reconciliadas <b>por <c>Id</c></b>: uma
-    /// etapa que ainda existe na instância <i>tracked</i> é atualizada nela mesma —
-    /// substituí-la por uma instância nova com o mesmo <c>Id</c> colidiria com o
-    /// identity map do EF, e o <c>CreatedAt</c> original se perderia. As demais filhas
-    /// são recriadas: os ids técnicos e o <c>CreatedAt</c> delas <b>não sobrevivem</b> —
-    /// perda de informação <b>declarada</b> (ADR-0110 D2), não silenciosa. A auditoria
-    /// com peso jurídico vive na <see cref="VersaoConfiguracao"/>, que é append-only e
-    /// não é tocada aqui.
+    /// As etapas são reconciliadas por <c>Id</c>: substituir a instância rastreada por outra de mesmo
+    /// <c>Id</c> colidiria com o identity map do EF e perderia o <c>CreatedAt</c>. As demais filhas são
+    /// recriadas e perdem ids técnicos e <c>CreatedAt</c>; a auditoria com peso jurídico vive na versão
+    /// append-only, que não é tocada aqui.
     /// </para>
     /// </remarks>
-    /// <param name="versao">Versão congelada de onde o grafo foi reconstruído — deste processo, e a que o handler elegeu como vigente.</param>
+    /// <param name="versao">Versão congelada de onde o grafo foi reconstruído: deste processo, a que o handler elegeu como vigente.</param>
     /// <param name="grafo">As dimensões reconstruídas pelo codec do envelope (ADR-0110 D1).</param>
     public Result RestaurarConfiguracaoCongelada(VersaoConfiguracao versao, GrafoConfiguracao grafo)
     {
@@ -944,24 +905,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Uma <b>sombra</b> deste processo — mesma identidade, mesmo tipo, mesmo status, mas
-    /// <b>sem configuração</b> e <b>fora do change tracker</b>.
+    /// Uma sombra deste processo: mesma identidade, tipo e status, mas sem configuração e fora do change
+    /// tracker.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Existe por uma razão só: a fidelidade de uma reidratação só é demonstrável
-    /// <b>recanonicalizando o agregado já reposto</b> — e fazer isso na raiz viva
-    /// significaria mutá-la <b>antes</b> de saber se a reposição é boa. Uma prova que
-    /// falhasse deixaria o agregado <i>tracked</i> empobrecido, e bastaria um
-    /// <c>SaveChanges</c> adiante no mesmo escopo para gravar o estrago — a atomicidade
-    /// dependeria da disciplina de quem chama, não do código.
-    /// </para>
-    /// <para>
-    /// Com a sombra, a ordem se inverte: <b>prova primeiro, aplica depois</b>. A raiz viva
-    /// só é tocada quando os bytes já bateram. O <c>Id</c> é o mesmo de propósito — é ele
-    /// que as filhas recebem em <c>VincularProcesso</c>, e é ele que a versão congelada
-    /// referencia.
-    /// </para>
+    /// A fidelidade de uma reidratação só se demonstra recanonicalizando o agregado já reposto, e fazer
+    /// isso na raiz viva a mutaria antes de saber se a reposição é boa; uma prova que falhasse deixaria o
+    /// agregado rastreado empobrecido, pronto para um <c>SaveChanges</c> gravar o estrago. Com a sombra,
+    /// prova-se primeiro e aplica-se depois. O <c>Id</c> é o mesmo porque as filhas o recebem em
+    /// <c>VincularProcesso</c> e a versão congelada o referencia.
     /// </remarks>
     public ProcessoSeletivo SombraParaVerificacao() => new()
     {

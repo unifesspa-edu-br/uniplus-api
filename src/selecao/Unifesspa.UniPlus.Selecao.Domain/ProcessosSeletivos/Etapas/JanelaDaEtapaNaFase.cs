@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 internal static class JanelaDaEtapaNaFase
@@ -106,7 +105,7 @@ internal static class JanelaDaEtapaNaFase
     /// <see langword="null"/> quando toda etapa datada acontece dentro da fase que a hospeda.
     /// </summary>
     /// <remarks>
-    /// O gate devolve o erro; <see cref="AvaliarConformidade"/> projeta o mesmo predicado num
+    /// O gate devolve o erro; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item do checklist. As duas metades vêm da MESMA travessia
     /// (<see cref="ViolacaoDaJanelaDaEtapaNaFase"/>), que é a que as duas gravações chamam —
     /// é o que mantém checklist e recusa bicondicionais.

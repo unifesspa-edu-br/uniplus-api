@@ -5,7 +5,6 @@ using System.Text.Json;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -48,7 +47,7 @@ public static class ReferenciasVivas
             .Concat(estado.Formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)));
 
     /// <summary>
-    /// CA-03 (Story #554, issue #892): um gatilho DNF sobre um
+    /// Um gatilho DNF sobre um
     /// fato categórico dinâmico (<c>MODALIDADE</c>, <c>CONDICAO_ATENDIMENTO</c>) referencia
     /// um valor por CÓDIGO — nunca por Guid, diferente de <c>FaseCronograma</c>. Isso
     /// permite checagem precisa (não o guard coarse de <c>FaseCronograma.ReferenciadaPorExigenciaViva</c>):

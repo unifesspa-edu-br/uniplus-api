@@ -1,23 +1,17 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Services;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -30,36 +24,19 @@ internal static class ItensEstruturaisDeConformidade
         estado.AplicaBonusRegional is { } aplica && aplica == (estado.BonusRegional is not null);
 
     /// <summary>
-    /// Os itens do PRIMEIRO gate estrutural — <see cref="PendenciaDeConformidade"/> (Story #758
-    /// CA-07) — as dimensões estruturalmente OBRIGATÓRIAS do agregado: Oferta de atendimento
-    /// especializado (1), Distribuição de vagas (1..*), Classificação (1) e Cronograma de fases
-    /// (1..*, Story #851), mais duas declarações obrigatórias: o bônus regional, que o processo
-    /// declara aplicar ou não (a ausência da declaração é pendência, e a ausência da configuração só
-    /// significa "sem bônus" quando a declaração é falsa), e os critérios de desempate, obrigatórios
-    /// quando a inscrição é feita no sistema (com resultado importado a lista já vem classificada).
+    /// As dimensões estruturalmente obrigatórias do agregado, que <see cref="ChecklistDeConformidade.PendenciaDeConformidade"/>
+    /// agrega no <c>DomainError</c> genérico: oferta de atendimento, distribuição de vagas, classificação,
+    /// cronograma, taxa, base legal das exigências e as declarações do bônus regional e dos critérios de
+    /// desempate (obrigatórios só com inscrição própria; com resultado importado a lista já vem classificada).
     /// </summary>
     /// <remarks>
-    /// <b>"Etapas" deixou de ser item incondicional (Story #851 §3.5).</b> Um processo
-    /// sem prova (SiSU, <c>CLASSIFICACAO-IMPORTADA</c>) publica sem etapa — a fase que
-    /// agrupa etapas existe se e somente se há etapa, e essa bicondicional é gate à
-    /// parte (<see cref="PendenciaDoCronograma"/>), projetada em <see cref="AvaliarConformidade"/>
-    /// por predicados próprios, não aqui. O que sobrevive aqui é a exigência de
-    /// <see cref="RegraCalculoCodigo.FormulaMediaPonderada"/>: sob essa fórmula, o divisor da
-    /// média (<see cref="CalcularDivisorMedia"/>) tem de ser maior que zero. Sob
-    /// <see cref="RegraCalculoCodigo.ClassificacaoImportada"/>, a classificação dispensa etapa,
-    /// fórmula e precisão locais — nenhum item aqui.
-    /// <para>
-    /// <b>Média pelos pesos por área do ENEM.</b> Quando a classificação calcula a média assim,
-    /// entram também a resolução com o quadro congelado e o grupo de área de cada oferta
-    /// (<see cref="ItensDaMediaPelosPesosPorAreaDoEnem"/>). Como o divisor da média, esses
-    /// itens existem só quando a exigência existe.
-    /// </para>
-    /// <para>
-    /// Fonte que <see cref="PendenciaDeConformidade"/> agrega no <c>DomainError</c> genérico
-    /// (Story #575, achado de revisão de plano): a cascata de remanejamento tem erro NOMEADO
-    /// próprio (<see cref="PendenciaDaCascata"/>) e não pode entrar nesta lista, senão o
-    /// agregador genérico intercepta o erro específico antes que ele seja alcançado.
-    /// </para>
+    /// Etapa não é item incondicional: o processo sem prova (SiSU, classificação importada) publica sem
+    /// etapa, e a bicondicional entre a fase que agrupa etapas e a etapa pontuada é gate à parte
+    /// (<see cref="PendenciasDoCronograma.PendenciaDoCronograma"/>). Sob a média ponderada, o divisor
+    /// (<see cref="EstadoDaConfiguracao.CalcularDivisorMedia"/>) tem de ser maior que zero; sob a classificação
+    /// importada, etapa, fórmula e precisão locais são dispensadas. A cascata de remanejamento tem erro
+    /// nomeado próprio (<see cref="CoberturaDaCascata.PendenciaDaCascata"/>) e fica fora desta lista: o
+    /// agregador genérico interceptaria o erro específico.
     /// </remarks>
     internal static List<ItemConformidade> Avaliar(EstadoDaConfiguracao estado)
     {
@@ -81,23 +58,17 @@ internal static class ItensEstruturaisDeConformidade
             new ItemConformidade("opcoes_de_curso_acima_das_ofertas", DimensaoConformidade.DistribuicaoVagas, "Opções de curso: a distribuição de vagas tem ao menos tantos cursos quanto o número de opções", !RegrasDaDistribuicaoDeVagas.OpcoesDeCursoAcimaDasOfertas(estado.NumeroDeOpcoesDeCurso, estado.DistribuicaoVagas.Count)),
             new ItemConformidade("classificacao_ausente", DimensaoConformidade.Classificacao, "Classificação", estado.Classificacao is not null),
             new ItemConformidade("cronograma_fases_ausente", DimensaoConformidade.Cronograma, "Cronograma de fases", estado.CronogramaFases.Count > 0),
-            // Issue #1112: publicar sem declarar cobrança de taxa é recusado — a ausência nunca
-            // é interpretada como "não cobra" (CA-01). Diferente de ConfiguracaoDivulgacao, aqui
-            // ausência não é estado publicável.
+            // Publicar sem declarar a cobrança de taxa é recusado: a ausência nunca vale "não cobra".
+            // Diferente da divulgação, aqui a ausência não é estado publicável.
             new ItemConformidade("taxa_inscricao_nao_declarada", DimensaoConformidade.TaxaInscricao, "Taxa de inscrição e isenção", estado.ConfiguracaoTaxaInscricao is not null),
-            // Issue #1310: processo que cobra reconhece ao menos um fundamento de isenção — a
-            // possibilidade de pedir isenção se materializa nos fundamentos declarados. A fábrica
-            // já recusa a combinação, mas ela é MATERIALIZÁVEL: o EF hidrata a linha direto da
-            // coluna, sem passar por Criar, então configuração gravada antes da regra volta ao
-            // agregado nesse estado. Sem este item, publicaria.
+            // O processo que cobra reconhece ao menos um fundamento de isenção. A fábrica já recusa a
+            // combinação, mas o EF hidrata a linha sem passar por ela, então configuração gravada
+            // antes da regra volta ao agregado nesse estado e publicaria sem este item.
             // Verdadeiro (sem pendência) quando a configuração é nula: a ausência já é o item
             // acima, e dois vermelhos pela mesma causa fariam o operador procurar dois problemas.
             new ItemConformidade("taxa_inscricao_sem_fundamento_de_isencao", DimensaoConformidade.TaxaInscricao, "Fundamentos de isenção do processo que cobra taxa", TemFundamentoDeIsencaoQuandoCobra(estado)),
-            // Story #554, PR #898 (issue #549, ADR-0074): toda exigência que determina
-            // resultado precisa de ≥1 base legal RESOLVIDO — semântica vazia quando não há
-            // exigência que determine resultado (Services.ValidadorBaseLegalExigencias).
-            // Story #920: estendido a grupo OU/N-de com consequência própria (exigência de
-            // 1ª classe, base legal NÃO derivada dos filhos).
+            // Toda exigência que determina resultado precisa de ao menos uma base legal resolvida, e o
+            // grupo OU/N-de com consequência própria também: a base legal dele não vem dos filhos.
             new ItemConformidade(
                 "exigencias_base_legal_nao_resolvida",
                 DimensaoConformidade.ExigenciasDocumentais,
@@ -131,8 +102,8 @@ internal static class ItensEstruturaisDeConformidade
         if (estado.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && estado.Classificacao is { BaseadoEmEnem: true })
         {
             // O candidato escolhe na inscrição, entre as edições admitidas, a do ENEM cujas notas a
-            // classificação usa (issue #1620). Com o resultado importado não há inscrição: a edição
-            // vem com a importação, e a declaração não teria quem a lesse.
+            // classificação usa. Com o resultado importado não há inscrição: a edição vem com a
+            // importação, e a declaração não teria quem a lesse.
             itens.Add(new ItemConformidade(
                 "classificacao_edicao_enem_nao_declarada",
                 DimensaoConformidade.Classificacao,
@@ -309,7 +280,7 @@ internal static class ItensEstruturaisDeConformidade
     /// </summary>
     /// <remarks>
     /// As ofertas ficam entre parênteses, separadas por ponto e vírgula e sem ponto final: o
-    /// agregador de <see cref="PendenciaDeConformidade"/> separa os itens por vírgula e pontua o
+    /// agregador de <see cref="ChecklistDeConformidade.PendenciaDeConformidade"/> separa os itens por vírgula e pontua o
     /// fim.
     /// </remarks>
     internal static ItemConformidade ItemDasOfertas(
@@ -345,7 +316,7 @@ internal static class ItensEstruturaisDeConformidade
     }
 
     /// <summary>
-    /// Processo que cobra taxa reconhece ao menos um fundamento de isenção (issue #1310).
+    /// Processo que cobra taxa reconhece ao menos um fundamento de isenção.
     /// Verdadeiro quando não há configuração declarada — a ausência é pendência do item anterior —
     /// e quando o processo declara não cobrar, caso em que fundamento nenhum é o estado correto
     /// (UNI-REQ-0100).
@@ -360,7 +331,7 @@ internal static class ItensEstruturaisDeConformidade
     internal static bool TemFundamentoDeIsencaoQuandoCobra(EstadoDaConfiguracao estado) =>
         estado.ConfiguracaoTaxaInscricao is not { Cobra: true, Fundamentos.Count: 0 };
 
-    /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria (Story #920) — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
+    /// <summary>Grupos <c>OU</c>/<c>N-de</c> com <see cref="NoExigencia.Consequencia"/> própria — cada um precisa de ≥1 <see cref="NoExigenciaBaseLegal"/> <see cref="StatusBaseLegal.Resolvido"/>, mesma semântica de <see cref="Services.ValidadorBaseLegalExigencias"/> para folha.</summary>
     internal static bool GruposComConsequenciaTemBaseLegalResolvida(EstadoDaConfiguracao estado) =>
         estado.NosExigencia
             .Where(static no => no.DeterminaResultado())

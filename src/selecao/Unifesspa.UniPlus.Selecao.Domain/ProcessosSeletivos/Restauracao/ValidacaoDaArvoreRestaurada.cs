@@ -1,17 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Restauracao;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -30,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class ValidacaoDaArvoreRestaurada
 {
     /// <summary>
-    /// Story #923 — as checagens estruturais da árvore de satisfação restaurada,
+    /// As checagens estruturais da árvore de satisfação restaurada,
     /// equivalentes ao que <c>NoExigencia.CriarGrupo</c> já garante na ESCRITA (grupo não
     /// vazio, ciclo, fase comum, cardinalidade por tipo) mais o que só a RAIZ consegue
     /// provar (INV-B6-símile: <c>DocumentoExigidoId</c> de folha existe em

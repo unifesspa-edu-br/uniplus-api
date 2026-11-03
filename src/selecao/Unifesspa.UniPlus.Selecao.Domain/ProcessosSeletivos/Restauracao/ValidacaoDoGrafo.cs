@@ -1,39 +1,28 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Restauracao;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ValidacaoDoGrafo
 {
     internal static DomainError? Validar(GrafoConfiguracao grafo)
     {
-        // Story #851 §3.5: lista de etapas vazia é estado válido (processo sem prova,
-        // ex. SiSU) — a antiga recusa incondicional foi removida também aqui, espelhando
-        // a mudança em DefinirEtapas.
+        // Lista de etapas vazia é estado válido (processo sem prova, como o SiSU).
         //
-        // O Id vem congelado do envelope (D2) — e nem EtapaProcesso nem o agregado o
-        // validavam: a unicidade era garantida só pelo handler de PUT /etapas. Um
-        // envelope com dois ids iguais produziria duas etapas que o etapa_ref não
-        // consegue distinguir, e o INSERT colidiria na chave primária.
+        // O Id vem congelado do envelope e nada além do handler de gravação garantia a unicidade: um
+        // envelope com dois ids iguais produziria duas etapas que o etapa_ref não consegue distinguir,
+        // e o INSERT colidiria na chave primária.
         List<Guid> idsEtapas = [.. grafo.Etapas.Select(e => e.Id)];
         if (idsEtapas.Any(id => id == Guid.Empty))
         {
@@ -103,9 +92,8 @@ internal static class ValidacaoDoGrafo
             return RegrasDaDistribuicaoDeVagas.ErroDeOpcoesDeCursoAcimaDasOfertas();
         }
 
-        // issue #848/ADR-0115 §3.7 — mesma checagem de DefinirDistribuicaoVagas: a
-        // restauração aplica o grafo diretamente via AplicarGrafo, sem passar por
-        // aquele método, então precisa repetir a validação de consistência.
+        // Mesma checagem de DefinirDistribuicaoVagas (ADR-0115 §3.7): a restauração repõe o grafo
+        // sem passar por aquele método, então precisa repetir a validação de consistência.
         if (RegrasDaDistribuicaoDeVagas.HaAcaoQuandoIndeferidoDivergenteEntreOfertas(grafo.DistribuicaoVagas))
         {
             return new DomainError(
@@ -196,11 +184,10 @@ internal static class ValidacaoDoGrafo
             }
         }
 
-        // Story #851 — cronograma restaurado: checagens estruturais equivalentes às de
-        // DefinirCronogramaFases, sobre o GRAFO (não sobre o agregado corrente). O grafo
-        // de precedências e a resolução de regra/ato âncora NÃO são reconferidos aqui —
-        // são I/O, e o congelamento dos parâmetros na publicação (UNI-REQ-0019) proíbe reinterpretar um passado legitimamente publicado contra
-        // o catálogo de hoje (mesma doutrina de LeitorEnvelope.Regra).
+        // Cronograma restaurado: checagens estruturais equivalentes às de DefinirCronogramaFases, sobre o
+        // grafo e não sobre o agregado corrente. O grafo de precedências e a resolução de regra e de ato
+        // âncora não são reconferidos: são I/O, e o congelamento dos parâmetros na publicação
+        // (UNI-REQ-0019) proíbe reinterpretar um passado publicado contra o catálogo atual.
         if (grafo.CronogramaFases.Count == 0)
         {
             return new DomainError(

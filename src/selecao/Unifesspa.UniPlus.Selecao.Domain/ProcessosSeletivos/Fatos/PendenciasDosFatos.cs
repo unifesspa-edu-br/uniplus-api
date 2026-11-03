@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -12,16 +10,13 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -192,7 +187,7 @@ public static class PendenciasDosFatos
     /// <remarks>
     /// <para>
     /// As regras dos itens e dos termos são conferidas de novo aqui, pela mesma regra da definição
-    /// (<see cref="ValidarGrafoDeFatos"/>), porque os itens e as derivações mudam depois. O gatilho
+    /// (<see cref="CitacoesDosFormularios.ValidarGrafoDeFatos"/>), porque os itens e as derivações mudam depois. O gatilho
     /// de exigência cita pelo mesmo vocabulário e caberá aqui quando passar a exigir os seus fatos.
     /// </para>
     /// <para>
@@ -334,7 +329,7 @@ public static class PendenciasDosFatos
     /// O grafo de dependência conjunto (campos, fatos, exigências, seções e termos condicionados, e
     /// as quatro arestas, §6) tem
     /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (congelamento dos parâmetros na publicação, UNI-REQ-0019)
-    /// não existe se houver ciclo. A construção do grafo (<see cref="ConstruirGrafoDependencia"/>)
+    /// não existe se houver ciclo. A construção do grafo (<see cref="CitacoesDosFormularios.ConstruirGrafoDependencia"/>)
     /// já detecta o ciclo — aqui ela vira gate de publicação, antes de canonicalizar.
     /// </summary>
     /// <remarks>

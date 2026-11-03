@@ -1,13 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
-using System.Text.Json;
-
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
@@ -19,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -27,13 +24,9 @@ public static class ChecklistDeConformidade
 {
     /// <summary>
     /// Os avisos da conformidade: o que o administrador deve confirmar e que nunca impede a
-    /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela é
-    /// bicondicional com os gates e um aviso não tem gate.
+    /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela é bicondicional
+    /// com os gates e um aviso não tem gate: nenhum aviso recusa uma publicação.
     /// </summary>
-    /// <remarks>
-    /// Só a consulta de conformidade chama este método; <see cref="Publicar"/> e
-    /// <see cref="SucederVersao"/> não o consultam, e por isso nenhum aviso recusa uma publicação.
-    /// </remarks>
     public static IReadOnlyList<AvisoConformidade> AvaliarAvisos(EstadoDaConfiguracao estado)
     {
         ArgumentNullException.ThrowIfNull(estado);
@@ -53,39 +46,20 @@ public static class ChecklistDeConformidade
             : $"{string.Join(", ", lugares.Take(lugares.Count - 1))} e {lugares[^1]}";
 
     /// <summary>
-    /// Checklist de conformidade ESTRUTURAL do agregado (issue #1092): bicondicional com os
-    /// gates que <see cref="Publicar"/>/<see cref="SucederVersao"/> aplicam, nesta ordem
-    /// — <see cref="ContagemDePrazos.PendenciaDoIdentificadorLegivel"/>, <see cref="ContagemDePrazos.PendenciaDaLocalidade"/>,
-    /// <see cref="ContagemDePrazos.PendenciaDoAlgoritmoDeContagem"/>,
-    /// <see cref="PendenciaDeConformidade"/>, <see cref="PendenciaDoCronograma"/>,
-    /// <see cref="PendenciaDaCascata"/> e <see cref="PendenciaPreCanonicalizacao"/>. Todos os
-    /// itens ficam <see langword="true"/> se e somente se esses gates não têm pendência —
-    /// não existe estado em que este checklist declare tudo <c>Ok</c> e a publicação recuse por
-    /// razão estrutural.
+    /// Checklist de conformidade ESTRUTURAL do agregado, bicondicional com os gates de congelamento
+    /// (<see cref="ProntidaoParaCongelar"/>): todos os itens ficam <see langword="true"/> se e somente se os
+    /// gates não têm pendência, então não existe estado em que o checklist declare tudo <c>Ok</c> e a
+    /// publicação recuse por razão estrutural.
     /// </summary>
     /// <remarks>
-    /// <b>Delimitação — "estrutural" não é "publicável".</b> Mesmo com esses gates verdes, a
-    /// publicação ainda pode recusar por conformidade LEGAL (motor data-driven, <c>GET
-    /// /conformidade-legal</c>), documento confirmado, tipo de ato e outras leituras
-    /// request-specific que só o command handler de publicação avalia (ADR-0109). Este método
-    /// cobre só a publicabilidade ESTRUTURAL do agregado, nunca o ensaio completo do command
-    /// handler.
+    /// "Estrutural" não é "publicável": com os gates verdes, a publicação ainda pode recusar por
+    /// conformidade legal (<c>GET /conformidade-legal</c>), documento confirmado, tipo de ato e outras
+    /// leituras que só o handler de publicação avalia (ADR-0109).
     /// <para>
-    /// <b>Sem segunda lista de predicados.</b> Cada item abaixo vem de um predicado privado
-    /// NOMEADO que o gate correspondente TAMBÉM chama (os <c>Ha*</c> de
-    /// <see cref="PendenciaDoCronograma"/>, os <c>Existe*</c> de <see cref="PendenciaDaCascata"/>
-    /// e da coerência de indeferimento, os <c>ReferenciaTemporalFatos*</c>, e os sub-gates de
-    /// <see cref="PendenciaPreCanonicalizacao"/> chamados diretamente) — o gate escolhe a
-    /// PRIMEIRA falha na precedência que <see cref="Publicar"/> já fixa; este método projeta
-    /// TODOS os vereditos. Uma razão nova acrescentada a um predicado compartilhado aparece nos
-    /// dois ao mesmo tempo, por construção — não há um segundo <c>if</c> para lembrar de manter
-    /// sincronizado.
-    /// </para>
-    /// <para>
-    /// <b>Ordem estável e fiel aos gates.</b> A ordem dos itens é a de declaração abaixo,
-    /// nunca a de iteração de uma coleção do EF — e reproduz a precedência que
-    /// <see cref="Publicar"/> aplica. Quem lê o checklist de cima para baixo encontra a
-    /// pendência que vai bloquear a publicação antes das que só apareceriam depois dela.
+    /// Não há segunda lista de predicados: cada item vem do predicado nomeado que o gate correspondente
+    /// também chama. O gate escolhe a primeira falha na precedência fixada pela prontidão; o checklist
+    /// projeta todos os vereditos, na ordem dos gates, e uma razão nova de um predicado compartilhado
+    /// aparece nos dois ao mesmo tempo.
     /// </para>
     /// </remarks>
     public static IReadOnlyList<ItemConformidade> AvaliarConformidade(
@@ -103,11 +77,9 @@ public static class ChecklistDeConformidade
 
         return
         [
-        // ── Gates que a raiz aplica ANTES do agregador genérico, na ordem de Publicar ──
-        // Têm erro nomeado próprio e por isso não entram em
-        // ItensEstruturaisDeConformidade.Avaliar(estado), que alimenta o agregador: lá dentro, o
-        // ConformidadeInsuficiente interceptaria a causa específica antes de ela ser
-        // alcançada — mesma razão pela qual a cascata fica de fora.
+        // Gates anteriores ao agregador genérico, na ordem da prontidão. Têm erro nomeado próprio e
+        // por isso não entram nos itens estruturais: lá dentro, a conformidade insuficiente
+        // interceptaria a causa específica.
         new ItemConformidade("identificador_legivel_nao_declarado", DimensaoConformidade.Identificacao, "Identificador legível do certame", ContagemDePrazos.PendenciaDoIdentificadorLegivel(estado) is null),
         new ItemConformidade("localidade_nao_declarada", DimensaoConformidade.ContagemDePrazos, "Localidade que rege a contagem dos prazos", ContagemDePrazos.PendenciaDaLocalidade(estado) is null),
         new ItemConformidade("algoritmo_contagem_prazo_nao_declarado", DimensaoConformidade.ContagemDePrazos, "Convenção de contagem dos prazos de recurso", ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(estado) is null),
@@ -120,7 +92,7 @@ public static class ChecklistDeConformidade
 
         .. ItensEstruturaisDeConformidade.Avaliar(estado),
 
-        // ── PendenciaDoCronograma (Story #851 §3.4/§3.5) ──
+        // ── Cronograma ──
         new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !PendenciasDoCronograma.HaFaseDeAvaliacaoSemEtapa(estado)),
         new ItemConformidade("cronograma_etapa_pontuada_sem_fase_agrupadora", DimensaoConformidade.Cronograma, "Cronograma: etapa pontuada tem fase que agrupa etapas", !PendenciasDoCronograma.HaEtapaSemFaseDeAvaliacao(estado)),
         new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !PendenciasDoCronograma.HaInscricaoPropriaSemFaseDeColeta(estado)),
@@ -137,7 +109,7 @@ public static class ChecklistDeConformidade
         new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(estado, tiposDeAtoUnicos) is null),
         new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(estado, tiposDeAtoUnicos) is null),
 
-        // ── PendenciaDaCascata: o agregado e o detalhamento por razão (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) ──
+        // ── Cascata de remanejamento (UNI-REQ-0056): o agregado e o detalhamento por razão ──
         new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", CoberturaDaCascata.PendenciaDaCascata(estado) is null),
         new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !CoberturaDaCascata.ExisteCascataForaDoRegimeFederal(estado)),
         new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !CoberturaDaCascata.ExisteCascataOrigemAusente(estado)),
@@ -145,7 +117,7 @@ public static class ChecklistDeConformidade
         new ItemConformidade("cascata_origem_nao_segue_cascata", DimensaoConformidade.CascataRemanejamento, "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada", !CoberturaDaCascata.ExisteCascataOrigemNaoSegueCascata(estado)),
         new ItemConformidade("cascata_destino_desconhecido", DimensaoConformidade.CascataRemanejamento, "Cascata: destino declarado corresponde a modalidade ofertada", !CoberturaDaCascata.ExisteCascataDestinoDesconhecido(estado)),
 
-        // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
+        // ── Pré-canonicalização, na mesma ordem do gate ──
         new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais(estado) is null),
         new ItemConformidade("exigencia_finalidade_incoerente_com_a_fase", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: declara o formulário a que pertence, entre os que a sua fase responde", ProtecaoDasExigencias.PendenciaDaFinalidadeDasExigencias(estado) is null),
         new ItemConformidade("exigencia_fato_comprovado_fora_do_processo", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: comprova só fatos que o processo coleta ou que são derivados congelados na publicação", ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(estado, protecao) is null),
@@ -203,24 +175,20 @@ public static class ChecklistDeConformidade
         !violacoes.Any(v => codigosDoErro.Contains(v.Erro.Code));
 
     /// <summary>
-    /// Pendência de conformidade do processo, ou <see langword="null"/> quando
-    /// ele está conforme. É a <b>fonte única</b> do gate: <see cref="Publicar"/>
-    /// e <see cref="Retificar"/> chamam este método — não há segunda lista de
-    /// itens em lugar nenhum, e as duas transições recusam com o <b>mesmo</b>
-    /// <c>DomainError</c>.
+    /// Pendência de conformidade do processo, ou <see langword="null"/> quando ele está conforme. É a fonte
+    /// única do gate: publicar e retificar recusam com o mesmo <c>DomainError</c>.
     /// </summary>
     /// <remarks>
-    /// Publicar e retificar abrem, ambos, uma <see cref="VersaoConfiguracao"/>
-    /// append-only e juridicamente vinculante. Uma versão congelada a partir de
-    /// configuração incompleta é irreparável — o passado não se muta. Por isso o
-    /// checklist vale para as <b>duas</b> transições, não só para a primeira.
+    /// As duas transições abrem uma <see cref="VersaoConfiguracao"/> append-only e juridicamente
+    /// vinculante: uma versão congelada a partir de configuração incompleta é irreparável, porque o
+    /// passado não se muta.
     /// </remarks>
     public static DomainError? PendenciaDeConformidade(EstadoDaConfiguracao estado)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        // Story #575: só os itens ESTRUTURAIS entram no agregador genérico — a cascata de
-        // remanejamento tem erro nomeado próprio (PendenciaDaCascata) e nunca passa por aqui.
+        // Só os itens estruturais entram no agregador genérico: a cascata de remanejamento tem erro
+        // nomeado próprio e nunca passa por aqui.
         IReadOnlyList<ItemConformidade> pendencias = [.. ItensEstruturaisDeConformidade.Avaliar(estado).Where(static item => !item.Ok)];
         if (pendencias.Count == 0)
         {

@@ -1,24 +1,21 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class CoberturaDaCascata
 {
     /// <summary>
-    /// Pendência de cobertura da cascata de remanejamento (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) —
-    /// erro NOMEADO, público (chamado tanto pela raiz quanto pelos handlers da Application,
-    /// que estão em outro assembly). Chamado por <see cref="Publicar"/> e <see cref="SucederVersao"/>
-    /// na mesma posição de <see cref="PendenciaDoCronograma"/>.
+    /// Pendência de cobertura da cascata de remanejamento, com erro nomeado. Pública porque os handlers
+    /// da Application, em outro assembly, a antecipam antes de canonicalizar; a prontidão do
+    /// congelamento a avalia depois de <see cref="PendenciasDoCronograma.PendenciaDoCronograma"/>.
     /// </summary>
     /// <remarks>
     /// A ordenação é determinística em todos os níveis — ofertas por <c>OfertaCursoOrigemId</c>
