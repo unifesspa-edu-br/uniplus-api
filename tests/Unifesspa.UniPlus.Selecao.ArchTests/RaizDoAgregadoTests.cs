@@ -11,39 +11,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// <summary>
 /// A raiz do agregado coordena e guarda o estado; as regras de negócio vivem nas políticas de
 /// <c>Domain.ProcessosSeletivos</c>. O critério é objetivo e lê o fonte da raiz: nenhum método passa de
-/// 15 linhas, toda porta pública delega ao protocolo de edição ou a uma política, e nenhuma regra
-/// constrói <c>DomainError</c> na raiz. O que foge do critério está listado por nome, com o limite
-/// atual e o motivo, e não pode crescer.
+/// 15 linhas, toda porta pública delega ao protocolo de edição ou a uma política, e a raiz não
+/// constrói <c>DomainError</c>. Não há exceção de tamanho.
 /// </summary>
 public sealed partial class RaizDoAgregadoTests
 {
     private const int LimiteDeLinhas = 15;
-
-    private static readonly Dictionary<string, (int Maximo, string Motivo)> MetodosMaisLongos = new()
-    {
-        ["AplicarModeloDeFormulario"] = (19, "protocolo próprio, sem precondição, que distingue a recusa de estado da recusa do plano"),
-        ["Publicar"] = (26, "transição de status: confere os argumentos do pedido, o status e a prontidão, e emite a versão"),
-        ["Retificar"] = (26, "transição de status: confere os argumentos do pedido, o status e a sessão aberta, e sucede a versão"),
-        ["FecharRetificacao"] = (19, "transição que encerra a sessão só depois de a versão estar decidida"),
-        ["DescartarRetificacao"] = (31, "encerra a sessão exigindo o carimbo da restauração da versão-base"),
-        ["SucederVersao"] = (43, "núcleo comum da retificação atômica e do fechamento: status, motivo, cadeia de versões e prontidão"),
-        ["PortoesDeCongelamento"] = (16, "monta os onze portões da prontidão, um delegado por portão"),
-        ["RestaurarConfiguracaoCongelada"] = (36, "porta da restauração: status, cadeia de versões, validação do grafo e carimbo"),
-        ["SombraParaVerificacao"] = (18, "cópia da identidade sem configuração; não há regra a delegar"),
-        ["AbrirRetificacao"] = (40, "abre a sessão: status, cadeia de versões, sessão já aberta e criação do rascunho"),
-        ["AlterarMotivoRetificacao"] = (30, "mutação da sessão com a allowlist inteira da guarda, e não o protocolo de edição da configuração"),
-        ["EditarConferindo"] = (17, "o próprio protocolo de edição: guarda, conferência, aplicação e revisão"),
-    };
-
-    private static readonly Dictionary<string, string> MetodosQueConstroemDomainError = new()
-    {
-        ["Publicar"] = "erro da transição de status",
-        ["Retificar"] = "erro da transição de status",
-        ["SucederVersao"] = "erros da transição: status, motivo obrigatório e versão de outro processo",
-        ["DescartarRetificacao"] = "erros da sessão: descarte sem restauração e com versão errada",
-        ["RestaurarConfiguracaoCongelada"] = "erros da restauração: status e versão de outro processo",
-        ["AbrirRetificacao"] = "erros da sessão: status e versão de outro processo",
-    };
 
     private static readonly Dictionary<string, string> PortasSemPolitica = new()
     {
@@ -53,21 +26,17 @@ public sealed partial class RaizDoAgregadoTests
         ["DerivacoesEfetivas"] = "consulta que só lê a vista da configuração, sem regra",
     };
 
-    [Fact(DisplayName = "Nenhum método da raiz passa de 15 linhas, salvo os listados por nome e sem crescer")]
+    [Fact(DisplayName = "Nenhum método da raiz passa de 15 linhas")]
     public void MetodosDaRaiz_RespeitamOLimite()
     {
         IReadOnlyList<MetodoDaRaiz> metodos = LerMetodos();
         metodos.Count(static m => m.Publico).Should().BeGreaterThan(30, "a leitura do fonte tem de encontrar as portas da raiz");
 
         string[] acimaDoLimite = [.. metodos
-            .Where(m => m.Linhas > LimiteDeLinhas && !MetodosMaisLongos.ContainsKey(m.Nome))
+            .Where(m => m.Linhas > LimiteDeLinhas)
             .Select(m => $"{m.Nome} ({m.Linhas} linhas)")];
-        acimaDoLimite.Should().BeEmpty("a regra de negócio vai para uma política; a raiz só coordena");
 
-        string[] cresceram = [.. metodos
-            .Where(m => MetodosMaisLongos.TryGetValue(m.Nome, out (int Maximo, string Motivo) limite) && m.Linhas > limite.Maximo)
-            .Select(m => $"{m.Nome} ({m.Linhas} linhas, limite {MetodosMaisLongos[m.Nome].Maximo})")];
-        cresceram.Should().BeEmpty("uma exceção nominal não pode crescer");
+        acimaDoLimite.Should().BeEmpty("a regra de negócio vai para uma política; a raiz só coordena");
     }
 
     [Fact(DisplayName = "Toda porta pública da raiz delega ao protocolo de edição ou a uma política")]
@@ -83,17 +52,16 @@ public sealed partial class RaizDoAgregadoTests
         semDelegacao.Should().BeEmpty("porta pública é Editar…(...) ou chamada de política, e não regra escrita na raiz");
     }
 
-    [Fact(DisplayName = "A raiz só constrói DomainError nas transições e na sessão, nunca numa regra de configuração")]
-    public void Raiz_NaoConstroiDomainErrorDeRegra()
+    [Fact(DisplayName = "A raiz não constrói DomainError: toda recusa pertence a uma política")]
+    public void Raiz_NaoConstroiDomainError()
     {
         string[] construtores = [.. LeitorDeIl.ChamadasPorMetodo(typeof(ProcessoSeletivo).Assembly)
             .Where(static c => c.Caller.FullName is { } nome && DonoDoMetodo(nome) == typeof(ProcessoSeletivo).FullName)
             .Where(static c => c.Callee is ConstructorInfo { DeclaringType.FullName: "Unifesspa.UniPlus.Kernel.Results.DomainError" })
             .Select(static c => MetodoDeOrigem(c.Metodo))
-            .Where(static metodo => !MetodosQueConstroemDomainError.ContainsKey(metodo))
             .Distinct(StringComparer.Ordinal)];
 
-        construtores.Should().BeEmpty("a recusa de uma regra pertence à política que a confere");
+        construtores.Should().BeEmpty("a recusa de uma regra, de uma transição ou da sessão pertence ao objeto que a confere");
     }
 
     private static string DonoDoMetodo(string nomeCompleto)
