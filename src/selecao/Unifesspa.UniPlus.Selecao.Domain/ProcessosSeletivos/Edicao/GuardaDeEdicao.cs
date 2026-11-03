@@ -48,8 +48,12 @@ internal static class GuardaDeEdicao
     /// um rascunho que não existe mandaria o cliente recarregar um ETag inexistente. Aqui o If-Match
     /// é sempre obrigatório, porque as duas rotas existem para a sessão.
     /// </summary>
-    internal static DomainError? PendenciaDaSessao(StatusProcesso status, RascunhoRetificacao? sessao, PrecondicaoIfMatch precondicao) =>
-        sessao is null ? RetificacaoNaoAberta() : MutacaoBloqueada(status, sessao, precondicao);
+    internal static DomainError? PendenciaDaSessao(StatusProcesso status, RascunhoRetificacao? sessao, PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        return sessao is null ? RetificacaoNaoAberta() : MutacaoBloqueada(status, sessao, precondicao);
+    }
 
     internal static DomainError RetificacaoJaAberta() => new(
         "RascunhoRetificacao.JaAberta",

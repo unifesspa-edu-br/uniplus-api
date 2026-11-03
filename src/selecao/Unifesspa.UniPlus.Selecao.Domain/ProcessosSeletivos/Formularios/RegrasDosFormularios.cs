@@ -1,17 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
@@ -20,6 +13,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDosFormularios
 {
+    internal static Result<PlanoDoModelo> PlanejarAplicacao(
+        EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, PrecondicaoIfMatch precondicao) =>
+        RecusaDeAplicacaoDeModelo(estado, precondicao) is { } recusa
+            ? Result<PlanoDoModelo>.Failure(recusa)
+            : AplicacaoDeModeloDeFormulario.Planejar(estado, copia);
+
     /// <summary>
     /// A aplicação do modelo substitui o formulário inteiro, e a retificação não retira o que o edital
     /// publicou: só em rascunho. No mais, vale a guarda de edição.

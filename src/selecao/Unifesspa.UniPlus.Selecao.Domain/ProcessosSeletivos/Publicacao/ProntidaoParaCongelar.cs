@@ -2,11 +2,14 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -29,7 +32,22 @@ public static class ProntidaoParaCongelar
         Func<DomainError?> ResultadoSemPapel,
         Func<DomainError?> TipoQueCongelaDeclaradoComoResultado,
         Func<DomainError?> Cascata,
-        Func<DomainError?> PreCanonicalizacao);
+        Func<DomainError?> PreCanonicalizacao)
+    {
+        /// <summary>Os onze portões do processo para este pedido, sobre a vista da configuração.</summary>
+        internal static Portoes Para(EstadoDaConfiguracao estado, PedidoDeCongelamento pedido) => new(
+            IdentificadorLegivel: () => ContagemDePrazos.PendenciaDoIdentificadorLegivel(estado),
+            Localidade: () => ContagemDePrazos.PendenciaDaLocalidade(estado),
+            AlgoritmoDeContagem: () => ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(estado),
+            CalendarioVigente: () => ContagemDePrazos.PendenciaDoCalendarioVigente(estado, pedido.Contexto),
+            Conformidade: () => ChecklistDeConformidade.PendenciaDeConformidade(estado),
+            Cronograma: () => PendenciasDoCronograma.PendenciaDoCronograma(estado, pedido.Contexto.FusoInstitucional),
+            TipoDeAtoUnico: () => TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(estado, pedido.TiposDeAtoUnicos),
+            ResultadoSemPapel: () => TiposDeAtoDoCronograma.PendenciaDoResultadoSemPapel(estado, pedido.TiposDeAtoUnicos),
+            TipoQueCongelaDeclaradoComoResultado: () => TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(estado, pedido.TiposDeAtoUnicos),
+            Cascata: () => CoberturaDaCascata.PendenciaDaCascata(estado),
+            PreCanonicalizacao: () => PendenciaPreCanonicalizacao(estado, pedido.FatosDeModalidade));
+    }
 
     /// <summary>A primeira pendência, ou nulo se todos passam. Para no primeiro portão que recusa.</summary>
     internal static DomainError? PrimeiraPendencia(Portoes portoes)

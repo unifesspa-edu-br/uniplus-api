@@ -15,11 +15,11 @@ public sealed class GateEstruturalRegressaoTests
     [Fact(DisplayName = "PendenciaDeConformidade() continua nos 5 pontos — a prontidão do Domain (uma ordem, duas transições) e 3 handlers que congelam")]
     public void PendenciaDeConformidade_ContinuaNosCincoPontosOriginais()
     {
-        string raiz = File.ReadAllText(CaminhoProcessoSeletivo());
-        Regex.Count(raiz, @"PrimeiraPendencia\(").Should().Be(2,
+        string transicoes = File.ReadAllText(CaminhoTransicoes());
+        Regex.Count(transicoes, @"PrimeiraPendencia\(").Should().Be(2,
             "Publicar() e SucederVersao() (o núcleo compartilhado de Retificar()/FecharRetificacao()) " +
             "são os dois pontos de defesa no Domain — a rede que ninguém contorna (ADR-0109 D5)");
-        Regex.Count(raiz, @"Conformidade:\s+\(\)\s+=>\s+ChecklistDeConformidade\.PendenciaDeConformidade\(estado\),").Should().Be(1,
+        Regex.Count(File.ReadAllText(CaminhoProntidao()), @"Conformidade:\s+\(\)\s+=>\s+ChecklistDeConformidade\.PendenciaDeConformidade\(estado\),").Should().Be(1,
             "os dois pontos de defesa usam a mesma composição dos portões, montada num só lugar");
         Regex.Count(File.ReadAllText(CaminhoProntidao()), @"portoes\.Conformidade\b").Should().Be(1,
             "a prontidão avalia o portão de conformidade uma vez, na posição que a ordem manda");
@@ -48,7 +48,7 @@ public sealed class GateEstruturalRegressaoTests
         // SucederVersao, os três handlers) do uso em AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario), que testa
         // `PendenciaDaCascata() is null` só para exibição — mesma chamada, propósito
         // diferente, não é um sexto call site de bloqueio.
-        string raiz = File.ReadAllText(CaminhoProcessoSeletivo());
+        string raiz = File.ReadAllText(CaminhoProntidao());
         Regex.Count(raiz, @"Cascata:\s+\(\)\s+=>\s+CoberturaDaCascata\.PendenciaDaCascata\(estado\),").Should().Be(1, "os dois pontos de defesa compartilham a composição dos portões");
         Regex.Count(File.ReadAllText(CaminhoProntidao()), @"portoes\.Cascata\b").Should().Be(1,
             "a prontidão avalia a cascata uma vez, antes da pré-canonicalização");
@@ -73,19 +73,17 @@ public sealed class GateEstruturalRegressaoTests
     [Fact(DisplayName = "Localidade e convenção de contagem: um portão na prontidão do Domain e a projeção no checklist, sem antecipação nos handlers")]
     public void ContagemDePrazos_TemGatesNaRaizEProjecaoNoChecklist()
     {
-        string processoSeletivo = File.ReadAllText(CaminhoProcessoSeletivo());
-
         string prontidao = File.ReadAllText(CaminhoProntidao());
         string checklist = File.ReadAllText(CaminhoChecklist());
 
         Regex.Count(checklist, @"PendenciaDaLocalidade\(estado\)\s+is\s").Should().Be(1,
             "AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado que a prontidão aplica");
-        Regex.Count(processoSeletivo, @"Localidade:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDaLocalidade\(estado\),").Should().Be(1, "Publicar() e SucederVersao() aplicam o gate pela prontidão");
+        Regex.Count(prontidao, @"Localidade:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDaLocalidade\(estado\),").Should().Be(1, "Publicar() e SucederVersao() aplicam o gate pela prontidão");
         Regex.Count(prontidao, @"portoes\.Localidade\b").Should().Be(1);
 
         Regex.Count(checklist, @"PendenciaDoAlgoritmoDeContagem\(estado\)\s+is\s").Should().Be(1,
             "mesma topologia da localidade — o gate pela prontidão e a projeção no checklist");
-        Regex.Count(processoSeletivo, @"AlgoritmoDeContagem:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDoAlgoritmoDeContagem\(estado\),").Should().Be(1);
+        Regex.Count(prontidao, @"AlgoritmoDeContagem:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDoAlgoritmoDeContagem\(estado\),").Should().Be(1);
         Regex.Count(prontidao, @"portoes\.AlgoritmoDeContagem\b").Should().Be(1);
 
         foreach (string handler in new[]
@@ -117,10 +115,10 @@ public sealed class GateEstruturalRegressaoTests
         return Regex.Count(fonte, @"\bPendenciaDeConformidade\((?:[^()\n]|\([^()\n]*\))*\)\s+is\s");
     }
 
-    private static string CaminhoProcessoSeletivo([CallerFilePath] string origem = "") =>
+    private static string CaminhoTransicoes([CallerFilePath] string origem = "") =>
         Path.GetFullPath(Path.Join(
             Path.GetDirectoryName(origem)!, "..", "..",
-            "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "Entities", "ProcessoSeletivo.cs"));
+            "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "ProcessosSeletivos", "Publicacao", "TransicoesDaVersao.cs"));
 
     private static string CaminhoProntidao([CallerFilePath] string origem = "") =>
         Path.GetFullPath(Path.Join(
