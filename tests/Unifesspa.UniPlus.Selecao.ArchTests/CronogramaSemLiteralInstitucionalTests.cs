@@ -51,7 +51,7 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         """\.Equals\(\s*"([^"]*)"\s*\)""",
         RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
-    /// <summary>Os arquivos do gate do cronograma (Domain + Application), fora de <c>ProcessoSeletivo.cs</c>.</summary>
+    /// <summary>Os arquivos do gate do cronograma (Domain + Application), além de <c>ProcessoSeletivo.cs</c> e da pasta das regras do processo.</summary>
     private static readonly string[] ArquivosDoGate =
     [
         "FaseCronograma.cs",
@@ -66,14 +66,10 @@ public sealed class CronogramaSemLiteralInstitucionalTests
     public void Gate_NaoContemLiteralInstitucional()
     {
         List<string> achados = [];
+        List<string> arquivos = [.. ArquivosExplicitosDoGate(), .. ArquivosDasRegrasDoProcesso()];
 
-        foreach (string caminho in CaminhosDoGate())
+        foreach (string caminho in arquivos)
         {
-            if (!File.Exists(caminho))
-            {
-                continue;
-            }
-
             string codigo = SemComentarios(caminho);
             foreach (string literal in LiteraisComparados(codigo))
             {
@@ -87,6 +83,15 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         achados.Should().BeEmpty(
             "o gate do cronograma não pode conhecer nome de conselho, órgão ou instância — a unidade responsável e a " +
             $"suspensividade são dado declarado, nunca literal em código (CA-19). Achados: {string.Join(", ", achados)}");
+    }
+
+    [Fact(DisplayName = "Todo arquivo explícito do gate existe e a pasta das regras do processo não está vazia")]
+    public void Gate_VarreOQueDeclara()
+    {
+        ArquivosExplicitosDoGate().Where(static caminho => !File.Exists(caminho)).Should().BeEmpty(
+            "um arquivo do gate que mudou de nome ou de lugar deixaria de ser varrido sem que ninguém notasse");
+        ArquivosDasRegrasDoProcesso().Should().NotBeEmpty(
+            "a pasta das regras do processo é varrida inteira, e uma pasta vazia ou renomeada tiraria a cobertura");
     }
 
     [Theory(DisplayName = "O detector ACUSA um literal de comparação institucional plantado (canário obrigatório)")]
@@ -145,7 +150,7 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         '\n',
         File.ReadLines(arquivo).Where(static linha => !linha.TrimStart().StartsWith("//", StringComparison.Ordinal)));
 
-    private static IEnumerable<string> CaminhosDoGate()
+    private static IEnumerable<string> ArquivosExplicitosDoGate()
     {
         string raizDomain = Caminho("src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "Entities");
         string raizApplication = Caminho("src", "selecao", "Unifesspa.UniPlus.Selecao.Application", "Commands", "ProcessosSeletivos");
@@ -153,20 +158,21 @@ public sealed class CronogramaSemLiteralInstitucionalTests
 
         foreach (string arquivo in ArquivosDoGate)
         {
-            string? achado = new[] { raizDomain, raizApplication, raizValidators }
+            yield return new[] { raizDomain, raizApplication, raizValidators }
                 .Select(pasta => Path.Combine(pasta, arquivo))
-                .FirstOrDefault(File.Exists);
-
-            if (achado is not null)
-            {
-                yield return achado;
-            }
+                .FirstOrDefault(File.Exists) ?? Path.Combine(raizDomain, arquivo);
         }
 
-        // ProcessoSeletivo.cs cobre muitas dimensões além do cronograma — varrer o
-        // arquivo inteiro é deliberado: uma comparação institucional em QUALQUER parte
-        // dele já seria uma violação, não só na região das fases.
+        // A raiz cobre muitas dimensões além do cronograma: varrer o arquivo inteiro é deliberado,
+        // porque uma comparação institucional em qualquer parte dele já seria uma violação.
         yield return Path.Combine(raizDomain, "ProcessoSeletivo.cs");
+    }
+
+    /// <summary>As regras extraídas da raiz moram em <c>Domain/ProcessosSeletivos</c>; a pasta inteira é varrida.</summary>
+    private static IEnumerable<string> ArquivosDasRegrasDoProcesso()
+    {
+        string pasta = Caminho("src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "ProcessosSeletivos");
+        return Directory.Exists(pasta) ? Directory.EnumerateFiles(pasta, "*.cs", SearchOption.AllDirectories) : [];
     }
 
     private static string Caminho(params string[] segmentos) =>

@@ -19,147 +19,92 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Agregado-raiz do certame (UNI-REQ-0014/0015): o administrador cria o
-/// processo em rascunho e monta a configuração a partir dos cadastros de
-/// referência. Todas as entidades de configuração pendem desta raiz e são
-/// acessadas e persistidas exclusivamente por ela (repositório único
-/// <c>IProcessoSeletivoRepository</c>).
+/// Agregado-raiz do certame (UNI-REQ-0014/0015): o administrador cria o processo em rascunho e monta
+/// a configuração a partir dos cadastros de referência. Todas as entidades de configuração pendem
+/// desta raiz e são acessadas e persistidas exclusivamente por ela.
 /// </summary>
 /// <remarks>
-/// <para>
-/// F0 entregou a raiz, as etapas pontuadas e a oferta de atendimento
-/// especializado; F2 a distribuição de vagas; F3 o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e os
-/// critérios de desempate — ambos por referência ao catálogo de regras
-/// tipadas (<c>rol_de_regras</c>, Story #772), nunca escalares crus. A
-/// classificação (bloco 15º) entra na F4, compondo por referência as
-/// dimensões já modeladas.
-/// </para>
-/// <para>
-/// O documento normativo não pertence a esta raiz: ele é o <b>ato publicado</b>,
-/// e vive no módulo <c>Publicacoes</c> (ADR-0103/0105). O que a publicação
-/// produz aqui é a <see cref="VersaoConfiguracao"/> congelada (congelamento dos parâmetros na publicação, UNI-REQ-0019), que
-/// referencia o ato por VALOR — o par <c>{id, hash}</c>, sem chave estrangeira
-/// (ADR-0061). Enquanto o processo está em rascunho, a configuração é livremente
-/// substituível (o comando <c>Definir*</c> troca a coleção inteira). A
-/// configuração é CRUD puro via EF Core — a fronteira de Event Sourcing
-/// (ADR-0069) começa nos agregados de decisão downstream, nunca aqui.
-/// </para>
+/// O documento normativo não pertence a esta raiz: é o ato publicado, que vive em <c>Publicacoes</c>
+/// (ADR-0103/0105). A publicação produz aqui a <see cref="VersaoConfiguracao"/> congelada
+/// (UNI-REQ-0019), que referencia o ato por valor — o par <c>{id, hash}</c>, sem chave estrangeira
+/// (ADR-0061). Enquanto o processo está em rascunho a configuração é substituível; é CRUD puro via
+/// EF Core, e a fronteira de Event Sourcing (ADR-0069) começa nos agregados de decisão downstream.
 /// </remarks>
 public sealed class ProcessoSeletivo : SoftDeletableEntity
 {
     public string Nome { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Identificador legível escolhido no cadastro, de onde derivam o endereço da página pública
-    /// do certame e a chave do documento no acervo. É exigido na criação
-    /// (<see cref="Criar"/>); a ausência só aparece em processo gravado antes dessa exigência, e
-    /// impede gerar versão publicada (<see cref="PendenciaDoIdentificadorLegivel"/>).
+    /// Identificador legível, de onde derivam o endereço da página pública do certame e a chave do
+    /// documento no acervo. Imutável depois de constar em versão publicada
+    /// (<see cref="DefinirIdentificadorLegivel"/>): trocá-lo mudaria o endereço de um certame que o
+    /// público já conhece.
     /// </summary>
-    /// <remarks>
-    /// Congelado com a versão, e imutável depois de constar em versão publicada
-    /// (<see cref="DefinirIdentificadorLegivel"/>): trocá-lo mudaria o endereço de um certame que
-    /// o público já conhece.
-    /// </remarks>
     public IdentificadorLegivel? IdentificadorLegivel { get; private set; }
 
     /// <summary>Id da origem em Configuração, sem FK cross-schema (ADR-0061).</summary>
     public Guid TipoProcessoOrigemId => TipoProcesso.OrigemId;
 
-    /// <summary>Snapshot-copy do tipo escolhido na criação, imutável para a vida do processo.</summary>
+    /// <summary>Cópia do tipo escolhido na criação, imutável para a vida do processo.</summary>
     public TipoProcessoSnapshot TipoProcesso { get; private set; } = null!;
 
     /// <summary>Alias de compatibilidade interna para fixtures; o contrato HTTP expõe <see cref="TipoProcesso"/>.</summary>
     public TipoProcessoSnapshot Tipo => TipoProcesso;
     public StatusProcesso Status { get; private set; }
 
-    /// <summary>
-    /// De onde vêm os candidatos deste certame (§3.4, Story #851) — NOT NULL, exigido na
-    /// criação. Deriva o piso mínimo do cronograma de fases; nunca ramifica por
-    /// <see cref="TipoProcesso"/>.
-    /// </summary>
+    /// <summary>De onde vêm os candidatos do certame; deriva o piso mínimo do cronograma e nunca ramifica por <see cref="TipoProcesso"/>.</summary>
     public OrigemCandidatos OrigemCandidatos { get; private set; }
 
-    /// <summary>
-    /// Quem responde pelo certame (CA-04 da Feature #40; issue #849) — NOT NULL, exigido na
-    /// criação, imutável depois (nenhum <c>Definir*</c> a altera; não há operação de
-    /// re-bind). Escalar de topo, sem FK cross-schema — resolvido uma única vez via
-    /// <c>IUnidadeReader</c> (ADR-0056) no momento da criação.
-    /// </summary>
+    /// <summary>Quem responde pelo certame: escalar de topo sem FK entre schemas, resolvido uma única vez na criação (ADR-0056) e imutável depois.</summary>
     public Guid UnidadeAdministradoraOrigemId { get; private set; }
 
-    /// <summary>Snapshot-copy (ADR-0061) da Unidade administradora, congelado na criação — ver <see cref="UnidadeAdministradoraOrigemId"/>.</summary>
+    /// <summary>Cópia (ADR-0061) da unidade administradora, congelada na criação.</summary>
     public UnidadeAdministradoraSnapshot UnidadeAdministradora { get; private set; } = null!;
 
     /// <summary>
-    /// Município cujo calendário rege a contagem dos prazos do certame (UNI-REQ-0111).
-    /// Declarado na criação e alterável enquanto a configuração admite mutação — não é
-    /// derivado da Unidade administradora, cuja cidade descreve onde ela fica, não sob
-    /// que calendário o certame corre.
+    /// Município cujo calendário rege a contagem dos prazos do certame (UNI-REQ-0111). Não deriva da
+    /// unidade administradora: a cidade dela diz onde fica, não sob que calendário o certame corre.
     /// </summary>
     public LocalidadeRegente Localidade { get; private set; } = null!;
 
     /// <summary>
-    /// Convenção de contagem que o certame usa para os prazos que distinguem dia útil de
-    /// dia não útil (UNI-REQ-0112): a entrada do rol de regras, congelada pela identidade
-    /// <c>(codigo, versao, hash)</c> que reproduz a definição. Ausência = não declarada,
-    /// o que só impede publicar quando alguma contagem depende dela.
+    /// Convenção de contagem dos prazos que distinguem dia útil (UNI-REQ-0112), identificada por
+    /// <c>(codigo, versao, hash)</c>. Ausente só impede publicar quando alguma contagem depende dela.
+    /// É uma por processo: por fase, duas fases do mesmo edital poderiam ler diferente o que é dia útil.
     /// </summary>
-    /// <remarks>
-    /// É <b>uma por processo</b>, não uma por fase: um mesmo certame conta todos os seus
-    /// prazos pela mesma convenção. Declará-la por fase permitiria que duas fases do
-    /// mesmo edital fechassem a janela por leituras diferentes do que é um dia útil.
-    /// </remarks>
     public ReferenciaRegra? AlgoritmoContagemPrazo { get; private set; }
 
     private readonly List<FormularioProcesso> _formularios = [];
 
-    /// <summary>Os formulários do processo, no máximo um por finalidade (UNI-REQ-0144).</summary>
+    /// <summary>Os formulários do processo (UNI-REQ-0144).</summary>
     public IReadOnlyCollection<FormularioProcesso> Formularios => _formularios.AsReadOnly();
 
     private readonly List<TermoExigidoFormulario> _termosExigidos = [];
 
-    /// <summary>
-    /// Os termos de consentimento ou declaração que os formulários exigem, escolhidos no catálogo e
-    /// congelados por versão (UNI-REQ-0086), cada um marcado com a finalidade do seu formulário.
-    /// </summary>
+    /// <summary>Os termos de consentimento ou declaração que os formulários exigem, congelados por versão (UNI-REQ-0086), cada um com a finalidade do seu formulário.</summary>
     public IReadOnlyCollection<TermoExigidoFormulario> TermosExigidos => _termosExigidos.AsReadOnly();
 
     private readonly List<EtapaProcesso> _etapas = [];
     public IReadOnlyCollection<EtapaProcesso> Etapas => _etapas.AsReadOnly();
 
-    /// <summary>
-    /// As etapas declaradas na fase de <paramref name="faseCodigo"/>, na ordem em que o
-    /// cliente as enviou. É por aqui que a leitura monta o quadro fase &rarr; etapa, sem
-    /// depender de sinalizador nenhum do cadastro.
-    /// </summary>
+    /// <summary>As etapas declaradas na fase <paramref name="faseCodigo"/>, na ordem em que foram enviadas.</summary>
     public IReadOnlyList<EtapaProcesso> EtapasDaFase(string faseCodigo) =>
         [.. _etapas.Where(e => string.Equals(e.FaseCodigo, faseCodigo, StringComparison.Ordinal))];
 
-    /// <summary>Cronograma de fases do certame (1..*, Story #851) — o eixo temporal, distinto das <see cref="Etapas"/> (eixo de pontuação).</summary>
     private readonly List<FaseCronograma> _cronogramaFases = [];
+
+    /// <summary>O eixo temporal do certame, distinto das <see cref="Etapas"/> (eixo de pontuação).</summary>
     public IReadOnlyCollection<FaseCronograma> CronogramaFases => _cronogramaFases.AsReadOnly();
 
-    /// <summary>Documentos exigidos do certame (0..*, Story #554) — por fase, aplicabilidade e gatilho.</summary>
     private readonly List<DocumentoExigido> _documentosExigidos = [];
+
+    /// <summary>Documentos exigidos do certame, por fase, aplicabilidade e gatilho.</summary>
     public IReadOnlyCollection<DocumentoExigido> DocumentosExigidos => _documentosExigidos.AsReadOnly();
 
-    /// <summary>
-    /// Árvore de satisfação dos documentos exigidos (0..*, Story #920) — coleção PLANA de
-    /// TODOS os nós (não só raízes; ver <see cref="NoExigenciaConfiguration"/>). Substitui o
-    /// antigo <c>DocumentoExigido.GrupoSatisfacaoId</c> (grupo plano, residual). Use
-    /// <see cref="RaizesDeExigencia"/> para as raízes da floresta.
-    /// </summary>
-    /// <summary>
-    /// Todo campo que o processo coleta: os itens dos formulários e os campos dos grupos repetíveis,
-    /// que também pertencem ao processo e se distinguem pelo grupo.
-    /// </summary>
+    /// <summary>Todo campo que o processo coleta: os itens dos formulários e os campos dos grupos repetíveis, que se distinguem pelo grupo.</summary>
     private readonly List<FatoColetado> _campos = [];
 
-    /// <summary>
-    /// Os fatos que este processo coleta do candidato, com a ordem de coleta e a pré-condição de
-    /// cada um (Story #926). Formam um grafo acíclico: a pré-condição de um fato só cita fatos
-    /// anteriores na ordem.
-    /// </summary>
+    /// <summary>Os fatos coletados do candidato, com a ordem e a pré-condição de cada um; a pré-condição só cita fatos anteriores na ordem.</summary>
     public IReadOnlyCollection<FatoColetado> FatosColetados => [.. Itens];
 
     /// <summary>Os itens dos formulários: os campos fora de grupo repetível.</summary>
@@ -167,10 +112,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private readonly List<GrupoColetado> _gruposColetados = [];
 
-    /// <summary>
-    /// Os grupos repetíveis dos formulários (UNI-REQ-0146), cada um dono dos seus campos. Os campos
-    /// são fatos de membro: não estão em <see cref="FatosColetados"/>, que são os itens.
-    /// </summary>
+    /// <summary>Os grupos repetíveis dos formulários (UNI-REQ-0146), cada um dono dos seus campos, que não entram em <see cref="FatosColetados"/>.</summary>
     public IReadOnlyCollection<GrupoColetado> GruposColetados => _gruposColetados.AsReadOnly();
 
     /// <summary>Os itens e os campos dos grupos: todo campo que o processo apresenta ao candidato.</summary>
@@ -178,17 +120,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private readonly List<OpcaoDeclaradaFato> _opcoesDeclaradas = [];
 
-    /// <summary>
-    /// As opções que o processo declara para os fatos cuja fonte dos valores é o processo, fora
-    /// os de atendimento especializado, cujas opções vêm da oferta (issue #1619).
-    /// </summary>
+    /// <summary>As opções que o processo declara para os fatos cuja fonte dos valores é o processo, exceto os de atendimento especializado, cujas opções vêm da oferta.</summary>
     public IReadOnlyCollection<OpcaoDeclaradaFato> OpcoesDeclaradas => _opcoesDeclaradas.AsReadOnly();
 
-    /// <summary>
-    /// De onde vêm as opções de um campo coletado: a origem copiada do catálogo quando a coleta foi
-    /// definida, com a condição e o recurso de atendimento sempre de opções do processo, porque a
-    /// oferta é a dona deles.
-    /// </summary>
+    /// <summary>A origem das opções de um campo coletado: a copiada do catálogo, salvo condição e recurso de atendimento, que são sempre do processo porque a oferta é a dona deles.</summary>
     public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
@@ -197,12 +132,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             : fato.OrigemValores;
     }
 
-    /// <summary>
-    /// As opções que o processo oferece para o fato, na ordem: da oferta de atendimento, quando
-    /// ela gere o fato, ou as declaradas pelo processo. Vazio quando não há nenhuma. É a única
-    /// leitura das opções do processo — publicação, validação de predicado e formulário usam
-    /// esta, e nenhuma decide pelo código do fato.
-    /// </summary>
+    /// <summary>As opções do processo para o fato, em ordem: as da oferta de atendimento, quando ela gere o fato, ou as declaradas. É a única leitura delas.</summary>
     public IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(string fatoCodigo)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
@@ -220,15 +150,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Substitui as opções que o processo declara para um fato de fonte do processo (issue
-    /// #1619). Editável em rascunho e sob sessão de retificação, como os demais <c>Definir*</c>.
+    /// Substitui as opções declaradas para um fato de fonte do processo. Recusa o fato cujas opções
+    /// vêm da oferta, a lista vazia, o código repetido e a redefinição que deixaria de fora um código
+    /// que uma exigência viva ainda cita, pelo próprio fato ou por um agregado cujas opções são as dele.
     /// </summary>
-    /// <remarks>
-    /// Recusa o fato cujas opções vêm da oferta de atendimento, a lista vazia, o código repetido
-    /// e a redefinição que deixaria de fora um código que uma exigência viva ainda cita, pelo
-    /// próprio fato ou por um agregado cujas opções são as dele — o edital sairia com uma
-    /// condição que nunca se satisfaz.
-    /// </remarks>
     /// <param name="agregadosDoFato">Os agregados sobre grupo repetível cujo fato de membro é este, lidos do catálogo.</param>
     public Result DefinirOpcoesDeclaradas(
         string fatoCodigo, IReadOnlyList<OpcaoDeclaradaFato> opcoes, PrecondicaoIfMatch precondicao,
@@ -250,9 +175,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 "As opções deste fato vêm da oferta de atendimento especializado; defina-as na oferta."));
         }
 
-        // A edição do ENEM só tem sentido quando a classificação lê notas do ENEM do candidato —
-        // mesmo raciocínio das regras de eliminação que exigem ENEM (ConfiguracaoClassificacao,
-        // "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem").
+        // A edição do ENEM só tem sentido quando a classificação lê notas do ENEM do candidato.
         if (string.Equals(fato, EdicaoDoEnem.Fato, StringComparison.Ordinal) && Classificacao is not { BaseadoEmEnem: true })
         {
             return Result.Failure(new DomainError(
@@ -296,27 +219,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
 
-    /// <summary>
-    /// As regras de derivação que o processo configura, por código de fato (Story #927): a
-    /// configuração <c>{quando, contribui}</c> que o motor usa para resolver um fato a partir dos
-    /// fatos declarados. As que a oferta de vagas define estão em <see cref="DerivacoesEfetivas"/>.
-    /// </summary>
+    /// <summary>As regras de derivação que o processo configura, por código de fato; as que a oferta de vagas define estão em <see cref="DerivacoesEfetivas"/>.</summary>
     public IReadOnlyCollection<ConfiguracaoDerivacaoFato> RegrasDerivacao => _regrasDerivacao.AsReadOnly();
 
-    /// <summary>
-    /// Todas as derivações do processo: as que ele configura e as que a oferta de vagas define — a
-    /// modalidade do candidato e a opção pelas cotas da lei (<see cref="DerivacoesDaOferta"/>). É a
-    /// fonte de quem avalia, confere ou cita um fato derivado.
-    /// </summary>
+    /// <summary>Todas as derivações do processo: as configuradas e as que a oferta de vagas define (<see cref="DerivacoesDaOferta"/>).</summary>
     public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas() => DerivacoesDaOferta.Efetivas(_regrasDerivacao, _distribuicaoVagas);
 
     private readonly List<NoExigencia> _nosExigencia = [];
+
+    /// <summary>Todos os nós da árvore de satisfação dos documentos exigidos, raízes e demais; as raízes saem em <see cref="RaizesDeExigencia"/>.</summary>
     public IReadOnlyCollection<NoExigencia> NosExigencia => _nosExigencia.AsReadOnly();
 
-    /// <summary>As raízes da floresta de árvores de satisfação — projeção em memória de <see cref="NosExigencia"/> (<c>NoPaiId == null</c>).</summary>
+    /// <summary>As raízes das árvores de satisfação (<c>NoPaiId == null</c>).</summary>
     public IEnumerable<NoExigencia> RaizesDeExigencia => _nosExigencia.Where(static n => n.NoPaiId is null);
 
-    /// <summary>Âncora que resolve FAIXA_ETARIA na publicação (Story #554, PR #896) — ausência = nenhum gatilho por idade pode existir (bloqueado na publicação, ver <see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
+    /// <summary>Âncora que resolve FAIXA_ETARIA; sem ela nenhum gatilho por idade pode existir (<see cref="PendenciaDaReferenciaTemporalFatos"/>).</summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
 
     public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
@@ -324,78 +241,43 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
     public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
 
-    /// <summary>
-    /// Configuração do bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015); só existe quando o processo declara que o aplica
-    /// (<see cref="AplicaBonusRegional"/>).
-    /// </summary>
+    /// <summary>Bônus regional (UNI-REQ-0015); só existe quando o processo declara que o aplica (<see cref="AplicaBonusRegional"/>).</summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; private set; }
 
-    /// <summary>
-    /// Declaração explícita de que o processo aplica ou não o bônus regional, como
-    /// <see cref="ConfiguracaoTaxaInscricao"/> faz com a cobrança. <see langword="null"/> é "ainda
-    /// não declarado" e BLOQUEIA a publicação: a ausência da configuração deixou de significar "sem
-    /// bônus". Verdadeiro exige <see cref="BonusRegional"/>; falso a dispensa.
-    /// </summary>
+    /// <summary>Declaração explícita de que o processo aplica ou não o bônus regional. Nulo é "ainda não declarado" e bloqueia a publicação; verdadeiro exige <see cref="BonusRegional"/>.</summary>
     public bool? AplicaBonusRegional { get; private set; }
 
-    /// <summary>
-    /// Quantos cursos o candidato escolhe na inscrição (1 ou 2). <see langword="null"/> é "ainda
-    /// não declarado" e BLOQUEIA a publicação, como <see cref="AplicaBonusRegional"/>: não há
-    /// valor padrão silencioso. Depende das ofertas da distribuição de vagas — nunca pode ser
-    /// maior que o número de ofertas da distribuição gravada, que a conformidade e as
-    /// gravações das duas dimensões conferem.
-    /// </summary>
+    /// <summary>Quantos cursos o candidato escolhe na inscrição (1 ou 2). Nulo é "ainda não declarado" e bloqueia a publicação; não pode passar do número de ofertas da distribuição.</summary>
     public int? NumeroDeOpcoesDeCurso { get; private set; }
 
     /// <summary>O maior número de opções de curso que a inscrição admite.</summary>
     public const int MaximoDeOpcoesDeCurso = 2;
 
-    /// <summary>
-    /// A cascata de remanejamento das cotas reservadas (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) —
-    /// ausência = nenhuma cascata configurada (toggle por presença). Uma só por processo, nunca por oferta de curso
-    /// (§2.2 da story) — a cobertura por oferta é validada em <see cref="PendenciaDaCascata"/>.
-    /// </summary>
+    /// <summary>Cascata de remanejamento das cotas reservadas (UNI-REQ-0056); ausente significa nenhuma. É uma por processo, e a cobertura por oferta é conferida em <see cref="PendenciaDaCascata"/>.</summary>
     public ConfiguracaoCascataRemanejamento? Cascata { get; private set; }
 
     private readonly List<CriterioDesempate> _criteriosDesempate = [];
     public IReadOnlyCollection<CriterioDesempate> CriteriosDesempate => _criteriosDesempate.AsReadOnly();
 
-    /// <summary>Configuração de classificação (15º bloco canônico, Story #775) — compõe por referência a fórmula, precisão, eliminação e ordem de alocação.</summary>
+    /// <summary>Classificação: compõe por referência a fórmula, a precisão, a eliminação e a ordem de alocação.</summary>
     public ConfiguracaoClassificacao? Classificacao { get; private set; }
 
-    /// <summary>
-    /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — ausência já é o default
-    /// minimizado (só o número de inscrição), não uma escolha administrativa pendente
-    /// (toggle por presença).
-    /// </summary>
+    /// <summary>Divulgação pública do certame (UNI-REQ-0050); ausente já é o padrão minimizado (só o número de inscrição).</summary>
     public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; private set; }
 
-    /// <summary>
-    /// Taxa de inscrição e isenção (issue #1112) — <see langword="null"/> significa "ainda não
-    /// declarado" e BLOQUEIA a publicação (CA-01, ver <see cref="ItensEstruturaisDeConformidade"/>).
-    /// Como a declaração do bônus (<see cref="AplicaBonusRegional"/>), e diferente de
-    /// <see cref="ConfiguracaoDivulgacao"/>, ausência aqui não é um estado válido de publicação —
-    /// é uma dimensão obrigatória ainda não preenchida.
-    /// </summary>
+    /// <summary>Taxa de inscrição e isenção. Nulo é "ainda não declarado" e bloqueia a publicação (<see cref="ItensEstruturaisDeConformidade"/>), ao contrário da divulgação.</summary>
     public ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; private set; }
 
     /// <summary>
-    /// A sessão editorial aberta sobre a configuração — o <b>portador</b> da retificação
-    /// (ADR-0110 D3). <see langword="null"/> quando não há retificação em curso.
+    /// A sessão editorial aberta sobre a configuração, portadora da retificação (ADR-0110 D3); nula
+    /// quando não há retificação em curso.
     /// </summary>
     /// <remarks>
-    /// É a <b>existência</b> dela que autoriza a mutação de um processo publicado — não um
-    /// status. O <see cref="Status"/> continua <see cref="StatusProcesso.Publicado"/>
-    /// durante toda a edição: o certame <b>está</b> publicado, e o candidato continua
-    /// vendo a versão congelada vigente.
-    /// <para>
-    /// <b>Cuidado ao carregar:</b> <see langword="null"/> aqui significa tanto "não existe"
-    /// quanto "não foi carregado". É por isso que a mutação tem carregamento próprio —
-    /// <c>IProcessoSeletivoRepository.ObterParaMutacaoAsync</c>, o único que a inclui — e
-    /// um fitness test que prova que todo handler de mutação passa por ele. Sem isso, um
-    /// comando futuro que usasse um carregamento sem esta navegação recusaria uma edição
-    /// legítima: fail-closed <b>indevido</b>.
-    /// </para>
+    /// É a existência dela, e não um status, que autoriza mutar um processo publicado: o
+    /// <see cref="Status"/> segue <see cref="StatusProcesso.Publicado"/> e o candidato continua vendo a
+    /// versão congelada vigente. Nula significa tanto "não existe" quanto "não foi carregada"; por isso
+    /// a mutação carrega por <c>IProcessoSeletivoRepository.ObterParaMutacaoAsync</c>, o único que a
+    /// inclui, e um teste de arquitetura prova que todo handler de mutação passa por ele.
     /// </remarks>
     public RascunhoRetificacao? Rascunho { get; private set; }
 

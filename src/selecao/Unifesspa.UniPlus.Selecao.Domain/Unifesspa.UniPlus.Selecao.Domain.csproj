@@ -24,6 +24,10 @@
     no assembly. Mantém a regra "Domain → SharedKernel apenas".
   -->
   <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Selecao.Domain.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Events\Schemas\*.avsc" />
   </ItemGroup>
 
