@@ -5,7 +5,6 @@ using Enums;
 using Events;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -1861,14 +1860,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cascata_destino_desconhecido", DimensaoConformidade.CascataRemanejamento, "Cascata: destino declarado corresponde a modalidade ofertada", !CoberturaDaCascata.ExisteCascataDestinoDesconhecido(EstadoDaConfiguracao.De(this))),
 
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
-        new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
-        new ItemConformidade("exigencia_finalidade_incoerente_com_a_fase", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: declara o formulário a que pertence, entre os que a sua fase responde", PendenciaDaFinalidadeDasExigencias() is null),
-        new ItemConformidade("exigencia_fato_comprovado_fora_do_processo", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: comprova só fatos que o processo coleta ou que são derivados congelados na publicação", PendenciaDoFatoComprovadoForaDoProcesso(protecao) is null),
-        new ItemConformidade("exigencia_menos_protegida_que_fato_comprovado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: o tipo de documento é tão protegido quanto o mais protegido dos fatos que a exigência comprova", PendenciaDaProtecaoDasExigencias(protecao) is null),
-        new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ExisteExigenciaRemoveVantagemSemVantagemViva()),
-        new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
-        new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ExisteGrupoRemoveVantagemSemVantagemViva()),
-        new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(fatosDeModalidade)),
+        new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("exigencia_finalidade_incoerente_com_a_fase", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: declara o formulário a que pertence, entre os que a sua fase responde", ProtecaoDasExigencias.PendenciaDaFinalidadeDasExigencias(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("exigencia_fato_comprovado_fora_do_processo", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: comprova só fatos que o processo coleta ou que são derivados congelados na publicação", ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(EstadoDaConfiguracao.De(this), protecao) is null),
+        new ItemConformidade("exigencia_menos_protegida_que_fato_comprovado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: o tipo de documento é tão protegido quanto o mais protegido dos fatos que a exigência comprova", ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(EstadoDaConfiguracao.De(this), protecao) is null),
+        new ItemConformidade("exigencia_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (exigência)", !ConsequenciaDeIndeferimento.ExisteExigenciaRemoveVantagemSemVantagemViva(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ConsequenciaDeIndeferimento.ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(EstadoDaConfiguracao.De(this), fatosDeModalidade)),
+        new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ConsequenciaDeIndeferimento.ExisteGrupoRemoveVantagemSemVantagemViva(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ConsequenciaDeIndeferimento.ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(EstadoDaConfiguracao.De(this), fatosDeModalidade)),
         new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando alguma regra cita a faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
         new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
@@ -1990,27 +1989,27 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
-        if (PendenciaDasExigenciasDocumentais() is { } exigencias)
+        if (ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais(EstadoDaConfiguracao.De(this)) is { } exigencias)
         {
             return exigencias;
         }
 
-        if (PendenciaDaFinalidadeDasExigencias() is { } finalidadeDaExigencia)
+        if (ProtecaoDasExigencias.PendenciaDaFinalidadeDasExigencias(EstadoDaConfiguracao.De(this)) is { } finalidadeDaExigencia)
         {
             return finalidadeDaExigencia;
         }
 
-        if (PendenciaDoFatoComprovadoForaDoProcesso(protecao) is { } fatoComprovadoForaDoProcesso)
+        if (ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(EstadoDaConfiguracao.De(this), protecao) is { } fatoComprovadoForaDoProcesso)
         {
             return fatoComprovadoForaDoProcesso;
         }
 
-        if (PendenciaDaProtecaoDasExigencias(protecao) is { } protecaoDaExigencia)
+        if (ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(EstadoDaConfiguracao.De(this), protecao) is { } protecaoDaExigencia)
         {
             return protecaoDaExigencia;
         }
 
-        if (PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(fatosDeModalidade) is { } coerencia)
+        if (ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(EstadoDaConfiguracao.De(this), fatosDeModalidade) is { } coerencia)
         {
             return coerencia;
         }
@@ -2515,299 +2514,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// A finalidade de cada exigência continua coerente com a fase dela: a escrita confere, e o
-    /// cronograma pode ter tirado da fase, depois, o formulário que a exigência declara.
-    /// </summary>
-    private DomainError? PendenciaDaFinalidadeDasExigencias() =>
-        _documentosExigidos
-            .Select(exigencia => _cronogramaFases.Find(f => f.Id == exigencia.ExigidoNaFaseId) is { } fase
-                ? Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(exigencia.Finalidade, fase)
-                : null)
-            .FirstOrDefault(static recusa => recusa is not null);
-
-    /// <summary>
     /// Congela em cada exigência a proteção efetiva calculada pelo contexto (a da versão vigente, quando
     /// a exigência é a mesma, ou a vigente no cadastro), antes do snapshot. A exigência que o contexto
     /// não traz mantém a cópia.
     /// </summary>
-    public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao)
-    {
-        ArgumentNullException.ThrowIfNull(protecao);
-
-        foreach (DocumentoExigido exigencia in _documentosExigidos)
-        {
-            if (protecao.PorExigencia.TryGetValue(exigencia.Id, out ProtecaoDoDocumento? efetiva))
-            {
-                exigencia.RecongelarProtecao(efetiva);
-            }
-        }
-    }
-
-    private static ClassificacaoDeProtecao ClassificacaoEfetiva(DocumentoExigido exigencia, ProtecaoVigenteDasExigencias? protecao) =>
-        protecao is not null && protecao.PorExigencia.TryGetValue(exigencia.Id, out ProtecaoDoDocumento? efetiva)
-            ? efetiva.Classificacao
-            : exigencia.ClassificacaoProtecao;
-
-    /// <summary>
-    /// Cada fato que uma exigência diz comprovar é coletado por algum formulário do processo ou é fato
-    /// derivado congelado na publicação: só assim tem classificação congelada com que comparar.
-    /// </summary>
-    private DomainError? PendenciaDoFatoComprovadoForaDoProcesso(ProtecaoVigenteDasExigencias? protecao)
-    {
-        foreach (DocumentoExigido exigencia in _documentosExigidos)
-        {
-            foreach (string codigo in exigencia.FatosComprovados.Order(StringComparer.Ordinal))
-            {
-                if (protecao is not null
-                    && !protecao.ClassificacaoDosFatosDerivados.ContainsKey(codigo)
-                    && !protecao.DerivadosSemProtecaoAprovada.Contains(codigo)
-                    && !_campos.Any(f => string.Equals(f.FatoCodigo, codigo, StringComparison.Ordinal)))
-                {
-                    return new DomainError(
-                        DocumentoExigido.FatoComprovadoForaDoProcesso,
-                        $"A exigência do tipo de documento '{exigencia.TipoDocumentoCodigo}' comprova o fato '{codigo}', que o processo não coleta e que não é fato derivado do catálogo.");
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O tipo de documento congelado na exigência é tão protegido quanto o mais protegido dos fatos
-    /// que ela comprova, na classificação que cada fato tem congelada no processo: um laudo
-    /// classificado como pessoal não comprova um fato sensível, porque o arquivo do laudo carrega
-    /// o dado do fato. O fato que só aciona a exigência pelo gatilho não entra na conferência, e a
-    /// exigência sem fato comprovado vale pela classificação do tipo. O fato que o processo não
-    /// coleta é outra pendência (<see cref="PendenciaDoFatoComprovadoForaDoProcesso"/>) e não conta aqui.
-    /// </summary>
-    private DomainError? PendenciaDaProtecaoDasExigencias(ProtecaoVigenteDasExigencias? protecao)
-    {
-        foreach (DocumentoExigido exigencia in _documentosExigidos.Where(static e => e.FatosComprovados.Length > 0))
-        {
-            (string Codigo, ClassificacaoDeProtecao Nivel)? maisProtegido = null;
-            foreach (string codigo in exigencia.FatosComprovados.Order(StringComparer.Ordinal))
-            {
-                ClassificacaoDeProtecao[] daColeta =
-                [
-                    .. _campos.Where(f => string.Equals(f.FatoCodigo, codigo, StringComparison.Ordinal))
-                        .Select(static f => ClassificacoesDeProtecao.Analisar(f.ClassificacaoProtecao)),
-                ];
-                ClassificacaoDeProtecao nivel;
-                if (daColeta.Length > 0)
-                {
-                    nivel = daColeta.Max();
-                }
-                else if (protecao?.ClassificacaoDosFatosDerivados.TryGetValue(codigo, out ClassificacaoDeProtecao doDerivado) == true)
-                {
-                    nivel = doDerivado;
-                }
-                else
-                {
-                    continue;
-                }
-
-                if (maisProtegido is not { } atual || nivel > atual.Nivel)
-                {
-                    maisProtegido = (codigo, nivel);
-                }
-            }
-
-            ClassificacaoDeProtecao doTipo = ClassificacaoEfetiva(exigencia, protecao);
-            if (maisProtegido is { } decisivo && doTipo < decisivo.Nivel)
-            {
-                return new DomainError(
-                    ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado,
-                    $"A exigência do tipo de documento '{exigencia.TipoDocumentoCodigo}' ({exigencia.TipoDocumentoNome}) é {ClassificacoesDeProtecao.ParaTokenCanonico(doTipo)} "
-                    + $"e comprova o fato '{decisivo.Codigo}', que é {ClassificacoesDeProtecao.ParaTokenCanonico(decisivo.Nivel)}. "
-                    + "Exija um tipo de documento com ao menos essa proteção ou retire o fato da exigência.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Pendências dos documentos exigidos (Story #554). Chamado por
-    /// <see cref="Publicar"/> e por <see cref="SucederVersao"/> (Retificar/
-    /// FecharRetificacao), sempre <b>depois</b> de <see cref="PendenciaDoCronograma"/>.
-    /// </summary>
-    /// <remarks>
-    /// <b>CA-01</b> (Story #554, issue #547) — uma exigência <c>CONDICIONAL</c> sem
-    /// nenhuma condição de gatilho viva que <see cref="DocumentoExigido.DeterminaResultado"/>
-    /// é "exigência morta": nunca seria cobrada de ninguém. Desde a PR #896 (issue #892),
-    /// avalia a coleção REAL de <see cref="DocumentoExigido.Condicoes"/>.
-    /// <para>
-    /// A guarda fail-closed <b>B-01</b>, que bloqueava QUALQUER publicação com
-    /// <see cref="DocumentoExigido"/> configurado enquanto o bloco
-    /// <c>documentosExigidos.exigencias</c> do envelope era stub (PR #895..PR #900), foi
-    /// <b>removida na PR #903</b> (issue #548): o bloco rico a substitui, e o gate real
-    /// (<see cref="Services.AvaliadorConformidadeLegal.Avaliar"/>, predicado
-    /// <c>DocumentoObrigatorioParaModalidade</c>) passa a decidir com base no que está
-    /// realmente configurado, não mais reprovando por padrão conservador.
-    /// </para>
-    /// </remarks>
-    private DomainError? PendenciaDasExigenciasDocumentais()
-    {
-        foreach (DocumentoExigido exigencia in _documentosExigidos)
-        {
-            bool possuiCondicaoViva = exigencia.Condicoes.Count > 0;
-            if (exigencia.Aplicabilidade == Aplicabilidade.Condicional
-                && !possuiCondicaoViva
-                && exigencia.DeterminaResultado())
-            {
-                return new DomainError(
-                    "DocumentoExigido.CondicionalVaziaDeterminaResultado",
-                    $"A exigência '{exigencia.TipoDocumentoCodigo}' é CONDICIONAL, determina resultado, mas não tem nenhuma condição de gatilho viva — nunca seria cobrada de ninguém.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Coerência entre a consequência de indeferimento declarada em cada
-    /// <see cref="DocumentoExigido"/> e a ação da vaga (Story #554, PR #903, CA-05) — lida
-    /// de <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>, sem campo duplicado em
-    /// <see cref="DocumentoExigido"/>. Chamado por <see cref="Publicar"/> e por
-    /// <see cref="SucederVersao"/> (Retificar/FecharRetificacao), sempre <b>depois</b> de
-    /// <see cref="PendenciaDasExigenciasDocumentais"/>. Sem cache — recomputado a cada
-    /// chamada a partir da coleção real de <see cref="_documentosExigidos"/> e
-    /// <see cref="_distribuicaoVagas"/>, então uma mudança de gatilho ou de distribuição
-    /// de vagas entre versões é sempre reavaliada (contraprova "reavaliação após mudança
-    /// de gatilho").
-    /// </summary>
-    /// <remarks>
-    /// Duas checagens:
-    /// <list type="bullet">
-    /// <item><c>REMOVE_VANTAGEM</c> exige vantagem viva no processo — hoje a única
-    /// vantagem modelada é <see cref="BonusRegional"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015; só existe quando
-    /// <see cref="AplicaBonusRegional"/> é verdadeiro).</item>
-    /// <item>Para cada modalidade que a exigência alcança pelas condições sobre os fatos cujos
-    /// valores são modalidades (os mesmos do gate real, <see cref="Services.AvaliadorConformidadeLegal"/>),
-    /// quando essa modalidade declara <c>AcaoQuandoIndeferido</c>, a consequência precisa
-    /// ser idêntica — mesmo vocabulário fechado dos dois lados.</item>
-    /// </list>
-    /// </remarks>
-    private DomainError? PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(FatosDeModalidade fatosDeModalidade)
-    {
-        foreach (DocumentoExigido exigencia in _documentosExigidos)
-        {
-            if (exigencia.ConsequenciaIndeferimento is not { } consequencia)
-            {
-                continue;
-            }
-
-            if (ConsequenciaRemoveVantagemSemVantagemViva(consequencia))
-            {
-                return new DomainError(
-                    "DocumentoExigido.RemoveVantagemSemVantagemViva",
-                    $"A exigência '{exigencia.TipoDocumentoCodigo}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
-            }
-
-            if (ModalidadeIncoerenteComConsequencia(consequencia, ModalidadesAlcancadasPor(exigencia, fatosDeModalidade)) is { } modalidadeIncoerente)
-            {
-                return new DomainError(
-                    "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga",
-                    $"A exigência '{exigencia.TipoDocumentoCodigo}' declara consequência '{consequencia}', incoerente com a ação de indeferimento '{modalidadeIncoerente.AcaoQuandoIndeferido}' configurada para a modalidade '{modalidadeIncoerente.Codigo}'.");
-            }
-        }
-
-        // Story #920: os mesmos dois gates, estendidos ao grupo OU/N-de com consequência
-        // própria (exigência de 1ª classe) — o alcance de modalidade é a união (OR) das
-        // folhas descendentes (NoExigencia.PodeAlcancarModalidade).
-        foreach (NoExigencia grupo in _nosExigencia.Where(static no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is not null))
-        {
-            string consequenciaDoGrupo = grupo.Consequencia!;
-
-            if (ConsequenciaRemoveVantagemSemVantagemViva(consequenciaDoGrupo))
-            {
-                return new DomainError(
-                    "NoExigencia.RemoveVantagemSemVantagemViva",
-                    $"O grupo '{grupo.Id}' declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva (ex.: bônus regional) para remover.");
-            }
-
-            if (ModalidadeIncoerenteComConsequencia(consequenciaDoGrupo, ModalidadesAlcancadasPor(grupo, fatosDeModalidade)) is { } modalidadeIncoerenteDoGrupo)
-            {
-                return new DomainError(
-                    "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga",
-                    $"O grupo '{grupo.Id}' declara consequência '{consequenciaDoGrupo}', incoerente com a ação de indeferimento '{modalidadeIncoerenteDoGrupo.AcaoQuandoIndeferido}' configurada para a modalidade '{modalidadeIncoerenteDoGrupo.Codigo}'.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>A consequência é REMOVE_VANTAGEM sem nenhuma vantagem viva no processo (bônus regional, Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015).</summary>
-    private bool ConsequenciaRemoveVantagemSemVantagemViva(string? consequencia) =>
-        consequencia == "REMOVE_VANTAGEM" && BonusRegional is null;
-
-    /// <summary>
-    /// A primeira modalidade alcançada cuja <c>AcaoQuandoIndeferido</c> declarada é incoerente com a
-    /// consequência — ou <see langword="null"/> quando todas as que declaram ação concordam. Devolve a
-    /// ENTIDADE (não um bool) porque tanto o gate (mensagem nomeando oferta/modalidade) quanto o
-    /// checklist (presença) derivam do mesmo cálculo, sem recomputar a busca duas vezes.
-    /// </summary>
-    private static ModalidadeSelecionada? ModalidadeIncoerenteComConsequencia(
-        string consequencia, IEnumerable<ModalidadeSelecionada> modalidadesAlcancadas)
-    {
-        string consequenciaComoAcaoDaVaga = NormalizarConsequenciaParaAcaoDaVaga(consequencia);
-        return modalidadesAlcancadas.FirstOrDefault(modalidade => modalidade.AcaoQuandoIndeferido is { } acao
-            && !string.Equals(acao, consequenciaComoAcaoDaVaga, StringComparison.Ordinal));
-    }
-
-    /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com REMOVE_VANTAGEM sem vantagem viva.</summary>
-    private bool ExisteExigenciaRemoveVantagemSemVantagemViva() =>
-        _documentosExigidos.Any(e => ConsequenciaRemoveVantagemSemVantagemViva(e.ConsequenciaIndeferimento));
-
-    /// <summary>Existe <see cref="DocumentoExigido"/> (folha) com consequência incoerente com a ação de alguma modalidade alcançada.</summary>
-    private bool ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(FatosDeModalidade fatosDeModalidade) =>
-        _documentosExigidos.Any(e => e.ConsequenciaIndeferimento is { } c
-            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(e, fatosDeModalidade)) is not null);
-
-    /// <summary>Existe grupo OU/N-de com consequência própria REMOVE_VANTAGEM sem vantagem viva (Story #920).</summary>
-    private bool ExisteGrupoRemoveVantagemSemVantagemViva() =>
-        _nosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && ConsequenciaRemoveVantagemSemVantagemViva(no.Consequencia));
-
-    /// <summary>Existe grupo OU/N-de com consequência própria incoerente com a ação de alguma modalidade alcançada (Story #920).</summary>
-    private bool ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(FatosDeModalidade fatosDeModalidade) =>
-        _nosExigencia.Any(no => no.Tipo == TipoNo.GrupoOu && no.Consequencia is { } c
-            && ModalidadeIncoerenteComConsequencia(c, ModalidadesAlcancadasPor(no, fatosDeModalidade)) is not null);
-
-    /// <summary>
-    /// Ponte entre os dois vocabulários fechados de "ação de indeferimento" — Story #554
-    /// (PR #903), achado de revisão: <see cref="DocumentoExigido.ConsequenciaIndeferimento"/>
-    /// usa <c>RECLASSIFICA_AC</c> (rol fechado desde a PR #895, issue #547), mas
-    /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/> — snapshot-copy do cadastro
-    /// de <c>Modalidade</c> no módulo Configuração
-    /// (<c>ck_modalidade_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
-    /// MESMO conceito com grafias diferentes, nunca unificadas entre os dois módulos;
-    /// comparar os tokens crus reprovaria sempre o único caso de reclassificação
-    /// realmente coerente que existe.
-    /// </summary>
-    private static string NormalizarConsequenciaParaAcaoDaVaga(string consequencia) =>
-        consequencia == "RECLASSIFICA_AC" ? "RECLASSIFICAR_AC" : consequencia;
-
-    /// <summary>
-    /// Modalidades ofertadas que o gatilho da exigência PODE alcançar — verificação
-    /// estrutural (<see cref="DocumentoExigido.PodeAlcancarModalidade"/>), não a avaliação
-    /// factual de <see cref="DocumentoExigido.AplicavelPara"/> que o gate de conformidade
-    /// legal usa (<see cref="Services.AvaliadorConformidadeLegal"/>) — aqui não há
-    /// candidato real, só a pergunta "existe combinação de fatos em que este documento se
-    /// torna exigido para alguém nesta modalidade?" (Story #554, PR #903, achado de
-    /// revisão P2: <c>AplicavelPara</c> trataria qualquer gatilho não-modal, ex. só
-    /// <c>FAIXA_ETARIA</c>, como nunca alcançando nenhuma modalidade).
-    /// </summary>
-    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(DocumentoExigido exigencia, FatosDeModalidade fatosDeModalidade) =>
-        _distribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .Where(modalidade => exigencia.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
-
-    /// <summary>Mesma checagem estrutural acima, para um nó de grupo (Story #920) — <see cref="NoExigencia.PodeAlcancarModalidade"/> é a união (OR) das folhas descendentes.</summary>
-    private IEnumerable<ModalidadeSelecionada> ModalidadesAlcancadasPor(NoExigencia no, FatosDeModalidade fatosDeModalidade) =>
-        _distribuicaoVagas
-            .SelectMany(static d => d.Modalidades)
-            .Where(modalidade => no.PodeAlcancarModalidade(modalidade.Codigo, fatosDeModalidade));
+    public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao) =>
+        ProtecaoDasExigencias.Recongelar(_documentosExigidos, protecao);
 
     /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
