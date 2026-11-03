@@ -9,6 +9,8 @@ using Npgsql;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -99,7 +101,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         // Story #923: a árvore com grupos E/OU já é publicável — sem pendência estrutural
         // remanescente para esta configuração mínima (sem REMOVE_VANTAGEM/modalidade
         // incoerente, sem exigência CONDICIONAL vazia, sem gatilho por FAIXA_ETARIA).
-        DomainError? pendencia = recarregado.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(recarregado), FatosDeModalidadeDeTeste.DoCatalogo);
         pendencia.Should().BeNull(pendencia?.Message);
     }
 

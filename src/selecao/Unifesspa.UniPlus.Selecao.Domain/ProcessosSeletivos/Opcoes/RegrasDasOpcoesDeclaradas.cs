@@ -1,9 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -65,5 +63,22 @@ public static class RegrasDasOpcoesDeclaradas
         return OfertaAtendimentoEspecializado.ImpoeOrigemDoFato(fato.FatoCodigo)
             ? OrigemValoresColeta.OpcoesDoProcesso
             : fato.OrigemValores;
+    }
+
+    public static IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(EstadoDaConfiguracao estado, string fatoCodigo)
+    {
+        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
+
+        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo))
+        {
+            return estado.OfertaAtendimento?.OpcoesDoFato(fatoCodigo) ?? [];
+        }
+
+        return [.. estado.OpcoesDeclaradas
+            .Where(o => string.Equals(o.FatoCodigo, fatoCodigo, StringComparison.Ordinal))
+            .OrderBy(static o => o.Ordem)
+            .ThenBy(static o => o.Codigo, StringComparer.Ordinal)
+            .Select(static o => new OpcaoDoProcesso(o.Codigo, o.Rotulo, o.Ordem))];
     }
 }

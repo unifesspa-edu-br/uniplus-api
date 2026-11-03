@@ -308,7 +308,7 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}"));
         }
 
-        if (ProcessoSeletivo.EdicaoDoEnemSemClassificacaoEnem(
+        if (Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
                 [.. fatosColetados, .. gruposColetados.SelectMany(static g => g.Subitens)], classificacao) is { } edicaoSemEnem)
         {
             return Result<EnvelopeReidratado>.Failure(new DomainError(

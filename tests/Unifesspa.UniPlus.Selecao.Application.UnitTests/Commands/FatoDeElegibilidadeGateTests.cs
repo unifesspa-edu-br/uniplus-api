@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -180,7 +182,7 @@ public sealed class FatoDeElegibilidadeGateTests
                 [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.RecusaDoFatoDeElegibilidade(new Dictionary<string, string>(), new Dictionary<string, string>())
+        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
             .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
         return processo;
     }

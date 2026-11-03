@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -63,7 +65,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
 
         (pendencia?.Code).Should().Be(comOCampo ? null : FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
         ItemOk(processo, ItemDoCampo).Should().Be(comOCampo);
@@ -75,7 +77,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         ProcessoSeletivo processo = ProcessoDoEnem();
         processo.DefinirItens([CampoDaEdicao(obrigatoriedade: Obrigatoriedade.Quando(SeCasado()))]).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "O campo da edição com exibição condicional não pede a edição a todo candidato e é recusado")]
@@ -86,7 +88,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             [CampoDaEdicao(exibicao: [CondicaoPrecondicaoFato.Criar(0, "ESTADO_CIVIL", Operador.Igual, JsonSerializer.SerializeToElement("CASADO")).Value!])])
             .IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "O campo da edição numa seção que se esconde não pede a edição a todo candidato e é recusado")]
@@ -105,7 +107,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens([CampoDaEdicao()], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem);
     }
 
     [Fact(DisplayName = "Com o resultado importado, a classificação baseada em ENEM não exige o campo da edição nem as edições admitidas")]
@@ -178,7 +180,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirItens(comOCampo ? [CampoDaEdicao()] : []).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
 
         (pendencia?.Code).Should().Be(comOCampo ? FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem : null);
         ItemOk(processo, "formulario_edicao_enem_sem_classificacao_enem").Should().Be(!comOCampo);
@@ -199,7 +201,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         List<string> vermelhos = [.. processo.AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
             .Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code
             .Should().Be(FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem);
         vermelhos.IndexOf("formulario_edicao_enem_sem_classificacao_enem")
             .Should().BeGreaterThanOrEqualTo(0).And.BeLessThan(vermelhos.IndexOf("termo_exigido_sem_forma_de_aceite"));

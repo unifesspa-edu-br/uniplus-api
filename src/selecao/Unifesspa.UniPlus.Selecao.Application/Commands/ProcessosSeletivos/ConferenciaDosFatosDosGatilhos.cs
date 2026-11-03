@@ -7,6 +7,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
 /// <summary>
 /// No congelamento, os fatos dos gatilhos de exigência são conferidos de novo contra o processo:
@@ -50,6 +51,6 @@ internal static class ConferenciaDosFatosDosGatilhos
             }
         }
 
-        return processo.PendenciaDeGrupoQueAlimentaAgregado(membroPorAgregado);
+        return PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(EstadoDaConfiguracao.De(processo), membroPorAgregado);
     }
 }

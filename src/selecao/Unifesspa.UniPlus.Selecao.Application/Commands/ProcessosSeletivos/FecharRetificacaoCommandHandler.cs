@@ -308,7 +308,7 @@ public static class FecharRetificacaoCommandHandler
         // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
         // quando a política não resolve — sem este guard antes dela, um processo inválido
         // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
-        if (processo.PendenciaPreCanonicalizacao(fatosDeModalidade, protecaoDasExigencias) is { } pendenciaPreCanonicalizacao)
+        if (ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), fatosDeModalidade, protecaoDasExigencias) is { } pendenciaPreCanonicalizacao)
         {
             return (Result.Failure(pendenciaPreCanonicalizacao), []);
         }

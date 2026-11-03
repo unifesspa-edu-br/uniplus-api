@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -533,7 +535,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         Result legado = tracked.DefinirFatosColetados(
             FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), PrecondicaoIfMatch.Curinga);
         legado.IsSuccess.Should().BeTrue(legado.Error?.Message + string.Join(";", legado.Errors.Select(static e => e.Error.Message)));
-        tracked.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(tracked), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(
             FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "pré-condição: a retificação não fecharia assim");
 
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
@@ -543,7 +545,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             processos, catalogo, sessao, CancellationToken.None);
 
         regravacao.IsSuccess.Should().BeTrue(regravacao.Error?.Message);
-        tracked.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(tracked), FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
             FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
         tracked.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.Ordem)
             .Should().OnlyHaveUniqueItems();

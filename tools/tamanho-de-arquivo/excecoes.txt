@@ -39,7 +39,7 @@
 812 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs
 1383 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/Inscricao.cs
 686 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/NoExigencia.cs
-3269 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs
+2627 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs
 591 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliacaoDaInscricao.cs
 447 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliadorConformidadeLegal.cs
 636 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/ResolvedorArvoreSatisfacao.cs

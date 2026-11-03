@@ -7,10 +7,8 @@ using Events;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
@@ -136,21 +134,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public IReadOnlyCollection<OpcaoDeclaradaFato> OpcoesDeclaradas => _opcoesDeclaradas.AsReadOnly();
 
     /// <summary>As opções do processo para o fato, em ordem: as da oferta de atendimento, quando ela gere o fato, ou as declaradas. É a única leitura delas.</summary>
-    public IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(string fatoCodigo)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
-
-        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo))
-        {
-            return OfertaAtendimento?.OpcoesDoFato(fatoCodigo) ?? [];
-        }
-
-        return [.. _opcoesDeclaradas
-            .Where(o => string.Equals(o.FatoCodigo, fatoCodigo, StringComparison.Ordinal))
-            .OrderBy(static o => o.Ordem)
-            .ThenBy(static o => o.Codigo, StringComparer.Ordinal)
-            .Select(static o => new OpcaoDoProcesso(o.Codigo, o.Rotulo, o.Ordem))];
-    }
+    public IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(string fatoCodigo) =>
+        RegrasDasOpcoesDeclaradas.OpcoesDoProcesso(EstadoDaConfiguracao.De(this), fatoCodigo);
 
     /// <summary>
     /// Substitui as opções declaradas para um fato de fonte do processo. Recusa o fato cujas opções
@@ -710,86 +695,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         AplicaBonusRegional is { } aplica && aplica == (BonusRegional is not null);
 
     /// <summary>
-    /// O fato que decide quem recebe o acréscimo (ADR-0142). Com inscrição própria, a citação é
-    /// obrigatória; citado, o fato é booleano, campo do formulário de inscrição fora de grupo ou
-    /// derivado por regra do processo, e conhecido até a fase da inscrição sem depender do que só a
-    /// isenção coleta — o motor o resolve para todo candidato. O ponto de resolução que o catálogo dá
-    /// a cada fato entra no congelamento, por quem o lê.
-    /// </summary>
-    public DomainError? RecusaDoFatoDeElegibilidade(
-        IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado)
-    {
-        ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
-        ArgumentNullException.ThrowIfNull(membroPorAgregado);
-
-        if (BonusRegional is not { } bonus)
-        {
-            return null;
-        }
-
-        if (bonus.FatoElegibilidadeCodigo is not { } fato)
-        {
-            return OrigemCandidatos == OrigemCandidatos.InscricaoPropria
-                ? new DomainError(
-                    ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente,
-                    "O processo com inscrição própria que aplica o acréscimo precisa citar o fato que decide quem o recebe.")
-                : null;
-        }
-
-        FatoColetado? coletado = Itens.FirstOrDefault(f =>
-            f.Finalidade == FinalidadeFormulario.Inscricao && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal));
-        ConfiguracaoDerivacaoFato? derivado = DerivacoesEfetivas().FirstOrDefault(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal));
-        if (coletado is null && derivado is null)
-        {
-            // O campo de grupo repetível tem um valor por membro; o acréscimo é do candidato.
-            return _campos.Any(f => f.GrupoColetadoId is not null && f.Finalidade == FinalidadeFormulario.Inscricao
-                    && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
-                ? new DomainError(
-                    ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo,
-                    $"O fato '{fato}', que decide quem recebe o acréscimo, é campo de membro de um grupo do formulário de inscrição; o acréscimo é decidido por um fato do candidato.")
-                : new DomainError(
-                    ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso,
-                    $"O fato '{fato}', que decide quem recebe o acréscimo, não é campo do formulário de inscrição nem derivado pelo processo.");
-        }
-
-        if (coletado is { TipoRenderizacao: not TipoRenderizacao.Booleano } || derivado is { Booleano: false })
-        {
-            return new DomainError(
-                ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, precisa ser booleano.");
-        }
-
-        // Sem o formulário de inscrição na fase dele, a pendência é a do próprio formulário.
-        if (FormularioDe(FinalidadeFormulario.Inscricao)?.FaseId is not { } faseId
-            || _cronogramaFases.Find(f => f.Id == faseId) is not { } faseDaInscricao)
-        {
-            return null;
-        }
-
-        FaseEfetivaDoFato.FaseEfetiva efetiva = FaseEfetivaDoFato.Resolver(EstadoDaConfiguracao.De(this), fato, pontoResolucaoPorFato, membroPorAgregado, []);
-        if (efetiva.Recusa is { } recusa)
-        {
-            return recusa;
-        }
-
-        if (efetiva.Fase is { } fase && fase.Ordem > faseDaInscricao.Ordem)
-        {
-            return new DomainError(
-                ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, só é conhecido na fase '{fase.Codigo}', depois da inscrição.");
-        }
-
-        return FaseEfetivaDoFato.DependeDeFatoSoDaIsencao(EstadoDaConfiguracao.De(this), fato, membroPorAgregado, [])
-            ? new DomainError(
-                ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao,
-                $"O fato '{fato}', que decide quem recebe o acréscimo, depende do que só o formulário de isenção coleta.")
-            : null;
-    }
-
-    private DomainError? PendenciaDoFatoDeElegibilidade() => RecusaDoFatoDeElegibilidade(CitacoesDosFormularios.SemCatalogo, CitacoesDosFormularios.SemCatalogo);
-
-    /// <summary>
     /// Divisor da média da nota final: soma dos pesos das etapas que compõem
     /// a nota (caráter classificatória ou ambas, com peso declarado). Fórmula:
     /// <c>NOTA FINAL = Soma(Etapa × peso) / fator_de_divisão + bônus_regional</c>.
@@ -876,7 +781,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             // significa mais "sem bônus". Declaração e configuração também precisam concordar:
             // o EF hidrata a linha sem passar por DefinirBonusRegional.
             new ItemConformidade("bonus_regional_nao_declarado", DimensaoConformidade.BonusRegional, "Bônus regional: aplica ou não aplica", BonusRegionalDeclarado()),
-            new ItemConformidade("bonus_regional_fato_de_elegibilidade", DimensaoConformidade.BonusRegional, "Bônus regional: com inscrição própria, cita o fato booleano que decide quem recebe o acréscimo, conhecido na inscrição", PendenciaDoFatoDeElegibilidade() is null),
+            new ItemConformidade("bonus_regional_fato_de_elegibilidade", DimensaoConformidade.BonusRegional, "Bônus regional: com inscrição própria, cita o fato booleano que decide quem recebe o acréscimo, conhecido na inscrição", PendenciasDosFatos.PendenciaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(this)) is null),
             // Com inscrição própria o desempate é obrigatório; com resultado importado a lista
             // já vem classificada e o desempate não se aplica.
             new ItemConformidade("criterios_desempate_ausentes", DimensaoConformidade.Desempate, "Critérios de desempate (inscrição própria)", OrigemCandidatos != OrigemCandidatos.InscricaoPropria || _criteriosDesempate.Count > 0),
@@ -1239,28 +1144,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosFaseNaoPertenceAoCronograma(EstadoDaConfiguracao.De(this))),
         new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosExtremoDaFaseAusente(EstadoDaConfiguracao.De(this))),
         new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosFimInscricaoIndisponivel(EstadoDaConfiguracao.De(this))),
-        new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciaDasRegrasDasModalidades(fatosDeModalidade.MembroPorAgregado) is null),
-        new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
+        new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciasDosFatos.PendenciaDasRegrasDasModalidades(EstadoDaConfiguracao.De(this), fatosDeModalidade.MembroPorAgregado) is null),
+        new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciasDosFatos.PendenciaDeFatosCitados(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(EstadoDaConfiguracao.De(this)) is null),
-        new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciaDeCampoOpcionalQueAlimentaRegra() is null),
+        new ItemConformidade("formulario_campo_opcional_alimenta_regra", DimensaoConformidade.ColetaDeFatos, "Formulários: campo que alimenta derivação, negação ou impedimento é obrigatório sempre que exibido", PendenciasDosFatos.PendenciaDeCampoOpcionalQueAlimentaRegra(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("exigencia_repete_por_grupo_do_formulario", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: repete por grupo dos formulários, conhecido até a fase da exigência", RegrasDasExigencias.PendenciaDaRepeticaoPorGrupo(EstadoDaConfiguracao.De(this)) is null),
-        new ItemConformidade("formulario_edicao_enem_sem_classificacao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: só pedem a edição do ENEM quando a classificação é baseada em ENEM", EdicaoDoEnemSemClassificacaoEnem(_campos, Classificacao) is null),
-        new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciaDeFatoColetadoSemValoresOfertados() is null),
-        new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciaDeMunicipioDoBonusForaDaArea() is null),
-        new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciaDeTermoSemFormaDeAceite() is null),
-        new ItemConformidade("formulario_inscricao_ausente", DimensaoConformidade.ColetaDeFatos, "Formulários: processo com inscrição própria tem formulário de inscrição", PendenciaDoFormularioDeInscricao() is null),
-        new ItemConformidade("formulario_inscricao_sem_conjunto_basico", DimensaoConformidade.ColetaDeFatos, "Formulários: o de inscrição coleta o conjunto básico de dados do candidato", PendenciaDoConjuntoBasico() is null),
-        new ItemConformidade("formulario_inscricao_sem_edicao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: com classificação baseada em ENEM, o de inscrição pede a edição do ENEM a todo candidato", PendenciaDaEdicaoDoEnem() is null),
-        new ItemConformidade("formulario_fase_incoerente", DimensaoConformidade.ColetaDeFatos, "Formulários: cada um na fase do cronograma que a finalidade pede", PendenciaDaFaseDosFormularios() is null),
-        new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciaDaIsencaoSemTaxa() is null),
-        new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciaDosItensForaDeSecao() is null),
-        new ItemConformidade("formulario_itens_em_excesso", DimensaoConformidade.ColetaDeFatos, $"Formulários: no máximo {FormaDoItem.MaximoDeItens} itens cada", PendenciaDosItensEmExcesso() is null),
+        new ItemConformidade("formulario_edicao_enem_sem_classificacao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: só pedem a edição do ENEM quando a classificação é baseada em ENEM", PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(_campos, Classificacao) is null),
+        new ItemConformidade("fato_coletavel_sem_valores_ofertados", DimensaoConformidade.ColetaDeFatos, "Fato coletável de escopo do processo: oferta declara ao menos um valor", PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("fato_coletavel_municipio_citado_fora_da_area_do_bonus", DimensaoConformidade.ColetaDeFatos, "Fato com os municípios do bônus regional: condição cita só município da área", PendenciasDosFatos.PendenciaDeMunicipioDoBonusForaDaArea(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("termo_exigido_sem_forma_de_aceite", DimensaoConformidade.ColetaDeFatos, "Termos do formulário: toda versão escolhida tem forma de aceite definida", PendenciasDosFormularios.PendenciaDeTermoSemFormaDeAceite(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_inscricao_ausente", DimensaoConformidade.ColetaDeFatos, "Formulários: processo com inscrição própria tem formulário de inscrição", PendenciasDosFormularios.PendenciaDoFormularioDeInscricao(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_inscricao_sem_conjunto_basico", DimensaoConformidade.ColetaDeFatos, "Formulários: o de inscrição coleta o conjunto básico de dados do candidato", PendenciasDosFormularios.PendenciaDoConjuntoBasico(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_inscricao_sem_edicao_enem", DimensaoConformidade.ColetaDeFatos, "Formulários: com classificação baseada em ENEM, o de inscrição pede a edição do ENEM a todo candidato", PendenciasDosFormularios.PendenciaDaEdicaoDoEnem(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_fase_incoerente", DimensaoConformidade.ColetaDeFatos, "Formulários: cada um na fase do cronograma que a finalidade pede", PendenciasDosFormularios.PendenciaDaFaseDosFormularios(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_isencao_sem_taxa", DimensaoConformidade.ColetaDeFatos, "Formulários: isenção de taxa só em processo que cobra taxa", PendenciasDosFormularios.PendenciaDaIsencaoSemTaxa(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_item_fora_de_secao", DimensaoConformidade.ColetaDeFatos, "Formulários: todo item numa seção, na ordem das seções", PendenciasDosFormularios.PendenciaDosItensForaDeSecao(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("formulario_itens_em_excesso", DimensaoConformidade.ColetaDeFatos, $"Formulários: no máximo {FormaDoItem.MaximoDeItens} itens cada", PendenciasDosFormularios.PendenciaDosItensEmExcesso(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("modalidade_regra_incoerente_com_a_natureza", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de cada cota da lei exige a opção pelas cotas, e a de cada ação afirmativa a recusa", RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(_distribuicaoVagas) is null),
         new ItemConformidade("modalidade_remanejamento_incoerente_com_a_natureza", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a ampla concorrência não remaneja as vagas ociosas, e cada ação afirmativa as remaneja para um destino único ou para o par", RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(_distribuicaoVagas) is null),
         new ItemConformidade("modalidade_cotas_da_lei_diferentes_entre_ofertas", DimensaoConformidade.DistribuicaoVagas, "Modalidades: todos os cursos ofertam as mesmas cotas da lei", RegrasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("modalidade_reserva_pcd_sem_cota_pcd_da_lei", DimensaoConformidade.DistribuicaoVagas, "Modalidades: com cota da lei, a reserva de pessoa com deficiência de ampla concorrência vem com a cota da lei para ela", RegrasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("derivacao_cota_e_acao_afirmativa_juntas", DimensaoConformidade.ColetaDeFatos, "Modalidades: cota da lei e ação afirmativa não se aplicam ao mesmo candidato", ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(EstadoDaConfiguracao.De(this)) is null),
-        new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciaDoGrafoConjunto() is null),
+        new ItemConformidade("grafo_dependencia_com_ciclo", DimensaoConformidade.ColetaDeFatos, "Grafo de dependência conjunto: sem ciclo", PendenciasDosFatos.PendenciaDoGrafoConjunto(EstadoDaConfiguracao.De(this)) is null),
         new ItemConformidade("criterios_desempate_em_excesso", DimensaoConformidade.Classificacao, $"Critérios de desempate: no máximo {RegrasDoDesempate.CriteriosDesempateMaximo}", RegrasDoDesempate.ValidarQuantidadeDeCriteriosDesempate(_criteriosDesempate.Count).Count == 0),
         new ItemConformidade("desempate_area_enem_areas_mal_formadas", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada critério tem ao menos uma área, sem exceder o teto, com códigos bem formados e sem repetição", Sem(desempate, DesempatePorAreaEnemErrorCodes.AreasObrigatorias, DesempatePorAreaEnemErrorCodes.AreasEmExcesso, DesempatePorAreaEnemErrorCodes.AreaInvalida, DesempatePorAreaEnemErrorCodes.AreaRepetida)),
         new ItemConformidade("desempate_area_enem_citada_por_dois_criterios", DimensaoConformidade.Classificacao, "Desempate por área do ENEM: cada área é citada por um critério só", Sem(desempate, DesempatePorAreaEnemErrorCodes.AreaCitadaPorOutroCriterio)),
@@ -1331,553 +1236,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new DomainError(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Mensagem))}.");
-    }
-
-    /// <summary>
-    /// Documentos exigidos, coerência de consequência e referência temporal de fatos —
-    /// os três checáveis que <see cref="Publicar"/>/<see cref="SucederVersao"/> avaliam
-    /// depois de <see cref="PendenciaDoCronograma"/>, agregados aqui para que o
-    /// <b>handler</b> (Application) também os alcance <b>antes</b> de canonicalizar.
-    /// </summary>
-    /// <remarks>
-    /// Achado de revisão (Story #554, PR #903, ADR-0109 D5): o gate de conformidade
-    /// PRECEDE a canonicalização por design — <see cref="PendenciaDeConformidade"/> já é
-    /// <see langword="public"/> e os handlers o chamam antes de
-    /// <c>ISnapshotPublicacaoCanonicalizer.Canonicalizar</c> exatamente por isso. Mas
-    /// <c>Canonicalizar</c> agora invoca <see cref="ResolverDataReferenciaFatos"/>
-    /// internamente (serialização de <c>documentosExigidos</c>), e esse método
-    /// <b>lança</b> quando a referência não resolve — sem este guard também rodando
-    /// ANTES de canonicalizar, uma publicação/retificação inválida vira exceção não
-    /// tratada (500) em vez do <see cref="DomainError"/> nomeado que
-    /// <see cref="Publicar"/>/<see cref="SucederVersao"/> devolveriam depois, se a
-    /// exceção não tivesse interrompido o fluxo antes.
-    /// </remarks>
-    public DomainError? PendenciaPreCanonicalizacao(FatosDeModalidade fatosDeModalidade, ProtecaoVigenteDasExigencias? protecao = null)
-    {
-        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
-
-        if (ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais(EstadoDaConfiguracao.De(this)) is { } exigencias)
-        {
-            return exigencias;
-        }
-
-        if (ProtecaoDasExigencias.PendenciaDaFinalidadeDasExigencias(EstadoDaConfiguracao.De(this)) is { } finalidadeDaExigencia)
-        {
-            return finalidadeDaExigencia;
-        }
-
-        if (ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(EstadoDaConfiguracao.De(this), protecao) is { } fatoComprovadoForaDoProcesso)
-        {
-            return fatoComprovadoForaDoProcesso;
-        }
-
-        if (ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(EstadoDaConfiguracao.De(this), protecao) is { } protecaoDaExigencia)
-        {
-            return protecaoDaExigencia;
-        }
-
-        if (ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(EstadoDaConfiguracao.De(this), fatosDeModalidade) is { } coerencia)
-        {
-            return coerencia;
-        }
-
-        if (ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos(EstadoDaConfiguracao.De(this)) is { } referenciaTemporal)
-        {
-            return referenciaTemporal;
-        }
-
-        if (PendenciaDasRegrasDasModalidades(fatosDeModalidade.MembroPorAgregado) is { } regraDeModalidade)
-        {
-            return regraDeModalidade;
-        }
-
-        if (PendenciaDeFatosCitados() is { } fatoCitado)
-        {
-            return fatoCitado;
-        }
-
-        if (CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(EstadoDaConfiguracao.De(this)) is { } fatoAusenteDeVersaoPublicada)
-        {
-            return fatoAusenteDeVersaoPublicada;
-        }
-
-        if (PendenciaDeCampoOpcionalQueAlimentaRegra() is { } campoOpcional)
-        {
-            return campoOpcional;
-        }
-
-        if (RegrasDasExigencias.PendenciaDaRepeticaoPorGrupo(EstadoDaConfiguracao.De(this)) is { } repeticaoPorGrupo)
-        {
-            return repeticaoPorGrupo;
-        }
-
-        // Antes da falta de opções: fora do ENEM, a edição não tem opções a declarar, e o que se
-        // corrige é o campo ou a classificação.
-        if (EdicaoDoEnemSemClassificacaoEnem(_campos, Classificacao) is { } edicaoSemEnem)
-        {
-            return edicaoSemEnem;
-        }
-
-        if (PendenciaDeFatoColetadoSemValoresOfertados() is { } fatoSemOferta)
-        {
-            return fatoSemOferta;
-        }
-
-        if (PendenciaDeMunicipioDoBonusForaDaArea() is { } municipioForaDaArea)
-        {
-            return municipioForaDaArea;
-        }
-
-        if (PendenciaDeTermoSemFormaDeAceite() is { } termoSemFormaDeAceite)
-        {
-            return termoSemFormaDeAceite;
-        }
-
-        if (PendenciaDoFormularioDeInscricao() is { } semFormularioDeInscricao)
-        {
-            return semFormularioDeInscricao;
-        }
-
-        if (PendenciaDoConjuntoBasico() is { } semConjuntoBasico)
-        {
-            return semConjuntoBasico;
-        }
-
-        if (PendenciaDaEdicaoDoEnem() is { } semEdicaoDoEnem)
-        {
-            return semEdicaoDoEnem;
-        }
-
-        if (PendenciaDaFaseDosFormularios() is { } faseDoFormulario)
-        {
-            return faseDoFormulario;
-        }
-
-        if (PendenciaDaIsencaoSemTaxa() is { } isencaoSemTaxa)
-        {
-            return isencaoSemTaxa;
-        }
-
-        if (PendenciaDosItensForaDeSecao() is { } itemForaDeSecao)
-        {
-            return itemForaDeSecao;
-        }
-
-        if (PendenciaDosItensEmExcesso() is { } itensEmExcesso)
-        {
-            return itensEmExcesso;
-        }
-
-        if (RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(_distribuicaoVagas) is { } regraIncoerente)
-        {
-            return regraIncoerente;
-        }
-
-        if (RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(_distribuicaoVagas) is { } remanejamentoIncoerente)
-        {
-            return remanejamentoIncoerente;
-        }
-
-        if (RegrasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(EstadoDaConfiguracao.De(this)) is { } cotasDiferentes)
-        {
-            return cotasDiferentes;
-        }
-
-        if (RegrasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(EstadoDaConfiguracao.De(this)) is { } reservaPcdSemCota)
-        {
-            return reservaPcdSemCota;
-        }
-
-        if (ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(EstadoDaConfiguracao.De(this)) is { } cotaEAcaoAfirmativa)
-        {
-            return cotaEAcaoAfirmativa;
-        }
-
-        if (PendenciaDoGrafoConjunto() is { } grafoConjunto)
-        {
-            return grafoConjunto;
-        }
-
-        return RegrasDoDesempate.PendenciaDosCriteriosDesempate(EstadoDaConfiguracao.De(this));
-    }
-
-    /// <summary>
-    /// A regra de aplicabilidade de cada modalidade ofertada, como vale na oferta, depende só de fatos
-    /// que o formulário de inscrição coleta, diretamente ou pelos derivados que ela cita: a modalidade
-    /// é decidida na inscrição, e o fato que ela não pergunta deixaria a modalidade sem candidato que
-    /// se saiba se concorre a ela. No processo de resultado importado, a modalidade vem com o
-    /// candidato, e as regras não são avaliadas.
-    /// </summary>
-    /// <remarks>
-    /// É também a conferência das citações das derivações da oferta: a modalidade do candidato cita o
-    /// que as regras citam, e a opção pelas cotas só é derivada quando uma regra a cita.
-    /// </remarks>
-    private DomainError? PendenciaDasRegrasDasModalidades(IReadOnlyDictionary<string, string> membroPorAgregado)
-    {
-        if (OrigemCandidatos != OrigemCandidatos.InscricaoPropria)
-        {
-            return null;
-        }
-
-        HashSet<string> daInscricao = CitacoesDosFormularios.FatosDaInscricao(Itens);
-        HashSet<string> camposDosGruposDaInscricao = new(
-            _gruposColetados.Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
-                .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
-            StringComparer.Ordinal);
-        foreach ((ModalidadeSelecionada modalidade, PredicadoDnf regra) in DerivacoesDaOferta.RegrasNaOferta(_distribuicaoVagas.SelectMany(static d => d.Modalidades)))
-        {
-            if (regra.FatosCitados
-                    .Select(f => FatoForaDaInscricao(f, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, new HashSet<string>(StringComparer.Ordinal)))
-                    .FirstOrDefault(static f => f is not null) is { } fato)
-            {
-                return new DomainError(
-                    ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado,
-                    $"A regra de aplicabilidade da modalidade {modalidade.Codigo} depende de '{fato}', que o formulário de inscrição não pergunta.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O primeiro fato de que o fato depende e que o formulário de inscrição não coleta: o próprio,
-    /// quando nem a inscrição o pergunta nem o processo o deriva; uma dependência do derivado; ou, no
-    /// agregado sobre grupo repetível, o campo de membro que nenhum grupo da inscrição pergunta.
-    /// </summary>
-    private string? FatoForaDaInscricao(
-        string fato,
-        IReadOnlySet<string> daInscricao,
-        IReadOnlySet<string> camposDosGruposDaInscricao,
-        IReadOnlyDictionary<string, string> membroPorAgregado,
-        HashSet<string> emAvaliacao)
-    {
-        if (daInscricao.Contains(fato) || !emAvaliacao.Add(fato))
-        {
-            return null;
-        }
-
-        // O agregado se calcula sobre as ocorrências do grupo: basta que um grupo da inscrição
-        // pergunte o campo de membro. Citado sozinho, o campo de grupo não decide a modalidade.
-        if (membroPorAgregado.TryGetValue(fato, out string? membro))
-        {
-            return camposDosGruposDaInscricao.Contains(membro) ? null : membro;
-        }
-
-        bool derivado = DerivacoesEfetivas().Any(d => string.Equals(d.CodigoFato, fato, StringComparison.Ordinal))
-            || DerivadosDoSistema.Dependencias.ContainsKey(fato);
-        return derivado
-            ? FaseEfetivaDoFato.DependenciasDoFato(EstadoDaConfiguracao.De(this), fato, membroPorAgregado)
-                .Select(d => FatoForaDaInscricao(d, daInscricao, camposDosGruposDaInscricao, membroPorAgregado, emAvaliacao))
-                .FirstOrDefault(static d => d is not null)
-            : fato;
-    }
-
-    /// <summary>
-    /// A condição de uma regra de derivação tem de citar um fato que exista no processo — coletado
-    /// ou derivado (§7.3). O motor de derivação resolve os derivados em ordem, então um derivado
-    /// que dependa de outro é resolúvel; o que ele não sabe fazer é resolver um fato que o processo
-    /// não configura. O grafo conjunto ignora de propósito uma referência ausente (projeta só o
-    /// que existe), então é esta recusa que prova a completude do vocabulário citado, antes que a
-    /// aciclicidade e a ordem topológica sejam congeladas (congelamento dos parâmetros na publicação, UNI-REQ-0019).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// As regras dos itens e dos termos são conferidas de novo aqui, pela mesma regra da definição
-    /// (<see cref="ValidarGrafoDeFatos"/>), porque os itens e as derivações mudam depois. O gatilho
-    /// de exigência cita pelo mesmo vocabulário e caberá aqui quando passar a exigir os seus fatos.
-    /// </para>
-    /// <para>
-    /// Só as derivações que o processo grava são conferidas aqui. As que a oferta supre, inclusive o
-    /// egresso pela regra do sistema, são conferidas por <see cref="PendenciaDasRegrasDasModalidades"/>,
-    /// que nomeia a modalidade e segue as citações até o formulário de inscrição.
-    /// </para>
-    /// </remarks>
-    private DomainError? PendenciaDeFatosCitados()
-    {
-        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = DerivacoesEfetivas();
-        HashSet<string> universo = new(
-            Itens.Select(static f => f.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)), StringComparer.Ordinal);
-
-        foreach (ConfiguracaoDerivacaoFato derivacao in RegrasDerivacao)
-        {
-            foreach (RegraDerivacaoConfigurada regra in derivacao.Regras)
-            {
-                foreach (CondicaoRegraDerivacao condicao in regra.Condicoes)
-                {
-                    if (!universo.Contains(condicao.Fato))
-                    {
-                        return new DomainError(
-                            FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado,
-                            $"A regra de derivação do fato '{derivacao.CodigoFato}' cita '{condicao.Fato}', "
-                            + "que este processo não coleta nem deriva.");
-                    }
-                }
-            }
-        }
-
-        // As regras dos itens, a exibição das seções e as condições dos termos citam o que o
-        // formulário conhece; os itens e as derivações podem ter mudado depois da citação.
-        return CitacoesDosFormularios.CitacaoInvalidaNosFormularios(_formularios, FatosColetados, _termosExigidos, derivacoes, _gruposColetados);
-    }
-
-    /// <summary>
-    /// Campo opcional que alimenta derivação, negação ou impedimento, em qualquer regra viva do processo — a regra
-    /// é a de <see cref="CampoQueAlimentaRegra"/>, avaliada sobre os formulários na ordem.
-    /// </summary>
-    private DomainError? PendenciaDeCampoOpcionalQueAlimentaRegra() =>
-        CampoQueAlimentaRegra.PrimeiroOpcional(
-            Itens.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))
-                .Concat(_gruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
-                    .SelectMany(static g => g.Subitens).Select(static f => (f.FatoCodigo, f.Obrigatoriedade.Tipo))),
-            CampoQueAlimentaRegra.Fatos(
-                DerivacoesEfetivas().SelectMany(static c => c.FatosCitados).Concat(DependenciasDosDerivadosDoSistemaCitados()),
-                ReferenciasVivas.CondicoesVivasComOperador(EstadoDaConfiguracao.De(this)).Select(static c => (c.Fato, c.Operador)),
-                Itens.Where(static f => f.Impedimento is not null).Select(static f => f.FatoCodigo)));
-
-    /// <summary>Os fatos de que dependem os derivados do sistema que uma regra viva do processo cita.</summary>
-    private IEnumerable<string> DependenciasDosDerivadosDoSistemaCitados() =>
-        ReferenciasVivas.CondicoesVivasComOperador(EstadoDaConfiguracao.De(this)).Select(static c => c.Fato).Distinct(StringComparer.Ordinal)
-            .SelectMany(static fato => DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? []);
-
-    /// <summary>
-    /// Grupo ou campo de grupo opcional que alimenta um agregado citado por regra viva do processo
-    /// (<see cref="CampoQueAlimentaRegra"/>): os agregados vêm do catálogo
-    /// (<paramref name="membroPorAgregado"/>), lido por quem congela o processo.
-    /// </summary>
-    public DomainError? PendenciaDeGrupoQueAlimentaAgregado(IReadOnlyDictionary<string, string> membroPorAgregado)
-    {
-        ArgumentNullException.ThrowIfNull(membroPorAgregado);
-
-        HashSet<string> membros = new(
-            ReferenciasVivas.CondicoesVivasComOperador(EstadoDaConfiguracao.De(this)).Select(static c => c.Fato).Where(membroPorAgregado.ContainsKey).Select(a => membroPorAgregado[a]),
-            StringComparer.Ordinal);
-        return CampoQueAlimentaRegra.PrimeiroGrupoOpcional(
-            _gruposColetados.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem)
-                .Select(static g => (g.Codigo, g.Obrigatoriedade.Tipo, g.Subitens.Select(static s => (s.FatoCodigo, s.Obrigatoriedade.Tipo)))),
-            membros);
-    }
-
-    /// <summary>
-    /// Um fato categórico coletável cujo domínio é derivado da oferta do próprio processo
-    /// (<c>CONDICAO_ATENDIMENTO</c>, <c>RECURSO_ACESSIBILIDADE</c> e o <c>TIPO_DEFICIENCIA</c> cujo campo
-    /// congelou a origem do processo antes de as opções virem do cadastro) não pode ser publicado sem pelo
-    /// menos um valor ofertado — obrigatório ou opcional, a pessoa candidata precisa de alguma
-    /// opção para responder. Sem este gate, <c>DefinirFatosColetadosCommandHandler</c> aceita o
-    /// vínculo (rascunho aceita configuração incompleta, de propósito) e
-    /// <c>ResolvedorValoresSelecionaveisCongelados</c> congela a lista vazia — o formulário de
-    /// inscrição publicado recebe um seletor sem nenhuma opção.
-    /// </summary>
-    private DomainError? PendenciaDeFatoColetadoSemValoresOfertados()
-    {
-        foreach (FatoColetado fato in _campos)
-        {
-            if (!fato.TipoRenderizacao.EhSelecao())
-            {
-                continue;
-            }
-
-            OrigemValoresColeta origem = RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato);
-            if (origem == OrigemValoresColeta.OpcoesDoProcesso && OpcoesDoProcesso(fato.FatoCodigo).Count == 0)
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                    $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele.");
-            }
-
-            if (origem == OrigemValoresColeta.MunicipiosDoBonus && BonusRegional is null)
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                    $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Processo com inscrição própria publica o formulário de inscrição (UNI-REQ-0144): sem ele, o
-    /// candidato não tem onde se inscrever.
-    /// </summary>
-    private DomainError? PendenciaDoFormularioDeInscricao() =>
-        OrigemCandidatos == OrigemCandidatos.InscricaoPropria && FormularioDe(FinalidadeFormulario.Inscricao) is null
-            ? new DomainError(FormularioProcessoErrorCodes.InscricaoSemFormulario, "O processo tem inscrição própria e ainda não tem formulário de inscrição.")
-            : null;
-
-    /// <summary>
-    /// O formulário de inscrição coleta todo o conjunto básico de dados do candidato, na seção
-    /// reservada: a escrita o garante, e a publicação recusa o formulário a que falta algum dado
-    /// básico nela.
-    /// </summary>
-    private DomainError? PendenciaDoConjuntoBasico()
-    {
-        if (FormularioDe(FinalidadeFormulario.Inscricao) is null)
-        {
-            return null;
-        }
-
-        HashSet<string> coletados = new(
-            Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
-                    && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
-                .Select(static f => f.FatoCodigo),
-            StringComparer.Ordinal);
-        int faltam = ConjuntoBasicoDaInscricao.Fatos.Count(f => !coletados.Contains(f));
-        return faltam == 0
-            ? null
-            : new DomainError(
-                FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico,
-                $"O formulário de inscrição não coleta {faltam} dos dados básicos do candidato. Grave de novo o formulário e, depois, os itens dele: a gravação repõe a seção dos dados básicos.");
-    }
-
-    /// <summary>
-    /// Com inscrição própria e classificação baseada em ENEM, o formulário de inscrição pede a todo
-    /// candidato a edição do ENEM cujas notas a classificação usa (issue #1620): o item é obrigatório
-    /// sempre, sem exibição condicional, fora de grupo e numa seção que não se esconde. Sem formulário
-    /// de inscrição, a falta é a do próprio formulário.
-    /// </summary>
-    private DomainError? PendenciaDaEdicaoDoEnem()
-    {
-        if (OrigemCandidatos != OrigemCandidatos.InscricaoPropria
-            || Classificacao is not { BaseadoEmEnem: true }
-            || FormularioDe(FinalidadeFormulario.Inscricao) is not { } formulario)
-        {
-            return null;
-        }
-
-        FatoColetado? edicao = Itens.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao
-            && string.Equals(f.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
-        bool secaoCondicional = edicao?.EtapaCodigo is { } secao
-            && formulario.Etapas.Any(e => string.Equals(e.Codigo, secao, StringComparison.Ordinal) && e.Exibicao is not null);
-        return edicao is { SemPrecondicao: true, Obrigatoriedade.Tipo: TipoObrigatoriedade.Sempre } && !secaoCondicional
-            ? null
-            : new DomainError(
-                FormularioProcessoErrorCodes.InscricaoSemEdicaoDoEnem,
-                "A classificação usa as notas do ENEM, e o formulário de inscrição não pede a edição do ENEM a todo candidato: o campo da edição é obrigatório sempre, sem exibição condicional e numa seção que não se esconde.");
-    }
-
-    /// <summary>
-    /// A edição do ENEM só existe com classificação baseada em ENEM: nenhum formulário a coleta fora
-    /// disso, nem em grupo. Estática para que o codec confira o envelope pela mesma regra.
-    /// </summary>
-    public static DomainError? EdicaoDoEnemSemClassificacaoEnem(
-        IEnumerable<FatoColetado> campos, ConfiguracaoClassificacao? classificacao)
-    {
-        ArgumentNullException.ThrowIfNull(campos);
-
-        return classificacao is not { BaseadoEmEnem: true }
-            && campos.Any(static f => string.Equals(f.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal))
-            ? new DomainError(
-                FormularioProcessoErrorCodes.EdicaoDoEnemSemClassificacaoEnem,
-                "Um formulário pede a edição do ENEM, mas a classificação do processo não usa as notas do ENEM: retire o campo da edição ou declare a classificação baseada em ENEM.")
-            : null;
-    }
-
-    /// <summary>
-    /// Todo formulário tem a fase que a finalidade pede e que continua no cronograma — a definição
-    /// confere quando a fase é informada, e o cronograma pode ter mudado depois.
-    /// </summary>
-    private DomainError? PendenciaDaFaseDosFormularios()
-    {
-        foreach (FormularioProcesso formulario in _formularios.OrderBy(static f => f.Finalidade))
-        {
-            if (formulario.FaseId is not { } fase)
-            {
-                return new DomainError(FormularioProcessoErrorCodes.SemFase,
-                    $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.");
-            }
-
-            if (RegrasDosFormularios.RecusaDaFaseDoFormulario(EstadoDaConfiguracao.De(this), formulario.Finalidade, fase) is { } recusa)
-            {
-                return recusa;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>Formulário de isenção só em processo que cobra taxa de inscrição (UNI-REQ-0144).</summary>
-    private DomainError? PendenciaDaIsencaoSemTaxa() =>
-        FormularioDe(FinalidadeFormulario.IsencaoTaxa) is not null && ConfiguracaoTaxaInscricao?.Cobra != true
-            ? new DomainError(FormularioProcessoErrorCodes.IsencaoSemTaxa, "O processo tem formulário de isenção de taxa, mas não cobra taxa de inscrição.")
-            : null;
-
-    /// <summary>Todo item publicado está numa seção do seu formulário, na ordem das seções.</summary>
-    private DomainError? PendenciaDosItensForaDeSecao()
-    {
-        foreach (FormularioProcesso formulario in _formularios.OrderBy(static f => f.Finalidade))
-        {
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, RegrasDosFormularios.ItensDaFinalidade(EstadoDaConfiguracao.De(this), formulario.Finalidade)) is [{ } primeiro, ..])
-            {
-                return new DomainError(FormularioProcessoErrorCodes.ItemForaDeSecao, primeiro.Error.Message);
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// O mesmo teto da gravação, conferido de novo na publicação: uma gravação feita fora do
-    /// agregado não publica formulário que o PUT seguinte da mesma lista recusaria.
-    /// </summary>
-    private DomainError? PendenciaDosItensEmExcesso() =>
-        _formularios.OrderBy(static f => f.Finalidade)
-            .Select(f => FormaDoItem.ValidarQuantidade(
-                CitacoesDosFormularios.QuantidadeNoTeto(Itens.Count(i => i.Finalidade == f.Finalidade), CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), f.Finalidade))))
-            .FirstOrDefault(static erros => erros.Count > 0) is [var excesso, ..]
-            ? excesso.Error
-            : null;
-
-    /// <summary>
-    /// Termo exigido cuja versão ainda não definiu a forma de aceite não é publicável
-    /// (UNI-REQ-0086): só o registro digital, com ou sem log de IP, é forma resolvida.
-    /// </summary>
-    private DomainError? PendenciaDeTermoSemFormaDeAceite() =>
-        _termosExigidos.OrderBy(static t => t.Ordem).FirstOrDefault(static t => t.SemFormaDeAceite) is { } termo
-            ? new DomainError(
-                TermoExigidoFormularioErrorCodes.SemFormaDeAceite,
-                $"O termo '{termo.Codigo}' usa uma versão sem forma de aceite definida; escolha uma versão com registro digital.")
-            : null;
-
-    /// <summary>
-    /// Toda condição viva que cita um campo com os municípios do bônus regional cita município da
-    /// área atual. A recusa ao redefinir o bônus só alcança os campos coletados naquele momento;
-    /// conferir na publicação cobre qualquer ordem de edição, como retirar o campo da coleta,
-    /// trocar a área e recolocá-lo.
-    /// </summary>
-    private DomainError? PendenciaDeMunicipioDoBonusForaDaArea()
-    {
-        if (BonusRegional is null)
-        {
-            return null;
-        }
-
-        HashSet<string> municipios = [.. BonusRegional.Municipios.Select(static m => m.CodigoIbge)];
-        FatoColetado? fato = _campos.FirstOrDefault(f =>
-            f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus
-            && ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(EstadoDaConfiguracao.De(this), f.FatoCodigo, municipios));
-        return fato is null
-            ? null
-            : new DomainError(
-                "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
-                $"Existe condição citando, no fato '{fato.FatoCodigo}', um município fora da área do bônus regional.");
-    }
-
-    /// <summary>
-    /// O grafo de dependência conjunto (campos, fatos, exigências, seções e termos condicionados, e
-    /// as quatro arestas, §6) tem
-    /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (congelamento dos parâmetros na publicação, UNI-REQ-0019)
-    /// não existe se houver ciclo. A construção do grafo (<see cref="ConstruirGrafoDependencia"/>)
-    /// já detecta o ciclo — aqui ela vira gate de publicação, antes de canonicalizar.
-    /// </summary>
-    /// <remarks>
-    /// O grafo ignora deliberadamente uma referência a fato ausente (ele projeta o que existe),
-    /// então este gate <b>não</b> prova sozinho que todo fato citado existe — essa é uma recusa
-    /// à parte (§7.3). Aqui só se garante a aciclicidade.
-    /// </remarks>
-    private DomainError? PendenciaDoGrafoConjunto()
-    {
-        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(this));
-        return grafo.IsFailure ? grafo.Error : null;
     }
 
     /// <summary>
@@ -2121,7 +1479,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             ResultadoSemPapel: () => TiposDeAtoDoCronograma.PendenciaDoResultadoSemPapel(estado, pedido.TiposDeAtoUnicos),
             TipoQueCongelaDeclaradoComoResultado: () => TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(estado, pedido.TiposDeAtoUnicos),
             Cascata: () => CoberturaDaCascata.PendenciaDaCascata(estado),
-            PreCanonicalizacao: () => PendenciaPreCanonicalizacao(pedido.FatosDeModalidade));
+            PreCanonicalizacao: () => ProntidaoParaCongelar.PendenciaPreCanonicalizacao(estado, pedido.FatosDeModalidade));
     }
 
     /// <summary>

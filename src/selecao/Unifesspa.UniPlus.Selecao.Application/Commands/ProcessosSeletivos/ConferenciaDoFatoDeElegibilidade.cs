@@ -5,6 +5,8 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
 /// <summary>
 /// No congelamento, o fato que decide quem recebe o acréscimo é conferido com o ponto de resolução
@@ -19,7 +21,7 @@ internal static class ConferenciaDoFatoDeElegibilidade
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        return processo.RecusaDoFatoDeElegibilidade(
+        return PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo),
             VocabularioDeFatos.PontoResolucaoPorFato(catalogo.Values),
             VocabularioDeFatos.MembroPorAgregado(catalogo.Values));
     }

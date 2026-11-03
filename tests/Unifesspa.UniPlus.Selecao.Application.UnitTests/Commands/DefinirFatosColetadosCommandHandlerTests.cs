@@ -19,6 +19,8 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -109,7 +111,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             .IsSuccess.Should().BeTrue();
         processo.FatosColetados.Where(static f => f.FatoCodigo is "SEXO_CIVIL" or "IDENTIDADE_GENERO" or "ORIENTACAO_SEXUAL")
             .Should().BeEmpty("pré-condição: o formulário foi gravado antes dos três dados");
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
@@ -120,7 +122,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         List<FatoColetado> daInscricao = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
         daInscricao.Select(static f => f.FatoCodigo).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
-        processo.PendenciaPreCanonicalizacao(FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
+        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
             FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "a regravação repõe o conjunto básico que a publicação confere");
         daInscricao.Select(static f => f.Ordem).Concat(processo.GruposColetados.Select(static g => g.Ordem)).Should().OnlyHaveUniqueItems();
         processo.GruposColetados.Single().Ordem.Should().Be(baixaRenda.Ordem + 1 + 3, "o grupo omitido sobe com os itens, para a ordem seguir única");

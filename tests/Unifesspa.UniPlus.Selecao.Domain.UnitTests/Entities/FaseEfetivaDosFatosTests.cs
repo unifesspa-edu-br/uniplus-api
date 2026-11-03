@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -170,11 +171,11 @@ public sealed class FaseEfetivaDosFatosTests
             grupoObrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca, [campo]).Value!;
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente, [grupo])
             .IsSuccess.Should().BeTrue();
-        processo.PendenciaDeGrupoQueAlimentaAgregado(Agregados).Should().BeNull("nenhuma regra cita o agregado");
+        PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(EstadoDaConfiguracao.De(processo), Agregados).Should().BeNull("nenhuma regra cita o agregado");
 
         DefinirDerivado(processo, "RENDA_RURAL", "RURAL_NA_FAMILIA");
 
-        DomainError? pendencia = processo.PendenciaDeGrupoQueAlimentaAgregado(Agregados);
+        DomainError? pendencia = PendenciasDosFatos.PendenciaDeGrupoQueAlimentaAgregado(EstadoDaConfiguracao.De(processo), Agregados);
         pendencia!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
         pendencia.Message.Should().Contain(recusado);
     }

@@ -1,13 +1,21 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A ordem única dos portões que uma configuração precisa passar para ser congelada. Publicar,
 /// retificar de uma vez e fechar a sessão recusam na mesma sequência, e a primeira pendência
 /// decide o código que o cliente vê.
 /// </summary>
-internal static class ProntidaoParaCongelar
+public static class ProntidaoParaCongelar
 {
     /// <summary>Os portões, nomeados na ordem em que são avaliados.</summary>
     internal sealed record Portoes(
@@ -41,6 +49,55 @@ internal static class ProntidaoParaCongelar
             portoes.TipoQueCongelaDeclaradoComoResultado,
             portoes.Cascata,
             portoes.PreCanonicalizacao,
+        ];
+
+        return emOrdem.Select(static portao => portao()).FirstOrDefault(static pendencia => pendencia is not null);
+    }
+
+    /// <summary>
+    /// Os portões que o handler alcança antes de canonicalizar: a canonicalização lança quando a
+    /// referência temporal dos fatos não resolve, e a publicação inválida viraria exceção em vez do
+    /// erro nomeado que a transição devolveria depois. A ordem é a do checklist de conformidade.
+    /// </summary>
+    public static DomainError? PendenciaPreCanonicalizacao(
+        EstadoDaConfiguracao estado, FatosDeModalidade fatosDeModalidade, ProtecaoVigenteDasExigencias? protecao = null)
+    {
+        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
+
+        Func<DomainError?>[] emOrdem =
+        [
+            () => ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais(estado),
+            () => ProtecaoDasExigencias.PendenciaDaFinalidadeDasExigencias(estado),
+            () => ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(estado, protecao),
+            () => ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(estado, protecao),
+            () => ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(estado, fatosDeModalidade),
+            () => ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos(estado),
+            () => PendenciasDosFatos.PendenciaDasRegrasDasModalidades(estado, fatosDeModalidade.MembroPorAgregado),
+            () => PendenciasDosFatos.PendenciaDeFatosCitados(estado),
+            () => CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(estado),
+            () => PendenciasDosFatos.PendenciaDeCampoOpcionalQueAlimentaRegra(estado),
+            () => RegrasDasExigencias.PendenciaDaRepeticaoPorGrupo(estado),
+            // Antes da falta de opções: fora do ENEM, a edição não tem opções a declarar, e o que se
+            // corrige é o campo ou a classificação.
+            () => PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(estado.Campos, estado.Classificacao),
+            () => PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(estado),
+            () => PendenciasDosFatos.PendenciaDeMunicipioDoBonusForaDaArea(estado),
+            () => PendenciasDosFormularios.PendenciaDeTermoSemFormaDeAceite(estado),
+            () => PendenciasDosFormularios.PendenciaDoFormularioDeInscricao(estado),
+            () => PendenciasDosFormularios.PendenciaDoConjuntoBasico(estado),
+            () => PendenciasDosFormularios.PendenciaDaEdicaoDoEnem(estado),
+            () => PendenciasDosFormularios.PendenciaDaFaseDosFormularios(estado),
+            () => PendenciasDosFormularios.PendenciaDaIsencaoSemTaxa(estado),
+            () => PendenciasDosFormularios.PendenciaDosItensForaDeSecao(estado),
+            () => PendenciasDosFormularios.PendenciaDosItensEmExcesso(estado),
+            () => RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(estado.DistribuicaoVagas),
+            () => RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(estado.DistribuicaoVagas),
+            () => RegrasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(estado),
+            () => RegrasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(estado),
+            () => ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(estado),
+            () => PendenciasDosFatos.PendenciaDoGrafoConjunto(estado),
+            () => RegrasDoDesempate.PendenciaDosCriteriosDesempate(estado),
         ];
 
         return emOrdem.Select(static portao => portao()).FirstOrDefault(static pendencia => pendencia is not null);
