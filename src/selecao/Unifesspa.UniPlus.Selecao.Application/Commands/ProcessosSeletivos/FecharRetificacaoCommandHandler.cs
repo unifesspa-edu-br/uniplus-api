@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Fecha a sessão editorial (Story #862, ADR-0110): congela a versão N+1 <b>com a
@@ -224,7 +226,7 @@ public static class FecharRetificacaoCommandHandler
 
         // Cascata de remanejamento de cotas (UNI-REQ-0056, Story #575) — cross-dimensão,
         // fora do agregador genérico acima. Mesma antecipação da publicação (ADR-0109 D5).
-        if (processo.PendenciaDaCascata() is { } pendenciaCascata)
+        if (CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)) is { } pendenciaCascata)
         {
             return (Result.Failure(pendenciaCascata), []);
         }

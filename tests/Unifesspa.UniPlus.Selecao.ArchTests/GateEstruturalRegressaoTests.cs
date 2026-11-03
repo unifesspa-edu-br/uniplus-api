@@ -49,7 +49,7 @@ public sealed class GateEstruturalRegressaoTests
         // `PendenciaDaCascata() is null` só para exibição — mesma chamada, propósito
         // diferente, não é um sexto call site de bloqueio.
         string raiz = File.ReadAllText(CaminhoProcessoSeletivo());
-        Regex.Count(raiz, @"Cascata:\s+PendenciaDaCascata,").Should().Be(1, "os dois pontos de defesa compartilham a composição dos portões");
+        Regex.Count(raiz, @"Cascata:\s+\(\)\s+=>\s+CoberturaDaCascata\.PendenciaDaCascata\(estado\),").Should().Be(1, "os dois pontos de defesa compartilham a composição dos portões");
         Regex.Count(File.ReadAllText(CaminhoProntidao()), @"portoes\.Cascata\b").Should().Be(1,
             "a prontidão avalia a cascata uma vez, antes da pré-canonicalização");
 
@@ -105,7 +105,7 @@ public sealed class GateEstruturalRegressaoTests
     private static int ContarChamadasDeGate(string caminho)
     {
         string fonte = File.ReadAllText(caminho);
-        return Regex.Count(fonte, @"PendenciaDaCascata\(\)\s+is\s+\{");
+        return Regex.Count(fonte, @"PendenciaDaCascata\(.*\)\s+is\s+\{");
     }
 
     private static int ContarChamadas(string caminho)

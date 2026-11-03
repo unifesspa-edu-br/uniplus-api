@@ -14,6 +14,8 @@ using Services;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Handler convention-based do <see cref="PublicarProcessoSeletivoCommand"/>
@@ -168,7 +170,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         // fora do agregador genérico acima (o item "Cascata de remanejamento" nunca
         // entra em PendenciaDeConformidade, só em PendenciaDaCascata). Mesma antecipação
         // e mesmo motivo das demais (ADR-0109 D5).
-        if (processo.PendenciaDaCascata() is { } pendenciaCascata)
+        if (CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)) is { } pendenciaCascata)
         {
             return (Result.Failure(pendenciaCascata), []);
         }

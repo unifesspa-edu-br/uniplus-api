@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
@@ -3193,12 +3194,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", PendenciaDoTipoDeAtoUnico(tiposDeAtoUnicos) is null),
 
         // ── PendenciaDaCascata: o agregado e o detalhamento por razão (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575) ──
-        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", PendenciaDaCascata() is null),
-        new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !ExisteCascataForaDoRegimeFederal()),
-        new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !ExisteCascataOrigemAusente()),
-        new ItemConformidade("cascata_fallback_nao_ofertado", DimensaoConformidade.CascataRemanejamento, "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !ExisteCascataFallbackNaoSelecionadoNaOferta()),
-        new ItemConformidade("cascata_origem_nao_segue_cascata", DimensaoConformidade.CascataRemanejamento, "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada", !ExisteCascataOrigemNaoSegueCascata()),
-        new ItemConformidade("cascata_destino_desconhecido", DimensaoConformidade.CascataRemanejamento, "Cascata: destino declarado corresponde a modalidade ofertada", !ExisteCascataDestinoDesconhecido()),
+        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(this)) is null),
+        new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !CoberturaDaCascata.ExisteCascataForaDoRegimeFederal(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !CoberturaDaCascata.ExisteCascataOrigemAusente(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cascata_fallback_nao_ofertado", DimensaoConformidade.CascataRemanejamento, "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !CoberturaDaCascata.ExisteCascataFallbackNaoSelecionadoNaOferta(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cascata_origem_nao_segue_cascata", DimensaoConformidade.CascataRemanejamento, "Cascata: origem declarada corresponde a modalidade SegueCascata ofertada", !CoberturaDaCascata.ExisteCascataOrigemNaoSegueCascata(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("cascata_destino_desconhecido", DimensaoConformidade.CascataRemanejamento, "Cascata: destino declarado corresponde a modalidade ofertada", !CoberturaDaCascata.ExisteCascataDestinoDesconhecido(EstadoDaConfiguracao.De(this))),
 
         // ── PendenciaPreCanonicalizacao, na mesma ordem do gate (Story #554/#920/#927/#928) ──
         new ItemConformidade("exigencia_condicional_vazia_determina_resultado", DimensaoConformidade.ExigenciasDocumentais, "Exigência documental: sem CONDICIONAL vazia que determina resultado", PendenciaDasExigenciasDocumentais() is null),
@@ -3305,245 +3306,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return new DomainError(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Mensagem))}.");
-    }
-
-    /// <summary>
-    /// Pendência de cobertura da cascata de remanejamento (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) —
-    /// erro NOMEADO, público (chamado tanto pela raiz quanto pelos handlers da Application,
-    /// que estão em outro assembly). Chamado por <see cref="Publicar"/> e <see cref="SucederVersao"/>
-    /// na mesma posição de <see cref="PendenciaDoCronograma"/>.
-    /// </summary>
-    /// <remarks>
-    /// A ordenação é determinística em todos os níveis — ofertas por <c>OfertaCursoOrigemId</c>
-    /// (comparação direta de <see cref="Guid"/>), modalidades de cada oferta por <c>Codigo</c>
-    /// (<see cref="StringComparer.Ordinal"/>), origens da cascata por <c>ModalidadeOrigemCodigo</c>
-    /// (ordinal) e destinos por <c>Ordem</c> — para que o primeiro erro nunca varie conforme a
-    /// ordem física de retorno do Postgres (os <c>Include</c> de <c>ComConfiguracao</c> não
-    /// aplicam ordem às coleções).
-    /// </remarks>
-    public DomainError? PendenciaDaCascata()
-    {
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas> ofertas = [.. _distribuicaoVagas.OrderBy(static o => o.OfertaCursoOrigemId)];
-
-        foreach (ConfiguracaoDistribuicaoVagas oferta in ofertas)
-        {
-            IReadOnlyList<ModalidadeSelecionada> modalidadesSegueCascata = [.. oferta.Modalidades
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .OrderBy(static m => m.Codigo, StringComparer.Ordinal)];
-
-            if (modalidadesSegueCascata.Count == 0)
-            {
-                continue;
-            }
-
-            // cascata de remanejamento de cotas (UNI-REQ-0056): SegueCascata só é coberta pela cascata única do processo quando a
-            // oferta usa o regime federal — fora dele, a cascata não tem o que validar.
-            if (OfertaForaDoRegimeFederal(oferta))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.CascataForaDoRegimeFederal",
-                    $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas não usa regra de distribuição do ramo federal (Lei 12.711).");
-            }
-
-            if (Cascata is null)
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.CascataOrigemAusente",
-                    $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidadesSegueCascata[0].Codigo}\" com SegueCascata, mas o processo não tem cascata de remanejamento configurada.");
-            }
-
-            if (FallbackNaoSelecionadoNaOferta(oferta, Cascata.FallbackCodigo))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
-                    $"O fallback \"{Cascata.FallbackCodigo}\" da cascata não é uma modalidade selecionada na oferta {oferta.OfertaCursoOrigemId}.");
-            }
-
-            foreach (ModalidadeSelecionada modalidade in modalidadesSegueCascata)
-            {
-                if (OrigemNaoDeclaradaNaCascata(modalidade.Codigo))
-                {
-                    return new DomainError(
-                        "ProcessoSeletivo.CascataOrigemAusente",
-                        $"A oferta {oferta.OfertaCursoOrigemId} tem modalidade \"{modalidade.Codigo}\" com SegueCascata, mas a cascata não declara nenhum destino para ela.");
-                }
-
-                if (DestinoDaOrigemNaoResolvivelNaOferta(oferta, modalidade.Codigo))
-                {
-                    return new DomainError(
-                        "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta",
-                        $"Nenhum destino da origem \"{modalidade.Codigo}\" na cascata é uma modalidade selecionada na oferta {oferta.OfertaCursoOrigemId}.");
-                }
-            }
-        }
-
-        if (Cascata is null)
-        {
-            return null;
-        }
-
-        HashSet<string> todosOsCodigosOfertados = new(
-            ofertas.SelectMany(static o => o.Modalidades).Select(static m => m.Codigo),
-            StringComparer.Ordinal);
-        HashSet<string> todasAsOrigensSegueCascata = new(
-            ofertas.SelectMany(static o => o.Modalidades)
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Select(static m => m.Codigo),
-            StringComparer.Ordinal);
-
-        IReadOnlyList<DestinoRemanejamento> origensDaCascataEmOrdem = [.. Cascata.Destinos
-            .Select(static d => d.ModalidadeOrigemCodigo)
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(static o => o, StringComparer.Ordinal)
-            .SelectMany(origem => Cascata.Destinos
-                .Where(d => string.Equals(d.ModalidadeOrigemCodigo, origem, StringComparison.Ordinal))
-                .OrderBy(static d => d.Ordem))];
-
-        foreach (DestinoRemanejamento destino in origensDaCascataEmOrdem)
-        {
-            if (!todasAsOrigensSegueCascata.Contains(destino.ModalidadeOrigemCodigo))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.CascataOrigemNaoSegueCascata",
-                    $"A cascata declara a origem \"{destino.ModalidadeOrigemCodigo}\", mas nenhuma oferta do processo a marca como SegueCascata.");
-            }
-
-            if (!todosOsCodigosOfertados.Contains(destino.ModalidadeDestinoCodigo))
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.CascataDestinoDesconhecido",
-                    $"A cascata declara o destino \"{destino.ModalidadeDestinoCodigo}\", que não é modalidade selecionada em nenhuma oferta do processo.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>A oferta exige a cascata única do processo: tem ≥1 modalidade SegueCascata (cascata de remanejamento de cotas, UNI-REQ-0056).</summary>
-    private static bool OfertaExigeCascata(ConfiguracaoDistribuicaoVagas oferta) =>
-        oferta.Modalidades.Any(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata);
-
-    /// <summary>A oferta não usa o regime federal (Lei 12.711/2012, em qualquer variação) — condição de <c>CascataForaDoRegimeFederal</c>.</summary>
-    private static bool OfertaForaDoRegimeFederal(ConfiguracaoDistribuicaoVagas oferta) =>
-        !RegraDistribuicaoVagasCodigo.EhRamoFederal(oferta.RegraDistribuicao.Codigo);
-
-    /// <summary>O fallback da cascata não é modalidade selecionada na oferta — condição de <c>CascataFallbackNaoSelecionadoNaOferta</c> (nível oferta).</summary>
-    private static bool FallbackNaoSelecionadoNaOferta(ConfiguracaoDistribuicaoVagas oferta, string fallbackCodigo) =>
-        !oferta.Modalidades.Select(static m => m.Codigo).Contains(fallbackCodigo, StringComparer.Ordinal);
-
-    /// <summary>A cascata não declara nenhum destino para a origem — condição de <c>CascataOrigemAusente</c> (nível modalidade).</summary>
-    private bool OrigemNaoDeclaradaNaCascata(string modalidadeOrigemCodigo) =>
-        Cascata is not null
-        && !Cascata.Destinos.Any(d => string.Equals(d.ModalidadeOrigemCodigo, modalidadeOrigemCodigo, StringComparison.Ordinal));
-
-    /// <summary>Nenhum destino declarado da origem é modalidade selecionada NESTA oferta — condição de <c>CascataFallbackNaoSelecionadoNaOferta</c> (nível modalidade).</summary>
-    private bool DestinoDaOrigemNaoResolvivelNaOferta(ConfiguracaoDistribuicaoVagas oferta, string modalidadeOrigemCodigo)
-    {
-        if (Cascata is null)
-        {
-            return false;
-        }
-
-        HashSet<string> codigosDaOferta = new(oferta.Modalidades.Select(static m => m.Codigo), StringComparer.Ordinal);
-        return !Cascata.Destinos
-            .Where(d => string.Equals(d.ModalidadeOrigemCodigo, modalidadeOrigemCodigo, StringComparison.Ordinal))
-            .OrderBy(static d => d.Ordem)
-            .Any(d => codigosDaOferta.Contains(d.ModalidadeDestinoCodigo));
-    }
-
-    /// <summary>
-    /// Existe alguma oferta com modalidade SegueCascata sob regime não-federal — mesmo predicado
-    /// de <see cref="OfertaForaDoRegimeFederal"/> que o gate usa, agregado sobre TODAS as ofertas
-    /// (não só a primeira) para o item do checklist estrutural.
-    /// </summary>
-    private bool ExisteCascataForaDoRegimeFederal() =>
-        _distribuicaoVagas.Any(o => OfertaExigeCascata(o) && OfertaForaDoRegimeFederal(o));
-
-    /// <summary>Existe alguma origem SegueCascata (cascata ausente, ou destino não declarado) alcançável por uma oferta federal.</summary>
-    private bool ExisteCascataOrigemAusente()
-    {
-        foreach (ConfiguracaoDistribuicaoVagas oferta in _distribuicaoVagas)
-        {
-            if (!OfertaExigeCascata(oferta) || OfertaForaDoRegimeFederal(oferta))
-            {
-                continue;
-            }
-
-            if (Cascata is null)
-            {
-                return true;
-            }
-
-            if (oferta.Modalidades
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Any(m => OrigemNaoDeclaradaNaCascata(m.Codigo)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>Existe fallback ou destino não resolvível numa oferta federal que exige cascata.</summary>
-    private bool ExisteCascataFallbackNaoSelecionadoNaOferta()
-    {
-        foreach (ConfiguracaoDistribuicaoVagas oferta in _distribuicaoVagas)
-        {
-            if (!OfertaExigeCascata(oferta) || OfertaForaDoRegimeFederal(oferta) || Cascata is null)
-            {
-                continue;
-            }
-
-            if (FallbackNaoSelecionadoNaOferta(oferta, Cascata.FallbackCodigo))
-            {
-                return true;
-            }
-
-            if (oferta.Modalidades
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Any(m => !OrigemNaoDeclaradaNaCascata(m.Codigo) && DestinoDaOrigemNaoResolvivelNaOferta(oferta, m.Codigo)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <summary>Existe origem declarada na cascata que nenhuma oferta do processo marca como SegueCascata.</summary>
-    private bool ExisteCascataOrigemNaoSegueCascata()
-    {
-        if (Cascata is null)
-        {
-            return false;
-        }
-
-        HashSet<string> todasAsOrigensSegueCascata = new(
-            _distribuicaoVagas.SelectMany(static o => o.Modalidades)
-                .Where(static m => m.RegraRemanejamento == RegraRemanejamentoModalidade.SegueCascata)
-                .Select(static m => m.Codigo),
-            StringComparer.Ordinal);
-
-        return Cascata.Destinos
-            .Select(static d => d.ModalidadeOrigemCodigo)
-            .Distinct(StringComparer.Ordinal)
-            .Any(origem => !todasAsOrigensSegueCascata.Contains(origem));
-    }
-
-    /// <summary>Existe destino declarado na cascata que não é modalidade selecionada em nenhuma oferta do processo.</summary>
-    private bool ExisteCascataDestinoDesconhecido()
-    {
-        if (Cascata is null)
-        {
-            return false;
-        }
-
-        HashSet<string> todosOsCodigosOfertados = new(
-            _distribuicaoVagas.SelectMany(static o => o.Modalidades).Select(static m => m.Codigo),
-            StringComparer.Ordinal);
-
-        return Cascata.Destinos.Any(d => !todosOsCodigosOfertados.Contains(d.ModalidadeDestinoCodigo));
     }
 
     /// <summary>
@@ -5466,7 +5228,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             TipoDeAtoUnico: () => PendenciaDoTipoDeAtoUnico(pedido.TiposDeAtoUnicos),
             ResultadoSemPapel: () => PendenciaDoResultadoSemPapel(pedido.TiposDeAtoUnicos),
             TipoQueCongelaDeclaradoComoResultado: () => PendenciaDoTipoQueCongelaDeclaradoComoResultado(pedido.TiposDeAtoUnicos),
-            Cascata: PendenciaDaCascata,
+            Cascata: () => CoberturaDaCascata.PendenciaDaCascata(estado),
             PreCanonicalizacao: () => PendenciaPreCanonicalizacao(pedido.FatosDeModalidade));
     }
 
