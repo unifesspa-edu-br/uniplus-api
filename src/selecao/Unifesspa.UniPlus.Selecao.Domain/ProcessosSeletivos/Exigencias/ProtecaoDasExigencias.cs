@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -13,17 +12,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ProtecaoDasExigencias
 {
-    internal static void Recongelar(IEnumerable<DocumentoExigido> exigencias, ProtecaoVigenteDasExigencias protecao)
+    internal static PlanoDaProtecaoVigente Planejar(EstadoDaConfiguracao estado, ProtecaoVigenteDasExigencias protecao)
     {
+        ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(protecao);
 
-        foreach (DocumentoExigido exigencia in exigencias)
-        {
-            if (protecao.PorExigencia.TryGetValue(exigencia.Id, out ProtecaoDoDocumento? efetiva))
-            {
-                exigencia.RecongelarProtecao(efetiva);
-            }
-        }
+        return new PlanoDaProtecaoVigente([.. estado.DocumentosExigidos
+            .Where(exigencia => protecao.PorExigencia.ContainsKey(exigencia.Id))
+            .Select(exigencia => (exigencia, protecao.PorExigencia[exigencia.Id]))]);
     }
 
     /// <summary>
@@ -148,5 +144,17 @@ internal static class ProtecaoDasExigencias
         }
 
         return null;
+    }
+}
+
+/// <summary>A proteção vigente que cada exigência recebe ao congelar; só a raiz aplica.</summary>
+internal sealed record PlanoDaProtecaoVigente(IReadOnlyList<(DocumentoExigido Exigencia, ProtecaoDoDocumento Efetiva)> Exigencias)
+{
+    internal void Aplicar()
+    {
+        foreach ((DocumentoExigido exigencia, ProtecaoDoDocumento efetiva) in Exigencias)
+        {
+            exigencia.RecongelarProtecao(efetiva);
+        }
     }
 }

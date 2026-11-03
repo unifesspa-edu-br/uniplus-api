@@ -41,6 +41,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
         "AplicacaoDeModeloDeFormulario", "PlanoDoModelo",
         "RegrasDaColeta", "PlanoDaColeta", "PlanoDaRecopiaDoCatalogo",
         "ReposicaoDaConfiguracao",
+        "PlanoDaProtecaoVigente",
         "RegrasDasOpcoesDeclaradas",
         "RegrasDosFormularios", "PlanoDoFormulario", "PlanoDosTermos",
         "RegrasDasExigencias", "PlanoDasExigencias",
@@ -99,13 +100,14 @@ public sealed class FronteirasDoProcessoSeletivoTests
         naoEstaticas.Should().BeEmpty("a política é função pura da vista; estado vive na raiz");
     }
 
-    [Fact(DisplayName = "A4: fora dos planos, ninguém vincula, substitui ou repõe partes do processo")]
+    [Fact(DisplayName = "A4: fora dos planos, ninguém vincula, substitui, repõe nem altera partes do processo")]
     public void A4_SoOsPlanosVinculamEMutam()
     {
         (string Dono, string Tipo, string Nome)[] controles =
         [
             (NamespaceDasPoliticas + ".Restauracao.ReposicaoDaConfiguracao", PartesFullName, "Substituir"),
             (PartesFullName, ParteFullName, "VincularProcesso"),
+            (NamespaceDasPoliticas + ".Exigencias.PlanoDaProtecaoVigente", "Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", "RecongelarProtecao"),
         ];
         foreach ((string dono, string tipo, string nome) in controles)
         {
@@ -117,13 +119,13 @@ public sealed class FronteirasDoProcessoSeletivoTests
         string[] infratores = [.. ChamadasNoDomain()
             .Where(static c => c.Callee.DeclaringType is { } tipo
                 && (tipo.FullName is ParteFullName or PartesFullName || tipo.Namespace == typeof(ProcessoSeletivo).Namespace)
-                && EhOperacaoDeVinculoOuMutacao(c.Callee.Name))
+                && (EhOperacaoDeVinculoOuMutacao(c.Callee.Name) || AlteraAParte(c.Callee)))
             .Select(static c => DonoDe(c.Caller.FullName!))
             .Where(static dono => dono.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal) && !EhPlanoOuRaiz(dono))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
 
-        infratores.Should().BeEmpty("quem vincula ou repõe uma parte é a raiz ou o plano que ela aplica");
+        infratores.Should().BeEmpty("quem altera uma parte do processo é a raiz ou o plano que ela aplica");
     }
 
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]
@@ -149,6 +151,15 @@ public sealed class FronteirasDoProcessoSeletivoTests
         fora.Should().BeEmpty("o vínculo com o processo é da entidade filha, não de um tipo de política");
     }
 
+    /// <summary>
+    /// Método de instância de uma parte que não devolve nada, ou acessor de escrita: o que muda uma parte
+    /// sem devolver valor. Não depende de uma lista de nomes, então um método novo de mutação é pego.
+    /// </summary>
+    private static bool AlteraAParte(MethodBase metodo) =>
+        !metodo.IsStatic && !metodo.IsConstructor
+        && (metodo is MethodInfo { ReturnType: { } retorno } && retorno == typeof(void)
+            || metodo.Name.StartsWith("set_", StringComparison.Ordinal));
+
     private static bool EhOperacaoDeVinculoOuMutacao(string nome) =>
         OperacoesDeVinculoEMutacao.Any(op => nome.EndsWith(op, StringComparison.Ordinal));
 
@@ -170,96 +181,6 @@ public sealed class FronteirasDoProcessoSeletivoTests
             .Where(static t => t.Namespace is { } ns && ns.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal))
             .Where(static t => !System.Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)));
 
-    private static IEnumerable<(System.Type Caller, MethodBase Callee)> ChamadasNoDomain()
-    {
-        foreach (System.Type tipo in typeof(ProcessoSeletivo).Assembly.GetTypes())
-        {
-            foreach (MethodBase metodo in tipo.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
-                         .OfType<MethodBase>())
-            {
-                foreach (MethodBase alvo in AlvosDasChamadas(metodo))
-                {
-                    yield return (tipo, alvo);
-                }
-            }
-        }
-    }
-
-    private static IEnumerable<MethodBase> AlvosDasChamadas(MethodBase metodo)
-    {
-        byte[]? il = metodo.GetMethodBody()?.GetILAsByteArray();
-        if (il is null)
-        {
-            yield break;
-        }
-
-        System.Type[]? tiposDoTipo = metodo.DeclaringType is { IsGenericType: true } declarante ? declarante.GetGenericArguments() : null;
-        System.Type[]? tiposDoMetodo = metodo.IsGenericMethod ? metodo.GetGenericArguments() : null;
-        for (int i = 0; i < il.Length;)
-        {
-            OpCode opcode = LerOpcode(il, ref i);
-            if (opcode.OperandType is OperandType.InlineMethod)
-            {
-                MethodBase? alvo = Resolver(metodo.Module, BitConverter.ToInt32(il, i), tiposDoTipo, tiposDoMetodo);
-                if (alvo is not null)
-                {
-                    yield return alvo;
-                }
-            }
-
-            i += TamanhoDoOperando(opcode, il, i);
-        }
-    }
-
-    private static MethodBase? Resolver(Module modulo, int token, System.Type[]? tiposDoTipo, System.Type[]? tiposDoMetodo)
-    {
-        try
-        {
-            return modulo.ResolveMethod(token, tiposDoTipo, tiposDoMetodo);
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-    }
-
-    private static OpCode LerOpcode(byte[] il, ref int posicao)
-    {
-        byte primeiro = il[posicao++];
-        return primeiro == 0xFE ? TabelaDeDoisBytes[il[posicao++]] : TabelaDeUmByte[primeiro];
-    }
-
-    private static int TamanhoDoOperando(OpCode opcode, byte[] il, int posicao) => opcode.OperandType switch
-    {
-        OperandType.InlineNone => 0,
-        OperandType.ShortInlineBrTarget or OperandType.ShortInlineI or OperandType.ShortInlineVar => 1,
-        OperandType.InlineVar => 2,
-        OperandType.InlineI8 or OperandType.InlineR => 8,
-        OperandType.InlineSwitch => 4 + (BitConverter.ToInt32(il, posicao) * 4),
-        _ => 4,
-    };
-
-    private static readonly OpCode[] TabelaDeUmByte = TabelaDeOpcodes(umByte: true);
-
-    private static readonly OpCode[] TabelaDeDoisBytes = TabelaDeOpcodes(umByte: false);
-
-    private static OpCode[] TabelaDeOpcodes(bool umByte)
-    {
-        OpCode[] tabela = new OpCode[256];
-        foreach (OpCode opcode in typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
-                     .Select(static f => (OpCode)f.GetValue(null)!))
-        {
-            ushort valor = (ushort)opcode.Value;
-            if (umByte && opcode.Size == 1)
-            {
-                tabela[valor] = opcode;
-            }
-            else if (!umByte && opcode.Size == 2)
-            {
-                tabela[valor & 0xFF] = opcode;
-            }
-        }
-
-        return tabela;
-    }
+    private static IEnumerable<(System.Type Caller, MethodBase Callee)> ChamadasNoDomain() =>
+        LeitorDeIl.ChamadasDoAssembly(typeof(ProcessoSeletivo).Assembly);
 }

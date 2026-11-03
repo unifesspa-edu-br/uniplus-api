@@ -604,7 +604,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// não traz mantém a cópia.
     /// </summary>
     public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao) =>
-        ProtecaoDasExigencias.Recongelar(_documentosExigidos, protecao);
+        ProtecaoDasExigencias.Planejar(EstadoDaConfiguracao.De(this), protecao).Aplicar();
 
 
     /// <summary>
