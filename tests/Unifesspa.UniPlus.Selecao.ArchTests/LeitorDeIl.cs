@@ -26,6 +26,59 @@ internal static class LeitorDeIl
         }
     }
 
+    /// <summary>
+    /// O método de instância escreve estado: grava um campo (<c>stfld</c>, inclusive pelo acessor de escrita)
+    /// ou chama, no mesmo assembly, outro método de instância que grava. Cobre o mutador que devolve valor.
+    /// </summary>
+    internal static bool EscreveEstado(MethodBase metodo) => EscreveEstado(metodo, []);
+
+    private static bool EscreveEstado(MethodBase metodo, HashSet<MethodBase> visitados)
+    {
+        if (metodo.IsStatic || metodo.IsConstructor || !visitados.Add(metodo))
+        {
+            return false;
+        }
+
+        return GravaCampo(metodo)
+            || AlvosDasChamadas(metodo).Any(alvo => alvo.DeclaringType?.Assembly == metodo.DeclaringType?.Assembly && EscreveEstado(alvo, visitados));
+    }
+
+    private static bool GravaCampo(MethodBase metodo)
+    {
+        byte[]? il = metodo.GetMethodBody()?.GetILAsByteArray();
+        for (int i = 0; il is not null && i < il.Length;)
+        {
+            OpCode opcode = LerOpcode(il, ref i);
+            if (opcode == OpCodes.Stfld && GravaCampoDoProprioTipo(metodo, BitConverter.ToInt32(il, i)))
+            {
+                return true;
+            }
+
+            i += TamanhoDoOperando(opcode, il, i);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Campo do próprio tipo (ou de um tipo-base). Os campos de fechamentos e de máquinas de estado gerados
+    /// pelo compilador também se gravam com <c>stfld</c> e não são estado da parte.
+    /// </summary>
+    private static bool GravaCampoDoProprioTipo(MethodBase metodo, int token)
+    {
+        try
+        {
+            FieldInfo campo = metodo.Module.ResolveField(token, metodo.DeclaringType?.GetGenericArguments(), null)!;
+            return campo.DeclaringType is { } dono
+                && dono.IsAssignableFrom(metodo.DeclaringType)
+                && !System.Attribute.IsDefined(dono, typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute));
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
     private static IEnumerable<MethodBase> AlvosDasChamadas(MethodBase metodo)
     {
         byte[]? il = metodo.GetMethodBody()?.GetILAsByteArray();

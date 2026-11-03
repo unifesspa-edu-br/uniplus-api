@@ -116,16 +116,21 @@ public sealed class FronteirasDoProcessoSeletivoTests
                 .Should().BeTrue($"a leitura do IL tem de enxergar {dono} chamando {tipo}.{nome}, inclusive pela interface");
         }
 
+        MethodInfo mutadorQueDevolveValor = typeof(ProcessoSeletivo).Assembly.GetType("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao")!
+            .GetMethod("AlterarMotivo", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
+        mutadorQueDevolveValor.ReturnType.Should().NotBe(typeof(void), "o controle é um mutador que devolve Result");
+        AlteraAParte(mutadorQueDevolveValor).Should().BeTrue("a detecção cobre o mutador com retorno, e não só o void");
+
         string[] infratores = [.. ChamadasNoDomain()
             .Where(static c => c.Callee.DeclaringType is { } tipo
                 && (tipo.FullName is ParteFullName or PartesFullName || tipo.Namespace == typeof(ProcessoSeletivo).Namespace)
                 && (EhOperacaoDeVinculoOuMutacao(c.Callee.Name) || AlteraAParte(c.Callee)))
-            .Select(static c => DonoDe(c.Caller.FullName!))
-            .Where(static dono => dono.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal) && !EhPlanoOuRaiz(dono))
+            .Select(static c => DonoDe(c.Caller.FullName!) + " -> " + c.Callee.DeclaringType!.Name + "." + c.Callee.Name)
+            .Where(static dono => dono.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal) && !EhPlanoOuRaiz(dono.Split(" -> ")[0]))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)];
 
-        infratores.Should().BeEmpty("quem altera uma parte do processo é a raiz ou o plano que ela aplica");
+        infratores.Should().BeEmpty("quem altera uma parte do processo, devolvendo valor ou não, é a raiz ou o plano que ela aplica");
     }
 
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]
@@ -151,14 +156,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
         fora.Should().BeEmpty("o vínculo com o processo é da entidade filha, não de um tipo de política");
     }
 
-    /// <summary>
-    /// Método de instância de uma parte que não devolve nada, ou acessor de escrita: o que muda uma parte
-    /// sem devolver valor. Não depende de uma lista de nomes, então um método novo de mutação é pego.
-    /// </summary>
-    private static bool AlteraAParte(MethodBase metodo) =>
-        !metodo.IsStatic && !metodo.IsConstructor
-        && (metodo is MethodInfo { ReturnType: { } retorno } && retorno == typeof(void)
-            || metodo.Name.StartsWith("set_", StringComparison.Ordinal));
+    private static bool AlteraAParte(MethodBase metodo) => LeitorDeIl.EscreveEstado(metodo);
 
     private static bool EhOperacaoDeVinculoOuMutacao(string nome) =>
         OperacoesDeVinculoEMutacao.Any(op => nome.EndsWith(op, StringComparison.Ordinal));
