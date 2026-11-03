@@ -75,7 +75,7 @@ internal sealed record ViolacaoDeRegra(
                 return p.DefinirFormulario(FinalidadeFormulario.Inscricao, Guid.CreateVersion7(), formulario.Titulo, [.. formulario.Etapas], pre);
             },
             "FormularioProcesso.FaseForaDoCronograma",
-            static p => [.. p.Formularios]),
+            static p => [.. p.Formularios.SelectMany(static f => (object?[])[f.Finalidade, f.FaseId, f.Titulo, .. f.Etapas])]),
         [nameof(ProcessoSeletivo.DefinirTermosDoFormulario)] = new(
             (p, pre) => p.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [], pre),
             FormularioProcessoErrorCodes.FormularioInexistente,

@@ -92,8 +92,8 @@ public sealed class ProcessoSeletivoEdicaoTests
     [MemberData(nameof(OperacoesComRegra))]
     public void ViolacaoSemSessao_RecusaPelaGuarda(string nome)
     {
-        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
         ViolacaoDeRegra violacao = ViolacaoDeRegra.PorOperacao[nome];
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _, violacao.Preparar);
 
         Result resultado = violacao.Chamar(processo, PrecondicaoIfMatch.Ausente);
 

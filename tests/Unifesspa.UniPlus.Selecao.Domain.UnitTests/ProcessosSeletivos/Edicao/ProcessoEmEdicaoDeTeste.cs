@@ -16,9 +16,11 @@ internal static class ProcessoEmEdicaoDeTeste
 {
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
-    internal static ProcessoSeletivo PublicadoSemSessao(out VersaoConfiguracao versao)
+    /// <param name="prepararAntesDePublicar">Estado que a configuração publicada já precisa ter, aplicado no rascunho.</param>
+    internal static ProcessoSeletivo PublicadoSemSessao(out VersaoConfiguracao versao, Action<ProcessoSeletivo>? prepararAntesDePublicar = null)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        prepararAntesDePublicar?.Invoke(processo);
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             DadosEdital.Criar(
                 "001/2026",
