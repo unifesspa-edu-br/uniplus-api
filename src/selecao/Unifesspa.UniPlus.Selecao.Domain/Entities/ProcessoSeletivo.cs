@@ -127,8 +127,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         string fato = fatoCodigo.Trim();
         return Editar(precondicao,
-            () => RegrasDasOpcoesDeclaradas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), fato, opcoes, agregadosDoFato),
-            () => Substituir(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal), opcoes));
+            () => RegrasDasOpcoesDeclaradas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), fato, opcoes, agregadosDoFato).Com(opcoes),
+            novas => Substituir(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal), novas));
     }
 
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
@@ -221,9 +221,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        return EditarConferindo(precondicao,
-            () => RegrasDasEtapas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), etapas),
-            () => Substituir(_etapas, etapas));
+        return Editar(precondicao,
+            () => RegrasDasEtapas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), etapas).Com(etapas),
+            novas => Substituir(_etapas, novas));
     }
 
     /// <summary>Define a oferta de atendimento especializado, sem deixar de fora um código que uma condição viva ainda cita.</summary>
@@ -231,14 +231,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(oferta);
 
-        return Editar(
-            precondicao,
-            () => RegrasDaOfertaDeAtendimento.Recusa(EstadoDaConfiguracao.De(this), oferta),
-            () =>
-            {
-                Vincular(oferta);
-                OfertaAtendimento = oferta;
-            });
+        return Editar(precondicao,
+            () => RegrasDaOfertaDeAtendimento.Recusa(EstadoDaConfiguracao.De(this), oferta).Com(oferta),
+            nova => OfertaAtendimento = Vincular(nova));
     }
 
     /// <summary>Substitui a distribuição de vagas: uma configuração por oferta de curso, sem repetir a oferta.</summary>
@@ -250,59 +245,43 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
 
-        return EditarConferindo(precondicao,
-            () => RegrasDaDistribuicaoDeVagas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), distribuicaoVagas, fatosDeModalidade),
-            () => Substituir(_distribuicaoVagas, distribuicaoVagas));
+        return Editar(precondicao,
+            () => RegrasDaDistribuicaoDeVagas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), distribuicaoVagas, fatosDeModalidade).Com(distribuicaoVagas),
+            novas => Substituir(_distribuicaoVagas, novas));
     }
 
     /// <summary>Declara quantos cursos o candidato escolhe (1 ou 2), sem superar o de ofertas já gravadas.</summary>
     public Result DefinirOpcoesDeCurso(int numero, PrecondicaoIfMatch precondicao) =>
-        EditarConferindo(precondicao,
-            () => RegrasDaDistribuicaoDeVagas.ConferirOpcoesDeCurso(EstadoDaConfiguracao.De(this), numero),
-            () => NumeroDeOpcoesDeCurso = numero);
+        Editar(precondicao,
+            () => RegrasDaDistribuicaoDeVagas.ConferirOpcoesDeCurso(EstadoDaConfiguracao.De(this), numero).Com(numero),
+            declarado => NumeroDeOpcoesDeCurso = declarado);
 
     /// <summary>Declara se o processo aplica o bônus regional (UNI-REQ-0015); a declaração e a configuração não podem divergir.</summary>
     public Result DefinirBonusRegional(bool aplica, ConfiguracaoBonusRegional? bonus, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao,
-            () => RegrasDoBonusRegional.Recusa(EstadoDaConfiguracao.De(this), aplica, bonus),
-            () =>
-            {
-                BonusRegional = Vincular(bonus);
-                AplicaBonusRegional = aplica;
-            });
+            () => RegrasDoBonusRegional.Recusa(EstadoDaConfiguracao.De(this), aplica, bonus).Com((aplica, bonus)),
+            declaracao => (BonusRegional, AplicaBonusRegional) = (Vincular(declaracao.bonus), declaracao.aplica));
 
     /// <summary>Define ou remove a divulgação pública (UNI-REQ-0050); nula volta ao padrão minimizado, que é publicável.</summary>
     public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao, PrecondicaoIfMatch precondicao) =>
-        Editar(precondicao, () =>
-        {
-            Vincular(configuracao);
-            ConfiguracaoDivulgacao = configuracao;
-        });
+        Editar(precondicao, () => ConferenciaDeEdicao.Livre(configuracao), nova => ConfiguracaoDivulgacao = Vincular(nova));
 
     /// <summary>Define ou remove a taxa e os fundamentos de isenção; nula volta a "não declarado", que bloqueia a publicação.</summary>
     public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao) =>
-        Editar(precondicao, () =>
-        {
-            Vincular(configuracao);
-            ConfiguracaoTaxaInscricao = configuracao;
-        });
+        Editar(precondicao, () => ConferenciaDeEdicao.Livre(configuracao), nova => ConfiguracaoTaxaInscricao = Vincular(nova));
 
     /// <summary>Define ou remove a cascata de remanejamento.</summary>
     public Result DefinirCascataRemanejamento(ConfiguracaoCascataRemanejamento? cascata, PrecondicaoIfMatch precondicao) =>
-        Editar(precondicao, () =>
-        {
-            Vincular(cascata);
-            Cascata = cascata;
-        });
+        Editar(precondicao, () => ConferenciaDeEdicao.Livre(cascata), nova => Cascata = Vincular(nova));
 
     /// <summary>Substitui os critérios de desempate; todo <c>etapa_ref</c> precisa existir entre as etapas.</summary>
     public Result DefinirCriteriosDesempate(IReadOnlyList<CriterioDesempate> criterios, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(criterios);
 
-        return EditarConferindo(precondicao,
-            () => RegrasDoDesempate.ConferirSubstituicao(EstadoDaConfiguracao.De(this), criterios),
-            () => Substituir(_criteriosDesempate, criterios));
+        return Editar(precondicao,
+            () => RegrasDoDesempate.ConferirSubstituicao(EstadoDaConfiguracao.De(this), criterios).Com(criterios),
+            novos => Substituir(_criteriosDesempate, novos));
     }
 
     /// <summary>Define a classificação, conferindo o que depende de outras dimensões (etapa de cada eliminação, quadro de pesos do desempate).</summary>
@@ -333,7 +312,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     public Result RemoverFormulario(FinalidadeFormulario finalidade, PrecondicaoIfMatch precondicao)
     {
-        DomainError? recusa = RegrasDosFormularios.RecusaDaRemocaoSobRetificacao(Rascunho) ?? MutacaoBloqueada(precondicao);
+        DomainError? recusa = RecusaDeOperacaoSoEmRascunho(RegrasDosFormularios.RemocaoSoEmRascunho(), precondicao);
         Result<FormularioProcesso> remocao = recusa is null
             ? RegrasDosFormularios.ConferirRemocao(EstadoDaConfiguracao.De(this), finalidade)
             : Result<FormularioProcesso>.Failure(recusa);
@@ -346,14 +325,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Result.Success();
     }
 
+    /// <summary>
+    /// A aplicação do modelo substitui o formulário inteiro e não existe sob sessão (não há ETag a avançar);
+    /// o handler a antecipa antes de qualquer leitura externa.
+    /// </summary>
+    public DomainError? RecusaDeAplicarModelo(PrecondicaoIfMatch precondicao) =>
+        RecusaDeOperacaoSoEmRascunho(RegrasDosFormularios.AplicacaoDeModeloSoEmRascunho(), precondicao);
+
     public Result AplicarModeloDeFormulario(CopiaDeModeloDeFormulario copia, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(copia);
 
-        Result<PlanoDoModelo> plano = RegrasDosFormularios.PlanejarAplicacao(EstadoDaConfiguracao.De(this), copia, precondicao);
+        DomainError? recusa = RecusaDeAplicarModelo(precondicao);
+        Result<PlanoDoModelo> plano = recusa is null
+            ? AplicacaoDeModeloDeFormulario.Planejar(EstadoDaConfiguracao.De(this), copia)
+            : Result<PlanoDoModelo>.Failure(recusa);
         plano.Value?.Aplicar(Colecoes(), Id);
         return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
     }
+
+    /// <summary>
+    /// Operação que só existe em rascunho: a recusa da sessão vem antes da precondição, porque exigir o
+    /// If-Match de uma sessão em que a operação nunca é aceita só esconderia o motivo.
+    /// </summary>
+    private DomainError? RecusaDeOperacaoSoEmRascunho(DomainError recusaSobSessao, PrecondicaoIfMatch precondicao) =>
+        Rascunho is not null ? recusaSobSessao : MutacaoBloqueada(precondicao);
 
     public Result DefinirTermosDoFormulario(
         FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos, PrecondicaoIfMatch precondicao)
@@ -436,9 +432,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(regrasDerivacao);
 
-        return EditarConferindo(precondicao,
-            () => RegrasDaColeta.ConferirDerivacoes(EstadoDaConfiguracao.De(this), regrasDerivacao),
-            () => Substituir(_regrasDerivacao, regrasDerivacao));
+        return Editar(precondicao,
+            () => RegrasDaColeta.ConferirDerivacoes(EstadoDaConfiguracao.De(this), regrasDerivacao).Com(regrasDerivacao),
+            novas => Substituir(_regrasDerivacao, novas));
     }
 
     /// <summary>
@@ -452,8 +448,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Define a âncora de <c>FAIXA_ETARIA</c>; nula é válida enquanto nenhuma exigência tem gatilho por idade.</summary>
     public Result DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao,
-            () => ReferenciaTemporalDosFatos.RecusaDaFaseForaDoCronograma(EstadoDaConfiguracao.De(this), referencia),
-            () => ReferenciaTemporalFatos = referencia);
+            () => ReferenciaTemporalDosFatos.RecusaDaFaseForaDoCronograma(EstadoDaConfiguracao.De(this), referencia).Com(referencia),
+            nova => ReferenciaTemporalFatos = nova);
 
     /// <summary>Declara ou troca o identificador legível; não há remoção, o certame sempre tem um.</summary>
     public Result DefinirIdentificadorLegivel(IdentificadorLegivel identificador, PrecondicaoIfMatch precondicao)
@@ -461,21 +457,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentException.ThrowIfNullOrWhiteSpace(identificador.Valor, nameof(identificador));
 
         return Editar(precondicao,
-            () => ContagemDePrazos.RecusaDeTrocaDoIdentificador(Rascunho),
-            () => IdentificadorLegivel = identificador);
+            () => ContagemDePrazos.RecusaDeTrocaDoIdentificador(Rascunho).Com(identificador),
+            novo => IdentificadorLegivel = novo);
     }
 
     /// <summary>Redeclara a localidade (UNI-REQ-0111). A atribuição é incondicional: a igualdade considera só o código IBGE, e comparar antes descartaria a correção de um nome divergente.</summary>
     public Result DefinirLocalidade(LocalidadeRegente localidade, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao,
-            () => ContagemDePrazos.RecusaDaLocalidadeAusente(localidade),
-            () => Localidade = localidade);
+            () => ContagemDePrazos.RecusaDaLocalidadeAusente(localidade).Com(localidade),
+            nova => Localidade = nova);
 
     /// <summary>Declara a convenção de contagem dos prazos (UNI-REQ-0112), já resolvida contra o rol de regras.</summary>
     public Result DefinirAlgoritmoContagemPrazo(ReferenciaRegra algoritmo, PrecondicaoIfMatch precondicao) =>
         Editar(precondicao,
-            () => ContagemDePrazos.RecusaDaConvencaoAusente(algoritmo),
-            () => AlgoritmoContagemPrazo = algoritmo);
+            () => ContagemDePrazos.RecusaDaConvencaoAusente(algoritmo).Com(algoritmo),
+            nova => AlgoritmoContagemPrazo = nova);
 
     /// <summary>Congela em cada exigência a proteção efetiva calculada pelo contexto; a exigência que o contexto não traz mantém a cópia.</summary>
     public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao) =>
@@ -487,7 +483,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// ADR-0042) e transita o status, tudo em memória e atomicamente.
     /// </summary>
     public Result<VersaoConfiguracao> Publicar(PedidoDeCongelamento pedido) =>
-        Registrar(TransicoesDaVersao.Publicar(EstadoDaConfiguracao.De(this), pedido));
+        AssumirVersaoEmitida(TransicoesDaVersao.Publicar(EstadoDaConfiguracao.De(this), pedido));
 
     /// <summary>
     /// Retifica de uma vez um processo publicado, sem sessão editorial (ADR-0101/0103): emite o ato que
@@ -496,14 +492,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <param name="versaoAtual">A versão corrente, carregada pelo handler: <see cref="VersaoConfiguracao"/> é agregado próprio.</param>
     /// <param name="motivo">Justificativa obrigatória do ato (ADR-0101).</param>
     public Result<VersaoConfiguracao> Retificar(PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo) =>
-        Registrar(TransicoesDaVersao.Retificar(EstadoDaConfiguracao.De(this), pedido, versaoAtual, motivo));
+        AssumirVersaoEmitida(TransicoesDaVersao.Retificar(EstadoDaConfiguracao.De(this), pedido, versaoAtual, motivo));
 
     /// <summary>Fecha a sessão editorial: congela a versão seguinte com a configuração editada e encerra a sessão (ADR-0110).</summary>
     public Result<VersaoConfiguracao> FecharRetificacao(
         PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, PrecondicaoIfMatch precondicao) =>
-        Registrar(TransicoesDaVersao.Fechar(EstadoDaConfiguracao.De(this), pedido, versaoAtual, precondicao));
+        PendenciaDaSessao(precondicao) is { } pendencia
+            ? Result<VersaoConfiguracao>.Failure(pendencia)
+            : AssumirVersaoEmitida(TransicoesDaVersao.Fechar(EstadoDaConfiguracao.De(this), pedido, versaoAtual, Rascunho!));
 
-    private Result<VersaoConfiguracao> Registrar(Result<VersaoEmitida> emissao)
+    private Result<VersaoConfiguracao> AssumirVersaoEmitida(Result<VersaoEmitida> emissao)
     {
         if (emissao.IsFailure)
         {
@@ -523,7 +521,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public Result DescartarRetificacao(PrecondicaoIfMatch precondicao)
     {
-        if (SessaoDeRetificacao.RecusaDoDescarte(EstadoDaConfiguracao.De(this), _versaoRestaurada, precondicao) is { } recusa)
+        if ((PendenciaDaSessao(precondicao) ?? SessaoDeRetificacao.RecusaDoDescarte(Rascunho!, _versaoRestaurada)) is { } recusa)
         {
             return Result.Failure(recusa);
         }
@@ -618,7 +616,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Altera o motivo da sessão em curso. Como toda mutação sob sessão, exige a precondição e incrementa a revisão.</summary>
     public Result AlterarMotivoRetificacao(string motivo, PrecondicaoIfMatch precondicao)
     {
-        if (GuardaDeEdicao.PendenciaDaSessao(Status, Rascunho, precondicao) is { } recusa)
+        if (PendenciaDaSessao(precondicao) is { } recusa)
         {
             return Result.Failure(recusa);
         }
@@ -638,44 +636,46 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// </summary>
     public string? ETagDaSessaoEditorial => Rascunho?.ETag;
 
-    /// <summary>A guarda de mutação da configuração (<see cref="GuardaDeEdicao.MutacaoBloqueada"/>).</summary>
-    public DomainError? MutacaoBloqueada(PrecondicaoIfMatch precondicao) =>
-        GuardaDeEdicao.MutacaoBloqueada(Status, Rascunho, precondicao);
+    /// <summary>
+    /// O que impede mutar a configuração agora, ou nulo (ADR-0110 D4/D5/D9). A precondição só é exigida
+    /// sob sessão, porque em rascunho não há ETag a fornecer. Os handlers a antecipam antes de validar o
+    /// payload, porque a precondição precede a regra de negócio; cada operação a repete por dentro.
+    /// </summary>
+    public DomainError? MutacaoBloqueada(PrecondicaoIfMatch precondicao)
+    {
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        return Rascunho is { } sessao
+            ? Status.RecusaDeEdicaoSobSessao() ?? sessao.ConferirPrecondicao(precondicao)
+            : Status.RecusaDeEdicaoSemSessao();
+    }
 
     /// <summary>
-    /// O protocolo comum de edição: a guarda de mutação, a conferência das regras sem efeito, a
-    /// aplicação e o avanço da revisão da sessão (ADR-0110 D4/D5, ADR-0125 §5). A aplicação só
-    /// roda depois de a conferência passar e nunca falha.
+    /// O que impede encerrar ou alterar a sessão: a sessão inexistente (409) precede a precondição
+    /// (428/412), porque responder 412 para um rascunho que não existe mandaria o cliente recarregar um ETag inexistente.
     /// </summary>
-    private Result Editar(PrecondicaoIfMatch precondicao, Func<DomainError?> conferir, Action aplicar) =>
-        EditarConferindo(precondicao, () => conferir() is { } recusa ? Result.Failure(recusa) : Result.Success(), aplicar);
-
-    private Result EditarConferindo(PrecondicaoIfMatch precondicao, Func<Result> conferir, Action aplicar)
+    internal DomainError? PendenciaDaSessao(PrecondicaoIfMatch precondicao)
     {
-        Result conferencia = MutacaoBloqueada(precondicao) is { } bloqueio ? Result.Failure(bloqueio) : conferir();
-        if (conferencia.IsSuccess)
+        ArgumentNullException.ThrowIfNull(precondicao);
+
+        return Rascunho is null ? RascunhoRetificacao.NaoAberta() : MutacaoBloqueada(precondicao);
+    }
+
+    /// <summary>
+    /// O protocolo de edição (ADR-0110 D4/D5, ADR-0125 §5): a guarda de mutação, o plano calculado sem
+    /// efeito, a aplicação do plano e o avanço da revisão da sessão. A aplicação só roda com o plano
+    /// aprovado e nunca falha.
+    /// </summary>
+    private Result Editar<TPlano>(PrecondicaoIfMatch precondicao, Func<Result<TPlano>> planejar, Action<TPlano> aplicar)
+    {
+        Result<TPlano> plano = MutacaoBloqueada(precondicao) is { } bloqueio ? Result<TPlano>.Failure(bloqueio) : planejar();
+        if (plano.IsSuccess)
         {
-            aplicar();
+            aplicar(plano.Value!);
             Rascunho?.IncrementarRevisao();
         }
 
-        return conferencia;
-    }
-
-    private Result Editar(PrecondicaoIfMatch precondicao, Action aplicar) =>
-        Editar(precondicao, static () => null, aplicar);
-
-    private Result Editar<TPlano>(PrecondicaoIfMatch precondicao, Func<Result<TPlano>> planejar, Action<TPlano> aplicar)
-    {
-        TPlano? plano = default;
-        return EditarConferindo(precondicao,
-            () =>
-            {
-                Result<TPlano> planejado = planejar();
-                plano = planejado.Value;
-                return planejado.IsSuccess ? Result.Success() : Result.ValidationFailure(planejado.Errors);
-            },
-            () => aplicar(plano!));
+        return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
     }
 
     private ColecoesDoProcesso Colecoes() => new(

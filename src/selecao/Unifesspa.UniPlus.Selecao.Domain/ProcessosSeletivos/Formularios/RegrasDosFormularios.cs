@@ -5,7 +5,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -13,26 +12,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDosFormularios
 {
-    internal static Result<PlanoDoModelo> PlanejarAplicacao(
-        EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, PrecondicaoIfMatch precondicao) =>
-        RecusaDeAplicacaoDeModelo(estado, precondicao) is { } recusa
-            ? Result<PlanoDoModelo>.Failure(recusa)
-            : AplicacaoDeModeloDeFormulario.Planejar(estado, copia);
-
     /// <summary>
     /// A aplicação do modelo substitui o formulário inteiro, e a retificação não retira o que o edital
-    /// publicou: só em rascunho. No mais, vale a guarda de edição.
+    /// publicou: só em rascunho.
     /// </summary>
-    public static DomainError? RecusaDeAplicacaoDeModelo(EstadoDaConfiguracao estado, PrecondicaoIfMatch precondicao)
-    {
-        ArgumentNullException.ThrowIfNull(estado);
-
-        return estado.Rascunho is not null
-            ? new DomainError(
-                FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho,
-                "O modelo se aplica só em rascunho: a aplicação substitui o formulário inteiro, e a retificação não retira o que o edital publicou.")
-            : GuardaDeEdicao.MutacaoBloqueada(estado.Status, estado.Rascunho, precondicao);
-    }
+    public static DomainError AplicacaoDeModeloSoEmRascunho() => new(
+        FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho,
+        "O modelo se aplica só em rascunho: a aplicação substitui o formulário inteiro, e a retificação não retira o que o edital publicou.");
 
     internal static Result<PlanoDoFormulario> PlanejarDefinicao(
         EstadoDaConfiguracao estado,
@@ -160,14 +146,9 @@ public static class RegrasDosFormularios
     internal static IReadOnlyList<ItemEstrutura> ItensDaFinalidade(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade) =>
         CitacoesDosFormularios.ParaEstrutura(estado.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.GruposDaFinalidade(estado, finalidade));
 
-    // A retificação acrescenta formulário, mas não remove o que o edital publicou. A recusa vem antes
-    // da precondição: nenhuma remoção sob sessão é aceita, então exigir o If-Match só esconderia o motivo.
-    internal static DomainError? RecusaDaRemocaoSobRetificacao(RascunhoRetificacao? sessao) =>
-        sessao is not null
-            ? new DomainError(
-                FormularioProcessoErrorCodes.RemocaoSoEmRascunho,
-                "A retificação acrescenta formulário, mas não remove o que o edital publicou.")
-            : null;
+    internal static DomainError RemocaoSoEmRascunho() => new(
+        FormularioProcessoErrorCodes.RemocaoSoEmRascunho,
+        "A retificação acrescenta formulário, mas não remove o que o edital publicou.");
 
     internal static void Remover(ColecoesDoProcesso colecoes, FormularioProcesso formulario)
     {

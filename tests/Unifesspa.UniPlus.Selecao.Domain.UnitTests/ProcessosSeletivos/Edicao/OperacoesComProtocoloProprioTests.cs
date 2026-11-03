@@ -72,7 +72,7 @@ public sealed class OperacoesComProtocoloProprioTests
         ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.EmSessao();
         PrecondicaoIfMatch velha = PrecondicaoIfMatch.DeTags(["\"outra-sessao:1\""]);
 
-        DomainError? recusa = RegrasDosFormularios.RecusaDeAplicacaoDeModelo(EstadoDaConfiguracao.De(processo), velha);
+        DomainError? recusa = processo.RecusaDeAplicarModelo(velha);
 
         recusa!.Code.Should().Be(FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho);
     }
@@ -82,7 +82,7 @@ public sealed class OperacoesComProtocoloProprioTests
     {
         ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
 
-        DomainError? recusa = RegrasDosFormularios.RecusaDeAplicacaoDeModelo(EstadoDaConfiguracao.De(processo), PrecondicaoIfMatch.Ausente);
+        DomainError? recusa = processo.RecusaDeAplicarModelo(PrecondicaoIfMatch.Ausente);
 
         recusa!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }

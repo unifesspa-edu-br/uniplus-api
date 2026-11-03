@@ -131,6 +131,14 @@ public sealed class RascunhoRetificacao : EntityBase
     /// </remarks>
     public string ETag => $"\"{Id}:{Revisao}\"";
 
+    internal static DomainError JaAberta() => new(
+        "RascunhoRetificacao.JaAberta",
+        "Já existe uma retificação em curso neste processo — feche-a ou descarte-a antes de abrir outra.");
+
+    internal static DomainError NaoAberta() => new(
+        "RascunhoRetificacao.NaoAberta",
+        "Não há retificação em curso neste processo.");
+
     /// <summary>
     /// Confere o <c>If-Match</c> contra o <see cref="ETag"/> corrente.
     /// <see langword="null"/> quando a mutação pode prosseguir.

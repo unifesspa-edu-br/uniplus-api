@@ -39,7 +39,7 @@ internal static class SessaoDeRetificacao
                 "ProcessoSeletivo.TransicaoInvalida",
                 $"Só é possível retificar um processo publicado — status atual: {estado.Status}.")
             : RecusaDaVersaoDeOutroProcesso(estado, versaoBase)
-                ?? (estado.Rascunho is not null ? GuardaDeEdicao.RetificacaoJaAberta() : null);
+                ?? (estado.Rascunho is not null ? RascunhoRetificacao.JaAberta() : null);
 
         return recusa is not null
             ? Result<RascunhoRetificacao>.Failure(recusa)
@@ -53,16 +53,9 @@ internal static class SessaoDeRetificacao
     /// callers só diz que ninguém descarta sem repor, e o carimbo torna isso irrepresentável. Descartar
     /// sem repor deixaria o certame servindo, em silêncio, uma configuração editada que nunca foi publicada.
     /// </summary>
-    internal static DomainError? RecusaDoDescarte(
-        EstadoDaConfiguracao estado, Guid? versaoRestaurada, PrecondicaoIfMatch precondicao)
+    internal static DomainError? RecusaDoDescarte(RascunhoRetificacao sessao, Guid? versaoRestaurada)
     {
-        ArgumentNullException.ThrowIfNull(estado);
-        ArgumentNullException.ThrowIfNull(precondicao);
-
-        if (GuardaDeEdicao.PendenciaDaSessao(estado.Status, estado.Rascunho, precondicao) is { } pendencia)
-        {
-            return pendencia;
-        }
+        ArgumentNullException.ThrowIfNull(sessao);
 
         return versaoRestaurada switch
         {
@@ -70,7 +63,7 @@ internal static class SessaoDeRetificacao
                 "ProcessoSeletivo.DescarteSemRestauracao",
                 "A sessão editorial não pode ser encerrada sem que a configuração congelada seja reposta — "
                 + "encerrá-la agora deixaria o certame servindo a configuração editada como se ela tivesse sido publicada."),
-            { } restaurada when restaurada != estado.Rascunho!.VersaoBaseId => new DomainError(
+            { } restaurada when restaurada != sessao.VersaoBaseId => new DomainError(
                 "ProcessoSeletivo.DescarteComVersaoErrada",
                 "A configuração reposta não é a da versão sobre a qual esta retificação foi aberta."),
             _ => null,

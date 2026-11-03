@@ -5,7 +5,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>A versão congelada, o evento que a anuncia e se a transição encerra a sessão editorial.</summary>
 internal sealed record VersaoEmitida(VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento, bool EncerraSessao);
@@ -65,24 +64,22 @@ internal static class TransicoesDaVersao
         // O atalho e a sessão retificam o mesmo ato; correndo juntos, a versão seguinte sairia da
         // configuração viva que a sessão está editando (ADR-0110 D7).
         return estado.Rascunho is not null
-            ? Result<VersaoEmitida>.Failure(GuardaDeEdicao.RetificacaoJaAberta())
+            ? Result<VersaoEmitida>.Failure(RascunhoRetificacao.JaAberta())
             : Suceder(estado, pedido, versaoAtual, motivo, encerraSessao: false);
     }
 
     /// <summary>
-    /// Fecha a sessão editorial: congela a versão seguinte com a configuração editada, com o motivo do
+    /// Fecha a sessão editorial: congela a versão seguinte com a configuração editada e o motivo do
     /// rascunho, onde foi normalizado uma única vez. A sessão só encerra depois de a versão estar
     /// decidida; se o congelamento for recusado, ela segue aberta para o administrador corrigir.
     /// </summary>
     internal static Result<VersaoEmitida> Fechar(
-        EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, PrecondicaoIfMatch precondicao)
+        EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, RascunhoRetificacao sessao)
     {
         ArgumentNullException.ThrowIfNull(estado);
-        ArgumentNullException.ThrowIfNull(precondicao);
+        ArgumentNullException.ThrowIfNull(sessao);
 
-        return GuardaDeEdicao.PendenciaDaSessao(estado.Status, estado.Rascunho, precondicao) is { } pendencia
-            ? Result<VersaoEmitida>.Failure(pendencia)
-            : Suceder(estado, pedido, versaoAtual, estado.Rascunho!.Motivo, encerraSessao: true);
+        return Suceder(estado, pedido, versaoAtual, sessao.Motivo, encerraSessao: true);
     }
 
     private static Result<VersaoEmitida> Suceder(
