@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
@@ -130,15 +131,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>As opções que o processo declara para os fatos cuja fonte dos valores é o processo, exceto os de atendimento especializado, cujas opções vêm da oferta.</summary>
     public IReadOnlyCollection<OpcaoDeclaradaFato> OpcoesDeclaradas => _opcoesDeclaradas.AsReadOnly();
 
-    /// <summary>A origem das opções de um campo coletado: a copiada do catálogo, salvo condição e recurso de atendimento, que são sempre do processo porque a oferta é a dona deles.</summary>
-    public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
-    {
-        ArgumentNullException.ThrowIfNull(fato);
-        return OfertaAtendimentoEspecializado.ImpoeOrigemDoFato(fato.FatoCodigo)
-            ? OrigemValoresColeta.OpcoesDoProcesso
-            : fato.OrigemValores;
-    }
-
     /// <summary>As opções do processo para o fato, em ordem: as da oferta de atendimento, quando ela gere o fato, ou as declaradas. É a única leitura delas.</summary>
     public IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(string fatoCodigo)
     {
@@ -169,59 +161,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
         ArgumentNullException.ThrowIfNull(opcoes);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
         string fato = fatoCodigo.Trim();
-        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato))
-        {
-            return Result.Failure(new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.GeridasPelaOfertaDeAtendimento,
-                "As opções deste fato vêm da oferta de atendimento especializado; defina-as na oferta."));
-        }
-
-        // A edição do ENEM só tem sentido quando a classificação lê notas do ENEM do candidato.
-        if (string.Equals(fato, EdicaoDoEnem.Fato, StringComparison.Ordinal) && Classificacao is not { BaseadoEmEnem: true })
-        {
-            return Result.Failure(new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem,
-                "As edições do ENEM só podem ser declaradas quando a classificação do processo é baseada em ENEM."));
-        }
-
-        if (opcoes.Count == 0)
-        {
-            return Result.Failure(new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.ListaVazia,
-                "Declare ao menos uma opção para o fato."));
-        }
-
-        HashSet<string> codigos = new(StringComparer.Ordinal);
-        if (opcoes.Any(o => !codigos.Add(o.Codigo)))
-        {
-            return Result.Failure(new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.CodigoRepetido,
-                "Cada opção do fato precisa de um código próprio."));
-        }
-
-        if (ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(EstadoDaConfiguracao.De(this), fato, codigos)
-            || (agregadosDoFato ?? []).Any(agregado => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(EstadoDaConfiguracao.De(this), agregado, codigos)))
-        {
-            return Result.Failure(new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
-                "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma opção que deixaria de existir — ajuste ou remova a condição antes de redefinir as opções."));
-        }
-
-        _opcoesDeclaradas.RemoveAll(o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal));
-        foreach (OpcaoDeclaradaFato opcao in opcoes)
-        {
-            Vincular(opcao);
-            _opcoesDeclaradas.Add(opcao);
-        }
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return Editar(precondicao,
+            () => RegrasDasOpcoesDeclaradas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), fato, opcoes, agregadosDoFato),
+            () => Substituir(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal), opcoes));
     }
 
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
@@ -4088,7 +4031,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                 continue;
             }
 
-            OrigemValoresColeta origem = OrigemDasOpcoes(fato);
+            OrigemValoresColeta origem = RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato);
             if (origem == OrigemValoresColeta.OpcoesDoProcesso && OpcoesDoProcesso(fato.FatoCodigo).Count == 0)
             {
                 return new DomainError(
@@ -6150,9 +6093,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     private void Substituir<T>(List<T> lista, IEnumerable<T> novas)
+        where T : class, IParteDoProcesso =>
+        Substituir(lista, static _ => true, novas);
+
+    private void Substituir<T>(List<T> lista, Predicate<T> substituidas, IEnumerable<T> novas)
         where T : class, IParteDoProcesso
     {
-        lista.Clear();
+        lista.RemoveAll(substituidas);
         foreach (T nova in novas)
         {
             Vincular(nova);

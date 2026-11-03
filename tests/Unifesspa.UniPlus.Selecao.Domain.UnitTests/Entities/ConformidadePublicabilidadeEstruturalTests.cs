@@ -15,6 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -769,7 +771,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        ProcessoSeletivo.OrigemDasOpcoes(processo.Campos.Single(static c => c.FatoCodigo == "TIPO_DEFICIENCIA")).Should().Be(OrigemValoresColeta.Catalogo);
+        RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(processo.Campos.Single(static c => c.FatoCodigo == "TIPO_DEFICIENCIA")).Should().Be(OrigemValoresColeta.Catalogo);
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }

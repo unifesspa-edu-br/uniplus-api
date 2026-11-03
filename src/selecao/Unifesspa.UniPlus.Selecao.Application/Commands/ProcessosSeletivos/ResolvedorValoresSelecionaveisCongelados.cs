@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
@@ -185,7 +186,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         // A origem é a copiada para o campo, a mesma que o agregado confere na publicação: o
         // rascunho a recopia do catálogo ao publicar, e depois de congelada ela não muda mais. O
         // catálogo só responde pelo campo cuja origem é ele.
-        switch (ProcessoSeletivo.OrigemDasOpcoes(fato))
+        switch (RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato))
         {
             case OrigemValoresColeta.OpcoesDoProcesso:
                 return Result<IReadOnlyList<ValorDominioDeclaradoCongelado>>.Success([.. processo.OpcoesDoProcesso(fatoCodigo)

@@ -27,6 +27,8 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -217,7 +219,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         // O campo cujas opções o processo oferta congela essas opções, pela mesma leitura que o
         // resolvedor da publicação usa.
-        foreach (FatoColetado campo in processo.Campos.Where(static c => ProcessoSeletivo.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
+        foreach (FatoColetado campo in processo.Campos.Where(static c => RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(c) == OrigemValoresColeta.OpcoesDoProcesso))
         {
             valoresDoConjuntoBasico[campo.FatoCodigo] = [.. processo.OpcoesDoProcesso(campo.FatoCodigo)
                 .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))];
