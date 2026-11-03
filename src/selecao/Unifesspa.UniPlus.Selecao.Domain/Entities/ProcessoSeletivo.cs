@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
@@ -1283,30 +1284,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story #554, PR #896 —
-    /// B-03 do plano). Presença (0..1) — <see langword="null"/> é estado válido enquanto
-    /// nenhuma exigência tem gatilho por idade; a ausência só vira pendência de publicação
-    /// quando existir esse gatilho (<see cref="PendenciaDaReferenciaTemporalFatos"/>).
+    /// Define a política que ancora <c>FAIXA_ETARIA</c> na publicação. Presença 0..1: nulo é estado
+    /// válido enquanto nenhuma exigência tem gatilho por idade; a ausência só vira pendência de
+    /// publicação quando existir esse gatilho.
     /// </summary>
-    public Result DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (referencia is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } and { FaseId: { } faseId }
-            && !_cronogramaFases.Any(f => f.Id == faseId))
-        {
-            return Result.Failure(new DomainError(
-                "ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso",
-                $"A fase {faseId} não pertence ao cronograma deste processo."));
-        }
-
-        ReferenciaTemporalFatos = referencia;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+    public Result DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao,
+            () => ReferenciaTemporalDosFatos.RecusaDaFaseForaDoCronograma(EstadoDaConfiguracao.De(this), referencia),
+            () => ReferenciaTemporalFatos = referencia);
 
     /// <summary>Declara ou troca o identificador legível; não há remoção, o certame sempre tem um.</summary>
     public Result DefinirIdentificadorLegivel(IdentificadorLegivel identificador, PrecondicaoIfMatch precondicao)
@@ -1868,10 +1853,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         new ItemConformidade("exigencia_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (exigência)", !ConsequenciaDeIndeferimento.ExisteExigenciaConsequenciaIncoerenteComAcaoDaVaga(EstadoDaConfiguracao.De(this), fatosDeModalidade)),
         new ItemConformidade("grupo_remove_vantagem_sem_vantagem_viva", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: REMOVE_VANTAGEM com vantagem viva (grupo)", !ConsequenciaDeIndeferimento.ExisteGrupoRemoveVantagemSemVantagemViva(EstadoDaConfiguracao.De(this))),
         new ItemConformidade("grupo_consequencia_incoerente_com_acao_da_vaga", DimensaoConformidade.ExigenciasDocumentais, "Consequência de indeferimento: coerente com a ação da vaga (grupo)", !ConsequenciaDeIndeferimento.ExisteGrupoConsequenciaIncoerenteComAcaoDaVaga(EstadoDaConfiguracao.De(this), fatosDeModalidade)),
-        new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando alguma regra cita a faixa etária", !ReferenciaTemporalFatosAusenteQuandoExigida()),
-        new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalFatosFaseNaoPertenceAoCronograma()),
-        new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalFatosExtremoDaFaseAusente()),
-        new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalFatosFimInscricaoIndisponivel()),
+        new ItemConformidade("referencia_temporal_ausente_com_gatilho_etario", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: configurada quando alguma regra cita a faixa etária", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosAusenteQuandoExigida(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("referencia_temporal_fase_fora_do_cronograma", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase âncora pertence ao cronograma", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosFaseNaoPertenceAoCronograma(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("referencia_temporal_extremo_da_fase_ausente", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: extremo da fase âncora definido", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosExtremoDaFaseAusente(EstadoDaConfiguracao.De(this))),
+        new ItemConformidade("referencia_temporal_fim_inscricao_indisponivel", DimensaoConformidade.ColetaDeFatos, "Referência temporal de fatos: fase de coleta com Fim definido para FIM_INSCRICAO", !ReferenciaTemporalDosFatos.ReferenciaTemporalFatosFimInscricaoIndisponivel(EstadoDaConfiguracao.De(this))),
         new ItemConformidade("modalidade_regra_cita_fato_nao_coletado", DimensaoConformidade.DistribuicaoVagas, "Modalidades: a regra de aplicabilidade cita só fatos que o processo coleta ou deriva", PendenciaDasRegrasDasModalidades(fatosDeModalidade.MembroPorAgregado) is null),
         new ItemConformidade("derivacao_fatos_citados_inexistentes", DimensaoConformidade.ColetaDeFatos, "Regras de derivação: fatos citados existem no processo", PendenciaDeFatosCitados() is null),
         new ItemConformidade("formulario_fato_ausente_de_versao_publicada", DimensaoConformidade.ColetaDeFatos, "Formulários: na retificação, fato de outra finalidade só quando coletado em todas as versões publicadas", CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(EstadoDaConfiguracao.De(this)) is null),
@@ -2014,7 +1999,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return coerencia;
         }
 
-        if (PendenciaDaReferenciaTemporalFatos() is { } referenciaTemporal)
+        if (ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos(EstadoDaConfiguracao.De(this)) is { } referenciaTemporal)
         {
             return referenciaTemporal;
         }
@@ -2521,180 +2506,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao) =>
         ProtecaoDasExigencias.Recongelar(_documentosExigidos, protecao);
 
-    /// <summary>
-    /// Pendência de <see cref="ReferenciaTemporalFatos"/> (Story #554, PR #896 — B-03 do
-    /// plano). Chamado por <see cref="Publicar"/> e por <see cref="SucederVersao"/>,
-    /// sempre <b>depois</b> de <see cref="PendenciaDasExigenciasDocumentais"/>.
-    /// </summary>
-    /// <remarks>
-    /// Sem fallback silencioso (ADR-0111:235-236): se alguma regra — gatilho de exigência ou regra
-    /// do formulário — citar <c>FAIXA_ETARIA</c>, a referência
-    /// precisa resolver para uma data concreta — política ausente, âncora de fase sem o
-    /// extremo escolhido, ou <c>FIM_INSCRICAO</c> sem fase que colete inscrição com
-    /// <c>Fim</c> definido bloqueiam a publicação. O congelamento da <c>DateOnly</c>
-    /// concreta é da PR #903; esta validação só prova que ela É resolvível.
-    /// </remarks>
-    private DomainError? PendenciaDaReferenciaTemporalFatos()
-    {
-        if (!CitaFaixaEtaria())
-        {
-            return null;
-        }
-
-        if (ReferenciaTemporalFatosAusenteQuandoExigida())
-        {
-            return new DomainError(
-                "ProcessoSeletivo.ReferenciaTemporalFatosAusente",
-                "Uma regra do processo (gatilho de exigência ou regra do formulário) cita FAIXA_ETARIA, mas nenhuma referência temporal de fatos foi configurada — a publicação não pode resolver a idade do candidato sem fallback silencioso (ADR-0111).");
-        }
-
-        ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos!;
-
-        if (referencia.Tipo is ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase)
-        {
-            if (ReferenciaTemporalFatosFaseNaoPertenceAoCronograma())
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente",
-                    "A fase âncora da referência temporal de fatos não pertence (mais) ao cronograma deste processo.");
-            }
-
-            if (ReferenciaTemporalFatosExtremoDaFaseAusente())
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente",
-                    $"A fase âncora da referência temporal de fatos não tem {(referencia.Tipo == ReferenciaTipo.InicioFase ? "Início" : "Fim")} definido — sem fallback silencioso.");
-            }
-        }
-        else if (referencia.Tipo == ReferenciaTipo.FimInscricao)
-        {
-            // Achado de revisão (Story #554, PR #903): nada no domínio impede MAIS de uma
-            // fase com ColetaInscricao (mesma família de guard já corrigida para
-            // IdadeMaximaEmissao, PR #900) — a pergunta certa é existencial (Any), não posicional.
-            if (ReferenciaTemporalFatosFimInscricaoIndisponivel())
-            {
-                return new DomainError(
-                    "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel",
-                    "FIM_INSCRICAO exige uma fase que colete inscrição com Fim definido — sem fallback silencioso.");
-            }
-        }
-
-        // DATA_ESPECIFICA: ReferenciaTemporalFatos.Criar já garante Data presente — nada a checar aqui.
-        return null;
-    }
-
-    /// <summary>
-    /// Alguma regra viva do processo — gatilho de exigência ou regra do formulário — cita a faixa
-    /// etária; sem isso, a referência temporal é opcional.
-    /// </summary>
-    private bool CitaFaixaEtaria() =>
-        ReferenciasVivas.CondicoesVivasComOperador(EstadoDaConfiguracao.De(this)).Any(static c => string.Equals(c.Fato, FaixaEtaria, StringComparison.Ordinal));
-
-    private const string FaixaEtaria = "FAIXA_ETARIA";
-
-    /// <summary>A fase âncora de InicioFase/FimFase — <see langword="null"/> quando o tipo não usa fase ou ela não pertence (mais) ao cronograma.</summary>
-    private FaseCronograma? FaseAncoraDaReferenciaTemporal() =>
-        ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
-            ? _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)
-            : null;
-
-    private bool ReferenciaTemporalFatosAusenteQuandoExigida() =>
-        CitaFaixaEtaria() && ReferenciaTemporalFatos is null;
-
-    private bool ReferenciaTemporalFatosFaseNaoPertenceAoCronograma() =>
-        CitaFaixaEtaria()
-        && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase }
-        && FaseAncoraDaReferenciaTemporal() is null;
-
-    private bool ReferenciaTemporalFatosExtremoDaFaseAusente() =>
-        CitaFaixaEtaria()
-        && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.InicioFase or ReferenciaTipo.FimFase } referencia
-        && FaseAncoraDaReferenciaTemporal() is { } fase
-        && (referencia.Tipo == ReferenciaTipo.InicioFase ? fase.Inicio : fase.Fim) is null;
-
-    private bool ReferenciaTemporalFatosFimInscricaoIndisponivel() =>
-        CitaFaixaEtaria()
-        && ReferenciaTemporalFatos is { Tipo: ReferenciaTipo.FimInscricao }
-        && !_cronogramaFases.Any(static f => f.ColetaInscricao && f.Fim is not null);
-
-    /// <summary>
-    /// Resolve <see cref="ReferenciaTemporalFatos"/> para a <see cref="DateOnly"/> concreta
-    /// que o envelope congela como <c>dataReferenciaFatos</c> (Story #554, PR #903, B-03) — o
-    /// mesmo par (Tipo, âncora) que <see cref="PendenciaDaReferenciaTemporalFatos"/> já
-    /// provou resolvível antes da transição chamar este método; aqui só se resolve, sem
-    /// revalidar. A virada do dia UTC→local é a razão de existir deste método, em vez de o
-    /// encoder ler <see cref="DateTimeOffset"/> cru.
-    /// </summary>
-    /// <returns>
-    /// <see langword="null"/> quando nenhuma regra cita <c>FAIXA_ETARIA</c> — a resolução
-    /// não foi provada nem é necessária, e congelar uma data não pedida por ninguém seria
-    /// dado morto no envelope, não uma garantia a mais.
-    /// </returns>
-    /// <param name="fusoHorario">
-    /// Zona em que a âncora vira dia civil. Vem da canonicalização — na publicação é o fuso
-    /// institucional corrente, e ao provar uma versão já publicada é o que ela congelou. Deixar o
-    /// método escolher a zona sozinho faria o envelope declarar um fuso no bloco de localidade e
-    /// calcular a data por outro, congelando o dia civil errado numa versão imutável.
-    /// </param>
-    public DateOnly? ResolverDataReferenciaFatos(TimeZoneInfo fusoHorario)
-    {
-        ArgumentNullException.ThrowIfNull(fusoHorario);
-
-        if (!CitaFaixaEtaria())
-        {
-            return null;
-        }
-
-        if (ReferenciaTemporalFatos is not { } referencia)
-        {
-            throw new InvalidOperationException(
-                "Resolução de dataReferenciaFatos sem ReferenciaTemporalFatos configurada — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
-        }
-
-        return DataDaReferencia(referencia, fusoHorario)
-            ?? throw new InvalidOperationException(
-                "dataReferenciaFatos não resolvível a partir do cronograma — PendenciaDaReferenciaTemporalFatos deveria ter recusado a transição antes deste ponto.");
-    }
-
-    /// <summary>
-    /// A data de referência que a configuração viva já resolve, para o rascunho em montagem: nula
-    /// quando nenhuma regra cita <c>FAIXA_ETARIA</c>, quando a referência ainda não foi declarada ou
-    /// quando a fase que a ancora ainda não tem a data. A publicação usa
-    /// <see cref="ResolverDataReferenciaFatos"/>, que recusa o que não resolve.
-    /// </summary>
-    public DateOnly? DataReferenciaFatosEmMontagem(TimeZoneInfo fusoHorario)
-    {
-        ArgumentNullException.ThrowIfNull(fusoHorario);
-        return CitaFaixaEtaria() && ReferenciaTemporalFatos is { } referencia ? DataDaReferencia(referencia, fusoHorario) : null;
-    }
-
-    private DateOnly? DataDaReferencia(ReferenciaTemporalFatos referencia, TimeZoneInfo fusoHorario)
-    {
-        if (referencia.Tipo == ReferenciaTipo.DataEspecifica)
-        {
-            return referencia.Data!.Value;
-        }
-
-        DateTimeOffset? extremo = referencia.Tipo switch
-        {
-            ReferenciaTipo.InicioFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Inicio,
-            ReferenciaTipo.FimFase => _cronogramaFases.FirstOrDefault(f => f.Id == referencia.FaseId)?.Fim,
-            // Achado de revisão (Story #554, PR #903): _cronogramaFases preserva a ORDEM DE
-            // ENTRADA de DefinirCronogramaFases, mas o envelope escreve as fases ordenadas
-            // por Ordem (canonicalização determinística) — havendo mais de uma fase de
-            // coleta com Fim, a fase publicada dependeria da ordem em que o caller as
-            // passou, e a reidratação (sempre em ordem de Ordem) poderia escolher outra,
-            // quebrando o round-trip (SombraParaVerificacao). OrderBy(Ordem) torna a escolha
-            // determinística e independente de como a coleção foi populada.
-            ReferenciaTipo.FimInscricao => _cronogramaFases
-                .Where(static f => f.ColetaInscricao && f.Fim is not null)
-                .OrderBy(static f => f.Ordem)
-                .FirstOrDefault()?.Fim,
-            _ => throw new InvalidOperationException($"Tipo de ReferenciaTemporalFatos não reconhecido: {referencia.Tipo}."),
-        };
-
-        return extremo is { } instante ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instante, fusoHorario).DateTime) : null;
-    }
 
     /// <summary>
     /// Publica o processo (UNI-REQ-0019): confere a transição e os portões de prontidão, abre a
@@ -3812,7 +3623,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // POLÍTICA crua (Tipo/Data/FaseId) ao lado da data já resolvida — mesmo padrão de
         // "insumo + output derivado" de distribuicao/vagas. Repor a política (não só a
         // data) é o que torna o round-trip reidratar→recanonicalizar não-tautológico:
-        // ResolverDataReferenciaFatos() recalcula o mesmo output a partir do mesmo insumo
+        // ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(EstadoDaConfiguracao.De(this)) recalcula o mesmo output a partir do mesmo insumo
         // restaurado. Cada VersaoConfiguracao congela sua PRÓPRIA política — uma
         // retificação que muda a política antes de publicar não afeta o que já foi
         // congelado (B-03). O FaseId também passa pelo mesmo remapeamento de

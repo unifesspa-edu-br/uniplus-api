@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -155,7 +157,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
         {
             FoiInvocado = true;
-            entrada.Processo.ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
+            ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(EstadoDaConfiguracao.De(entrada.Processo), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
             return new SnapshotCanonico("{}"u8.ToArray(), "1.2", "canonical-json/sha256@v1");
         }
     }

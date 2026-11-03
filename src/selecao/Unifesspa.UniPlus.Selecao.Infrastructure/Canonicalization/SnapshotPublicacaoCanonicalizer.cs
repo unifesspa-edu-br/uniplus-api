@@ -1435,7 +1435,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
                 ["faseId"] = referencia.FaseId,
             }
             : null,
-            ["dataReferenciaFatos"] = processo.ResolverDataReferenciaFatos(fusoHorario) is { } data
+            ["dataReferenciaFatos"] = Domain.ProcessosSeletivos.Fatos.ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo), fusoHorario) is { } data
             ? data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
             : null,
             ["metadadosFatos"] = SerializarMetadadosFatos(metadadosFatosCongelados),

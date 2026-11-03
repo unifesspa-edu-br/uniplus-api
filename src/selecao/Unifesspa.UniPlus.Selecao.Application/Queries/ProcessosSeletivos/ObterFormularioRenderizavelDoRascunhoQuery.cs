@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 
 /// <summary>
 /// O formulário de uma finalidade como a configuração viva o define agora — o rascunho, ou a sessão
@@ -62,7 +64,7 @@ public static class ObterFormularioRenderizavelDoRascunhoQueryHandler
 
         return ProjecaoDoFormularioRenderizavel.Projetar(
                 query.Finalidade, avaliavel.Value!, processo.Formularios, processo.FatosColetados, processo.GruposColetados, processo.TermosExigidos,
-                processo.DataReferenciaFatosEmMontagem(fuso.Value!)) is { } formulario
+                ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(EstadoDaConfiguracao.De(processo), fuso.Value!)) is { } formulario
             ? Result<FormularioRenderizavelDto>.Success(FormularioRenderizavelDto.De(
                 formulario, comprovacaoDocumental: null, dependenciasDaAvaliacao: null, dependenciasDoFator: null,
                 processo.Formularios.FirstOrDefault(f => f.Finalidade == query.Finalidade)?.FaseId))
