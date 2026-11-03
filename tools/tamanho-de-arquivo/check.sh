@@ -95,7 +95,7 @@ while IFS= read -r ARQ; do
   elif (( N > REGISTRADO[$ARQ] )); then
     CRESCERAM+=("$ARQ (registrado ${REGISTRADO[$ARQ]}, agora $N)")
   elif (( N < REGISTRADO[$ARQ] )); then
-    ENCOLHERAM+=("$ARQ")
+    ENCOLHERAM+=("$ARQ (registrado ${REGISTRADO[$ARQ]}, agora $N)")
   fi
 done < <(printf '%s\n' "${!ATUAL[@]}" | LC_ALL=C sort)
 
@@ -152,6 +152,10 @@ if (( ${#SAIRAM[@]} )); then
   EXIT_CODE=1
   listar "arquivo da lista com $LIMITE linhas ou menos: tire-o de $LISTA_REL (ou rode com --atualizar):" "${SAIRAM[@]}"
 fi
+if (( ${#ENCOLHERAM[@]} )); then
+  EXIT_CODE=1
+  listar "arquivo da lista encolheu: rode com --atualizar para registrar o número novo (senão a folga permite crescer de novo):" "${ENCOLHERAM[@]}"
+fi
 if (( ${#FALHAS_LISTA[@]} )); then
   EXIT_CODE=1
   listar "problemas na lista de exceções:" "${FALHAS_LISTA[@]}"
@@ -164,6 +168,3 @@ fi
 
 NA_LISTA=${#REGISTRADO[@]}
 echo "ok   $((TOTAL - NA_LISTA)) arquivo(s) dentro do limite de $LIMITE linhas; $NA_LISTA na lista de exceções ($LISTA_REL)"
-if (( ${#ENCOLHERAM[@]} )); then
-  echo "aviso ${#ENCOLHERAM[@]} arquivo(s) da lista encolheram; rode 'bash tools/tamanho-de-arquivo/check.sh --atualizar' para registrar"
-fi

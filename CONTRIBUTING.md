@@ -324,7 +324,7 @@ public static class ObterProcessoSeletivoQueryHandler
 
 #### Tamanho de arquivo
 
-Nenhum arquivo `*.cs` de `src/` passa de **400 linhas físicas** (comentários, documentação XML e linhas em branco contam). Ficam fora: `Migrations/`, `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`, `*ModelSnapshot.cs` e todo o diretório `tests/`. O job `tamanho-de-arquivo` do CI roda `bash tools/tamanho-de-arquivo/check.sh` e recusa arquivo novo acima do limite. Os arquivos que ainda excedem o limite constam em `tools/tamanho-de-arquivo/excecoes.txt`: a lista **só diminui** — arquivo dela que cresce é recusado, e arquivo que cai para 400 linhas ou menos deve sair dela (`--atualizar` faz isso).
+Nenhum arquivo `*.cs` de `src/` passa de **400 linhas físicas** (comentários, documentação XML e linhas em branco contam). Ficam fora: `Migrations/`, `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`, `*ModelSnapshot.cs` e todo o diretório `tests/`. O job `tamanho-de-arquivo` do CI roda `bash tools/tamanho-de-arquivo/check.sh` e recusa arquivo novo acima do limite. Os arquivos que ainda excedem o limite constam em `tools/tamanho-de-arquivo/excecoes.txt`: a lista **só diminui** — arquivo dela que cresce é recusado, toda redução tem de ser registrada nela e arquivo que cai para 400 linhas ou menos deve sair dela (`--atualizar` faz as duas coisas).
 
 ### 3. Testar
 
