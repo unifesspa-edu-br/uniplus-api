@@ -77,6 +77,47 @@ public sealed class ProcessoSeletivoEdicaoTests
         processo.Rascunho!.Revisao.Should().Be(2);
     }
 
+    [Fact(DisplayName = "Toda operação do protocolo declara a violação da sua regra ou o motivo de não ter regra")]
+    public void Catalogo_DeclaraRegraOuAusenciaDela()
+    {
+        string[] todas = [.. OperacaoDeEdicao.Todas.Select(static o => o.Nome)];
+
+        ViolacaoDeRegra.PorOperacao.Keys.Concat(ViolacaoDeRegra.SemRegra.Keys).Should().BeEquivalentTo(todas);
+        ViolacaoDeRegra.PorOperacao.Keys.Intersect(ViolacaoDeRegra.SemRegra.Keys).Should().BeEmpty();
+    }
+
+    public static TheoryData<string> OperacoesComRegra => [.. ViolacaoDeRegra.PorOperacao.Keys];
+
+    [Theory(DisplayName = "Entrada que viola a regra, no processo publicado sem sessão, é recusada pela guarda e não pela regra")]
+    [MemberData(nameof(OperacoesComRegra))]
+    public void ViolacaoSemSessao_RecusaPelaGuarda(string nome)
+    {
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
+        ViolacaoDeRegra violacao = ViolacaoDeRegra.PorOperacao[nome];
+
+        Result resultado = violacao.Chamar(processo, PrecondicaoIfMatch.Ausente);
+
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+    }
+
+    [Theory(DisplayName = "Entrada que viola a regra, sob sessão com a precondição atual, é recusada pelo código da regra sem mudar a dimensão")]
+    [MemberData(nameof(OperacoesComRegra))]
+    public void ViolacaoSobSessao_RecusaPelaRegraSemMutacao(string nome)
+    {
+        ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.EmSessao();
+        ViolacaoDeRegra violacao = ViolacaoDeRegra.PorOperacao[nome];
+        violacao.Preparar?.Invoke(processo);
+        object?[] antes = violacao.Dimensao(processo);
+        int revisao = processo.Rascunho!.Revisao;
+
+        Result resultado = violacao.Chamar(processo, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
+
+        resultado.IsFailure.Should().BeTrue();
+        (resultado.Errors.Select(static e => e.Error.Code).FirstOrDefault()).Should().Be(violacao.Codigo);
+        violacao.Dimensao(processo).Should().Equal(antes);
+        processo.Rascunho!.Revisao.Should().Be(revisao);
+    }
+
     [Fact(DisplayName = "Em rascunho a operação não exige precondição")]
     public void EmRascunho_NaoExigePrecondicao()
     {
