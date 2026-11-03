@@ -1,0 +1,63 @@
+# Arquivos de produção (src/**/*.cs) que ainda passam de 400 linhas físicas.
+#
+# Regra: nenhum arquivo de produção passa de 400 linhas (comentários,
+# documentação XML e linhas em branco contam). Ficam fora da regra:
+# Migrations/, obj/, bin/, *.g.cs, *.Designer.cs, *ModelSnapshot.cs e tests/.
+#
+# Esta lista SÓ DIMINUI: não se acrescenta arquivo nem se aumenta número.
+# Ao dividir um arquivo, remova a entrada (ou rode
+# `bash tools/tamanho-de-arquivo/check.sh --atualizar`).
+#
+# Formato: <linhas> <caminho relativo à raiz>, ordenado por caminho.
+404 src/autorizacao/Unifesspa.UniPlus.Autorizacao.API/Controllers/PedidosDeConcessaoController.cs
+654 src/autorizacao/Unifesspa.UniPlus.Autorizacao.Domain/Entities/PedidoDeConcessao.cs
+417 src/configuracao/Unifesspa.UniPlus.Configuracao.API/Controllers/FatosCandidatoController.cs
+2257 src/configuracao/Unifesspa.UniPlus.Configuracao.API/Errors/ConfiguracaoDomainErrorRegistration.cs
+417 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/CalendarioDiasUteis.cs
+1500 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/FatoCandidato.cs
+637 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/Modalidade.cs
+755 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/ModeloFormulario.cs
+472 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/OfertaCurso.cs
+418 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/PesoAreaEnem.cs
+402 src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Persistence/Seed/FatoCandidatoSeed.cs
+676 src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Persistence/Seed/SementePsrMedicina2027.cs
+512 src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Entities/Instituicao.cs
+494 src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Commands/AtosNormativos/RegistrarAtoNormativoCommandHandler.cs
+1459 src/selecao/Unifesspa.UniPlus.Selecao.API/Controllers/ProcessoSeletivoController.cs
+1116 src/selecao/Unifesspa.UniPlus.Selecao.API/Errors/SelecaoDomainErrorRegistration.cs
+638 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/AplicarModeloFormularioCommandHandler.cs
+512 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirCronogramaFasesCommandHandler.cs
+847 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirDocumentosExigidosCommandHandler.cs
+767 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirEtapasCommandHandler.cs
+437 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DivulgarCertameAoRegistrarAtoHandler.cs
+546 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/FecharRetificacaoCommandHandler.cs
+467 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs
+545 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/RetificarProcessoSeletivoCommandHandler.cs
+514 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs
+1147 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ProjecaoDoCertamePublicado.cs
+544 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoClassificacao.cs
+696 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoDistribuicaoVagas.cs
+592 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/DocumentoExigido.cs
+1075 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/EtapaProcesso.cs
+829 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs
+1383 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/Inscricao.cs
+686 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/NoExigencia.cs
+8331 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs
+591 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliacaoDaInscricao.cs
+447 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliadorConformidadeLegal.cs
+636 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/ResolvedorArvoreSatisfacao.cs
+507 src/selecao/Unifesspa.UniPlus.Selecao.Domain/ValueObjects/GrafoDependenciaConjunta.cs
+889 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.Configuracoes.cs
+587 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.DistribuicaoVagas.cs
+583 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.DocumentosExigidos.cs
+979 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.FatosEDerivacao.cs
+477 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.RegrasClassificacao.cs
+442 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.cs
+784 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/LeitorEnvelope.cs
+2351 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/SnapshotPublicacaoCanonicalizer.cs
+817 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Repositories/InscricaoRepository.cs
+425 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Errors/InvalidRequestProblemFactory.cs
+558 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyFilter.cs
+525 src/shared/Unifesspa.UniPlus.Regras/Formularios/FormaDoFormulario.cs
+485 src/shared/Unifesspa.UniPlus.Regras/Formularios/FormularioPortavel.cs
+415 src/shared/Unifesspa.UniPlus.Regras/Formularios/RestricaoValor.cs

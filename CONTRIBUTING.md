@@ -322,6 +322,10 @@ public static class ObterProcessoSeletivoQueryHandler
 
 **Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` source generator (.NET 6+): a classe é `partial`, o método é `private static partial void Log{Acao}` decorado com `[LoggerMessage(Level = ..., Message = "...")]`, e o `ILogger` entra como primeiro parâmetro do método. Chamadas diretas a `logger.LogInformation(...)` etc. são bloqueadas pelo analisador `CA1848` (com `TreatWarningsAsErrors`) — o source generator evita avaliação de argumentos quando o log level está desativado, elimina boxing de value types e parseia o template uma única vez na compilação.
 
+#### Tamanho de arquivo
+
+Nenhum arquivo `*.cs` de `src/` passa de **400 linhas físicas** (comentários, documentação XML e linhas em branco contam). Ficam fora: `Migrations/`, `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`, `*ModelSnapshot.cs` e todo o diretório `tests/`. O job `tamanho-de-arquivo` do CI roda `bash tools/tamanho-de-arquivo/check.sh` e recusa arquivo novo acima do limite. Os arquivos que ainda excedem o limite constam em `tools/tamanho-de-arquivo/excecoes.txt`: a lista **só diminui** — arquivo dela que cresce é recusado, e arquivo que cai para 400 linhas ou menos deve sair dela (`--atualizar` faz isso).
+
 ### 3. Testar
 
 ```bash
