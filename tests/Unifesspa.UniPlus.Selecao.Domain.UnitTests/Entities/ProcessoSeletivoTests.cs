@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoTests
 
         processo.Status.Should().Be(StatusProcesso.Rascunho);
         processo.Nome.Should().Be("PS 2026 — SiSU");
-        processo.Tipo.Should().Be(TipoProcesso.SiSU);
+        processo.TipoProcesso.Should().Be(TipoProcesso.SiSU);
         processo.Etapas.Should().BeEmpty();
         processo.OfertaAtendimento.Should().BeNull();
     }

@@ -44,8 +44,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Cópia do tipo escolhido na criação, imutável para a vida do processo.</summary>
     public TipoProcessoSnapshot TipoProcesso { get; private set; } = null!;
 
-    /// <summary>Alias de <see cref="TipoProcesso"/> para fixtures; o contrato HTTP expõe <see cref="TipoProcesso"/>.</summary>
-    public TipoProcessoSnapshot Tipo => TipoProcesso;
     public StatusProcesso Status { get; private set; }
 
     /// <summary>De onde vêm os candidatos; deriva o piso mínimo do cronograma e nunca ramifica por tipo de processo.</summary>

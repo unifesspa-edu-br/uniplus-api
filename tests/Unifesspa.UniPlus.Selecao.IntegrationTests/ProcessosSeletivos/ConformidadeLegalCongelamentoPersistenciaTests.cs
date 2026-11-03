@@ -160,8 +160,8 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         ObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = new(readContext, TimeProvider.System);
         IReadOnlyList<ObrigatoriedadeLegal> vigentes = await obrigatoriedadeLegalRepository
-            .ObterVigentesParaTipoProcessoAsync(processo.Tipo.ToString(), DataDeCorte, CancellationToken.None);
-        ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.Tipo.ToString(), vigentes, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+            .ObterVigentesParaTipoProcessoAsync(processo.TipoProcesso.ToString(), DataDeCorte, CancellationToken.None);
+        ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.TipoProcesso.ToString(), vigentes, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo);
         conformidade.Regras.Should().OnlyContain(static r => r.Aprovada, "pré-condição do teste — o processo satisfaz a regra semeada");
 
         SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
@@ -220,9 +220,9 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
 
         ProcessoSeletivo processoVivo = (await processoRepository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
         IReadOnlyList<ObrigatoriedadeLegal> vigentesAgora = await freshRepository
-            .ObterVigentesParaTipoProcessoAsync(processoVivo.Tipo.ToString(), DataDeCorte, CancellationToken.None);
+            .ObterVigentesParaTipoProcessoAsync(processoVivo.TipoProcesso.ToString(), DataDeCorte, CancellationToken.None);
         ResultadoConformidade recomputado = AvaliadorConformidadeLegal.Avaliar(
-            processoVivo, processoVivo.Tipo.ToString(), vigentesAgora, IdentidadesDe(processoVivo), FatosDeModalidadeDeTeste.DoCatalogo);
+            processoVivo, processoVivo.TipoProcesso.ToString(), vigentesAgora, IdentidadesDe(processoVivo), FatosDeModalidadeDeTeste.DoCatalogo);
 
         (Guid RegraId, string Hash)[] recomputadoSet = [.. recomputado.Regras
             .Select(r => (r.RegraId, r.Hash))

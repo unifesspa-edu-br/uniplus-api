@@ -88,7 +88,6 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             tipo.Property(x => x.Nome).HasColumnName("tipo_processo_nome").HasMaxLength(200).IsRequired();
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
-        builder.Ignore(p => p.Tipo);
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
         // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
         builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
