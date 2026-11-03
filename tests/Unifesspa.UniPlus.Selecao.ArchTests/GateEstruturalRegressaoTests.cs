@@ -17,7 +17,7 @@ public sealed class GateEstruturalRegressaoTests
     {
         string transicoes = File.ReadAllText(CaminhoTransicoes());
         Regex.Count(transicoes, @"PrimeiraPendencia\(").Should().Be(2,
-            "Publicar() e SucederVersao() (o núcleo compartilhado de Retificar()/FecharRetificacao()) " +
+            "TransicoesDaVersao.Publicar e a sucessão compartilhada por Retificar e Fechar " +
             "são os dois pontos de defesa no Domain — a rede que ninguém contorna (ADR-0109 D5)");
         Regex.Count(File.ReadAllText(CaminhoProntidao()), @"Conformidade:\s+\(\)\s+=>\s+ChecklistDeConformidade\.PendenciaDeConformidade\(estado\),").Should().Be(1,
             "os dois pontos de defesa usam a mesma composição dos portões, montada num só lugar");
@@ -45,7 +45,7 @@ public sealed class GateEstruturalRegressaoTests
     public void PendenciaDaCascata_AtravessaOsCincoCallSites()
     {
         // O padrão `is { }` (destructuring) isola os call sites de GATE (Publicar,
-        // SucederVersao, os três handlers) do uso em AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario), que testa
+        // a sucessão, os três handlers) do uso em AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario), que testa
         // `PendenciaDaCascata() is null` só para exibição — mesma chamada, propósito
         // diferente, não é um sexto call site de bloqueio.
         string raiz = File.ReadAllText(CaminhoProntidao());
@@ -66,7 +66,7 @@ public sealed class GateEstruturalRegressaoTests
     /// Localidade e convenção de contagem são gates da raiz, e só dela: os handlers da
     /// Application não os antecipam. Diferente de <c>PendenciaDeConformidade</c> e
     /// <c>PendenciaDaCascata</c>, cada um tem <b>três</b> call sites no Domain — os dois de
-    /// <c>Publicar</c>/<c>SucederVersao</c> mais a projeção em <c>AvaliarConformidade</c>, que
+    /// <c>TransicoesDaVersao.Publicar</c> e a sucessão mais a projeção em <c>AvaliarConformidade</c>, que
     /// é o que mantém checklist e recusa bicondicionais. Perder a terceira chamada devolve o
     /// defeito em que a publicação recusa por uma causa que o checklist declarava verde.
     /// </summary>
@@ -78,7 +78,7 @@ public sealed class GateEstruturalRegressaoTests
 
         Regex.Count(checklist, @"PendenciaDaLocalidade\(estado\)\s+is\s").Should().Be(1,
             "AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado que a prontidão aplica");
-        Regex.Count(prontidao, @"Localidade:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDaLocalidade\(estado\),").Should().Be(1, "Publicar() e SucederVersao() aplicam o gate pela prontidão");
+        Regex.Count(prontidao, @"Localidade:\s+\(\)\s+=>\s+ContagemDePrazos\.PendenciaDaLocalidade\(estado\),").Should().Be(1, "Publicar e a sucessão de Retificar e Fechar aplicam o gate pela prontidão");
         Regex.Count(prontidao, @"portoes\.Localidade\b").Should().Be(1);
 
         Regex.Count(checklist, @"PendenciaDoAlgoritmoDeContagem\(estado\)\s+is\s").Should().Be(1,

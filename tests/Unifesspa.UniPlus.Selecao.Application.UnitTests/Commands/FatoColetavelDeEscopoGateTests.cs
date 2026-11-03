@@ -84,7 +84,7 @@ public sealed class FatoColetavelDeEscopoGateTests
     // "drift" possível entre a publicação original e uma chamada de Retificar sem sessão
     // aberta: se o estado violasse o gate, a publicação original já teria recusado. O caminho
     // válido para reabrir e violar o gate é a sessão de retificação explícita — coberto abaixo
-    // por FecharRetificacaoCommandHandler, que também fecha por SucederVersao (mesmo gate).
+    // por FecharRetificacaoCommandHandler, que fecha pela mesma sucessão de TransicoesDaVersao (mesmo gate).
 
     [Fact(DisplayName = "FecharRetificacao_ComFatoColetavelSemOferta_RecusaESessaoPermaneceAberta — recusa não destrói a sessão editorial")]
     public async Task FecharRetificacao_ComFatoColetavelSemOferta_RecusaESessaoPermaneceAberta()

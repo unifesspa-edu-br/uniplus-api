@@ -2,12 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Veredicto de um item do checklist de conformidade ESTRUTURAL do <c>ProcessoSeletivo</c>
-/// (<see cref="Entities.ProcessoSeletivo.AvaliarConformidade"/>, Story #758 CA-07, Story #759
-/// CA-03, issue #1092). Tipo de Domain — a versão Application-facing (<c>ItemConformidadeDto</c>)
-/// é mapeada a partir deste no query handler, para que o checklist usado pela leitura pública e
-/// os seis gates de <c>Publicar</c>/<c>SucederVersao</c> nunca divirjam: <c>AvaliarConformidade</c>
-/// projeta um item por razão de recusa ALCANÇÁVEL nos seis gates, a partir dos MESMOS predicados
-/// que os gates chamam — nunca uma segunda lista copiada.
+/// (<see cref="ProcessosSeletivos.Conformidade.ChecklistDeConformidade.AvaliarConformidade"/>). Tipo de Domain: a
+/// versão Application-facing (<c>ItemConformidadeDto</c>) é mapeada a partir deste no query handler. O
+/// checklist e os gates de <c>TransicoesDaVersao.Publicar</c>, <c>Retificar</c> e <c>Fechar</c> nunca
+/// divergem: o checklist projeta um item por razão de recusa alcançável nos gates, a partir dos mesmos
+/// predicados que eles chamam, nunca uma segunda lista copiada.
 /// </summary>
 /// <remarks>
 /// <para>

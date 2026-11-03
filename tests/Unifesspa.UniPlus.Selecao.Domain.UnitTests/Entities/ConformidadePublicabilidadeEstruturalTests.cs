@@ -1198,7 +1198,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(
             "ProcessoSeletivo.ConformidadeInsuficiente",
-            "PendenciaDeConformidade é checado ANTES de PendenciaDoCronograma em Publicar (e em SucederVersao) — " +
+            "PendenciaDeConformidade é checado ANTES de PendenciaDoCronograma em Publicar (e na sucessão de Retificar/Fechar) — " +
             "coletar todos os vereditos para o checklist não pode mudar essa ordem");
     }
 
