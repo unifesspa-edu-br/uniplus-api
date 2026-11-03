@@ -603,11 +603,10 @@ public sealed class FaseCronograma : EntityBase
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>
-    /// Atualiza os dados da MESMA fase (mesmo <see cref="EntityBase.Id"/>) em vez de
-    /// recriá-la — usado tanto pela reposição da configuração congelada
+    /// Atualiza os dados da MESMA fase (mesmo <see cref="EntityBase.Id"/>) em vez de recriá-la,
+    /// copiando-os de <paramref name="origem"/>: usado tanto pela reposição da configuração congelada
     /// (<see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>, reconciliação por
-    /// <see cref="Ordem"/> — é a instância VIVA rastreada que precisa sobreviver, a do EF,
-    /// não a decodificada) quanto pela redefinição ao vivo do cronograma
+    /// <see cref="Ordem"/> — a instância VIVA rastreada, a do EF, é que precisa sobreviver) quanto pela redefinição ao vivo do cronograma
     /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, reconciliação por
     /// <see cref="FaseCanonicaOrigemId"/> — a identidade estável de uma fase; aqui
     /// <see cref="Ordem"/> PODE mudar, ao contrário do caminho de restauração).
@@ -715,8 +714,9 @@ public sealed class FaseCronograma : EntityBase
             _produtos.Add(produto);
         }
 
+        List<BancaRequerida> bancasRequeridas = [.. origem.BancasRequeridas];
         _bancasRequeridas.Clear();
-        foreach (BancaRequerida banca in origem.BancasRequeridas)
+        foreach (BancaRequerida banca in bancasRequeridas)
         {
             banca.VincularFase(Id);
             _bancasRequeridas.Add(banca);

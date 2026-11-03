@@ -32,7 +32,8 @@ public sealed class ProcessoSeletivoCronogramaTests
         bool coletaSolicitacaoIsencao = false,
         IReadOnlyList<ProdutoDaFase>? produtos = null,
         string? faseConcluinteCodigo = null,
-        bool emiteParecerIndividual = false) =>
+        bool emiteParecerIndividual = false,
+        IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
         FaseCronograma.Criar(
             ordem,
             faseCanonicaOrigemId ?? Guid.CreateVersion7(),
@@ -47,7 +48,7 @@ public sealed class ProcessoSeletivoCronogramaTests
             produtos ?? (produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : []),
             faseConcluinteCodigo,
             emiteParecerIndividual,
-            bancasRequeridas: [],
+            bancasRequeridas ?? [],
             regraRecurso: null,
             unidadeResponsavel: UnidadesDeTeste.Ceps);
 
@@ -207,6 +208,21 @@ public sealed class ProcessoSeletivoCronogramaTests
         Result resultado = processo.DefinirCronogramaFases([inscricao, homologacao], precedencias, PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
+    [Fact(DisplayName = "Redefinir o cronograma com a própria fase já gravada preserva as bancas requeridas dela")]
+    public void Redefinir_ComAPropriaFaseJaGravada_PreservaBancasRequeridas()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        BancaRequerida banca = BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", []);
+        FaseCronograma heteroidentificacao = Fase(1, "HETEROIDENTIFICACAO", bancasRequeridas: [banca]).Value!;
+        processo.DefinirCronogramaFases([heteroidentificacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases([.. processo.CronogramaFases], [], PrecondicaoIfMatch.Ausente);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.CronogramaFases.Single().BancasRequeridas.Select(b => b.Codigo)
+            .Should().Equal("BANCA_ANALISE_DOCUMENTAL");
     }
 
     // ── CA-10 — heteroidentificação precede a homologação do resultado final ──
