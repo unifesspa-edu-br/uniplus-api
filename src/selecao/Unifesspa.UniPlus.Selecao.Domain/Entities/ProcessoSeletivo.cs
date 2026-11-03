@@ -478,12 +478,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Define ou substitui o formulário de uma finalidade: a fase em que é respondido, o título e
-    /// as etapas (UNI-REQ-0144). Sob retificação, acrescentar formulário é permitido. A fase, quando
-    /// informada, está no cronograma e é a que a finalidade pede; o rascunho pode ainda não a ter.
-    /// Os itens que já estão em seções do formulário continuam em seções dele, na ordem delas. O
-    /// formulário que nasce com <paramref name="itensDaCriacao"/> — o de inscrição, com o conjunto
-    /// básico do candidato — nasce com eles, numa operação só, e as exibições das seções já os citam.
+    /// Define ou substitui o formulário de uma finalidade: a fase em que é respondido, o título e as
+    /// etapas. Sob retificação, acrescentar formulário é permitido. O formulário que nasce com
+    /// <paramref name="itensDaCriacao"/> — o de inscrição, com o conjunto básico do candidato — nasce
+    /// com eles, numa operação só.
     /// </summary>
     public Result DefinirFormulario(
         FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas,
@@ -491,115 +489,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
-        // ADR-0110 D9: a precondição de concorrência precede a validação de payload.
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        IReadOnlyList<FatoColetado>? itensIniciais = FormularioDe(finalidade) is null && itensDaCriacao is { Count: > 0 } ? itensDaCriacao : null;
-        IReadOnlyList<FieldError> recusas = ConferirFormulario(finalidade, faseId, titulo, etapas, itensDaCriacao: itensIniciais);
-        if (recusas.Count > 0)
-        {
-            return Result.ValidationFailure(recusas);
-        }
-
-        // A conferência acima já recusou o que a fábrica recusaria.
-        FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas).Value!;
-        if (FormularioDe(finalidade) is { } existente)
-        {
-            existente.Substituir(novo);
-        }
-        else
-        {
-            if (itensIniciais is not null && RegrasDaColeta.ConferirFatosColetados(EstadoDaConfiguracao.De(this), novo, finalidade, itensIniciais, []) is { IsFailure: true } recusaDosItens)
-            {
-                return recusaDosItens;
-            }
-
-            Vincular(novo);
-            _formularios.Add(novo);
-            if (itensIniciais is not null)
-            {
-                new PlanoDaColeta(finalidade, itensIniciais, []).Aplicar(Colecoes(), Id);
-            }
-        }
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return Editar(precondicao,
+            () => RegrasDosFormularios.PlanejarDefinicao(EstadoDaConfiguracao.De(this), finalidade, faseId, titulo, etapas, itensDaCriacao),
+            plano => plano.Aplicar(Colecoes(), Id));
     }
 
-    /// <summary>
-    /// Confere o formulário sem mutar o processo, acumulando as recusas (ADR-0125): finalidade e
-    /// título, a fase que a finalidade pede e, com as etapas completas, a estrutura e os itens que
-    /// já estão em seções. Com <paramref name="etapasCompletas"/> falso — alguma etapa já foi
-    /// recusada — a estrutura não é conferida, porque recusaria a etapa que falta.
-    /// </summary>
-    public IReadOnlyList<FieldError> ConferirFormulario(
-        FinalidadeFormulario finalidade, Guid? faseId, string? titulo, IReadOnlyList<EtapaFormulario> etapas, bool etapasCompletas = true,
-        IReadOnlyList<FatoColetado>? itensDaCriacao = null)
-    {
-        ArgumentNullException.ThrowIfNull(etapas);
-
-        List<FieldError> recusas = FormaDoCabecalho.Validar(finalidade, titulo);
-        if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(finalidade, fase) is { } recusaDaFase)
-        {
-            recusas.Add(new("faseId", recusaDaFase));
-        }
-
-        if (etapasCompletas && finalidade != FinalidadeFormulario.Nenhuma)
-        {
-            IReadOnlyList<EtapaEstrutura> estrutura = [.. etapas.Select(static e => e.Estrutura)];
-            IReadOnlyList<FieldError> daEstrutura = EstruturaFormulario.ValidarEtapas(finalidade, estrutura);
-            recusas.AddRange(daEstrutura);
-            if (daEstrutura.Count == 0)
-            {
-                // Os itens não estão no corpo do formulário: a recusa aponta as etapas que os
-                // deixariam fora de seção, e a mensagem nomeia o item.
-                recusas.AddRange(EstruturaFormulario
-                    .ValidarItens(
-                        estrutura,
-                        itensDaCriacao is null ? ItensDaFinalidade(finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
-                        secaoObrigatoria: false)
-                    .Select(static recusa => recusa with { Field = "etapas" }));
-            }
-
-            // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais
-            // ou, na criação, com os que o formulário recebe ao nascer.
-            FatoColetado[] itens = [.. itensDaCriacao ?? [.. Itens.Where(f => f.Finalidade == finalidade)]];
-            DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(EstadoDaConfiguracao.De(this), finalidade, itens, CitacoesDosFormularios.FatosDaInscricao(Itens));
-            EtapaDoGrafo[] etapasDoGrafo = [.. etapas.Select(static e => e.ParaGrafo())];
-            ItemDoGrafo[] itensDoGrafo = [.. itens.Select(static i => i.ParaGrafo())];
-            GrupoDoGrafo[] gruposDoGrafo = [.. CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), finalidade).Select(static g => g.ParaGrafo())];
-            for (int indice = 0; indice < etapas.Count; indice++)
-            {
-                if ((GrafoDoFormulario.CitacaoInvalidaDaEtapa(
-                            etapasDoGrafo[indice],
-                            GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
-                            dependencias)
-                        ?? CitacoesDosFormularios.CitacaoNaoGarantida(EstadoDaConfiguracao.De(this), CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDaSecao(etapas[indice])), finalidade, CitacoesDosFormularios.SemCatalogo)) is { } recusa)
-                {
-                    recusas.Add(new($"etapas[{indice}].exibicao", recusa));
-                }
-            }
-        }
-
-        return recusas;
-    }
-
-    /// <summary>
-    /// Remove o formulário de uma finalidade, com os seus itens e termos. Só em rascunho: a
-    /// retificação acrescenta formulário, mas não retira o que o edital publicou.
-    /// </summary>
     public Result RemoverFormulario(FinalidadeFormulario finalidade, PrecondicaoIfMatch precondicao)
     {
-        // A recusa da retificação vem antes da precondição: nenhuma remoção sob sessão é aceita,
-        // então exigir o If-Match dela só esconderia o motivo.
-        if (Rascunho is not null)
+        if (RegrasDosFormularios.RecusaDaRemocaoSobRetificacao(Rascunho) is { } recusaDaSessao)
         {
-            return Result.Failure(new DomainError(
-                FormularioProcessoErrorCodes.RemocaoSoEmRascunho,
-                "A retificação acrescenta formulário, mas não remove o que o edital publicou."));
+            return Result.Failure(recusaDaSessao);
         }
 
         if (MutacaoBloqueada(precondicao) is { } bloqueio)
@@ -607,296 +506,52 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.Failure(bloqueio);
         }
 
-        if (FormularioDe(finalidade) is not { } formulario)
+        Result<FormularioProcesso> remocao = RegrasDosFormularios.ConferirRemocao(EstadoDaConfiguracao.De(this), finalidade);
+        if (remocao.IsFailure)
         {
-            return Result.Failure(RegrasDosFormularios.FormularioInexistente(finalidade));
+            return Result.Failure(remocao.Error!);
         }
 
-        if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(EstadoDaConfiguracao.De(this), []) is { } orfa)
-        {
-            return Result.Failure(orfa);
-        }
-
-        _formularios.Remove(formulario);
+        _formularios.Remove(remocao.Value!);
         _campos.RemoveAll(f => f.Finalidade == finalidade);
         _gruposColetados.RemoveAll(g => g.Finalidade == finalidade);
         _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
         return Result.Success();
     }
 
-    /// <summary>
-    /// Por que o processo não recebe agora a cópia de um modelo: sob retificação, nunca — a
-    /// aplicação substitui o formulário inteiro —, e a recusa vem antes da precondição, que só
-    /// esconderia o motivo; fora disso, o guard de mutação.
-    /// </summary>
-    public DomainError? RecusaDeAplicacaoDeModelo(PrecondicaoIfMatch precondicao) =>
-        Rascunho is not null
-            ? new DomainError(
-                FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho,
-                "O modelo se aplica só em rascunho: a aplicação substitui o formulário inteiro, e a retificação não retira o que o edital publicou.")
-            : MutacaoBloqueada(precondicao);
-
-    /// <summary>
-    /// Aplica a cópia de um modelo de formulário à finalidade dela (UNI-REQ-0144, ADR-0061): as
-    /// etapas, os itens e os termos da finalidade são substituídos por inteiro, a fase do formulário
-    /// existente é preservada, e as derivações novas somam-se às do processo, sem trocar nenhuma.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Na inscrição, o fato da cópia que outra finalidade coletava passa para ela. As regras dessa
-    /// finalidade continuam citando o fato, porque todo formulário conhece a inscrição. Nas outras
-    /// finalidades, o fato coletado em outro formulário é recusado: quem decide o que fica na
-    /// inscrição é a aplicação, antes daqui.
-    /// </para>
-    /// <para>
-    /// O estado final é conferido de uma vez: a forma e a estrutura do formulário, o grafo da
-    /// finalidade, o produtor único, os termos e as citações de todos os formulários. Só depois o
-    /// processo muda, numa vez só (ADR-0125). Só em rascunho: sob retificação, a substituição
-    /// inteira tiraria o que o edital publicou.
-    /// </para>
-    /// </remarks>
     public Result AplicarModeloDeFormulario(CopiaDeModeloDeFormulario copia, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(copia);
 
-        if (RecusaDeAplicacaoDeModelo(precondicao) is { } recusaDeEstado)
+        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(this);
+        if (RegrasDosFormularios.RecusaDeAplicacaoDeModelo(estado, precondicao) is { } recusaDeEstado)
         {
             return Result.Failure(recusaDeEstado);
         }
 
-        FinalidadeFormulario finalidade = copia.Finalidade;
-        Result<FormularioProcesso> formulario = FormularioProcesso.Criar(
-            finalidade, FormularioDe(finalidade)?.FaseId, copia.Titulo, copia.Etapas, copia.ModeloId, copia.ModeloCodigo);
-        if (formulario.IsFailure)
+        Result<PlanoDoModelo> plano = AplicacaoDeModeloDeFormulario.Planejar(estado, copia);
+        if (plano.IsFailure)
         {
-            return Result.ValidationFailure(formulario.Errors);
+            return Result.ValidationFailure(plano.Errors);
         }
 
-        FormularioProcesso novo = formulario.Value!;
-        HashSet<string> daCopia = new(copia.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        List<FieldError> erros = [.. FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(copia.Itens.Count, copia.Grupos))];
-        erros.AddRange(EstruturaFormulario.ValidarItens(novo.Estrutura, CitacoesDosFormularios.ParaEstrutura(copia.Itens, copia.Grupos), secaoObrigatoria: false));
-        if (finalidade != FinalidadeFormulario.Inscricao)
-        {
-            erros.AddRange(Itens
-                .Where(f => f.Finalidade != finalidade && daCopia.Contains(f.FatoCodigo))
-                .OrderBy(static f => f.FatoCodigo, StringComparer.Ordinal)
-                .Select(f => new FieldError("itens", new DomainError(
-                    FatoColetadoErrorCodes.FatoDuplicado,
-                    $"O fato '{f.FatoCodigo}' já é coletado pelo formulário de {EstruturaFormulario.ParaToken(f.Finalidade)}."))));
-        }
-
-        // A cópia substitui os grupos do próprio formulário; os dos outros continuam, e nem item, nem
-        // grupo, nem campo de grupo, nem derivação da cópia repete o código de um deles ou de um campo
-        // deles. O grupo e o campo de grupo da cópia também não repetem fato de outro formulário:
-        // diferente do item, não são trazidos de outra finalidade.
-        HashSet<string> dosGruposDeOutros = new(
-            _gruposColetados.Where(g => g.Finalidade != finalidade).SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)),
-            StringComparer.Ordinal);
-        static DomainError CodigoDeOutroFormulario(string codigo) => new(
-            FatoColetadoErrorCodes.FatoDuplicado, $"O código '{codigo}' já é usado por um fato ou grupo de outro formulário do processo.");
-        erros.AddRange(copia.Itens.Select(static i => i.FatoCodigo).Concat(copia.DerivacoesNovas.Select(static c => c.CodigoFato))
-            .Where(dosGruposDeOutros.Contains)
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)
-            .Select(static codigo => new FieldError("itens", CodigoDeOutroFormulario(codigo))));
-        HashSet<string> deOutros = new(
-            dosGruposDeOutros.Concat(Itens.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)), StringComparer.Ordinal);
-        for (int indice = 0; indice < copia.Grupos.Count; indice++)
-        {
-            GrupoColetado grupo = copia.Grupos[indice];
-            if (grupo.Subitens.Select(static s => s.FatoCodigo).Prepend(grupo.Codigo).FirstOrDefault(deOutros.Contains) is { } repetido)
-            {
-                erros.Add(new($"grupos[{indice}]", CodigoDeOutroFormulario(repetido)));
-            }
-        }
-
-        erros.AddRange(copia.DerivacoesNovas
-            .Where(static c => DerivacoesDaOferta.Deriva(c.CodigoFato))
-            .Select(static c => new FieldError("derivacoes", DerivacoesDaOferta.RecusaDeConfiguracao(c.CodigoFato))));
-        // A cópia não repete o que o processo grava. O egresso que a oferta supre pela regra do sistema
-        // cede lugar ao que a cópia traz, como cede ao que o operador configura.
-        HashSet<string> derivados = new(_regrasDerivacao.Select(static c => c.CodigoFato), StringComparer.Ordinal);
-        erros.AddRange(copia.DerivacoesNovas
-            .Where(c => !derivados.Add(c.CodigoFato))
-            .Select(static c => new FieldError("derivacoes", new DomainError(
-                ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado,
-                $"O fato '{c.CodigoFato}' tem mais de uma configuração de derivação neste processo."))));
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        foreach (FatoColetado item in copia.Itens)
-        {
-            item.VincularFinalidade(finalidade);
-        }
-
-        foreach (GrupoColetado grupo in copia.Grupos)
-        {
-            grupo.VincularFinalidade(finalidade);
-        }
-
-        foreach (TermoExigidoFormulario termo in copia.Termos)
-        {
-            termo.VincularFinalidade(finalidade);
-        }
-
-        // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
-        FatoColetado[] itensFinais = [.. Itens.Where(f => f.Finalidade != finalidade && !daCopia.Contains(f.FatoCodigo)), .. copia.Itens];
-        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoesFinais = DerivacoesDaOferta.Efetivas([.. _regrasDerivacao, .. copia.DerivacoesNovas], _distribuicaoVagas);
-        TermoExigidoFormulario[] termosFinais = [.. _termosExigidos.Where(t => t.Finalidade != finalidade), .. copia.Termos];
-        GrupoColetado[] gruposFinais = [.. _gruposColetados.Where(g => g.Finalidade != finalidade), .. copia.Grupos];
-        Dictionary<string, IReadOnlyCollection<string>> dependenciasDasDerivacoes =
-            CitacoesDosFormularios.MapaDeDerivacoes(derivacoesFinais);
-        HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
-            ? new(StringComparer.Ordinal)
-            : CitacoesDosFormularios.FatosDaInscricao(itensFinais);
-
-        if (CitacoesDosFormularios.ValidarGrafoDeFatos(novo.Etapas, copia.Itens, copia.Grupos, daInscricao, dependenciasDasDerivacoes) is { } grafo)
-        {
-            return Result.ValidationFailure([new("itens", grafo)]);
-        }
-
-        erros.AddRange(FormaDoTermo.ConferirUnicidade([.. copia.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]));
-        DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(finalidade, copia.Itens, CitacoesDosFormularios.FatosDaInscricao(itensFinais), dependenciasDasDerivacoes);
-        for (int indice = 0; indice < copia.Termos.Count; indice++)
-        {
-            if (GrafoDoFormulario.CitacaoInvalidaDoTermo(copia.Termos[indice].ParaGrafo(), dependencias) is { } recusa)
-            {
-                erros.Add(new($"termos[{indice}]", recusa));
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        // O formulário novo é conferido por inteiro; nos outros, só a citação que a cópia invalida é
-        // recusada, e a que já era inválida fica para a publicação, como na escrita direta dos itens.
-        // A cópia fora da inscrição não muda o que os outros formulários conhecem.
-        IEnumerable<DomainError> orfasDosOutros = finalidade == FinalidadeFormulario.Inscricao
-            ? CitacoesDosFormularios.CitacoesQueFicariamOrfas(EstadoDaConfiguracao.De(this), daCopia, outra => [.. itensFinais.Where(f => f.Finalidade == outra)], dependenciasDasDerivacoes)
-            : [];
-        FieldError[] orfas = [.. orfasDosOutros
-            .Concat(CitacoesDosFormularios.CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais, gruposFinais) is { } doNovo ? [doNovo] : [])
-            .Select(static recusa => new FieldError(string.Empty, recusa))];
-        if (orfas.Length > 0)
-        {
-            return Result.ValidationFailure(orfas);
-        }
-
-        if (FormularioDe(finalidade) is { } existente)
-        {
-            existente.Substituir(novo);
-            existente.RegistrarOrigem(copia.ModeloId, copia.ModeloCodigo);
-        }
-        else
-        {
-            Vincular(novo);
-            _formularios.Add(novo);
-        }
-
-        _campos.RemoveAll(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && daCopia.Contains(f.FatoCodigo)));
-        foreach (FatoColetado item in copia.Itens)
-        {
-            Vincular(item);
-            _campos.Add(item);
-        }
-
-        new PlanoDaColeta(finalidade, [], copia.Grupos).AplicarGrupos(Colecoes(), Id);
-
-        _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
-        foreach (TermoExigidoFormulario termo in copia.Termos)
-        {
-            Vincular(termo);
-            _termosExigidos.Add(termo);
-        }
-
-        foreach (ConfiguracaoDerivacaoFato derivacao in copia.DerivacoesNovas)
-        {
-            Vincular(derivacao);
-            _regrasDerivacao.Add(derivacao);
-        }
-
+        plano.Value!.Aplicar(Colecoes(), Id);
         return Result.Success();
     }
 
-    /// <summary>
-    /// Substitui os termos que o formulário da finalidade exige (UNI-REQ-0086). Código e ordem são
-    /// únicos no formulário, e as condições citam só o que o formulário conhece: os campos dele, os
-    /// da inscrição e os derivados desses (UNI-REQ-0144, UNI-REQ-0145). A publicação confere de
-    /// novo, porque os itens e as derivações podem mudar depois.
-    /// </summary>
     public Result DefinirTermosDoFormulario(
         FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(termos);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
-
-        if (FormularioDe(finalidade) is null)
-        {
-            return Result.Failure(RegrasDosFormularios.FormularioInexistente(finalidade));
-        }
-
-        List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
-        DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(EstadoDaConfiguracao.De(this), finalidade, Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.FatosDaInscricao(Itens));
-        for (int indice = 0; indice < termos.Count; indice++)
-        {
-            if ((GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias)
-                    ?? CitacoesDosFormularios.CitacaoNaoGarantida(EstadoDaConfiguracao.De(this), CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDoTermo(termos[indice])), finalidade, CitacoesDosFormularios.SemCatalogo)) is { } recusa)
-            {
-                erros.Add(new($"termos[{indice}]", recusa));
-            }
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        _termosExigidos.RemoveAll(t => t.Finalidade == finalidade);
-        foreach (TermoExigidoFormulario termo in termos)
-        {
-            Vincular(termo);
-            termo.VincularFinalidade(finalidade);
-            _termosExigidos.Add(termo);
-        }
-
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+        return Editar(precondicao,
+            () => RegrasDosFormularios.PlanejarTermos(EstadoDaConfiguracao.De(this), finalidade, termos),
+            plano => plano.Aplicar(Colecoes(), Id));
     }
 
     /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
     public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
         EstadoDaConfiguracao.De(this).FormularioDe(finalidade);
-
-    /// <summary>
-    /// A fase do formulário está no cronograma e é a que a finalidade pede: a que coleta
-    /// inscrição, a de solicitação de isenção ou a de habilitação.
-    /// </summary>
-    private DomainError? RecusaDaFaseDoFormulario(FinalidadeFormulario finalidade, Guid faseId)
-    {
-        if (_cronogramaFases.Find(f => f.Id == faseId) is not { } fase)
-        {
-            return new DomainError(FormularioProcessoErrorCodes.FaseForaDoCronograma, "A fase do formulário não está no cronograma do processo.");
-        }
-
-        return fase.Atende(finalidade)
-            ? null
-            : new DomainError(
-                FormularioProcessoErrorCodes.FaseIncoerenteComFinalidade,
-                $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {EstruturaFormulario.ParaToken(finalidade)}.");
-    }
-
-    /// <summary>Os itens e os grupos da finalidade, na forma que a estrutura confere.</summary>
-    private IReadOnlyList<ItemEstrutura> ItensDaFinalidade(FinalidadeFormulario finalidade) =>
-        CitacoesDosFormularios.ParaEstrutura(Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.GruposDaFinalidade(EstadoDaConfiguracao.De(this), finalidade));
 
     /// <summary>
     /// Substitui integralmente o cronograma de fases do processo. O grafo de precedências é parâmetro,
@@ -2131,7 +1786,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
                     $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.");
             }
 
-            if (RecusaDaFaseDoFormulario(formulario.Finalidade, fase) is { } recusa)
+            if (RegrasDosFormularios.RecusaDaFaseDoFormulario(EstadoDaConfiguracao.De(this), formulario.Finalidade, fase) is { } recusa)
             {
                 return recusa;
             }
@@ -2151,7 +1806,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         foreach (FormularioProcesso formulario in _formularios.OrderBy(static f => f.Finalidade))
         {
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, ItensDaFinalidade(formulario.Finalidade)) is [{ } primeiro, ..])
+            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, RegrasDosFormularios.ItensDaFinalidade(EstadoDaConfiguracao.De(this), formulario.Finalidade)) is [{ } primeiro, ..])
             {
                 return new DomainError(FormularioProcessoErrorCodes.ItemForaDeSecao, primeiro.Error.Message);
             }

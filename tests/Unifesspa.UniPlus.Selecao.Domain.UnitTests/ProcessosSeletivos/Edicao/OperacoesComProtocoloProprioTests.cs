@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -70,7 +72,7 @@ public sealed class OperacoesComProtocoloProprioTests
         ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.EmSessao();
         PrecondicaoIfMatch velha = PrecondicaoIfMatch.DeTags(["\"outra-sessao:1\""]);
 
-        DomainError? recusa = processo.RecusaDeAplicacaoDeModelo(velha);
+        DomainError? recusa = RegrasDosFormularios.RecusaDeAplicacaoDeModelo(EstadoDaConfiguracao.De(processo), velha);
 
         recusa!.Code.Should().Be(FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho);
     }
@@ -80,7 +82,7 @@ public sealed class OperacoesComProtocoloProprioTests
     {
         ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
 
-        DomainError? recusa = processo.RecusaDeAplicacaoDeModelo(PrecondicaoIfMatch.Ausente);
+        DomainError? recusa = RegrasDosFormularios.RecusaDeAplicacaoDeModelo(EstadoDaConfiguracao.De(processo), PrecondicaoIfMatch.Ausente);
 
         recusa!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }

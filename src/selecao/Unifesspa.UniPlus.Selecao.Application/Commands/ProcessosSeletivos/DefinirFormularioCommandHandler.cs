@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
@@ -85,9 +86,9 @@ public static class DefinirFormularioCommandHandler
             // com todas as etapas montadas, e a exibição já recusada pela semântica não é recusada
             // de novo pela posição.
             HashSet<string> recusados = [.. erros.Select(static e => e.Field ?? string.Empty)];
-            erros.AddRange(processo
+            erros.AddRange(RegrasDosFormularios
                 .ConferirFormulario(
-                    command.Finalidade, command.FaseId, command.Titulo, etapas, etapasCompletas: etapas.Count == entradas.Count, itensDaCriacao)
+                    EstadoDaConfiguracao.De(processo), command.Finalidade, command.FaseId, command.Titulo, etapas, etapasCompletas: etapas.Count == entradas.Count, itensDaCriacao)
                 .Where(recusa => recusa.Field is not { } campo
                     || !campo.EndsWith(".exibicao", StringComparison.Ordinal)
                     || !recusados.Contains(campo)));

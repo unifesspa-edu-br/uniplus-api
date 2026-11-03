@@ -83,7 +83,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         }
 
         // O estado do processo é conferido antes de qualquer leitura externa.
-        if (processo.RecusaDeAplicacaoDeModelo(command.Precondicao) is { } recusaDeEstado)
+        if (Domain.ProcessosSeletivos.Formularios.RegrasDosFormularios.RecusaDeAplicacaoDeModelo(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo), command.Precondicao) is { } recusaDeEstado)
         {
             return Result<AplicacaoDeModeloDto>.Failure(recusaDeEstado);
         }
