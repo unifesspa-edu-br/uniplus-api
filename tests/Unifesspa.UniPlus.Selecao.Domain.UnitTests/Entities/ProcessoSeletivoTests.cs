@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -623,7 +625,7 @@ public sealed class ProcessoSeletivoTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirDistribuicaoVagas([NovaDistribuicao(Guid.CreateVersion7())], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
-        processo.ConcorrenciaDuplaAplicavel().Should().BeFalse();
+        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeFalse();
     }
 
     [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é derivada (true) quando há modalidade de cota reservada (INV-B7)")]
@@ -650,6 +652,6 @@ public sealed class ProcessoSeletivoTests
 
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
-        processo.ConcorrenciaDuplaAplicavel().Should().BeTrue();
+        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeTrue();
     }
 }

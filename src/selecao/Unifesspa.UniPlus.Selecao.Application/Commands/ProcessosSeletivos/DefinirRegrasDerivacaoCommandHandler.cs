@@ -15,6 +15,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Handler do <see cref="DefinirRegrasDerivacaoCommand"/> (Story #985): substitui integralmente as
@@ -134,7 +136,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             catalogo,
-            processo.Vinculos(),
+            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
             VinculosDeFatos.De(
                 configuracoes.Select(static c => c.CodigoFato),
                 configuracoes.SelectMany(static c => c.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)),

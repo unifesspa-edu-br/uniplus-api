@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
-using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -11,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// possibilidade de escrita, de modo que quem precisa do estado depois de uma mutação deve
 /// materializá-lo antes. O candidato de uma escrita é <c>De(processo) with { Etapas = candidatas }</c>.
 /// </summary>
-internal sealed record EstadoDaConfiguracao
+public sealed record EstadoDaConfiguracao
 {
     public required Guid ProcessoId { get; init; }
 
@@ -72,6 +73,16 @@ internal sealed record EstadoDaConfiguracao
     public required ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; init; }
 
     public required RascunhoRetificacao? Rascunho { get; init; }
+
+    /// <summary>Os itens dos formulários: os campos fora de grupo repetível.</summary>
+    public IEnumerable<FatoColetado> Itens => Campos.Where(static f => f.GrupoColetadoId is null);
+
+    public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas() =>
+        DerivacoesDaOferta.Efetivas(RegrasDerivacao, DistribuicaoVagas);
+
+    /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
+    public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
+        Formularios.FirstOrDefault(f => f.Finalidade == finalidade);
 
     public static EstadoDaConfiguracao De(ProcessoSeletivo processo)
     {

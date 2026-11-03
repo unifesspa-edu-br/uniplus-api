@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Resolve, para cada <see cref="FatoColetado"/> do processo, os valores que o candidato pode
@@ -55,7 +57,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
         ArgumentNullException.ThrowIfNull(catalogo);
 
         Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valoresPorFato = new(StringComparer.Ordinal);
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados = processo.Vinculos().Valores;
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
         foreach (FatoColetado fato in processo.Campos)
         {
             if (!fato.TipoRenderizacao.EhSelecao())

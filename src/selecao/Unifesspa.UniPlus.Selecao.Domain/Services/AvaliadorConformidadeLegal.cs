@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -441,7 +441,7 @@ public static class AvaliadorConformidadeLegal
 
     private static (bool, string?, string?) AvaliarConcorrenciaDuplaObrigatoria(ProcessoSeletivo processo)
     {
-        bool aprovada = processo.ConcorrenciaDuplaAplicavel();
+        bool aprovada = RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo));
         return (aprovada, aprovada ? null : "nenhuma modalidade de cota reservada (CotaReservada) cadastrada", null);
     }
 }

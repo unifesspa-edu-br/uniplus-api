@@ -109,7 +109,7 @@ public static partial class AplicarModeloFormularioCommandHandler
 
         // Itens: o que o catálogo mudou sai da cópia, salvo o fato desativado que o processo já
         // vincula, que continua com ele (ADR-0136); o fato de outra finalidade segue o par.
-        IReadOnlySet<string> vinculados = processo.Vinculos().Fatos;
+        IReadOnlySet<string> vinculados = Domain.ProcessosSeletivos.Referencias.ReferenciasVivas.Vinculos(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo)).Fatos;
         List<int> indicesDosItens = [];
         List<FatoColetadoInput> itensACopiar = [];
         IReadOnlyList<FatoColetadoInput> itensDoModelo = conteudo.Itens ?? [];
@@ -260,7 +260,7 @@ public static partial class AplicarModeloFormularioCommandHandler
         // O valor desativado no catálogo é recusado como vínculo novo; o que o processo já citava continua.
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            processo.Vinculos(),
+            Domain.ProcessosSeletivos.Referencias.ReferenciasVivas.Vinculos(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo)),
             VinculosDeFatos.De(
                 itens.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static i => i.FatoCodigo).Concat(derivacoes.Select(static d => d.CodigoFato)),
                 itens.SelectMany(static i => i.Condicoes)

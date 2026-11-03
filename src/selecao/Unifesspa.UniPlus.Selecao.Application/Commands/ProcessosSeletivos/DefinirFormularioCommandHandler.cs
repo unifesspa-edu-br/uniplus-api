@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Monta as etapas com as recusas acumuladas por etapa (ADR-0125) e entrega ao processo, que confere
@@ -94,7 +96,7 @@ public static class DefinirFormularioCommandHandler
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            processo.Vinculos(),
+            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
             VinculosDeFatos.De(
                 (itensDaCriacao ?? []).Select(static f => f.FatoCodigo),
                 etapas.SelectMany(static e => e.Condicoes).Concat((itensDaCriacao ?? []).SelectMany(static f => f.Condicoes))

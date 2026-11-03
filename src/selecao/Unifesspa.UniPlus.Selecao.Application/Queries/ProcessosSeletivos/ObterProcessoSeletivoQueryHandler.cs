@@ -346,7 +346,7 @@ public static class ObterProcessoSeletivoQueryHandler
             classificacao.CasasArredondamento,
             new ReferenciaRegraDto(classificacao.RegraOrdemAlocacao.Codigo, classificacao.RegraOrdemAlocacao.Versao, classificacao.RegraOrdemAlocacao.Hash),
             [.. classificacao.RegrasEliminacao.Select(ProjectRegraEliminacao)],
-            processo.ConcorrenciaDuplaAplicavel(),
+            Domain.ProcessosSeletivos.Vagas.RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo)),
             classificacao.BaseadoEmEnem,
             classificacao.ResolucaoPesoAreaEnem,
             [.. classificacao.QuadroPesoAreaEnem

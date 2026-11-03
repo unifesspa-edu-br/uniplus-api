@@ -7,6 +7,8 @@ using Domain.Entities;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Resolve o metadado congelável (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019) de cada fato do candidato citado em
@@ -54,7 +56,7 @@ internal static class ResolvedorMetadadosFatosCongelados
         }
 
         Dictionary<string, MetadadoFatoCongelado> metadados = new(StringComparer.Ordinal);
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados = processo.Vinculos().Valores;
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
         foreach (string codigo in codigos)
         {
             if (!catalogo.TryGetValue(codigo, out FatoCandidatoView? fato))

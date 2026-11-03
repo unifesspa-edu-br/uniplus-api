@@ -267,7 +267,7 @@ public static class DefinirDocumentosExigidosCommandHandler
         {
             // O fato que uma exigência só comprova é vínculo existente apenas desta conferência: para os demais
             // handlers, que o coletam ou o citam, continua sendo vínculo novo.
-            VinculosDeFatos existentes = processo.Vinculos();
+            VinculosDeFatos existentes = Domain.ProcessosSeletivos.Referencias.ReferenciasVivas.Vinculos(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo));
             existentes = existentes with
             {
                 Fatos = new HashSet<string>(existentes.Fatos.Concat(processo.DocumentosExigidos.SelectMany(static d => d.FatosComprovados)), StringComparer.Ordinal),

@@ -17,6 +17,8 @@ using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Handler do <see cref="DefinirFatosColetadosCommand"/> (Story #984): substitui integralmente
@@ -113,7 +115,7 @@ public static class DefinirFatosColetadosCommandHandler
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            processo.Vinculos(),
+            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
             VinculosDeFatos.De(
                 fatos.Concat(gruposResolvidos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo),
                 fatos.SelectMany(static f => f.Condicoes).Concat(gruposResolvidos.SelectMany(static g => g.Condicoes))

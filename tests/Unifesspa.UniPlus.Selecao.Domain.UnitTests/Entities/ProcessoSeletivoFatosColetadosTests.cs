@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -132,7 +134,7 @@ public sealed class ProcessoSeletivoFatosColetadosTests
             [Fato("COR_RACA", 0), ObrigatorioQuando("CONCORRER_PPI", 1, "COR_RACA", JsonSerializer.SerializeToElement("PRETA"))],
             PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
-        processo.Vinculos().Valores.Should().Contain(("COR_RACA", "PRETA"));
+        ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores.Should().Contain(("COR_RACA", "PRETA"));
     }
 
     [Fact(DisplayName = "Ciclo é recusado com erro nomeado que mostra o caminho")]

@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -243,7 +245,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             [Item("COR_RACA", 0)],
             grupos: [Grupo("COMPOSICAO", 1, exibicao: Predicado("COR_RACA", "PRETA"), campos: Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
-        VinculosDeFatos vinculos = processo.Vinculos();
+        VinculosDeFatos vinculos = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo));
 
         vinculos.Fatos.Should().Contain("PARENTESCO");
         vinculos.Valores.Should().Contain(("COR_RACA", "PRETA"));

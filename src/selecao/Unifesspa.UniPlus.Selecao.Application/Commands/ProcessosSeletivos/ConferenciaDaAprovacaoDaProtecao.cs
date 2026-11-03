@@ -6,6 +6,8 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// A publicação e a retificação só congelam proteção que a proteção de dados aprovou (ADR-0153): o tipo de documento
@@ -49,7 +51,7 @@ internal static class ConferenciaDaAprovacaoDaProtecao
             }
         }
 
-        HashSet<string> usados = new(processo.Vinculos().Fatos, StringComparer.Ordinal);
+        HashSet<string> usados = new(ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Fatos, StringComparer.Ordinal);
         usados.UnionWith(processo.DocumentosExigidos.SelectMany(static d => d.FatosComprovados));
         foreach (FatoCandidatoView fato in catalogoDeFatos
             .Where(f => !f.ProtecaoAprovada && usados.Contains(f.Codigo))

@@ -14,6 +14,8 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774). Lê o catálogo de
@@ -135,7 +137,7 @@ public static class DefinirCriteriosDesempateCommandHandler
         {
             Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
                 catalogoFatos.Catalogo,
-                processo.Vinculos(),
+                ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
                 VinculosDeFatos.De(
                     [],
                     criterios.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()

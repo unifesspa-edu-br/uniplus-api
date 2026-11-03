@@ -14,6 +14,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Confere a forma de todos os termos antes de qualquer leitura externa e acumula as recusas por
@@ -84,7 +86,7 @@ public static class DefinirTermosDoFormularioCommandHandler
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            processo.Vinculos(),
+            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
             VinculosDeFatos.De([], termos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
         {
