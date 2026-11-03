@@ -498,47 +498,41 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Define (ou substitui) a oferta de atendimento especializado do processo.
-    /// A invariante ADR-0067 (tipo de deficiência só sob condição PcD) já foi
-    /// garantida na montagem da oferta
-    /// (<see cref="OfertaAtendimentoEspecializado.Criar"/>).
+    /// Define (ou substitui) a oferta de atendimento especializado. Recusa a oferta que deixaria de
+    /// conter um código de condição ou de recurso que uma condição viva ainda cita.
     /// </summary>
     public Result DefinirOfertaAtendimento(OfertaAtendimentoEspecializado oferta, PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(oferta);
 
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
-        {
-            return Result.Failure(bloqueio);
-        }
+        return Editar(
+            precondicao,
+            () => RecusaDaOfertaDeAtendimento(oferta),
+            () =>
+            {
+                oferta.VincularProcesso(Id);
+                OfertaAtendimento = oferta;
+            });
+    }
 
-        // Story #554/issue #892 (CA-03): um gatilho DNF com fato
-        // CONDICAO_ATENDIMENTO referencia um código de condição por VALOR (não por Guid —
-        // diferente da fase), então a checagem é precisa: só recusa se o novo conjunto de
-        // ofertas realmente deixaria de conter um código hoje referenciado por condição
-        // viva — redefinir preservando (ou ampliando) os códigos ofertados é aceito.
+    // Condição e recurso são citados por código, não por Guid: só recusa se o novo conjunto de
+    // ofertas deixar de conter um código hoje referenciado por condição viva.
+    private DomainError? RecusaDaOfertaDeAtendimento(OfertaAtendimentoEspecializado oferta)
+    {
         HashSet<string> novosCodigos = [.. oferta.Condicoes.Select(c => c.CondicaoCodigo)];
         if (ReferenciaDinamicaSeriaInvalidada(OfertaAtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
         {
-            return Result.Failure(new DomainError(
+            return new DomainError(
                 "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
-                "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento."));
+                "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento.");
         }
 
-        // O recurso também é citado por código: uma condição sobre o recurso pedido que o
-        // candidato não pudesse mais escolher nunca se satisfaria.
         HashSet<string> novosRecursos = [.. oferta.Recursos.Select(static r => r.RecursoCodigo)];
-        if (ReferenciaDinamicaSeriaInvalidada(OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos))
-        {
-            return Result.Failure(new DomainError(
+        return ReferenciaDinamicaSeriaInvalidada(OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos)
+            ? new DomainError(
                 ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva,
-                "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento."));
-        }
-
-        oferta.VincularProcesso(Id);
-        OfertaAtendimento = oferta;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
+                "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento.")
+            : null;
     }
 
     /// <summary>
@@ -712,85 +706,38 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>
-    /// Define (ou remove) a configuração de divulgação pública do processo (UNI-REQ-0050,
-    /// issue #563). Passar <see langword="null"/> remove a configuração explícita — o
-    /// processo volta ao default minimizado, mesmo padrão de <see cref="DefinirBonusRegional"/>.
+    /// Define (ou remove) a divulgação pública do processo (UNI-REQ-0050). Nula, o processo volta ao
+    /// padrão minimizado, que é publicável.
     /// </summary>
-    public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+    public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao, () =>
         {
-            return Result.Failure(bloqueio);
-        }
-
-        if (configuracao is null)
-        {
-            ConfiguracaoDivulgacao = null;
-            Rascunho?.IncrementarRevisao();
-            return Result.Success();
-        }
-
-        configuracao.VincularProcesso(Id);
-        ConfiguracaoDivulgacao = configuracao;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+            configuracao?.VincularProcesso(Id);
+            ConfiguracaoDivulgacao = configuracao;
+        });
 
     /// <summary>
-    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
-    /// #1112). Passar <see langword="null"/> remove a declaração — o processo volta a "ainda
-    /// não declarado" (CA-01), que BLOQUEIA a publicação, como a declaração do bônus em
-    /// <see cref="DefinirBonusRegional"/> e diferente da divulgação (onde ausência é estado
-    /// publicável).
+    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção. Nula, o processo volta a
+    /// "ainda não declarado", que bloqueia a publicação, ao contrário da divulgação.
     /// </summary>
-    public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+    public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao, () =>
         {
-            return Result.Failure(bloqueio);
-        }
-
-        if (configuracao is null)
-        {
-            ConfiguracaoTaxaInscricao = null;
-            Rascunho?.IncrementarRevisao();
-            return Result.Success();
-        }
-
-        configuracao.VincularProcesso(Id);
-        ConfiguracaoTaxaInscricao = configuracao;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+            configuracao?.VincularProcesso(Id);
+            ConfiguracaoTaxaInscricao = configuracao;
+        });
 
     /// <summary>
-    /// Define (ou remove) a cascata de remanejamento do processo (Story #575).
-    /// Passar <see langword="null"/> remove a cascata — a ausência da entidade já
-    /// é o toggle "sem cascata configurada".
-    /// A forma (cascata de remanejamento de cotas, UNI-REQ-0056) e o vínculo com a regra versionada (cascata de remanejamento de cotas, UNI-REQ-0056) já
-    /// foram validados antes de chegar aqui — pela factory de <see cref="ConfiguracaoCascataRemanejamento"/>
-    /// e pelo handler da Application, respectivamente; este método só aplica a mutação
-    /// protegida pela sessão editorial.
+    /// Define (ou remove) a cascata de remanejamento. A forma e o vínculo com a regra versionada já
+    /// foram validados pela fábrica e pelo handler; aqui só se aplica a mutação protegida pela
+    /// sessão editorial.
     /// </summary>
-    public Result DefinirCascataRemanejamento(ConfiguracaoCascataRemanejamento? cascata, PrecondicaoIfMatch precondicao)
-    {
-        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+    public Result DefinirCascataRemanejamento(ConfiguracaoCascataRemanejamento? cascata, PrecondicaoIfMatch precondicao) =>
+        Editar(precondicao, () =>
         {
-            return Result.Failure(bloqueio);
-        }
-
-        if (cascata is null)
-        {
-            Cascata = null;
-            Rascunho?.IncrementarRevisao();
-            return Result.Success();
-        }
-
-        cascata.VincularProcesso(Id);
-        Cascata = cascata;
-        Rascunho?.IncrementarRevisao();
-        return Result.Success();
-    }
+            cascata?.VincularProcesso(Id);
+            Cascata = cascata;
+        });
 
     /// <summary>
     /// Teto de critérios de desempate aceitos numa definição: acima dele a lista é recusada
@@ -8151,6 +8098,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         // pré-publicação.
         return Rascunho?.ConferirPrecondicao(precondicao);
     }
+
+    /// <summary>
+    /// O protocolo comum de edição: a guarda de mutação, a conferência das regras sem efeito, a
+    /// aplicação e o avanço da revisão da sessão (ADR-0110 D4/D5, ADR-0125 §5). A aplicação só
+    /// roda depois de a conferência passar e nunca falha.
+    /// </summary>
+    private Result Editar(PrecondicaoIfMatch precondicao, Func<DomainError?> conferir, Action aplicar)
+    {
+        if (MutacaoBloqueada(precondicao) is { } bloqueio)
+        {
+            return Result.Failure(bloqueio);
+        }
+
+        if (conferir() is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        aplicar();
+        Rascunho?.IncrementarRevisao();
+        return Result.Success();
+    }
+
+    private Result Editar(PrecondicaoIfMatch precondicao, Action aplicar) =>
+        Editar(precondicao, static () => null, aplicar);
 
     internal static DomainError RetificacaoJaAberta() => new(
         "RascunhoRetificacao.JaAberta",
