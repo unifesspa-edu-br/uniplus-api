@@ -2,10 +2,19 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using System.Reflection;
 
+using ArchUnitNET.Domain;
+using ArchUnitNET.Fluent;
+using ArchUnitNET.Loader;
+using ArchUnitNET.xUnit;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
+
+using static ArchUnitNET.Fluent.ArchRuleDefinition;
+
+using Type = System.Type;
 
 /// <summary>
 /// Fitness test do contrato de <b>pureza</b> do canonicalizador (ADR-0109 D6).
@@ -30,18 +39,29 @@ public sealed class CanonicalizerEProjecaoPuraTests
 {
     private static readonly Type Canonicalizer = typeof(SnapshotPublicacaoCanonicalizer);
 
-    /// <summary>Dependências que denunciam que a projeção deixou de ser pura.</summary>
-    private static readonly string[] DependenciasProibidas =
+    private static readonly Architecture Arquitetura = new ArchLoader()
+        .LoadAssemblies(
+        [
+            typeof(SnapshotPublicacaoCanonicalizer).Assembly,
+            typeof(ISnapshotPublicacaoCanonicalizer).Assembly,
+        ])
+        .Build();
+
+    /// <summary>Os tipos da projeção do certame, que vivem na Application ao lado dos handlers.</summary>
+    private static readonly string[] NomesDaProjecaoDoCertame =
     [
-        "Repository",      // leitura de banco
-        "DbContext",       // idem
-        "TimeProvider",    // relógio — a mesma entrada produziria bytes distintos
-        "IServiceProvider", // service locator: esconde qualquer uma das anteriores
-        "HttpClient",      // rede
+        "ProjecaoDoCertamePublicado",
+        "PrimitivasDaProjecao",
+        "LeituraDoDocumentoDivulgado",
+        "LeituraDoCertameEdital",
+        "LeituraDoCertameVagas",
+        "LeituraDoCertameCronograma",
+        "LeituraDoCertameDocumentos",
     ];
 
-    private static readonly string[] EsperadosNaProjecao =
+    private static readonly string[] EsperadosNoCanonicalizador =
     [
+        "SnapshotPublicacaoCanonicalizer",
         "EscritaCanonica",
         "SerializacaoDaCascata",
         "SerializacaoDaClassificacao",
@@ -57,53 +77,39 @@ public sealed class CanonicalizerEProjecaoPuraTests
         "SerializacaoDosPredicados",
     ];
 
-    [Fact(DisplayName = "Canonicalizer_NaoTemDependencias — a projeção não recebe repositório, DbContext, relógio, service provider nem HttpClient")]
-    public void Canonicalizer_NaoTemDependencias()
+    [Fact(DisplayName = "Todo tipo do namespace do envelope é puro — não depende de repositório, DbContext, relógio, service provider nem HttpClient")]
+    public void NamespaceDoEnvelope_NaoDependeDeEstadoExterno()
     {
-        IEnumerable<Type> tiposInjetados = Canonicalizer
-            .GetConstructors()
-            .SelectMany(static c => c.GetParameters())
-            .Select(static p => p.ParameterType);
+        IEnumerable<IType> tipos = Arquitetura.Types.Where(static t => t.Namespace.FullName == Canonicalizer.Namespace);
 
-        IEnumerable<Type> tiposDeCampo = Canonicalizer
-            .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
-            .Select(static f => f.FieldType);
+        tipos.Select(static t => t.Name).Should().Contain(EsperadosNoCanonicalizador,
+            "a varredura tem de encontrar os serializadores; sem isso a regra passaria vazia");
 
-        foreach (Type tipo in tiposInjetados.Concat(tiposDeCampo))
-        {
-            foreach (string proibida in DependenciasProibidas)
-            {
-                tipo.Name.Should().NotContain(proibida,
-                    $"o canonicalizador é uma projeção PURA (ADR-0109 D6) — '{tipo.Name}' denuncia estado externo. " +
-                    "Dado que falta ao envelope entra por EntradaCanonicalizacao, montada pelo handler.");
-            }
-        }
+        BarrarEstadoExterno(Types().That().Are(tipos), "a projeção do envelope é PURA (ADR-0109 D6)").Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "Serializadores_NaoTemEstadoNemDependencias — todo tipo da projeção, no namespace inteiro, só declara campos de valor")]
-    public void Serializadores_NaoTemEstadoNemDependencias()
+    [Fact(DisplayName = "A projeção do certame publicado é pura — não depende de repositório, DbContext, relógio, service provider nem HttpClient")]
+    public void ProjecaoDoCertame_NaoDependeDeEstadoExterno()
     {
-        Type[] tiposDaProjecao = [.. Canonicalizer.Assembly
-            .GetTypes()
-            .Where(static t => t.Namespace == Canonicalizer.Namespace
-                && (t.Name.StartsWith("Serializacao", StringComparison.Ordinal) || t.Name == "EscritaCanonica"))];
+        IEnumerable<IType> tipos = Arquitetura.Types.Where(static t => NomesDaProjecaoDoCertame.Contains(t.Name));
 
-        tiposDaProjecao.Select(static t => t.Name).Should().Contain(EsperadosNaProjecao,
-            "a varredura tem de encontrar os serializadores; sem isso o teste passaria vazio");
+        tipos.Select(static t => t.Name).Should().Contain(NomesDaProjecaoDoCertame,
+            "a varredura tem de encontrar todos os tipos da projeção do certame; sem isso a regra passaria vazia");
 
-        IEnumerable<Type> tiposDeCampo = tiposDaProjecao
-            .SelectMany(static t => t.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
-            .Select(static f => f.FieldType);
-
-        foreach (Type tipo in tiposDeCampo)
-        {
-            foreach (string proibida in DependenciasProibidas)
-            {
-                tipo.Name.Should().NotContain(proibida,
-                    $"a projeção é PURA (ADR-0109 D6) — '{tipo.Name}' denuncia estado externo.");
-            }
-        }
+        BarrarEstadoExterno(Types().That().Are(tipos), "a mesma entrada e o mesmo endereço base produzem sempre a mesma resposta").Check(Arquitetura);
     }
+
+    private static ArchUnitNET.Fluent.Syntax.Elements.Types.TypesShouldConjunctionWithDescription BarrarEstadoExterno(ArchUnitNET.Fluent.Syntax.Elements.Types.GivenTypesConjunction tipos, string motivo) =>
+        tipos
+            .Should()
+            .NotDependOnAnyTypesThat()
+            .HaveNameContaining("Repository")
+            .AndShould()
+            .NotDependOnAnyTypesThat()
+            .HaveNameContaining("DbContext")
+            .AndShould()
+            .NotDependOnAny(typeof(TimeProvider), typeof(IServiceProvider), typeof(HttpClient))
+            .Because($"{motivo}: dado que falta entra por parâmetro, montado pelo handler (ADR-0042)");
 
     [Fact(DisplayName = "Canonicalizar_NaoEAssincrono — a projeção é síncrona: não há I/O a esperar")]
     public void Canonicalizar_NaoEAssincrono()
