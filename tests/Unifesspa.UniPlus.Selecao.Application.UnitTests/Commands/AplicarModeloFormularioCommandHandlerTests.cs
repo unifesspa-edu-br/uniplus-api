@@ -453,7 +453,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> quando =
             [[new CondicaoPrecondicaoInput("CONDICAO_ATENDIMENTO", operador, JsonSerializer.SerializeToElement("LACTANTE"))]];
 
-        AplicarModeloFormularioCommandHandler.ClausulasOfertadas(quando, ofertados)!.Should().HaveCount(esperadas);
+        CopiaDosDocumentosDoModelo.ClausulasOfertadas(quando, ofertados)!.Should().HaveCount(esperadas);
     }
 
     [Fact(DisplayName = "O documento multiplicado pelas opções do fato entra uma vez por opção ofertada, menos as excetuadas, e cada cópia vale só para quem declarou a opção")]
@@ -468,7 +468,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             [[new CondicaoPrecondicaoInput("SOLICITA_ATENDIMENTO_ESPECIALIZADO", "IGUAL", JsonSerializer.SerializeToElement(true))]], "REMOVE_VANTAGEM", [],
             new ExigenciaPorOpcaoInput("CONDICAO_ATENDIMENTO", ["LACTANTE"]));
 
-        List<DocumentoExigidoDoModeloInput> copias = [.. AplicarModeloFormularioCommandHandler.PorOpcaoOfertada(laudo, ofertados)];
+        List<DocumentoExigidoDoModeloInput> copias = [.. CopiaDosDocumentosDoModelo.PorOpcaoOfertada(laudo, ofertados)];
 
         copias.Should().OnlyContain(static c => c.PorOpcao == null && c.Obrigatorio);
         copias.Select(static c => string.Join(" e ", c.Quando!.Single().Select(static k => $"{k.Fato}={k.Valor.GetRawText()}"))).Should().BeEquivalentTo(
@@ -476,7 +476,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
             "SOLICITA_ATENDIMENTO_ESPECIALIZADO=true e CONDICAO_ATENDIMENTO=\"PCD\"",
             "SOLICITA_ATENDIMENTO_ESPECIALIZADO=true e CONDICAO_ATENDIMENTO=\"VISAO_MONOCULAR\"",
         ]);
-        AplicarModeloFormularioCommandHandler.PorOpcaoOfertada(laudo, new Dictionary<string, DominioDeValores>(StringComparer.Ordinal))
+        CopiaDosDocumentosDoModelo.PorOpcaoOfertada(laudo, new Dictionary<string, DominioDeValores>(StringComparer.Ordinal))
             .Should().BeEmpty("sem opção ofertada não há o que comprovar");
     }
 

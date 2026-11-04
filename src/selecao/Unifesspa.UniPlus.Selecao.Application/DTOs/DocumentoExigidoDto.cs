@@ -66,7 +66,7 @@ public sealed record IdadeMaximaEmissaoDto(int Valor, string Unidade, string Ref
 /// issue #892). <see cref="Operador"/>/<see cref="Valor"/> seguem o mesmo formato flat de
 /// <c>CondicaoGatilhoInput</c> (comando de escrita) — <see cref="Valor"/> é o texto JSON
 /// canônico (<c>JsonElement.GetRawText()</c>), round-tripável direto de volta pelo mesmo
-/// PUT (<c>DefinirDocumentosExigidosCommandHandler.InterpretarValor</c> o reparseia como JSON).
+/// PUT (<c>CondicoesDaExigencia</c> o reparseia como JSON).
 /// </summary>
 public sealed record CondicaoGatilhoDto(Guid Id, int Clausula, string Fato, string Operador, string Valor);
 

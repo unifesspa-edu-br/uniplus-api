@@ -456,7 +456,7 @@ public static class ObterProcessoSeletivoQueryHandler
 
     /// <summary>
     /// Projeta <see cref="FormatosPermitidos"/> (Story #918) no MESMO valor JSON polimórfico
-    /// que <c>DefinirDocumentosExigidosCommandHandler.ResolverFormatosPermitidos</c> aceita
+    /// que <c>FormatosPermitidosDoPayload.Resolver</c> aceita
     /// de volta — <c>"QUALQUER"</c> ou um array de <c>{formato, tamanhoMaximoBytesMax}</c> —
     /// fechando o round-trip GET→PUT sem transformação do cliente.
     /// </summary>
@@ -470,7 +470,7 @@ public static class ObterProcessoSeletivoQueryHandler
             }));
 
     // Valor como texto JSON canônico (GetRawText) — o mesmo PUT que aceita este DTO de
-    // volta (DefinirDocumentosExigidosCommandHandler.InterpretarValor) reparseia texto
+    // volta (CondicoesDaExigencia) reparseia texto
     // JSON válido como tal, fechando o round-trip GET→PUT sem perda de tipo.
     private static CondicaoGatilhoDto ProjectCondicaoGatilho(CondicaoGatilho condicao) => new(
         condicao.Id,
