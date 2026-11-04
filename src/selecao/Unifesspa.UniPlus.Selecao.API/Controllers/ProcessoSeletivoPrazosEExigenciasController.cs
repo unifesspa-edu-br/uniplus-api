@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 using System.Diagnostics.CodeAnalysis;
 
 using Application.Commands.ProcessosSeletivos;
-using Application.Queries.ProcessosSeletivos;
 
 using Contracts.Requests;
 
@@ -14,7 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
