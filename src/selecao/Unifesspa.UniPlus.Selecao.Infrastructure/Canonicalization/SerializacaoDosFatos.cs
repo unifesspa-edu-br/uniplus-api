@@ -113,43 +113,43 @@ internal static class SerializacaoDosFatos
         bool ehFatoDeSelecao,
         bool temEntrada,
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato) => (ehFatoDeSelecao, temEntrada, valoresDoFato) switch
-    {
-        (true, false, _) or (true, true, null) =>
-            "recebido pelo canonicalizador não tem entrada para ele — a ausência é erro de programação do " +
-            "handler, nunca lista vazia por omissão.",
-        (true, _, { Count: 0 }) =>
-            "traz uma lista VAZIA para ele — o canonicalizador nunca serializa um seletor sem opção nenhuma.",
-        (false, true, not null) =>
-            "traz um array para ele — a bicondicional exige null.",
-        _ => null,
-    };
+        {
+            (true, false, _) or (true, true, null) =>
+                "recebido pelo canonicalizador não tem entrada para ele — a ausência é erro de programação do " +
+                "handler, nunca lista vazia por omissão.",
+            (true, _, { Count: 0 }) =>
+                "traz uma lista VAZIA para ele — o canonicalizador nunca serializa um seletor sem opção nenhuma.",
+            (false, true, not null) =>
+                "traz um array para ele — a bicondicional exige null.",
+            _ => null,
+        };
 
     private static JsonObject SerializarFatoColetado(
         FatoColetado fato,
         IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDoFato) => new()
-    {
-        ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
-        ["finalidade"] = EstruturaFormulario.ParaToken(fato.Finalidade),
-        ["etapaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
-        ["ordem"] = fato.Ordem,
-        ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
-        ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
-        ["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(fato.Obrigatoriedade),
-        ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
-        ["pedirConfirmacao"] = fato.PedirConfirmacao,
-        ["restricoes"] = SerializacaoDosFormularios.SerializarRestricoes(fato.Restricoes),
-        ["impedimento"] = fato.Impedimento is { } impedimento ? SerializacaoDosFormularios.SerializarImpedimento(impedimento) : null,
-        ["origemValores"] = fato.OrigemValores.ToString(),
-        ["formato"] = fato.Formato,
-        ["classificacaoProtecao"] = fato.ClassificacaoProtecao,
-        ["hipoteseLegal"] = fato.HipoteseLegal,
-        ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(fato.FinalidadeTratamento),
-        ["descricao"] = HashCanonicalComputer.NormalizeNfc(fato.Descricao),
-        ["componenteExibicao"] = fato.ComponenteExibicao,
-        ["precondicao"] = SerializacaoDosPredicados.SerializarDnf(fato.Precondicoes.Select(
+        {
+            ["fatoCodigo"] = HashCanonicalComputer.NormalizeNfc(fato.FatoCodigo),
+            ["finalidade"] = EstruturaFormulario.ParaToken(fato.Finalidade),
+            ["etapaCodigo"] = fato.EtapaCodigo is { } etapa ? HashCanonicalComputer.NormalizeNfc(etapa) : null,
+            ["ordem"] = fato.Ordem,
+            ["rotulo"] = HashCanonicalComputer.NormalizeNfc(fato.Rotulo),
+            ["tipoRenderizacao"] = fato.TipoRenderizacao.ToCodigo(),
+            ["obrigatoriedade"] = SerializacaoDosFormularios.SerializarObrigatoriedade(fato.Obrigatoriedade),
+            ["ajuda"] = fato.Ajuda is { } ajuda ? HashCanonicalComputer.NormalizeNfc(ajuda) : null,
+            ["pedirConfirmacao"] = fato.PedirConfirmacao,
+            ["restricoes"] = SerializacaoDosFormularios.SerializarRestricoes(fato.Restricoes),
+            ["impedimento"] = fato.Impedimento is { } impedimento ? SerializacaoDosFormularios.SerializarImpedimento(impedimento) : null,
+            ["origemValores"] = fato.OrigemValores.ToString(),
+            ["formato"] = fato.Formato,
+            ["classificacaoProtecao"] = fato.ClassificacaoProtecao,
+            ["hipoteseLegal"] = fato.HipoteseLegal,
+            ["finalidadeTratamento"] = HashCanonicalComputer.NormalizeNfc(fato.FinalidadeTratamento),
+            ["descricao"] = HashCanonicalComputer.NormalizeNfc(fato.Descricao),
+            ["componenteExibicao"] = fato.ComponenteExibicao,
+            ["precondicao"] = SerializacaoDosPredicados.SerializarDnf(fato.Precondicoes.Select(
             static c => (c.Clausula, c.Fato, c.Operador, c.Valor))),
-        ["valoresSelecionaveis"] = valoresDoFato is null ? null : SerializarValoresSelecionaveis(valoresDoFato),
-    };
+            ["valoresSelecionaveis"] = valoresDoFato is null ? null : SerializarValoresSelecionaveis(valoresDoFato),
+        };
 
     private static JsonArray SerializarValoresSelecionaveis(IReadOnlyList<ValorDominioDeclaradoCongelado> valores) =>
         new([.. valores
