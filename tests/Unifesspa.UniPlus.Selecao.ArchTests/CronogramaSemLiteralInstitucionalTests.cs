@@ -60,6 +60,12 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         "DefinirCronogramaFasesCommand.cs",
         "DefinirCronogramaFasesCommandHandler.cs",
         "DefinirCronogramaFasesCommandValidator.cs",
+        "MontagemDasFases.cs",
+        "MontagemDosProdutosDaFase.cs",
+        "MontagemDasBancasDaFase.cs",
+        "MontagemDaRegraDeRecursoDaFase.cs",
+        "ConferenciaDaAncoraDoRecursoDaFase.cs",
+        "CadastrosDasFases.cs",
     ];
 
     [Fact(DisplayName = "Nenhum literal de comparação institucional no gate do cronograma")]
