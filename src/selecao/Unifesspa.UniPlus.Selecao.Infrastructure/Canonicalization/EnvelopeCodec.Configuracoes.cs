@@ -435,7 +435,7 @@ public sealed partial class EnvelopeCodec
     /// como fonte única daquelas invariantes. O que só a LEITURA pode conferir — porque o
     /// congelamento nunca as violaria pelo caminho normal de escrita — fica aqui: repetição,
     /// ordem canônica (pela MESMA política do encoder,
-    /// <see cref="SnapshotPublicacaoCanonicalizer.OrdenarPorConteudo(IEnumerable{JsonValue})"/>,
+    /// <see cref="EscritaCanonica.OrdenarPorConteudo(IEnumerable{JsonValue})"/>,
     /// nunca um <see cref="StringComparer.Ordinal"/> reimplementado), a bicondicional entre
     /// <c>nome_abreviado</c> e <c>regraNomeAbreviado</c>, o identificador de regra conhecido, e a
     /// forma canônica (Trim + NFC) da justificativa. Um bloco cujo conteúdo é exatamente o
@@ -469,7 +469,7 @@ public sealed partial class EnvelopeCodec
         // A MESMA política do encoder (ADR-0109 D9) — nunca um comparador próprio, que
         // coincidiria hoje (três tokens ASCII) e divergiria no dia em que o vocabulário crescesse
         // com um token não-ASCII. Não reordena: fora de ordem é malformado.
-        IReadOnlyList<string> naOrdemCanonica = [.. SnapshotPublicacaoCanonicalizer
+        IReadOnlyList<string> naOrdemCanonica = [.. EscritaCanonica
             .OrdenarPorConteudo(camposPublicos.Select(static c => JsonValue.Create(c)!))
             .Select(static n => n!.GetValue<string>())];
         if (!naOrdemCanonica.SequenceEqual(camposPublicos, StringComparer.Ordinal))
@@ -537,7 +537,7 @@ public sealed partial class EnvelopeCodec
     /// O decodificador é tão estrito quanto o encoder (mesmo raciocínio de
     /// <see cref="LerDivulgacao"/>): vocabulário fechado de <c>fundamentos</c> (token desconhecido
     /// é malformado, nunca ignorado), sem repetição, na MESMA ordem canônica que
-    /// <see cref="SnapshotPublicacaoCanonicalizer.OrdenarPorConteudo(IEnumerable{JsonValue})"/>
+    /// <see cref="EscritaCanonica.OrdenarPorConteudo(IEnumerable{JsonValue})"/>
     /// usaria — o encoder nunca embaralha porque <see cref="ConfiguracaoTaxaInscricao.Criar"/> já
     /// deduplica e ordena antes de guardar; achar duplicata ou ordem diferente aqui é sinal de
     /// bytes que não vieram desse caminho. <c>cobra:true</c> com <c>fundamentos:[]</c> é a mesma
@@ -874,7 +874,7 @@ public sealed partial class EnvelopeCodec
                 ErrosCodecEnvelope.EnvelopeMalformado, "'taxaInscricao.fundamentos' tem token repetido."));
         }
 
-        IReadOnlyList<string> fundamentosNaOrdemCanonica = [.. SnapshotPublicacaoCanonicalizer
+        IReadOnlyList<string> fundamentosNaOrdemCanonica = [.. EscritaCanonica
             .OrdenarPorConteudo(fundamentos.Select(static f => JsonValue.Create(f)!))
             .Select(static n => n!.GetValue<string>())];
         if (!fundamentosNaOrdemCanonica.SequenceEqual(fundamentos, StringComparer.Ordinal))

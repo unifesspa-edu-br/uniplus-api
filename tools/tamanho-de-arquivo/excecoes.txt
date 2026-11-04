@@ -45,7 +45,6 @@
 477 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.RegrasClassificacao.cs
 442 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.cs
 784 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/LeitorEnvelope.cs
-2351 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/SnapshotPublicacaoCanonicalizer.cs
 817 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Repositories/InscricaoRepository.cs
 425 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Errors/InvalidRequestProblemFactory.cs
 558 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyFilter.cs

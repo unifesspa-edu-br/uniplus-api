@@ -938,13 +938,13 @@ public sealed partial class EnvelopeCodec
         }
 
         if (DivergeDoCongelado(payload, "grafoDependencia",
-            SnapshotPublicacaoCanonicalizer.SerializarGrafoDependencia(grafo.Value!)))
+            SerializacaoDosFatos.SerializarGrafoDependencia(grafo.Value!)))
         {
             return Malformado("'grafoDependencia' congelado não reproduz o grafo recomputado das partes reidratadas.");
         }
 
         if (DivergeDoCongelado(payload, "modalidadesOfertadas",
-            SnapshotPublicacaoCanonicalizer.SerializarModalidadesOfertadas(distribuicao)))
+            SerializacaoDosFatos.SerializarModalidadesOfertadas(distribuicao)))
         {
             return Malformado("'modalidadesOfertadas' congelado não reproduz o conjunto recomputado da distribuição.");
         }
