@@ -22,9 +22,13 @@ public sealed class GuardaDeEdicaoTests
     [InlineData(StatusProcesso.Nenhum)]
     [InlineData(StatusProcesso.Encerrado)]
     [InlineData(StatusProcesso.Cancelado)]
-    public void StatusForaDaListaDePermissao_Bloqueia(StatusProcesso status) =>
+    public void StatusForaDaListaDePermissao_Bloqueia(StatusProcesso status)
+    {
         status.RecusaDeEdicaoSemSessao()!
             .Code.Should().Be("ProcessoSeletivo.MutacaoForaDeEstadoEditavel");
+        status.RecusaDeEdicaoSobSessao()!
+            .Code.Should().Be("ProcessoSeletivo.MutacaoForaDeEstadoEditavel");
+    }
 
     [Fact(DisplayName = "Sob sessão a guarda exige a precondição da revisão corrente")]
     public void SobSessao_ExigeAPrecondicao()
