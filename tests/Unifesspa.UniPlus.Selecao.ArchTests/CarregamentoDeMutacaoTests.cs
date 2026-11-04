@@ -265,9 +265,9 @@ public sealed class CarregamentoDeMutacaoTests
             // O agregado, ao repor a configuração congelada (reconciliação por Id — D2).
             "Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs",
 
-            // O handler do PUT /etapas, que reconcilia por Id para preservar o etapa_ref —
+            // A montagem das etapas do PUT /etapas, que reconcilia por Id para preservar o etapa_ref —
             // e que só chega até aqui DEPOIS de MutacaoBloqueada ter passado.
-            "Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirEtapasCommandHandler.cs",
+            "Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/MontagemDasEtapas.cs",
         ];
 
         Regex mutacao = new(@"\bAtualizarDados\b", RegexOptions.None, TimeSpan.FromSeconds(5));

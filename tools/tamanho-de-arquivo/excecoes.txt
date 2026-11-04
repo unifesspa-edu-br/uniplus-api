@@ -26,7 +26,6 @@
 638 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/AplicarModeloFormularioCommandHandler.cs
 512 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirCronogramaFasesCommandHandler.cs
 847 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirDocumentosExigidosCommandHandler.cs
-767 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirEtapasCommandHandler.cs
 437 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DivulgarCertameAoRegistrarAtoHandler.cs
 514 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs
 1147 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ProjecaoDoCertamePublicado.cs
