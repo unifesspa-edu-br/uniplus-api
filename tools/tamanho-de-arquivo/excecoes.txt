@@ -24,7 +24,6 @@
 512 src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Entities/Instituicao.cs
 494 src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Commands/AtosNormativos/RegistrarAtoNormativoCommandHandler.cs
 638 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/AplicarModeloFormularioCommandHandler.cs
-512 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirCronogramaFasesCommandHandler.cs
 847 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DefinirDocumentosExigidosCommandHandler.cs
 437 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DivulgarCertameAoRegistrarAtoHandler.cs
 514 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs
