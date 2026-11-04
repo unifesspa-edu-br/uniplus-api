@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirOpcoesDeCurso"/> — omite
+/// Corpo de <see cref="ProcessoSeletivoOfertaEClassificacaoController.DefinirOpcoesDeCurso"/> — omite
 /// <c>ProcessoSeletivoId</c> (vem da rota). <c>Numero</c> é <c>[JsonRequired]</c>: omiti-lo é 400, e não
 /// um zero que o agregado recusaria como fora de 1 ou 2.
 /// </summary>

@@ -7,7 +7,7 @@ using Application.Commands.ProcessosSeletivos;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirClassificacao"/> —
+/// Corpo de <see cref="ProcessoSeletivoOfertaEClassificacaoController.DefinirClassificacao"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>

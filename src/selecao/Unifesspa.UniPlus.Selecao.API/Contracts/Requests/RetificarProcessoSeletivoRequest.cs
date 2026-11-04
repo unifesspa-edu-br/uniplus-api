@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.Retificar"/> — carrega só os
+/// Corpo de <see cref="ProcessoSeletivoRetificacaoController.Retificar"/> — carrega só os
 /// dados próprios da retificação. Omite <c>ProcessoSeletivoId</c> (vem da rota)
 /// e não recebe id de Edital: o Edital sucedido é o vigente, resolvido no
 /// servidor (a retificação endereça o agregado, não uma entidade interna).

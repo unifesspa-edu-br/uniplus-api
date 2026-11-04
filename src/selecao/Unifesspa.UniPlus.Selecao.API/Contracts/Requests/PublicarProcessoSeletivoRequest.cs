@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.Publicar"/> — omite
+/// Corpo de <see cref="ProcessoSeletivoPublicacaoController.Publicar"/> — omite
 /// <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <param name="Anexos">

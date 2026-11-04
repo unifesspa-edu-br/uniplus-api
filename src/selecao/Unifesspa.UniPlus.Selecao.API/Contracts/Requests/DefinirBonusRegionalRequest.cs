@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirBonusRegional"/> —
+/// Corpo de <see cref="ProcessoSeletivoOfertaEClassificacaoController.DefinirBonusRegional"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>

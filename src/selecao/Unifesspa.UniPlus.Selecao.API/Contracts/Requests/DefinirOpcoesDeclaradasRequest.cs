@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirOpcoesDeclaradas"/> — as opções na ordem
+/// Corpo de <see cref="ProcessoSeletivoEtapasEVagasController.DefinirOpcoesDeclaradas"/> — as opções na ordem
 /// de exibição; o processo e o fato vêm da rota.
 /// </summary>
 public sealed record DefinirOpcoesDeclaradasRequest(IReadOnlyList<OpcaoDeclaradaRequest> Opcoes);

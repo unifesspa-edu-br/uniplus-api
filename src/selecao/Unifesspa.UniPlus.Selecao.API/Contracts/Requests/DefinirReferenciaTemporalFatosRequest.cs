@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirReferenciaTemporalFatos"/> —
+/// Corpo de <see cref="ProcessoSeletivoPrazosEExigenciasController.DefinirReferenciaTemporalFatos"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>

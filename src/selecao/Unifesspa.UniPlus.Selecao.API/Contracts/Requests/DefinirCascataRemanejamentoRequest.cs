@@ -5,7 +5,7 @@ using Controllers;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirCascataRemanejamento"/>
+/// Corpo de <see cref="ProcessoSeletivoOfertaEClassificacaoController.DefinirCascataRemanejamento"/>
 /// — omite <c>ProcessoSeletivoId</c> (vem da rota). Os quatro campos são todos
 /// nulos (remove a cascata) ou todos presentes (define) — presença parcial é
 /// recusada com <c>ConfiguracaoCascataRemanejamento.CamposObrigatorios</c>.

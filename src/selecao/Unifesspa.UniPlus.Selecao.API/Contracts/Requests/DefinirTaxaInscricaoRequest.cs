@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirTaxaInscricao"/> —
+/// Corpo de <see cref="ProcessoSeletivoOfertaEClassificacaoController.DefinirTaxaInscricao"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>

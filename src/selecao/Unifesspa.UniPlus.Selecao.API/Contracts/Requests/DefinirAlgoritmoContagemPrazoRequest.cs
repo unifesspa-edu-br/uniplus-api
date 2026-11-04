@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Contracts.Requests;
 using Controllers;
 
 /// <summary>
-/// Corpo de <see cref="ProcessoSeletivoController.DefinirAlgoritmoContagemPrazo"/> —
+/// Corpo de <see cref="ProcessoSeletivoPrazosEExigenciasController.DefinirAlgoritmoContagemPrazo"/> —
 /// omite <c>ProcessoSeletivoId</c> (vem da rota).
 /// </summary>
 /// <remarks>
