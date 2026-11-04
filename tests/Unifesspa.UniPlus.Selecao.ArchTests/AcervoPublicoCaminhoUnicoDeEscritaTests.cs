@@ -2,9 +2,16 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using System.Runtime.CompilerServices;
 
+using ArchUnitNET.Domain;
+using ArchUnitNET.Fluent;
+using ArchUnitNET.Loader;
+using ArchUnitNET.xUnit;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+
+using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
 /// O caminho único de escrita no acervo público (ADR-0132): só a materialização da divulgação, que
@@ -13,24 +20,55 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 /// </summary>
 public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
 {
+    /// <summary>
+    /// As partes da mesma materialização: a do edital que cria versão e a do ato que não cria, mais os
+    /// tipos que carregam o port para elas. O nome vale também para os tipos gerados dentro de cada uma.
+    /// </summary>
+    private const string CaminhoPrevisto =
+        @"^Unifesspa\.UniPlus\.Selecao\.Application\.Commands\.ProcessosSeletivos\."
+        + @"(DivulgarCertameAoRegistrarAtoHandler|DivulgarAtoDoProcessoNoAcervo|MontagemDaDivulgacao|AcervoDaDivulgacao)(\+|$)";
+
+    private static readonly Architecture Arquitetura = new ArchLoader()
+        .LoadAssemblies([typeof(IAcervoPublico).Assembly])
+        .Build();
+
     [Fact(DisplayName = "Só a materialização da divulgação depende do port de escrita no acervo público")]
     public void SoADivulgacaoEscreveNoAcervo()
     {
-        string[] dependentes = [.. Directory
-            .EnumerateFiles(Raiz("src", "selecao", "Unifesspa.UniPlus.Selecao.Application"), "*.cs", SearchOption.AllDirectories)
-            .Where(static arquivo => !EhGerado(arquivo))
-            .Where(static arquivo => File.ReadAllText(arquivo).Contains(nameof(IAcervoPublico), StringComparison.Ordinal))
-            .Select(static arquivo => Path.GetFileName(arquivo))
-            .Where(static nome => nome != $"{nameof(IAcervoPublico)}.cs")
-            .Order(StringComparer.Ordinal)];
+        IArchRule regra = Types()
+            .That()
+            .DoNotHaveFullNameMatching(CaminhoPrevisto)
+            .Should()
+            .NotDependOnAny(typeof(IAcervoPublico))
+            .Because("confirmar o envio não é publicar: o documento só entra no acervo depois de o ato existir");
 
-        // As duas partes da mesma materialização: a do edital que cria versão e a do ato que não cria.
-        //
-        // Igualdade, e não "contido em": sem dependente nenhum o teste aprovaria um acervo que nunca
-        // recebe o modelo publicado.
-        dependentes.Should().Equal(
-            ["AcervoDaDivulgacao.cs", "DivulgarAtoDoProcessoNoAcervo.cs", "DivulgarCertameAoRegistrarAtoHandler.cs"],
-            "confirmar o envio não é publicar: o documento só entra no acervo depois de o ato existir");
+        regra.Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "Só a materialização da divulgação depende do tipo que carrega o port do acervo público")]
+    public void SoADivulgacaoUsaOTipoQueCarregaOAcervo()
+    {
+        IArchRule regra = Types()
+            .That()
+            .DoNotHaveFullNameMatching(CaminhoPrevisto)
+            .Should()
+            .NotDependOnAnyTypesThat()
+            .HaveFullNameMatching(@"\.(MontagemDaDivulgacao|AcervoDaDivulgacao)(\+|$)")
+            .Because("passar o acervo adiante por outro tipo reabriria a escrita fora do caminho previsto");
+
+        regra.Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "O caminho previsto e o port existem: a regra não passa vazia")]
+    public void OCaminhoPrevistoDependeDoPort()
+    {
+        IEnumerable<IType> dependentes = Arquitetura.Types
+            .Where(static t => System.Text.RegularExpressions.Regex.IsMatch(t.FullName, CaminhoPrevisto))
+            .Where(static t => t.Dependencies.Any(static d => d.Target.FullName == typeof(IAcervoPublico).FullName));
+
+        dependentes.Select(static t => t.Name.Split('+')[0]).Distinct().Should().Contain(
+            ["DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo", "AcervoDaDivulgacao"],
+            "sem dependente nenhum o teste aprovaria um acervo que nunca recebe o modelo publicado");
     }
 
     [Fact(DisplayName = "Só a implementação do acervo de Seleção usa a cópia para objeto público do storage")]
