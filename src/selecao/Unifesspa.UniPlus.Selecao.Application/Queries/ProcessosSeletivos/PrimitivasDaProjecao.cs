@@ -20,17 +20,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 internal static class PrimitivasDaProjecao
 {
     /// <summary>Lê um item de um arranjo do envelope, devolvendo <see langword="false"/> quando a forma não é a esperada.</summary>
-    /// <typeparam name="T">O tipo do contrato público que o item projeta.</typeparam>
-    /// <param name="item">O item do arranjo.</param>
-    /// <param name="valor">O item projetado, quando a leitura deu certo.</param>
-    /// <returns><see langword="true"/> quando o item tem a forma esperada.</returns>
-    internal delegate bool TentadorDeItem<T>(JsonNode? item, [NotNullWhen(true)] out T? valor)
+    internal delegate bool LeituraDeItem<T>(JsonNode? item, [NotNullWhen(true)] out T? valor)
         where T : class;
 
     /// <summary>
     /// Lê todos os itens de um arranjo; um único item de forma inesperada recusa o arranjo inteiro.
     /// </summary>
-    internal static bool TentarItens<T>(JsonArray array, TentadorDeItem<T> tentar, [NotNullWhen(true)] out List<T>? itens)
+    internal static bool TentarItens<T>(JsonArray array, LeituraDeItem<T> tentar, [NotNullWhen(true)] out List<T>? itens)
         where T : class
     {
         itens = null;

@@ -27,13 +27,6 @@ internal static class MontagemDaDivulgacao
     /// <summary>
     /// Copia o edital, os anexos e os modelos para o acervo e devolve o edital divulgado.
     /// </summary>
-    /// <param name="versao">A versão cujo ato acabou de se confirmar.</param>
-    /// <param name="ato">O ato que criou a versão.</param>
-    /// <param name="envelope">O envelope congelado da versão.</param>
-    /// <param name="enderecoDoEdital">O endereço público que a projeção já calculou para o edital.</param>
-    /// <param name="acervo">Os cadastros de onde se lê a cópia selada e o acervo para onde se copia.</param>
-    /// <param name="cancellationToken">O token de cancelamento.</param>
-    /// <returns>O edital divulgado, com o principal e os anexos.</returns>
     internal static async Task<EditalDivulgado> PublicarNoAcervoAsync(
         VersaoConfiguracao versao,
         AtoDaDivulgacao ato,
