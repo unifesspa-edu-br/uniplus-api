@@ -13,19 +13,19 @@ internal sealed record BlocosDeColeta
 {
     public required IReadOnlyList<FatoColetado> FatosColetados { get; init; }
 
-    public required Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis { get; init; }
+    public required IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis { get; init; }
 
     public required IReadOnlyList<GrupoColetado> GruposColetados { get; init; }
 
-    public required List<DefinicaoAgregado> AgregadosDosGrupos { get; init; }
+    public required IReadOnlyList<DefinicaoAgregado> AgregadosDosGrupos { get; init; }
 
     public required IReadOnlyList<ConfiguracaoDerivacaoFato> RegrasDerivacao { get; init; }
 
     public required string VersaoInterpretador { get; init; }
 
-    public required Dictionary<string, ApresentacaoDoFato> ApresentacaoDosPressupostos { get; init; }
+    public required IReadOnlyDictionary<string, ApresentacaoDoFato> ApresentacaoDosPressupostos { get; init; }
 
-    public required Dictionary<string, TipoDeAtoCongelado> TiposDeAtoCongelados { get; init; }
+    public required IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposDeAtoCongelados { get; init; }
 
-    public required Dictionary<string, FatoDerivadoCongelado> FatosDerivadosCongelados { get; init; }
+    public required IReadOnlyDictionary<string, FatoDerivadoCongelado> FatosDerivadosCongelados { get; init; }
 }
