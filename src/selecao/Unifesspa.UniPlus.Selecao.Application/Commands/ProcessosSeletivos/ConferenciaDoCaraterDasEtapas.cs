@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Domain.Entities;
 using Domain.Errors;
 using Domain.ValueObjects;
 
@@ -17,59 +16,50 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// A passada só lê o cadastro quando há o que conferir. A etapa existente que mantém o vínculo e o caráter
 /// não é reavaliada: sem esse recorte, estreitar um tipo ainda ativo — a operação que o cadastro existe
 /// para permitir — recusaria todo PUT posterior de qualquer certame que já tivesse uma etapa daquele tipo.
-/// O snapshot do tipo só é lido de novo quando o vínculo é novo ou muda de tipo, ou quando muda o caráter
-/// da etapa; do contrário, renomear um tipo ativo reescreveria o snapshot que o cliente nem tocou
-/// (ADR-0061).
+/// O tipo lido fica na etapa conferida; os sinalizadores do snapshot só mudam quando o vínculo é novo ou
+/// muda de tipo, ou quando muda o caráter, e renomear um tipo ativo não reescreve o snapshot que o cliente
+/// nem tocou (ADR-0061).
 /// </remarks>
-internal sealed class ConferenciaDoCaraterDasEtapas(
-    ITipoEtapaReader tipoEtapaReader,
-    IReadOnlyDictionary<Guid, EtapaProcesso> existentes)
+internal sealed class ConferenciaDoCaraterDasEtapas(ITipoEtapaReader tipoEtapaReader)
 {
     private readonly Dictionary<Guid, TipoEtapaView> _tiposAtivos = [];
-    private readonly Dictionary<int, TipoEtapaView> _sinalizadoresRelidos = [];
 
-    public async Task<Result<TiposDasEtapasResolvidos>> ConferirAsync(
-        IReadOnlyList<EtapaProcessoInput> etapas, CancellationToken cancellationToken)
+    public async Task<Result<List<EtapaConferida>>> ConferirAsync(
+        IReadOnlyList<EtapaConferida> etapas, CancellationToken cancellationToken)
     {
         List<FieldError> erros = [];
+        List<EtapaConferida> conferidas = [];
         for (int indice = 0; indice < etapas.Count; indice++)
         {
-            erros.AddRange(await ConferirEtapaAsync(etapas[indice], indice, cancellationToken).ConfigureAwait(false));
+            (EtapaConferida conferida, IReadOnlyList<FieldError> recusas) =
+                await ConferirEtapaAsync(etapas[indice], indice, cancellationToken).ConfigureAwait(false);
+            conferidas.Add(conferida);
+            erros.AddRange(recusas);
         }
 
         return erros.Count > 0
-            ? Result<TiposDasEtapasResolvidos>.ValidationFailure(erros)
-            : Result<TiposDasEtapasResolvidos>.Success(new TiposDasEtapasResolvidos(_tiposAtivos, _sinalizadoresRelidos));
+            ? Result<List<EtapaConferida>>.ValidationFailure(erros)
+            : Result<List<EtapaConferida>>.Success(conferidas);
     }
 
-    private async Task<IReadOnlyList<FieldError>> ConferirEtapaAsync(
-        EtapaProcessoInput etapa, int indice, CancellationToken cancellationToken)
+    private async Task<(EtapaConferida Etapa, IReadOnlyList<FieldError> Recusas)> ConferirEtapaAsync(
+        EtapaConferida etapa, int indice, CancellationToken cancellationToken)
     {
-        EtapaProcesso? existente = EtapaExistente(etapa);
-        bool vinculoInalterado = existente?.TipoEtapaOrigemId == etapa.TipoEtapaOrigemId;
-        if (vinculoInalterado && existente!.Carater == etapa.Carater)
+        if (etapa.CaraterInalterado)
         {
-            return [];
+            return (etapa, []);
         }
 
-        TipoEtapaView? tipo = await TipoAtivoAsync(etapa.TipoEtapaOrigemId, cancellationToken).ConfigureAwait(false);
+        EtapaProcessoInput declarada = etapa.Declarada;
+        TipoEtapaView? tipo = await TipoAtivoAsync(declarada.TipoEtapaOrigemId, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
-            return vinculoInalterado
-                ? ErrosContraOTipoCongelado(etapa, existente!, indice)
-                : [RecusaDoTipoInativo(etapa, indice)];
+            return (etapa, etapa.VinculoInalterado ? ErrosContraOTipoCongelado(etapa, indice) : [RecusaDoTipoInativo(declarada, indice)]);
         }
 
-        if (vinculoInalterado)
-        {
-            _sinalizadoresRelidos[indice] = tipo;
-        }
-
-        return EtapaDoPayload.ErrosDeCarater(etapa.Carater, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.Nome, indice);
+        return (etapa with { TipoLido = tipo },
+            EscritaDasEtapasDoProcesso.ErrosDeCarater(declarada.Carater, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.Nome, indice));
     }
-
-    private EtapaProcesso? EtapaExistente(EtapaProcessoInput etapa) =>
-        etapa.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? existente) ? existente : null;
 
     private async Task<TipoEtapaView?> TipoAtivoAsync(Guid tipoEtapaId, CancellationToken cancellationToken)
     {
@@ -89,12 +79,11 @@ internal sealed class ConferenciaDoCaraterDasEtapas(
 
     // Vínculo inalterado e tipo desde então desativado: recusar puniria quem só quer corrigir o caráter
     // de uma etapa que já existia, e o que o tipo admitia continua conhecido no snapshot da etapa.
-    private static IReadOnlyList<FieldError> ErrosContraOTipoCongelado(
-        EtapaProcessoInput etapa, EtapaProcesso existente, int indice)
+    private static IReadOnlyList<FieldError> ErrosContraOTipoCongelado(EtapaConferida etapa, int indice)
     {
-        TipoEtapaSnapshot congelado = existente.TipoEtapa;
-        return EtapaDoPayload.ErrosDeCarater(
-            etapa.Carater, congelado.AdmitePontuacao, congelado.AdmiteEliminacao, congelado.Nome, indice);
+        TipoEtapaSnapshot congelado = etapa.Existente!.TipoEtapa;
+        return EscritaDasEtapasDoProcesso.ErrosDeCarater(
+            etapa.Declarada.Carater, congelado.AdmitePontuacao, congelado.AdmiteEliminacao, congelado.Nome, indice);
     }
 
     private static FieldError RecusaDoTipoInativo(EtapaProcessoInput etapa, int indice) =>
@@ -102,12 +91,3 @@ internal sealed class ConferenciaDoCaraterDasEtapas(
             "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo",
             $"Tipo de etapa {etapa.TipoEtapaOrigemId} não encontrado ou não está ativo."));
 }
-
-/// <summary>
-/// O que a conferência do caráter leu do cadastro: os tipos ativos por identidade — dado bruto, nunca a
-/// instância de snapshot, que o EF não aceita em dois donos — e, por posição no payload, o tipo relido
-/// cujos sinalizadores a etapa existente passa a congelar.
-/// </summary>
-internal sealed record TiposDasEtapasResolvidos(
-    IReadOnlyDictionary<Guid, TipoEtapaView> Ativos,
-    IReadOnlyDictionary<int, TipoEtapaView> SinalizadoresRelidos);

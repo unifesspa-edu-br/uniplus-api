@@ -22,20 +22,19 @@ internal sealed class DefinicaoDasEtapas(
 {
     public async Task<Result> DefinirAsync(CancellationToken cancellationToken)
     {
-        Result payload = ConferenciaDoPayloadDasEtapas.Conferir(command.Etapas);
+        Result payload = EscritaDasEtapasDoProcesso.Conferir(command.Etapas);
         if (payload.IsFailure)
         {
             return payload;
         }
 
-        Dictionary<Guid, EtapaProcesso> existentes = processo.Etapas.ToDictionary(e => e.Id);
-        Result<MontagemDasEtapas> montagem = await ConferirContraOsCadastrosAsync(existentes, cancellationToken).ConfigureAwait(false);
-        if (montagem.IsFailure)
+        Result<List<EtapaConferida>> conferidas = await ConferirContraOsCadastrosAsync(cancellationToken).ConfigureAwait(false);
+        if (conferidas.IsFailure)
         {
-            return Result.ValidationFailure(montagem.Errors);
+            return Result.ValidationFailure(conferidas.Errors);
         }
 
-        Result aplicada = await AplicarAsync(montagem.Value!, cancellationToken).ConfigureAwait(false);
+        Result aplicada = await AplicarAsync(conferidas.Value!, cancellationToken).ConfigureAwait(false);
         if (aplicada.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
@@ -44,26 +43,21 @@ internal sealed class DefinicaoDasEtapas(
         return aplicada;
     }
 
-    private async Task<Result<MontagemDasEtapas>> ConferirContraOsCadastrosAsync(
-        IReadOnlyDictionary<Guid, EtapaProcesso> existentes, CancellationToken cancellationToken)
+    private async Task<Result<List<EtapaConferida>>> ConferirContraOsCadastrosAsync(CancellationToken cancellationToken)
     {
-        Result<TiposDasEtapasResolvidos> tipos = await new ConferenciaDoCaraterDasEtapas(cadastros.TiposDeEtapa, existentes)
-            .ConferirAsync(command.Etapas, cancellationToken).ConfigureAwait(false);
-        if (tipos.IsFailure)
-        {
-            return Result<MontagemDasEtapas>.ValidationFailure(tipos.Errors);
-        }
-
-        Result<AvaliacaoDasEtapasResolvida> avaliacao = await new ConferenciaDaAvaliacaoDasEtapas(existentes, tipos.Value!, cadastros.Regras)
-            .ConferirAsync(command.Etapas, cancellationToken).ConfigureAwait(false);
-        return avaliacao.IsFailure
-            ? Result<MontagemDasEtapas>.ValidationFailure(avaliacao.Errors)
-            : Result<MontagemDasEtapas>.Success(new MontagemDasEtapas(existentes, tipos.Value!, avaliacao.Value!));
+        Dictionary<Guid, EtapaProcesso> existentes = processo.Etapas.ToDictionary(e => e.Id);
+        List<EtapaConferida> declaradas = [.. command.Etapas.Select(etapa => EtapaConferida.De(etapa, existentes))];
+        Result<List<EtapaConferida>> comCarater = await new ConferenciaDoCaraterDasEtapas(cadastros.TiposDeEtapa)
+            .ConferirAsync(declaradas, cancellationToken).ConfigureAwait(false);
+        return comCarater.IsFailure
+            ? comCarater
+            : await new ConferenciaDaAvaliacaoDasEtapas(cadastros.Regras)
+                .ConferirAsync(comCarater.Value!, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Result> AplicarAsync(MontagemDasEtapas montagem, CancellationToken cancellationToken)
+    private async Task<Result> AplicarAsync(IReadOnlyList<EtapaConferida> conferidas, CancellationToken cancellationToken)
     {
-        Result<List<EtapaProcesso>> etapas = montagem.Montar(command.Etapas);
+        Result<List<EtapaProcesso>> etapas = MontagemDasEtapas.Montar(conferidas);
         if (etapas.IsFailure)
         {
             return Result.ValidationFailure(etapas.Errors);
