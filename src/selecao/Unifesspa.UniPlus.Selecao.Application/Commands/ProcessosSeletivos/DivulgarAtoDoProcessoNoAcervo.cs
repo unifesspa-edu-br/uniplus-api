@@ -36,11 +36,8 @@ internal static class DivulgarAtoDoProcessoNoAcervo
     public static async Task DivulgarAsync(
         AtoNormativoRegistrado mensagem,
         IAtoDoProcessoRepository atoDoProcessoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        IAcervoPublico acervoPublico,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
-        ISelecaoUnitOfWork unitOfWork,
+        AcervoDaDivulgacao acervo,
+        GravacaoDaDivulgacao gravacao,
         CancellationToken cancellationToken)
     {
         AtoDoProcesso? ato = await atoDoProcessoRepository
@@ -54,14 +51,14 @@ internal static class DivulgarAtoDoProcessoNoAcervo
 
         // Leitura sem rastreamento antes das cópias: sem divulgação não há o que copiar, e a linha para
         // mutação só é lida depois, para não segurar a versão dela durante cópias demoradas.
-        if (await certameDivulgadoRepository.ObterParaLeituraAsync(ato.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
+        if (await gravacao.Certames.ObterParaLeituraAsync(ato.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
         {
             throw new CertameAindaNaoDivulgadoException(
                 $"O processo {ato.ProcessoSeletivoId} ainda não tem divulgação para receber os documentos do ato {ato.Id}.");
         }
 
         IReadOnlyList<AnexoDoAtoDoProcesso> anexos = [.. ato.Anexos.OrderBy(static a => a.Ordem)];
-        IReadOnlyList<DocumentoAPublicar> cadastrados = await documentoAPublicarRepository
+        IReadOnlyList<DocumentoAPublicar> cadastrados = await acervo.Documentos
             .ListarDoProcessoAsync(
                 ato.ProcessoSeletivoId,
                 [ato.DocumentoPrincipalId, .. anexos.Select(static a => a.DocumentoAPublicarId)],
@@ -69,18 +66,18 @@ internal static class DivulgarAtoDoProcessoNoAcervo
             .ConfigureAwait(false);
 
         DocumentoDivulgado principal = await PublicarPrincipalAsync(
-            mensagem, ato, Selado(ato, cadastrados, ato.DocumentoPrincipalId), acervoPublico, enderecoNoAcervo, cancellationToken)
+            mensagem, ato, Selado(ato, cadastrados, ato.DocumentoPrincipalId), acervo, cancellationToken)
             .ConfigureAwait(false);
 
         List<DocumentoDivulgado> documentos = [principal];
         foreach (AnexoDoAtoDoProcesso anexo in anexos)
         {
             documentos.Add(await PublicarAnexoAsync(
-                ato, anexo, Selado(ato, cadastrados, anexo.DocumentoAPublicarId), acervoPublico, enderecoNoAcervo, cancellationToken)
+                ato, anexo, Selado(ato, cadastrados, anexo.DocumentoAPublicarId), acervo, cancellationToken)
                 .ConfigureAwait(false));
         }
 
-        CertameDivulgado divulgado = await certameDivulgadoRepository
+        CertameDivulgado divulgado = await gravacao.Certames
             .ObterParaMutacaoAsync(ato.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false)
             ?? throw new CertameAindaNaoDivulgadoException(
@@ -92,15 +89,14 @@ internal static class DivulgarAtoDoProcessoNoAcervo
             return;
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        await gravacao.UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<DocumentoDivulgado> PublicarPrincipalAsync(
         AtoNormativoRegistrado mensagem,
         AtoDoProcesso ato,
         DocumentoSelado documento,
-        IAcervoPublico acervoPublico,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
         string chave = ChaveNoAcervoPublico.DoEdital(
@@ -114,7 +110,7 @@ internal static class DivulgarAtoDoProcessoNoAcervo
         string nome = $"{ato.IdentificadorLegivelDoProcesso}-{ChaveNoAcervoPublico.SegmentoDoTipo(mensagem.TipoCodigo)}.{FormatosDeDocumento.Extensao(documento.Formato)}";
 
         return await CopiarAsync(
-            PapelDoDocumentoDivulgado.Principal, nome, nome, chave, ato, documento, acervoPublico, enderecoNoAcervo, cancellationToken)
+            PapelDoDocumentoDivulgado.Principal, nome, nome, chave, ato, documento, acervo, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -122,8 +118,7 @@ internal static class DivulgarAtoDoProcessoNoAcervo
         AtoDoProcesso ato,
         AnexoDoAtoDoProcesso anexo,
         DocumentoSelado documento,
-        IAcervoPublico acervoPublico,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
         string chave = ChaveNoAcervoPublico.DoAnexo(ato.ProcessoSeletivoId, ato.Id, anexo.Id, documento.Hash, documento.Formato);
@@ -136,7 +131,7 @@ internal static class DivulgarAtoDoProcessoNoAcervo
             : $"{anexo.NomeDeExibicao}.{extensao}";
 
         return await CopiarAsync(
-            PapelDoDocumentoDivulgado.Anexo, anexo.NomeDeExibicao, nomeDeDownload, chave, ato, documento, acervoPublico, enderecoNoAcervo, cancellationToken)
+            PapelDoDocumentoDivulgado.Anexo, anexo.NomeDeExibicao, nomeDeDownload, chave, ato, documento, acervo, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -147,11 +142,10 @@ internal static class DivulgarAtoDoProcessoNoAcervo
         string chave,
         AtoDoProcesso ato,
         DocumentoSelado documento,
-        IAcervoPublico acervoPublico,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
-        await acervoPublico
+        await acervo.Acervo
             .CopiarAsync(
                 documento.ChavePrivada,
                 chave,
@@ -160,7 +154,7 @@ internal static class DivulgarAtoDoProcessoNoAcervo
             .ConfigureAwait(false);
 
         return new DocumentoDivulgado(
-            papel, nome, documento.TipoDeMidia, documento.TamanhoBytes, documento.Hash, enderecoNoAcervo.De(chave).OriginalString);
+            papel, nome, documento.TipoDeMidia, documento.TamanhoBytes, documento.Hash, acervo.Endereco.De(chave).OriginalString);
     }
 
     /// <summary>

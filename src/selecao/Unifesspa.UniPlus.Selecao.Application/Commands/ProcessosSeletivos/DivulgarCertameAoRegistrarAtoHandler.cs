@@ -86,11 +86,8 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             .DivulgarAsync(
                 mensagem,
                 atoDoProcessoRepository,
-                gravacao.Certames,
-                acervo.Documentos,
-                acervo.Acervo,
-                acervo.Endereco,
-                gravacao.UnitOfWork,
+                acervo,
+                gravacao,
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -116,7 +113,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             .PublicarNoAcervoAsync(versao, ato, envelope, certame.DocumentoEdital.UrlDownload, acervo, cancellationToken)
             .ConfigureAwait(false);
 
-        await RegistrarAsync(versao, certame, edital, gravacao, cancellationToken).ConfigureAwait(false);
+        await gravacao.RegistrarAsync(versao, certame, edital, cancellationToken).ConfigureAwait(false);
     }
 
     private static JsonObject LerEnvelopeOuFalhar(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
@@ -158,117 +155,6 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             ? throw new InvalidOperationException(
                 $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada: {projecao.Error!.Message}")
             : projecao.Value!;
-    }
-
-    private static async Task RegistrarAsync(
-        VersaoConfiguracao versao,
-        CertamePublicadoDto certame,
-        EditalDivulgado edital,
-        GravacaoDaDivulgacao gravacao,
-        CancellationToken cancellationToken)
-    {
-        string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
-        DateTimeOffset agora = gravacao.Relogio.GetUtcNow();
-
-        // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
-        FacetasDoCertameDivulgado facetas = new(
-            certame.IdentificadorLegivel,
-            certame.Nome,
-            certame.Periodo.Numero,
-            certame.ModalidadesOfertadas,
-            certame.Periodo.Inicio,
-            certame.Periodo.Fim);
-
-        CertameDivulgado? divulgado = await gravacao.Certames
-            .ObterParaMutacaoAsync(versao.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        bool alterou = divulgado is null
-            ? await AdicionarAsync(versao, edital, facetas, documento, agora, gravacao.Certames, cancellationToken).ConfigureAwait(false)
-            : Atualizar(divulgado, versao, edital, facetas, documento, agora);
-
-        if (alterou)
-        {
-            await SalvarAsync(versao, certame, gravacao, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private static async Task<bool> AdicionarAsync(
-        VersaoConfiguracao versao,
-        EditalDivulgado edital,
-        FacetasDoCertameDivulgado facetas,
-        string documento,
-        DateTimeOffset agora,
-        ICertameDivulgadoRepository repositorio,
-        CancellationToken cancellationToken)
-    {
-        CertameDivulgado nova = CertameDivulgado.Criar(
-            versao.ProcessoSeletivoId,
-            versao.NumeroVersao,
-            versao.AtoCriadorId,
-            versao.HashConfiguracao,
-            ProjecaoDoCertamePublicado.Versao,
-            facetas,
-            documento,
-            agora);
-        nova.RegistrarEdital(edital);
-
-        await repositorio.AdicionarAsync(nova, cancellationToken).ConfigureAwait(false);
-        return true;
-    }
-
-    private static bool Atualizar(
-        CertameDivulgado divulgado,
-        VersaoConfiguracao versao,
-        EditalDivulgado edital,
-        FacetasDoCertameDivulgado facetas,
-        string documento,
-        DateTimeOffset agora)
-    {
-        bool avancou = divulgado.TentarAvancar(
-            versao.NumeroVersao,
-            versao.AtoCriadorId,
-            versao.HashConfiguracao,
-            ProjecaoDoCertamePublicado.Versao,
-            facetas,
-            documento,
-            agora);
-
-        // O edital registra-se também quando a versão não avança: o ato atrasado de uma versão anterior
-        // não desfaz a vigente, mas o seu edital já está no acervo e a linha do tempo precisa dele.
-        // Reentrega do que já está registrado não muda nada.
-        bool registrou = divulgado.RegistrarEdital(edital);
-        return avancou || registrou;
-    }
-
-    private static async Task SalvarAsync(
-        VersaoConfiguracao versao,
-        CertamePublicadoDto certame,
-        GravacaoDaDivulgacao gravacao,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            await gravacao.UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception falha) when (IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha))
-        {
-            gravacao.UnitOfWork.DescartarAlteracoesNaoSalvas();
-
-            CertameDivulgado? dono = await gravacao.Certames
-                .ObterParaLeituraPorIdentificadorAsync(certame.IdentificadorLegivel, cancellationToken)
-                .ConfigureAwait(false);
-
-            // Linha do próprio processo (entregas de versões dele correndo juntas) ou já removida: é
-            // corrida, que a reentrega resolve — a falha original segue para a política transiente.
-            if (IdentificadorLegivelJaDivulgadoException.Classificar(
-                falha, versao.ProcessoSeletivoId, dono?.Id, certame.IdentificadorLegivel) is not { } conflito)
-            {
-                throw;
-            }
-
-            throw conflito;
-        }
     }
 
     /// <summary>
