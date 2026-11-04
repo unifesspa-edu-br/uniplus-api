@@ -37,6 +37,7 @@ public static class DefinirCronogramaFasesCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
@@ -55,14 +56,12 @@ public static class DefinirCronogramaFasesCommandHandler
         }
 
         CadastrosDasFases cadastros = new(
-            faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader, precedenciaFaseReader);
+            faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader);
         AtosConsultadosNaEdicao atos = new(
             tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider);
-        Result<List<FaseCronograma>> fases = await new MontagemDasFases(processo, cadastros, atos)
-            .MontarAsync(command.Fases, cancellationToken).ConfigureAwait(false);
-        Result definida = fases.IsFailure
-            ? Result.ValidationFailure(fases.Errors)
-            : await DefinirComPrecedenciasAsync(processo, command, fases.Value!, cadastros, cancellationToken).ConfigureAwait(false);
+        Result definida = await DefinirAsync(
+                processo, command, new MontagemDasFases(processo, cadastros, atos), precedenciaFaseReader, cancellationToken)
+            .ConfigureAwait(false);
         if (definida.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
@@ -72,18 +71,26 @@ public static class DefinirCronogramaFasesCommandHandler
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 
-    private static async Task<Result> DefinirComPrecedenciasAsync(
+    // O grafo de precedências é parâmetro do domínio, e não navegação (ADR-0042): é lido depois de as fases
+    // serem montadas, e só se elas vieram sem recusa.
+    private static async Task<Result> DefinirAsync(
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
-        List<FaseCronograma> fases,
-        CadastrosDasFases cadastros,
+        MontagemDasFases montagem,
+        IPrecedenciaFaseReader precedenciaFaseReader,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<PrecedenciaFaseView> arestasVivas = await cadastros.Precedencias
+        Result<List<FaseCronograma>> fases = await montagem.MontarAsync(command.Fases, cancellationToken).ConfigureAwait(false);
+        if (fases.IsFailure)
+        {
+            return Result.ValidationFailure(fases.Errors);
+        }
+
+        IReadOnlyList<PrecedenciaFaseView> arestasVivas = await precedenciaFaseReader
             .ListarVivasAsync(cancellationToken)
             .ConfigureAwait(false);
         List<ArestaPrecedencia> precedencias = [.. arestasVivas
             .Select(static a => new ArestaPrecedencia(a.AntecessoraCodigo, a.SucessoraCodigo, a.PermiteSobreposicao))];
-        return processo.DefinirCronogramaFases(fases, precedencias, command.Precondicao);
+        return processo.DefinirCronogramaFases(fases.Value!, precedencias, command.Precondicao);
     }
 }

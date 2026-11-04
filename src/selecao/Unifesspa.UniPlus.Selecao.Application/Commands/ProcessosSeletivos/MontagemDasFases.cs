@@ -71,24 +71,30 @@ internal sealed class MontagemDasFases
             return Result.ValidationFailure(insumos.Errors);
         }
 
-        string faseCodigo = insumos.Value!.Canonica.Codigo;
         Result<ProdutosDaFaseMontados> produtos = await _produtos
-            .MontarAsync(input, indice, faseCodigo, _recusas, cancellationToken).ConfigureAwait(false);
+            .MontarAsync(input, indice, insumos.Value!.Canonica.Codigo, cancellationToken).ConfigureAwait(false);
         if (produtos.IsFailure)
         {
             return Result.ValidationFailure(produtos.Errors);
         }
 
-        Result<RegraRecursoFase?> regra = await _regraDeRecurso
-            .MontarAsync(input.RegraRecurso, indice, faseCodigo, produtos.Value!.Produtos, cancellationToken).ConfigureAwait(false);
-        if (regra.IsFailure)
+        _recusas.AddRange(produtos.Value!.Recusas);
+        RegraRecursoFase? regraRecurso = null;
+        if (input.RegraRecurso is { } declarada)
         {
-            return Result.ValidationFailure(regra.Errors);
+            Result<RegraRecursoFase> regra = await _regraDeRecurso
+                .MontarAsync(declarada, indice, insumos.Value.Canonica.Codigo, produtos.Value.Produtos, cancellationToken).ConfigureAwait(false);
+            if (regra.IsFailure)
+            {
+                return Result.ValidationFailure(regra.Errors);
+            }
+
+            regraRecurso = regra.Value;
         }
 
         if (produtos.Value.Integros)
         {
-            CriarFase(input, indice, insumos.Value, produtos.Value.Produtos, regra.Value);
+            CriarFase(input, indice, insumos.Value, produtos.Value.Produtos, regraRecurso);
         }
 
         return Result.Success();
@@ -106,33 +112,34 @@ internal sealed class MontagemDasFases
                 $"Fase canônica {input.FaseCanonicaId} não encontrada ou não está mais viva."));
         }
 
-        Result<UnidadeResponsavelSnapshot?> unidade = await UnidadeAsync(input, indice, canonica, cancellationToken).ConfigureAwait(false);
-        if (unidade.IsFailure)
+        UnidadeResponsavelSnapshot? unidade = null;
+        if (input.UnidadeResponsavelId is { } unidadeId)
         {
-            return Result<InsumosDaFase>.ValidationFailure(unidade.Errors);
+            Result<UnidadeResponsavelSnapshot> resolvida = await UnidadeAsync(unidadeId, indice, canonica, cancellationToken).ConfigureAwait(false);
+            if (resolvida.IsFailure)
+            {
+                return Result<InsumosDaFase>.ValidationFailure(resolvida.Errors);
+            }
+
+            unidade = resolvida.Value;
         }
 
         Result<List<BancaRequerida>> bancas = await _bancas.MontarAsync(input, indice, cancellationToken).ConfigureAwait(false);
         return bancas.IsFailure
             ? Result<InsumosDaFase>.ValidationFailure(bancas.Errors)
-            : Result<InsumosDaFase>.Success(new InsumosDaFase(canonica, unidade.Value, bancas.Value!));
+            : Result<InsumosDaFase>.Success(new InsumosDaFase(canonica, unidade, bancas.Value!));
     }
 
-    // A unidade é resolvida no cadastro vivo a cada definição; é opcional no rascunho.
-    private async Task<Result<UnidadeResponsavelSnapshot?>> UnidadeAsync(
-        FaseCronogramaInput input, int indice, FaseCanonicaView canonica, CancellationToken cancellationToken)
+    // A unidade é resolvida no cadastro vivo a cada definição.
+    private async Task<Result<UnidadeResponsavelSnapshot>> UnidadeAsync(
+        Guid unidadeId, int indice, FaseCanonicaView canonica, CancellationToken cancellationToken)
     {
-        if (input.UnidadeResponsavelId is not { } unidadeId)
-        {
-            return Result<UnidadeResponsavelSnapshot?>.Success(null);
-        }
-
         UnidadeResponsavelSnapshot? unidade = await _cadastros.Unidades.ObterAsync(unidadeId, cancellationToken).ConfigureAwait(false);
         return unidade is null
-            ? InterrupcaoDaFase.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
+            ? InterrupcaoDaFase.Com<UnidadeResponsavelSnapshot>($"fases[{indice}].unidadeResponsavelId", new DomainError(
                 "FaseCronograma.UnidadeResponsavelNaoEncontrada",
                 $"Unidade responsável {unidadeId} da fase '{canonica.Codigo}' não encontrada ou não está mais viva."))
-            : Result<UnidadeResponsavelSnapshot?>.Success(unidade);
+            : Result<UnidadeResponsavelSnapshot>.Success(unidade);
     }
 
     private void CriarFase(

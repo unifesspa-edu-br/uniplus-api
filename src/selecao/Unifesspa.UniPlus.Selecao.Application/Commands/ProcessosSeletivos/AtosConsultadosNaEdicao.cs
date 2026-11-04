@@ -42,20 +42,25 @@ internal sealed class AtosConsultadosNaEdicao
 
     /// <summary>
     /// A classificação do tipo de ato: a congelada na versão publicada ou, para o tipo novo, a do catálogo
-    /// vigente. Sucesso nulo quando o tipo não consta em nenhum dos dois; falha quando a versão publicada
-    /// não é legível.
+    /// vigente. Falha quando a versão publicada não é legível.
     /// </summary>
-    public async Task<Result<ClassificacaoDoTipoDeAto?>> ClassificacaoAsync(string atoCodigo, CancellationToken cancellationToken)
+    public async Task<Result<ClassificacaoDoAtoConsultado>> ClassificacaoAsync(string atoCodigo, CancellationToken cancellationToken)
     {
         Result<ClassificacaoDoTipoDeAto?> congelada = await Congelados
             .DoTipoJaDeclaradoAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
-        if (congelada.IsFailure || congelada.Value is not null)
+        if (congelada.IsFailure)
         {
-            return congelada;
+            return Result<ClassificacaoDoAtoConsultado>.ValidationFailure(congelada.Errors);
+        }
+
+        if (congelada.Value is { } daVersaoPublicada)
+        {
+            return Result<ClassificacaoDoAtoConsultado>.Success(new ClassificacaoDoAtoConsultado.Conhecida(daVersaoPublicada));
         }
 
         TipoAtoPublicadoView? vigente = await TipoVigenteAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
-        return Result<ClassificacaoDoTipoDeAto?>.Success(
-            vigente is null ? null : ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(vigente));
+        return Result<ClassificacaoDoAtoConsultado>.Success(vigente is null
+            ? new ClassificacaoDoAtoConsultado.SemVersaoVigente()
+            : new ClassificacaoDoAtoConsultado.Conhecida(ResolucaoDosTiposDeAtoUnicos.ClassificacaoDe(vigente)));
     }
 }

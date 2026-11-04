@@ -20,24 +20,19 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
 {
     private readonly ConferenciaDaAncoraDoRecurso _conferenciaDaAncora = new(atos);
 
-    /// <summary>A regra montada, ou sucesso nulo quando a fase não declara recurso; falha é interrupção.</summary>
-    public async Task<Result<RegraRecursoFase?>> MontarAsync(
-        RegraRecursoFaseInput? declarada,
+    /// <summary>A regra de recurso que a fase declara; a falha interrompe a montagem do cronograma.</summary>
+    public async Task<Result<RegraRecursoFase>> MontarAsync(
+        RegraRecursoFaseInput declarada,
         int indice,
         string faseCodigo,
         IReadOnlyList<ProdutoDaFase> produtos,
         CancellationToken cancellationToken)
     {
-        if (declarada is null)
-        {
-            return Result<RegraRecursoFase?>.Success(null);
-        }
-
         string campo = $"fases[{indice}].regraRecurso";
         Result<ReferenciaRegra> referencia = await ReferenciaAsync(declarada, campo, cancellationToken).ConfigureAwait(false);
         if (referencia.IsFailure)
         {
-            return Result<RegraRecursoFase?>.ValidationFailure(referencia.Errors);
+            return Result<RegraRecursoFase>.ValidationFailure(referencia.Errors);
         }
 
         // A âncora é resolvida DENTRO dos produtos desta fase: o mesmo tipo de ato pode ser publicado por
@@ -48,7 +43,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
         Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia.Value!, ArgumentosDoPrazo(declarada), ancora?.Id ?? Guid.Empty);
         if (regra.IsFailure)
         {
-            return InterrupcaoDaFase.Com<RegraRecursoFase?>(campo, regra.Error!);
+            return InterrupcaoDaFase.Com<RegraRecursoFase>(campo, regra.Error!);
         }
 
         DomainError? recusaDaAncora = ancora is null
@@ -62,8 +57,8 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
                     cancellationToken)
                 .ConfigureAwait(false);
         return recusaDaAncora is null
-            ? Result<RegraRecursoFase?>.Success(regra.Value)
-            : InterrupcaoDaFase.Com<RegraRecursoFase?>($"{campo}.atoAncoraCodigo", recusaDaAncora);
+            ? regra
+            : InterrupcaoDaFase.Com<RegraRecursoFase>($"{campo}.atoAncoraCodigo", recusaDaAncora);
     }
 
     private async Task<Result<ReferenciaRegra>> ReferenciaAsync(

@@ -56,15 +56,15 @@ internal sealed class DeclaracaoDosProdutosDaEtapa(AtosConsultadosNaEdicao atos)
     private async Task<DomainError?> RecusaDoProdutoNovoAsync(
         ProdutoDaEtapaInput declarado, PapelProdutoFase? papel, RotuloDoDonoDoProduto dono, CancellationToken cancellationToken)
     {
-        Result<ClassificacaoDoTipoDeAto?> classificada = await atos
+        Result<ClassificacaoDoAtoConsultado> classificada = await atos
             .ClassificacaoAsync(declarado.AtoCodigo, cancellationToken).ConfigureAwait(false);
         if (classificada.IsFailure)
         {
             return classificada.Error;
         }
 
-        return classificada.Value is { } classificacao
-            ? ConferenciaDoProdutoDoAto.RecusaDoPapel(declarado.AtoCodigo, papel, classificacao, dono)
+        return classificada.Value is ClassificacaoDoAtoConsultado.Conhecida conhecida
+            ? ConferenciaDoProdutoDoAto.RecusaDoPapel(declarado.AtoCodigo, papel, conhecida.Classificacao, dono)
             : ConferenciaDoProdutoDoAto.AtoNaoEncontrado(declarado.AtoCodigo, dono);
     }
 }
