@@ -13,14 +13,14 @@ internal static class ErrosDasIntegracoesExternas
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Conferência do endereço do candidato no Geo (issue #1865, ADR-0136).
+        // Conferência do endereço do candidato no Geo (ADR-0136).
         new(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.cep_nao_resolve", "O CEP informado não tem cobertura no Geo")),
         new(ConferenciaEnderecoGeoErrorCodes.CidadeDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.cidade_divergente", "O CEP informado resolve para uma cidade diferente da declarada")),
         new(ConferenciaEnderecoGeoErrorCodes.MunicipioNaoEncontrado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_nao_encontrado", "O município informado não existe no Geo")),
         new(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.conferencia_endereco_geo.municipio_divergente", "O município informado não pertence à UF declarada")),
         // Falha fechada: o Geo não respondeu — temporário, nunca "aceito".
         new(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, new DomainErrorMapping(StatusCodes.Status503ServiceUnavailable, "uniplus.selecao.conferencia_endereco_geo.geo_indisponivel", "O Geo não respondeu — a submissão é recusada, mas o rascunho continua salvável")),
-        // Envio ao INEP e importação das notas do ENEM (issue #1602, ADR-0148 e ADR-0149).
+        // Envio ao INEP e importação das notas do ENEM (ADR-0148 e ADR-0149).
         new(NotasDoEnemErrorCodes.EtapaNaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.notas_do_enem.etapa_nao_encontrada", "A etapa não pertence ao processo seletivo")),
         new(NotasDoEnemErrorCodes.EtapaSemNotaDoEnem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.etapa_sem_nota_do_enem", "A etapa não tem a nota vinda do ENEM")),
         new(NotasDoEnemErrorCodes.EdicaoNaoAdmitida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.notas_do_enem.edicao_nao_admitida", "A edição do ENEM não é uma das aceitas pelo processo")),

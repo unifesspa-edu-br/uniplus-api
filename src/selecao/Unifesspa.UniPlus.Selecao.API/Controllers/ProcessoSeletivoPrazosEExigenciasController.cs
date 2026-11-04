@@ -45,7 +45,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):
+    /// Substitui integralmente o cronograma de fases do processo:
     /// janela, produtos publicados com o papel de cada um, fase que conclui o ciclo
     /// recursal, parecer individual, bancas requeridas e regra de recurso, por fase. O
     /// <c>GET</c> vem do endpoint agregado
@@ -77,13 +77,13 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente os documentos exigidos do processo (Story #554): fase,
+    /// Substitui integralmente os documentos exigidos do processo: fase,
     /// snapshot-copy do tipo de documento, aplicabilidade GERAL/CONDICIONAL,
     /// obrigatoriedade, consequência de indeferimento, grupo de satisfação, o gatilho
-    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO, PR #896), a base
-    /// legal 1:N (PR #898) — validada apenas na FORMA aqui; o gate "≥1 RESOLVIDO por
+    /// DNF (dinâmico/multivalorado para MODALIDADE/CONDICAO_ATENDIMENTO), a base
+    /// legal 1:N — validada apenas na FORMA aqui; o gate "≥1 RESOLVIDO por
     /// exigência que determina resultado" é da publicação (ADR-0074) — e a idade máxima
-    /// de emissão/formato/tamanho do arquivo (PR #900, issue #893) — aviso, não bloqueio de
+    /// de emissão/formato/tamanho do arquivo — aviso, não bloqueio de
     /// presença; congelados por chamada (substituição integral, não <i>merge</i> parcial).
     /// O <c>GET</c> vem do endpoint agregado (<see cref="ProcessoSeletivoController.ObterPorId"/>) — não há rota
     /// aninhada própria de leitura.
@@ -147,10 +147,6 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     }
 
     /// <summary>
-    /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação (Story
-    /// #554, PR #896 — B-03 do plano). <c>Tipo</c> nulo remove a referência.
-    /// </summary>
-    /// <summary>
     /// Redeclara o município cujo calendário rege a contagem dos prazos do certame.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -211,6 +207,9 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
         return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
+    /// <summary>
+    /// Define (ou remove) a política que ancora <c>FAIXA_ETARIA</c> na publicação. <c>Tipo</c> nulo remove a referência.
+    /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/referencia-temporal-fatos")]
     [RequiresIdempotencyKey]
@@ -240,11 +239,11 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente as regras que derivam os fatos derivados do processo — hoje a
-    /// modalidade de concorrência (Story #985). Cada configuração traz o fato derivado e a lista de
+    /// modalidade de concorrência. Cada configuração traz o fato derivado e a lista de
     /// regras <c>{ ordem, contribui, quando? }</c>; a regra incondicional (âncora) tem <c>quando</c>
     /// nulo. Só um fato derivado com binding de regra de derivação é alvo válido — para a
     /// modalidade, cada código contribuído tem de ser uma das modalidades ofertadas pelo processo.
-    /// Editável em rascunho e sob sessão de retificação (Story #986): em rascunho <c>204</c> sem
+    /// Editável em rascunho e sob sessão de retificação: em rascunho <c>204</c> sem
     /// ETag e <c>If-Match</c> ignorado; sob sessão, <c>If-Match</c> obrigatório (<c>428</c>/<c>412</c>)
     /// e <c>204</c> com o ETag novo. Processo publicado sem sessão é recusado com <c>422</c>.
     /// </summary>

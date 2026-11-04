@@ -12,14 +12,12 @@ internal static class ErrosDoCronograma
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Cronograma de fases (Story #851, §3.6/§3.7): estrutura, janelas, precedência,
+        // Cronograma de fases (§3.6/§3.7): estrutura, janelas, precedência,
         // piso mínimo derivado da origem dos candidatos/vagas ofertadas e o gate de
-        // recurso. Todos 422 (ADR-0102) — a lista dos 19+1 códigos declarados na issue,
-        // mais 3 "NaoEncontrada"/"NaoEncontrado" adicionais, no MESMO molde de
+        // recurso. Todos 422 (ADR-0102) — mais 3 "NaoEncontrada"/"NaoEncontrado", no MESMO molde de
         // ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada/RegraDistribuicaoNaoEncontrada
         // acima, para a resolução cross-módulo de FaseCanonica/TipoBanca/tipo de ato
-        // produzido — necessários para o handler recusar um id que não resolve, e que a
-        // issue não enumerou por não serem invariantes do §3.6/§3.7 propriamente.
+        // produzido — necessários para o handler recusar um id que não resolve.
         new("ProcessoSeletivo.CronogramaFasesVazio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cronograma_fases_vazio", "O processo deve ter ao menos uma fase no cronograma")),
         new("ProcessoSeletivo.OrdemFaseDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_fase_duplicada", "Cada fase deve ter uma ordem única dentro do cronograma")),
         new("ProcessoSeletivo.FaseCanonicaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_canonica_duplicada", "A mesma fase canônica não pode aparecer duas vezes no cronograma")),

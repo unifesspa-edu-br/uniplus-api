@@ -32,8 +32,7 @@ internal static class ErrosDoProcessoSeletivo
         new(MotivoDecisaoIsencaoErrorCodes.JaInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_inativo", "O motivo já está inativo")),
         new(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.motivo_decisao_isencao.nao_encontrado", "Motivo de decisão de isenção não encontrado")),
         new(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.situacao_alterada_concorrentemente", "A situação do motivo foi alterada por outra operação", RetryableConflict: true)),
-        // ObrigatoriedadeLegal forma plena (Story #460, ADR-0058). Códigos do
-        // placeholder #459 preservados; novos códigos refletem invariantes da
+        // ObrigatoriedadeLegal forma plena (ADR-0058). Os códigos refletem invariantes da
         // forma plena (vigência, governance, hash UNIQUE, regra duplicada).
         new("ObrigatoriedadeLegal.RegraCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_obrigatorio", "RegraCodigo obrigatório")),
         new("ObrigatoriedadeLegal.RegraCodigoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_invalido", "RegraCodigo inválido")),
@@ -76,7 +75,7 @@ internal static class ErrosDoProcessoSeletivo
 
         new("ObrigatoriedadeLegal.ModalidadesMinimasVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidades_minimas_vazia", "Exigência de modalidades mínimas sem nenhuma modalidade")),
         new("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.predicado_com_codigo_em_branco", "Predicado da regra legal com código em branco")),
-        // Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015) — F0.
+        // Configuração do Processo Seletivo (UNI-REQ-0014/0015).
         // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
         // nas fatias F2–F4 sobre o rol_de_regras, com seus próprios códigos.
@@ -157,7 +156,7 @@ internal static class ErrosDoProcessoSeletivo
         new("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_produto_ou_recurso_em_ato", "Etapa de nota do ENEM não declara produto nem recurso ancorado em ato; o recurso coletivo é o da regra de recurso da fase")),
         new("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_sem_classificacao_enem", "Etapa de nota do ENEM exige classificação baseada em ENEM pela média ponderada")),
         new("ProcessoSeletivo.EtapaReferenciadaPorClassificacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_referenciada_por_classificacao", "Etapa referenciada por regra de eliminação da classificação")),
-        // Identificador legível do certame (issue #1479): forma, obrigatoriedade na geração de
+        // Identificador legível do certame: forma, obrigatoriedade na geração de
         // versão, imutabilidade depois de constar em versão publicada e unicidade entre processos.
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_tamanho", "O identificador legível deve ter entre 3 e 64 caracteres")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_formato_invalido", "O identificador legível deve estar em kebab-case")),

@@ -45,8 +45,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
-    /// Substitui integralmente os critérios de desempate do processo (Story
-    /// #774). Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de
+    /// Substitui integralmente os critérios de desempate do processo. Lista vazia remove todos os critérios: o rascunho aceita, mas a publicação de
     /// processo com inscrição própria exige ao menos um (resultado importado dispensa).
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -74,7 +73,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
-    /// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774). <c>Aplica</c> falso
+    /// Declara se o processo aplica o bônus regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015). <c>Aplica</c> falso
     /// dispensa a configuração; verdadeiro exige <c>RegraCodigo</c> e os demais campos do bônus.
     /// A declaração é obrigatória para publicar.
     /// </summary>
@@ -138,9 +137,8 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
-    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo (issue
-    /// #1112). <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não
-    /// declarado", que BLOQUEIA a publicação (CA-01).
+    /// Define (ou remove) a taxa de inscrição e os fundamentos de isenção do processo. <c>Cobra</c> nulo remove a declaração — o processo volta a "ainda não
+    /// declarado", que BLOQUEIA a publicação.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/taxa-inscricao")]
@@ -170,7 +168,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
     }
 
     /// <summary>
-    /// Define (ou remove) a divulgação pública do processo (UNI-REQ-0050, issue #563).
+    /// Define (ou remove) a divulgação pública do processo (UNI-REQ-0050).
     /// <c>CamposPublicos</c> nulo remove a configuração explícita — o processo volta ao
     /// default minimizado (só o número de inscrição).
     /// </summary>
@@ -203,7 +201,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
 
     /// <summary>
     /// Define (ou remove) a cascata de remanejamento do processo
-    /// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575). <c>RegraCodigo</c> nulo remove a
+    /// (cascata de remanejamento de cotas, UNI-REQ-0056). <c>RegraCodigo</c> nulo remove a
     /// cascata — a ausência já é o toggle "sem cascata".
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -235,7 +233,7 @@ public sealed class ProcessoSeletivoOfertaEClassificacaoController : ControllerB
 
     /// <summary>
     /// Substitui integralmente a configuração de classificação do processo
-    /// (Story #775) — o 15º bloco canônico, que compõe
+    /// — o 15º bloco canônico, que compõe
     /// por referência a fórmula da nota, a precisão, a lista de eliminação e
     /// a ordem de alocação. Bônus e desempate não são parâmetros aqui.
     /// </summary>

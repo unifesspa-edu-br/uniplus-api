@@ -11,13 +11,13 @@ internal static class ErrosDaLeituraDoCongelado
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Seletor de snapshot vigente (T6 #787, ADR-0075/0076): não há publicação
+        // Seletor de snapshot vigente (ADR-0075/0076): não há publicação
         // vigente ≤ o instante consultado — 422, nunca retorno silencioso.
         new("Snapshot.VigenteAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.snapshot.vigente_ausente", "Nenhuma publicação vigente para o instante")),
-        // Renderização pública do formulário de inscrição (Story #559) contra uma versão vigente
+        // Renderização pública do formulário de inscrição contra uma versão vigente
         // congelada antes de a apresentação existir no envelope.
         new("FormularioInscricao.VersaoSemApresentacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_inscricao.versao_sem_apresentacao", "A versão publicada vigente não tem apresentação de formulário")),
-        // Issue #1859 — a versão resolvida (pela divulgação ou pela fixada numa inscrição) não tem
+        // A versão resolvida (pela divulgação ou pela fixada numa inscrição) não tem
         // formulário para a finalidade pedida. Quem lê pela divulgação colapsa no não encontrado
         // único (ver ObterFormularioRenderizavelQueryHandler); quem lê pela inscrição propaga este
         // código, porque a versão fixada já foi provada existente ao iniciar a inscrição.
@@ -31,12 +31,12 @@ internal static class ErrosDaLeituraDoCongelado
         // aqui: são compartilhados com as listagens de Configuração e vivem uma única vez em
         // KernelDomainErrorRegistration, com taxonomia sem prefixo de módulo. Registrá-los por
         // módulo faria o último da ordem de DI sobrescrever o code do outro no registry global.
-        // Reposição da configuração congelada (Story #859, ADR-0110 D2). Todos 422: são
+        // Reposição da configuração congelada (ADR-0110 D2). Todos 422: são
         // regras de negócio, e o operador que dispara um descarte precisa saber por que ele
         // foi recusado — reidratar mal é pior do que não reidratar.
         new("ProcessoSeletivo.RestauracaoForaDePublicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.restauracao_fora_de_publicado", "Só um processo publicado tem configuração congelada a restaurar")),
         new("ProcessoSeletivo.IdEtapaAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_ausente", "Toda etapa restaurada declara o Id congelado no envelope")),
-        // Árvore de satisfação restaurada (Story #923, ADR-0110 D2) — checagens
+        // Árvore de satisfação restaurada (ADR-0110 D2) — checagens
         // estruturais equivalentes ao que o banco garante na escrita normal
         // (ux_nos_exigencia_raiz_ordem/ux_nos_exigencia_irmaos_ordem) mais o que só a raiz
         // consegue provar (folha referencia um DocumentoExigido que existe no grafo).

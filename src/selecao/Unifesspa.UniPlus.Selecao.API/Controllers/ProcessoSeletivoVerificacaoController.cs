@@ -40,7 +40,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     }
 
     /// <summary>
-    /// Consulta a conformidade ESTRUTURAL do processo (CA-07, issue #1092): checklist
+    /// Consulta a conformidade ESTRUTURAL do processo: checklist
     /// bicondicional com os seis gates estruturais de <c>Publicar</c>/<c>Retificar</c> — todo
     /// item <c>Ok</c> se e somente se nenhum dos seis gates tem pendência. Não altera o
     /// processo.
@@ -78,7 +78,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     }
 
     /// <summary>
-    /// Consulta a conformidade LEGAL do processo (Story #853, CA-16) contra o catálogo
+    /// Consulta a conformidade LEGAL do processo contra o catálogo
     /// <c>ObrigatoriedadeLegal</c> vigente na <paramref name="dataReferencia"/> informada —
     /// recurso distinto de <see cref="ObterConformidade"/> (checklist estrutural), com a
     /// MESMA fonte que o gate de <c>Publicar</c>/<c>Retificar</c>/<c>FecharRetificacao</c>
@@ -88,7 +88,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
     /// derivar a data de referência, a resposta é 422 com o código que o gate usaria — sem fase de
     /// coleta, <c>PeriodoInscricaoObrigatorioSemFaseDeColeta</c>; com fase de coleta sem janela,
     /// <c>FaseQueColetaInscricaoSemJanela</c>. Devolver 404 aqui dizia que o processo não existe, e
-    /// o preflight da tela não tinha como distinguir a pendência de uma falha de rede (issue #1456).
+    /// o preflight da tela não tinha como distinguir a pendência de uma falha de rede.
     /// </para>
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -105,7 +105,7 @@ public sealed class ProcessoSeletivoVerificacaoController : ControllerBase
         Guid id,
         // Anulável (e não BindRequired): omitir significa "use a data que o gate usaria", que o
         // handler deriva. O tipo separa "omitida" de DateOnly.MinValue, que filtraria toda regra
-        // por vigência e se leria como conformidade aprovada (issue #1350).
+        // por vigência e se leria como conformidade aprovada.
         [FromQuery] DateOnly? dataReferencia,
         CancellationToken cancellationToken)
     {

@@ -16,16 +16,8 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 /// </summary>
 internal static class EnriquecimentoDaPublicacao
 {
-    /// <summary>
-    /// Issue #1096: enriquece TODA recusa HTTP 422 da publicação com o checklist de
-    /// pendências — reconsulta <see cref="ObterConformidadeProcessoSeletivoQuery"/> (mesmo
-    /// <c>Domain.ProcessosSeletivos.Conformidade.ChecklistDeConformidade.AvaliarConformidade(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(ProcessoSeletivo))</c> por trás dos seis gates estruturais,
-    /// sem duplicar a regra nem manter lista paralela de códigos de erro no controller) e
-    /// anexa <c>Extensions["pendencias"]</c> quando o estado atual tiver item vermelho —
-    /// independentemente de qual gate produziu o 422 (CA-01/CA-02/CA-03/CA-04/CA-06). Quando
-    /// o checklist estiver 100% verde, a extensão é omitida — nunca <c>pendencias: []</c>
-    /// (CA-05/CA-07).
-    /// </summary>
+    // A extensão sai só quando o checklist tem item vermelho, nunca como lista vazia, e
+    // independe de qual gate produziu o 422: a regra vem do checklist, não de uma lista de códigos.
     internal static async Task<IActionResult> EnriquecerComPendenciasEstruturaisAsync(
         IQueryBus queryBus, IActionResult actionResult, Guid id, CancellationToken cancellationToken)
     {
@@ -56,12 +48,6 @@ internal static class EnriquecimentoDaPublicacao
         return actionResult;
     }
 
-    /// <summary>
-    /// Story #853: enriquece o 422 de conformidade LEGAL insuficiente com as regras
-    /// reprovadas (código, descrição, base legal) — reconsulta
-    /// <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/> para montar
-    /// <c>Extensions["obrigatoriedadesReprovadas"]</c>.
-    /// </summary>
     internal static async Task<IActionResult> EnriquecerComObrigatoriedadesReprovadasAsync(
         IQueryBus queryBus,
         Result resultado,

@@ -209,7 +209,7 @@ public sealed class ProcessoSeletivoRetificacaoController : ControllerBase
     }
 
     /// <summary>
-    /// <b>Descarta</b> a sessão editorial: o administrador abriu e desistiu (Story #861).
+    /// <b>Descarta</b> a sessão editorial: o administrador abriu e desistiu.
     /// </summary>
     /// <remarks>
     /// Repõe a configuração ao que a versão congelada diz — <b>com prova de round-trip byte a
@@ -244,7 +244,7 @@ public sealed class ProcessoSeletivoRetificacaoController : ControllerBase
 
     /// <summary>
     /// <b>Fecha</b> a sessão editorial: congela a versão N+1 <b>com a configuração editada</b>
-    /// e registra o ato (Story #862).
+    /// e registra o ato.
     /// </summary>
     /// <remarks>
     /// O corpo é o do atalho atômico <b>menos o motivo</b> — ele já está no rascunho, declarado

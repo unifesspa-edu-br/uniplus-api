@@ -12,9 +12,9 @@ internal static class ErrosDaColetaDeFatos
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Grafo de coleta de fatos do candidato (Story #926). Todas as recusas são de configuração
+        // Grafo de coleta de fatos do candidato. Todas as recusas são de configuração
         // (422): grafo mal formado. A edição é permitida em rascunho e sob sessão de retificação
-        // (Story #986) — a recusa de mutação de processo publicado sem sessão é a geral
+        // — a recusa de mutação de processo publicado sem sessão é a geral
         // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos de FatoColetado usam
         // constantes e escapam do fitness test — registrados aqui à mão para não caírem em 500.
         new("DocumentoExigido.FatoDaIsencaoEmOutraFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.fato_da_isencao_em_outra_finalidade", "Fato do formulário de isenção citado por documento de outro formulário")),
@@ -24,15 +24,15 @@ internal static class ErrosDaColetaDeFatos
         new("FatoColetado.ClassificacaoProtecaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.classificacao_protecao_invalida", "Classificação de proteção de dados fora do vocabulário fechado")),
         new("FatoColetado.ComponenteExibicaoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fato_coletado.componente_exibicao_invalido", "Componente de exibição fora do vocabulário fechado")),
         new("CondicaoPrecondicaoFato.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_precondicao_fato.clausula_invalida", "O ordinal da cláusula da pré-condição não pode ser negativo")),
-        // Coletabilidade de fato (Story #984) — semântica cross-módulo resolvida na Application:
+        // Coletabilidade de fato — semântica cross-módulo resolvida na Application:
         // um fato coletado tem de existir no vocabulário e ser declarado com binding de campo de
         // inscrição (derivado/computado não é coletável).
-        // Regra de derivação de fato (Story #927). Todas as recusas são de configuração (422): regra
-        // mal formada. A edição é permitida em rascunho e sob sessão de retificação (Story #986) — a
+        // Regra de derivação de fato. Todas as recusas são de configuração (422): regra
+        // mal formada. A edição é permitida em rascunho e sob sessão de retificação — a
         // recusa de mutação de processo publicado sem sessão é a geral
         // (ProcessoSeletivo.MutacaoPosPublicacaoBloqueada). Os códigos usam constantes e escapam do
         // fitness test — registrados à mão para não caírem em 500.
-        // Alvo de derivação (Story #985) — semântica cross-módulo resolvida na Application: o fato
+        // Alvo de derivação — semântica cross-módulo resolvida na Application: o fato
         // configurado tem de existir e ser derivado com binding de regra de derivação.
         new("ConfiguracaoDerivacaoFato.FatoDesconhecido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.fato_desconhecido", "O fato derivado não pertence ao vocabulário de fatos do candidato")),
         new("ConfiguracaoDerivacaoFato.FatoNaoDerivavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_derivacao_fato.fato_nao_derivavel", "O fato não é um alvo de derivação — só um fato derivado com binding de regra de derivação pode ter regras configuradas")),
@@ -46,12 +46,12 @@ internal static class ErrosDaColetaDeFatos
         new("RegraDerivacaoConfigurada.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao_configurada.ordem_invalida", "A ordem da regra não pode ser negativa")),
         new("RegraDerivacaoConfigurada.ContribuiEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_derivacao_configurada.contribui_em_branco", "O código contribuído pela regra não pode ficar em branco")),
         new("CondicaoRegraDerivacao.ClausulaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.condicao_regra_derivacao.clausula_invalida", "O ordinal da cláusula da regra não pode ser negativo")),
-        // Grafo de dependência conjunto (Story #928, §6): ciclo pelas quatro classes de aresta juntas.
+        // Grafo de dependência conjunto (§6): ciclo pelas quatro classes de aresta juntas.
         new("GrafoDependenciaConjunta.GrafoConjuntoComCiclo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo", "O grafo de dependência conjunto (produção, pré-condição, derivação e gatilho) forma um ciclo")),
         new("ProcessoSeletivo.DocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_encontrado", "Documento do Edital não encontrado ou não pertence a este processo")),
         new("ProcessoSeletivo.DocumentoNaoEnviadoComoEdital", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_enviado_como_edital", "Somente um documento enviado como edital pode ser o documento do edital")),
         new("ProcessoSeletivo.DocumentoNaoConfirmado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.documento_nao_confirmado", "Somente um documento confirmado pode ser referenciado na publicação")),
-        // Story #919 (congelamento dos parâmetros na publicação, UNI-REQ-0019): defesa em profundidade — o vocabulário de fatos é fechado e
+        // Congelamento dos parâmetros na publicação (UNI-REQ-0019): defesa em profundidade — o vocabulário de fatos é fechado e
         // append-only (ADR-0111), então este código não deveria ocorrer em produção, mas
         // precisa de mapeamento nomeado (não um 500 genérico) se ocorrer.
         new("ProcessoSeletivo.FatoCongeladoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_congelado_nao_encontrado", "Fato citado em condição de gatilho não encontrado no catálogo de fatos do candidato")),

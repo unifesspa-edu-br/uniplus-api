@@ -12,7 +12,7 @@ internal static class ErrosDoEnvelopeEDaRetificacao
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Codec do envelope (Story #859, ADR-0110 D1/D8). A recusa é NOMEADA: um descarte
+        // Codec do envelope (ADR-0110 D1/D8). A recusa é NOMEADA: um descarte
         // que falha precisa distinguir uma versão que o sistema não conhece, uma que ele
         // conhece e não reidrata, e uma evidência que não prova o que diz provar.
         new("EnvelopeCodec.VersaoDesconhecida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.versao_desconhecida", "A versão do envelope congelado não está no registro de codecs")),
@@ -24,7 +24,7 @@ internal static class ErrosDoEnvelopeEDaRetificacao
         new("EnvelopeCodec.BlocosDerivadosIncoerentes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.blocos_derivados_incoerentes", "Distribuição, modalidades e ofertas não declaram o mesmo conjunto de ofertas de curso")),
         new("EnvelopeCodec.RegraDesconhecida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.regra_desconhecida", "O envelope referencia um código de regra fora do rol conhecido")),
         new("EnvelopeCodec.RoundTripDivergente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.envelope_codec.round_trip_divergente", "A configuração reidratada não reproduz os bytes congelados")),
-        // Sessão editorial de retificação (Story #860, ADR-0110 D3/D5). A precondição é a
+        // Sessão editorial de retificação (ADR-0110 D3/D5). A precondição é a
         // ÚNICA família de erros do módulo que não é 4xx-de-negócio: 412 e 428 são de
         // PROTOCOLO — a operação não chegou a ser tentada. É também por isso que elas são
         // as únicas respostas < 500 que a idempotência NÃO armazena (D6): cachear um 412

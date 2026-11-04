@@ -49,8 +49,8 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
     /// Publica o processo (congelamento dos parâmetros na publicação, UNI-REQ-0019): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
     /// transação — junto da requisição durável que registra o ato em Publicações
-    /// (ADR-0108). Toda recusa 422 é reavaliada contra o checklist estrutural
-    /// (issue #1096): havendo item vermelho no estado atual, o corpo carrega
+    /// (ADR-0108). Toda recusa 422 é reavaliada contra o checklist estrutural:
+    /// havendo item vermelho no estado atual, o corpo carrega
     /// <c>Extensions["pendencias"]</c>, qualquer que seja o código do erro que
     /// efetivamente recusou.
     /// <para>

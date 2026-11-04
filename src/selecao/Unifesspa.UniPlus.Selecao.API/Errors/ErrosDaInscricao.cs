@@ -12,7 +12,7 @@ internal static class ErrosDaInscricao
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Opções declaradas pelo processo (issue #1619).
+        // Opções declaradas pelo processo.
         new(OpcaoDeclaradaFatoErrorCodes.CodigoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.codigo_invalido", "O código da opção é obrigatório e respeita o tamanho máximo")),
         new(OpcaoDeclaradaFatoErrorCodes.RotuloInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.rotulo_invalido", "O rótulo da opção é obrigatório e respeita o tamanho máximo")),
         new(OpcaoDeclaradaFatoErrorCodes.ListaVazia, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.lista_vazia", "Declare ao menos uma opção para o fato")),
@@ -21,7 +21,7 @@ internal static class ErrosDaInscricao
         new(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.referenciada_por_exigencia_viva", "Uma exigência documental cita uma opção que deixaria de existir")),
         new(OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.fonte_nao_eh_do_processo", "Só se declaram opções para um fato cuja fonte dos valores é o processo")),
         new(OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.edicao_enem_fora_de_processo_enem", "As edições do ENEM só podem ser declaradas quando a classificação do processo é baseada em ENEM")),
-        // Inscrição do candidato (issue #1858).
+        // Inscrição do candidato.
         new(InscricaoErrorCodes.SubObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.sub_obrigatorio", "O token precisa trazer o claim sub")),
         new(InscricaoErrorCodes.EmissorObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.emissor_obrigatorio", "O token precisa trazer o emissor")),
         new(InscricaoErrorCodes.DescarteSoDeRascunho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.descarte_so_de_rascunho", "Só o rascunho da inscrição pode ser descartado")),
@@ -69,7 +69,7 @@ internal static class ErrosDaInscricao
         new(InscricaoErrorCodes.RascunhoSoAntesDoEnvio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.rascunho_so_antes_do_envio", "Depois do envio, a inscrição só muda por um novo envio")),
         new(InscricaoErrorCodes.ForaDoPeriodo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.fora_do_periodo", "A inscrição está fora do período de inscrição")),
         new(InscricaoErrorCodes.ProcessoSemInscricao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.processo_sem_inscricao", "Este processo seletivo não recebe inscrição pelo sistema")),
-        // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao.
+        // Veredito de submissão — só avaliados no POST .../submissao.
         new(InscricaoErrorCodes.ItemObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.item_obrigatorio_ausente", "Um item visível e obrigatório está sem resposta")),
         new(InscricaoErrorCodes.Impedimento, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.impedimento", "Uma resposta impede a submissão desta inscrição")),
         new(InscricaoErrorCodes.GrupoContagemInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.grupo_contagem_invalida", "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido")),
@@ -80,11 +80,11 @@ internal static class ErrosDaInscricao
         new(InscricaoErrorCodes.DocumentoObrigatorioAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.documento_obrigatorio_ausente", "Falta enviar um documento obrigatório")),
         new(InscricaoErrorCodes.DocumentoObrigatorioEmVerificacao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.documento_obrigatorio_em_verificacao", "Há documento obrigatório com o arquivo ainda em verificação")),
         new(InscricaoErrorCodes.ModalidadeNaoDecidida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.modalidade_nao_decidida", "As respostas ainda não decidem as modalidades em que o candidato concorre")),
-        // Derivados do sistema (issue #1859, ADR-0136) — calculados só na submissão.
+        // Derivados do sistema (ADR-0136) — calculados só na submissão.
         new("Inscricao.DataNascimentoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.data_nascimento_invalida", "A data de nascimento não é uma data válida")),
         new("Inscricao.EnderecoResidencialInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.endereco_residencial_invalido", "O endereço residencial não tem a cidade que a conferência no Geo exige")),
         new(InscricaoErrorCodes.ConflitoDeConcorrencia, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.inscricao.conflito_de_concorrencia", "Esta inscrição foi alterada por outra operação", RetryableConflict: true)),
-        // Comprovante por número (issue #1860).
+        // Comprovante por número.
         new(InscricaoErrorCodes.ComprovanteNaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.inscricao.comprovante_nao_encontrado", "A inscrição não tem o comprovante com este número")),
     ];
 }

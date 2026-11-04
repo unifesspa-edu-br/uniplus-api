@@ -11,19 +11,19 @@ internal static class ErrosDaPublicacao
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // Publicação do Processo Seletivo — congelamento dos parâmetros na publicação, UNI-REQ-0019 (Story #759, T4 #785). Todo
+        // Publicação do Processo Seletivo — congelamento dos parâmetros na publicação, UNI-REQ-0019. Todo
         // 422: status dominante do módulo para violação de regra de negócio,
         // inclusive quando a origem física é constraint de banco (ADR-0102).
         new("DadosEdital.DocumentoEditalIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.documento_edital_id_obrigatorio", "Referência ao documento do Edital é obrigatória")),
         new("DadosEdital.PeriodoInscricaoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.periodo_inscricao_invalido", "O fim do período de inscrição não pode anteceder o início")),
         new("DadosEdital.PeriodoInscricaoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dados_edital.periodo_inscricao_obrigatorio", "O período de inscrição exige início e fim definidos")),
-        // Issue #1350: as situações que o operador precisa distinguir ao datar a inscrição.
+        // As situações que o operador precisa distinguir ao datar a inscrição.
         new("ProcessoSeletivo.PeriodoInscricaoNaoInformavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.periodo_inscricao_nao_informavel", "O período de inscrição vem da janela da fase do cronograma que coleta inscrição e não pode ser informado na publicação")),
         new("ProcessoSeletivo.PeriodoInscricaoObrigatorioSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.periodo_inscricao_obrigatorio_sem_fase_de_coleta", "O processo não tem fase do cronograma que colete inscrição, então o período precisa ser informado na publicação")),
         new("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_que_coleta_inscricao_sem_janela", "A fase que coleta inscrição precisa de início e fim definidos para que o Edital declare o período")),
         new("ProcessoSeletivo.FaseSemUnidadeResponsavel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_sem_unidade_responsavel", "Toda fase do cronograma precisa de uma unidade responsável para o processo ser publicado")),
         new("FaseCronograma.UnidadeResponsavelNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.unidade_responsavel_nao_encontrada", "Unidade responsável da fase não encontrada ou não está mais viva")),
-        // Issue #1349: as regras de contorno da janela de solicitação de isenção (UNI-REQ-0106).
+        // As regras de contorno da janela de solicitação de isenção (UNI-REQ-0106).
         new("ProcessoSeletivo.JanelaDeIsencaoSemPrazo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.janela_de_isencao_sem_prazo", "A fase que abre a solicitação de isenção precisa de início e fim definidos")),
         new("ProcessoSeletivo.JanelaDeIsencaoNaoAbreComAInscricao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.janela_de_isencao_nao_abre_com_a_inscricao", "A janela de solicitação de isenção abre no mesmo instante em que abrem as inscrições")),
         new("ProcessoSeletivo.JanelaDeIsencaoNaoTerminaAntesDaInscricao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.janela_de_isencao_nao_termina_antes_da_inscricao", "A solicitação de isenção precisa terminar antes do fim das inscrições")),

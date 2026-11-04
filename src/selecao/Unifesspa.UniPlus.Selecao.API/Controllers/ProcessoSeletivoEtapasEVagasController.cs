@@ -51,7 +51,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente as etapas pontuadas do processo (CA-02).
+    /// Substitui integralmente as etapas pontuadas do processo.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]
@@ -79,8 +79,8 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
 
     /// <summary>
     /// Substitui as opções que o processo declara para um fato cuja fonte dos valores é o
-    /// processo — por exemplo, as edições do ENEM aceitas —, congeladas no edital na publicação
-    /// (issue #1619). As opções dos fatos de atendimento especializado vêm da oferta de atendimento.
+    /// processo — por exemplo, as edições do ENEM aceitas —, congeladas no edital na publicação.
+    /// As opções dos fatos de atendimento especializado vêm da oferta de atendimento.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fatos/{fatoCodigo}/opcoes")]
@@ -120,7 +120,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
 
     /// <summary>
     /// Define (ou substitui) a oferta de atendimento especializado do
-    /// processo (CA-06) — tipo de deficiência só é aceito sob a condição PcD
+    /// processo — tipo de deficiência só é aceito sob a condição PcD
     /// (ADR-0067).
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -151,12 +151,10 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     }
 
     /// <summary>
-    /// Substitui integralmente a distribuição de vagas do processo (Story
-    /// #773): uma configuração por oferta de curso. O <c>QuadroDeVagas</c>
+    /// Substitui integralmente a distribuição de vagas do processo: uma configuração por oferta de curso. O <c>QuadroDeVagas</c>
     /// (quantidade calculada por modalidade — Lei 12.711 no ramo federal,
     /// fixa no institucional) é materializado na mesma operação pelo motor
-    /// de cálculo da issue #848, e devolvido no corpo da resposta (issue
-    /// #1283) — o mesmo shape que <see cref="SimularDistribuicaoVagas"/>
+    /// de cálculo, e devolvido no corpo da resposta — o mesmo shape que <see cref="SimularDistribuicaoVagas"/>
     /// (preview sem persistir) e o <c>GET</c> do processo devolvem.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -187,14 +185,14 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// 200 com o quadro de vagas recém-persistido e o <c>ETag</c> <b>novo</b>
     /// quando a mutação correu sob sessão editorial; 200 com o quadro mas
     /// sem header <c>ETag</c> quando o processo está em rascunho (não há
-    /// sessão, não há tag) — issue #1283.
+    /// sessão, não há tag).
     /// </summary>
     /// <remarks>
     /// Diferente de <see cref="ProtocoloDeMutacao.ResponderMutacao"/> (204 sempre, corpo vazio):
     /// aqui o corpo nunca é vazio em caso de sucesso. Deliberadamente não
     /// reaproveita <see cref="ProtocoloDeMutacao.ResponderMutacao"/> nem estende
     /// <see cref="MutacaoAceita"/> — esse tipo e esse helper são
-    /// compartilhados por todos os outros <c>Definir*</c> do controller, que
+    /// compartilhados pelas demais rotas de configuração, que
     /// continuam em 204; mudar o shape deles quebraria os demais.
     /// </remarks>
     private IActionResult ResponderDefinicaoDistribuicaoVagas(Result<MutacaoComDistribuicaoVagasDto> resultado)
@@ -211,7 +209,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// <summary>
     /// Calcula, sem persistir, o quadro de vagas por modalidade que o
     /// <see cref="DefinirDistribuicaoVagas"/> produziria para o mesmo
-    /// payload (issue #1282) — preview para o admin conferir/ajustar
+    /// payload — preview para o admin conferir/ajustar
     /// VoBase, PR ou modalidades antes de confirmar a gravação real.
     /// </summary>
     /// <remarks>
@@ -236,7 +234,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// verifica com a lista inteira do processo (ex.: oferta duplicada entre
     /// itens do payload, <c>AcaoQuandoIndeferido</c> inconsistente entre
     /// ofertas do mesmo processo), não são checadas aqui — só apareceriam no
-    /// PUT real. Decisão de escopo da issue #1282, não lacuna.
+    /// PUT real. Decisão de escopo, não lacuna.
     /// </para>
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]

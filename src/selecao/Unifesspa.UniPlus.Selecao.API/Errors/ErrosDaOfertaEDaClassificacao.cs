@@ -13,7 +13,7 @@ internal static class ErrosDaOfertaEDaClassificacao
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        // rol_de_regras (Story #772) — validação da definição de uma regra
+        // rol_de_regras — validação da definição de uma regra
         // do catálogo e da referência tipada que a configuração embute.
         new("RegraCatalogo.CodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_catalogo.codigo_obrigatorio", "Código da regra obrigatório")),
         new("RegraCatalogo.VersaoObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_catalogo.versao_obrigatoria", "Versão da regra obrigatória")),
@@ -24,7 +24,7 @@ internal static class ErrosDaOfertaEDaClassificacao
         new("ReferenciaRegra.CodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_regra.codigo_obrigatorio", "Código da regra referenciada obrigatório")),
         new("ReferenciaRegra.VersaoObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_regra.versao_obrigatoria", "Versão da regra referenciada obrigatória")),
         new("ReferenciaRegra.HashInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_regra.hash_invalido", "Hash da regra referenciada inválido")),
-        // Distribuição de vagas (Story #773) — vagas do
+        // Distribuição de vagas — vagas do
         // agregado-raiz, coerência de cada modalidade selecionada e o snapshot
         // de referência demográfica.
         new("ProcessoSeletivo.DistribuicaoVagasVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.distribuicao_vagas_vazia", "O processo deve ter ao menos uma distribuição de vagas configurada")),
@@ -55,7 +55,7 @@ internal static class ErrosDaOfertaEDaClassificacao
         new("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.regra_distribuicao_tipo_invalido", "A regra referenciada não é do tipo regra_distribuicao_vagas")),
         new("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.referencia_demografica_nao_encontrada", "Referência de reserva demográfica não encontrada ou não está mais viva")),
         new("ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_nao_encontrada", "Modalidade não encontrada ou não está mais viva")),
-        // Quadro de vagas (issue #848/ADR-0115) — cálculo do ramo federal (Lei
+        // Quadro de vagas (ADR-0115) — cálculo do ramo federal (Lei
         // 12.711), fixação do ramo institucional, e a regra de ajuste (art. 11
         // §único) congelada junto da configuração.
         new("ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.quadro_ampla_concorrencia_negativa", "A ampla concorrência resultaria negativa — ajuste o VO, o PR ou as retiradas")),
@@ -89,7 +89,7 @@ internal static class ErrosDaOfertaEDaClassificacao
         new("ReferenciaReservaDemograficaSnapshot.CensoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.censo_obrigatorio", "Censo de referência é obrigatório")),
         new("ReferenciaReservaDemograficaSnapshot.PercentualInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.percentual_invalido", "Os percentuais demográficos devem estar entre 0 e 100")),
         new("ReferenciaReservaDemograficaSnapshot.BaseLegalObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.referencia_reserva_demografica_snapshot.base_legal_obrigatoria", "Base legal é obrigatória")),
-        // Desempate + Bônus (Story #774) — Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015
+        // Desempate + Bônus — Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015
         // (bônus: declaração de aplicar ou não) e INV-B6 (etapa_ref executável).
         new("ProcessoSeletivo.OrdemDesempateDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_desempate_duplicada", "Cada critério de desempate deve ter uma ordem única dentro do processo")),
         new("ProcessoSeletivo.EtapaRefDesempateInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_ref_desempate_inexistente", "O critério de desempate referencia uma etapa que não existe neste processo")),
@@ -123,7 +123,7 @@ internal static class ErrosDaOfertaEDaClassificacao
         new("ConfiguracaoBonusRegional.RegraTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.regra_tipo_invalido", "A regra referenciada não é do tipo regra_bonus")),
         new("ConfiguracaoBonusRegional.BaseLegalNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.base_legal_nao_encontrada", "Base legal de bônus regional não encontrada ou desativada")),
         new("ConfiguracaoBonusRegional.SemMunicipios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_bonus_regional.sem_municipios", "A base legal do bônus regional deve abranger pelo menos um município")),
-        // Cascata de remanejamento (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) — a outra metade da flag
+        // Cascata de remanejamento de cotas (UNI-REQ-0056) — a outra metade da flag
         // SegueCascata de ModalidadeSelecionada, que hoje aponta para o nada.
         new("ConfiguracaoCascataRemanejamento.CamposObrigatorios", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_cascata_remanejamento.campos_obrigatorios", "RegraCodigo, RegraVersao, FallbackCodigo e Destinos precisam estar todos presentes ou todos ausentes")),
         new("ConfiguracaoCascataRemanejamento.RegraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_cascata_remanejamento.regra_nao_encontrada", "Regra de remanejamento não encontrada no rol_de_regras")),
@@ -150,7 +150,7 @@ internal static class ErrosDaOfertaEDaClassificacao
         new(ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cotas_da_lei_diferentes_entre_ofertas", "Os cursos do processo ofertam conjuntos diferentes de cotas da lei")),
         new(ProcessoSeletivoErrorCodes.ReservaPcdSemCotaPcdDaLei, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.reserva_pcd_sem_cota_pcd_da_lei", "O processo oferta a reserva de pessoa com deficiência de ampla concorrência e cota da lei, sem a cota da lei para pessoa com deficiência")),
         new("ProcessoSeletivo.CascataForaDoRegimeFederal", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.cascata_fora_do_regime_federal", "Uma modalidade SegueCascata está numa oferta que não usa regra de distribuição do ramo federal (Lei 12.711)")),
-        // Classificação (Story #775) — 15º bloco
+        // Classificação — 15º bloco
         // canônico, composição por referência de fórmula/precisão/eliminação/
         // ordem de alocação.
         new("ConfiguracaoClassificacao.ArredondamentoIndevido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_classificacao.arredondamento_indevido", "Arredondamento local não se aplica quando a classificação é importada")),
