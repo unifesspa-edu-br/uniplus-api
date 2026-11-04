@@ -31,7 +31,7 @@ internal static class MontagemDaDivulgacao
     /// <param name="ato">O ato que criou a versão.</param>
     /// <param name="envelope">O envelope congelado da versão.</param>
     /// <param name="enderecoDoEdital">O endereço público que a projeção já calculou para o edital.</param>
-    /// <param name="origem">Os cadastros de onde se lê a cópia selada e o acervo para onde se copia.</param>
+    /// <param name="acervo">Os cadastros de onde se lê a cópia selada e o acervo para onde se copia.</param>
     /// <param name="cancellationToken">O token de cancelamento.</param>
     /// <returns>O edital divulgado, com o principal e os anexos.</returns>
     internal static async Task<EditalDivulgado> PublicarNoAcervoAsync(
@@ -39,14 +39,14 @@ internal static class MontagemDaDivulgacao
         AtoDaDivulgacao ato,
         JsonObject envelope,
         Uri enderecoDoEdital,
-        CopiaParaOAcervo origem,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
-        DocumentoDivulgado principal = await PublicarEditalAsync(versao, ato, envelope, enderecoDoEdital, origem, cancellationToken)
+        DocumentoDivulgado principal = await PublicarEditalAsync(versao, ato, envelope, enderecoDoEdital, acervo, cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosAsync(versao, envelope, origem, cancellationToken)
+        IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosAsync(versao, envelope, acervo, cancellationToken)
             .ConfigureAwait(false);
-        await PublicarModelosAsync(versao, envelope, origem, cancellationToken).ConfigureAwait(false);
+        await PublicarModelosAsync(versao, envelope, acervo, cancellationToken).ConfigureAwait(false);
 
         return new EditalDivulgado(versao.AtoCriadorId, versao.NumeroVersao, principal.UrlDownload, [principal, .. anexos]);
     }
@@ -56,7 +56,7 @@ internal static class MontagemDaDivulgacao
         AtoDaDivulgacao ato,
         JsonObject envelope,
         Uri enderecoDoEdital,
-        CopiaParaOAcervo origem,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
         if (!LeituraDoCertameEdital.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
@@ -65,10 +65,10 @@ internal static class MontagemDaDivulgacao
                 $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada no documento do edital.");
         }
 
-        DocumentoAPublicar documento = await ObterCopiaSeladaDoEditalAsync(versao, edital, origem, cancellationToken).ConfigureAwait(false);
+        DocumentoAPublicar documento = await ObterCopiaSeladaDoEditalAsync(versao, edital, acervo, cancellationToken).ConfigureAwait(false);
         DocumentoDivulgado divulgado = DivulgarEdital(edital, documento, enderecoDoEdital);
 
-        await origem.Acervo
+        await acervo.Acervo
             .CopiarAsync(
                 documento.ObjectKeyConfirmado!,
                 edital.Chave,
@@ -89,9 +89,9 @@ internal static class MontagemDaDivulgacao
         enderecoDoEdital.OriginalString);
 
     private static async Task<DocumentoAPublicar> ObterCopiaSeladaDoEditalAsync(
-        VersaoConfiguracao versao, EditalNoAcervo edital, CopiaParaOAcervo origem, CancellationToken cancellationToken)
+        VersaoConfiguracao versao, EditalNoAcervo edital, AcervoDaDivulgacao acervo, CancellationToken cancellationToken)
     {
-        DocumentoAPublicar? documento = await origem.Documentos
+        DocumentoAPublicar? documento = await acervo.Documentos
             .ObterPorIdAsync(edital.DocumentoEditalId, cancellationToken)
             .ConfigureAwait(false);
 
@@ -105,7 +105,7 @@ internal static class MontagemDaDivulgacao
     }
 
     private static async Task<IReadOnlyList<DocumentoDivulgado>> PublicarAnexosAsync(
-        VersaoConfiguracao versao, JsonObject envelope, CopiaParaOAcervo origem, CancellationToken cancellationToken)
+        VersaoConfiguracao versao, JsonObject envelope, AcervoDaDivulgacao acervo, CancellationToken cancellationToken)
     {
         if (!LeituraDoCertameEdital.TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos))
         {
@@ -118,14 +118,14 @@ internal static class MontagemDaDivulgacao
             return [];
         }
 
-        IReadOnlyList<DocumentoAPublicar> cadastrados = await origem.Documentos
+        IReadOnlyList<DocumentoAPublicar> cadastrados = await acervo.Documentos
             .ListarDoProcessoAsync(versao.ProcessoSeletivoId, [.. anexos.Select(static a => a.DocumentoId)], cancellationToken)
             .ConfigureAwait(false);
 
         List<DocumentoDivulgado> divulgados = [];
         foreach (AnexoDoEdital anexo in anexos)
         {
-            divulgados.Add(await PublicarAnexoAsync(versao, anexo, cadastrados, origem, cancellationToken).ConfigureAwait(false));
+            divulgados.Add(await PublicarAnexoAsync(versao, anexo, cadastrados, acervo, cancellationToken).ConfigureAwait(false));
         }
 
         return divulgados;
@@ -135,7 +135,7 @@ internal static class MontagemDaDivulgacao
         VersaoConfiguracao versao,
         AnexoDoEdital anexo,
         IReadOnlyList<DocumentoAPublicar> cadastrados,
-        CopiaParaOAcervo origem,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
         DocumentoAPublicar? cadastrado = cadastrados.FirstOrDefault(d => d.Id == anexo.DocumentoId);
@@ -147,7 +147,7 @@ internal static class MontagemDaDivulgacao
         }
 
         string chave = ChaveNoAcervoPublico.DoAnexo(versao.ProcessoSeletivoId, versao.AtoCriadorId, anexo);
-        await origem.Acervo
+        await acervo.Acervo
             .CopiarAsync(
                 chavePrivada,
                 chave,
@@ -161,11 +161,11 @@ internal static class MontagemDaDivulgacao
             anexo.TipoDeMidia,
             anexo.TamanhoBytes,
             anexo.HashSha256,
-            origem.Endereco.De(chave).OriginalString);
+            acervo.Endereco.De(chave).OriginalString);
     }
 
     private static async Task PublicarModelosAsync(
-        VersaoConfiguracao versao, JsonObject envelope, CopiaParaOAcervo origem, CancellationToken cancellationToken)
+        VersaoConfiguracao versao, JsonObject envelope, AcervoDaDivulgacao acervo, CancellationToken cancellationToken)
     {
         if (!LeituraDoCertameDocumentos.TentarModelosCongelados(envelope, out List<ModeloDaExigencia>? modelos))
         {
@@ -178,13 +178,13 @@ internal static class MontagemDaDivulgacao
             return;
         }
 
-        IReadOnlyList<ModeloDeDocumento> cadastrados = await origem.Modelos
+        IReadOnlyList<ModeloDeDocumento> cadastrados = await acervo.Modelos
             .ListarDoProcessoAsync(versao.ProcessoSeletivoId, [.. modelos.Select(static m => m.ModeloId)], cancellationToken)
             .ConfigureAwait(false);
 
         foreach (ModeloDaExigencia modelo in modelos)
         {
-            await PublicarModeloAsync(versao, modelo, cadastrados, origem, cancellationToken).ConfigureAwait(false);
+            await PublicarModeloAsync(versao, modelo, cadastrados, acervo, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -192,7 +192,7 @@ internal static class MontagemDaDivulgacao
         VersaoConfiguracao versao,
         ModeloDaExigencia modelo,
         IReadOnlyList<ModeloDeDocumento> cadastrados,
-        CopiaParaOAcervo origem,
+        AcervoDaDivulgacao acervo,
         CancellationToken cancellationToken)
     {
         ModeloDeDocumento? cadastrado = cadastrados.FirstOrDefault(m => m.Id == modelo.ModeloId);
@@ -203,7 +203,7 @@ internal static class MontagemDaDivulgacao
                 $"O modelo de documento {modelo.ModeloId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
         }
 
-        await origem.Acervo
+        await acervo.Acervo
             .CopiarAsync(
                 chavePrivada,
                 ChaveNoAcervoPublico.DoModelo(versao.ProcessoSeletivoId, versao.AtoCriadorId, modelo),

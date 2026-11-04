@@ -62,33 +62,12 @@ public static class DivulgarCertameAoRegistrarAtoHandler
     {
         ArgumentNullException.ThrowIfNull(mensagem);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
-        ArgumentNullException.ThrowIfNull(modeloDeDocumentoRepository);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(acervoPublico);
-        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
-        await DivulgarAsync(
-            mensagem,
-            new ColaboradoresDaDivulgacao(
-                processoSeletivoRepository,
-                certameDivulgadoRepository,
-                registroCodecs,
-                atoDoProcessoRepository,
-                unitOfWork,
-                timeProvider,
-                new CopiaParaOAcervo(documentoAPublicarRepository, modeloDeDocumentoRepository, acervoPublico, enderecoNoAcervo)),
-            cancellationToken).ConfigureAwait(false);
-    }
+        AcervoDaDivulgacao acervo = new(documentoAPublicarRepository, modeloDeDocumentoRepository, acervoPublico, enderecoNoAcervo);
+        GravacaoDaDivulgacao gravacao = new(certameDivulgadoRepository, unitOfWork, timeProvider);
 
-    private static async Task DivulgarAsync(
-        AtoNormativoRegistrado mensagem, ColaboradoresDaDivulgacao colaboradores, CancellationToken cancellationToken)
-    {
-        IReadOnlyList<VersaoConfiguracao> versoes = await colaboradores.ProcessosSeletivos
+        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
             .ObterVersoesPorAtoCriadorAsync([mensagem.AtoId], cancellationToken)
             .ConfigureAwait(false);
 
@@ -97,19 +76,21 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         // não há o que divulgar.
         if (versoes.Count > 0)
         {
-            await DivulgarVersaoAsync(mensagem, versoes[0], colaboradores, cancellationToken).ConfigureAwait(false);
+            await DivulgarVersaoAsync(
+                mensagem, versoes[0], processoSeletivoRepository, registroCodecs, acervo, gravacao, cancellationToken)
+                .ConfigureAwait(false);
             return;
         }
 
         await DivulgarAtoDoProcessoNoAcervo
             .DivulgarAsync(
                 mensagem,
-                colaboradores.AtosDoProcesso,
-                colaboradores.CertamesDivulgados,
-                colaboradores.Copia.Documentos,
-                colaboradores.Copia.Acervo,
-                colaboradores.Copia.Endereco,
-                colaboradores.UnitOfWork,
+                atoDoProcessoRepository,
+                gravacao.Certames,
+                acervo.Documentos,
+                acervo.Acervo,
+                acervo.Endereco,
+                gravacao.UnitOfWork,
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -117,21 +98,25 @@ public static class DivulgarCertameAoRegistrarAtoHandler
     private static async Task DivulgarVersaoAsync(
         AtoNormativoRegistrado mensagem,
         VersaoConfiguracao versao,
-        ColaboradoresDaDivulgacao colaboradores,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        AcervoDaDivulgacao acervo,
+        GravacaoDaDivulgacao gravacao,
         CancellationToken cancellationToken)
     {
-        JsonObject envelope = LerEnvelopeOuFalhar(versao, colaboradores.Codecs);
+        JsonObject envelope = LerEnvelopeOuFalhar(versao, registroCodecs);
         AtoDaDivulgacao ato = new(versao.AtoCriadorId, mensagem.Ano, mensagem.TipoCodigo);
-        CertamePublicadoDto certame = await ProjetarAsync(versao, ato, envelope, colaboradores, cancellationToken).ConfigureAwait(false);
+        CertamePublicadoDto certame = await ProjetarAsync(versao, ato, envelope, processoSeletivoRepository, acervo.Endereco, cancellationToken)
+            .ConfigureAwait(false);
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
         // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
         EditalDivulgado edital = await MontagemDaDivulgacao
-            .PublicarNoAcervoAsync(versao, ato, envelope, certame.DocumentoEdital.UrlDownload, colaboradores.Copia, cancellationToken)
+            .PublicarNoAcervoAsync(versao, ato, envelope, certame.DocumentoEdital.UrlDownload, acervo, cancellationToken)
             .ConfigureAwait(false);
 
-        await RegistrarAsync(versao, certame, edital, colaboradores, cancellationToken).ConfigureAwait(false);
+        await RegistrarAsync(versao, certame, edital, gravacao, cancellationToken).ConfigureAwait(false);
     }
 
     private static JsonObject LerEnvelopeOuFalhar(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
@@ -155,18 +140,19 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         VersaoConfiguracao versao,
         AtoDaDivulgacao ato,
         JsonObject envelope,
-        ColaboradoresDaDivulgacao colaboradores,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IEnderecoNoAcervoPublico enderecoNoAcervo,
         CancellationToken cancellationToken)
     {
         // O título é atributo do processo, não da configuração congelada: lê-lo aqui é o que o congela
         // contra edição sob retificação sem publicidade.
-        string nome = await colaboradores.ProcessosSeletivos
+        string nome = await processoSeletivoRepository
             .ObterNomeAsync(versao.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Processo {versao.ProcessoSeletivoId} não encontrado para divulgar o certame.");
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, colaboradores.Copia.Endereco.De);
+            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo.De);
 
         return projecao.IsFailure
             ? throw new InvalidOperationException(
@@ -178,11 +164,11 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         VersaoConfiguracao versao,
         CertamePublicadoDto certame,
         EditalDivulgado edital,
-        ColaboradoresDaDivulgacao colaboradores,
+        GravacaoDaDivulgacao gravacao,
         CancellationToken cancellationToken)
     {
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
-        DateTimeOffset agora = colaboradores.Relogio.GetUtcNow();
+        DateTimeOffset agora = gravacao.Relogio.GetUtcNow();
 
         // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
         FacetasDoCertameDivulgado facetas = new(
@@ -193,17 +179,17 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             certame.Periodo.Inicio,
             certame.Periodo.Fim);
 
-        CertameDivulgado? divulgado = await colaboradores.CertamesDivulgados
+        CertameDivulgado? divulgado = await gravacao.Certames
             .ObterParaMutacaoAsync(versao.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
         bool alterou = divulgado is null
-            ? await AdicionarAsync(versao, edital, facetas, documento, agora, colaboradores.CertamesDivulgados, cancellationToken).ConfigureAwait(false)
+            ? await AdicionarAsync(versao, edital, facetas, documento, agora, gravacao.Certames, cancellationToken).ConfigureAwait(false)
             : Atualizar(divulgado, versao, edital, facetas, documento, agora);
 
         if (alterou)
         {
-            await SalvarAsync(versao, certame, colaboradores, cancellationToken).ConfigureAwait(false);
+            await SalvarAsync(versao, certame, gravacao, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -258,18 +244,18 @@ public static class DivulgarCertameAoRegistrarAtoHandler
     private static async Task SalvarAsync(
         VersaoConfiguracao versao,
         CertamePublicadoDto certame,
-        ColaboradoresDaDivulgacao colaboradores,
+        GravacaoDaDivulgacao gravacao,
         CancellationToken cancellationToken)
     {
         try
         {
-            await colaboradores.UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            await gravacao.UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception falha) when (IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha))
         {
-            colaboradores.UnitOfWork.DescartarAlteracoesNaoSalvas();
+            gravacao.UnitOfWork.DescartarAlteracoesNaoSalvas();
 
-            CertameDivulgado? dono = await colaboradores.CertamesDivulgados
+            CertameDivulgado? dono = await gravacao.Certames
                 .ObterParaLeituraPorIdentificadorAsync(certame.IdentificadorLegivel, cancellationToken)
                 .ConfigureAwait(false);
 
