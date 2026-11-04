@@ -133,10 +133,10 @@ public static class DefinirDistribuicaoVagasCommandHandler
 
         // Reprojeta do agregado (não da lista local `distribuicoes`): DefinirDistribuicaoVagas
         // substitui a coleção inteira, então processo.DistribuicaoVagas já reflete exatamente
-        // o que foi persistido — mesma projeção do GET (ObterProcessoSeletivoQueryHandler),
+        // o que foi persistido — mesma projeção do GET (ProjecaoDoProcessoSeletivo),
         // para o corpo da resposta nunca divergir do que um GET mostraria em seguida.
         IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> distribuicaoPersistida =
-            [.. processo.DistribuicaoVagas.Select(ObterProcessoSeletivoQueryHandler.ProjectDistribuicaoVagas)];
+            [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
 
         return Result<MutacaoComDistribuicaoVagasDto>.Success(
             new MutacaoComDistribuicaoVagasDto(processo.ETagDaSessaoEditorial, distribuicaoPersistida));

@@ -70,9 +70,9 @@ public static class ObterCertamePublicadoQueryHandler
             return NaoEncontrado();
         }
 
-        if (!ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
+        if (!LeituraDoDocumentoDivulgado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
         {
-            return ProjecaoDoCertamePublicado.RecusarDocumentoIlegivel();
+            return LeituraDoDocumentoDivulgado.RecusarDocumentoIlegivel();
         }
 
         SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(

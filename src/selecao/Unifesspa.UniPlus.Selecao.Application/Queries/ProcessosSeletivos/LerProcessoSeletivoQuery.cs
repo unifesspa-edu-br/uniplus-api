@@ -102,10 +102,10 @@ public static class LerProcessoSeletivoQueryHandler
     // o valor vazio: o leitor recebe a identificação sem localidade, nunca um erro nem a localidade da configuração viva.
     private static LocalidadeRegenteDto LocalidadePublicada(VersaoConfiguracao? vigente) =>
         EnvelopeDaVersao.Ler(vigente) is { } envelope
-        && ProjecaoDoCertamePublicado.TentarObjeto(envelope, "localidade", out JsonObject? localidade)
-        && ProjecaoDoCertamePublicado.TentarTexto(localidade, "codigoIbge", out string codigoIbge)
-        && ProjecaoDoCertamePublicado.TentarTexto(localidade, "nome", out string nome)
-        && ProjecaoDoCertamePublicado.TentarTexto(localidade, "uf", out string uf)
+        && PrimitivasDaProjecao.TentarObjeto(envelope, "localidade", out JsonObject? localidade)
+        && PrimitivasDaProjecao.TentarTexto(localidade, "codigoIbge", out string codigoIbge)
+        && PrimitivasDaProjecao.TentarTexto(localidade, "nome", out string nome)
+        && PrimitivasDaProjecao.TentarTexto(localidade, "uf", out string uf)
             ? new LocalidadeRegenteDto(codigoIbge, nome, uf)
             : new LocalidadeRegenteDto(string.Empty, string.Empty, string.Empty);
 }

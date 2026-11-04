@@ -232,7 +232,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
         documento[bloco] = JsonNode.Parse(conteudoParcial);
 
-        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
             .Should().BeFalse("bloco incompleto é meia projeção, e meia projeção mente");
 
         certame.Should().BeNull();
@@ -250,7 +250,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
         documento[bloco] = JsonNode.Parse(conteudoComNulo);
 
-        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
             .Should().BeFalse();
 
         certame.Should().BeNull();
@@ -264,7 +264,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
         ((JsonObject)documento["periodo"]!)["numero"] = null;
 
-        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
             .Should().BeTrue();
 
         certame!.Periodo.Numero.Should().BeNull();
@@ -288,7 +288,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
             SubstituirPorArranjoComNulo(documento, caminho).Should().BeTrue(
                 $"o documento de referência precisa trazer `{caminho}` para que a conferência o alcance");
 
-            ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+            LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
                 .Should().BeFalse($"`{caminho}` com elemento nulo é entrada nula onde o contrato declara objeto ou texto");
 
             certame.Should().BeNull();
@@ -391,7 +391,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         JsonObject documento = (JsonObject)JsonNode.Parse(DocumentoInteiro())!;
         documento["versaoProjecao"] = outraVersao;
 
-        ProjecaoDoCertamePublicado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(documento.ToJsonString(), out CertamePublicadoDto? certame)
             .Should().BeFalse("este binário só sabe servir a projeção que ele próprio grava");
 
         certame.Should().BeNull();
@@ -402,7 +402,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     {
         // O outro lado da conferência: uma recusa severa demais tornaria toda divulgação ilegível,
         // e o teste acima passaria com a leitura pública inteiramente quebrada.
-        ProjecaoDoCertamePublicado.TentarLerProjecao(DocumentoInteiro(), out CertamePublicadoDto? certame)
+        LeituraDoDocumentoDivulgado.TentarLerProjecao(DocumentoInteiro(), out CertamePublicadoDto? certame)
             .Should().BeTrue();
 
         certame.Should().NotBeNull();

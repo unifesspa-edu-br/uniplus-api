@@ -74,7 +74,7 @@ public static class ListarCertamesPublicadosQueryHandler
         List<CertameNaVitrineDto> itens = [];
         foreach (CertameDivulgado divulgado in pagina.Itens)
         {
-            if (!ProjecaoDoCertamePublicado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
+            if (!LeituraDoDocumentoDivulgado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
             {
                 continue;
             }

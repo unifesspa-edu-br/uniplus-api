@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura de <see cref="ObterProcessoSeletivoQueryHandler.Project"/> para
+/// Cobertura de <see cref="ProjecaoDoProcessoSeletivo.Projetar"/> para
 /// <c>DocumentosExigidos</c> (Story #554, PR #895): a projeção precisa emitir o mesmo
 /// token de wire que <c>DefinirDocumentosExigidosCommandValidator</c> aceita — round-trip
 /// GET→PUT direto, sem transformação do cliente.

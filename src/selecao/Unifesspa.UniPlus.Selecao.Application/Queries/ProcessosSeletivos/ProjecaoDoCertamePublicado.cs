@@ -75,90 +75,6 @@ internal static class ProjecaoDoCertamePublicado
     /// </summary>
     internal const string CodigoEnvelopeInesperado = "CertamePublicado.EnvelopeInesperado";
 
-    /// <summary>
-    /// Lê a projeção já materializada na linha de divulgação. Devolve <see langword="false"/>
-    /// quando o documento guardado não é uma projeção íntegra.
-    /// </summary>
-    /// <remarks>
-    /// Uma só implementação para os dois contratos públicos do certame — o detalhe recusa com
-    /// <see cref="CodigoEnvelopeInesperado"/>, a vitrine omite o item, e ambos partem da mesma
-    /// leitura. Texto que não fecha como JSON faz <c>JsonSerializer.Deserialize</c> LANÇAR (não
-    /// devolver <see langword="null"/>, que é reservado ao literal <c>null</c>), e um documento que
-    /// desserializa sem os blocos obrigatórios devolve membros nulos que estouram no primeiro
-    /// acesso. Os dois casos só são alcançáveis por linha adulterada no banco ou por projeção de
-    /// formato anterior, e os dois viram recusa em vez de 500 num endereço anônimo.
-    /// </remarks>
-    internal static bool TentarLerProjecao(
-        string documentoDivulgado,
-        [NotNullWhen(true)] out CertamePublicadoDto? certame)
-    {
-        certame = null;
-        CertamePublicadoDto? lido;
-
-        try
-        {
-            lido = JsonSerializer.Deserialize<CertamePublicadoDto>(documentoDivulgado, OpcoesDoDocumento);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-
-        if (!EhProjecaoIntegra(lido))
-        {
-            return false;
-        }
-
-        certame = lido;
-        return true;
-    }
-
-    /// <summary>
-    /// O documento desserializou; resta saber se o que saiu dele é uma projeção inteira desta
-    /// versão.
-    /// </summary>
-    private static bool EhProjecaoIntegra([NotNullWhen(true)] CertamePublicadoDto? certame)
-    {
-        // Um documento de formato anterior desserializa sem lançar e deixa os blocos que ele não
-        // tinha como nulos. Conferir aqui é o que impede o NullReferenceException lá adiante, em
-        // quem monta a vitrine ou o corpo da resposta — e o que impede servir campo declarado
-        // obrigatório com valor nulo, que é a meia projeção que esta classe recusa. A conferência
-        // cobre TODOS os membros não-anuláveis do contrato, porque um subconjunto deles deixa o
-        // resto passar em silêncio. O ELEMENTO nulo dentro de um arranjo é recusado antes, na
-        // desserialização, por ArranjoSemElementoNulo.
-        return certame is not null
-            && certame.IdentificadorLegivel is not null
-            && certame.Nome is not null
-            // Igualdade, não presença: num deploy em fases um processo novo materializa a versão
-            // seguinte e este continua lendo a mesma linha. O documento desserializa — os campos
-            // que ele não conhece são ignorados — e a resposta sairia com a forma antiga carimbada,
-            // no corpo e no ETag, com a identidade da versão nova: um cache guardaria conteúdo
-            // incompleto sob o selo do completo.
-            && certame.VersaoProjecao == Versao
-            && certame.HashConfiguracao is not null
-            && certame.TipoProcesso is not null
-            && certame.Periodo is not null
-            && certame.Localidade is not null
-            && certame.UnidadeAdministradora is not null
-            && certame.DocumentoEdital is not null
-            && certame.OrigemCandidatos is not null
-            && certame.ModalidadesOfertadas is not null
-            && certame.Ofertas is not null
-            && certame.OpcoesDeCurso is not null
-            && certame.Vagas is not null
-            && certame.Etapas is not null
-            && certame.CronogramaFases is not null
-            && certame.DocumentosExigidos is not null
-            && certame.Atendimento is not null;
-    }
-
-    /// <summary>
-    /// Recusa a leitura de um documento divulgado que não é uma projeção íntegra — a mesma recusa
-    /// que um bloco de forma inesperada produz, pela mesma razão: é falha de leitura, e uma exceção
-    /// solta aqui viraria 500 num endereço anônimo.
-    /// </summary>
-    internal static Result<CertamePublicadoDto> RecusarDocumentoIlegivel() => Recusar("documento do certame");
-
     /// <param name="enderecoNoAcervo">
     /// O endereço público de uma chave do acervo. Chega como função, e não como port, para a projeção
     /// continuar pura: o mesmo envelope e o mesmo endereço base produzem sempre a mesma resposta.
@@ -173,129 +89,211 @@ internal static class ProjecaoDoCertamePublicado
     {
         ArgumentNullException.ThrowIfNull(ato);
 
+        Result<IdentidadeDoCertame> identidade = LerIdentidade(envelope, ato);
+        if (identidade.IsFailure)
+        {
+            return Result<CertamePublicadoDto>.Failure(identidade.Error!);
+        }
+
+        Result<OfertaDoCertame> oferta = LerOferta(envelope);
+        if (oferta.IsFailure)
+        {
+            return Result<CertamePublicadoDto>.Failure(oferta.Error!);
+        }
+
+        Result<ParticipacaoNoCertame> participacao = LerParticipacao(
+            envelope, new DocumentosDoAtoNoAcervo(processoSeletivoId, ato.Id, enderecoNoAcervo));
+        if (participacao.IsFailure)
+        {
+            return Result<CertamePublicadoDto>.Failure(participacao.Error!);
+        }
+
+        return Result<CertamePublicadoDto>.Success(Montar(
+            new CabecalhoDoCertame(processoSeletivoId, ato.Id, nome, hashConfiguracao, enderecoNoAcervo),
+            identidade.Value!,
+            oferta.Value!,
+            participacao.Value!));
+    }
+
+    private static CertamePublicadoDto Montar(
+        CabecalhoDoCertame cabecalho,
+        IdentidadeDoCertame identidade,
+        OfertaDoCertame oferta,
+        ParticipacaoNoCertame participacao) => new(
+            cabecalho.ProcessoSeletivoId,
+            identidade.IdentificadorLegivel,
+            cabecalho.AtoId,
+            cabecalho.Nome,
+            Versao,
+            cabecalho.HashConfiguracao,
+            identidade.TipoProcesso,
+            identidade.Periodo,
+            identidade.Localidade,
+            identidade.Unidade,
+            new DocumentoEditalCertameDto(identidade.DocumentoDoEdital.DocumentoEditalId, identidade.DocumentoDoEdital.HashSha256, cabecalho.EnderecoNoAcervo(identidade.DocumentoDoEdital.Chave)),
+            oferta.Ofertas,
+            oferta.OpcoesDeCurso,
+            oferta.Modalidades,
+            oferta.Vagas,
+            participacao.Etapas,
+            participacao.OrigemCandidatos,
+            participacao.Fases,
+            participacao.Exigencias,
+            participacao.Atendimento,
+            participacao.Taxa,
+            participacao.Retificacao);
+
+    private static Result<IdentidadeDoCertame> LerIdentidade(JsonObject envelope, AtoDaDivulgacao ato)
+    {
         // Obrigatório na projeção, embora o bloco admita nulo no envelope: publicação e sucessão de
         // versão recusam a ausência, então uma versão divulgável sempre o traz. A regra do cadastro
         // é reaplicada ao valor lido porque é ele que a leitura pública usa como chave de busca.
-        if (!TentarTexto(envelope, BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
+        if (!PrimitivasDaProjecao.TentarTexto(envelope, BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
             || IdentificadorLegivel.Criar(identificadorLegivel).IsFailure)
         {
-            return Recusar("identificador legível");
+            return Recusar<IdentidadeDoCertame>("identificador legível");
         }
 
-        if (!TentarObjeto(envelope, BlocoPublico("tipoProcesso"), out JsonObject? tipoProcessoNode)
-            || !TentarTipoNomeado(tipoProcessoNode, out TipoCatalogadoCertameDto? tipoProcesso))
+        if (!PrimitivasDaProjecao.TentarObjeto(envelope, BlocoPublico("tipoProcesso"), out JsonObject? tipoProcessoNode)
+            || !LeituraDoCertameEdital.TentarTipoNomeado(tipoProcessoNode, out TipoCatalogadoCertameDto? tipoProcesso))
         {
-            return Recusar("tipo do processo");
+            return Recusar<IdentidadeDoCertame>("tipo do processo");
         }
 
-        if (!TentarObjeto(envelope, BlocoPublico("periodo"), out JsonObject? periodo)
-            || !TentarTextoOpcional(periodo, "numero", out string? numero)
-            || !TentarInstante(periodo, "inicio", out DateTimeOffset inicio)
-            || !TentarInstante(periodo, "fim", out DateTimeOffset fim))
+        if (!TentarPeriodo(envelope, out PeriodoInscricaoCertameDto? periodo))
         {
-            return Recusar("período de inscrição");
+            return Recusar<IdentidadeDoCertame>("período de inscrição");
         }
 
-        if (!TentarObjeto(envelope, BlocoPublico("localidade"), out JsonObject? localidade)
-            || !TentarTexto(localidade, "codigoIbge", out string codigoIbge)
-            || !TentarTexto(localidade, "nome", out string localidadeNome)
-            || !TentarTexto(localidade, "uf", out string uf)
-            || !TentarTexto(localidade, "fusoHorario", out string fusoHorario)
+        if (!TentarLocalidade(envelope, out LocalidadeCertameDto? localidade))
+        {
+            return Recusar<IdentidadeDoCertame>("localidade");
+        }
+
+        if (!LeituraDoCertameEdital.TentarUnidadeAdministradora(envelope, out UnidadeAdministradoraCertameDto? unidade))
+        {
+            return Recusar<IdentidadeDoCertame>("unidade administradora");
+        }
+
+        return LeituraDoCertameEdital.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital)
+            ? Result<IdentidadeDoCertame>.Success(new IdentidadeDoCertame(identificadorLegivel, tipoProcesso, periodo, localidade, unidade, edital))
+            : Recusar<IdentidadeDoCertame>("documento do edital");
+    }
+
+    private static bool TentarPeriodo(JsonObject envelope, [NotNullWhen(true)] out PeriodoInscricaoCertameDto? periodo)
+    {
+        periodo = null;
+        if (!PrimitivasDaProjecao.TentarObjeto(envelope, BlocoPublico("periodo"), out JsonObject? bloco)
+            || !PrimitivasDaProjecao.TentarTextoOpcional(bloco, "numero", out string? numero)
+            || !PrimitivasDaProjecao.TentarInstante(bloco, "inicio", out DateTimeOffset inicio)
+            || !PrimitivasDaProjecao.TentarInstante(bloco, "fim", out DateTimeOffset fim))
+        {
+            return false;
+        }
+
+        periodo = new PeriodoInscricaoCertameDto(numero, inicio, fim);
+        return true;
+    }
+
+    private static bool TentarLocalidade(JsonObject envelope, [NotNullWhen(true)] out LocalidadeCertameDto? localidade)
+    {
+        localidade = null;
+        if (!PrimitivasDaProjecao.TentarObjeto(envelope, BlocoPublico("localidade"), out JsonObject? bloco)
+            || !PrimitivasDaProjecao.TentarTexto(bloco, "codigoIbge", out string codigoIbge)
+            || !PrimitivasDaProjecao.TentarTexto(bloco, "nome", out string nome)
+            || !PrimitivasDaProjecao.TentarTexto(bloco, "uf", out string uf)
+            || !PrimitivasDaProjecao.TentarTexto(bloco, "fusoHorario", out string fusoHorario)
             // O domínio só sabe dizer o nome da zona institucional, a única que a publicação
             // congela; uma zona diferente sairia com o nome errado, e isso é meia projeção.
             || fusoHorario != FusoHorarioDto.Institucional.Id)
         {
-            return Recusar("localidade");
+            return false;
         }
 
-        if (!TentarUnidadeAdministradora(envelope, out UnidadeAdministradoraCertameDto? unidade))
-        {
-            return Recusar("unidade administradora");
-        }
-
-        if (!TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
-        {
-            return Recusar("documento do edital");
-        }
-
-        if (!TentarOfertas(envelope, out List<OfertaDeCursoCertameDto>? ofertas))
-        {
-            return Recusar("ofertas");
-        }
-
-        if (!TentarOpcoesDeCurso(envelope, out OpcoesDeCursoCertameDto? opcoesDeCurso))
-        {
-            return Recusar("opções de curso");
-        }
-
-        if (!TentarTextos(envelope, BlocoPublico("modalidadesOfertadas"), out List<string>? modalidades))
-        {
-            return Recusar("modalidades ofertadas");
-        }
-
-        if (!TentarVagas(envelope, out List<QuadroDeVagasCertameDto>? vagas))
-        {
-            return Recusar("quadro de vagas");
-        }
-
-        if (!TentarEtapas(envelope, out List<EtapaCertameDto>? etapas))
-        {
-            return Recusar("etapas");
-        }
-
-        if (!TentarCronograma(envelope, out string? origemCandidatos, out List<FaseCronogramaCertameDto>? fases))
-        {
-            return Recusar("cronograma");
-        }
-
-        if (!TentarExigencias(
-            envelope,
-            static _ => true,
-            new DocumentosDoAtoNoAcervo(processoSeletivoId, ato.Id, enderecoNoAcervo),
-            out List<ExigenciaDocumentalCertameDto>? exigencias))
-        {
-            return Recusar("documentos exigidos");
-        }
-
-        if (!TentarAtendimento(envelope, out AtendimentoCertameDto? atendimento))
-        {
-            return Recusar("atendimento especializado");
-        }
-
-        if (!TentarTaxaInscricao(envelope, out TaxaInscricaoCertameDto? taxa))
-        {
-            return Recusar("taxa de inscrição");
-        }
-
-        if (!TentarRetificacao(envelope, out RetificacaoCertameDto? retificacao))
-        {
-            return Recusar("retificação");
-        }
-
-        return Result<CertamePublicadoDto>.Success(new CertamePublicadoDto(
-            processoSeletivoId,
-            identificadorLegivel,
-            ato.Id,
-            nome,
-            Versao,
-            hashConfiguracao,
-            tipoProcesso,
-            new PeriodoInscricaoCertameDto(numero, inicio, fim),
-            new LocalidadeCertameDto(codigoIbge, localidadeNome, uf, FusoHorarioDto.Institucional),
-            unidade,
-            new DocumentoEditalCertameDto(edital.DocumentoEditalId, edital.HashSha256, enderecoNoAcervo(edital.Chave)),
-            ofertas,
-            opcoesDeCurso,
-            modalidades,
-            vagas,
-            etapas,
-            origemCandidatos,
-            fases,
-            exigencias,
-            atendimento,
-            taxa,
-            retificacao));
+        localidade = new LocalidadeCertameDto(codigoIbge, nome, uf, FusoHorarioDto.Institucional);
+        return true;
     }
+
+    private static Result<OfertaDoCertame> LerOferta(JsonObject envelope)
+    {
+        if (!LeituraDoCertameVagas.TentarOfertas(envelope, out List<OfertaDeCursoCertameDto>? ofertas))
+        {
+            return Recusar<OfertaDoCertame>("ofertas");
+        }
+
+        if (!LeituraDoCertameVagas.TentarOpcoesDeCurso(envelope, out OpcoesDeCursoCertameDto? opcoesDeCurso))
+        {
+            return Recusar<OfertaDoCertame>("opções de curso");
+        }
+
+        if (!PrimitivasDaProjecao.TentarTextos(envelope, BlocoPublico("modalidadesOfertadas"), out List<string>? modalidades))
+        {
+            return Recusar<OfertaDoCertame>("modalidades ofertadas");
+        }
+
+        return LeituraDoCertameVagas.TentarVagas(envelope, out List<QuadroDeVagasCertameDto>? vagas)
+            ? Result<OfertaDoCertame>.Success(new OfertaDoCertame(ofertas, opcoesDeCurso, modalidades, vagas))
+            : Recusar<OfertaDoCertame>("quadro de vagas");
+    }
+
+    private static Result<ParticipacaoNoCertame> LerParticipacao(JsonObject envelope, DocumentosDoAtoNoAcervo acervo)
+    {
+        if (!LeituraDoCertameCronograma.TentarEtapas(envelope, out List<EtapaCertameDto>? etapas))
+        {
+            return Recusar<ParticipacaoNoCertame>("etapas");
+        }
+
+        if (!LeituraDoCertameCronograma.TentarCronograma(envelope, out string? origemCandidatos, out List<FaseCronogramaCertameDto>? fases))
+        {
+            return Recusar<ParticipacaoNoCertame>("cronograma");
+        }
+
+        if (!LeituraDoCertameDocumentos.TentarExigencias(envelope, static _ => true, acervo, out List<ExigenciaDocumentalCertameDto>? exigencias))
+        {
+            return Recusar<ParticipacaoNoCertame>("documentos exigidos");
+        }
+
+        if (!LeituraDoCertameDocumentos.TentarAtendimento(envelope, out AtendimentoCertameDto? atendimento))
+        {
+            return Recusar<ParticipacaoNoCertame>("atendimento especializado");
+        }
+
+        if (!LeituraDoCertameEdital.TentarTaxaInscricao(envelope, out TaxaInscricaoCertameDto? taxa))
+        {
+            return Recusar<ParticipacaoNoCertame>("taxa de inscrição");
+        }
+
+        return LeituraDoCertameEdital.TentarRetificacao(envelope, out RetificacaoCertameDto? retificacao)
+            ? Result<ParticipacaoNoCertame>.Success(
+                new ParticipacaoNoCertame(etapas, origemCandidatos, fases, exigencias, atendimento, taxa, retificacao))
+            : Recusar<ParticipacaoNoCertame>("retificação");
+    }
+
+    private sealed record CabecalhoDoCertame(
+        Guid ProcessoSeletivoId, Guid AtoId, string Nome, string HashConfiguracao, Func<string, Uri> EnderecoNoAcervo);
+
+    private sealed record IdentidadeDoCertame(
+        string IdentificadorLegivel,
+        TipoCatalogadoCertameDto TipoProcesso,
+        PeriodoInscricaoCertameDto Periodo,
+        LocalidadeCertameDto Localidade,
+        UnidadeAdministradoraCertameDto Unidade,
+        EditalNoAcervo DocumentoDoEdital);
+
+    private sealed record OfertaDoCertame(
+        List<OfertaDeCursoCertameDto> Ofertas,
+        OpcoesDeCursoCertameDto OpcoesDeCurso,
+        List<string> Modalidades,
+        List<QuadroDeVagasCertameDto> Vagas);
+
+    private sealed record ParticipacaoNoCertame(
+        List<EtapaCertameDto> Etapas,
+        string OrigemCandidatos,
+        List<FaseCronogramaCertameDto> Fases,
+        List<ExigenciaDocumentalCertameDto> Exigencias,
+        AtendimentoCertameDto Atendimento,
+        TaxaInscricaoCertameDto? Taxa,
+        RetificacaoCertameDto? Retificacao);
 
     /// <summary>
     /// Recusa nomeando a parte do certame pelo nome que o CONTRATO PÚBLICO usa, nunca pela chave
@@ -303,8 +301,8 @@ internal static class ProjecaoDoCertamePublicado
     /// documento pela mensagem de erro — é a mesma disciplina de ausência de oráculo que motivou o
     /// colapso das recusas numa só resposta.
     /// </summary>
-    private static Result<CertamePublicadoDto> Recusar(string parte) =>
-        Result<CertamePublicadoDto>.Failure(new DomainError(
+    internal static Result<T> Recusar<T>(string parte) =>
+        Result<T>.Failure(new DomainError(
             CodigoEnvelopeInesperado,
             $"A configuração publicada não pôde ser lida em '{parte}' — a leitura do certame foi recusada em vez de responder parcialmente."));
 
@@ -326,822 +324,4 @@ internal static class ProjecaoDoCertamePublicado
             : throw new InvalidOperationException(
                 $"O contrato público do certame não projeta '{chave}': o bloco não está classificado como público.");
 
-    /// <summary>Par código/nome, a forma que tipo de processo e tipo de etapa compartilham.</summary>
-    internal static bool TentarTipoNomeado(JsonObject? objeto, [NotNullWhen(true)] out TipoCatalogadoCertameDto? tipo)
-    {
-        tipo = null;
-        if (!TentarTexto(objeto, "codigo", out string codigo) || !TentarTexto(objeto, "nome", out string nome))
-        {
-            return false;
-        }
-
-        tipo = new TipoCatalogadoCertameDto(codigo, nome);
-        return true;
-    }
-
-    /// <summary>
-    /// O documento do edital que a versão congelou, como o ato o publica no acervo — o que a
-    /// divulgação copia e o endereço que o contrato público divulga, numa leitura só.
-    /// </summary>
-    /// <remarks>
-    /// A chave é a da ADR-0132 para o acervo de editais. O processo entra pelo identificador legível
-    /// e a unidade pelo slug, ambos congelados na publicação; o slug é chave do caminho, não campo
-    /// do contrato. O nome de apresentação usa os mesmos segmentos legíveis, para o arquivo baixado
-    /// dizer de qual certame e de qual ato é.
-    /// </remarks>
-    internal static bool TentarEditalNoAcervo(
-        JsonObject envelope,
-        AtoDaDivulgacao ato,
-        [NotNullWhen(true)] out EditalNoAcervo? edital)
-    {
-        ArgumentNullException.ThrowIfNull(ato);
-
-        edital = null;
-        if (!TentarTexto(envelope, BlocoPublico("identificadorLegivel"), out string identificadorLegivel)
-            || !TentarObjeto(envelope, BlocoPublico("identidadesUnidade"), out JsonObject? unidades)
-            || !TentarObjeto(unidades, "administradora", out JsonObject? administradora)
-            || !TentarTexto(administradora, "slug", out string unidade)
-            || !TentarObjeto(envelope, BlocoPublico("hashesEdital"), out JsonObject? hashes)
-            || !TentarIdentificador(hashes, "documentoEditalId", out Guid documentoEditalId)
-            || !TentarTexto(hashes, "hashSha256", out string hashSha256)
-            || string.IsNullOrWhiteSpace(unidade)
-            || string.IsNullOrWhiteSpace(hashSha256)
-            || string.IsNullOrWhiteSpace(ato.TipoCodigo))
-        {
-            return false;
-        }
-
-        string chave = ChaveNoAcervoPublico.DoEdital(ato.Ano, unidade, ato.TipoCodigo, identificadorLegivel, ato.Id, hashSha256, FormatoDeDocumento.Pdf);
-        string nomeDeApresentacao = $"{identificadorLegivel}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.pdf";
-        edital = new EditalNoAcervo(documentoEditalId, hashSha256, chave, nomeDeApresentacao);
-        return true;
-    }
-
-    /// <summary>
-    /// Os anexos do edital como o envelope da versão os congelou, na ordem em que o edital os
-    /// apresenta — o que a divulgação publica no acervo. Vazio quando o edital não tem anexo.
-    /// </summary>
-    internal static bool TentarAnexosCongelados(
-        JsonObject envelope,
-        [NotNullWhen(true)] out List<AnexoDoEdital>? anexos)
-    {
-        anexos = null;
-        if (!TentarObjeto(envelope, BlocoPublico("hashesEdital"), out JsonObject? hashes)
-            || !TentarArray(hashes, "anexos", out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<AnexoDoEdital> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject anexo
-                || !TentarIdentificador(anexo, "anexoId", out Guid anexoId)
-                || !TentarIdentificador(anexo, "documentoId", out Guid documentoId)
-                || !TentarTexto(anexo, "nomeArquivo", out string nomeArquivo)
-                || !TentarTexto(anexo, "tipoDeMidia", out string tipoDeMidia)
-                || !TentarInteiro(anexo, "tamanhoBytes", out int tamanhoBytes)
-                || !TentarTexto(anexo, "hashSha256", out string hashSha256)
-                || FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia) is not { } formato)
-            {
-                return false;
-            }
-
-            lidos.Add(new AnexoDoEdital(anexoId, documentoId, nomeArquivo, formato, tamanhoBytes, hashSha256));
-        }
-
-        anexos = lidos;
-        return true;
-    }
-
-    /// <summary>
-    /// Os anexos que a versão congelou, para a versão seguinte. Quando o pedido não traz a lista
-    /// (<paramref name="herdaOsDaVersao"/>), são eles que a versão nova herda, e um envelope que não se
-    /// deixa ler é defeito — a versão publicada já foi lida pelo codec —, não estado do processo.
-    /// Quando o pedido traz a própria lista, os da versão servem só para manter a identidade do
-    /// anexo que continua o mesmo, e a leitura que falha apenas deixa de manter a identidade.
-    /// </summary>
-    internal static IReadOnlyList<AnexoDoEdital> AnexosDaVersao(VersaoConfiguracao versao, bool herdaOsDaVersao)
-    {
-        ArgumentNullException.ThrowIfNull(versao);
-
-        if (TentarAnexosDaVersao(versao, out List<AnexoDoEdital>? anexos))
-        {
-            return anexos;
-        }
-
-        return herdaOsDaVersao
-            ? throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos anexos do edital.")
-            : [];
-    }
-
-    private static bool TentarAnexosDaVersao(VersaoConfiguracao versao, [NotNullWhen(true)] out List<AnexoDoEdital>? anexos)
-    {
-        anexos = null;
-        try
-        {
-            return JsonNode.Parse(versao.ConfiguracaoCongelada) is JsonObject envelope
-                && TentarAnexosCongelados(envelope, out anexos);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
-    private static bool TentarUnidadeAdministradora(
-        JsonObject envelope,
-        [NotNullWhen(true)] out UnidadeAdministradoraCertameDto? unidade)
-    {
-        unidade = null;
-        if (!TentarObjeto(envelope, BlocoPublico("identidadesUnidade"), out JsonObject? bloco)
-            || !TentarObjeto(bloco, "administradora", out JsonObject? administradora)
-            || !TentarTexto(administradora, "sigla", out string sigla)
-            || !TentarTexto(administradora, "nome", out string nome)
-            || !TentarTexto(administradora, "tipo", out string tipo)
-            || !TentarTextoOpcional(administradora, "cidadeNome", out string? cidadeNome)
-            || !TentarTextoOpcional(administradora, "cidadeUf", out string? cidadeUf))
-        {
-            return false;
-        }
-
-        // O identificador de origem e o slug ficam fora: são chave de integração com o cadastro
-        // institucional, não informação que o edital comunica ao candidato.
-        unidade = new UnidadeAdministradoraCertameDto(sigla, nome, tipo, cidadeNome, cidadeUf);
-        return true;
-    }
-
-    private static bool TentarOfertas(JsonObject envelope, [NotNullWhen(true)] out List<OfertaDeCursoCertameDto>? ofertas)
-    {
-        ofertas = null;
-        if (!TentarArray(envelope, BlocoPublico("ofertas"), out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<OfertaDeCursoCertameDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject oferta
-                || !TentarIdentificador(oferta, "ofertaCursoOrigemId", out Guid id)
-                || !TentarTexto(oferta, "cursoNome", out string cursoNome)
-                || !TentarTexto(oferta, "cursoGrau", out string cursoGrau)
-                || !TentarTexto(oferta, "unidadeOfertanteNome", out string unidade)
-                || !TentarTextos(oferta, "turnos", out List<string>? turnos))
-            {
-                return false;
-            }
-
-            lidas.Add(new OfertaDeCursoCertameDto(id, cursoNome, cursoGrau, unidade, turnos));
-        }
-
-        ofertas = lidas;
-        return true;
-    }
-
-    private static bool TentarOpcoesDeCurso(JsonObject envelope, [NotNullWhen(true)] out OpcoesDeCursoCertameDto? opcoesDeCurso)
-    {
-        opcoesDeCurso = null;
-        if (!TentarObjeto(envelope, BlocoPublico("opcoesDeCurso"), out JsonObject? bloco)
-            || !TentarInteiro(bloco, "numero", out int numero)
-            || numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso)
-        {
-            return false;
-        }
-
-        opcoesDeCurso = new OpcoesDeCursoCertameDto(numero);
-        return true;
-    }
-
-    private static bool TentarVagas(JsonObject envelope, [NotNullWhen(true)] out List<QuadroDeVagasCertameDto>? vagas)
-    {
-        vagas = null;
-        if (!TentarArray(envelope, BlocoPublico("vagas"), out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<QuadroDeVagasCertameDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject configuracao
-                || !TentarIdentificador(configuracao, "ofertaCursoOrigemId", out Guid ofertaId)
-                || !TentarInteiro(configuracao, "totalPublicado", out int total)
-                || !TentarArray(configuracao, "quadro", out JsonArray? quadroArray))
-            {
-                return false;
-            }
-
-            List<VagaPorModalidadeCertameDto> quadro = [];
-            foreach (JsonNode? linha in quadroArray)
-            {
-                if (linha is not JsonObject vaga
-                    || !TentarTexto(vaga, "modalidadeCodigo", out string modalidadeCodigo)
-                    || !TentarInteiro(vaga, "quantidade", out int quantidade))
-                {
-                    return false;
-                }
-
-                quadro.Add(new VagaPorModalidadeCertameDto(modalidadeCodigo, quantidade));
-            }
-
-            lidas.Add(new QuadroDeVagasCertameDto(ofertaId, quadro, total));
-        }
-
-        vagas = lidas;
-        return true;
-    }
-
-    private static bool TentarEtapas(JsonObject envelope, [NotNullWhen(true)] out List<EtapaCertameDto>? etapas)
-    {
-        etapas = null;
-        if (!TentarArray(envelope, BlocoPublico("etapas"), out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<EtapaCertameDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject etapa
-                || !TentarTexto(etapa, "nome", out string nome)
-                || !TentarTexto(etapa, "carater", out string carater)
-                || !TentarObjeto(etapa, "tipoEtapa", out JsonObject? tipoEtapaNode)
-                || !TentarTipoNomeado(tipoEtapaNode, out TipoCatalogadoCertameDto? tipoEtapa)
-                || !TentarTextoOpcional(etapa, "peso", out string? peso)
-                || !TentarTextoOpcional(etapa, "notaMinima", out string? notaMinima)
-                || !TentarInteiroOpcional(etapa, "ordem", out int? ordem)
-                || !TentarTextoOpcional(etapa, "faseCodigo", out string? faseCodigo)
-                || !TentarInstanteOpcional(etapa, "inicio", out DateTimeOffset? inicio)
-                || !TentarInstanteOpcional(etapa, "fim", out DateTimeOffset? fim)
-                || !TentarBooleano(etapa, "emiteParecerIndividual", out bool emiteParecer))
-            {
-                return false;
-            }
-
-            lidas.Add(new EtapaCertameDto(
-                nome, carater, tipoEtapa, peso, notaMinima, ordem, faseCodigo, inicio, fim, emiteParecer));
-        }
-
-        etapas = lidas;
-        return true;
-    }
-
-    private static bool TentarCronograma(
-        JsonObject envelope,
-        [NotNullWhen(true)] out string? origemCandidatos,
-        [NotNullWhen(true)] out List<FaseCronogramaCertameDto>? fases)
-    {
-        origemCandidatos = null;
-        fases = null;
-
-        if (!TentarObjeto(envelope, BlocoPublico("cronogramaFases"), out JsonObject? bloco)
-            || !TentarTexto(bloco, "origemCandidatos", out string origem)
-            || !TentarArray(bloco, "fases", out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<FaseCronogramaCertameDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject fase
-                || !TentarInteiro(fase, "ordem", out int ordem)
-                || !TentarTexto(fase, "codigo", out string codigo)
-                || !TentarInstanteOpcional(fase, "inicio", out DateTimeOffset? inicio)
-                || !TentarInstanteOpcional(fase, "fim", out DateTimeOffset? fim)
-                || !TentarBooleano(fase, "coletaInscricao", out bool coletaInscricao)
-                || !TentarBooleano(fase, "coletaSolicitacaoIsencao", out bool coletaIsencao)
-                || !TentarBooleano(fase, "permiteComplementacao", out bool permiteComplementacao))
-            {
-                return false;
-            }
-
-            lidas.Add(new FaseCronogramaCertameDto(
-                ordem, codigo, inicio, fim, coletaInscricao, coletaIsencao, permiteComplementacao));
-        }
-
-        origemCandidatos = origem;
-        fases = lidas;
-        return true;
-    }
-
-    /// <summary>
-    /// Só o que o candidato precisa para reunir documentos. Os blocos irmãos de
-    /// <c>documentosExigidos</c> — obrigatoriedades legais, referência temporal dos fatos e os
-    /// metadados dos fatos que condicionam cada exigência — não entram. <paramref name="incluir"/>
-    /// recorta as exigências projetadas, como as da fase de um formulário; nulo quando a exigência
-    /// não tem a forma que o recorte lê, o que recusa a leitura inteira em vez de omiti-la.
-    /// <paramref name="acervo"/> dá o endereço do modelo publicado pelo ato da versão lida.
-    /// </summary>
-    internal static bool TentarExigencias(
-        JsonObject envelope,
-        Func<JsonObject, bool?> incluir,
-        DocumentosDoAtoNoAcervo acervo,
-        [NotNullWhen(true)] out List<ExigenciaDocumentalCertameDto>? exigencias)
-    {
-        exigencias = null;
-        if (!TentarObjeto(envelope, BlocoPublico("documentosExigidos"), out JsonObject? bloco)
-            || !TentarArray(bloco, "exigencias", out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<ExigenciaDocumentalCertameDto> lidas = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject exigencia
-                || !TentarTexto(exigencia, "tipoDocumentoNome", out string rotulo)
-                || !TentarTexto(exigencia, "aplicabilidade", out string aplicabilidade)
-                || !TentarBooleano(exigencia, "obrigatorio", out bool obrigatorio)
-                || !TentarFormatos(exigencia, out FormatosAceitosCertameDto? formatos)
-                || !TentarModelo(exigencia, acervo, out ModeloDocumentalCertameDto? modelo))
-            {
-                return false;
-            }
-
-            switch (incluir(exigencia))
-            {
-                case null:
-                    return false;
-                case true:
-                    lidas.Add(new ExigenciaDocumentalCertameDto(rotulo, aplicabilidade, obrigatorio, formatos, modelo));
-                    break;
-            }
-        }
-
-        exigencias = lidas;
-        return true;
-    }
-
-    /// <summary>
-    /// O modelo que a exigência oferece ao candidato: a chave é obrigatória, nula quando a
-    /// exigência não tem modelo. O id do modelo fica fora como campo — é referência interna do
-    /// cadastro —, e só aparece dentro do endereço no acervo.
-    /// </summary>
-    private static bool TentarModelo(JsonObject exigencia, DocumentosDoAtoNoAcervo acervo, out ModeloDocumentalCertameDto? modelo)
-    {
-        modelo = null;
-        if (!TentarModeloCongelado(exigencia, out ModeloDaExigencia? congelado))
-        {
-            return false;
-        }
-
-        if (congelado is not null)
-        {
-            modelo = new ModeloDocumentalCertameDto(
-                congelado.NomeArquivo,
-                ModeloDeDocumento.TokenDe(congelado.Formato),
-                congelado.HashSha256,
-                acervo.DoModelo(congelado));
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Os modelos de documento que o edital congelou, um por modelo, na ordem das exigências — o
-    /// que a divulgação publica no acervo. Vazio quando nenhuma exigência oferece modelo.
-    /// </summary>
-    internal static bool TentarModelosCongelados(
-        JsonObject envelope,
-        [NotNullWhen(true)] out List<ModeloDaExigencia>? modelos)
-    {
-        modelos = null;
-        if (!TentarObjeto(envelope, BlocoPublico("documentosExigidos"), out JsonObject? bloco)
-            || !TentarArray(bloco, "exigencias", out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<ModeloDaExigencia> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject exigencia || !TentarModeloCongelado(exigencia, out ModeloDaExigencia? modelo))
-            {
-                return false;
-            }
-
-            if (modelo is not null && !lidos.Exists(m => m.ModeloId == modelo.ModeloId))
-            {
-                lidos.Add(modelo);
-            }
-        }
-
-        modelos = lidos;
-        return true;
-    }
-
-    /// <summary>
-    /// A cópia do modelo como o envelope a congelou, numa leitura só para o contrato público e para a
-    /// publicação no acervo. Formato fora do vocabulário recusa a leitura.
-    /// </summary>
-    private static bool TentarModeloCongelado(JsonObject exigencia, out ModeloDaExigencia? modelo)
-    {
-        modelo = null;
-        if (!exigencia.TryGetPropertyValue("modelo", out JsonNode? node))
-        {
-            return false;
-        }
-
-        if (node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonObject bloco
-            || !TentarIdentificador(bloco, "modeloId", out Guid modeloId)
-            || !TentarTexto(bloco, "nomeArquivo", out string nomeArquivo)
-            || !TentarTexto(bloco, "formato", out string token)
-            || !TentarTexto(bloco, "hashSha256", out string hash))
-        {
-            return false;
-        }
-
-        if (ModeloDeDocumento.FormatoDoToken(token) is not { } formato)
-        {
-            return false;
-        }
-
-        modelo = new ModeloDaExigencia(modeloId, nomeArquivo, formato, hash);
-        return true;
-    }
-
-    /// <summary>
-    /// Bicondicional do envelope: lista nula equivale a "qualquer formato". O tamanho máximo por
-    /// formato fica fora — é limite de upload, não informação do edital.
-    /// </summary>
-    private static bool TentarFormatos(JsonObject exigencia, [NotNullWhen(true)] out FormatosAceitosCertameDto? formatos)
-    {
-        formatos = null;
-        if (!TentarObjeto(exigencia, "formatosPermitidos", out JsonObject? bloco)
-            || !TentarBooleano(bloco, "qualquer", out bool qualquer)
-            || !bloco.TryGetPropertyValue("lista", out JsonNode? listaNode))
-        {
-            return false;
-        }
-
-        // A bicondicional é CONFERIDA, não só documentada: "aceita qualquer formato" com uma lista
-        // de formatos ao lado são duas afirmações contraditórias, e repassá-las publicaria a
-        // contradição num documento com efeito jurídico — o resto desta classe recusa forma
-        // inesperada em vez de repassar, e aqui não é diferente.
-        if (listaNode is null)
-        {
-            if (!qualquer)
-            {
-                return false;
-            }
-
-            formatos = new FormatosAceitosCertameDto(true, null);
-            return true;
-        }
-
-        // Lista VAZIA é a terceira forma contraditória, e não passa: "não aceita qualquer formato"
-        // sem nenhum formato ao lado publicaria uma exigência que nenhum arquivo satisfaz. O
-        // emissor nunca a produz — a lista, quando presente, tem ao menos uma entrada.
-        if (qualquer || listaNode is not JsonArray array || array.Count == 0)
-        {
-            return false;
-        }
-
-        List<string> lista = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject entrada || !TentarTexto(entrada, "formato", out string formato))
-            {
-                return false;
-            }
-
-            lista.Add(formato);
-        }
-
-        formatos = new FormatosAceitosCertameDto(false, lista);
-        return true;
-    }
-
-    private static bool TentarAtendimento(JsonObject envelope, [NotNullWhen(true)] out AtendimentoCertameDto? atendimento)
-    {
-        atendimento = null;
-        if (!TentarObjeto(envelope, BlocoPublico("atendimento"), out JsonObject? bloco)
-            || !TentarParesNomeados(bloco, "condicoes", "condicaoCodigo", "condicaoNome", out List<CondicaoAtendimentoCertameDto>? condicoes)
-            || !TentarParesNomeados(bloco, "tiposDeficiencia", "tipoDeficienciaCodigo", "tipoDeficienciaNome", out List<CondicaoAtendimentoCertameDto>? tipos)
-            || !TentarArray(bloco, "recursos", out JsonArray? recursosArray))
-        {
-            return false;
-        }
-
-        List<string> recursos = [];
-        foreach (JsonNode? item in recursosArray)
-        {
-            if (item is not JsonObject recurso || !TentarTexto(recurso, "recursoNome", out string nome))
-            {
-                return false;
-            }
-
-            recursos.Add(nome);
-        }
-
-        atendimento = new AtendimentoCertameDto(condicoes, recursos, tipos);
-        return true;
-    }
-
-    private static bool TentarParesNomeados(
-        JsonObject bloco,
-        string chaveArray,
-        string chaveCodigo,
-        string chaveNome,
-        [NotNullWhen(true)] out List<CondicaoAtendimentoCertameDto>? pares)
-    {
-        pares = null;
-        if (!TentarArray(bloco, chaveArray, out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<CondicaoAtendimentoCertameDto> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject entrada
-                || !TentarTexto(entrada, chaveCodigo, out string codigo)
-                || !TentarTexto(entrada, chaveNome, out string nome))
-            {
-                return false;
-            }
-
-            lidos.Add(new CondicaoAtendimentoCertameDto(codigo, nome));
-        }
-
-        pares = lidos;
-        return true;
-    }
-
-    /// <summary>
-    /// Bloco de presença explícita: <c>presente: false</c> significa publicação sem taxa
-    /// configurada, e vira ausência do bloco na resposta pública — não um objeto com campos nulos,
-    /// que o candidato leria como "taxa de valor desconhecido".
-    /// </summary>
-    private static bool TentarTaxaInscricao(JsonObject envelope, out TaxaInscricaoCertameDto? taxa)
-    {
-        taxa = null;
-        if (!TentarObjeto(envelope, BlocoPublico("taxaInscricao"), out JsonObject? bloco)
-            || !TentarBooleano(bloco, "presente", out bool presente))
-        {
-            return false;
-        }
-
-        if (!presente)
-        {
-            return true;
-        }
-
-        if (!TentarBooleano(bloco, "cobra", out bool cobra)
-            || !TentarTextoOpcional(bloco, "valor", out string? valor)
-            || !TentarTextos(bloco, "fundamentos", out List<string>? fundamentos))
-        {
-            return false;
-        }
-
-        taxa = new TaxaInscricaoCertameDto(cobra, valor, fundamentos);
-        return true;
-    }
-
-    /// <summary>
-    /// Bloco condicional: ausente na publicação original, presente quando o edital foi emendado.
-    /// Ausência é sucesso com <see langword="null"/>; presença malformada é falha.
-    /// </summary>
-    private static bool TentarRetificacao(JsonObject envelope, out RetificacaoCertameDto? retificacao)
-    {
-        retificacao = null;
-        if (!envelope.TryGetPropertyValue(BlocoPublico("retificacao"), out JsonNode? node) || node is null)
-        {
-            return true;
-        }
-
-        if (node is not JsonObject bloco
-            || !TentarIdentificador(bloco, "editalRetificadoId", out Guid atoRetificadoId)
-            || !TentarTexto(bloco, "motivo", out string motivo))
-        {
-            return false;
-        }
-
-        retificacao = new RetificacaoCertameDto(atoRetificadoId, motivo);
-        return true;
-    }
-
-    private static bool TentarIdentificadores(JsonObject objeto, string chave, [NotNullWhen(true)] out List<Guid>? valores)
-    {
-        valores = null;
-        if (!TentarArray(objeto, chave, out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<Guid> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonValue valor
-                || !valor.TryGetValue(out string? texto)
-                || !Guid.TryParse(texto, CultureInfo.InvariantCulture, out Guid identificador))
-            {
-                return false;
-            }
-
-            lidos.Add(identificador);
-        }
-
-        valores = lidos;
-        return true;
-    }
-
-    internal static bool TentarTextos(JsonObject objeto, string chave, [NotNullWhen(true)] out List<string>? valores)
-    {
-        valores = null;
-        if (!TentarArray(objeto, chave, out JsonArray? array))
-        {
-            return false;
-        }
-
-        List<string> lidos = [];
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonValue valor || !valor.TryGetValue(out string? texto))
-            {
-                return false;
-            }
-
-            lidos.Add(texto);
-        }
-
-        valores = lidos;
-        return true;
-    }
-
-    internal static bool TentarArray(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonArray? valor)
-    {
-        valor = null;
-        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonArray array)
-        {
-            return false;
-        }
-
-        valor = array;
-        return true;
-    }
-
-    internal static bool TentarObjeto(JsonObject? objeto, string chave, [NotNullWhen(true)] out JsonObject? valor)
-    {
-        valor = null;
-        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node) || node is not JsonObject encontrado)
-        {
-            return false;
-        }
-
-        valor = encontrado;
-        return true;
-    }
-
-    internal static bool TentarTexto(JsonObject? objeto, string chave, out string valor)
-    {
-        valor = "";
-        return objeto is not null
-            && objeto.TryGetPropertyValue(chave, out JsonNode? node)
-            && node is JsonValue jv
-            && jv.TryGetValue(out valor!);
-    }
-
-    /// <summary>
-    /// Chave presente com <c>null</c> explícito ou com texto: sucesso. Chave ausente ou de outro
-    /// tipo: falha — a ausência da chave é forma inesperada, não campo opcional vazio.
-    /// </summary>
-    internal static bool TentarTextoOpcional(JsonObject? objeto, string chave, out string? valor)
-    {
-        valor = null;
-        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
-        {
-            return false;
-        }
-
-        return node is null || (node is JsonValue jv && jv.TryGetValue(out valor));
-    }
-
-    private static bool TentarBooleano(JsonObject? objeto, string chave, out bool valor)
-    {
-        valor = false;
-        return objeto is not null
-            && objeto.TryGetPropertyValue(chave, out JsonNode? node)
-            && node is JsonValue jv
-            && jv.TryGetValue(out valor);
-    }
-
-    internal static bool TentarInteiro(JsonObject? objeto, string chave, out int valor)
-    {
-        valor = 0;
-        return objeto is not null
-            && objeto.TryGetPropertyValue(chave, out JsonNode? node)
-            && node is JsonValue jv
-            && jv.TryGetValue(out valor);
-    }
-
-    private static bool TentarInteiroOpcional(JsonObject? objeto, string chave, out int? valor)
-    {
-        valor = null;
-        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
-        {
-            return false;
-        }
-
-        if (node is null)
-        {
-            return true;
-        }
-
-        if (node is JsonValue jv && jv.TryGetValue(out int lido))
-        {
-            valor = lido;
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Identificador na forma <b>exata</b> em que o envelope o congela: <c>D</c> minúsculo, e
-    /// nunca o Guid vazio.
-    /// </summary>
-    /// <remarks>
-    /// Mesma exigência do decodificador do envelope, pelo mesmo motivo do instante canônico:
-    /// aceitar chaves, maiúsculas ou o vazio tornaria a projeção mais leniente do que o
-    /// decodificador, e um identificador que o envelope recusa como malformado atravessaria a
-    /// fronteira pública — no caso do vazio, como um documento de edital ou uma oferta que o
-    /// consumidor tentaria buscar e não acharia.
-    /// </remarks>
-    private static bool TentarIdentificador(JsonObject? objeto, string chave, out Guid valor)
-    {
-        valor = Guid.Empty;
-
-        if (!TentarTexto(objeto, chave, out string texto)
-            || !Guid.TryParseExact(texto, "D", out Guid lido)
-            || !string.Equals(lido.ToString(), texto, StringComparison.Ordinal)
-            || lido == Guid.Empty)
-        {
-            return false;
-        }
-
-        valor = lido;
-        return true;
-    }
-
-    /// <summary>
-    /// A forma exata em que o envelope congela um instante: RFC 3339, UTC, granularidade de
-    /// segundo, sem fração.
-    /// </summary>
-    private const string FormatoInstanteCanonico = "yyyy-MM-ddTHH:mm:ssZ";
-
-    /// <summary>Instante congelado, exigido na forma canônica — nunca em outra.</summary>
-    /// <remarks>
-    /// Exato, e assumindo UTC, pelos dois lados da mesma moeda. Um texto sem designador de fuso
-    /// recebe, numa leitura permissiva, o fuso LOCAL do processo que lê: o mesmo envelope
-    /// responderia instantes diferentes conforme a máquina que serve a requisição. E aceitar
-    /// variações que o emissor nunca produz (fração de segundo, deslocamento explícito) tornaria
-    /// a projeção mais leniente que o decodificador do envelope, que recusa qualquer forma fora
-    /// da canônica — divergência que esconde adulteração em vez de expô-la.
-    /// </remarks>
-    internal static bool TentarInstante(JsonObject? objeto, string chave, out DateTimeOffset valor)
-    {
-        valor = default;
-        return TentarTexto(objeto, chave, out string texto) && TentarInstanteCanonico(texto, out valor);
-    }
-
-    private static bool TentarInstanteOpcional(JsonObject? objeto, string chave, out DateTimeOffset? valor)
-    {
-        valor = null;
-        if (objeto is null || !objeto.TryGetPropertyValue(chave, out JsonNode? node))
-        {
-            return false;
-        }
-
-        if (node is null)
-        {
-            return true;
-        }
-
-        if (node is JsonValue jv
-            && jv.TryGetValue(out string? texto)
-            && TentarInstanteCanonico(texto, out DateTimeOffset lido))
-        {
-            valor = lido;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool TentarInstanteCanonico(string texto, out DateTimeOffset valor) =>
-        DateTimeOffset.TryParseExact(
-            texto,
-            FormatoInstanteCanonico,
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-            out valor);
 }

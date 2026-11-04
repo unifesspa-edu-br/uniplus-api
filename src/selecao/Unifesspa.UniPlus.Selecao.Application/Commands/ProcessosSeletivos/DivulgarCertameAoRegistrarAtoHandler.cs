@@ -72,85 +72,117 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
+        await DivulgarAsync(
+            mensagem,
+            new ColaboradoresDaDivulgacao(
+                processoSeletivoRepository,
+                certameDivulgadoRepository,
+                registroCodecs,
+                atoDoProcessoRepository,
+                unitOfWork,
+                timeProvider,
+                new CopiaParaOAcervo(documentoAPublicarRepository, modeloDeDocumentoRepository, acervoPublico, enderecoNoAcervo)),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task DivulgarAsync(
+        AtoNormativoRegistrado mensagem, ColaboradoresDaDivulgacao colaboradores, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<VersaoConfiguracao> versoes = await colaboradores.ProcessosSeletivos
             .ObterVersoesPorAtoCriadorAsync([mensagem.AtoId], cancellationToken)
             .ConfigureAwait(false);
 
         // Ato que não cria versão: se é do processo, o registro do ato diz quais documentos divulgar;
         // se não há registro, o ato é de outro domínio — o registro central serve a mais de um — e
         // não há o que divulgar.
-        if (versoes.Count == 0)
+        if (versoes.Count > 0)
         {
-            await DivulgarAtoDoProcessoNoAcervo
-                .DivulgarAsync(
-                    mensagem,
-                    atoDoProcessoRepository,
-                    certameDivulgadoRepository,
-                    documentoAPublicarRepository,
-                    acervoPublico,
-                    enderecoNoAcervo,
-                    unitOfWork,
-                    cancellationToken)
-                .ConfigureAwait(false);
+            await DivulgarVersaoAsync(mensagem, versoes[0], colaboradores, cancellationToken).ConfigureAwait(false);
             return;
         }
 
-        VersaoConfiguracao versao = versoes[0];
-
-        if (!registroCodecs.SabeLer(versao.SchemaVersion)
-            || !TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope))
-        {
-            // O documento congelado existe mas não é legível por ESTE processo. Divulgar meia
-            // projeção seria pior que não divulgar — a ausência é visível e reprojetável, a
-            // projeção parcial mente.
-            //
-            // O tipo próprio é o que permite à política de reentrega separar este caso da falha
-            // transiente: aqui a causa esperada é a janela de um deploy em fases, que dura minutos,
-            // e não os segundos de um blip.
-            throw new EnvelopeAindaNaoLegivelException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não pôde ser lida para divulgação (schema {versao.SchemaVersion}).");
-        }
-
-        // O título é atributo do processo, não da configuração congelada: lê-lo aqui é o que o
-        // congela contra edição sob retificação sem publicidade.
-        string? nome = await processoSeletivoRepository
-            .ObterNomeAsync(versao.ProcessoSeletivoId, cancellationToken)
+        await DivulgarAtoDoProcessoNoAcervo
+            .DivulgarAsync(
+                mensagem,
+                colaboradores.AtosDoProcesso,
+                colaboradores.CertamesDivulgados,
+                colaboradores.Copia.Documentos,
+                colaboradores.Copia.Acervo,
+                colaboradores.Copia.Endereco,
+                colaboradores.UnitOfWork,
+                cancellationToken)
             .ConfigureAwait(false);
+    }
 
-        if (nome is null)
-        {
-            throw new InvalidOperationException(
-                $"Processo {versao.ProcessoSeletivoId} não encontrado para divulgar o certame.");
-        }
-
+    private static async Task DivulgarVersaoAsync(
+        AtoNormativoRegistrado mensagem,
+        VersaoConfiguracao versao,
+        ColaboradoresDaDivulgacao colaboradores,
+        CancellationToken cancellationToken)
+    {
+        JsonObject envelope = LerEnvelopeOuFalhar(versao, colaboradores.Codecs);
         AtoDaDivulgacao ato = new(versao.AtoCriadorId, mensagem.Ano, mensagem.TipoCodigo);
-        Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo.De);
-
-        if (projecao.IsFailure)
-        {
-            throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada: {projecao.Error!.Message}");
-        }
+        CertamePublicadoDto certame = await ProjetarAsync(versao, ato, envelope, colaboradores, cancellationToken).ConfigureAwait(false);
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
-        CertamePublicadoDto certame = projecao.Value!;
-        DocumentoDivulgado principal = await PublicarEditalNoAcervoAsync(
-            versao, ato, envelope, documentoAPublicarRepository, acervoPublico, certame.DocumentoEdital.UrlDownload, cancellationToken)
-            .ConfigureAwait(false);
-        IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosNoAcervoAsync(
-            versao, envelope, documentoAPublicarRepository, acervoPublico, enderecoNoAcervo, cancellationToken)
-            .ConfigureAwait(false);
-        await PublicarModelosNoAcervoAsync(versao, envelope, modeloDeDocumentoRepository, acervoPublico, cancellationToken)
+        // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
+        EditalDivulgado edital = await MontagemDaDivulgacao
+            .PublicarNoAcervoAsync(versao, ato, envelope, certame.DocumentoEdital.UrlDownload, colaboradores.Copia, cancellationToken)
             .ConfigureAwait(false);
 
-        // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
-        // É o endereço que a projeção desta versão já calculou para o edital, sem segunda derivação.
-        EditalDivulgado editalDivulgado = new(
-            versao.AtoCriadorId, versao.NumeroVersao, principal.UrlDownload, [principal, .. anexos]);
+        await RegistrarAsync(versao, certame, edital, colaboradores, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static JsonObject LerEnvelopeOuFalhar(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
+    {
+        if (registroCodecs.SabeLer(versao.SchemaVersion) && TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope))
+        {
+            return envelope;
+        }
+
+        // O documento congelado existe mas não é legível por ESTE processo. Divulgar meia projeção seria
+        // pior que não divulgar — a ausência é visível e reprojetável, a projeção parcial mente.
+        //
+        // O tipo próprio é o que permite à política de reentrega separar este caso da falha transiente:
+        // aqui a causa esperada é a janela de um deploy em fases, que dura minutos, e não os segundos
+        // de um blip.
+        throw new EnvelopeAindaNaoLegivelException(
+            $"Configuração congelada do processo {versao.ProcessoSeletivoId} não pôde ser lida para divulgação (schema {versao.SchemaVersion}).");
+    }
+
+    private static async Task<CertamePublicadoDto> ProjetarAsync(
+        VersaoConfiguracao versao,
+        AtoDaDivulgacao ato,
+        JsonObject envelope,
+        ColaboradoresDaDivulgacao colaboradores,
+        CancellationToken cancellationToken)
+    {
+        // O título é atributo do processo, não da configuração congelada: lê-lo aqui é o que o congela
+        // contra edição sob retificação sem publicidade.
+        string nome = await colaboradores.ProcessosSeletivos
+            .ObterNomeAsync(versao.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"Processo {versao.ProcessoSeletivoId} não encontrado para divulgar o certame.");
+
+        Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
+            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, colaboradores.Copia.Endereco.De);
+
+        return projecao.IsFailure
+            ? throw new InvalidOperationException(
+                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada: {projecao.Error!.Message}")
+            : projecao.Value!;
+    }
+
+    private static async Task RegistrarAsync(
+        VersaoConfiguracao versao,
+        CertamePublicadoDto certame,
+        EditalDivulgado edital,
+        ColaboradoresDaDivulgacao colaboradores,
+        CancellationToken cancellationToken)
+    {
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
-        DateTimeOffset agora = timeProvider.GetUtcNow();
+        DateTimeOffset agora = colaboradores.Relogio.GetUtcNow();
 
         // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
         FacetasDoCertameDivulgado facetas = new(
@@ -161,61 +193,88 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             certame.Periodo.Inicio,
             certame.Periodo.Fim);
 
-        CertameDivulgado? divulgado = await certameDivulgadoRepository
+        CertameDivulgado? divulgado = await colaboradores.CertamesDivulgados
             .ObterParaMutacaoAsync(versao.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (divulgado is null)
+        bool alterou = divulgado is null
+            ? await AdicionarAsync(versao, edital, facetas, documento, agora, colaboradores.CertamesDivulgados, cancellationToken).ConfigureAwait(false)
+            : Atualizar(divulgado, versao, edital, facetas, documento, agora);
+
+        if (alterou)
         {
-            CertameDivulgado nova = CertameDivulgado.Criar(
-                versao.ProcessoSeletivoId,
-                versao.NumeroVersao,
-                versao.AtoCriadorId,
-                versao.HashConfiguracao,
-                ProjecaoDoCertamePublicado.Versao,
-                facetas,
-                documento,
-                agora);
-            nova.RegistrarEdital(editalDivulgado);
-
-            await certameDivulgadoRepository.AdicionarAsync(nova, cancellationToken).ConfigureAwait(false);
+            await SalvarAsync(versao, certame, colaboradores, cancellationToken).ConfigureAwait(false);
         }
-        else
-        {
-            bool avancou = divulgado.TentarAvancar(
-                versao.NumeroVersao,
-                versao.AtoCriadorId,
-                versao.HashConfiguracao,
-                ProjecaoDoCertamePublicado.Versao,
-                facetas,
-                documento,
-                agora);
+    }
 
-            // O edital registra-se também quando a versão não avança: o ato atrasado de uma versão
-            // anterior não desfaz a vigente, mas o seu edital já está no acervo e a linha do tempo
-            // precisa dele. Reentrega do que já está registrado não muda nada.
-            bool registrou = divulgado.RegistrarEdital(editalDivulgado);
+    private static async Task<bool> AdicionarAsync(
+        VersaoConfiguracao versao,
+        EditalDivulgado edital,
+        FacetasDoCertameDivulgado facetas,
+        string documento,
+        DateTimeOffset agora,
+        ICertameDivulgadoRepository repositorio,
+        CancellationToken cancellationToken)
+    {
+        CertameDivulgado nova = CertameDivulgado.Criar(
+            versao.ProcessoSeletivoId,
+            versao.NumeroVersao,
+            versao.AtoCriadorId,
+            versao.HashConfiguracao,
+            ProjecaoDoCertamePublicado.Versao,
+            facetas,
+            documento,
+            agora);
+        nova.RegistrarEdital(edital);
 
-            if (!avancou && !registrou)
-            {
-                return;
-            }
-        }
+        await repositorio.AdicionarAsync(nova, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
 
+    private static bool Atualizar(
+        CertameDivulgado divulgado,
+        VersaoConfiguracao versao,
+        EditalDivulgado edital,
+        FacetasDoCertameDivulgado facetas,
+        string documento,
+        DateTimeOffset agora)
+    {
+        bool avancou = divulgado.TentarAvancar(
+            versao.NumeroVersao,
+            versao.AtoCriadorId,
+            versao.HashConfiguracao,
+            ProjecaoDoCertamePublicado.Versao,
+            facetas,
+            documento,
+            agora);
+
+        // O edital registra-se também quando a versão não avança: o ato atrasado de uma versão anterior
+        // não desfaz a vigente, mas o seu edital já está no acervo e a linha do tempo precisa dele.
+        // Reentrega do que já está registrado não muda nada.
+        bool registrou = divulgado.RegistrarEdital(edital);
+        return avancou || registrou;
+    }
+
+    private static async Task SalvarAsync(
+        VersaoConfiguracao versao,
+        CertamePublicadoDto certame,
+        ColaboradoresDaDivulgacao colaboradores,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            await colaboradores.UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception falha) when (IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha))
         {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
+            colaboradores.UnitOfWork.DescartarAlteracoesNaoSalvas();
 
-            CertameDivulgado? dono = await certameDivulgadoRepository
+            CertameDivulgado? dono = await colaboradores.CertamesDivulgados
                 .ObterParaLeituraPorIdentificadorAsync(certame.IdentificadorLegivel, cancellationToken)
                 .ConfigureAwait(false);
 
-            // Linha do próprio processo (entregas de versões dele correndo juntas) ou já removida:
-            // é corrida, que a reentrega resolve — a falha original segue para a política transiente.
+            // Linha do próprio processo (entregas de versões dele correndo juntas) ou já removida: é
+            // corrida, que a reentrega resolve — a falha original segue para a política transiente.
             if (IdentificadorLegivelJaDivulgadoException.Classificar(
                 falha, versao.ProcessoSeletivoId, dono?.Id, certame.IdentificadorLegivel) is not { } conflito)
             {
@@ -223,193 +282,6 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             }
 
             throw conflito;
-        }
-    }
-
-    /// <summary>
-    /// Copia para o acervo público o documento do edital que a versão congelou, na chave do ato que a
-    /// criou.
-    /// </summary>
-    /// <remarks>
-    /// Mesma conferência dos modelos: do cadastro só se lê onde está a cópia selada privada, e um
-    /// documento sem cópia selada ou com outro conteúdo não é publicado — o endereço divulgado
-    /// apontaria para um arquivo que não é o que o ato oficializou.
-    /// </remarks>
-    private static async Task<DocumentoDivulgado> PublicarEditalNoAcervoAsync(
-        VersaoConfiguracao versao,
-        AtoDaDivulgacao ato,
-        JsonObject envelope,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        IAcervoPublico acervoPublico,
-        Uri enderecoDoEdital,
-        CancellationToken cancellationToken)
-    {
-        if (!ProjecaoDoCertamePublicado.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
-        {
-            throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada no documento do edital.");
-        }
-
-        DocumentoAPublicar? documento = await documentoAPublicarRepository
-            .ObterPorIdAsync(edital.DocumentoEditalId, cancellationToken)
-            .ConfigureAwait(false);
-        if (documento is null
-            || documento.ProcessoSeletivoId != versao.ProcessoSeletivoId
-            || documento.ObjectKeyConfirmado is not { } chavePrivada
-            || !string.Equals(documento.HashSha256, edital.HashSha256, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException(
-                $"O documento do edital {edital.DocumentoEditalId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
-        }
-
-        long tamanhoBytes = documento.TamanhoBytes ?? throw new InvalidOperationException(
-            $"O documento do edital {edital.DocumentoEditalId} está confirmado e sem tamanho gravado.");
-
-        await acervoPublico
-            .CopiarAsync(
-                chavePrivada,
-                edital.Chave,
-                new DocumentoNoAcervo(
-                    documento.TipoDeMidia,
-                    edital.NomeDeApresentacao,
-                    versao.AtoCriadorId,
-                    versao.ProcessoSeletivoId,
-                    edital.HashSha256),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        return new DocumentoDivulgado(
-            PapelDoDocumentoDivulgado.Principal,
-            edital.NomeDeApresentacao,
-            documento.TipoDeMidia,
-            tamanhoBytes,
-            edital.HashSha256,
-            enderecoDoEdital.OriginalString);
-    }
-
-    /// <summary>
-    /// Copia para o acervo público cada anexo que a versão congelou, na chave do ato que a criou, e
-    /// devolve os documentos como o acervo passa a servi-los.
-    /// </summary>
-    /// <remarks>
-    /// Mesma conferência do edital e dos modelos: nome, formato, tamanho e hash são os do envelope, e
-    /// do cadastro só se lê onde está a cópia selada privada. O anexo sem cópia selada, ou com outro
-    /// conteúdo, é dado inconsistente — divulgar o endereço de um arquivo que não é o congelado seria
-    /// pior que não divulgar.
-    /// </remarks>
-    private static async Task<IReadOnlyList<DocumentoDivulgado>> PublicarAnexosNoAcervoAsync(
-        VersaoConfiguracao versao,
-        JsonObject envelope,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        IAcervoPublico acervoPublico,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
-        CancellationToken cancellationToken)
-    {
-        if (!ProjecaoDoCertamePublicado.TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos))
-        {
-            throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos anexos do edital.");
-        }
-
-        if (anexos.Count == 0)
-        {
-            return [];
-        }
-
-        IReadOnlyList<DocumentoAPublicar> cadastrados = await documentoAPublicarRepository
-            .ListarDoProcessoAsync(versao.ProcessoSeletivoId, [.. anexos.Select(static a => a.DocumentoId)], cancellationToken)
-            .ConfigureAwait(false);
-
-        List<DocumentoDivulgado> divulgados = [];
-        foreach (AnexoDoEdital anexo in anexos)
-        {
-            DocumentoAPublicar? cadastrado = cadastrados.FirstOrDefault(d => d.Id == anexo.DocumentoId);
-            if (cadastrado?.ObjectKeyConfirmado is not { } chavePrivada
-                || !string.Equals(cadastrado.HashSha256, anexo.HashSha256, StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    $"O anexo {anexo.Id} do edital, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
-            }
-
-            string chave = ChaveNoAcervoPublico.DoAnexo(versao.ProcessoSeletivoId, versao.AtoCriadorId, anexo);
-            await acervoPublico
-                .CopiarAsync(
-                    chavePrivada,
-                    chave,
-                    new DocumentoNoAcervo(
-                        anexo.TipoDeMidia,
-                        anexo.NomeArquivo,
-                        versao.AtoCriadorId,
-                        versao.ProcessoSeletivoId,
-                        anexo.HashSha256),
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            divulgados.Add(new DocumentoDivulgado(
-                PapelDoDocumentoDivulgado.Anexo,
-                anexo.NomeArquivo,
-                anexo.TipoDeMidia,
-                anexo.TamanhoBytes,
-                anexo.HashSha256,
-                enderecoNoAcervo.De(chave).OriginalString));
-        }
-
-        return divulgados;
-    }
-
-    /// <summary>
-    /// Copia para o acervo público cada modelo de documento que a versão congelou, na chave do ato
-    /// que a criou.
-    /// </summary>
-    /// <remarks>
-    /// O que se publica vem do envelope — nome, formato e hash são os do edital —, e do cadastro só se
-    /// lê onde está a cópia selada privada. Modelo sem cópia selada, ou com outro conteúdo, é dado
-    /// inconsistente: divulgar o link de um arquivo que não é o congelado seria pior que não divulgar.
-    /// </remarks>
-    private static async Task PublicarModelosNoAcervoAsync(
-        VersaoConfiguracao versao,
-        JsonObject envelope,
-        IModeloDeDocumentoRepository modeloDeDocumentoRepository,
-        IAcervoPublico acervoPublico,
-        CancellationToken cancellationToken)
-    {
-        if (!ProjecaoDoCertamePublicado.TentarModelosCongelados(envelope, out List<ModeloDaExigencia>? modelos))
-        {
-            throw new InvalidOperationException(
-                $"Configuração congelada do processo {versao.ProcessoSeletivoId} não tem a forma esperada nos modelos de documento.");
-        }
-
-        if (modelos.Count == 0)
-        {
-            return;
-        }
-
-        IReadOnlyList<ModeloDeDocumento> cadastrados = await modeloDeDocumentoRepository
-            .ListarDoProcessoAsync(versao.ProcessoSeletivoId, [.. modelos.Select(static m => m.ModeloId)], cancellationToken)
-            .ConfigureAwait(false);
-
-        foreach (ModeloDaExigencia modelo in modelos)
-        {
-            ModeloDeDocumento? cadastrado = cadastrados.FirstOrDefault(m => m.Id == modelo.ModeloId);
-            if (cadastrado?.ObjectKeyConfirmado is not { } chavePrivada
-                || !string.Equals(cadastrado.HashSha256, modelo.HashSha256, StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    $"O modelo de documento {modelo.ModeloId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
-            }
-
-            await acervoPublico
-                .CopiarAsync(
-                    chavePrivada,
-                    ChaveNoAcervoPublico.DoModelo(versao.ProcessoSeletivoId, versao.AtoCriadorId, modelo),
-                    new DocumentoNoAcervo(
-                        FormatosDeDocumento.TipoDeMidia(modelo.Formato),
-                        modelo.NomeArquivo,
-                        versao.AtoCriadorId,
-                        versao.ProcessoSeletivoId,
-                        modelo.HashSha256),
-                    cancellationToken)
-                .ConfigureAwait(false);
         }
     }
 

@@ -29,7 +29,7 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
         // Igualdade, e não "contido em": sem dependente nenhum o teste aprovaria um acervo que nunca
         // recebe o modelo publicado.
         dependentes.Should().Equal(
-            ["DivulgarAtoDoProcessoNoAcervo.cs", "DivulgarCertameAoRegistrarAtoHandler.cs"],
+            ["CopiaParaOAcervo.cs", "DivulgarAtoDoProcessoNoAcervo.cs", "DivulgarCertameAoRegistrarAtoHandler.cs"],
             "confirmar o envio não é publicar: o documento só entra no acervo depois de o ato existir");
     }
 

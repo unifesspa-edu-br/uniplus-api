@@ -244,7 +244,7 @@ public static class ProjecaoDoFormularioDaVersao
         // O formulário publicado tem fase, e toda exigência é de uma fase: a falta de qualquer das
         // duas é forma inesperada, e omitir o documento em silêncio esconderia exigência do candidato.
         return formulario.FaseId is { } faseDoFormulario
-            && ProjecaoDoCertamePublicado.TentarExigencias(
+            && LeituraDoCertameDocumentos.TentarExigencias(
                 envelope,
                 exigencia => DoFormulario(exigencia, faseDoFormulario, finalidade),
                 acervo,

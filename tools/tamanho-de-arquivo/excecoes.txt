@@ -23,9 +23,6 @@
 676 src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Persistence/Seed/SementePsrMedicina2027.cs
 512 src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Domain/Entities/Instituicao.cs
 494 src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Commands/AtosNormativos/RegistrarAtoNormativoCommandHandler.cs
-437 src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/DivulgarCertameAoRegistrarAtoHandler.cs
-514 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ObterProcessoSeletivoQueryHandler.cs
-1147 src/selecao/Unifesspa.UniPlus.Selecao.Application/Queries/ProcessosSeletivos/ProjecaoDoCertamePublicado.cs
 544 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoClassificacao.cs
 696 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoDistribuicaoVagas.cs
 592 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/DocumentoExigido.cs

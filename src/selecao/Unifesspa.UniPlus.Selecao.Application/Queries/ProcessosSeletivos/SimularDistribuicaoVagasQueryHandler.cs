@@ -87,7 +87,7 @@ public static class SimularDistribuicaoVagasQueryHandler
             // gerados em memória por ConfiguracaoDistribuicaoVagas.Criar/
             // VagaOfertada.Criar (EntityBase.Id = Guid.CreateVersion7()),
             // nunca persistidos.
-            simulacao.Add(ObterProcessoSeletivoQueryHandler.ProjectDistribuicaoVagas(resultado.Value!));
+            simulacao.Add(ProjecaoDasVagas.ProjetarDistribuicao(resultado.Value!));
         }
 
         return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(simulacao);
