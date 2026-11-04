@@ -22,7 +22,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 internal sealed class ConferenciaDoCaraterDasEtapas(ITipoEtapaReader tipoEtapaReader)
 {
-    private readonly Dictionary<Guid, TipoEtapaView> _tiposAtivos = [];
+    private readonly LeituraMemoizada<Guid, TipoEtapaView> _tiposAtivos =
+        new((tipoEtapaId, cancellationToken) => tipoEtapaReader.ObterAtivoPorIdAsync(tipoEtapaId, cancellationToken));
 
     public async Task<Result<List<EtapaConferida>>> ConferirAsync(
         IReadOnlyList<EtapaConferida> etapas, CancellationToken cancellationToken)
@@ -51,7 +52,7 @@ internal sealed class ConferenciaDoCaraterDasEtapas(ITipoEtapaReader tipoEtapaRe
         }
 
         EtapaProcessoInput declarada = etapa.Declarada;
-        TipoEtapaView? tipo = await TipoAtivoAsync(declarada.TipoEtapaOrigemId, cancellationToken).ConfigureAwait(false);
+        TipoEtapaView? tipo = await _tiposAtivos.ObterAsync(declarada.TipoEtapaOrigemId, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
             return (etapa, etapa.VinculoInalterado ? ErrosContraOTipoCongelado(etapa, indice) : [RecusaDoTipoInativo(declarada, indice)]);
@@ -59,22 +60,6 @@ internal sealed class ConferenciaDoCaraterDasEtapas(ITipoEtapaReader tipoEtapaRe
 
         return (etapa with { TipoLido = tipo },
             EscritaDasEtapasDoProcesso.ErrosDeCarater(declarada.Carater, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.Nome, indice));
-    }
-
-    private async Task<TipoEtapaView?> TipoAtivoAsync(Guid tipoEtapaId, CancellationToken cancellationToken)
-    {
-        if (_tiposAtivos.TryGetValue(tipoEtapaId, out TipoEtapaView? emCache))
-        {
-            return emCache;
-        }
-
-        TipoEtapaView? lido = await tipoEtapaReader.ObterAtivoPorIdAsync(tipoEtapaId, cancellationToken).ConfigureAwait(false);
-        if (lido is not null)
-        {
-            _tiposAtivos[tipoEtapaId] = lido;
-        }
-
-        return lido;
     }
 
     // Vínculo inalterado e tipo desde então desativado: recusar puniria quem só quer corrigir o caráter
