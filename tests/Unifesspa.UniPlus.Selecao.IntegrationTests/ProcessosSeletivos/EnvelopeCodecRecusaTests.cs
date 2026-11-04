@@ -1318,6 +1318,16 @@ public sealed class EnvelopeCodecRecusaTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
     }
 
+    [Fact(DisplayName = "documentosExigidos.metadadosFatos com item que não é objeto é recusado, nunca lança")]
+    public void MetadadosFatos_ItemQueNaoEObjeto_Recusa()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeDeReferenciaAdulterado(envelope =>
+            envelope["documentosExigidos"]!["metadadosFatos"] = new JsonArray(42));
+
+        resultado.IsFailure.Should().BeTrue("um item que não é objeto é forma que o encoder nunca produz");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados ausente é recusado")]
     public void ValoresDominioDeclarados_ChaveAusente_Recusa()
     {

@@ -78,8 +78,15 @@ internal static class LeituraDosMetadadosDosFatos
         string cardinalidade = leitor.TextoNaoVazio(item, "cardinalidade", path);
         string pontoResolucao = leitor.TextoNaoVazio(item, "pontoResolucao", path);
         string binding = leitor.TextoNaoVazio(item, "binding", path);
+        if (leitor.Falhou)
+        {
+            return null;
+        }
+
         IReadOnlyList<string>? valoresDominio = LerValoresDominio(leitor, item, path);
-        IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDeclarados = LeituraDosValoresDeDominio.LerValoresDominioDeclarados(leitor, item, path);
+        IReadOnlyList<ValorDominioDeclaradoCongelado>? valoresDeclarados = leitor.Falhou
+            ? null
+            : LeituraDosValoresDeDominio.LerValoresDominioDeclarados(leitor, item, path);
 
         return leitor.Falhou
             ? null
