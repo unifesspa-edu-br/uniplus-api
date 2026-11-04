@@ -38,7 +38,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         FatoColetado novo = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
         FatoColetado coletado = processo.FatosColetados.Single(static f => f.FatoCodigo == "RG_NUMERO");
 
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
+        ReconferenciaDeTeste.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
 
         novo.ClassificacaoProtecao.Should().Be("IDENTIFICADOR");
         coletado.ClassificacaoProtecao.Should().Be("PESSOAL", "o fato já coletado segue a guarda da retificação contra troca de eixo");
@@ -55,7 +55,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             ? f with { HipoteseLegal = "EXECUCAO_POLITICAS_PUBLICAS", FinalidadeTratamento = "Finalidade nova do catálogo." }
             : f)];
 
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
+        ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("RG_NUMERO")).IsSuccess.Should().BeTrue();
 
         novo.HipoteseLegal.Should().Be("EXECUCAO_POLITICAS_PUBLICAS");
         novo.FinalidadeTratamento.Should().Be("Finalidade nova do catálogo.");
@@ -69,7 +69,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("DESEJA_NOME_SOCIAL", static f => f with { Dominio = "CATEGORICO" });
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, Coletados("DESEJA_NOME_SOCIAL"));
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("DESEJA_NOME_SOCIAL"));
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
@@ -82,7 +82,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Cópias do item", out _);
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("RG_UF", static f => f with { FonteValores = "GEO_MUNICIPIO" });
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Message.Should().Contain("fonte de valores 'GEO_MUNICIPIO'").And.Contain("Regrave o item");
@@ -96,7 +96,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             "COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, "PESSOAL",
             restricoes: [new OpcoesPermitidas([new OpcoesCondicionadas(null, ["BRANCA", "PRETA"])])], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirItens([corRaca]).IsSuccess.Should().BeTrue();
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, null).IsSuccess.Should().BeTrue("o domínio atual tem os dois valores");
+        ReconferenciaDeTeste.Aplicar(processo, CatalogoDoConjuntoBasico.Fatos, null).IsSuccess.Should().BeTrue("o domínio atual tem os dois valores");
 
         IReadOnlyList<FatoCandidatoView> catalogo = CatalogoCom("COR_RACA", static f => f with
         {
@@ -104,7 +104,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
         });
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Message.Should().Contain("Cor ou raça");
@@ -123,7 +123,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             }),
         ];
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().HaveCountGreaterThanOrEqualTo(2);
@@ -144,7 +144,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         Result definido = processo.DefinirItens([item]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
         IReadOnlyList<FatoCandidatoView> vigente = CatalogoDoConjuntoBasico.Com([temRenda]);
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
+        ReconferenciaDeTeste.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
 
         IReadOnlyList<FatoCandidatoView> catalogo = [.. vigente.Select(static f => f.Codigo != "COR_RACA" ? f : f with
         {
@@ -152,11 +152,11 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
         })];
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().Contain(static e => e.Field != null && e.Field.EndsWith("predicadoObrigatoriedade", StringComparison.Ordinal));
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, Coletados("TEM_RENDA")).IsSuccess
+        ReconferenciaDeTeste.Aplicar(processo, catalogo, Coletados("TEM_RENDA")).IsSuccess
             .Should().BeTrue("o fato já coletado só tem o campo conferido");
     }
 
@@ -182,7 +182,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             FinalidadeFormulario.Inscricao).Value!;
         Result definido = processo.DefinirFatosColetados(FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente, [grupo]);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
+        ReconferenciaDeTeste.Aplicar(processo, vigente, null).IsSuccess.Should().BeTrue("o domínio atual tem PRETA");
 
         IReadOnlyList<FatoCandidatoView> catalogo = [.. vigente.Select(static f => f.Codigo != "COR_RACA" ? f : f with
         {
@@ -190,7 +190,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             ValoresDominioDeclarados = [.. f.ValoresDominioDeclarados!.Where(static v => v.Codigo != "PRETA")],
         })];
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("formularios[INSCRICAO].grupos[0].exibicao");
@@ -215,7 +215,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
             .. CatalogoDoConjuntoBasico.Com([extra]).Select(static f => f.Codigo is "DESEJA_NOME_SOCIAL" or "SITUACAO_EXTRA" ? f with { Dominio = "CATEGORICO" } : f),
         ];
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Errors.Select(static e => e.Field).Should().Contain([
@@ -238,7 +238,7 @@ public sealed class ReconferenciaDasCopiasDoItemTests
         ];
         antes.Should().NotBe("PUBLICO", "pré-condição: há cópia a refazer");
 
-        Result resposta = ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null);
+        Result resposta = ReconferenciaDeTeste.Aplicar(processo, catalogo, null);
 
         resposta.IsFailure.Should().BeTrue();
         processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF").ClassificacaoProtecao.Should().Be(antes);

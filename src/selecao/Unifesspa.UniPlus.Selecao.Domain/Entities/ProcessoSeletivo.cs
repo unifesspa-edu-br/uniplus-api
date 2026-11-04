@@ -325,10 +325,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return Result.Success();
     }
 
-    /// <summary>
-    /// A aplicação do modelo substitui o formulário inteiro e não existe sob sessão (não há ETag a avançar);
-    /// o handler a antecipa antes de qualquer leitura externa.
-    /// </summary>
+    /// <summary>A aplicação do modelo substitui o formulário inteiro e só existe em rascunho; o handler a antecipa.</summary>
     public DomainError? RecusaDeAplicarModelo(PrecondicaoIfMatch precondicao) =>
         RecusaDeOperacaoSoEmRascunho(RegrasDosFormularios.AplicacaoDeModeloSoEmRascunho(), precondicao);
 
@@ -344,10 +341,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
     }
 
-    /// <summary>
-    /// Operação que só existe em rascunho: a recusa da sessão vem antes da precondição, porque exigir o
-    /// If-Match de uma sessão em que a operação nunca é aceita só esconderia o motivo.
-    /// </summary>
+    /// <summary>Operação só de rascunho: a recusa da sessão vem antes da precondição, que só esconderia o motivo.</summary>
     private DomainError? RecusaDeOperacaoSoEmRascunho(DomainError recusaSobSessao, PrecondicaoIfMatch precondicao) =>
         Rascunho is not null ? recusaSobSessao : MutacaoBloqueada(precondicao);
 
@@ -408,24 +402,31 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             plano => plano.Aplicar(Colecoes(), Id));
     }
 
-    public Result RecopiarItensDoCatalogo(
-        IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
+    /// <summary>Refaz a cópia dos itens, a das unidades das fases e a proteção das exigências, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>
+    public Result PrepararCongelamento(PreparacaoDoCongelamento preparacao)
     {
-        ArgumentNullException.ThrowIfNull(catalogo);
-        ArgumentNullException.ThrowIfNull(fatosJaColetados);
+        ArgumentNullException.ThrowIfNull(preparacao);
 
-        Result<PlanoDaRecopiaDoCatalogo> plano = RegrasDaColeta.PlanejarRecopia(EstadoDaConfiguracao.De(this), catalogo, fatosJaColetados);
-        if (plano.IsFailure)
+        Result itens = RecopiarItensDoCatalogo(preparacao.CopiasDoCatalogo, preparacao.FatosJaColetados);
+        if (itens.IsSuccess)
         {
-            return Result.ValidationFailure(plano.Errors);
+            RecopiarUnidadesDasFases(preparacao.UnidadesVivas);
+            AplicarProtecaoVigente(preparacao.ProtecaoVigente);
         }
 
-        plano.Value!.Aplicar();
-        return Result.Success();
+        return itens;
+    }
+
+    internal Result RecopiarItensDoCatalogo(
+        IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
+    {
+        Result<PlanoDaRecopiaDoCatalogo> plano = RegrasDaColeta.PlanejarRecopia(EstadoDaConfiguracao.De(this), catalogo, fatosJaColetados);
+        plano.Value?.Aplicar();
+        return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
     }
 
     /// <summary>Refaz nas fases a cópia de sigla e nome da unidade responsável ao congelar a versão; a fase sem unidade em <paramref name="vivas"/> fica como está.</summary>
-    public void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas) =>
+    internal void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas) =>
         ReconciliacaoDoCronograma.RecopiarUnidades(_cronogramaFases, vivas);
 
     public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao, PrecondicaoIfMatch precondicao)
@@ -437,11 +438,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             novas => Substituir(_regrasDerivacao, novas));
     }
 
-    /// <summary>
-    /// Limpa a coleta e as regras de derivação antes da reposição fiel no descarte: a edição sob retificação as tornou mutáveis e repor
-    /// as instâncias congeladas por cima das vivas colidiria no índice único de ordem. A orquestração do descarte grava os <c>DELETE</c>s
-    /// antes de aplicar o grafo; nenhuma identidade precisa sobreviver.
-    /// </summary>
+    /// <summary>Limpa a coleta e a derivação antes da reposição fiel do descarte, que grava os <c>DELETE</c>s antes de aplicar o grafo: repor por cima das vivas colidiria no índice único de ordem.</summary>
     public void LimparColetaEDerivacaoParaRestauracao() =>
         RegrasDaColeta.LimparParaRestauracao(Colecoes());
 
@@ -474,7 +471,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             nova => AlgoritmoContagemPrazo = nova);
 
     /// <summary>Congela em cada exigência a proteção efetiva calculada pelo contexto; a exigência que o contexto não traz mantém a cópia.</summary>
-    public void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao) =>
+    internal void AplicarProtecaoVigente(ProtecaoVigenteDasExigencias protecao) =>
         ProtecaoDasExigencias.Planejar(EstadoDaConfiguracao.De(this), protecao).Aplicar();
 
     /// <summary>

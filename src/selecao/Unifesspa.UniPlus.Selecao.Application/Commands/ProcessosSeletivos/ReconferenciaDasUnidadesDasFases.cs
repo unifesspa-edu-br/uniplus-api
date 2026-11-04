@@ -17,11 +17,11 @@ using Kernel.Results;
 internal static class ReconferenciaDasUnidadesDasFases
 {
     /// <summary>
-    /// Recusa, no mesmo lote, toda fase cuja unidade não existe mais (ADR-0125). Sem nenhuma recusa,
-    /// manda o agregado recopiar as unidades; com recusa, o agregado não muda. A unidade é
-    /// resolvida uma vez por id.
+    /// Recusa, no mesmo lote, toda fase cuja unidade não existe mais (ADR-0125). Sem recusa, devolve as
+    /// unidades vivas que o agregado copia para as fases; o agregado não muda aqui. A unidade é resolvida
+    /// uma vez por id.
     /// </summary>
-    public static async Task<Result> AplicarAsync(
+    public static async Task<Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>> ConferirAsync(
         ProcessoSeletivo processo,
         IResolvedorDaUnidadeResponsavel resolvedor,
         CancellationToken cancellationToken)
@@ -55,21 +55,10 @@ internal static class ReconferenciaDasUnidadesDasFases
 
         if (erros.Count > 0)
         {
-            return Result.ValidationFailure(erros);
+            return Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>.ValidationFailure(erros);
         }
 
-        processo.RecopiarUnidadesDasFases(resolvidas.ToDictionary(static p => p.Key, static p => p.Value!));
-        return Result.Success();
-    }
-
-    /// <summary>Soma as recusas dos dois resultados num só, para o operador ver tudo de uma vez.</summary>
-    public static Result Combinar(Result primeiro, Result segundo)
-    {
-        ArgumentNullException.ThrowIfNull(primeiro);
-        ArgumentNullException.ThrowIfNull(segundo);
-
-        return primeiro.IsSuccess && segundo.IsSuccess
-            ? Result.Success()
-            : Result.ValidationFailure([.. primeiro.Errors, .. segundo.Errors]);
+        return Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>.Success(
+            resolvidas.ToDictionary(static p => p.Key, static p => p.Value!));
     }
 }

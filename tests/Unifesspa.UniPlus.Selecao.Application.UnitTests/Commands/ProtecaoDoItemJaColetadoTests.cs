@@ -107,7 +107,7 @@ public sealed class ProtecaoDoItemJaColetadoTests
             ? f with { HipoteseLegal = " EXECUCAO_POLITICAS_PUBLICAS ", FinalidadeTratamento = "  Identifica\u00e7\u00e3o: a\u0301.  " }
             : f)];
 
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, null).IsSuccess.Should().BeTrue();
+        ReconferenciaDeTeste.Aplicar(processo, catalogo, null).IsSuccess.Should().BeTrue();
 
         FatoColetado recopiado = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
         recopiado.HipoteseLegal.Should().Be("EXECUCAO_POLITICAS_PUBLICAS");
@@ -126,7 +126,7 @@ public sealed class ProtecaoDoItemJaColetadoTests
             ? f with { Descricao = "Descrição corrigida no catálogo.", ComponenteExibicao = "MOEDA", FinalidadeTratamento = "Outra finalidade." }
             : f)];
 
-        ReconferenciaDasCopiasDoItem.Aplicar(processo, catalogo, new HashSet<string>(["CPF"], StringComparer.Ordinal)).IsSuccess.Should().BeTrue();
+        ReconferenciaDeTeste.Aplicar(processo, catalogo, new HashSet<string>(["CPF"], StringComparer.Ordinal)).IsSuccess.Should().BeTrue();
 
         FatoColetado retificado = processo.FatosColetados.Single(static f => f.FatoCodigo == "CPF");
         (retificado.Descricao, retificado.ComponenteExibicao).Should().Be(("Descrição corrigida no catálogo.", "MOEDA"));

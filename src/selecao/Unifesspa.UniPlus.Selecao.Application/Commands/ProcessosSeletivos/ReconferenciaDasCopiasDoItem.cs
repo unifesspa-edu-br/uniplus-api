@@ -39,14 +39,13 @@ internal static class ReconferenciaDasCopiasDoItem
     private static readonly HashSet<string> Nenhum = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// Reconfere os itens e os grupos e, sem nenhuma recusa, manda o agregado recopiar do catálogo
-    /// os itens que podem ser recopiados; com recusa, o agregado não muda. A
-    /// configuração com fato não coletável fica para a conferência de coletabilidade, que a recusa
-    /// adiante. <paramref name="fatosJaColetados"/> traz, com <see cref="StringComparer.Ordinal"/>,
-    /// os fatos que alguma versão publicada coletou; nulo, nenhum. Toda recusa de todo item sai no
-    /// mesmo lote (ADR-0125).
+    /// Reconfere os itens e os grupos sem mudar o agregado e devolve as cópias do catálogo que ele deve
+    /// refazer. A configuração com fato não coletável fica para a conferência de coletabilidade, que a
+    /// recusa adiante. <paramref name="fatosJaColetados"/> traz, com <see cref="StringComparer.Ordinal"/>,
+    /// os fatos que alguma versão publicada coletou; nulo, nenhum. Toda recusa de todo item sai no mesmo
+    /// lote (ADR-0125).
     /// </summary>
-    public static Result Aplicar(
+    public static Result<CopiasConferidas> Conferir(
         ProcessoSeletivo processo,
         IReadOnlyList<FatoCandidatoView> catalogoDeFatos,
         IReadOnlySet<string>? fatosJaColetados)
@@ -59,7 +58,7 @@ internal static class ReconferenciaDasCopiasDoItem
         // coletabilidade, com a causa certa; recopiar ou recusar o campo dele antes só trocaria a causa.
         if (ConferenciaDeColetabilidadeDeFatos.Conferir(processo, contexto.Fatos).IsFailure)
         {
-            return Result.Success();
+            return Result<CopiasConferidas>.Success(new CopiasConferidas(new Dictionary<string, CopiaDoItemNoCatalogo>(), Nenhum));
         }
 
         IReadOnlySet<string> jaColetados = fatosJaColetados ?? Nenhum;
@@ -103,8 +102,9 @@ internal static class ReconferenciaDasCopiasDoItem
             }
         }
 
-        // O agregado só muda com zero recusas: a recópia vem depois de toda conferência.
-        return erros.Count == 0 ? processo.RecopiarItensDoCatalogo(copias, jaColetados) : Result.ValidationFailure(erros);
+        return erros.Count == 0
+            ? Result<CopiasConferidas>.Success(new CopiasConferidas(copias, jaColetados))
+            : Result<CopiasConferidas>.ValidationFailure(erros);
     }
 
     /// <summary>
@@ -148,3 +148,8 @@ internal static class ReconferenciaDasCopiasDoItem
         string.IsNullOrEmpty(erro.Field) ? caminho : $"{caminho}.{erro.Field}",
         new DomainError(erro.Error.Code, $"{erro.Error.Message} {quem}. {orientacao}"));
 }
+
+/// <summary>As cópias do catálogo conferidas e os fatos já coletados que o agregado usa para refazê-las.</summary>
+internal sealed record CopiasConferidas(
+    IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> Copias,
+    IReadOnlySet<string> FatosJaColetados);

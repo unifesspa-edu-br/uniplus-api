@@ -143,20 +143,16 @@ public static class PublicarProcessoSeletivoCommandHandler
         FatosDeModalidade fatosDeModalidade = catalogo.FatosDeModalidade;
         IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = catalogo.TiposVivos;
 
-        Result copiasDoItem = await ReconferenciaDasCopiasEUnidades
-            .AplicarAsync(processo, catalogoDeFatos, null, unidadeResponsavelResolvedor, cancellationToken)
+        Result<ProtecaoVigenteDoProcesso> preparo = await PreparoDoCongelamento
+            .PrepararAsync(processo, catalogo, null, null, unidadeResponsavelResolvedor, cancellationToken)
             .ConfigureAwait(false);
-        if (copiasDoItem.IsFailure)
+        if (preparo.IsFailure)
         {
-            return (copiasDoItem, []);
+            return (Result.ValidationFailure(preparo.Errors), []);
         }
 
-        // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
-        // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDoProcesso protecaoDoProcesso = ProtecaoVigenteDasExigenciasDoProcesso
-            .Montar(processo, tiposVivos, catalogoDeFatos, null);
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = preparo.Value!;
         ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
-        processo.AplicarProtecaoVigente(protecaoDasExigencias);
 
         // O gate precede a canonicalização (ADR-0109 D5): um processo não conforme
         // não chega a ser projetado. Sem isso, a canonicalização de uma dimensão

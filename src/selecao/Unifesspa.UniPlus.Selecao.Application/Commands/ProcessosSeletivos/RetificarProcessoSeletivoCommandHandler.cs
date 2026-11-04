@@ -180,20 +180,16 @@ public static class RetificarProcessoSeletivoCommandHandler
             return (Result.Failure(versoesPublicadas.Error!), []);
         }
 
-        Result copiasDoItem = await ReconferenciaDasCopiasEUnidades
-            .AplicarAsync(processo, catalogoDeFatos, versoesPublicadas.Value?.FatosJaColetados, unidadeResponsavelResolvedor, cancellationToken)
+        Result<ProtecaoVigenteDoProcesso> preparo = await PreparoDoCongelamento
+            .PrepararAsync(processo, catalogo, versoesPublicadas.Value?.FatosJaColetados, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false), unidadeResponsavelResolvedor, cancellationToken)
             .ConfigureAwait(false);
-        if (copiasDoItem.IsFailure)
+        if (preparo.IsFailure)
         {
-            return (copiasDoItem, []);
+            return (Result.ValidationFailure(preparo.Errors), []);
         }
 
-        // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor
-        // vigente é o que se congela, antes da conferência contra os fatos e do snapshot.
-        ProtecaoVigenteDoProcesso protecaoDoProcesso = ProtecaoVigenteDasExigenciasDoProcesso
-            .Montar(processo, tiposVivos, catalogoDeFatos, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false));
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = preparo.Value!;
         ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
-        processo.AplicarProtecaoVigente(protecaoDasExigencias);
 
         // O gate precede a canonicalização, igual à publicação (ADR-0109 D5) — a
         // retificação também congela uma versão append-only e vinculante.
