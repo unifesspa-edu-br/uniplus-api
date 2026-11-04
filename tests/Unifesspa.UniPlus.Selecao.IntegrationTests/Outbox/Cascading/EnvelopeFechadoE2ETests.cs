@@ -545,7 +545,7 @@ public sealed class EnvelopeFechadoE2ETests
     /// <summary>
     /// Localiza, dentro do bloco <c>etapas</c> do envelope congelado, o item cujo <c>id</c>
     /// bate com <paramref name="etapaId"/> — casamento por identidade, nunca por posição no
-    /// array (<c>SnapshotPublicacaoCanonicalizer.SerializarEtapas</c> reordena por conteúdo
+    /// array (<c>SerializacaoDasEtapas.SerializarEtapas</c> reordena por conteúdo
     /// quando duas etapas empatam em <c>Ordem</c>).
     /// </summary>
     private static JsonObject LocalizarEtapaPorId(JsonNode configuracao, Guid etapaId) =>

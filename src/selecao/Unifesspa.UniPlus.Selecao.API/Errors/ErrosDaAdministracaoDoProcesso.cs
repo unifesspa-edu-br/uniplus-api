@@ -27,7 +27,7 @@ internal static class ErrosDaAdministracaoDoProcesso
         new("UnidadeAdministradoraSnapshot.TipoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.unidade_administradora_snapshot.tipo_obrigatorio", "Tipo da unidade administradora é obrigatório")),
         // Referência de cidade do Geo (ADR-0090) — usada tanto por
         // UnidadeAdministradoraSnapshot.Criar (Domain) quanto pelo decoder do envelope
-        // (EnvelopeCodec.LerIdentidadesUnidade): registrada uma única vez em
+        // (LeituraDoEdital.LerIdentidadesUnidade): registrada uma única vez em
         // KernelDomainErrorRegistration, não aqui — DomainErrorMappingRegistry agrega todo
         // IDomainErrorRegistration num único dicionário global por código, e um segundo registro
         // do mesmo CidadeReferenciaErrorCodes sobrescreveria silenciosamente o mapeamento de

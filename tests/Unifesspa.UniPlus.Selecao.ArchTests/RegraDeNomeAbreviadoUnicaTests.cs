@@ -39,7 +39,7 @@ public sealed class RegraDeNomeAbreviadoUnicaTests
             .ToArray();
 
         identificadoresConhecidos.Should().ContainSingle(
-            "SnapshotPublicacaoCanonicalizer.SerializarDivulgacao deriva a regra vigente " +
+            "SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao deriva a regra vigente " +
             "(RegrasDeNomeAbreviado.Vigente) em vez de reinjetar a regra que a versão congelou — " +
             "e essa derivação só é indistinguível da reinjeção enquanto existir UMA ÚNICA regra " +
             "conhecida (issue #563, D3). Se este teste falhou, uma segunda regra acabou de nascer: " +

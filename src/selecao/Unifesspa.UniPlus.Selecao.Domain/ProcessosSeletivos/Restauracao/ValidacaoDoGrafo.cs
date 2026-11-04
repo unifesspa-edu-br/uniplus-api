@@ -165,7 +165,7 @@ internal static class ValidacaoDoGrafo
 
         // A checagem ENEM×eliminação e a da falta em dia de prova do ENEM declarada no
         // máximo uma vez NÃO se repetem aqui: grafo.Classificacao chega já construído por
-        // ConfiguracaoClassificacao.Criar (via EnvelopeCodec.LerClassificacao) — se o
+        // ConfiguracaoClassificacao.Criar (via LeituraDaClassificacao.LerClassificacao) — se o
         // envelope violasse uma delas, a decodificação já teria falhado antes de
         // ValidarGrafo ser chamado.
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)

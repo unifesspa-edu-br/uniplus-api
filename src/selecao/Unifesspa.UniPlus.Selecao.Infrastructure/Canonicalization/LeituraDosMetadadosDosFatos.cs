@@ -26,7 +26,7 @@ using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.En
 internal static class LeituraDosMetadadosDosFatos
 {
     /// <summary>
-    /// Simétrico de <c>SnapshotPublicacaoCanonicalizer.SerializarMetadadosFatos</c>: array
+    /// Simétrico de <see cref="SerializacaoDosFatos.SerializarMetadadosFatos"/>: array
     /// ordenado por <c>codigo</c> (o encoder já ordena — este leitor não reordena, só
     /// decodifica item a item), chaves fechadas por item. Código duplicado no array é
     /// envelope malformado (o encoder nunca emite duas entradas para o mesmo fato). Dentro de

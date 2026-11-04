@@ -24,7 +24,7 @@ using Xunit;
 /// Duas armadilhas que a formulação óbvia cairia, nesta ordem: (1) canonicalizar duas vezes e
 /// comparar os blocos prova <b>determinismo</b>, não fidelidade — um encoder que ignorasse a
 /// configuração e sempre emitisse o default passaria nos dois lados; (2)
-/// <c>SnapshotPublicacaoCanonicalizer.SerializarDivulgacao</c> é <c>private</c>, então "recomputar
+/// <c>SerializacaoDaDivulgacaoEDaTaxa.SerializarDivulgacao</c> é <c>private</c>, então "recomputar
 /// com a mesma função" não é sequer possível — e se fosse, seria a primeira armadilha de novo. O
 /// esperado aqui é montado <b>à mão</b>, a partir dos valores que o teste gravou na configuração
 /// viva, serializado pelo mesmo perfil canônico, e comparado <b>byte a byte</b> com o bloco

@@ -89,7 +89,7 @@ internal static class LeituraDasCondicoes
     /// <summary>
     /// O predicado DNF: <see langword="null"/> na chave é "sem gatilho" (0
     /// cláusulas); do contrário, um array de cláusulas (OU), cada uma um array de
-    /// condições (E) — a forma espelha exatamente <c>SnapshotPublicacaoCanonicalizer.SerializarCondicaoGatilho</c>.
+    /// condições (E) — a forma espelha exatamente <see cref="SerializacaoDasExigencias.SerializarCondicaoGatilho"/>.
     /// A validação de forma de cada condição é <see cref="CondicaoGatilho.Criar"/>, a
     /// mesma factory que o caminho de comando usa — o decoder não revalida semântica
     /// (congelamento dos parâmetros na publicação, UNI-REQ-0019: um predicado congelado não é reinterpretado contra um vocabulário que pode

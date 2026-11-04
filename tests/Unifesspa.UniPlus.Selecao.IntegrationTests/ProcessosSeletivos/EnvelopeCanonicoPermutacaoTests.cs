@@ -50,7 +50,7 @@ using Xunit;
 /// <para>
 /// <c>documentosExigidos.exigencias</c> também fica FORA, por um motivo distinto dos dois acima: a
 /// chave PRIMÁRIA de ordenação é de negócio parcial — fase mais tipo de documento, ver
-/// <c>SnapshotPublicacaoCanonicalizer.SerializarExigencias</c> — não a identidade de origem nem a
+/// <c>SerializacaoDasExigencias.SerializarExigencias</c> — não a identidade de origem nem a
 /// chave de conteúdo; a chave de conteúdo só desempata o caso raro de duas exigências idênticas na
 /// mesma fase e no mesmo tipo. Como a chave primária independe de qualquer identidade técnica da
 /// linha, a ordem de entrada não tem como vazar para o envelope — não há permutação a provar aqui.

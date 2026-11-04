@@ -19,7 +19,7 @@ internal static class LeituraDaArvoreDeSatisfacao
 {
     /// <summary>
     /// A única chave nova. Cada item é uma raiz; a recursão desce por
-    /// <c>filhos</c>, mesmo formato de <c>SnapshotPublicacaoCanonicalizer.SerializarNo</c>.
+    /// <c>filhos</c>, mesmo formato de <see cref="SerializacaoDasExigencias.SerializarNo"/>.
     /// </summary>
     internal static List<NoExigencia> LerArvoreSatisfacao(
         LeitorEnvelope leitor, JsonObject payload, IReadOnlyDictionary<Guid, DocumentoExigido> exigenciasPorId)

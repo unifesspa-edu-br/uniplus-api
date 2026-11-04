@@ -25,7 +25,7 @@ using Xunit;
 /// <para>
 /// Cada teste de <c>CA-01</c> tem oráculo <b>independente</b> — a ordem esperada é escrita à
 /// mão a partir do primeiro byte UTF-8 em que os itens divergem, nunca calculada chamando o
-/// método privado que ordena (<c>SnapshotPublicacaoCanonicalizer.OrdenarPorConteudo</c>). A
+/// método privado que ordena (<c>EscritaCanonica.OrdenarPorConteudo</c>). A
 /// mesma asserção também serve de <c>CA-02</c> quando o teste reordena a entrada e exige os
 /// MESMOS bytes na saída — determinismo canônico, não ausência de semântica (essa vem da
 /// evidência de consumidor documentada no plano da issue, não de um teste de permutação).
