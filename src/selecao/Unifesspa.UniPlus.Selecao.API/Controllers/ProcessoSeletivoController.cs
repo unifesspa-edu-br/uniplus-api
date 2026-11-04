@@ -149,12 +149,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirEtapasCommand(id, etapas, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
@@ -195,7 +195,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
                     : [.. request.Opcoes.Select(static o => o is null ? null! : new OpcaoDeclaradaInput(o.Codigo, o.Rotulo))],
                 precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -221,13 +221,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirOfertaAtendimentoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -255,7 +255,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoComDistribuicaoVagasDto> resultado = await _commandBus.Send(
@@ -270,9 +270,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
     /// sessão, não há tag) — issue #1283.
     /// </summary>
     /// <remarks>
-    /// Diferente de <see cref="ResponderMutacao"/> (204 sempre, corpo vazio):
+    /// Diferente de <see cref="ProtocoloDeMutacao.ResponderMutacao"/> (204 sempre, corpo vazio):
     /// aqui o corpo nunca é vazio em caso de sucesso. Deliberadamente não
-    /// reaproveita <see cref="ResponderMutacao"/> nem estende
+    /// reaproveita <see cref="ProtocoloDeMutacao.ResponderMutacao"/> nem estende
     /// <see cref="MutacaoAceita"/> — esse tipo e esse helper são
     /// compartilhados por todos os outros <c>Definir*</c> do controller, que
     /// continuam em 204; mudar o shape deles quebraria os demais.
@@ -284,11 +284,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
             return resultado.ToActionResult(_mapper);
         }
 
-        if (resultado.Value!.ETag is { } etag)
-        {
-            Response.Headers.ETag = etag;
-        }
-
+        ProtocoloDeMutacao.EmitirETag(Response, resultado.Value!.ETag);
         return Ok(resultado.Value!.DistribuicaoVagas);
     }
 
@@ -395,12 +391,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirCriteriosDesempateCommand(id, criterios, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -426,13 +422,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirBonusRegionalCommand(id, request.Aplica, request.RegraCodigo, request.RegraVersao, request.Fator, request.Teto, request.FatoElegibilidadeCodigo, request.BaseLegalBonusRegionalId, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -458,13 +454,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirOpcoesDeCursoCommand(id, request.Numero, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -490,13 +486,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirTaxaInscricaoCommand(id, request.Cobra, request.Valor, request.Fundamentos, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -522,13 +518,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirConfiguracaoDivulgacaoCommand(id, request.CamposPublicos, request.Justificativa, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -554,13 +550,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirCascataRemanejamentoCommand(id, request.RegraCodigo, request.RegraVersao, request.FallbackCodigo, request.Destinos, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -587,7 +583,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
@@ -606,7 +602,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.EscalaNotaFinal,
                 precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -633,12 +629,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirCronogramaFasesCommand(id, fases, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -669,12 +665,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirDocumentosExigidosCommand(id, raizes, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -702,13 +698,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirIdentificadorLegivelCommand(id, request.IdentificadorLegivel, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -736,13 +732,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirLocalidadeCommand(id, request.CodigoIbge, request.Nome, request.Uf, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -767,13 +763,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirAlgoritmoContagemPrazoCommand(id, request.Codigo, request.Versao, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
@@ -794,13 +790,13 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirReferenciaTemporalFatosCommand(id, request.Tipo, request.Data, request.FaseId, precondicao),
             cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -829,12 +825,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new DefinirRegrasDerivacaoCommand(id, configuracoes, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -876,7 +872,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         Result resultado = await _commandBus.Send(
             new PublicarProcessoSeletivoCommand(
                 id, request.Numero, request.PeriodoInscricaoInicio, request.PeriodoInscricaoFim, request.DocumentoEditalId,
-                MapearAto(request.Ato), MapearAnexos(request.Anexos)),
+                MapeamentoDoAto.ParaDados(request.Ato), MapeamentoDoAto.ParaAnexos(request.Anexos)),
             cancellationToken);
         if (resultado.IsSuccess)
         {
@@ -884,85 +880,11 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
-        actionResult = await EnriquecerComPendenciasEstruturaisAsync(actionResult, id, cancellationToken)
+        actionResult = await EnriquecimentoDaPublicacao
+            .EnriquecerComPendenciasEstruturaisAsync(_queryBus, actionResult, id, cancellationToken)
             .ConfigureAwait(false);
-        return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Issue #1096: enriquece TODA recusa HTTP 422 da publicação com o checklist de
-    /// pendências — reconsulta <see cref="ObterConformidadeProcessoSeletivoQuery"/> (mesmo
-    /// <c>Domain.ProcessosSeletivos.Conformidade.ChecklistDeConformidade.AvaliarConformidade(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(ProcessoSeletivo))</c> por trás dos seis gates estruturais,
-    /// sem duplicar a regra nem manter lista paralela de códigos de erro no controller) e
-    /// anexa <c>Extensions["pendencias"]</c> quando o estado atual tiver item vermelho —
-    /// independentemente de qual gate produziu o 422 (CA-01/CA-02/CA-03/CA-04/CA-06). Quando
-    /// o checklist estiver 100% verde, a extensão é omitida — nunca <c>pendencias: []</c>
-    /// (CA-05/CA-07).
-    /// </summary>
-    private async Task<IActionResult> EnriquecerComPendenciasEstruturaisAsync(
-        IActionResult actionResult, Guid id, CancellationToken cancellationToken)
-    {
-        if (actionResult is not ObjectResult
-            {
-                StatusCode: StatusCodes.Status422UnprocessableEntity, Value: ProblemDetails problem,
-            })
-        {
-            return actionResult;
-        }
-
-        ConformidadeProcessoSeletivoDto? conformidade = await _queryBus
-            .Send(new ObterConformidadeProcessoSeletivoQuery(id), cancellationToken)
-            .ConfigureAwait(false);
-
-        // As pendências saem com a MESMA identidade que o checklist publica — quem recebeu o
-        // preview aprovado e depois este 422 compara código e dimensão, não frases. Levar só o
-        // texto obrigaria o cliente a manter uma tabela de mensagens para saber onde corrigir.
-        PendenciaEstruturalDto[] pendencias = conformidade?.Itens
-            .Where(item => !item.Ok)
-            .Select(item => new PendenciaEstruturalDto(item.Codigo, item.Dimensao, item.Mensagem))
-            .ToArray() ?? [];
-        if (pendencias.Length > 0)
-        {
-            problem.Extensions["pendencias"] = pendencias;
-        }
-
-        return actionResult;
-    }
-
-    /// <summary>
-    /// Story #853: enriquece o 422 de conformidade LEGAL insuficiente com as regras
-    /// reprovadas (código, descrição, base legal) — reconsulta
-    /// <see cref="ObterConformidadeLegalProcessoSeletivoQuery"/> para montar
-    /// <c>Extensions["obrigatoriedadesReprovadas"]</c>.
-    /// </summary>
-    private async Task<IActionResult> EnriquecerComObrigatoriedadesReprovadasAsync(
-        Result resultado,
-        IActionResult actionResult,
-        Guid id,
-        DateTimeOffset? periodoInscricaoInformado,
-        CancellationToken cancellationToken)
-    {
-        if (!resultado.HasErrorCode("ProcessoSeletivo.ConformidadeLegalInsuficiente")
-            || actionResult is not ObjectResult { Value: ProblemDetails problem })
-        {
-            return actionResult;
-        }
-
-        // A recusa que está sendo enriquecida é a que vale: se a reconsulta não chega a uma data de
-        // referência, o 422 sai sem a lista, nunca trocado pela falha da consulta auxiliar.
-        Result<ConformidadeLegalProcessoSeletivoDto> conformidade = await _queryBus
-            .Send(new ObterConformidadeLegalProcessoSeletivoQuery(id, PeriodoInscricaoInformado: periodoInscricaoInformado), cancellationToken)
-            .ConfigureAwait(false);
-        if (conformidade.IsSuccess)
-        {
-            problem.Extensions["obrigatoriedadesReprovadas"] = conformidade.Value!.Regras
-                .Where(regra => !regra.Aprovada)
-                .Select(regra => new { regra.RegraCodigo, regra.DescricaoHumana, regra.BaseLegal, regra.Motivo })
-                .ToArray();
-        }
-
-        return actionResult;
+        return await EnriquecimentoDaPublicacao.EnriquecerComObrigatoriedadesReprovadasAsync(
+            _queryBus, resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1006,8 +928,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.PeriodoInscricaoInicio,
                 request.PeriodoInscricaoFim,
                 request.DocumentoEditalId,
-                MapearAto(request.Ato),
-                Anexos: MapearAnexos(request.Anexos)),
+                MapeamentoDoAto.ParaDados(request.Ato),
+                Anexos: MapeamentoDoAto.ParaAnexos(request.Anexos)),
             cancellationToken);
 
         if (resultado.IsSuccess)
@@ -1016,8 +938,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
-        return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
+        return await EnriquecimentoDaPublicacao.EnriquecerComObrigatoriedadesReprovadasAsync(
+            _queryBus, resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1115,12 +1037,12 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
             new AlterarMotivoRetificacaoCommand(id, request.Motivo, precondicao), cancellationToken);
-        return ResponderMutacao(resultado);
+        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }
 
     /// <summary>
@@ -1148,7 +1070,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result resultado = await _commandBus.Send(
@@ -1189,7 +1111,7 @@ public sealed class ProcessoSeletivoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!TentarLerPrecondicao(ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
+        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
             return malformada!;
 
         Result resultado = await _commandBus.Send(
@@ -1199,9 +1121,9 @@ public sealed class ProcessoSeletivoController : ControllerBase
                 request.PeriodoInscricaoInicio,
                 request.PeriodoInscricaoFim,
                 request.DocumentoEditalId,
-                MapearAto(request.Ato),
+                MapeamentoDoAto.ParaDados(request.Ato),
                 precondicao,
-                MapearAnexos(request.Anexos)),
+                MapeamentoDoAto.ParaAnexos(request.Anexos)),
             cancellationToken);
 
         if (resultado.IsSuccess)
@@ -1210,8 +1132,8 @@ public sealed class ProcessoSeletivoController : ControllerBase
         }
 
         IActionResult actionResult = resultado.ToActionResult(_mapper);
-        return await EnriquecerComObrigatoriedadesReprovadasAsync(
-            resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
+        return await EnriquecimentoDaPublicacao.EnriquecerComObrigatoriedadesReprovadasAsync(
+            _queryBus, resultado, actionResult, id, request.PeriodoInscricaoInicio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1293,73 +1215,6 @@ public sealed class ProcessoSeletivoController : ControllerBase
             : Ok(conformidade.Value!);
     }
 
-    // O item nulo segue para o validator, que o recusa com 4xx — desreferenciar aqui responderia
-    // 500 antes de o comando existir.
-    private static List<AnexoSolicitadoDoEdital>? MapearAnexos(IReadOnlyList<AnexoDoEditalRequest>? anexos) =>
-        anexos?.Select(static a => a is null ? null! : new AnexoSolicitadoDoEdital(a.DocumentoId, a.Nome)).ToList();
-
-    /// <summary>
-    /// Resolve o snapshot congelado vigente do processo num instante (congelamento dos parâmetros na publicação, UNI-REQ-0019,
-    /// ADR-0075/0076/0104): a VERSÃO da configuração de maior
-    /// <c>vigente_a_partir_de</c> ≤ o instante, desempatada pelo número da
-    /// versão. Quem ordena é o relógio do sistema, não a data que o documento
-    /// declara. Quando <paramref name="instante"/> é omitido, usa o relógio do
-    /// servidor (ADR-0068). É o contrato de LEITURA que o runtime e os
-    /// incrementos downstream consomem — a configuração congelada, não a viva.
-    /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há versão vigente ≤ o
-    /// instante; 404 quando o processo não existe — nunca retorno silencioso.
-    /// </summary>
-    private static DadosDoAto MapearAto(DadosDoAtoRequest ato)
-    {
-        ArgumentNullException.ThrowIfNull(ato);
-        return new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataPublicacao, ato.Assinante, ato.TipoAtoCodigo);
-    }
-
-    /// <summary>
-    /// Decodifica o <c>If-Match</c> — <b>só a sintaxe</b> (ADR-0110 D5). Se ele é
-    /// <b>obrigatório</b>, e se ele <b>casa</b>, quem decide é o handler, sob o lock: a
-    /// obrigatoriedade depende de haver sessão editorial aberta, e o transporte não carrega
-    /// o agregado.
-    /// </summary>
-    private bool TentarLerPrecondicao(string? ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada)
-    {
-        Result<PrecondicaoIfMatch> analise = IfMatchHeader.Analisar(ifMatch);
-        if (analise.IsFailure)
-        {
-            precondicao = PrecondicaoIfMatch.Ausente;
-            malformada = analise.ToActionResult(_mapper);
-            return false;
-        }
-
-        precondicao = analise.Value!;
-        malformada = null;
-        return true;
-    }
-
-    /// <summary>
-    /// 204 com o <c>ETag</c> <b>novo</b> quando a mutação correu sob sessão editorial; 204
-    /// nu quando o processo está em rascunho (não há sessão, não há tag).
-    /// </summary>
-    /// <remarks>
-    /// Devolver o tag novo é o que permite ao cliente encadear a próxima edição sem um
-    /// <c>GET</c> no meio — a revisão acabou de ser incrementada, e o tag que ele tinha em
-    /// mãos já não vale.
-    /// </remarks>
-    private IActionResult ResponderMutacao(Result<MutacaoAceita> resultado)
-    {
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        if (resultado.Value!.ETag is { } etag)
-        {
-            Response.Headers.ETag = etag;
-        }
-
-        return NoContent();
-    }
-
     /// <summary>
     /// Devolve o rascunho da publicação do operador corrente — o bloco do ato que ele já
     /// transcreveu e ainda não publicou.
@@ -1436,6 +1291,17 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
     }
 
+    /// <summary>
+    /// Resolve o snapshot congelado vigente do processo num instante (congelamento dos parâmetros na publicação, UNI-REQ-0019,
+    /// ADR-0075/0076/0104): a VERSÃO da configuração de maior
+    /// <c>vigente_a_partir_de</c> ≤ o instante, desempatada pelo número da
+    /// versão. Quem ordena é o relógio do sistema, não a data que o documento
+    /// declara. Quando <paramref name="instante"/> é omitido, usa o relógio do
+    /// servidor (ADR-0068). É o contrato de LEITURA que o runtime e os
+    /// incrementos downstream consomem — a configuração congelada, não a viva.
+    /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há versão vigente ≤ o
+    /// instante; 404 quando o processo não existe — nunca retorno silencioso.
+    /// </summary>
     [AllowAnonymous]
     [ExigeLeituraDoProcesso]
     [HttpGet("{id:guid}/snapshot-vigente")]
