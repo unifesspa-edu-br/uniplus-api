@@ -7,13 +7,11 @@ using Application.DTOs;
 using Application.Queries.ProcessosSeletivos;
 
 using Contracts.Requests;
-using Contracts.Responses;
 
 using Http;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -28,23 +26,25 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Configuração do Processo Seletivo (Story #758, UNI-REQ-0014/0015): o
-/// administrador cria o processo em rascunho e monta a configuração sobre o
-/// agregado-raiz — etapas pontuadas, oferta de atendimento especializado,
-/// distribuição de vagas (Story #773), bônus regional e critérios de
-/// desempate (Story #774) e classificação (Story #775, 15º bloco canônico),
-/// estes por referência ao catálogo de regras tipadas versionadas
-/// (<c>rol_de_regras</c>, Story #772). O <c>Edital</c> não é criado
-/// diretamente — é o documento emitido pelo ato de publicação
-/// (<see cref="Publicar"/>, Story #759 T4 #785).
+/// Cria, lista e lê o processo seletivo. O administrador cria o processo em rascunho e monta a
+/// configuração pelas demais rotas de <c>processos-seletivos</c>, que ficam em controllers próprios
+/// da mesma tag.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Cada ação de configuração exige a permissão da sua operação na unidade dona do processo
+/// (<c>ExigePermissaoNoProcesso</c>), decidida pela concessão e não pelo papel no token.
+/// <c>[Authorize]</c> mantém anônimo quem não se autenticou, porque não há fallback policy.
+/// </para>
+/// <para>
+/// A leitura do processo é aberta depois da publicação e restrita a quem configura enquanto é
+/// rascunho (<c>ExigeLeituraDoProcesso</c>, anônima). A listagem não tem processo para decidir:
+/// devolve os processos publicados e os rascunhos das unidades em que a pessoa configura.
+/// </para>
+/// </remarks>
 [ApiController]
 [Route("processos-seletivos")]
-// Configuração administrativa: cada ação exige a permissão da sua operação na unidade dona do processo
-// (ExigePermissaoNoProcesso), decidida pela concessão e não pelo papel no token. [Authorize] mantém anônimo
-// quem não se autenticou, porque não há fallback policy. A leitura do processo é aberta depois da publicação e
-// restrita a quem configura enquanto é rascunho (ExigeLeituraDoProcesso, anônima). A listagem não tem processo
-// para decidir: devolve os processos publicados e os rascunhos das unidades em que a pessoa configura.
+[Tags("ProcessoSeletivo")]
 [Authorize]
 [SuppressMessage(
     "Performance",
@@ -1213,113 +1213,5 @@ public sealed class ProcessoSeletivoController : ControllerBase
         return conformidade.IsFailure
             ? conformidade.ToActionResult(_mapper)
             : Ok(conformidade.Value!);
-    }
-
-    /// <summary>
-    /// Devolve o rascunho da publicação do operador corrente — o bloco do ato que ele já
-    /// transcreveu e ainda não publicou.
-    /// </summary>
-    /// <remarks>
-    /// 404 quando não há rascunho, inclusive quando o que havia já venceu. É a leitura que
-    /// cobra o prazo: sem tarefa recorrente varrendo a tabela, quem lê é quem descarta.
-    /// </remarks>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
-    [HttpGet("{id:guid}/rascunho-da-publicacao")]
-    [VendorMediaType(Resource = "rascunho-da-publicacao", Versions = [1])]
-    [ProducesResponseType(typeof(RascunhoDaPublicacaoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> ObterRascunhoDaPublicacao(Guid id, CancellationToken cancellationToken)
-    {
-        RascunhoDaPublicacaoDto? rascunho = await _queryBus.Send(
-            new ObterRascunhoDaPublicacaoQuery(id), cancellationToken);
-        return rascunho is null ? NotFound() : Ok(rascunho);
-    }
-
-    /// <summary>
-    /// Guarda o rascunho da publicação do operador corrente, substituindo por inteiro o que
-    /// houvesse antes.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Sem <c>If-Match</c>, e isso não é exceção ao padrão das demais rotas de escrita.</b> A
-    /// precondição que elas exigem é da <b>sessão editorial</b> de retificação, e vale porque
-    /// elas alteram a configuração congelada de um certame publicado. O rascunho não é
-    /// configuração: não entra no envelope, é privado de quem o escreve e existe justamente
-    /// enquanto o certame é preparado. Exigir dele o ETag da sessão acoplaria um bloco de notas
-    /// à concorrência editorial do certame e, durante uma retificação, impediria de salvá-lo.
-    /// </para>
-    /// <para>
-    /// O corpo não é validado campo a campo de propósito: rascunho de formulário pela metade é
-    /// o caso de uso. A validação forte continua no ato de publicar.
-    /// </para>
-    /// </remarks>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
-    [HttpPut("{id:guid}/rascunho-da-publicacao")]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SalvarRascunhoDaPublicacao(
-        Guid id,
-        [FromBody] SalvarRascunhoDaPublicacaoRequest request,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        Result resultado = await _commandBus.Send(
-            new SalvarRascunhoDaPublicacaoCommand(id, request.Versao, request.Conteudo), cancellationToken);
-        return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
-    }
-
-    /// <summary>
-    /// Joga fora o rascunho da publicação do operador corrente.
-    /// </summary>
-    /// <remarks>
-    /// Idempotente: descartar o que não existe é 204, porque o pedido era que não houvesse
-    /// rascunho — e não há.
-    /// </remarks>
-    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar)]
-    [HttpDelete("{id:guid}/rascunho-da-publicacao")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> DescartarRascunhoDaPublicacao(Guid id, CancellationToken cancellationToken)
-    {
-        Result resultado = await _commandBus.Send(
-            new DescartarRascunhoDaPublicacaoCommand(id), cancellationToken);
-        return resultado.IsFailure ? resultado.ToActionResult(_mapper) : NoContent();
-    }
-
-    /// <summary>
-    /// Resolve o snapshot congelado vigente do processo num instante (congelamento dos parâmetros na publicação, UNI-REQ-0019,
-    /// ADR-0075/0076/0104): a VERSÃO da configuração de maior
-    /// <c>vigente_a_partir_de</c> ≤ o instante, desempatada pelo número da
-    /// versão. Quem ordena é o relógio do sistema, não a data que o documento
-    /// declara. Quando <paramref name="instante"/> é omitido, usa o relógio do
-    /// servidor (ADR-0068). É o contrato de LEITURA que o runtime e os
-    /// incrementos downstream consomem — a configuração congelada, não a viva.
-    /// 422 (<c>Snapshot.VigenteAusente</c>) quando não há versão vigente ≤ o
-    /// instante; 404 quando o processo não existe — nunca retorno silencioso.
-    /// </summary>
-    [AllowAnonymous]
-    [ExigeLeituraDoProcesso]
-    [HttpGet("{id:guid}/snapshot-vigente")]
-    [VendorMediaType(Resource = "snapshot-vigente-processo-seletivo", Versions = [1])]
-    [ProducesResponseType(typeof(SnapshotVigenteDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> ObterSnapshotVigente(
-        Guid id,
-        [FromQuery] DateTimeOffset? instante,
-        CancellationToken cancellationToken)
-    {
-        Result<SnapshotVigenteDto> resultado = await _queryBus
-            .Send(new LerSnapshotVigenteQuery(id, instante), cancellationToken)
-            .ConfigureAwait(false);
-
-        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 }
