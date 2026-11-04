@@ -24,7 +24,7 @@ using LinhaDoPredicado = (int Clausula, string Fato, Unifesspa.UniPlus.Regras.En
 internal static class LeituraDaDerivacao
 {
     /// <summary>
-    /// As regras de derivação (§7.4) — reconstruídas nos três níveis por
+    /// As regras de derivação, reconstruídas nos três níveis por
     /// <see cref="ConfiguracaoDerivacaoFato.Criar"/>, <see cref="RegraDerivacaoConfigurada.Criar"/> e
     /// <see cref="CondicaoRegraDerivacao.Criar"/> (forma revalidada; Ids novos). A regra âncora tem
     /// <c>quando</c> nulo.

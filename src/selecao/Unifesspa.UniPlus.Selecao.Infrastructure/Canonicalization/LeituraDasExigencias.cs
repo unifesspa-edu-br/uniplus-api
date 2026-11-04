@@ -29,16 +29,9 @@ internal static class LeituraDasExigencias
     ];
 
     /// <summary>
-    /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas nesta mesma
-    /// passagem. Desde o achado de revisão que acrescentou <c>id</c> ao bloco
-    /// <c>cronogramaFases</c> (<see cref="LeituraDoCronograma.LerCronogramaFases"/>,
-    /// parâmetro <c>comId</c>), <c>FaseCronograma.Id</c> é congelado e a checagem SERIA
-    /// possível — mas continua redundante: a mesma razão pela qual
-    /// <see cref="ReferenciaTemporalFatos.FaseId"/> (<see cref="LeituraDosFatos.LerReferenciaTemporalFatosPolitica"/>)
-    /// também não é validado aqui. A resolução real acontece no domínio
-    /// (<see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>/<c>ResolverDataReferenciaFatos</c>),
-    /// que agora enxerga o MESMO Id que a exigência/política referenciam — não um Id
-    /// regenerado a cada decodificação.
+    /// Não valida <c>exigidoNaFaseId</c> contra as fases decodificadas na mesma passagem: a checagem seria
+    /// redundante, como a de <see cref="ReferenciaTemporalFatos.FaseId"/>. A resolução acontece no domínio, ao
+    /// restaurar a configuração, que enxerga o mesmo Id congelado que a exigência e a política referenciam.
     /// </summary>
     internal static IReadOnlyList<DocumentoExigido> LerExigencias(LeitorEnvelope leitor, JsonObject bloco)
     {

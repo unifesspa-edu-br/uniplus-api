@@ -23,11 +23,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// sobe sem manter o codec anterior, e nenhum código legado é mantido.
 /// </summary>
 /// <remarks>
-/// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva —
-/// e, sendo o único codec, os dois nunca podem divergir. <c>Decodificar</c> reconstrói o
-/// envelope pelos leitores de bloco (as classes <c>Leitura*</c>, uma por assunto)
-///) e resolve <c>arvoreSatisfacao</c> contra as exigências
-/// já lidas, por Id, sem duplicá-las.
+/// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva, e, sendo o único
+/// codec, os dois nunca podem divergir. <c>Decodificar</c> lê os blocos pelas classes <c>Leitura*</c>, uma por
+/// assunto, e confere a coerência entre eles antes de reidratar.
 /// </remarks>
 public sealed class EnvelopeCodec : IEnvelopeCodec
 {

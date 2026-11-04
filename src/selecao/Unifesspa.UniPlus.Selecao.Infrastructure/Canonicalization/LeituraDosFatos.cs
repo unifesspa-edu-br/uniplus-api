@@ -31,7 +31,7 @@ internal static class LeituraDosFatos
     ];
 
     /// <summary>
-    /// A POLÍTICA crua (B-03) — o insumo de <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>.
+    /// A política de referência temporal como foi congelada, insumo de <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>.
     /// </summary>
     internal static ReferenciaTemporalFatos? LerReferenciaTemporalFatosPolitica(LeitorEnvelope leitor, JsonObject bloco)
     {
@@ -61,7 +61,7 @@ internal static class LeituraDosFatos
     }
 
     /// <summary>
-    /// Os fatos coletados (§7.4) — reconstruídos por <see cref="FatoColetado.Criar"/>
+    /// Os fatos coletados, reconstruídos por <see cref="FatoColetado.Criar"/>
     /// (que revalida a forma: código, ordem, auto-referência), Ids novos (não são congelados no
     /// envelope, diferente de <c>etapa.Id</c>). A pré-condição é a mesma forma DNF do gatilho.
     /// <c>ValoresSelecionaveis</c> (UNI-REQ-0072) é o dicionário reidratado —

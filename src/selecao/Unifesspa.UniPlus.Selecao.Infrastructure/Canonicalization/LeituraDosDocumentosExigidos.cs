@@ -21,10 +21,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class LeituraDosDocumentosExigidos
 {
     /// <summary>
-    ///: a orquestração do bloco inteiro — <c>exigencias</c>, <c>obrigatoriedades</c>
-    /// (e o predicado que as condiciona), <c>referenciaTemporalFatos</c> e a chave
-    /// <c>metadadosFatos</c> (congelamento dos parâmetros na publicação, UNI-REQ-0019). O bloco de topo <c>arvoreSatisfacao</c> é
-    /// IRMÃO deste, não mudança dele — por isso não aparece aqui.
+    /// Orquestra o bloco inteiro: <c>exigencias</c>, <c>obrigatoriedades</c> (e o predicado que as condiciona),
+    /// <c>referenciaTemporalFatos</c> e <c>metadadosFatos</c>. O bloco de topo <c>arvoreSatisfacao</c> é irmão
+    /// deste, e por isso não é lido aqui.
     /// </summary>
     internal static (
         ResultadoConformidade? Conformidade,

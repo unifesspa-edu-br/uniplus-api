@@ -53,9 +53,9 @@ internal static class LeituraDosPrazosDeRecurso
 
     /// <summary>
     /// A regra de recurso da fase (0..1 — a PRESENÇA do bloco é o que faz a fase admitir
-    /// recurso, §3.6). O vocabulário de <c>regra.codigo</c> é fechado a
+    /// recurso). O vocabulário de <c>regra.codigo</c> é fechado a
     /// <see cref="RegraPrazoRecursoCodigo.AncoradoEmAto"/> — a única variante que
-    /// <see cref="RegraRecursoFase"/> admite (CA-02).
+    /// <see cref="RegraRecursoFase"/> admite.
     /// </summary>
     /// <remarks>
     /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>args</c>, e não campo de
@@ -97,10 +97,9 @@ internal static class LeituraDosPrazosDeRecurso
     /// Lê os args do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
     /// </summary>
     /// <remarks>
-    /// Um lugar só porque fase e etapa carregam o MESMO value object, e enquanto cada uma lia o
-    /// seu, a da etapa lia menos: ela reconstruía os args com as quatro suspensividades nulas,
-    /// de modo que o que o edital prometeu ao candidato voltava vazio do envelope sem que nada
-    /// acusasse.
+    /// Um lugar só porque fase e etapa carregam o mesmo value object: lê-lo em dois lugares deixaria um deles
+    /// reconstruir os args com as suspensividades nulas, e o que o edital prometeu ao candidato voltaria vazio
+    /// do envelope sem que nada acusasse.
     /// </remarks>
     internal static ArgsRegraPrazoRecurso? LerArgsDePrazoDeRecurso(
         LeitorEnvelope leitor,

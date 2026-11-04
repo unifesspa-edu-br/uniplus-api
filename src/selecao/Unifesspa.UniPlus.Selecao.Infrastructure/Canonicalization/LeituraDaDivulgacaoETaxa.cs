@@ -22,11 +22,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class LeituraDaDivulgacaoETaxa
 {
     /// <summary>
-    /// Divulgação pública do certame (UNI-REQ-0050) — forma fechada, no molde de
-    /// <see cref="LerFormulario"/>. <see cref="LeitorEnvelope.ExigirChaves"/> roda ANTES de
-    /// qualquer retorno antecipado: é o que fecha a gramática do bloco agora que a guarda global
-    /// de stub saiu — o antigo <c>{"status":"nao_construido"}</c> é recusado exatamente aqui, por
-    /// faltarem as três chaves e sobrar <c>status</c>.
+    /// Divulgação pública do certame (UNI-REQ-0050), em forma fechada. A exigência das chaves roda antes de
+    /// qualquer retorno antecipado, o que fecha a gramática do bloco: chave desconhecida ou ausente é recusada.
     /// </summary>
     /// <remarks>
     /// O decodificador é tão estrito quanto o encoder: vocabulário fechado, piso
@@ -39,7 +36,7 @@ internal static class LeituraDaDivulgacaoETaxa
     /// nunca um <see cref="StringComparer.Ordinal"/> reimplementado), a bicondicional entre
     /// <c>nome_abreviado</c> e <c>regraNomeAbreviado</c>, o identificador de regra conhecido, e a
     /// forma canônica (Trim + NFC) da justificativa. Um bloco cujo conteúdo é exatamente o
-    /// default minimizado (D5) reidrata como <see langword="null"/> — a restauração não fabrica
+    /// default minimizado reidrata como <see langword="null"/> — a restauração não fabrica
     /// entidade para um processo que nunca configurou divulgação.
     /// </remarks>
     internal static ConfiguracaoDivulgacao? LerDivulgacao(LeitorEnvelope leitor, JsonObject payload)
@@ -121,14 +118,10 @@ internal static class LeituraDaDivulgacaoETaxa
     }
 
     /// <summary>
-    /// Taxa de inscrição e isenção — forma do bloco no molde do toggle
-    /// <c>"presente"</c> de <see cref="LeituraDoBonusEAtendimento.LerBonusRegional"/>, mas o desfecho
-    /// <c>presente:false</c> nunca é um estado válido AQUI: CA-01 recusa <see cref="Domain.Entities.ProcessoSeletivo.Publicar"/>
-    /// quando <see cref="Domain.Entities.ProcessoSeletivo.ConfiguracaoTaxaInscricao"/> é
-    /// <see langword="null"/>, então nenhum envelope que passou pelo gate consegue congelar
-    /// <c>presente:false</c> — só chega aqui bytes adulterados ou de um caminho que nunca deveria
-    /// ter sido aceito. Decodificar como "sem taxa declarada" repetiria, na leitura, o próprio
-    /// default silencioso que a escrita existe para banir.
+    /// Taxa de inscrição e isenção. Como o bloco de bônus regional, declara <c>presente</c>, mas
+    /// <c>presente:false</c> nunca é um estado válido aqui: a publicação recusa a configuração sem taxa
+    /// declarada, então nenhum envelope que passou por ela congela essa forma. Decodificá-la como "sem taxa
+    /// declarada" repetiria, na leitura, o default silencioso que a escrita existe para banir.
     /// </summary>
     /// <remarks>
     /// O decodificador é tão estrito quanto o encoder (mesmo raciocínio de
