@@ -34,9 +34,9 @@ internal static class CoerenciaEntreBlocos
             return Result<EnvelopeReidratado>.Failure(incoerencia);
         }
 
-        IReadOnlyList<FatoColetado> itensEDeGrupos = [.. blocos.FatosColetados, .. blocos.GruposColetados.SelectMany(static g => g.Subitens)];
+        IReadOnlyList<FatoColetado> itensEDeGrupos = [.. blocos.Coleta.FatosColetados, .. blocos.Coleta.GruposColetados.SelectMany(static g => g.Subitens)];
         Result<IReadOnlyList<OpcaoDeclaradaFato>> opcoesDeclaradas =
-            LeituraDosValoresDeDominio.ReconstruirOpcoesDeclaradas(itensEDeGrupos, blocos.ValoresSelecionaveis);
+            LeituraDosValoresDeDominio.ReconstruirOpcoesDeclaradas(itensEDeGrupos, blocos.Coleta.ValoresSelecionaveis);
         return opcoesDeclaradas.IsFailure
             ? Result<EnvelopeReidratado>.Failure(opcoesDeclaradas.Error!)
             : Result<EnvelopeReidratado>.Success(Montar(blocos, todosOsNos, opcoesDeclaradas.Value!));
@@ -45,15 +45,15 @@ internal static class CoerenciaEntreBlocos
     private static DomainError? PrimeiraIncoerencia(
         BlocosDoEnvelope blocos, VersaoConfiguracao versao, JsonObject payload, IReadOnlyList<NoExigencia> todosOsNos)
     {
-        return ItensForaDosFormularios(blocos.Formularios, blocos.FatosColetados, blocos.GruposColetados)
-            ?? LeituraDaRetificacao.VerificarCoerenciaComAVersao(versao, blocos.HashDocumento, blocos.Retificacao)
+        return ItensForaDosFormularios(blocos.Documentos.Formularios, blocos.Coleta.FatosColetados, blocos.Coleta.GruposColetados)
+            ?? LeituraDaRetificacao.VerificarCoerenciaComAVersao(versao, blocos.Configuracao.HashDocumento, blocos.Retificacao)
             ?? VinculoOuRepeticaoInvalidos(blocos, todosOsNos)
             ?? LeituraDaDerivacao.ValidarBlocoDeFatosEDerivacao(
-                new BlocoDeFatosEDerivacao(blocos.FatosColetados, blocos.GruposColetados, blocos.RegrasDerivacao, blocos.VersaoInterpretador),
-                blocos.DocumentosExigidos,
-                blocos.Formularios,
-                blocos.TermosExigidos,
-                blocos.Distribuicao,
+                new BlocoDeFatosEDerivacao(blocos.Coleta.FatosColetados, blocos.Coleta.GruposColetados, blocos.Coleta.RegrasDerivacao, blocos.Coleta.VersaoInterpretador),
+                blocos.Documentos.DocumentosExigidos,
+                blocos.Documentos.Formularios,
+                blocos.Documentos.TermosExigidos,
+                blocos.Configuracao.Distribuicao,
                 payload)
             ?? CitacoesOuEnemInvalidos(blocos);
     }
@@ -63,25 +63,25 @@ internal static class CoerenciaEntreBlocos
     // da escrita. Sem elas, uma exigência apontando para fase ou etapa que o envelope não repõe atravessa a
     // leitura e morre na chave estrangeira.
     private static DomainError? VinculoOuRepeticaoInvalidos(BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> todosOsNos) =>
-        ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(blocos.DocumentosExigidos, blocos.CronogramaFases, blocos.Etapas)
-        ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todosOsNos, blocos.GruposColetados);
+        ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(blocos.Documentos.DocumentosExigidos, blocos.Configuracao.CronogramaFases, blocos.Configuracao.Etapas)
+        ?? ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todosOsNos, blocos.Coleta.GruposColetados);
 
     // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece, pela mesma
     // conferência da escrita e da publicação, que inclui os fatos que a oferta deriva.
     private static DomainError? CitacoesOuEnemInvalidos(BlocosDoEnvelope blocos)
     {
         if (Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.CitacaoInvalidaNosFormularios(
-                blocos.Formularios,
-                blocos.FatosColetados,
-                blocos.TermosExigidos,
-                DerivacoesDaOferta.Efetivas(blocos.RegrasDerivacao, blocos.Distribuicao),
-                blocos.GruposColetados) is { } citacaoInvalida)
+                blocos.Documentos.Formularios,
+                blocos.Coleta.FatosColetados,
+                blocos.Documentos.TermosExigidos,
+                DerivacoesDaOferta.Efetivas(blocos.Coleta.RegrasDerivacao, blocos.Configuracao.Distribuicao),
+                blocos.Coleta.GruposColetados) is { } citacaoInvalida)
         {
             return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}");
         }
 
         return Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
-                [.. blocos.FatosColetados, .. blocos.GruposColetados.SelectMany(static g => g.Subitens)], blocos.Classificacao) is { } edicaoSemEnem
+                [.. blocos.Coleta.FatosColetados, .. blocos.Coleta.GruposColetados.SelectMany(static g => g.Subitens)], blocos.Configuracao.Classificacao) is { } edicaoSemEnem
             ? new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {edicaoSemEnem.Message}")
             : null;
     }
@@ -90,23 +90,23 @@ internal static class CoerenciaEntreBlocos
         BlocosDoEnvelope blocos, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<OpcaoDeclaradaFato> opcoesDeclaradas)
     {
         GrafoConfiguracao grafo = new(
-            blocos.Etapas, blocos.Atendimento!, blocos.Distribuicao, blocos.Bonus, blocos.Desempate, blocos.Classificacao!, blocos.CronogramaFases,
-            blocos.DocumentosExigidos, todosOsNos, blocos.ReferenciaTemporalFatos, blocos.FatosColetados, blocos.RegrasDerivacao,
-            cascataRemanejamento: blocos.Cascata,
-            formularios: blocos.Formularios,
-            termosExigidos: blocos.TermosExigidos,
-            configuracaoDivulgacao: blocos.Divulgacao,
-            configuracaoTaxaInscricao: blocos.TaxaInscricao,
-            localidade: blocos.Localidade,
-            numeroDeOpcoesDeCurso: blocos.NumeroDeOpcoesDeCurso,
-            algoritmoContagemPrazo: blocos.AlgoritmoContagemPrazo,
-            identificadorLegivel: blocos.IdentificadorLegivel,
+            blocos.Configuracao.Etapas, blocos.Configuracao.Atendimento!, blocos.Configuracao.Distribuicao, blocos.Configuracao.Bonus, blocos.Configuracao.Desempate, blocos.Configuracao.Classificacao!, blocos.Configuracao.CronogramaFases,
+            blocos.Documentos.DocumentosExigidos, todosOsNos, blocos.Documentos.ReferenciaTemporalFatos, blocos.Coleta.FatosColetados, blocos.Coleta.RegrasDerivacao,
+            cascataRemanejamento: blocos.Configuracao.Cascata,
+            formularios: blocos.Documentos.Formularios,
+            termosExigidos: blocos.Documentos.TermosExigidos,
+            configuracaoDivulgacao: blocos.Publicacao.Divulgacao,
+            configuracaoTaxaInscricao: blocos.Publicacao.TaxaInscricao,
+            localidade: blocos.Publicacao.Localidade,
+            numeroDeOpcoesDeCurso: blocos.Publicacao.NumeroDeOpcoesDeCurso,
+            algoritmoContagemPrazo: blocos.Publicacao.AlgoritmoContagemPrazo,
+            identificadorLegivel: blocos.Publicacao.IdentificadorLegivel,
             opcoesDeclaradas: opcoesDeclaradas,
-            gruposColetados: blocos.GruposColetados);
+            gruposColetados: blocos.Coleta.GruposColetados);
         return new EnvelopeReidratado(
-            grafo, blocos.Dados!, blocos.HashDocumento, blocos.FusoHorario!, blocos.Retificacao, blocos.Conformidade,
-            blocos.MetadadosFatosCongelados, blocos.ValoresSelecionaveis, blocos.CalendarioDiasUteis, blocos.AgregadosDosGrupos,
-            blocos.ApresentacaoDosPressupostos, blocos.TiposDeAtoCongelados, blocos.FatosDerivadosCongelados);
+            grafo, blocos.Configuracao.Dados!, blocos.Configuracao.HashDocumento, blocos.Publicacao.FusoHorario!, blocos.Retificacao, blocos.Documentos.Conformidade,
+            blocos.Documentos.MetadadosFatosCongelados, blocos.Coleta.ValoresSelecionaveis, blocos.Publicacao.CalendarioDiasUteis, blocos.Coleta.AgregadosDosGrupos,
+            blocos.Coleta.ApresentacaoDosPressupostos, blocos.Coleta.TiposDeAtoCongelados, blocos.Coleta.FatosDerivadosCongelados);
     }
 
     /// <summary>

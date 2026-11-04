@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 using System.Text.Json.Nodes;
 
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -21,76 +22,129 @@ internal static class LeituraDoEnvelope
     /// <returns>Os blocos lidos, ou nulo quando a leitura falhou.</returns>
     internal static BlocosDoEnvelope? Ler(LeitorEnvelope leitor, JsonObject payload, bool temRetificacao)
     {
-        BlocosDoEnvelope blocos = new();
-        LerEditalEClassificacao(leitor, payload, blocos);
-        LerExigenciasEFormularios(leitor, payload, blocos);
-        blocos.Retificacao = temRetificacao ? LeituraDaRetificacao.LerRetificacao(leitor, payload) : null;
+        BlocosDaConfiguracao configuracao = LerConfiguracao(leitor, payload);
+        BlocosDosDocumentos documentos = LerDocumentos(leitor, payload);
+        BlocosDaPublicacao publicacao = LerPublicacao(leitor, payload, configuracao);
+        RetificacaoInfo? retificacao = temRetificacao ? LeituraDaRetificacao.LerRetificacao(leitor, payload) : null;
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Dictionary<Guid, DocumentoExigido> exigenciasPorId = IndexarExigenciasPorId(leitor, blocos.DocumentosExigidos);
+        Dictionary<Guid, DocumentoExigido> exigenciasPorId = IndexarExigenciasPorId(leitor, documentos.DocumentosExigidos);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        blocos.Raizes = LeituraDaArvoreDeSatisfacao.LerArvoreSatisfacao(leitor, payload, exigenciasPorId);
+        IReadOnlyList<NoExigencia> raizes = LeituraDaArvoreDeSatisfacao.LerArvoreSatisfacao(leitor, payload, exigenciasPorId);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        LerFatosEDerivacao(leitor, payload, blocos);
-        return leitor.Falhou ? null : blocos;
+        BlocosDeColeta coleta = LerColeta(leitor, payload, configuracao);
+        return leitor.Falhou ? null : new BlocosDoEnvelope(configuracao, documentos, publicacao, retificacao, raizes, coleta);
     }
 
-    private static void LerEditalEClassificacao(LeitorEnvelope leitor, JsonObject payload, BlocosDoEnvelope blocos)
+    private static BlocosDaConfiguracao LerConfiguracao(LeitorEnvelope leitor, JsonObject payload)
     {
         LeituraDoEdital.LerTipoProcesso(leitor, payload);
 
-        blocos.Dados = LeituraDoEdital.LerDadosEdital(leitor, payload, out string hashDocumento);
-        blocos.HashDocumento = hashDocumento;
-        blocos.Etapas = LeituraDasEtapas.LerEtapas(leitor, payload);
-        blocos.Distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload);
-        blocos.Atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload);
-        blocos.Bonus = LeituraDoBonusEAtendimento.LerBonusRegional(leitor, payload);
-        blocos.Cascata = LeituraDaCascata.LerCascataRemanejamento(leitor, payload);
-        blocos.Desempate = LeituraDoDesempate.LerCriteriosDesempate(leitor, payload);
-        blocos.Classificacao = LeituraDaClassificacao.LerClassificacao(leitor, payload);
-        blocos.CronogramaFases = LeituraDoCronograma.LerCronogramaFases(leitor, payload, comId: true);
+        DadosEdital? dados = LeituraDoEdital.LerDadosEdital(leitor, payload, out string hashDocumento);
+        IReadOnlyList<EtapaProcesso> etapas = LeituraDasEtapas.LerEtapas(leitor, payload);
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload);
+        OfertaAtendimentoEspecializado? atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload);
+        ConfiguracaoBonusRegional? bonus = LeituraDoBonusEAtendimento.LerBonusRegional(leitor, payload);
+        ConfiguracaoCascataRemanejamento? cascata = LeituraDaCascata.LerCascataRemanejamento(leitor, payload);
+        IReadOnlyList<CriterioDesempate> desempate = LeituraDoDesempate.LerCriteriosDesempate(leitor, payload);
+        ConfiguracaoClassificacao? classificacao = LeituraDaClassificacao.LerClassificacao(leitor, payload);
+        IReadOnlyList<FaseCronograma> cronogramaFases = LeituraDoCronograma.LerCronogramaFases(leitor, payload, comId: true);
         LeituraDoEdital.LerIdentidadesUnidade(leitor, payload);
+
+        return new BlocosDaConfiguracao
+        {
+            Dados = dados,
+            HashDocumento = hashDocumento,
+            Etapas = etapas,
+            Distribuicao = distribuicao,
+            Atendimento = atendimento,
+            Bonus = bonus,
+            Cascata = cascata,
+            Desempate = desempate,
+            Classificacao = classificacao,
+            CronogramaFases = cronogramaFases,
+        };
     }
 
-    private static void LerExigenciasEFormularios(LeitorEnvelope leitor, JsonObject payload, BlocosDoEnvelope blocos)
+    private static BlocosDosDocumentos LerDocumentos(LeitorEnvelope leitor, JsonObject payload)
     {
-        (blocos.Conformidade, blocos.DocumentosExigidos, blocos.ReferenciaTemporalFatos, blocos.MetadadosFatosCongelados) =
-            LeituraDosDocumentosExigidos.LerDocumentosExigidos(leitor, payload);
-        (blocos.Formularios, blocos.TermosExigidos) = LeituraDosFormularios.LerFormularios(leitor, payload);
-        blocos.Divulgacao = LeituraDaDivulgacaoETaxa.LerDivulgacao(leitor, payload);
-        blocos.TaxaInscricao = LeituraDaDivulgacaoETaxa.LerTaxaInscricao(leitor, payload);
-        (blocos.Localidade, blocos.FusoHorario) = LeituraDoCalendario.LerLocalidade(leitor, payload);
-        blocos.NumeroDeOpcoesDeCurso = LeituraDasVagas.LerOpcoesDeCurso(leitor, payload);
-        blocos.AlgoritmoContagemPrazo = LeituraDoCalendario.LerAlgoritmoContagemPrazo(leitor, payload);
-        blocos.CalendarioDiasUteis = LeituraDoCalendario.LerCalendarioDiasUteis(leitor, payload, blocos.CronogramaFases, blocos.Etapas);
-        blocos.IdentificadorLegivel = LeituraDoEdital.LerIdentificadorLegivel(leitor, payload);
+        (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentos, ReferenciaTemporalFatos? referenciaTemporal,
+            IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados) = LeituraDosDocumentosExigidos.LerDocumentosExigidos(leitor, payload);
+        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termos) = LeituraDosFormularios.LerFormularios(leitor, payload);
+
+        return new BlocosDosDocumentos
+        {
+            Conformidade = conformidade,
+            DocumentosExigidos = documentos,
+            ReferenciaTemporalFatos = referenciaTemporal,
+            MetadadosFatosCongelados = metadados,
+            Formularios = formularios,
+            TermosExigidos = termos,
+        };
     }
 
-    private static void LerFatosEDerivacao(LeitorEnvelope leitor, JsonObject payload, BlocosDoEnvelope blocos)
+    private static BlocosDaPublicacao LerPublicacao(LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao)
+    {
+        ConfiguracaoDivulgacao? divulgacao = LeituraDaDivulgacaoETaxa.LerDivulgacao(leitor, payload);
+        ConfiguracaoTaxaInscricao? taxa = LeituraDaDivulgacaoETaxa.LerTaxaInscricao(leitor, payload);
+        (LocalidadeRegente? localidade, string? fusoHorario) = LeituraDoCalendario.LerLocalidade(leitor, payload);
+        int? opcoesDeCurso = LeituraDasVagas.LerOpcoesDeCurso(leitor, payload);
+        ReferenciaRegra? algoritmo = LeituraDoCalendario.LerAlgoritmoContagemPrazo(leitor, payload);
+        CalendarioDiasUteisCongelado? calendario = LeituraDoCalendario.LerCalendarioDiasUteis(
+            leitor, payload, configuracao.CronogramaFases, configuracao.Etapas);
+        IdentificadorLegivel? identificadorLegivel = LeituraDoEdital.LerIdentificadorLegivel(leitor, payload);
+
+        return new BlocosDaPublicacao
+        {
+            Divulgacao = divulgacao,
+            TaxaInscricao = taxa,
+            Localidade = localidade,
+            FusoHorario = fusoHorario,
+            NumeroDeOpcoesDeCurso = opcoesDeCurso,
+            AlgoritmoContagemPrazo = algoritmo,
+            CalendarioDiasUteis = calendario,
+            IdentificadorLegivel = identificadorLegivel,
+        };
+    }
+
+    private static BlocosDeColeta LerColeta(LeitorEnvelope leitor, JsonObject payload, BlocosDaConfiguracao configuracao)
     {
         (IReadOnlyList<FatoColetado> fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores) =
             LeituraDosFatos.LerFatosColetados(leitor, payload);
-        blocos.FatosColetados = fatos;
-        blocos.ValoresSelecionaveis = valores;
-        blocos.GruposColetados = leitor.Falhou
+        List<DefinicaoAgregado> agregados = [];
+        IReadOnlyList<GrupoColetado> grupos = leitor.Falhou
             ? []
-            : LeituraDosGrupos.LerGruposColetados(leitor, payload, valores, blocos.AgregadosDosGrupos);
-        blocos.RegrasDerivacao = LeituraDaDerivacao.LerRegrasDerivacao(leitor, payload);
-        blocos.VersaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
-        blocos.ApresentacaoDosPressupostos = LeituraDoEdital.LerApresentacaoDosPressupostos(leitor, payload);
-        blocos.TiposDeAtoCongelados = LeituraDosTiposDeAto.LerTiposDeAto(leitor, payload, blocos.CronogramaFases, blocos.Etapas);
-        blocos.FatosDerivadosCongelados = LeituraDosFatosDerivados.LerFatosDerivados(leitor, payload);
+            : LeituraDosGrupos.LerGruposColetados(leitor, payload, valores, agregados);
+        IReadOnlyList<ConfiguracaoDerivacaoFato> regras = LeituraDaDerivacao.LerRegrasDerivacao(leitor, payload);
+        string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
+        Dictionary<string, ApresentacaoDoFato> apresentacao = LeituraDoEdital.LerApresentacaoDosPressupostos(leitor, payload);
+        Dictionary<string, TipoDeAtoCongelado> tiposDeAto = LeituraDosTiposDeAto.LerTiposDeAto(
+            leitor, payload, configuracao.CronogramaFases, configuracao.Etapas);
+        Dictionary<string, FatoDerivadoCongelado> fatosDerivados = LeituraDosFatosDerivados.LerFatosDerivados(leitor, payload);
+
+        return new BlocosDeColeta
+        {
+            FatosColetados = fatos,
+            ValoresSelecionaveis = valores,
+            GruposColetados = grupos,
+            AgregadosDosGrupos = agregados,
+            RegrasDerivacao = regras,
+            VersaoInterpretador = versaoInterpretador,
+            ApresentacaoDosPressupostos = apresentacao,
+            TiposDeAtoCongelados = tiposDeAto,
+            FatosDerivadosCongelados = fatosDerivados,
+        };
     }
 
     /// <summary>
