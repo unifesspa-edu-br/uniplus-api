@@ -27,12 +27,13 @@ internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
     public async Task<Result<ProdutosDaFaseMontados>> MontarAsync(
         FaseCronogramaInput fase, int indice, string faseCodigo, List<FieldError> recusas, CancellationToken cancellationToken)
     {
+        RotuloDoDonoDoProduto dono = RotuloDoDonoDoProduto.DaFase(faseCodigo);
         List<ProdutoDaFase> produtos = [];
         bool integros = true;
         for (int posicao = 0; posicao < fase.Produtos.Count; posicao++)
         {
             string campo = $"fases[{indice}].produtos[{posicao}]";
-            Result<ProdutoDaFase?> produto = await ProdutoAsync(fase.Produtos[posicao], campo, faseCodigo, recusas, cancellationToken)
+            Result<ProdutoDaFase?> produto = await ProdutoAsync(fase.Produtos[posicao], campo, dono, recusas, cancellationToken)
                 .ConfigureAwait(false);
             if (produto.IsFailure)
             {
@@ -53,17 +54,15 @@ internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
 
     // Sucesso nulo é a recusa do produto, já acumulada; falha é a interrupção.
     private async Task<Result<ProdutoDaFase?>> ProdutoAsync(
-        ProdutoDaFaseInput declarado, string campo, string faseCodigo, List<FieldError> recusas, CancellationToken cancellationToken)
+        ProdutoDaFaseInput declarado, string campo, RotuloDoDonoDoProduto dono, List<FieldError> recusas, CancellationToken cancellationToken)
     {
         if (!PapelProdutoFaseCodigo.TentarConverter(declarado.Papel, out PapelProdutoFase? papel))
         {
-            recusas.Add(new($"{campo}.papel", new DomainError(
-                "ProdutoDaFase.PapelDesconhecido",
-                $"O papel '{declarado.Papel}' não é declarável — use '{PapelProdutoFaseCodigo.Preliminar}', '{PapelProdutoFaseCodigo.Definitivo}' ou nenhum.")));
+            recusas.Add(new($"{campo}.papel", ConferenciaDoProdutoDoAto.PapelDesconhecido(declarado.Papel, dono)));
             return Result<ProdutoDaFase?>.Success(null);
         }
 
-        Result<FieldError?> conferido = await ConferirAtoAsync(declarado, papel, campo, faseCodigo, cancellationToken).ConfigureAwait(false);
+        Result<FieldError?> conferido = await ConferirAtoAsync(declarado, papel, campo, dono, cancellationToken).ConfigureAwait(false);
         if (conferido.IsFailure)
         {
             return Result<ProdutoDaFase?>.ValidationFailure(conferido.Errors);
@@ -80,7 +79,7 @@ internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
 
     // Sucesso nulo é o ato conferido; sucesso com valor é a recusa a acumular; falha é a interrupção.
     private async Task<Result<FieldError?>> ConferirAtoAsync(
-        ProdutoDaFaseInput declarado, PapelProdutoFase? papel, string campo, string faseCodigo, CancellationToken cancellationToken)
+        ProdutoDaFaseInput declarado, PapelProdutoFase? papel, string campo, RotuloDoDonoDoProduto dono, CancellationToken cancellationToken)
     {
         Result<ClassificacaoDoTipoDeAto?> classificada = await atos
             .ClassificacaoAsync(declarado.AtoCodigo, cancellationToken).ConfigureAwait(false);
@@ -89,29 +88,14 @@ internal sealed class MontagemDosProdutosDaFase(AtosConsultadosNaEdicao atos)
             return InterrupcaoDaFase.Com<FieldError?>($"{campo}.atoCodigo", classificada.Error!);
         }
 
-        FieldError? recusa = classificada.Value is { } classificacao
-            ? RecusaDoPapel(declarado, papel, campo, faseCodigo, classificacao)
-            : new($"{campo}.atoCodigo", new DomainError(
-                "ProdutoDaFase.AtoNaoEncontradoNoCatalogo",
-                $"O tipo de ato '{declarado.AtoCodigo}' não tem versão vigente no catálogo de Publicações na data de hoje."));
-        return Result<FieldError?>.Success(recusa);
-    }
-
-    // Papel preliminar ou definitivo só faz sentido sobre resultado. O resultado sempre declara papel, e o
-    // tipo que congela a configuração não serve de item de resultado (UNI-REQ-0157).
-    private static FieldError? RecusaDoPapel(
-        ProdutoDaFaseInput declarado, PapelProdutoFase? papel, string campo, string faseCodigo, ClassificacaoDoTipoDeAto classificacao)
-    {
-        if (papel is not null && !classificacao.EhResultado)
+        if (classificada.Value is not { } classificacao)
         {
-            return new($"{campo}.papel", new DomainError(
-                "ProdutoDaFase.PapelEmAtoQueNaoEhResultado",
-                $"O tipo de ato '{declarado.AtoCodigo}' não é resultado no catálogo — só resultado recebe papel preliminar ou definitivo."));
+            return Result<FieldError?>.Success(
+                new FieldError($"{campo}.atoCodigo", ConferenciaDoProdutoDoAto.AtoNaoEncontrado(declarado.AtoCodigo, dono)));
         }
 
-        return classificacao.ViolacaoDoProduto(declarado.AtoCodigo, papel, $"na fase '{faseCodigo}'") is { } violacao
-            ? new($"{campo}.papel", violacao)
-            : null;
+        DomainError? recusaDoPapel = ConferenciaDoProdutoDoAto.RecusaDoPapel(declarado.AtoCodigo, papel, classificacao, dono);
+        return Result<FieldError?>.Success(recusaDoPapel is null ? null : new FieldError($"{campo}.papel", recusaDoPapel));
     }
 }
 
