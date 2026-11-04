@@ -38,8 +38,8 @@ internal sealed class AplicacaoDoModeloDeFormulario(
 
         // O conjunto padrão de documentos entra no mesmo estado em memória e na mesma gravação: a recusa de
         // um documento desfaz a aplicação inteira.
-        Result documentos = await new CopiaDosDocumentosDoModelo(processo, plano.Value.Finalidade, cadastros.Documentos)
-            .CopiarAsync(plano.Value.Documentos, plano.Value.Catalogo, precondicao, cancellationToken).ConfigureAwait(false);
+        Result documentos = await new CopiaDosDocumentosDoModelo(processo, plano.Value.Copia.Finalidade, cadastros.Documentos)
+            .CopiarAsync(modelo.Conteudo.DocumentosExigidos ?? [], plano.Value.Catalogo, precondicao, cancellationToken).ConfigureAwait(false);
         if (documentos.IsFailure)
         {
             return RecusaDosDocumentos(documentos);

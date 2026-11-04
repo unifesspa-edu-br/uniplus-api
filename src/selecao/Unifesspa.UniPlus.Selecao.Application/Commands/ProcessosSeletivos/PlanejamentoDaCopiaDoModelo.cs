@@ -25,7 +25,6 @@ internal sealed class PlanejamentoDaCopiaDoModelo(
     ModeloFormularioView modelo,
     CadastrosDaAplicacaoDoModelo cadastros)
 {
-    private readonly List<FieldError> _erros = [];
     private readonly RelatorioDaAplicacaoDoModelo _relatorio = new();
     private readonly FinalidadeFormulario _finalidade = EstruturaFormulario.FinalidadeDoToken(modelo.Finalidade);
 
@@ -34,14 +33,15 @@ internal sealed class PlanejamentoDaCopiaDoModelo(
         IReadOnlyList<FatoCandidatoView> catalogo = await cadastros.Fatos.ListarAsync(cancellationToken).ConfigureAwait(false);
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
         ConteudoDoModeloInput conteudo = modelo.Conteudo;
-        FormularioCopiado formulario = new CopiaDoFormularioDoModelo(processo, _finalidade, contexto, _relatorio).Copiar(conteudo, _erros);
+        FormularioCopiado formulario = new CopiaDoFormularioDoModelo(processo, _finalidade, contexto, _relatorio).Copiar(conteudo);
         TermosSelecionados termos = await new CopiaDosTermosDoModelo(cadastros.Termos, _relatorio)
             .SelecionarAsync(conteudo.Termos ?? [], cancellationToken).ConfigureAwait(false);
 
         CopiaResolvida copia = await ResolverAsync(contexto, conteudo, formulario, termos, cancellationToken).ConfigureAwait(false);
-        if (_erros.Count > 0)
+        List<FieldError> recusas = [.. formulario.Recusas, .. copia.Recusas];
+        if (recusas.Count > 0)
         {
-            return Result<PlanoDaCopiaDoModelo>.ValidationFailure(_erros);
+            return Result<PlanoDaCopiaDoModelo>.ValidationFailure(recusas);
         }
 
         Result vinculoNovo = ConferirVinculoNovo(contexto, formulario, copia);
@@ -62,22 +62,29 @@ internal sealed class PlanejamentoDaCopiaDoModelo(
     {
         CopiaDasDerivacoesDoModelo derivacoes = new(processo, contexto, cadastros.Fatos, _relatorio);
         string[] citados = FatosCitadosPeloModelo.Todos(conteudo, formulario, termos);
-        List<ConfiguracaoDerivacaoInput> aCopiar = await derivacoes.EscolherAsync(citados, _erros, cancellationToken).ConfigureAwait(false);
-        derivacoes.ConferirModalidade(citados, aCopiar, _erros);
+        DerivacoesEscolhidas escolhidas = await derivacoes.EscolherAsync(citados, cancellationToken).ConfigureAwait(false);
+        FieldError? semDistribuicaoDeVagas = derivacoes.ConferirModalidade(citados, escolhidas.ACopiar);
 
-        HashSet<string> universo = new(
-            processo.FatosColetados.Select(static f => f.FatoCodigo)
-                .Concat(formulario.Itens.Itens.Select(static i => i.FatoCodigo))
-                .Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
-                .Concat(aCopiar.Select(static d => d.CodigoFato)),
-            StringComparer.Ordinal);
-        List<ConfiguracaoDerivacaoFato> derivacoesResolvidas = derivacoes.Resolver(aCopiar, universo, _erros);
         HashSet<string> coletados = new(
             processo.FatosColetados.Select(static f => f.FatoCodigo).Concat(formulario.Itens.Itens.Select(static i => i.FatoCodigo)),
             StringComparer.Ordinal);
-        List<TermoExigidoFormulario> termosResolvidos = CopiaDosTermosDoModelo.Resolver(
-            termos, contexto, new HashSet<string>(universo.Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)), StringComparer.Ordinal), _erros);
-        return new CopiaResolvida(derivacoesResolvidas, termosResolvidos);
+        HashSet<string> universo = new(
+            coletados
+                .Concat(processo.DerivacoesEfetivas().Select(static r => r.CodigoFato))
+                .Concat(escolhidas.ACopiar.Select(static d => d.CodigoFato)),
+            StringComparer.Ordinal);
+        DerivacoesResolvidas derivacoesResolvidas = derivacoes.Resolver(escolhidas.ACopiar, universo);
+        TermosResolvidos termosResolvidos = CopiaDosTermosDoModelo.Resolver(
+            termos, contexto, new HashSet<string>(universo.Concat(VocabularioDeFatos.DerivadosDoSistemaResolvidos(coletados)), StringComparer.Ordinal));
+        List<FieldError> recusas = [.. escolhidas.Recusas];
+        if (semDistribuicaoDeVagas is not null)
+        {
+            recusas.Add(semDistribuicaoDeVagas);
+        }
+
+        recusas.AddRange(derivacoesResolvidas.Recusas);
+        recusas.AddRange(termosResolvidos.Recusas);
+        return new CopiaResolvida(derivacoesResolvidas.Derivacoes, termosResolvidos.Termos, recusas);
     }
 
     // O valor desativado no catálogo é recusado como vínculo novo; o que o processo já citava continua.
@@ -111,9 +118,8 @@ internal sealed class PlanejamentoDaCopiaDoModelo(
                 copia.Termos, copia.Derivacoes, modelo.Id, modelo.Codigo),
             new IndicesNoModelo(formulario.Itens.IndicesNoModelo, formulario.Grupos.IndicesNoModelo, termos.IndicesNoModelo),
             _relatorio,
-            _finalidade,
-            catalogo,
-            conteudo.DocumentosExigidos ?? []);
+            catalogo);
 
-    private sealed record CopiaResolvida(List<ConfiguracaoDerivacaoFato> Derivacoes, List<TermoExigidoFormulario> Termos);
+    private sealed record CopiaResolvida(
+        List<ConfiguracaoDerivacaoFato> Derivacoes, List<TermoExigidoFormulario> Termos, List<FieldError> Recusas);
 }

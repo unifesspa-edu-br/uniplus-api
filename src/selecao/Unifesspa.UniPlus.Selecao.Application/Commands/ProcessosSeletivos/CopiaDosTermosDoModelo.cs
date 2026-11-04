@@ -35,16 +35,12 @@ internal sealed class CopiaDosTermosDoModelo(ITermoConsentimentoReader termoCons
         return new TermosSelecionados(EscritaDosTermos.Ler(aCopiar), versaoPorId, indices, aCopiar);
     }
 
-    public static List<TermoExigidoFormulario> Resolver(
-        TermosSelecionados selecionados,
-        ContextoDoCatalogo contexto,
-        IReadOnlySet<string> universoDeFatos,
-        List<FieldError> erros)
+    public static TermosResolvidos Resolver(
+        TermosSelecionados selecionados, ContextoDoCatalogo contexto, IReadOnlySet<string> universoDeFatos)
     {
         (List<TermoExigidoFormulario> termos, List<FieldError> errosDosTermos) =
             EscritaDosTermos.Resolver(selecionados.Lidos, contexto, selecionados.VersaoPorId, universoDeFatos);
-        erros.AddRange(errosDosTermos.Select(e => PosicaoNoModelo.NoModelo(e, "termos", selecionados.IndicesNoModelo)));
-        return termos;
+        return new TermosResolvidos(termos, [.. errosDosTermos.Select(e => PosicaoNoModelo.NoModelo(e, "termos", selecionados.IndicesNoModelo))]);
     }
 
     private bool VersaoVigente(TermoExigidoInput termo, Dictionary<Guid, VersaoTermoConsentimentoView> versaoPorId)
@@ -65,3 +61,6 @@ internal sealed record TermosSelecionados(
     IReadOnlyDictionary<Guid, VersaoTermoConsentimentoView> VersaoPorId,
     List<int> IndicesNoModelo,
     List<TermoExigidoInput> Entradas);
+
+/// <summary>Os termos resolvidos e as recusas, na posição do modelo.</summary>
+internal sealed record TermosResolvidos(List<TermoExigidoFormulario> Termos, List<FieldError> Recusas);

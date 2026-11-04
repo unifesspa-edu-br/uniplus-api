@@ -27,9 +27,8 @@ internal sealed class CopiaDasDerivacoesDoModelo(
 {
     private const string FonteModalidade = "MODALIDADE";
 
-    /// <summary>As derivações a copiar para o processo; as recusas entram em <paramref name="erros"/>.</summary>
-    public async Task<List<ConfiguracaoDerivacaoInput>> EscolherAsync(
-        string[] citados, List<FieldError> erros, CancellationToken cancellationToken)
+    /// <summary>As derivações a copiar para o processo e as recusas do que o processo precisa configurar antes.</summary>
+    public async Task<DerivacoesEscolhidas> EscolherAsync(string[] citados, CancellationToken cancellationToken)
     {
         IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao =
             await fatoCandidatoReader.ListarRegrasPadraoAsync(cancellationToken).ConfigureAwait(false);
@@ -37,40 +36,56 @@ internal sealed class CopiaDasDerivacoesDoModelo(
         HashSet<string> vistos = new(StringComparer.Ordinal);
         Queue<string> pendentes = new(citados.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
         List<ConfiguracaoDerivacaoInput> aCopiar = [];
+        List<FieldError> recusas = [];
         while (pendentes.TryDequeue(out string? codigo))
         {
-            if (vistos.Add(codigo) && contexto.Fatos.TryGetValue(codigo, out FatoCandidatoView? fato)
-                && VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao))
+            if (!vistos.Add(codigo) || !contexto.Fatos.TryGetValue(codigo, out FatoCandidatoView? fato)
+                || !VinculoDeFato.Usa(fato.Binding, VinculoDeFato.RegraDeDerivacao))
             {
-                Visitar(codigo, derivados, regrasPadrao, pendentes, aCopiar, erros);
+                continue;
+            }
+
+            Visita visita = Visitar(codigo, derivados, regrasPadrao);
+            if (visita.Copiada is not null)
+            {
+                aCopiar.Add(visita.Copiada);
+            }
+
+            if (visita.Recusa is not null)
+            {
+                recusas.Add(visita.Recusa);
+            }
+
+            foreach (string dependencia in visita.Dependencias)
+            {
+                pendentes.Enqueue(dependencia);
             }
         }
 
-        return aCopiar;
+        return new DerivacoesEscolhidas(aCopiar, recusas);
     }
 
     /// <summary>
     /// A modalidade pode vir pela cópia ou pelas regras padrão que ela traz; sem distribuição de vagas, ela
-    /// não tem de onde vir.
+    /// não tem de onde vir, e a recusa é devolvida.
     /// </summary>
-    public void ConferirModalidade(string[] citados, List<ConfiguracaoDerivacaoInput> aCopiar, List<FieldError> erros)
+    public FieldError? ConferirModalidade(string[] citados, List<ConfiguracaoDerivacaoInput> aCopiar)
     {
         IEnumerable<string> fechamento = citados.Concat(aCopiar
             .SelectMany(static d => d.Regras).SelectMany(static r => r.Quando ?? []).SelectMany(static c => c).Select(static c => c.Fato));
-        if (processo.DistribuicaoVagas.Count == 0
-            && fechamento.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValores == FonteModalidade))
-        {
-            erros.Add(new("modelo", new DomainError(
-                AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas,
-                "O modelo cita a modalidade de concorrência, que depende da distribuição de vagas do processo; defina a distribuição de vagas antes.")));
-        }
+        return processo.DistribuicaoVagas.Count == 0
+            && fechamento.Any(c => contexto.Fatos.TryGetValue(c, out FatoCandidatoView? fato) && fato.FonteValores == FonteModalidade)
+                ? new FieldError("modelo", new DomainError(
+                    AplicacaoDeModeloErrorCodes.SemDistribuicaoDeVagas,
+                    "O modelo cita a modalidade de concorrência, que depende da distribuição de vagas do processo; defina a distribuição de vagas antes."))
+                : null;
     }
 
     /// <summary>Resolve as derivações a copiar contra o universo de fatos da configuração final.</summary>
-    public List<ConfiguracaoDerivacaoFato> Resolver(
-        List<ConfiguracaoDerivacaoInput> aCopiar, IReadOnlySet<string> universo, List<FieldError> erros)
+    public DerivacoesResolvidas Resolver(List<ConfiguracaoDerivacaoInput> aCopiar, IReadOnlySet<string> universo)
     {
         List<ConfiguracaoDerivacaoFato> derivacoes = [];
+        List<FieldError> recusas = [];
         foreach (ConfiguracaoDerivacaoInput derivacao in aCopiar)
         {
             Result<ConfiguracaoDerivacaoFato> resolvida = DefinirRegrasDerivacaoCommandHandler.ResolverConfiguracao(
@@ -81,11 +96,11 @@ internal sealed class CopiaDasDerivacoesDoModelo(
             }
             else
             {
-                erros.AddRange(resolvida.Errors.Select(e => e with { Field = $"derivacoes[{derivacao.CodigoFato}]" }));
+                recusas.AddRange(resolvida.Errors.Select(e => e with { Field = $"derivacoes[{derivacao.CodigoFato}]" }));
             }
         }
 
-        return derivacoes;
+        return new DerivacoesResolvidas(derivacoes, recusas);
     }
 
     // Mantém o que o processo grava e o que a oferta deriva. A regra do sistema que as derivações efetivas
@@ -97,47 +112,40 @@ internal sealed class CopiaDasDerivacoesDoModelo(
                 || processo.RegrasDerivacao.Any(g => string.Equals(g.CodigoFato, r.CodigoFato, StringComparison.Ordinal)))
             .ToDictionary(static r => r.CodigoFato, StringComparer.Ordinal);
 
-    private void Visitar(
+    private Visita Visitar(
         string codigo,
         Dictionary<string, ConfiguracaoDerivacaoFato> derivados,
-        IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao,
-        Queue<string> pendentes,
-        List<ConfiguracaoDerivacaoInput> aCopiar,
-        List<FieldError> erros)
+        IReadOnlyDictionary<string, IReadOnlyList<RegraDerivacao>> regrasPadrao)
     {
         if (derivados.TryGetValue(codigo, out ConfiguracaoDerivacaoFato? derivado))
         {
             relatorio.Mantidas.Add(codigo);
-            Enfileirar(pendentes, DerivacoesDaOferta.Deriva(codigo) ? derivado.FatosCitados : []);
+            return new Visita(null, null, DerivacoesDaOferta.Deriva(codigo) ? derivado.FatosCitados : []);
         }
-        else if (string.Equals(codigo, OpcaoPelasCotasDaLei.Fato, StringComparison.Ordinal))
+
+        if (string.Equals(codigo, OpcaoPelasCotasDaLei.Fato, StringComparison.Ordinal))
         {
-            erros.Add(Recusa(codigo, AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada,
+            return Visita.Recusada(Recusa(codigo, AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada,
                 $"O modelo cita '{codigo}', que só existe no processo que oferta cota da lei; oferte as cotas na distribuição de vagas antes."));
         }
-        else if (DerivacoesDaOferta.Deriva(codigo))
+
+        // A modalidade sem modalidade ofertada: a recusa é a da distribuição de vagas que falta.
+        if (DerivacoesDaOferta.Deriva(codigo))
         {
-            // A modalidade sem modalidade ofertada: a recusa é a da distribuição de vagas que falta.
+            return Visita.Ignorada;
         }
-        else if (regrasPadrao.TryGetValue(codigo, out IReadOnlyList<RegraDerivacao>? regras))
+
+        if (!regrasPadrao.TryGetValue(codigo, out IReadOnlyList<RegraDerivacao>? regras))
         {
-            relatorio.Copiadas.Add(codigo);
-            aCopiar.Add(new ConfiguracaoDerivacaoInput(codigo, [.. regras.Select(static (r, ordem) => new RegraDerivacaoInput(ordem, r.Contribui, Quando(r.Quando)))]));
-            Enfileirar(pendentes, regras.SelectMany(static r => r.FatosCitados));
-        }
-        else
-        {
-            erros.Add(Recusa(codigo, AplicacaoDeModeloErrorCodes.DerivadoSemRegra,
+            return Visita.Recusada(Recusa(codigo, AplicacaoDeModeloErrorCodes.DerivadoSemRegra,
                 $"O modelo cita '{codigo}', que o processo ainda não deriva e o catálogo não tem regra padrão; configure as regras de derivação dele no processo antes."));
         }
-    }
 
-    private static void Enfileirar(Queue<string> pendentes, IEnumerable<string> dependencias)
-    {
-        foreach (string dependencia in dependencias)
-        {
-            pendentes.Enqueue(dependencia);
-        }
+        relatorio.Copiadas.Add(codigo);
+        return new Visita(
+            new ConfiguracaoDerivacaoInput(codigo, [.. regras.Select(static (r, ordem) => new RegraDerivacaoInput(ordem, r.Contribui, Quando(r.Quando)))]),
+            null,
+            regras.SelectMany(static r => r.FatosCitados));
     }
 
     private static FieldError Recusa(string codigo, string codigoDoErro, string mensagem) =>
@@ -148,4 +156,19 @@ internal sealed class CopiaDasDerivacoesDoModelo(
         EntradaDeRegras.ParaEntrada(quando) is { Count: > 0 } clausulas
             ? [.. clausulas.Select(static c => (IReadOnlyList<CondicaoDerivacaoInput>)[.. c.Select(static k => new CondicaoDerivacaoInput(k.Fato, k.Operador, k.Valor))])]
             : null;
+
+    // O que a visita a um derivado citado decidiu: copiá-lo do catálogo, recusá-lo, ou só seguir para os
+    // derivados que ele cita.
+    private sealed record Visita(ConfiguracaoDerivacaoInput? Copiada, FieldError? Recusa, IEnumerable<string> Dependencias)
+    {
+        public static Visita Ignorada { get; } = new(null, null, []);
+
+        public static Visita Recusada(FieldError recusa) => new(null, recusa, []);
+    }
 }
+
+/// <summary>As derivações a copiar do catálogo e as recusas das que o processo precisa configurar antes.</summary>
+internal sealed record DerivacoesEscolhidas(List<ConfiguracaoDerivacaoInput> ACopiar, List<FieldError> Recusas);
+
+/// <summary>As derivações resolvidas contra o universo de fatos e as recusas das que não resolvem.</summary>
+internal sealed record DerivacoesResolvidas(List<ConfiguracaoDerivacaoFato> Derivacoes, List<FieldError> Recusas);

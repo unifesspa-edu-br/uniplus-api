@@ -29,7 +29,9 @@ internal sealed class CopiaDosDocumentosDoModelo(
     FinalidadeFormulario finalidade,
     CadastrosDosDocumentosExigidos cadastros)
 {
-    private readonly Dictionary<string, TipoDocumentoView?> _tipos = new(StringComparer.Ordinal);
+    private readonly LeituraMemoizada<string, TipoDocumentoView> _tipos = new(
+        (codigo, cancellationToken) => cadastros.TiposDeDocumento.ObterVivoPorCodigoAsync(codigo, cancellationToken),
+        StringComparer.Ordinal);
 
     public async Task<Result> CopiarAsync(
         IReadOnlyList<DocumentoExigidoDoModeloInput> documentos,
@@ -153,7 +155,7 @@ internal sealed class CopiaDosDocumentosDoModelo(
                 $"O modelo exige o documento '{documento.TipoDocumentoCodigo}' na fase '{documento.FaseCodigo}', que o cronograma do processo não tem; defina o cronograma antes.")));
         }
 
-        TipoDocumentoView? tipo = await TipoAsync(documento.TipoDocumentoCodigo, cancellationToken).ConfigureAwait(false);
+        TipoDocumentoView? tipo = await _tipos.ObterAsync(documento.TipoDocumentoCodigo, cancellationToken).ConfigureAwait(false);
         if (tipo is null)
         {
             erros.Add(new($"{campo}.tipoDocumentoCodigo", new DomainError(
@@ -162,18 +164,6 @@ internal sealed class CopiaDosDocumentosDoModelo(
         }
 
         return fase is null || tipo is null ? null : FolhaDoModelo(documento, fase, tipo);
-    }
-
-    private async Task<TipoDocumentoView?> TipoAsync(string codigo, CancellationToken cancellationToken)
-    {
-        if (_tipos.TryGetValue(codigo, out TipoDocumentoView? lido))
-        {
-            return lido;
-        }
-
-        lido = await cadastros.TiposDeDocumento.ObterVivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false);
-        _tipos[codigo] = lido;
-        return lido;
     }
 
     private NoExigenciaInput FolhaDoModelo(DocumentoExigidoDoModeloInput documento, FaseCronograma fase, TipoDocumentoView tipo) =>

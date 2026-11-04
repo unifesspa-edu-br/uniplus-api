@@ -29,10 +29,19 @@ internal sealed record RestricoesDoDocumentoDoPayload(IdadeMaximaEmissao? Idade,
             return Result<RestricoesDoDocumentoDoPayload>.ValidationFailure(formatos.Errors);
         }
 
-        Result<ModeloDaExigencia?> modelo = ModeloDaFolha(folha.ModeloId, modelosDoProcesso);
-        return modelo.IsFailure
-            ? Result<RestricoesDoDocumentoDoPayload>.ValidationFailure(modelo.Errors)
-            : Result<RestricoesDoDocumentoDoPayload>.Success(new RestricoesDoDocumentoDoPayload(idade.Value, formatos.Value!, modelo.Value));
+        ModeloDaExigencia? modelo = null;
+        if (folha.ModeloId is { } modeloId)
+        {
+            Result<ModeloDaExigencia> citado = ModeloCitado(modeloId, modelosDoProcesso);
+            if (citado.IsFailure)
+            {
+                return Result<RestricoesDoDocumentoDoPayload>.ValidationFailure(citado.Errors);
+            }
+
+            modelo = citado.Value;
+        }
+
+        return Result<RestricoesDoDocumentoDoPayload>.Success(new RestricoesDoDocumentoDoPayload(idade.Value, formatos.Value!, modelo));
     }
 
     private static Result<IdadeMaximaEmissao?> IdadeMaximaEmissaoDaFolha(IdadeMaximaEmissaoInput? idade) =>
@@ -43,22 +52,11 @@ internal sealed record RestricoesDoDocumentoDoPayload(IdadeMaximaEmissao? Idade,
             idade?.Data,
             idade?.ReferenciaFaseId);
 
-    // O modelo que a folha cita, copiado por valor; nulo quando ela não cita. Recusa o modelo que não é
-    // deste processo — a mesma recusa do inexistente — e o que ainda não foi confirmado.
-    private static Result<ModeloDaExigencia?> ModeloDaFolha(Guid? modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
-    {
-        if (modeloId is not { } id)
-        {
-            return Result<ModeloDaExigencia?>.Success(null);
-        }
-
-        if (!modelosDoProcesso.TryGetValue(id, out ModeloDeDocumento? modelo))
-        {
-            return Result<ModeloDaExigencia?>.Failure(new DomainError(
-                "DocumentoExigido.ModeloNaoEncontrado", $"O modelo de documento {id} não existe neste Processo Seletivo."));
-        }
-
-        Result<ModeloDaExigencia> copia = ModeloDaExigencia.Do(modelo);
-        return copia.IsSuccess ? Result<ModeloDaExigencia?>.Success(copia.Value) : Result<ModeloDaExigencia?>.Failure(copia.Error!);
-    }
+    // O modelo que a folha cita, copiado por valor. Recusa o modelo que não é deste processo — a mesma recusa
+    // do inexistente — e o que ainda não foi confirmado.
+    private static Result<ModeloDaExigencia> ModeloCitado(Guid modeloId, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso) =>
+        modelosDoProcesso.TryGetValue(modeloId, out ModeloDeDocumento? modelo)
+            ? ModeloDaExigencia.Do(modelo)
+            : Result<ModeloDaExigencia>.Failure(new DomainError(
+                "DocumentoExigido.ModeloNaoEncontrado", $"O modelo de documento {modeloId} não existe neste Processo Seletivo."));
 }

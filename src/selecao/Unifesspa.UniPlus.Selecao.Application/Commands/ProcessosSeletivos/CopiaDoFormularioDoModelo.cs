@@ -26,20 +26,23 @@ internal sealed class CopiaDoFormularioDoModelo(
 {
     private readonly IReadOnlySet<string> _vinculados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Fatos;
 
-    /// <summary>Copia as partes do formulário; as recusas entram em <paramref name="erros"/>, já na posição do modelo.</summary>
-    public FormularioCopiado Copiar(ConteudoDoModeloInput conteudo, List<FieldError> erros)
+    /// <summary>Copia as partes do formulário; as recusas vêm já na posição do modelo.</summary>
+    public FormularioCopiado Copiar(ConteudoDoModeloInput conteudo)
     {
-        ConteudoDoModeloInput conteudoFinal = finalidade == FinalidadeFormulario.Inscricao ? ComConjuntoBasico(conteudo, erros) : conteudo;
-        ItensCopiados itens = CopiarItens(conteudoFinal.Itens ?? [], erros);
-        GruposCopiados grupos = CopiarGrupos(conteudoFinal.Grupos ?? [], erros);
+        (ConteudoDoModeloInput conteudoFinal, List<FieldError> recusasDaMescla) =
+            finalidade == FinalidadeFormulario.Inscricao ? ComConjuntoBasico(conteudo) : (conteudo, []);
+        ItensCopiados itens = CopiarItens(conteudoFinal.Itens ?? []);
+        GruposCopiados grupos = CopiarGrupos(conteudoFinal.Grupos ?? []);
         EtapasLidas etapas = EscritaDasEtapas.Ler(conteudoFinal.Etapas ?? []);
-        erros.AddRange(etapas.Erros.Concat(EscritaDasEtapas.ConferirExibicoes(etapas, contexto)).Select(static e => PosicaoNoModelo.NoModelo(e)));
-        return new FormularioCopiado(itens, grupos, etapas);
+        IEnumerable<FieldError> recusasDasEtapas = etapas.Erros
+            .Concat(EscritaDasEtapas.ConferirExibicoes(etapas, contexto))
+            .Select(static e => PosicaoNoModelo.NoModelo(e));
+        return new FormularioCopiado(itens, grupos, etapas, [.. recusasDaMescla, .. itens.Recusas, .. grupos.Recusas, .. recusasDasEtapas]);
     }
 
     // O formulário de inscrição coleta o conjunto básico na seção reservada: o básico que o modelo não traz
     // entra como o conjunto básico o define.
-    private static ConteudoDoModeloInput ComConjuntoBasico(ConteudoDoModeloInput conteudo, List<FieldError> erros)
+    private static (ConteudoDoModeloInput Conteudo, List<FieldError> Recusas) ComConjuntoBasico(ConteudoDoModeloInput conteudo)
     {
         IReadOnlyList<FatoColetadoInput> itens = conteudo.Itens ?? [];
         IReadOnlyList<EtapaFormularioInput> etapas = conteudo.Etapas ?? [];
@@ -47,11 +50,12 @@ internal sealed class CopiaDoFormularioDoModelo(
             ConjuntoBasicoDaInscricao.MesclarItens(itens, conteudo.Grupos ?? [], ConjuntoBasicoDaInscricao.Referencia(itens));
         (IReadOnlyList<EtapaFormularioInput> etapasMescladas, List<FieldError> mesclaDasEtapas) =
             ConjuntoBasicoDaInscricao.MesclarEtapas(etapas, ConjuntoBasicoDaInscricao.SecaoDe(etapas));
-        erros.AddRange(mescla.Concat(mesclaDasEtapas).Select(static e => PosicaoNoModelo.NoModelo(e)));
-        return conteudo with { Itens = itensMesclados, Grupos = gruposMesclados, Etapas = etapasMescladas };
+        return (
+            conteudo with { Itens = itensMesclados, Grupos = gruposMesclados, Etapas = etapasMescladas },
+            [.. mescla.Concat(mesclaDasEtapas).Select(static e => PosicaoNoModelo.NoModelo(e))]);
     }
 
-    private ItensCopiados CopiarItens(IReadOnlyList<FatoColetadoInput> itensDoModelo, List<FieldError> erros)
+    private ItensCopiados CopiarItens(IReadOnlyList<FatoColetadoInput> itensDoModelo)
     {
         List<int> indices = [];
         List<FatoColetadoInput> aCopiar = [];
@@ -65,8 +69,7 @@ internal sealed class CopiaDoFormularioDoModelo(
         }
 
         (List<FatoColetado> itens, List<FieldError> errosDosItens) = EscritaDosItens.Resolver(EscritaDosItens.Ler(aCopiar), contexto);
-        erros.AddRange(errosDosItens.Select(e => PosicaoNoModelo.NoModelo(e, "itens", indices)));
-        return new ItensCopiados(itens, indices, aCopiar);
+        return new ItensCopiados(itens, indices, aCopiar, [.. errosDosItens.Select(e => PosicaoNoModelo.NoModelo(e, "itens", indices))]);
     }
 
     private bool ItemEntraNaCopia(FatoColetadoInput item)
@@ -95,7 +98,7 @@ internal sealed class CopiaDoFormularioDoModelo(
 
     // O grupo com campo que o catálogo mudou sai da cópia inteiro: a ocorrência sem o campo seria outra
     // lista que o modelo não compôs.
-    private GruposCopiados CopiarGrupos(IReadOnlyList<GrupoColetadoInput> gruposDoModelo, List<FieldError> erros)
+    private GruposCopiados CopiarGrupos(IReadOnlyList<GrupoColetadoInput> gruposDoModelo)
     {
         List<int> indices = [];
         List<GrupoColetadoInput> aCopiar = [];
@@ -109,8 +112,7 @@ internal sealed class CopiaDoFormularioDoModelo(
         }
 
         (List<GrupoColetado> grupos, List<FieldError> errosDosGrupos) = EscritaDosItens.ResolverGrupos(EscritaDosItens.LerGrupos(aCopiar), contexto);
-        erros.AddRange(errosDosGrupos.Select(e => PosicaoNoModelo.NoModelo(e, "grupos", indices)));
-        return new GruposCopiados(grupos, indices, aCopiar);
+        return new GruposCopiados(grupos, indices, aCopiar, [.. errosDosGrupos.Select(e => PosicaoNoModelo.NoModelo(e, "grupos", indices))]);
     }
 
     private bool GrupoEntraNaCopia(GrupoColetadoInput grupo)
@@ -140,11 +142,13 @@ internal sealed class CopiaDoFormularioDoModelo(
     }
 }
 
-/// <summary>Os itens que entram na cópia, o índice de cada um no modelo e a entrada que os originou.</summary>
-internal sealed record ItensCopiados(List<FatoColetado> Itens, List<int> IndicesNoModelo, List<FatoColetadoInput> Entradas);
+/// <summary>Os itens que entram na cópia, o índice de cada um no modelo, a entrada que os originou e as recusas.</summary>
+internal sealed record ItensCopiados(
+    List<FatoColetado> Itens, List<int> IndicesNoModelo, List<FatoColetadoInput> Entradas, List<FieldError> Recusas);
 
-/// <summary>Os grupos que entram na cópia, o índice de cada um no modelo e a entrada que os originou.</summary>
-internal sealed record GruposCopiados(List<GrupoColetado> Grupos, List<int> IndicesNoModelo, List<GrupoColetadoInput> Entradas);
+/// <summary>Os grupos que entram na cópia, o índice de cada um no modelo, a entrada que os originou e as recusas.</summary>
+internal sealed record GruposCopiados(
+    List<GrupoColetado> Grupos, List<int> IndicesNoModelo, List<GrupoColetadoInput> Entradas, List<FieldError> Recusas);
 
-/// <summary>As partes do formulário copiadas do modelo.</summary>
-internal sealed record FormularioCopiado(ItensCopiados Itens, GruposCopiados Grupos, EtapasLidas Etapas);
+/// <summary>As partes do formulário copiadas do modelo e as recusas de todas elas, na ordem de avaliação.</summary>
+internal sealed record FormularioCopiado(ItensCopiados Itens, GruposCopiados Grupos, EtapasLidas Etapas, List<FieldError> Recusas);
