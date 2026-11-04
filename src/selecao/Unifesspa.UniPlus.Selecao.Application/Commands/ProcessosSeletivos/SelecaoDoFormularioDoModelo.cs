@@ -33,9 +33,9 @@ internal sealed class SelecaoDoFormularioDoModelo(
             finalidade == FinalidadeFormulario.Inscricao ? ComConjuntoBasico(conteudo) : (conteudo, []);
         ItensSelecionados itens = CopiarItens(conteudoFinal.Itens ?? []);
         GruposSelecionados grupos = CopiarGrupos(conteudoFinal.Grupos ?? []);
-        EtapasLidas etapas = EscritaDasEtapas.Ler(conteudoFinal.Etapas ?? []);
+        EtapasDoFormularioLidas etapas = EscritaDasEtapasDoFormulario.Ler(conteudoFinal.Etapas ?? []);
         IEnumerable<FieldError> recusasDasEtapas = etapas.Erros
-            .Concat(EscritaDasEtapas.ConferirExibicoes(etapas, contexto))
+            .Concat(EscritaDasEtapasDoFormulario.ConferirExibicoes(etapas, contexto))
             .Select(static e => PosicaoNoModelo.NoModelo(e));
         return new FormularioSelecionado(itens, grupos, etapas, [.. recusasDaMescla, .. itens.Recusas, .. grupos.Recusas, .. recusasDasEtapas]);
     }
@@ -151,4 +151,4 @@ internal sealed record GruposSelecionados(
     List<GrupoColetado> Grupos, List<int> IndicesNoModelo, List<GrupoColetadoInput> Entradas, List<FieldError> Recusas);
 
 /// <summary>As partes do formulário copiadas do modelo e as recusas de todas elas, na ordem de avaliação.</summary>
-internal sealed record FormularioSelecionado(ItensSelecionados Itens, GruposSelecionados Grupos, EtapasLidas Etapas, List<FieldError> Recusas);
+internal sealed record FormularioSelecionado(ItensSelecionados Itens, GruposSelecionados Grupos, EtapasDoFormularioLidas Etapas, List<FieldError> Recusas);

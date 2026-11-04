@@ -60,7 +60,7 @@ public static class DefinirFormularioCommandHandler
             (entradas, daSecao) = ConjuntoBasicoDaInscricao.MesclarEtapas(entradas, SecaoDadosBasicosDoProcesso.Secao(processo));
         }
 
-        EtapasLidas lidas = EscritaDasEtapas.Ler(entradas);
+        EtapasDoFormularioLidas lidas = EscritaDasEtapasDoFormulario.Ler(entradas);
         bool criaInscricao = inscricao && processo.FormularioDe(FinalidadeFormulario.Inscricao) is null;
 
         // A semântica das exibições e os itens da criação vêm do catálogo, lido só quando preciso.
@@ -68,7 +68,7 @@ public static class DefinirFormularioCommandHandler
             ? await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false)
             : [];
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogo);
-        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasEtapas.ConferirExibicoes(lidas, contexto)];
+        List<FieldError> erros = [.. daSecao, .. lidas.Erros, .. EscritaDasEtapasDoFormulario.ConferirExibicoes(lidas, contexto)];
         List<EtapaFormulario> etapas = [.. lidas.Etapas];
 
         List<FatoColetado>? itensDaCriacao = null;

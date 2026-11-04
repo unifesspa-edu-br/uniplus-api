@@ -14,16 +14,16 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>As etapas lidas pela forma, sem leitura externa, com a exibição de cada posição da entrada.</summary>
-internal sealed record EtapasLidas(IReadOnlyList<EtapaFormulario> Etapas, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros);
+internal sealed record EtapasDoFormularioLidas(IReadOnlyList<EtapaFormulario> Etapas, IReadOnlyList<PredicadoDnf?> Exibicoes, IReadOnlyList<FieldError> Erros);
 
 /// <summary>
 /// A escrita das etapas do formulário do processo, sem ler nem mudar o processo: a forma de cada
 /// etapa, sem I/O, e a semântica das exibições contra o catálogo. A estrutura por finalidade e a
 /// posição das citações são do agregado.
 /// </summary>
-internal static class EscritaDasEtapas
+internal static class EscritaDasEtapasDoFormulario
 {
-    public static EtapasLidas Ler(IReadOnlyList<EtapaFormularioInput?> entradas)
+    public static EtapasDoFormularioLidas Ler(IReadOnlyList<EtapaFormularioInput?> entradas)
     {
         ArgumentNullException.ThrowIfNull(entradas);
         List<FieldError> erros = [];
@@ -57,11 +57,11 @@ internal static class EscritaDasEtapas
             }
         }
 
-        return new EtapasLidas(etapas, exibicoes, erros);
+        return new EtapasDoFormularioLidas(etapas, exibicoes, erros);
     }
 
     /// <summary>A exibição de cada seção pelo vocabulário e pelos domínios do processo, sem fato calculado de atributos.</summary>
-    public static IEnumerable<FieldError> ConferirExibicoes(EtapasLidas lidas, ContextoDoCatalogo contexto)
+    public static IEnumerable<FieldError> ConferirExibicoes(EtapasDoFormularioLidas lidas, ContextoDoCatalogo contexto)
     {
         ArgumentNullException.ThrowIfNull(lidas);
         ArgumentNullException.ThrowIfNull(contexto);
