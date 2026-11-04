@@ -66,6 +66,9 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         "MontagemDaRegraDeRecursoDaFase.cs",
         "ConferenciaDaAncoraDoRecurso.cs",
         "CadastrosDasFases.cs",
+        "ConferenciaDoProdutoDoAto.cs",
+        "AtosConsultadosNaEdicao.cs",
+        "InterrupcaoDaFase.cs",
     ];
 
     [Fact(DisplayName = "Nenhum literal de comparação institucional no gate do cronograma")]
