@@ -59,17 +59,28 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
         regra.Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "O caminho previsto e o port existem: a regra não passa vazia")]
+    [Fact(DisplayName = "O caminho previsto existe: o port e o tipo que o carrega têm dependentes, e a regra não passa vazia")]
     public void OCaminhoPrevistoDependeDoPort()
     {
-        IEnumerable<IType> dependentes = Arquitetura.Types
-            .Where(static t => System.Text.RegularExpressions.Regex.IsMatch(t.FullName, CaminhoPrevisto))
-            .Where(static t => t.Dependencies.Any(static d => d.Target.FullName == typeof(IAcervoPublico).FullName));
+        string[] doPort = DependentesDe(typeof(IAcervoPublico).FullName!);
+        string[] doCarregador = DependentesDe("Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.AcervoDaDivulgacao");
 
-        dependentes.Select(static t => t.Name.Split('+')[0]).Distinct().Should().Contain(
-            ["DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo", "AcervoDaDivulgacao"],
+        doPort.Should().Contain(
+            ["DivulgarCertameAoRegistrarAtoHandler", "AcervoDaDivulgacao"],
             "sem dependente nenhum o teste aprovaria um acervo que nunca recebe o modelo publicado");
+        doCarregador.Should().Contain(
+            ["DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo", "MontagemDaDivulgacao"],
+            "o acervo chega às etapas da divulgação por intermédio do tipo que o carrega");
     }
+
+    private static string[] DependentesDe(string nomeCompleto) =>
+    [
+        .. Arquitetura.Types
+            .Where(static t => System.Text.RegularExpressions.Regex.IsMatch(t.FullName, CaminhoPrevisto))
+            .Where(t => t.Dependencies.Any(d => d.Target.FullName == nomeCompleto))
+            .Select(static t => t.Name.Split('+')[0])
+            .Distinct(),
+    ];
 
     [Fact(DisplayName = "Só a implementação do acervo de Seleção usa a cópia para objeto público do storage")]
     public void SoOAcervoDeSelecaoUsaACopiaPublica()
