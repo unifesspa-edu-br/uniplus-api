@@ -25,11 +25,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// <c>Codificar</c> delega ao <see cref="SnapshotPublicacaoCanonicalizer"/>, a projeção viva —
 /// e, sendo o único codec, os dois nunca podem divergir. <c>Decodificar</c> reconstrói o
-/// envelope pelos leitores de bloco (os métodos <c>Ler*</c> estáticos, divididos por assunto
-/// em arquivos parciais desta classe) e resolve <c>arvoreSatisfacao</c> contra as exigências
+/// envelope pelos leitores de bloco (as classes <c>Leitura*</c>, uma por assunto)
+///) e resolve <c>arvoreSatisfacao</c> contra as exigências
 /// já lidas, por Id, sem duplicá-las.
 /// </remarks>
-public sealed partial class EnvelopeCodec : IEnvelopeCodec
+public sealed class EnvelopeCodec : IEnvelopeCodec
 {
     private static readonly string[] BlocosReais =
     [
@@ -75,10 +75,6 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
     /// indistinguível da que o parser escolheria.
     /// </summary>
     private static readonly JsonDocumentOptions OpcoesDocumento = new() { AllowDuplicateProperties = false };
-
-    private const int EscalaPadrao = 4;
-
-    private const int EscalaPercentual = 2;
 
     private readonly SnapshotPublicacaoCanonicalizer _encoder = new();
 
@@ -139,6 +135,18 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
+        Result<JsonObject> lido = LerObjeto(bytes);
+        if (lido.IsFailure)
+        {
+            return lido;
+        }
+
+        DomainError? forma = ConferirFormaCanonica(perfil, lido.Value!, bytes);
+        return forma is null ? lido : Result<JsonObject>.Failure(forma);
+    }
+
+    private static Result<JsonObject> LerObjeto(byte[] bytes)
+    {
         JsonNode? node;
         try
         {
@@ -146,18 +154,18 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         }
         catch (JsonException excecao)
         {
-            return Result<JsonObject>.Failure(new DomainError(
+            return Falha(
                 ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Os bytes congelados não são um JSON válido e sem chaves duplicadas: {excecao.Message}"));
+                $"Os bytes congelados não são um JSON válido e sem chaves duplicadas: {excecao.Message}");
         }
 
-        if (node is not JsonObject payload)
-        {
-            return Result<JsonObject>.Failure(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                "Os bytes congelados não são um objeto JSON."));
-        }
+        return node is JsonObject payload
+            ? Result<JsonObject>.Success(payload)
+            : Falha(ErrosCodecEnvelope.EnvelopeMalformado, "Os bytes congelados não são um objeto JSON.");
+    }
 
+    private static DomainError? ConferirFormaCanonica(IPerfilCanonico perfil, JsonObject payload, byte[] bytes)
+    {
         byte[] recanonicalizado;
         try
         {
@@ -165,20 +173,20 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         }
         catch (PayloadForaDoPerfilCanonicoException excecao)
         {
-            return Result<JsonObject>.Failure(new DomainError(
+            return new DomainError(
                 ErrosCodecEnvelope.EnvelopeMalformado,
-                $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}"));
+                $"Os bytes congelados contêm o que o perfil '{perfil.Algoritmo}' não representa: {excecao.Message}");
         }
 
-        if (!recanonicalizado.AsSpan().SequenceEqual(bytes))
-        {
-            return Result<JsonObject>.Failure(new DomainError(
+        return recanonicalizado.AsSpan().SequenceEqual(bytes)
+            ? null
+            : new DomainError(
                 ErrosCodecEnvelope.IntegridadeViolada,
-                "Os bytes congelados não estão na forma canônica (ADR-0100) — reserializá-los produz bytes distintos."));
-        }
-
-        return Result<JsonObject>.Success(payload);
+                "Os bytes congelados não estão na forma canônica (ADR-0100) — reserializá-los produz bytes distintos.");
     }
+
+    private static Result<JsonObject> Falha(string codigo, string mensagem) =>
+        Result<JsonObject>.Failure(new DomainError(codigo, mensagem));
 
     public Result<EnvelopeReidratado> Decodificar(VersaoConfiguracao versao)
     {
@@ -194,249 +202,11 @@ public sealed partial class EnvelopeCodec : IEnvelopeCodec
         LeitorEnvelope leitor = new();
 
         bool temRetificacao = payload.ContainsKey("retificacao");
-        string[] chavesEsperadas = temRetificacao
-            ? [.. BlocosReais, "retificacao"]
-            : BlocosReais;
+        leitor.ExigirChaves(payload, "$", temRetificacao ? [.. BlocosReais, "retificacao"] : BlocosReais);
 
-        leitor.ExigirChaves(payload, "$", chavesEsperadas);
-
-        LerTipoProcesso(leitor, payload);
-
-        DadosEdital? dados = LerDadosEdital(leitor, payload, out string hashDocumento);
-        IReadOnlyList<EtapaProcesso> etapas = LerEtapas(leitor, payload);
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao = LerDistribuicao(leitor, payload);
-        OfertaAtendimentoEspecializado? atendimento = LerAtendimento(leitor, payload);
-        ConfiguracaoBonusRegional? bonus = LerBonusRegional(leitor, payload);
-        ConfiguracaoCascataRemanejamento? cascata = LerCascataRemanejamento(leitor, payload);
-        IReadOnlyList<CriterioDesempate> desempate = LerCriteriosDesempate(leitor, payload);
-        ConfiguracaoClassificacao? classificacao = LerClassificacao(leitor, payload);
-        IReadOnlyList<FaseCronograma> cronogramaFases = LerCronogramaFases(leitor, payload, comId: true);
-        LerIdentidadesUnidade(leitor, payload);
-        (ResultadoConformidade? conformidade, IReadOnlyList<DocumentoExigido> documentosExigidos, ReferenciaTemporalFatos? referenciaTemporalFatos,
-            IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados) = LerDocumentosExigidos(leitor, payload);
-        (IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<TermoExigidoFormulario> termosExigidos) = LerFormularios(leitor, payload);
-        ConfiguracaoDivulgacao? configuracaoDivulgacao = LerDivulgacao(leitor, payload);
-        ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = LerTaxaInscricao(leitor, payload);
-        (LocalidadeRegente? localidade, string? fusoHorario) = LerLocalidade(leitor, payload);
-        int? numeroDeOpcoesDeCurso = LerOpcoesDeCurso(leitor, payload);
-        ReferenciaRegra? algoritmoContagemPrazo = LerAlgoritmoContagemPrazo(leitor, payload);
-        CalendarioDiasUteisCongelado? calendarioDiasUteis = LerCalendarioDiasUteis(leitor, payload, cronogramaFases, etapas);
-        IdentificadorLegivel? identificadorLegivel = LerIdentificadorLegivel(leitor, payload);
-        RetificacaoInfo? retificacao = temRetificacao ? LerRetificacao(leitor, payload) : null;
-
-        if (leitor.Falhou)
-        {
-            return leitor.Falha<EnvelopeReidratado>();
-        }
-
-        Dictionary<Guid, DocumentoExigido> exigenciasPorId = IndexarExigenciasPorId(leitor, documentosExigidos);
-        if (leitor.Falhou)
-        {
-            return leitor.Falha<EnvelopeReidratado>();
-        }
-
-        IReadOnlyList<NoExigencia> raizes = LerArvoreSatisfacao(leitor, payload, exigenciasPorId);
-        if (leitor.Falhou)
-        {
-            return leitor.Falha<EnvelopeReidratado>();
-        }
-
-        (IReadOnlyList<FatoColetado> Fatos, Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresSelecionaveis)
-            fatosColetadosLidos = LerFatosColetados(leitor, payload);
-        IReadOnlyList<FatoColetado> fatosColetados = fatosColetadosLidos.Fatos;
-        List<DefinicaoAgregado> agregadosDosGrupos = [];
-        IReadOnlyList<GrupoColetado> gruposColetados = leitor.Falhou
-            ? []
-            : LerGruposColetados(leitor, payload, fatosColetadosLidos.ValoresSelecionaveis, agregadosDosGrupos);
-        IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao = LerRegrasDerivacao(leitor, payload);
-        string versaoInterpretador = leitor.TextoNaoVazio(payload, "versaoInterpretador", "$");
-        Dictionary<string, ApresentacaoDoFato> apresentacaoDosPressupostos = LerApresentacaoDosPressupostos(leitor, payload);
-        Dictionary<string, TipoDeAtoCongelado> tiposDeAtoCongelados = LerTiposDeAto(leitor, payload, cronogramaFases, etapas);
-        Dictionary<string, FatoDerivadoCongelado> fatosDerivadosCongelados = LerFatosDerivados(leitor, payload);
-        if (leitor.Falhou)
-        {
-            return leitor.Falha<EnvelopeReidratado>();
-        }
-
-        if (ItensForaDosFormularios(formularios, fatosColetados, gruposColetados) is { } itemForaDoFormulario)
-        {
-            return Result<EnvelopeReidratado>.Failure(itemForaDoFormulario);
-        }
-
-        if (VerificarCoerenciaComAVersao(versao, hashDocumento, retificacao) is { } incoerencia)
-        {
-            return Result<EnvelopeReidratado>.Failure(incoerencia);
-        }
-
-        IReadOnlyList<NoExigencia> todosOsNos = [.. raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
-
-        // Onde cada documento é coletado só significa alguma coisa contra o cronograma e as
-        // etapas repostas ao lado dele — e é a MESMA conferência que a escrita faz, não uma
-        // segunda leitura da regra. Sem ela, uma exigência apontando para fase ou etapa que
-        // o envelope não repõe atravessa a leitura e morre na chave estrangeira, e a que
-        // aponta para etapa de outra fase persiste calada.
-        if (ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(documentosExigidos, cronogramaFases, etapas) is { } vinculoInvalido)
-        {
-            return Result<EnvelopeReidratado>.Failure(vinculoInvalido);
-        }
-
-        // A repetição por entidade nomeia um grupo dos formulários repostos ao lado dela, pela
-        // mesma conferência da escrita.
-        if (ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(todosOsNos, gruposColetados) is { } repeticaoSemGrupo)
-        {
-            return Result<EnvelopeReidratado>.Failure(repeticaoSemGrupo);
-        }
-
-        // Fail-closed do bloco de coleta/derivação (congelamento dos parâmetros na publicação, UNI-REQ-0019): um envelope adulterado que declare fato
-        // duplicado, cite fato inexistente num gatilho/pré-condição/regra, contribua código fora do
-        // domínio de modalidades, feche ciclo no grafo conjunto, ou cujo grafo/modalidades congelados
-        // divirjam do recomputado, é recusado como malformado — nunca reidratado como se fosse íntegro.
-        if (ValidarBlocoDeFatosEDerivacao(
-            fatosColetados, gruposColetados, regrasDerivacao, documentosExigidos, formularios, termosExigidos,
-            versaoInterpretador, distribuicao, payload) is { } malformado)
-        {
-            return Result<EnvelopeReidratado>.Failure(malformado);
-        }
-
-        // As regras dos itens, das seções e dos termos citam só o que o formulário delas conhece,
-        // pela mesma conferência da escrita e da publicação, que inclui os fatos que a oferta deriva.
-        if (Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.CitacaoInvalidaNosFormularios(
-                formularios, fatosColetados, termosExigidos, DerivacoesDaOferta.Efetivas(regrasDerivacao, distribuicao),
-                gruposColetados) is { } citacaoInvalida)
-        {
-            return Result<EnvelopeReidratado>.Failure(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {citacaoInvalida.Message}"));
-        }
-
-        if (Domain.ProcessosSeletivos.Formularios.PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(
-                [.. fatosColetados, .. gruposColetados.SelectMany(static g => g.Subitens)], classificacao) is { } edicaoSemEnem)
-        {
-            return Result<EnvelopeReidratado>.Failure(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {edicaoSemEnem.Message}"));
-        }
-
-        Result<IReadOnlyList<OpcaoDeclaradaFato>> opcoesDeclaradas =
-            ReconstruirOpcoesDeclaradas([.. fatosColetados, .. gruposColetados.SelectMany(static g => g.Subitens)], fatosColetadosLidos.ValoresSelecionaveis);
-        if (opcoesDeclaradas.IsFailure)
-        {
-            return Result<EnvelopeReidratado>.Failure(opcoesDeclaradas.Error!);
-        }
-
-        GrafoConfiguracao grafo = new(
-            etapas, atendimento!, distribuicao, bonus, desempate, classificacao!, cronogramaFases,
-            documentosExigidos, todosOsNos, referenciaTemporalFatos, fatosColetados, regrasDerivacao,
-            cascataRemanejamento: cascata,
-            formularios: formularios,
-            termosExigidos: termosExigidos,
-            configuracaoDivulgacao: configuracaoDivulgacao,
-            configuracaoTaxaInscricao: configuracaoTaxaInscricao,
-            localidade: localidade,
-            numeroDeOpcoesDeCurso: numeroDeOpcoesDeCurso,
-            algoritmoContagemPrazo: algoritmoContagemPrazo,
-            identificadorLegivel: identificadorLegivel,
-            opcoesDeclaradas: opcoesDeclaradas.Value,
-            gruposColetados: gruposColetados);
-        return Result<EnvelopeReidratado>.Success(
-            new EnvelopeReidratado(
-                grafo, dados!, hashDocumento, fusoHorario!, retificacao, conformidade,
-                metadadosFatosCongelados, fatosColetadosLidos.ValoresSelecionaveis, calendarioDiasUteis, agregadosDosGrupos,
-                apresentacaoDosPressupostos, tiposDeAtoCongelados, fatosDerivadosCongelados));
-    }
-
-    /// <summary>
-    /// O rótulo e o tipo de campo de cada fato que as regras citam e nenhum formulário pergunta. O tipo é
-    /// um dos que o formulário renderiza, ou nulo; o código, um só por item.
-    /// </summary>
-    private static Dictionary<string, ApresentacaoDoFato> LerApresentacaoDosPressupostos(LeitorEnvelope leitor, JsonObject payload)
-    {
-        Dictionary<string, ApresentacaoDoFato> apresentacao = new(StringComparer.Ordinal);
-        if (leitor.Falhou)
-        {
-            return apresentacao;
-        }
-
-        JsonArray array = leitor.Array(payload, "apresentacaoDosPressupostos", "$");
-        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
-        {
-            string path = $"apresentacaoDosPressupostos[{i}]";
-            JsonObject item = leitor.ItemObjeto(array, i, "apresentacaoDosPressupostos");
-            leitor.ExigirChaves(item, path, "fatoCodigo", "rotulo", "tipoRenderizacao");
-            string fatoCodigo = leitor.TextoNaoVazio(item, "fatoCodigo", path, FormaDoItem.FatoCodigoMaxLength);
-            string rotulo = leitor.TextoNaoVazio(item, "rotulo", path, LimitesDoEnvelope.NomeDeCadastro);
-            string? tipo = leitor.TextoOpcional(item, "tipoRenderizacao", path, LimitesDoEnvelope.Token);
-            if (leitor.Falhou)
-            {
-                break;
-            }
-
-            if (tipo is not null && TipoRenderizacaoCodigo.FromCodigo(tipo) == TipoRenderizacao.Nenhuma)
-            {
-                return leitor.Propagar<Dictionary<string, ApresentacaoDoFato>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em '{path}.tipoRenderizacao': '{tipo}' não é um tipo de campo.")) ?? apresentacao;
-            }
-
-            if (!apresentacao.TryAdd(fatoCodigo, new ApresentacaoDoFato(fatoCodigo, rotulo, tipo)))
-            {
-                return leitor.Propagar<Dictionary<string, ApresentacaoDoFato>>(new DomainError(
-                    ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"Envelope malformado em 'apresentacaoDosPressupostos': o fato '{fatoCodigo}' aparece mais de uma vez.")) ?? apresentacao;
-            }
-        }
-
-        return apresentacao;
-    }
-
-    /// <summary>
-    /// <c>documentosExigidos.exigencias</c> nunca tem <c>exigenciaId</c> duplicado quando
-    /// produzido por um encoder real — mas um envelope adulterado poderia ter. Sem esta
-    /// checagem, <c>ToDictionary</c> lançaria <see cref="ArgumentException"/> (500 não
-    /// tratado) em vez de recusar como envelope malformado, mesma disciplina do restante do
-    /// decoder.
-    /// </summary>
-    private static Dictionary<Guid, DocumentoExigido> IndexarExigenciasPorId(
-        LeitorEnvelope leitor, IReadOnlyList<DocumentoExigido> documentosExigidos)
-    {
-        List<Guid> duplicados = [.. documentosExigidos
-            .GroupBy(static d => d.Id)
-            .Where(static grupo => grupo.Count() > 1)
-            .Select(static grupo => grupo.Key)];
-
-        if (duplicados.Count > 0)
-        {
-            return leitor.Propagar<Dictionary<Guid, DocumentoExigido>>(new DomainError(
-                ErrosCodecEnvelope.EnvelopeMalformado,
-                $"'documentosExigidos.exigencias': o exigenciaId '{duplicados[0]}' aparece mais de uma vez.")) ?? [];
-        }
-
-        return documentosExigidos.ToDictionary(static d => d.Id);
-    }
-
-    /// <summary>
-    /// Todo item pertence a um formulário do envelope e está numa seção dele, na ordem das seções —
-    /// a mesma recusa da publicação, que nunca congela outra forma.
-    /// </summary>
-    private static DomainError? ItensForaDosFormularios(
-        IReadOnlyList<FormularioProcesso> formularios, IReadOnlyList<FatoColetado> fatos, IReadOnlyList<GrupoColetado> grupos)
-    {
-        Dictionary<FinalidadeFormulario, FormularioProcesso> porFinalidade = formularios.ToDictionary(static f => f.Finalidade);
-        IEnumerable<(FinalidadeFormulario Finalidade, ItemEstrutura Item)> itensEGrupos = fatos
-            .Select(static f => (f.Finalidade, new ItemEstrutura(f.FatoCodigo, f.Ordem, f.EtapaCodigo)))
-            .Concat(grupos.Select(static g => (g.Finalidade, g.ParaEstrutura())));
-        foreach (IGrouping<FinalidadeFormulario, ItemEstrutura> itens in itensEGrupos.GroupBy(static p => p.Finalidade, static p => p.Item))
-        {
-            if (!porFinalidade.TryGetValue(itens.Key, out FormularioProcesso? formulario))
-            {
-                return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado,
-                    $"'fatosColetados' tem itens de {EstruturaFormulario.ParaToken(itens.Key)}, que não tem formulário no envelope.");
-            }
-
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, [.. itens]) is [{ } primeiro, ..])
-            {
-                return new DomainError(ErrosCodecEnvelope.EnvelopeMalformado, $"'fatosColetados': {primeiro.Error.Message}");
-            }
-        }
-
-        return null;
+        BlocosDoEnvelope? blocos = LeituraDoEnvelope.Ler(leitor, payload, temRetificacao);
+        return blocos is null
+            ? leitor.Falha<EnvelopeReidratado>()
+            : CoerenciaEntreBlocos.Conferir(blocos, versao, payload);
     }
 }

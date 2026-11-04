@@ -13,10 +13,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura do bloco <c>retificacao</c> e a conferência de coerência entre o envelope e a
-/// versão de configuração que o guarda (hash do ato criador, cadeia de retificação).
+/// Leitura do bloco de retificação e conferência de sua coerência com a versão.
 /// </summary>
-public sealed partial class EnvelopeCodec
+internal static class LeituraDaRetificacao
 {
     /// <summary>
     /// O envelope não pode contradizer a linha que o guarda. O hash do ato aparece nos
@@ -25,42 +24,36 @@ public sealed partial class EnvelopeCodec
     /// coluna aponta. Divergir aqui significa que uma das duas evidências está errada, e
     /// não há como saber qual.
     /// </summary>
-    private static DomainError? VerificarCoerenciaComAVersao(
+    internal static DomainError? VerificarCoerenciaComAVersao(
         VersaoConfiguracao versao,
         string hashDocumento,
         RetificacaoInfo? retificacao)
     {
         if (!string.Equals(hashDocumento, versao.AtoCriadorHash, StringComparison.Ordinal))
         {
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao,
-                "O hash do documento congelado no bloco 'hashesEdital' não é o do ato criador da versão.");
+            return Incoerente("O hash do documento congelado no bloco 'hashesEdital' não é o do ato criador da versão.");
         }
 
         if (versao.NumeroVersao == 1)
         {
             return retificacao is null
                 ? null
-                : new DomainError(
-                    ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao,
-                    "A versão 1 abre a cadeia e não retifica ato algum — o bloco 'retificacao' não pode existir nela.");
+                : Incoerente("A versão 1 abre a cadeia e não retifica ato algum — o bloco 'retificacao' não pode existir nela.");
         }
 
         if (retificacao is null)
         {
-            return new DomainError(
-                ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao,
-                $"A versão {versao.NumeroVersao} sucede outra e tem de carregar o bloco 'retificacao'.");
+            return Incoerente($"A versão {versao.NumeroVersao} sucede outra e tem de carregar o bloco 'retificacao'.");
         }
 
         return retificacao.EditalRetificadoId == versao.AtoCriadorRetificaId
             ? null
-            : new DomainError(
-                ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao,
-                "O ato retificado declarado no bloco 'retificacao' não é o que a versão registra ter emendado.");
+            : Incoerente("O ato retificado declarado no bloco 'retificacao' não é o que a versão registra ter emendado.");
     }
 
-    private static RetificacaoInfo? LerRetificacao(LeitorEnvelope leitor, JsonObject payload)
+    private static DomainError Incoerente(string mensagem) => new(ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao, mensagem);
+
+    internal static RetificacaoInfo? LerRetificacao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "retificacao", "$");
         leitor.ExigirChaves(bloco, "retificacao", "editalRetificadoId", "motivo");

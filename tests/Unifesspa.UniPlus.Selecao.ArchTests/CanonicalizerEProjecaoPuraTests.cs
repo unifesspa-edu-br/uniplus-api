@@ -40,6 +40,23 @@ public sealed class CanonicalizerEProjecaoPuraTests
         "HttpClient",      // rede
     ];
 
+    private static readonly string[] EsperadosNaProjecao =
+    [
+        "EscritaCanonica",
+        "SerializacaoDaCascata",
+        "SerializacaoDaClassificacao",
+        "SerializacaoDaDivulgacaoEDaTaxa",
+        "SerializacaoDasEtapas",
+        "SerializacaoDasExigencias",
+        "SerializacaoDasVagas",
+        "SerializacaoDoBonusEDoAtendimento",
+        "SerializacaoDoCronograma",
+        "SerializacaoDoEdital",
+        "SerializacaoDosFatos",
+        "SerializacaoDosFormularios",
+        "SerializacaoDosPredicados",
+    ];
+
     [Fact(DisplayName = "Canonicalizer_NaoTemDependencias — a projeção não recebe repositório, DbContext, relógio, service provider nem HttpClient")]
     public void Canonicalizer_NaoTemDependencias()
     {
@@ -59,6 +76,31 @@ public sealed class CanonicalizerEProjecaoPuraTests
                 tipo.Name.Should().NotContain(proibida,
                     $"o canonicalizador é uma projeção PURA (ADR-0109 D6) — '{tipo.Name}' denuncia estado externo. " +
                     "Dado que falta ao envelope entra por EntradaCanonicalizacao, montada pelo handler.");
+            }
+        }
+    }
+
+    [Fact(DisplayName = "Serializadores_NaoTemEstadoNemDependencias — todo tipo da projeção, no namespace inteiro, só declara campos de valor")]
+    public void Serializadores_NaoTemEstadoNemDependencias()
+    {
+        Type[] tiposDaProjecao = [.. Canonicalizer.Assembly
+            .GetTypes()
+            .Where(static t => t.Namespace == Canonicalizer.Namespace
+                && (t.Name.StartsWith("Serializacao", StringComparison.Ordinal) || t.Name == "EscritaCanonica"))];
+
+        tiposDaProjecao.Select(static t => t.Name).Should().Contain(EsperadosNaProjecao,
+            "a varredura tem de encontrar os serializadores; sem isso o teste passaria vazio");
+
+        IEnumerable<Type> tiposDeCampo = tiposDaProjecao
+            .SelectMany(static t => t.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+            .Select(static f => f.FieldType);
+
+        foreach (Type tipo in tiposDeCampo)
+        {
+            foreach (string proibida in DependenciasProibidas)
+            {
+                tipo.Name.Should().NotContain(proibida,
+                    $"a projeção é PURA (ADR-0109 D6) — '{tipo.Name}' denuncia estado externo.");
             }
         }
     }

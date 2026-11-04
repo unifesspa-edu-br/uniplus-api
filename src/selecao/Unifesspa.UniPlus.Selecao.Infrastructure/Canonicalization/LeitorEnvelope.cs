@@ -47,6 +47,11 @@ internal sealed class LeitorEnvelope
         return default!;
     }
 
+    /// <summary>
+    /// Recusa o envelope com a mensagem como está, no código de envelope malformado.
+    /// </summary>
+    public T Recusar<T>(string mensagem) => Registrar<T>(ErrosCodecEnvelope.EnvelopeMalformado, mensagem);
+
     internal T Malformado<T>(string path, string detalhe) =>
         Registrar<T>(ErrosCodecEnvelope.EnvelopeMalformado, $"Envelope malformado em '{path}': {detalhe}");
 
@@ -86,6 +91,33 @@ internal sealed class LeitorEnvelope
         return pai[chave] is JsonObject objeto
             ? objeto
             : Malformado<JsonObject>($"{path}.{chave}", "esperado um objeto.");
+    }
+
+    /// <summary>
+    /// Lê um bloco que declara <c>presente</c>: devolve o objeto quando presente e nulo quando ausente,
+    /// caso em que a única chave admitida é <c>presente</c>.
+    /// </summary>
+    public JsonObject? ObjetoSePresente(JsonObject pai, string chave)
+    {
+        JsonObject bloco = Objeto(pai, chave, "$");
+        if (Falhou)
+        {
+            return null;
+        }
+
+        bool presente = this.Booleano(bloco, "presente", chave);
+        if (Falhou)
+        {
+            return null;
+        }
+
+        if (presente)
+        {
+            return bloco;
+        }
+
+        ExigirChaves(bloco, chave, "presente");
+        return null;
     }
 
     public JsonObject? ObjetoOpcional(JsonObject pai, string chave, string path)

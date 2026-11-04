@@ -38,13 +38,6 @@
 447 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliadorConformidadeLegal.cs
 636 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/ResolvedorArvoreSatisfacao.cs
 507 src/selecao/Unifesspa.UniPlus.Selecao.Domain/ValueObjects/GrafoDependenciaConjunta.cs
-889 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.Configuracoes.cs
-587 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.DistribuicaoVagas.cs
-583 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.DocumentosExigidos.cs
-979 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.FatosEDerivacao.cs
-477 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.RegrasClassificacao.cs
-442 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/EnvelopeCodec.cs
-784 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Canonicalization/LeitorEnvelope.cs
 817 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Repositories/InscricaoRepository.cs
 425 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Errors/InvalidRequestProblemFactory.cs
 558 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyFilter.cs
