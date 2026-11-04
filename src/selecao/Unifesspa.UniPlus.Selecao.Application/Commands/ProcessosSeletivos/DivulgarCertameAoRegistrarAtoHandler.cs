@@ -103,14 +103,14 @@ public static class DivulgarCertameAoRegistrarAtoHandler
     {
         JsonObject envelope = LerEnvelopeOuFalhar(versao, registroCodecs);
         AtoDaDivulgacao ato = new(versao.AtoCriadorId, mensagem.Ano, mensagem.TipoCodigo);
-        CertamePublicadoDto certame = await ProjetarAsync(versao, ato, envelope, processoSeletivoRepository, acervo.Endereco, cancellationToken)
+        CertamePublicadoDto certame = await ProjetarAsync(versao, ato, envelope, processoSeletivoRepository, acervo.EnderecoDe, cancellationToken)
             .ConfigureAwait(false);
 
         // Antes de ler a linha de divulgação para mutação: a reentrega que a cópia falhada provoca
         // começa sem nada rastreado, e a cópia já feita é encontrada no acervo e não se repete.
         // Registrado só depois da cópia: o endereço divulgado nunca aponta para arquivo ausente.
-        EditalDivulgado edital = await MontagemDaDivulgacao
-            .PublicarNoAcervoAsync(versao, ato, envelope, certame.DocumentoEdital.UrlDownload, acervo, cancellationToken)
+        EditalDivulgado edital = await acervo
+            .PublicarVersaoAsync(versao, ato, envelope, certame.DocumentoEdital.UrlDownload, cancellationToken)
             .ConfigureAwait(false);
 
         await gravacao.RegistrarAsync(versao, certame, edital, cancellationToken).ConfigureAwait(false);
@@ -138,7 +138,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         AtoDaDivulgacao ato,
         JsonObject envelope,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        Func<string, Uri> enderecoNoAcervo,
         CancellationToken cancellationToken)
     {
         // O título é atributo do processo, não da configuração congelada: lê-lo aqui é o que o congela
@@ -149,7 +149,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
             ?? throw new InvalidOperationException($"Processo {versao.ProcessoSeletivoId} não encontrado para divulgar o certame.");
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
-            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo.De);
+            versao.ProcessoSeletivoId, ato, nome, versao.HashConfiguracao, envelope, enderecoNoAcervo);
 
         return projecao.IsFailure
             ? throw new InvalidOperationException(

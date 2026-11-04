@@ -26,7 +26,7 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
     /// </summary>
     private const string CaminhoPrevisto =
         @"^Unifesspa\.UniPlus\.Selecao\.Application\.Commands\.ProcessosSeletivos\."
-        + @"(DivulgarCertameAoRegistrarAtoHandler|DivulgarAtoDoProcessoNoAcervo|MontagemDaDivulgacao|AcervoDaDivulgacao)(\+|$)";
+        + @"(DivulgarCertameAoRegistrarAtoHandler|DivulgarAtoDoProcessoNoAcervo|AcervoDaDivulgacao)(\+|$)";
 
     private static readonly Architecture Arquitetura = new ArchLoader()
         .LoadAssemblies([typeof(IAcervoPublico).Assembly])
@@ -53,7 +53,7 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
             .DoNotHaveFullNameMatching(CaminhoPrevisto)
             .Should()
             .NotDependOnAnyTypesThat()
-            .HaveFullNameMatching(@"\.(MontagemDaDivulgacao|AcervoDaDivulgacao)(\+|$)")
+            .HaveFullNameMatching(@"\.AcervoDaDivulgacao(\+|$)")
             .Because("passar o acervo adiante por outro tipo reabriria a escrita fora do caminho previsto");
 
         regra.Check(Arquitetura);
@@ -66,10 +66,10 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
         string[] doCarregador = DependentesDe("Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.AcervoDaDivulgacao");
 
         doPort.Should().Contain(
-            ["DivulgarCertameAoRegistrarAtoHandler", "AcervoDaDivulgacao"],
+            ["AcervoDaDivulgacao"],
             "sem dependente nenhum o teste aprovaria um acervo que nunca recebe o modelo publicado");
         doCarregador.Should().Contain(
-            ["DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo", "MontagemDaDivulgacao"],
+            ["DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo"],
             "o acervo chega às etapas da divulgação por intermédio do tipo que o carrega");
     }
 

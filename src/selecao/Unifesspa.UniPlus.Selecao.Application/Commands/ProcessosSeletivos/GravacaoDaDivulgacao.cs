@@ -25,11 +25,42 @@ internal sealed class GravacaoDaDivulgacao
         Relogio = relogio;
     }
 
-    internal ICertameDivulgadoRepository Certames { get; }
+    private ICertameDivulgadoRepository Certames { get; }
 
-    internal ISelecaoUnitOfWork UnitOfWork { get; }
+    private ISelecaoUnitOfWork UnitOfWork { get; }
 
     private TimeProvider Relogio { get; }
+
+    /// <summary>
+    /// Confere, sem rastrear a linha, que o processo já tem divulgação para receber os documentos do ato:
+    /// a linha para mutação só é lida depois, para não segurar a versão dela durante cópias demoradas.
+    /// </summary>
+    internal async Task ExigirDivulgacaoAsync(AtoDoProcesso ato, CancellationToken cancellationToken)
+    {
+        if (await Certames.ObterParaLeituraAsync(ato.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
+        {
+            throw new CertameAindaNaoDivulgadoException(
+                $"O processo {ato.ProcessoSeletivoId} ainda não tem divulgação para receber os documentos do ato {ato.Id}.");
+        }
+    }
+
+    /// <summary>
+    /// Registra na divulgação do processo o edital do ato que não cria versão. Registrado só depois da
+    /// cópia: o endereço divulgado nunca aponta para arquivo ausente.
+    /// </summary>
+    internal async Task RegistrarEditalDoAtoAsync(AtoDoProcesso ato, EditalDivulgado edital, CancellationToken cancellationToken)
+    {
+        CertameDivulgado divulgado = await Certames
+            .ObterParaMutacaoAsync(ato.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new CertameAindaNaoDivulgadoException(
+                $"O processo {ato.ProcessoSeletivoId} perdeu a divulgação durante a cópia dos documentos do ato {ato.Id}.");
+
+        if (divulgado.RegistrarEdital(edital))
+        {
+            await UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
 
     internal async Task RegistrarAsync(
         VersaoConfiguracao versao,
