@@ -107,26 +107,6 @@ internal static class ReconferenciaDasCopiasDoItem
             : Result<CopiasConferidas>.ValidationFailure(erros);
     }
 
-    /// <summary>
-    /// Roda a operação e, se ela recusa, descarta o que a recópia mudou no agregado rastreado: a
-    /// recusa não devolve exceção, e o Wolverine salvaria o que sobrou (ADR-0119).
-    /// </summary>
-    public static async Task<(Result Resposta, IEnumerable<object> Eventos)> SemPersistirEmRecusaAsync(
-        ISelecaoUnitOfWork unitOfWork,
-        Func<Task<(Result Resposta, IEnumerable<object> Eventos)>> operacao)
-    {
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(operacao);
-
-        (Result Resposta, IEnumerable<object> Eventos) resultado = await operacao().ConfigureAwait(false);
-        if (resultado.Resposta.IsFailure)
-        {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-        }
-
-        return resultado;
-    }
-
     private static IEnumerable<FieldError> Conferir(
         FatoColetado item, string caminho, ContextoDoCatalogo contexto, IReadOnlySet<string> jaColetados, ILookup<FatoColetado, FieldError> daForma)
     {

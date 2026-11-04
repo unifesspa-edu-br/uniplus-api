@@ -46,10 +46,30 @@ internal static class PreparoDoCongelamento
         // o que se congela, e a montagem não lê o que o agregado refaz a seguir.
         ProtecaoVigenteDoProcesso protecao = ProtecaoVigenteDasExigenciasDoProcesso.Montar(processo, catalogo.TiposVivos, catalogo.Fatos, daVersaoVigente);
         Result preparado = processo.PrepararCongelamento(
-            new PreparacaoDoCongelamento(copias.Value!.Copias, copias.Value.FatosJaColetados, unidades.Value!, protecao.Exigencias));
+            new CopiasDoCongelamento(copias.Value!.Copias, copias.Value.FatosJaColetados, unidades.Value!, protecao.Exigencias));
 
         return preparado.IsSuccess
             ? Result<ProtecaoVigenteDoProcesso>.Success(protecao)
             : Result<ProtecaoVigenteDoProcesso>.ValidationFailure(preparado.Errors);
+    }
+
+    /// <summary>
+    /// Roda a operação e, se ela recusa, descarta o que a recópia mudou no agregado rastreado: a
+    /// recusa não devolve exceção, e o Wolverine salvaria o que sobrou (ADR-0119).
+    /// </summary>
+    public static async Task<(Result Resposta, IEnumerable<object> Eventos)> SemPersistirEmRecusaAsync(
+        ISelecaoUnitOfWork unitOfWork,
+        Func<Task<(Result Resposta, IEnumerable<object> Eventos)>> operacao)
+    {
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(operacao);
+
+        (Result Resposta, IEnumerable<object> Eventos) resultado = await operacao().ConfigureAwait(false);
+        if (resultado.Resposta.IsFailure)
+        {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+        }
+
+        return resultado;
     }
 }

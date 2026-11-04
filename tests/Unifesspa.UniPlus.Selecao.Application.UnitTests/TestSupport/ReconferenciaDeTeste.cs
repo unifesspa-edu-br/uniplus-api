@@ -18,7 +18,7 @@ internal static class ReconferenciaDeTeste
         Result<CopiasConferidas> copias = ReconferenciaDasCopiasDoItem.Conferir(processo, catalogo, fatosJaColetados);
         return copias.IsFailure
             ? Result.ValidationFailure(copias.Errors)
-            : processo.PrepararCongelamento(new PreparacaoDoCongelamento(
+            : processo.PrepararCongelamento(new CopiasDoCongelamento(
                 copias.Value!.Copias,
                 copias.Value.FatosJaColetados,
                 new Dictionary<Guid, UnidadeResponsavelSnapshot>(),

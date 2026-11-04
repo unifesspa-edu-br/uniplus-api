@@ -58,7 +58,7 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         // A recópia das cópias do item altera o agregado rastreado antes dos gates seguintes; a
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
-        return ReconferenciaDasCopiasDoItem.SemPersistirEmRecusaAsync(
+        return PreparoDoCongelamento.SemPersistirEmRecusaAsync(
             unitOfWork,
             () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, timeProvider, cancellationToken));
     }
@@ -141,7 +141,6 @@ public static class PublicarProcessoSeletivoCommandHandler
         IReadOnlyList<FatoCandidatoView> catalogoDeFatos = catalogo.Fatos;
         IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.PorCodigo;
         FatosDeModalidade fatosDeModalidade = catalogo.FatosDeModalidade;
-        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = catalogo.TiposVivos;
 
         Result<ProtecaoVigenteDoProcesso> preparo = await PreparoDoCongelamento
             .PrepararAsync(processo, catalogo, null, null, unidadeResponsavelResolvedor, cancellationToken)

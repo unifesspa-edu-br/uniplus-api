@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="CopiasDoCatalogo">A cópia que o catálogo de hoje tem de cada fato, por código.</param>
 /// <param name="FatosJaColetados">Os fatos que alguma versão publicada coletou, por código ordinal.</param>
 /// <param name="UnidadesVivas">A unidade responsável viva de cada unidade citada pelas fases.</param>
-public sealed record PreparacaoDoCongelamento(
+public sealed record CopiasDoCongelamento(
     IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> CopiasDoCatalogo,
     IReadOnlySet<string> FatosJaColetados,
     IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> UnidadesVivas,

@@ -333,12 +333,16 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(copia);
 
-        DomainError? recusa = RecusaDeAplicarModelo(precondicao);
-        Result<PlanoDoModelo> plano = recusa is null
-            ? AplicacaoDeModeloDeFormulario.Planejar(EstadoDaConfiguracao.De(this), copia)
-            : Result<PlanoDoModelo>.Failure(recusa);
-        plano.Value?.Aplicar(Colecoes(), Id);
-        return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
+        Result<PlanoDoModelo> plano = RecusaDeAplicarModelo(precondicao) is { } recusa
+            ? Result<PlanoDoModelo>.Failure(recusa)
+            : AplicacaoDeModeloDeFormulario.Planejar(EstadoDaConfiguracao.De(this), copia);
+        if (plano.IsFailure)
+        {
+            return Result.ValidationFailure(plano.Errors);
+        }
+
+        plano.Value!.Aplicar(Colecoes(), Id);
+        return Result.Success();
     }
 
     /// <summary>Operação só de rascunho: a recusa da sessão vem antes da precondição, que só esconderia o motivo.</summary>
@@ -403,7 +407,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>Refaz a cópia dos itens, a das unidades das fases e a proteção das exigências, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>
-    public Result PrepararCongelamento(PreparacaoDoCongelamento preparacao)
+    public Result PrepararCongelamento(CopiasDoCongelamento preparacao)
     {
         ArgumentNullException.ThrowIfNull(preparacao);
 
@@ -421,8 +425,13 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
     {
         Result<PlanoDaRecopiaDoCatalogo> plano = RegrasDaColeta.PlanejarRecopia(EstadoDaConfiguracao.De(this), catalogo, fatosJaColetados);
-        plano.Value?.Aplicar();
-        return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
+        if (plano.IsFailure)
+        {
+            return Result.ValidationFailure(plano.Errors);
+        }
+
+        plano.Value!.Aplicar();
+        return Result.Success();
     }
 
     /// <summary>Refaz nas fases a cópia de sigla e nome da unidade responsável ao congelar a versão; a fase sem unidade em <paramref name="vivas"/> fica como está.</summary>
