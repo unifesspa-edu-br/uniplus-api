@@ -25,7 +25,7 @@ internal static class DefinicaoDosDocumentosExigidos
         // A forma da árvore inteira vence qualquer leitura externa (ADR-0125). O grupo da repetição vem antes
         // dos gatilhos: um gatilho que cita campo de grupo inexistente seria recusado como fato fora do
         // processo, e a recusa que orienta é a do grupo.
-        List<FieldError> formaErros = ConferenciaDaFormaDaArvore.Conferir(entradas);
+        List<FieldError> formaErros = EscritaDaArvoreDeExigencias.Conferir(entradas);
         if (formaErros.Count > 0)
         {
             return Result.ValidationFailure(formaErros);

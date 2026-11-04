@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// de vagas e nunca são copiadas: quando a cópia as cita, o que elas citam é que recebe as regras padrão.
 /// A configuração existente nunca é trocada.
 /// </summary>
-internal sealed class CopiaDasDerivacoesDoModelo(
+internal sealed class SelecaoDasDerivacoesDoModelo(
     ProcessoSeletivo processo,
     ContextoDoCatalogo contexto,
     IFatoCandidatoReader fatoCandidatoReader,

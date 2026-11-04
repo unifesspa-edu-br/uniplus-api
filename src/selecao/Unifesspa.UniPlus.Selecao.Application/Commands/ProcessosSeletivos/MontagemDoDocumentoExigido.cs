@@ -57,14 +57,14 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
 
     private Result<IReadOnlyList<CondicaoGatilho>> Condicoes(ItemDocumentoExigidoInput folha, string? grupoDaRepeticao) =>
         contexto.Fatos is { } fatos
-            ? CondicoesDaExigencia.Resolver(folha, contexto.Processo, fatos, grupoDaRepeticao)
+            ? ConferenciaDasCondicoesDaExigencia.Resolver(folha, contexto.Processo, fatos, grupoDaRepeticao)
             : Result<IReadOnlyList<CondicaoGatilho>>.Success([]);
 
     private static Result<IReadOnlyList<DocumentoExigidoBaseLegal>> BasesLegais(ItemDocumentoExigidoInput folha) =>
-        BasesLegaisDoPayload.Resolver(
+        EscritaDasBasesLegais.Resolver(
             folha.BasesLegais,
-            static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, BasesLegaisDoPayload.Abrangencia(b), BasesLegaisDoPayload.Status(b)),
-            static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, BasesLegaisDoPayload.Abrangencia(b), BasesLegaisDoPayload.Status(b), b.Observacao).Value!);
+            static b => DocumentoExigidoBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
+            static b => DocumentoExigidoBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
 
     private Result<DocumentoExigido> Criar(
         ItemDocumentoExigidoInput folha,
@@ -72,7 +72,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
         IReadOnlyList<CondicaoGatilho> condicoes,
         IReadOnlyList<DocumentoExigidoBaseLegal> basesLegais)
     {
-        Result<RestricoesDoDocumentoDoPayload> restricoes = RestricoesDoDocumentoDoPayload.Resolver(folha, contexto.Modelos);
+        Result<EscritaDasRestricoesDoDocumento> restricoes = EscritaDasRestricoesDoDocumento.Resolver(folha, contexto.Modelos);
         return restricoes.IsFailure
             ? Result<DocumentoExigido>.ValidationFailure(restricoes.Errors)
             : DocumentoExigido.Criar(
@@ -82,7 +82,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
                 tipo.Nome,
                 tipo.Categoria,
                 new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal),
-                LeituraDaExigenciaDoPayload.AplicabilidadeDoToken(folha.Aplicabilidade),
+                EscritaDaExigencia.AplicabilidadeDoToken(folha.Aplicabilidade),
                 folha.Obrigatorio,
                 folha.ConsequenciaIndeferimento,
                 condicoes,
@@ -92,7 +92,7 @@ internal sealed class MontagemDoDocumentoExigido(ContextoDaMontagemDasExigencias
                 folha.TamanhoMaximoBytes,
                 folha.ExigidoNaEtapaId,
                 restricoes.Value.Modelo,
-                LeituraDaExigenciaDoPayload.FinalidadeDoToken(folha.Finalidade),
+                EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade),
                 folha.FatosComprovados);
     }
 }

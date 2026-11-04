@@ -115,8 +115,8 @@ internal sealed class MontagemDaArvoreDeExigencias(MontagemDoDocumentoExigido do
     }
 
     private static Result<IReadOnlyList<NoExigenciaBaseLegal>> BasesLegaisDoGrupo(IReadOnlyList<BaseLegalInput> declaradas) =>
-        BasesLegaisDoPayload.Resolver(
+        EscritaDasBasesLegais.Resolver(
             declaradas,
-            static b => NoExigenciaBaseLegal.ValidarFormaBasica(b.Referencia, BasesLegaisDoPayload.Abrangencia(b), BasesLegaisDoPayload.Status(b)),
-            static b => NoExigenciaBaseLegal.Criar(b.Referencia, BasesLegaisDoPayload.Abrangencia(b), BasesLegaisDoPayload.Status(b), b.Observacao).Value!);
+            static b => NoExigenciaBaseLegal.ValidarFormaBasica(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b)),
+            static b => NoExigenciaBaseLegal.Criar(b.Referencia, EscritaDasBasesLegais.Abrangencia(b), EscritaDasBasesLegais.Status(b), b.Observacao).Value!);
 }

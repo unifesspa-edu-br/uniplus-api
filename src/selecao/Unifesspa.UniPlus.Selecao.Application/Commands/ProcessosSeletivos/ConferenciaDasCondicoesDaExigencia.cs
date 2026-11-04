@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// contra domínio — estático ou dinâmico, contra a oferta do processo — e só então converte para as
 /// entidades <see cref="CondicaoGatilho"/> que o domínio persiste.
 /// </summary>
-internal static class CondicoesDaExigencia
+internal static class ConferenciaDasCondicoesDaExigencia
 {
     /// <summary>
     /// Resolve e confere as condições da folha, inclusive o gate de fase: a condição não pode citar fato
@@ -119,7 +119,7 @@ internal static class CondicoesDaExigencia
         IReadOnlyList<CondicaoGatilho> condicoes, ItemDocumentoExigidoInput folha, ProcessoSeletivo processo, FatosDoGatilho fatos)
     {
         EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(processo);
-        FinalidadeFormulario? finalidade = LeituraDaExigenciaDoPayload.FinalidadeDoToken(folha.Finalidade);
+        FinalidadeFormulario? finalidade = EscritaDaExigencia.FinalidadeDoToken(folha.Finalidade);
         DomainError? recusa = condicoes
             .Select(c => FaseEfetivaDoFato.RecusaDeFaseDoGatilho(
                 estado, c.Fato, folha.ExigidoNaFaseId, finalidade, fatos.PontoResolucaoPorFato, fatos.MembroPorAgregado))

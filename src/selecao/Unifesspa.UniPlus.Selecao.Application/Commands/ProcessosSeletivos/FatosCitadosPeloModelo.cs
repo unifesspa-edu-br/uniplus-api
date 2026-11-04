@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 /// </summary>
 internal static class FatosCitadosPeloModelo
 {
-    public static string[] Todos(ConteudoDoModeloInput conteudo, FormularioCopiado formulario, TermosSelecionados termos)
+    public static string[] Todos(ConteudoDoModeloInput conteudo, FormularioSelecionado formulario, TermosSelecionados termos)
     {
         IReadOnlyList<DocumentoExigidoDoModeloInput> documentos = conteudo.DocumentosExigidos ?? [];
         return [.. DasPartes(formulario.Itens.Entradas, formulario.Grupos.Entradas, conteudo.Etapas ?? [], termos.Entradas)

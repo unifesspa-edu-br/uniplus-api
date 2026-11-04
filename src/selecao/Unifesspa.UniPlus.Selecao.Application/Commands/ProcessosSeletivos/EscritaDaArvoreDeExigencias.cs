@@ -14,7 +14,7 @@ using Kernel.Results;
 /// Devolve as violações do primeiro nó com defeito, acumuladas entre si: acumular entre nós exigiria um
 /// caminho posicional sem convenção estabelecida.
 /// </remarks>
-internal static class ConferenciaDaFormaDaArvore
+internal static class EscritaDaArvoreDeExigencias
 {
     public static List<FieldError> Conferir(IReadOnlyList<NoExigenciaInput> nos)
     {
@@ -42,7 +42,7 @@ internal static class ConferenciaDaFormaDaArvore
         IReadOnlyList<BaseLegalInput> basesLegais = ehFolha ? no.Documento?.BasesLegais ?? [] : no.BasesLegais ?? [];
         for (int indice = 0; indice < basesLegais.Count; indice++)
         {
-            erros.AddRange(BasesLegaisDoPayload.ComIndice(FormaDaBaseLegal(basesLegais[indice], ehFolha), indice));
+            erros.AddRange(EscritaDasBasesLegais.ComIndice(FormaDaBaseLegal(basesLegais[indice], ehFolha), indice));
         }
 
         return erros;
@@ -50,17 +50,17 @@ internal static class ConferenciaDaFormaDaArvore
 
     private static List<FieldError> FormaDoDocumento(ItemDocumentoExigidoInput documento) =>
         DocumentoExigido.ValidarFormaBasica(
-            LeituraDaExigenciaDoPayload.AplicabilidadeDoToken(documento.Aplicabilidade),
+            EscritaDaExigencia.AplicabilidadeDoToken(documento.Aplicabilidade),
             documento.ConsequenciaIndeferimento,
             documento.TamanhoMaximoBytes,
             documento.Condicoes.Count,
-            LeituraDaExigenciaDoPayload.FinalidadeDoToken(documento.Finalidade),
+            EscritaDaExigencia.FinalidadeDoToken(documento.Finalidade),
             documento.FatosComprovados);
 
     private static List<FieldError> FormaDaBaseLegal(BaseLegalInput baseLegal, bool daFolha) =>
         daFolha
             ? DocumentoExigidoBaseLegal.ValidarFormaBasica(
-                baseLegal.Referencia, BasesLegaisDoPayload.Abrangencia(baseLegal), BasesLegaisDoPayload.Status(baseLegal))
+                baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal))
             : NoExigenciaBaseLegal.ValidarFormaBasica(
-                baseLegal.Referencia, BasesLegaisDoPayload.Abrangencia(baseLegal), BasesLegaisDoPayload.Status(baseLegal));
+                baseLegal.Referencia, EscritaDasBasesLegais.Abrangencia(baseLegal), EscritaDasBasesLegais.Status(baseLegal));
 }

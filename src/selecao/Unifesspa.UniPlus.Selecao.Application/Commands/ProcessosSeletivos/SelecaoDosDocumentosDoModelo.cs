@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// nenhuma cláusula que valha sai com ela. O documento que o modelo multiplica pelas opções de um fato
 /// entra uma vez por opção ofertada.
 /// </summary>
-internal sealed class CopiaDosDocumentosDoModelo(
+internal sealed class SelecaoDosDocumentosDoModelo(
     ProcessoSeletivo processo,
     FinalidadeFormulario finalidade,
     CadastrosDosDocumentosExigidos cadastros)

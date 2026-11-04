@@ -15,7 +15,7 @@ using Kernel.Results;
 /// vier limpa constrói as instâncias. O escopo da acumulação é o nó: entre nós a árvore falha no primeiro,
 /// porque acumulá-la inteira exigiria um caminho posicional sem convenção estabelecida.
 /// </remarks>
-internal static class BasesLegaisDoPayload
+internal static class EscritaDasBasesLegais
 {
     public static Result<IReadOnlyList<TBase>> Resolver<TBase>(
         IReadOnlyList<BaseLegalInput> declaradas,

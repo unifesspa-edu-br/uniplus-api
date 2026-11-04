@@ -11,22 +11,22 @@ using Kernel.Results;
 /// O que restringe o arquivo que o candidato envia para uma folha: a idade máxima de emissão, os formatos
 /// permitidos e o modelo que a folha cita.
 /// </summary>
-internal sealed record RestricoesDoDocumentoDoPayload(IdadeMaximaEmissao? Idade, FormatosPermitidos Formatos, ModeloDaExigencia? Modelo)
+internal sealed record EscritaDasRestricoesDoDocumento(IdadeMaximaEmissao? Idade, FormatosPermitidos Formatos, ModeloDaExigencia? Modelo)
 {
     /// <summary>Resolve as três restrições nessa ordem; a primeira recusa encerra.</summary>
-    public static Result<RestricoesDoDocumentoDoPayload> Resolver(
+    public static Result<EscritaDasRestricoesDoDocumento> Resolver(
         ItemDocumentoExigidoInput folha, IReadOnlyDictionary<Guid, ModeloDeDocumento> modelosDoProcesso)
     {
         Result<IdadeMaximaEmissao?> idade = IdadeMaximaEmissaoDaFolha(folha.IdadeMaximaEmissao);
         if (idade.IsFailure)
         {
-            return Result<RestricoesDoDocumentoDoPayload>.ValidationFailure(idade.Errors);
+            return Result<EscritaDasRestricoesDoDocumento>.ValidationFailure(idade.Errors);
         }
 
-        Result<FormatosPermitidos> formatos = FormatosPermitidosDoPayload.Resolver(folha.FormatosPermitidos);
+        Result<FormatosPermitidos> formatos = EscritaDosFormatosPermitidos.Resolver(folha.FormatosPermitidos);
         if (formatos.IsFailure)
         {
-            return Result<RestricoesDoDocumentoDoPayload>.ValidationFailure(formatos.Errors);
+            return Result<EscritaDasRestricoesDoDocumento>.ValidationFailure(formatos.Errors);
         }
 
         ModeloDaExigencia? modelo = null;
@@ -35,13 +35,13 @@ internal sealed record RestricoesDoDocumentoDoPayload(IdadeMaximaEmissao? Idade,
             Result<ModeloDaExigencia> citado = ModeloCitado(modeloId, modelosDoProcesso);
             if (citado.IsFailure)
             {
-                return Result<RestricoesDoDocumentoDoPayload>.ValidationFailure(citado.Errors);
+                return Result<EscritaDasRestricoesDoDocumento>.ValidationFailure(citado.Errors);
             }
 
             modelo = citado.Value;
         }
 
-        return Result<RestricoesDoDocumentoDoPayload>.Success(new RestricoesDoDocumentoDoPayload(idade.Value, formatos.Value!, modelo));
+        return Result<EscritaDasRestricoesDoDocumento>.Success(new EscritaDasRestricoesDoDocumento(idade.Value, formatos.Value!, modelo));
     }
 
     private static Result<IdadeMaximaEmissao?> IdadeMaximaEmissaoDaFolha(IdadeMaximaEmissaoInput? idade) =>

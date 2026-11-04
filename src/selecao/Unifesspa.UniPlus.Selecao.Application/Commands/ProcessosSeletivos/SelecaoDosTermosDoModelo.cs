@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Regras.Entradas;
 /// do modelo sai da cópia e volta no relatório; os termos que ficam passam pelo resolvedor da escrita do
 /// formulário, contra o universo de fatos que o processo coleta e deriva depois da cópia.
 /// </summary>
-internal sealed class CopiaDosTermosDoModelo(ITermoConsentimentoReader termoConsentimentoReader, RelatorioDaAplicacaoDoModelo relatorio)
+internal sealed class SelecaoDosTermosDoModelo(ITermoConsentimentoReader termoConsentimentoReader, RelatorioDaAplicacaoDoModelo relatorio)
 {
     public async Task<TermosSelecionados> SelecionarAsync(IReadOnlyList<TermoExigidoInput> termosDoModelo, CancellationToken cancellationToken)
     {

@@ -14,7 +14,7 @@ using Kernel.Results;
 /// segunda <c>FormatosPermitidos.FormaInvalida</c>. Cada item da lista aceita um texto (<c>"PDF"</c>, sem
 /// teto por formato) ou um objeto <c>{formato, tamanhoMaximoBytesMax}</c> (com teto por formato).
 /// </summary>
-internal static class FormatosPermitidosDoPayload
+internal static class EscritaDosFormatosPermitidos
 {
     private const string FormaInvalida = "FormatosPermitidos.FormaInvalida";
 

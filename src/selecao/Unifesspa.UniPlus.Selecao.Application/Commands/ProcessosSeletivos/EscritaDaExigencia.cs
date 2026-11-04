@@ -5,7 +5,7 @@ using Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>Conversão dos tokens de uma exigência do payload para o vocabulário do domínio.</summary>
-internal static class LeituraDaExigenciaDoPayload
+internal static class EscritaDaExigencia
 {
     public static Aplicabilidade AplicabilidadeDoToken(string? token) => token switch
     {

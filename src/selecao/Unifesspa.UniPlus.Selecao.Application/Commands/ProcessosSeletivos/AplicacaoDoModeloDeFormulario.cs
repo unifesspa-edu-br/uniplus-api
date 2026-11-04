@@ -10,7 +10,7 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
-/// Aplica o modelo ao processo em memória: planeja a cópia (ver <see cref="PlanejamentoDaCopiaDoModelo"/>),
+/// Aplica o modelo ao processo em memória: planeja a cópia (ver <see cref="PlanejamentoDaAplicacaoDoModelo"/>),
 /// entrega-a ao agregado, que a confere e só então muda o processo, e copia o conjunto padrão de documentos
 /// exigidos. Grava só quando tudo foi aceito.
 /// </summary>
@@ -23,7 +23,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
 {
     public async Task<Result<AplicacaoDeModeloDto>> AplicarAsync(CancellationToken cancellationToken)
     {
-        Result<PlanoDaCopiaDoModelo> plano = await new PlanejamentoDaCopiaDoModelo(processo, modelo, cadastros)
+        Result<PlanoDaAplicacaoDoModelo> plano = await new PlanejamentoDaAplicacaoDoModelo(processo, modelo, cadastros)
             .PlanejarAsync(cancellationToken).ConfigureAwait(false);
         if (plano.IsFailure)
         {
@@ -38,7 +38,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
 
         // O conjunto padrão de documentos entra no mesmo estado em memória e na mesma gravação: a recusa de
         // um documento desfaz a aplicação inteira.
-        Result documentos = await new CopiaDosDocumentosDoModelo(processo, plano.Value.Copia.Finalidade, cadastros.Documentos)
+        Result documentos = await new SelecaoDosDocumentosDoModelo(processo, plano.Value.Copia.Finalidade, cadastros.Documentos)
             .CopiarAsync(modelo.Conteudo.DocumentosExigidos ?? [], plano.Value.Catalogo, precondicao, cancellationToken).ConfigureAwait(false);
         if (documentos.IsFailure)
         {
@@ -55,6 +55,6 @@ internal sealed class AplicacaoDoModeloDeFormulario(
     {
         unitOfWork.DescartarAlteracoesNaoSalvas();
         return Result<AplicacaoDeModeloDto>.ValidationFailure([.. documentos.Errors.Select(static e =>
-            PosicaoNoModelo.NoModelo(e with { Field = CopiaDosDocumentosDoModelo.NoConjuntoDeDocumentos(e.Field) }))]);
+            PosicaoNoModelo.NoModelo(e with { Field = SelecaoDosDocumentosDoModelo.NoConjuntoDeDocumentos(e.Field) }))]);
     }
 }
