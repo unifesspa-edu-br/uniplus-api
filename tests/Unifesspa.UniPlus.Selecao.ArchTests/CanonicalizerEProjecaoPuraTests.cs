@@ -4,6 +4,7 @@ using System.Reflection;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
+using ArchUnitNET.Fluent.Syntax.Elements.Types;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
@@ -99,17 +100,59 @@ public sealed class CanonicalizerEProjecaoPuraTests
         BarrarEstadoExterno(Types().That().Are(tipos), "a mesma entrada e o mesmo endereço base produzem sempre a mesma resposta").Check(Arquitetura);
     }
 
-    private static ArchUnitNET.Fluent.Syntax.Elements.Types.TypesShouldConjunctionWithDescription BarrarEstadoExterno(ArchUnitNET.Fluent.Syntax.Elements.Types.GivenTypesConjunction tipos, string motivo) =>
-        tipos
+    [Fact(DisplayName = "Controle: a regra de pureza reprova o handler da divulgação, que depende de repositório e de TimeProvider")]
+    public void Controle_RegraReprovaTipoQueDependeDeEstadoExterno()
+    {
+        GivenTypesConjunction handler = Types().That().HaveFullName(
+            "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.DivulgarCertameAoRegistrarAtoHandler");
+
+        foreach (string proibida in new[] { typeof(TimeProvider).FullName! })
+        {
+            IEnumerable<EvaluationResult> resultados = handler.Should().NotDependOnAnyTypesThat().HaveFullName(proibida).Evaluate(Arquitetura);
+            resultados.Should().Contain(static r => !r.Passed, $"{proibida} está na arquitetura carregada e o handler depende dele");
+        }
+
+        IEnumerable<EvaluationResult> porNome = Types().That().HaveFullName(
+            "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.DivulgarCertameAoRegistrarAtoHandler")
+            .Should().NotDependOnAnyTypesThat().HaveNameContaining("Repository").Evaluate(Arquitetura);
+        porNome.Should().Contain(static r => !r.Passed);
+    }
+
+    [Fact(DisplayName = "Controle: cada tipo proibido é resolvido pela arquitetura — há ao menos um tipo carregado que depende dele")]
+    public void Controle_CadaTipoProibidoEResolvido()
+    {
+        foreach (string proibida in TiposProibidos)
+        {
+            Arquitetura.Types
+                .Any(t => t.Dependencies.Any(d => d.Target.FullName == proibida))
+                .Should().BeTrue($"{proibida} precisa aparecer nas dependências carregadas, senão a regra que o proíbe seria vácua");
+        }
+    }
+
+    private static readonly string[] TiposProibidos =
+    [
+        typeof(TimeProvider).FullName!,
+        typeof(IServiceProvider).FullName!,
+        typeof(HttpClient).FullName!,
+    ];
+
+    private static TypesShouldConjunctionWithDescription BarrarEstadoExterno(GivenTypesConjunction tipos, string motivo)
+    {
+        TypesShouldConjunction regra = tipos
             .Should()
             .NotDependOnAnyTypesThat()
             .HaveNameContaining("Repository")
             .AndShould()
             .NotDependOnAnyTypesThat()
-            .HaveNameContaining("DbContext")
-            .AndShould()
-            .NotDependOnAny(typeof(TimeProvider), typeof(IServiceProvider), typeof(HttpClient))
-            .Because($"{motivo}: dado que falta entra por parâmetro, montado pelo handler (ADR-0042)");
+            .HaveNameContaining("DbContext");
+
+        foreach (string proibida in TiposProibidos)
+        {
+            regra = regra.AndShould().NotDependOnAnyTypesThat().HaveFullName(proibida);
+        }
+
+        return regra.Because($"{motivo}: dado que falta entra por parâmetro, montado pelo handler (ADR-0042)");
+    }
 
     [Fact(DisplayName = "Canonicalizar_NaoEAssincrono — a projeção é síncrona: não há I/O a esperar")]
     public void Canonicalizar_NaoEAssincrono()
