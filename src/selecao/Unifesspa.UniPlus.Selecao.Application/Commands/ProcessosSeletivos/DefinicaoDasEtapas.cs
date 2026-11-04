@@ -86,7 +86,7 @@ internal sealed class DefinicaoDasEtapas(
         DeclaracaoDosFilhosDasEtapas declaracao = new(
             new DeclaracaoDosProdutosDaEtapa(atos),
             new DeclaracaoDasBancasDaEtapa(cadastros.TiposDeBanca),
-            new DeclaracaoDosRecursosDaEtapa(new ConferenciaDaAncoraDoRecursoDaEtapa(atos), cadastros.Regras));
+            new DeclaracaoDosRecursosDaEtapa(atos, cadastros.Regras));
         for (int indice = 0; indice < etapas.Count; indice++)
         {
             Result declarada = await declaracao.DeclararAsync(etapas[indice], command.Etapas[indice], cancellationToken).ConfigureAwait(false);

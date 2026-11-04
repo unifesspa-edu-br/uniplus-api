@@ -36,8 +36,7 @@ internal sealed class MontagemDasFases
         _cadastros = cadastros;
         _bancas = new MontagemDasBancasDaFase(cadastros);
         _produtos = new MontagemDosProdutosDaFase(atos);
-        _regraDeRecurso = new MontagemDaRegraDeRecursoDaFase(
-            cadastros.Regras, new ConferenciaDaAncoraDoRecursoDaFase(atos, AncorasJaDeclaradas(processo)));
+        _regraDeRecurso = new MontagemDaRegraDeRecursoDaFase(cadastros.Regras, atos, AncorasJaDeclaradas(processo));
     }
 
     public async Task<Result<List<FaseCronograma>>> MontarAsync(

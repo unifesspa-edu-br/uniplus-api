@@ -12,9 +12,11 @@ using Kernel.Results;
 /// dos produtos desta etapa: ancorar na publicação de outra etapa deixa de ser exprimível.
 /// </summary>
 internal sealed class DeclaracaoDosRecursosDaEtapa(
-    ConferenciaDaAncoraDoRecursoDaEtapa conferenciaDaAncora,
+    AtosConsultadosNaEdicao atos,
     LeituraMemoizada<(string Codigo, string Versao), RegraCatalogo> regras)
 {
+    private readonly ConferenciaDaAncoraDoRecurso _conferenciaDaAncora = new(atos);
+
     public async Task<Result> DeclararAsync(
         EtapaProcesso etapa,
         EtapaProcessoInput input,
@@ -50,8 +52,14 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             // Conferido sobre o produto âncora JÁ RESOLVIDO, e não sobre o código cru do payload: um código
             // que não corresponde a produto preliminar algum da etapa é âncora inexistente, e quem sabe
             // dizer isso é o domínio, nomeando os preliminares disponíveis.
-            DomainError? recusaDaAncora = await conferenciaDaAncora
-                .ConferirAsync(etapa, input.Nome, produtoAncora, atosJaAncorados, cancellationToken).ConfigureAwait(false);
+            DomainError? recusaDaAncora = await _conferenciaDaAncora
+                .ConferirAsync(
+                    produtoAncora.AtoCodigo,
+                    RotuloDoDonoDaAncora.DaEtapa(input.Nome),
+                    atosJaAncorados.Contains,
+                    (atoCodigo, token) => atos.Congelados.AncoraDaEtapaJaPublicadaAsync(etapa.Id, atoCodigo, token),
+                    cancellationToken)
+                .ConfigureAwait(false);
             if (recusaDaAncora is not null)
             {
                 return Result<RecursoDaEtapa>.Failure(recusaDaAncora);

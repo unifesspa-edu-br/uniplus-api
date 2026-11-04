@@ -64,7 +64,7 @@ public sealed class CronogramaSemLiteralInstitucionalTests
         "MontagemDosProdutosDaFase.cs",
         "MontagemDasBancasDaFase.cs",
         "MontagemDaRegraDeRecursoDaFase.cs",
-        "ConferenciaDaAncoraDoRecursoDaFase.cs",
+        "ConferenciaDaAncoraDoRecurso.cs",
         "CadastrosDasFases.cs",
     ];
 

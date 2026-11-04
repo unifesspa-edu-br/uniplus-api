@@ -15,8 +15,11 @@ using Kernel.Results;
 /// </summary>
 internal sealed class MontagemDaRegraDeRecursoDaFase(
     IRegraCatalogoReader regraCatalogoReader,
-    ConferenciaDaAncoraDoRecursoDaFase conferenciaDaAncora)
+    AtosConsultadosNaEdicao atos,
+    IReadOnlySet<(string Fase, string Ato)> ancorasJaDeclaradas)
 {
+    private readonly ConferenciaDaAncoraDoRecurso _conferenciaDaAncora = new(atos);
+
     /// <summary>A regra montada, ou sucesso nulo quando a fase não declara recurso; falha é interrupção.</summary>
     public async Task<Result<RegraRecursoFase?>> MontarAsync(
         RegraRecursoFaseInput? declarada,
@@ -50,7 +53,14 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
 
         DomainError? recusaDaAncora = ancora is null
             ? null
-            : await conferenciaDaAncora.ConferirAsync(faseCodigo, ancora, cancellationToken).ConfigureAwait(false);
+            : await _conferenciaDaAncora
+                .ConferirAsync(
+                    ancora.AtoCodigo,
+                    RotuloDoDonoDaAncora.DaFase,
+                    atoCodigo => ancorasJaDeclaradas.Contains((faseCodigo, atoCodigo)),
+                    (atoCodigo, token) => atos.Congelados.AncoraDaFaseJaPublicadaAsync(faseCodigo, atoCodigo, token),
+                    cancellationToken)
+                .ConfigureAwait(false);
         return recusaDaAncora is null
             ? Result<RegraRecursoFase?>.Success(regra.Value)
             : InterrupcaoDaFase.Com<RegraRecursoFase?>($"{campo}.atoAncoraCodigo", recusaDaAncora);
