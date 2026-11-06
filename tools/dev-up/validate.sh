@@ -48,7 +48,7 @@ confere() {
 echo "== shellcheck"
 if command -v shellcheck >/dev/null; then
     if shellcheck -x -P SCRIPTDIR "$RAIZ/scripts/dev-up.sh" "$RAIZ/scripts/dev-instalar-gestores.sh" \
-        "$RAIZ/scripts/setup-keycloak-dev.sh" "$RAIZ/scripts/lib/dev-up-validacao.sh"; then
+        "$RAIZ/scripts/setup-keycloak-dev.sh" "$RAIZ/scripts/lib/dev-up-validacao.sh" "$RAIZ/scripts/ambiente-init.sh"; then
         ok "scripts sem aviso do shellcheck"
     else
         erro "shellcheck acusou aviso"
@@ -140,8 +140,10 @@ if command -v docker >/dev/null && docker compose version >/dev/null 2>&1; then
         "$(compor config --format json | jq -r '[.services["uniplus-api"].ports[0].published, .services.keycloak.ports[0].published] | join(" ")')"
     confere "o verificador compartilha a rede do clamd" "service:clamd-verificador" \
         "$(compor config --format json | jq -r '.services.verificador.network_mode')"
-    confere "kafka-init, clamd e verificador fazem parte do compose" "true" \
-        "$(compor config --format json | jq -r '.services | has("kafka-init") and has("clamd-verificador") and has("verificador")')"
+    confere "kafka-init, clamd, verificador e ambiente-init fazem parte do compose" "true" \
+        "$(compor config --format json | jq -r '.services | has("kafka-init") and has("clamd-verificador") and has("verificador") and has("ambiente-init")')"
+    confere "o ambiente-init espera a API e o Keycloak" "true" \
+        "$(compor config --format json | jq -r '.services["ambiente-init"].depends_on | has("uniplus-api") and has("keycloak")')"
     (
         aplicar_deslocamento_de_portas 100
         confere "portas deslocadas chegam ao compose" "5300 8180 9100" \
@@ -170,6 +172,14 @@ if command -v docker >/dev/null && docker compose version >/dev/null 2>&1 && doc
     confere ".env antigo: falha antes de subir serviço" "1" "$status"
     verifica ".env antigo: a mensagem nomeia a chave ausente" grep -q 'UNIPLUS_API_SELECAO_CLIENT_SECRET' <<< "$saida"
     cp "$RAIZ/docker/.env.example" "$TRABALHO/docker/.env"
+
+    # override antigo, sem o serviço de inicialização
+    cp "$RAIZ/docker/docker-compose.override.example.yml" "$TRABALHO/docker/docker-compose.override.yml"
+    awk '/^  ambiente-init:/{pula=1; next} pula && /^  [a-z]/{pula=0} !pula' \
+        "$RAIZ/docker/docker-compose.override.example.yml" > "$TRABALHO/docker/docker-compose.override.yml"
+    saida=$("$TRABALHO/scripts/dev-up.sh" --so-validar 2>&1); status=$?
+    confere "override sem o ambiente-init: falha antes de subir serviço" "1" "$status"
+    verifica "override sem o ambiente-init: a mensagem nomeia o serviço" grep -q "ambiente-init" <<< "$saida"
 
     # override antigo: sem os domínios institucionais de desenvolvimento.
     grep -v 'DominiosInstitucionais' "$TRABALHO/docker/docker-compose.override.yml" > "$TRABALHO/override.antigo"
