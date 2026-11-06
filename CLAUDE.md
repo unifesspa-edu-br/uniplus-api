@@ -174,6 +174,10 @@ dotnet test UniPlus.slnx
 dotnet test tests/Unifesspa.UniPlus.Selecao.ArchTests
 dotnet test tests/Unifesspa.UniPlus.Ingresso.ArchTests
 
+# Ambiente local pronto em um comando: infra + verificador de arquivos + API + Keycloak configurado
+# + gestores de acessos instalados. Idempotente; --deslocamento-de-portas N para um segundo ambiente.
+scripts/dev-up.sh
+
 # Infraestrutura local (PostgreSQL, Redis, Kafka, MinIO, Keycloak) — só a infra
 docker compose -f docker/docker-compose.yml up -d
 

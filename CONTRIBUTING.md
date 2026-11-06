@@ -27,6 +27,21 @@ docker compose -f docker/docker-compose.yml up -d
 Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft), MinIO, Apicurio e Keycloak (dev mode).
 Para o stack completo (infra + APIs + frontend), veja **Subir a stack completa** abaixo.
 
+### Ambiente pronto para uso em um comando
+
+Para ir de um clone novo a um ambiente com a API no ar, o Keycloak configurado e os dois primeiros gestores
+de acessos instalados, rode, a partir da raiz (só Docker, `jq` e `curl`):
+
+```bash
+scripts/dev-up.sh
+```
+
+O comando cria `docker/.env` e `docker/docker-compose.override.yml` a partir dos exemplos, acusa a chave que
+faltar numa cópia antiga, sobe a infraestrutura, o verificador de arquivos e a API, configura o Keycloak e
+instala os gestores pela API. Rodar de novo não altera o estado. Para um segundo ambiente na mesma máquina,
+use `scripts/dev-up.sh --deslocamento-de-portas 100`. Detalhes e o procedimento manual em
+[`docs/guia-instalacao-gestores-ambiente-local.md`](docs/guia-instalacao-gestores-ambiente-local.md).
+
 ### Subir a stack completa (backend + frontend)
 
 Para subir **tudo** — infra + as 3 APIs + o gateway + os 4 frontends Angular
