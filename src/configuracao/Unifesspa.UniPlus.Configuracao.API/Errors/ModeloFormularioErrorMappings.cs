@@ -1,0 +1,87 @@
+namespace Unifesspa.UniPlus.Configuracao.API.Errors;
+
+using Microsoft.AspNetCore.Http;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+
+/// <summary>Mapeamentos HTTP dos erros de Modelo de formulário (UNI-REQ-0144, ADR-0137).</summary>
+internal static class ModeloFormularioErrorMappings
+{
+    internal static readonly IReadOnlyList<KeyValuePair<string, DomainErrorMapping>> Todos =
+    [
+        new(ModeloFormularioErrorCodes.OcorrenciaSimuladaInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.ocorrencia_simulada_invalida",
+                "Ocorrência simulada sem identidade própria no grupo")),
+
+        new(ModeloFormularioErrorCodes.CodigoObrigatorio,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.codigo_obrigatorio", "Código do modelo de formulário é obrigatório")),
+        new(ModeloFormularioErrorCodes.CodigoTamanho,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.codigo_tamanho", "Código do modelo de formulário excede o tamanho máximo")),
+        new(ModeloFormularioErrorCodes.CodigoJaExiste,
+            new DomainErrorMapping(StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modelo_formulario.codigo_ja_existe", "Já existe modelo de formulário com este código")),
+        new(ModeloFormularioErrorCodes.NomeObrigatorio,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.nome_obrigatorio", "Nome do modelo de formulário é obrigatório")),
+        new(ModeloFormularioErrorCodes.NomeTamanho,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.nome_tamanho", "Nome do modelo de formulário excede o tamanho máximo")),
+        new(ModeloFormularioErrorCodes.DescricaoTamanho,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.descricao_tamanho", "Descrição do modelo de formulário excede o tamanho máximo")),
+        new(ModeloFormularioErrorCodes.TipoProcessoCodigoTamanho,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_tamanho", "Código do tipo de processo excede o tamanho máximo")),
+        new(ModeloFormularioErrorCodes.PressupostoNaInscricao,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.pressuposto_na_inscricao", "O modelo de inscrição não tem pressupostos")),
+        new(ModeloFormularioErrorCodes.PressupostoRepetido,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.pressuposto_repetido", "O fato aparece mais de uma vez entre os pressupostos")),
+        new(ModeloFormularioErrorCodes.PressupostoEmBranco,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.pressuposto_em_branco", "O pressuposto nomeia um fato")),
+        new(ModeloFormularioErrorCodes.PressupostoTambemItem,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.pressuposto_tambem_item", "O fato é item e pressuposto do mesmo modelo")),
+        new(ModeloFormularioErrorCodes.NaoEncontrado,
+            new DomainErrorMapping(StatusCodes.Status404NotFound,
+                "uniplus.configuracao.modelo_formulario.nao_encontrado", "Modelo de formulário não encontrado")),
+        new(ModeloFormularioErrorCodes.JaAtivo,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.ja_ativo", "O modelo de formulário já está ativo")),
+        new(ModeloFormularioErrorCodes.JaDesativado,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.ja_desativado", "O modelo de formulário já está desativado")),
+        new(ModeloFormularioErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(StatusCodes.Status409Conflict,
+                "uniplus.configuracao.modelo_formulario.conflito_de_concorrencia", "Modelo de formulário alterado concorrentemente", RetryableConflict: true)),
+        new(ModeloFormularioErrorCodes.TextoNaoGravavel,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.texto_nao_gravavel", "Texto do modelo com caractere nulo ou Unicode inválido")),
+        new(ModeloFormularioErrorCodes.TipoProcessoCodigoEmBranco,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_em_branco", "O tipo de processo é um código, ou ausente quando o modelo serve a todos")),
+        new(ModeloFormularioErrorCodes.TipoProcessoInexistente,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.tipo_processo_inexistente", "O tipo de processo não existe ou está desativado")),
+        new(ModeloFormularioErrorCodes.TermoVersaoNaoEncontrada,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.termo_versao_nao_encontrada", "A versão do termo não existe no catálogo ou pertence a outro termo")),
+        new(ModeloFormularioErrorCodes.ObrigatoriedadeInvalida,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.obrigatoriedade_invalida", "A obrigatoriedade é SEMPRE ou NUNCA, sem predicado, ou QUANDO, com predicado")),
+        new(ModeloFormularioErrorCodes.EntradaMalformada,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.entrada_malformada", "Uma etapa, item ou termo do modelo veio nulo")),
+        new(ModeloFormularioErrorCodes.ExigenciaPorOpcaoInvalida,
+            new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.modelo_formulario.exigencia_por_opcao_invalida",
+                "O documento só se multiplica pelas opções de fato categórico cujas opções o processo declara")),
+    ];
+}
