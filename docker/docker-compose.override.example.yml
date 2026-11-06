@@ -148,6 +148,8 @@ services:
     restart: "no"
     environment:
       KC_URL: "http://keycloak:8080"
+      # O que o navegador do host alcança (KC_HOSTNAME do Keycloak): entra nas URLs de login do gov.br simulado.
+      KC_PUBLIC_URL: "http://localhost:${KEYCLOAK_PORT:-8080}"
       API_URL: "http://uniplus-api:8080"
       MAILPIT_URL: "http://mailpit:8025"
       KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN}"
@@ -166,8 +168,10 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+      # A API só precisa estar de pé: o próprio ambiente-init espera o /health por até 5 minutos, mais do que a
+      # janela do healthcheck cobre na primeira subida, com as migrations de todos os módulos.
       uniplus-api:
-        condition: service_healthy
+        condition: service_started
       mailpit:
         condition: service_healthy
       minio-init:

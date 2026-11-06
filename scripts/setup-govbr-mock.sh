@@ -44,6 +44,10 @@ set -euo pipefail
 # ---- Config ----------------------------------------------------------------
 
 KC_URL="${KC_URL:-http://localhost:8080}"
+# Endereço que o navegador alcança (o KC_HOSTNAME do compose). Vale para o que o navegador percorre: o
+# redirect URI do client simulado, a URL de login e de logout e o issuer. As chamadas do próprio Keycloak a si
+# mesmo (token, userinfo, jwks) seguem em KC_URL, que dentro da rede do compose é http://keycloak:8080.
+KC_PUBLIC_URL="${KC_PUBLIC_URL:-$KC_URL}"
 TARGET_REALM="${TARGET_REALM:-unifesspa}"
 MOCK_REALM="${MOCK_REALM:-govbr-mock}"
 MOCK_CLIENT_ID="${MOCK_CLIENT_ID:-unifesspa-rp}"
@@ -156,7 +160,7 @@ ensure_mock_client() {
     body=$(jq -nc \
         --arg cid "$MOCK_CLIENT_ID" \
         --arg secret "$MOCK_CLIENT_SECRET" \
-        --arg redirect "$KC_URL/realms/$TARGET_REALM/broker/$IDP_ALIAS/endpoint" \
+        --arg redirect "$KC_PUBLIC_URL/realms/$TARGET_REALM/broker/$IDP_ALIAS/endpoint" \
         '{
             clientId: $cid,
             secret: $secret,
@@ -294,12 +298,12 @@ ensure_idp_in_target_realm() {
     body=$(jq -nc \
         --arg alias "$IDP_ALIAS" \
         --arg flow "$IDP_FIRST_BROKER_LOGIN_FLOW" \
-        --arg authUrl "$KC_URL/realms/$MOCK_REALM/protocol/openid-connect/auth" \
+        --arg authUrl "$KC_PUBLIC_URL/realms/$MOCK_REALM/protocol/openid-connect/auth" \
         --arg tokenUrl "$KC_URL/realms/$MOCK_REALM/protocol/openid-connect/token" \
         --arg userInfoUrl "$KC_URL/realms/$MOCK_REALM/protocol/openid-connect/userinfo" \
         --arg jwksUrl "$KC_URL/realms/$MOCK_REALM/protocol/openid-connect/certs" \
-        --arg logoutUrl "$KC_URL/realms/$MOCK_REALM/protocol/openid-connect/logout" \
-        --arg issuer "$KC_URL/realms/$MOCK_REALM" \
+        --arg logoutUrl "$KC_PUBLIC_URL/realms/$MOCK_REALM/protocol/openid-connect/logout" \
+        --arg issuer "$KC_PUBLIC_URL/realms/$MOCK_REALM" \
         --arg clientId "$MOCK_CLIENT_ID" \
         --arg clientSecret "$MOCK_CLIENT_SECRET" \
         '{
