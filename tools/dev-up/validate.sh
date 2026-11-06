@@ -19,10 +19,12 @@ trap 'rm -rf "$TRABALHO"' EXIT
 # shellcheck source=scripts/lib/dev-up-validacao.sh
 source "$RAIZ/scripts/lib/dev-up-validacao.sh"
 
-falhas=0
+# As falhas vão para um arquivo: o contador de uma variável se perderia nos subshells.
+ARQUIVO_DE_FALHAS="$TRABALHO/falhas"
+: > "$ARQUIVO_DE_FALHAS"
 
 ok()    { echo "  ok   $1"; }
-erro()  { echo "  FALHA $1"; falhas=$((falhas + 1)); }
+erro()  { echo "  FALHA $1"; echo x >> "$ARQUIVO_DE_FALHAS"; }
 
 verifica() {
     local descricao="$1"
@@ -191,6 +193,7 @@ verifica "o override de exemplo traz os domínios de desenvolvimento" \
     grep -q 'DominiosInstitucionais__1: "teste.unifesspa.edu.br"' "$RAIZ/docker/docker-compose.override.example.yml"
 
 echo
+falhas=$(wc -l < "$ARQUIVO_DE_FALHAS")
 if [ "$falhas" -gt 0 ]; then
     echo "$falhas falha(s)."
     exit 1
