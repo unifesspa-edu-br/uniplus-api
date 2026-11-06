@@ -33,6 +33,12 @@ services:
     volumes:
       - ./keycloak/realm-export-dev-local.json:/opt/keycloak/data/import/realm-export-dev-local.json
 
+  # Com o proxy da documentação (openapi-docs) no ar, o documento da API anuncia o proxy, e não a
+  # própria porta, como primeiro servidor.
+  uniplus-api:
+    environment:
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:${OPENAPI_DOCS_PORT:-5299}"
+
   portal-api:
     build:
       context: ..

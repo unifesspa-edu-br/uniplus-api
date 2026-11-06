@@ -111,7 +111,7 @@ a API não emite `Access-Control-Allow-Origin`, então todos os documentos
 falhariam em CORS.
 
 O seletor **Servers** já vem no ambiente local: o documento anuncia
-`http://localhost:5299` como primeiro servidor porque o compose local define
+`http://localhost:5299` como primeiro servidor porque o override de exemplo define (no compose base, sem o proxy, o documento anuncia a porta da própria API)
 `UniPlus__OpenApi__LocalServerUrl`. Sem isso o "Try it out" dispararia contra a
 URL de produção — o que falha em CORS e, pior, manda requisição e credencial
 para o ambiente errado. Em HML e PROD a variável não existe e o documento volta
