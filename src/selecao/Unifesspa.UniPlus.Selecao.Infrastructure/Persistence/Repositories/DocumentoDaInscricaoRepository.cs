@@ -149,23 +149,27 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao =
+        Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao =
             await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        int linhasAfetadas = await _context.ArquivosDaApresentacao
-            .Where(a => a.Id == id)
-            .Where(PendenteVencido(agora))
-            .ExecuteDeleteAsync(cancellationToken)
-            .ConfigureAwait(false);
-        if (linhasAfetadas == 1)
+
+        await using (transacao.ConfigureAwait(false))
         {
-            await _context.ApresentacoesDeDocumento
-                .Where(p => p.Id == apresentacaoId && !_context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id))
+            int linhasAfetadas = await _context.ArquivosDaApresentacao
+                .Where(a => a.Id == id)
+                .Where(PendenteVencido(agora))
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
-        }
+            if (linhasAfetadas == 1)
+            {
+                await _context.ApresentacoesDeDocumento
+                    .Where(p => p.Id == apresentacaoId && !_context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id))
+                    .ExecuteDeleteAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
-        await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
-        return linhasAfetadas == 1;
+            await transacao.CommitAsync(cancellationToken).ConfigureAwait(false);
+            return linhasAfetadas == 1;
+        }
     }
 
     public async Task AgendarLimpezaAsync(string objectKey, DateTimeOffset limparApos, CancellationToken cancellationToken = default) =>

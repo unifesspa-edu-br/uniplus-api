@@ -89,7 +89,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         }
 
         CheckResult concessao = await _concessaoAplicavel.CheckAsync(
-            subject, requirement, resource, request, cancellationToken);
+            subject, requirement, resource, request, cancellationToken).ConfigureAwait(false);
 
         if (!concessao.Passou)
         {
@@ -100,7 +100,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         // verificações contextuais: o impedimento vale para toda permissão com processo no resource, e nenhuma
         // concessão o supera.
         CheckResult impedimento = await _impedimento.CheckAsync(
-            subject, requirement, resource, request, cancellationToken);
+            subject, requirement, resource, request, cancellationToken).ConfigureAwait(false);
 
         if (!impedimento.Passou)
         {
@@ -110,7 +110,7 @@ public sealed class AuthorizationDecisionService : IAuthorizationDecisionService
         foreach (string nome in requirement.VerificacoesDeContexto)
         {
             CheckResult resultado = await LocalizarVerificacao(nome).CheckAsync(
-                subject, requirement, resource, request, cancellationToken);
+                subject, requirement, resource, request, cancellationToken).ConfigureAwait(false);
 
             if (!resultado.Passou)
             {

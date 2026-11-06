@@ -84,47 +84,50 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
         // assinada no cursor passa a descrever um estado que não é o da página. O instantâneo
         // repetível dá às três a mesma visão. É leitura pura: não toma bloqueio nem falha por
         // serialização.
-        await using IDbContextTransaction instantaneo = await _context.Database
+        IDbContextTransaction instantaneo = await _context.Database
             .BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
             .ConfigureAwait(false);
 
-        string revisao = await RevisaoDoRecorteAsync(
-                instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
-            .ConfigureAwait(false);
+        await using (instantaneo.ConfigureAwait(false))
+        {
+            string revisao = await RevisaoDoRecorteAsync(
+                    instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
+                .ConfigureAwait(false);
 
-        IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
-            .Select(c => new CertameNaVitrine
-            {
-                Id = c.Id,
-                Encerrado = c.InscricoesAte < instanteUtc,
-                NomeOrdenacao = EF.Property<string>(c, CertameDivulgadoConfiguration.NomeOrdenacaoPropriedade),
-                InscricoesDe = c.InscricoesDe,
-                InscricoesAte = c.InscricoesAte,
-                DivulgadoEm = c.DivulgadoEm,
-                Entidade = c,
-            });
+            IQueryable<CertameNaVitrine> query = Recortar(instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida)
+                .Select(c => new CertameNaVitrine
+                {
+                    Id = c.Id,
+                    Encerrado = c.InscricoesAte < instanteUtc,
+                    NomeOrdenacao = EF.Property<string>(c, CertameDivulgadoConfiguration.NomeOrdenacaoPropriedade),
+                    InscricoesDe = c.InscricoesDe,
+                    InscricoesAte = c.InscricoesAte,
+                    DivulgadoEm = c.DivulgadoEm,
+                    Entidade = c,
+                });
 
-        OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor
-            .ApplyAsync(
-                query,
-                OrdenacaoDaVitrine.Montar(ordenacao, AssinaturaDoRecorte(instanteUtc, recorte, termo, revisao)),
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
-            .ConfigureAwait(false);
+            OrderedKeysetPage<CertameNaVitrine> page = await OrderedKeysetCursor
+                .ApplyAsync(
+                    query,
+                    OrdenacaoDaVitrine.Montar(ordenacao, AssinaturaDoRecorte(instanteUtc, recorte, termo, revisao)),
+                    afterSortKey,
+                    afterId,
+                    limit,
+                    direction,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
-        ContadoresDaVitrine? contadores = incluirContadores
-            ? await ContarPorSituacaoAsync(
-                instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
-                .ConfigureAwait(false)
-            : null;
+            ContadoresDaVitrine? contadores = incluirContadores
+                ? await ContarPorSituacaoAsync(
+                    instanteUtc, recorte, termo, limiarDosUltimosDias, versaoDaProjecaoServida, cancellationToken)
+                    .ConfigureAwait(false)
+                : null;
 
-        await instantaneo.CommitAsync(cancellationToken).ConfigureAwait(false);
+            await instantaneo.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        return new PaginaDaVitrine(
-            [.. page.Items.Select(static linha => linha.Entidade)], instanteUtc, page.Previous, page.Next, contadores, revisao);
+            return new PaginaDaVitrine(
+                [.. page.Items.Select(static linha => linha.Entidade)], instanteUtc, page.Previous, page.Next, contadores, revisao);
+        }
     }
 
     private async Task<ContadoresDaVitrine> ContarPorSituacaoAsync(

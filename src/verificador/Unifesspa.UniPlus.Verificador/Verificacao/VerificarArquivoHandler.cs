@@ -128,7 +128,7 @@ public sealed partial class VerificarArquivoHandler
         string caminho = Path.Join(diretorio, $"verificacao-{Guid.NewGuid():N}.tmp");
 
         // O arquivo temporário vive só durante esta verificação: DeleteOnClose o apaga ao fim, mesmo na falha.
-        await using FileStream temporario = new(
+        FileStream temporario = new(
             caminho,
             FileMode.CreateNew,
             FileAccess.ReadWrite,
@@ -136,12 +136,15 @@ public sealed partial class VerificarArquivoHandler
             bufferSize: 81920,
             FileOptions.Asynchronous | FileOptions.DeleteOnClose);
 
-        if (!await _armazenamento.LerEnvioAsync(pedido.ChaveDeEnvio, pedido.ETag, temporario, cancellationToken).ConfigureAwait(false))
+        await using (temporario.ConfigureAwait(false))
         {
-            return await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
-        }
+            if (!await _armazenamento.LerEnvioAsync(pedido.ChaveDeEnvio, pedido.ETag, temporario, cancellationToken).ConfigureAwait(false))
+            {
+                return await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
+            }
 
-        return await VerificarConteudoAsync(pedido, envio, temporario, cancellationToken).ConfigureAwait(false);
+            return await VerificarConteudoAsync(pedido, envio, temporario, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task<ResultadoDaVerificacaoDeArquivo> VerificarConteudoAsync(

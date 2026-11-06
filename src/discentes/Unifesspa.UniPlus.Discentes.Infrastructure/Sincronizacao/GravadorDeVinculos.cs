@@ -66,45 +66,48 @@ internal sealed class GravadorDeVinculos : IGravadorDeVinculos
         IReadOnlyList<VinculoSincronizavel> lote,
         CancellationToken cancellationToken = default)
     {
-        await using AsyncServiceScope escopo = _escopos.CreateAsyncScope();
+        AsyncServiceScope escopo = _escopos.CreateAsyncScope();
 
-        IVinculoDiscenteRepository repositorio =
-            escopo.ServiceProvider.GetRequiredService<IVinculoDiscenteRepository>();
-        IDiscentesUnitOfWork unidadeDeTrabalho =
-            escopo.ServiceProvider.GetRequiredService<IDiscentesUnitOfWork>();
-
-        // Preparar o lote também pode falhar — cifrar o CPF de um vínculo alterado é o caso
-        // mais provável —, e essa falha precisa do mesmo tratamento por lote que a da
-        // confirmação. Fora do try, ela subiria até o orquestrador e encerraria a varredura,
-        // deixando de tentar todos os lotes seguintes por causa de um único vínculo.
-        ResultadoDaGravacao classificacao = new(0, 0, 0);
-
-        try
+        await using (escopo.ConfigureAwait(false))
         {
-            classificacao = await repositorio
-                .GravarLoteAsync(lote, cancellationToken)
-                .ConfigureAwait(false);
+            IVinculoDiscenteRepository repositorio =
+                escopo.ServiceProvider.GetRequiredService<IVinculoDiscenteRepository>();
+            IDiscentesUnitOfWork unidadeDeTrabalho =
+                escopo.ServiceProvider.GetRequiredService<IDiscentesUnitOfWork>();
 
-            await unidadeDeTrabalho.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (FalhaAoPrepararLoteException falha)
-        {
-            // A preparação parou no meio, mas o que ela já havia reconhecido como igual
-            // continua valendo — a réplica não foi tocada nesses vínculos.
-            return new DesfechoDaGravacao(
-                falha.Parcial with { Inseridos = 0, Atualizados = 0 },
-                falha.InnerException ?? falha);
-        }
-        catch (Exception excecao) when (excecao is not OperationCanceledException)
-        {
-            // A classificação sobe junto com a falha: o que já estava igual na réplica
-            // continua correto lá, e contá-lo como não gravado subestimaria a execução.
-            // Quando a falha é da preparação, ela ainda é a inicial e nada foi aproveitado.
-            return new DesfechoDaGravacao(
-                classificacao with { Inseridos = 0, Atualizados = 0 },
-                excecao);
-        }
+            // Preparar o lote também pode falhar — cifrar o CPF de um vínculo alterado é o caso
+            // mais provável —, e essa falha precisa do mesmo tratamento por lote que a da
+            // confirmação. Fora do try, ela subiria até o orquestrador e encerraria a varredura,
+            // deixando de tentar todos os lotes seguintes por causa de um único vínculo.
+            ResultadoDaGravacao classificacao = new(0, 0, 0);
 
-        return new DesfechoDaGravacao(classificacao);
+            try
+            {
+                classificacao = await repositorio
+                    .GravarLoteAsync(lote, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await unidadeDeTrabalho.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (FalhaAoPrepararLoteException falha)
+            {
+                // A preparação parou no meio, mas o que ela já havia reconhecido como igual
+                // continua valendo — a réplica não foi tocada nesses vínculos.
+                return new DesfechoDaGravacao(
+                    falha.Parcial with { Inseridos = 0, Atualizados = 0 },
+                    falha.InnerException ?? falha);
+            }
+            catch (Exception excecao) when (excecao is not OperationCanceledException)
+            {
+                // A classificação sobe junto com a falha: o que já estava igual na réplica
+                // continua correto lá, e contá-lo como não gravado subestimaria a execução.
+                // Quando a falha é da preparação, ela ainda é a inicial e nada foi aproveitado.
+                return new DesfechoDaGravacao(
+                    classificacao with { Inseridos = 0, Atualizados = 0 },
+                    excecao);
+            }
+
+            return new DesfechoDaGravacao(classificacao);
+        }
     }
 }

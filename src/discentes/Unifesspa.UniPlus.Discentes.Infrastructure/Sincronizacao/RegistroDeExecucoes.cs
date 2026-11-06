@@ -52,14 +52,17 @@ internal sealed class RegistroDeExecucoes : IRegistroDeExecucoes
         DateOnly dataDeReferencia,
         CancellationToken cancellationToken = default)
     {
-        await using AsyncServiceScope escopo = _escopos.CreateAsyncScope();
+        AsyncServiceScope escopo = _escopos.CreateAsyncScope();
 
-        SyncRun execucao = SyncRun.Iniciar(dataDeReferencia, _relogio);
+        await using (escopo.ConfigureAwait(false))
+        {
+            SyncRun execucao = SyncRun.Iniciar(dataDeReferencia, _relogio);
 
-        await Repositorio(escopo).AdicionarSyncRunAsync(execucao, cancellationToken).ConfigureAwait(false);
-        await UnidadeDeTrabalho(escopo).SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            await Repositorio(escopo).AdicionarSyncRunAsync(execucao, cancellationToken).ConfigureAwait(false);
+            await UnidadeDeTrabalho(escopo).SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return execucao.Id;
+            return execucao.Id;
+        }
     }
 
     public async Task ConcluirAsync(
@@ -68,14 +71,17 @@ internal sealed class RegistroDeExecucoes : IRegistroDeExecucoes
         SyncRunStatus situacao,
         CancellationToken cancellationToken = default)
     {
-        await using AsyncServiceScope escopo = _escopos.CreateAsyncScope();
+        AsyncServiceScope escopo = _escopos.CreateAsyncScope();
 
-        SyncRun execucao = await Repositorio(escopo).ObterSyncRunAsync(execucaoId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"Execução {execucaoId} não encontrada para conclusão.");
+        await using (escopo.ConfigureAwait(false))
+        {
+            SyncRun execucao = await Repositorio(escopo).ObterSyncRunAsync(execucaoId, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException($"Execução {execucaoId} não encontrada para conclusão.");
 
-        execucao.Concluir(contagens, situacao, _relogio);
+            execucao.Concluir(contagens, situacao, _relogio);
 
-        await UnidadeDeTrabalho(escopo).SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            await UnidadeDeTrabalho(escopo).SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static ISyncRunRepository Repositorio(AsyncServiceScope escopo) =>
