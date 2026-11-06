@@ -21,11 +21,9 @@ env:
   # Força actions JavaScript a rodar em Node.js 24 (Node 20 deprecado,
   # removido em set/2026). Recomendação oficial do aviso de deprecação.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  # Threshold de cobertura (Domain + Application).
-  # Escada gradual definida na issue #21: o piso aumenta a cada sprint
-  # até atingir 80% quando a suíte de testes estiver madura.
-  # Atualizar este valor à medida que a cobertura real evolui — nunca abaixar.
-  COVERAGE_THRESHOLD: 0
+  # Piso de cobertura de linhas de Domain, Application e Kernel (escopo em
+  # coverlet.runsettings). É o mínimo que toda issue já exige; nunca abaixar.
+  COVERAGE_THRESHOLD: 80
 
 jobs:
   adr-lint:
@@ -512,7 +510,7 @@ jobs:
             cat "${{ env.COVERAGE_DIR }}/report/SummaryGithub.md" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Enforce coverage threshold (Domain + Application >= ${{ env.COVERAGE_THRESHOLD }}%)
+      - name: Enforce coverage threshold (Domain + Application + Kernel >= ${{ env.COVERAGE_THRESHOLD }}%)
         run: |
           report="${{ env.COVERAGE_DIR }}/report/Cobertura.xml"
           if [ ! -f "$report" ]; then
@@ -528,7 +526,7 @@ jobs:
 
           pct=$(awk "BEGIN{printf \"%.2f\", $line_rate * 100}")
           threshold=${{ env.COVERAGE_THRESHOLD }}
-          echo "Cobertura agregada (Domain + Application): ${pct}% (mínimo: ${threshold}%)"
+          echo "Cobertura agregada (Domain + Application + Kernel): ${pct}% (mínimo: ${threshold}%)"
 
           if awk "BEGIN{exit !($line_rate * 100 < $threshold)}"; then
             echo "::error::Cobertura ${pct}% abaixo do mínimo exigido (${threshold}%)"
