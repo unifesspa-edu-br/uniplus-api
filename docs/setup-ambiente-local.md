@@ -46,6 +46,10 @@ Variações (todas por variável no `docker/.env`):
 | Um segundo ambiente na mesma máquina | Copie o repositório para outra pasta, troque todas as portas e defina `COMPOSE_PROJECT_NAME` diferente |
 | Stack completo (`portal-api`, gateway Traefik e frontends; exige o `uniplus-web` clonado ao lado) | `cp docker-compose.override.example.yml docker-compose.override.yml` e `docker compose up --build` |
 
+Quando algo não sobe, `scripts/diagnosticar-ambiente.sh` faz o diagnóstico sem alterar nada:
+chaves do `.env` que faltam ou estão vazias frente ao `.env.example`, override antigo que redefine a API ou o
+`ambiente-init`, recusa do compose e portas já ocupadas. Não faz parte da subida.
+
 Se você tem um `docker/docker-compose.override.yml` de antes desta mudança, apague-o ou recopie o exemplo:
 a API e o `ambiente-init` agora vivem no `docker-compose.yml`, e o override antigo sobrepõe os valores deles.
 Se o `.env` é antigo e falta uma chave, o compose para e nomeia a chave (copie-a do `.env.example`).
@@ -110,6 +114,12 @@ dotnet run --project src/host/Unifesspa.UniPlus.Host
 ```
 
 A API usa o `appsettings.Development.json` do Host, com connection strings de todos os módulos apontando para `localhost`.
+
+A instalação dos gestores só aceita e-mail em domínio institucional: antes do `dotnet run`, exporte no mesmo shell
+as três chaves `Autorizacao__Instalacao__DominiosInstitucionais__0..2` com `unifesspa.edu.br`,
+`teste.unifesspa.edu.br` e `uniplus-test.local` (comandos no
+[guia da instalação dos gestores](guia-instalacao-gestores-ambiente-local.md#22-domínio-institucional-aceito-pela-api)).
+Sem isso o passo 1 responde 422 `instalacao.gestores_invalidos`.
 
 Neste modo o `ambiente-init` não roda (ele depende da API do compose). Configure o Keycloak e instale os gestores
 uma vez, e de novo a cada banco recriado, com `jq` e `curl` instalados:
