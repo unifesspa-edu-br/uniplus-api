@@ -14,7 +14,7 @@
           <Format>cobertura</Format>
           <Include>[Unifesspa.UniPlus.*.Domain]*,[Unifesspa.UniPlus.*.Application]*,[Unifesspa.UniPlus.Kernel]*</Include>
           <Exclude>[*.Tests]*,[*.ArchTests]*,[*.Integration.Tests]*</Exclude>
-          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
           <ExcludeByFile>**/Migrations/*.cs,**/*.g.cs,**/*.Designer.cs</ExcludeByFile>
           <SingleHit>false</SingleHit>
           <UseSourceLink>true</UseSourceLink>
