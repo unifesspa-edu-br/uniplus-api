@@ -174,12 +174,13 @@ dotnet test UniPlus.slnx
 dotnet test tests/Unifesspa.UniPlus.Selecao.ArchTests
 dotnet test tests/Unifesspa.UniPlus.Ingresso.ArchTests
 
-# Ambiente local pronto em um comando: infra + verificador de arquivos + API + Keycloak configurado
-# + gestores de acessos instalados. Idempotente; --deslocamento-de-portas N para um segundo ambiente.
-scripts/dev-up.sh
+# Ambiente local pronto: infra + verificador de arquivos + API + Keycloak configurado + gestores de acessos
+# instalados. Idempotente. Todos os valores (inclusive as portas) vêm do docker/.env.
+cp docker/.env.example docker/.env
+(cd docker && docker compose up --build)
 
-# Infraestrutura local (PostgreSQL, Redis, Kafka, MinIO, Keycloak) — só a infra
-docker compose -f docker/docker-compose.yml up -d
+# Só a infraestrutura local (sem a API nem o ambiente-init), para rodar a API com dotnet run
+(cd docker && docker compose up -d postgres redis kafka kafka-init minio minio-init rabbitmq mailpit apicurio keycloak clamd-verificador verificador)
 
 # Stack COMPLETA (infra + 3 APIs + gateway Traefik + 4 frontends conteinerizados).
 # Copie os dois templates e suba — nada a editar. As APIs validam o realm `unifesspa`

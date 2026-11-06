@@ -18,31 +18,32 @@ Este documento descreve como contribuir com o backend da plataforma Uni+. Leia-o
 ### Dependências via Docker Compose
 
 O projeto depende de serviços externos que rodam localmente via Docker. Para subir
-**apenas a infra** (sem as APIs nem o frontend), a partir da raiz do repositório:
+**apenas a infra** (sem a API nem o frontend), a partir de `docker/` e com o `.env` copiado:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d
+docker compose up -d postgres redis kafka kafka-init minio minio-init rabbitmq mailpit apicurio keycloak clamd-verificador verificador
 ```
 
 Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft) e o `kafka-init`, MinIO, RabbitMQ, Mailpit, Apicurio, Keycloak
 (dev mode) e o verificador de arquivos (`clamd-verificador` e `verificador`). Para ter também o Keycloak
-configurado e os gestores de acessos instalados, veja **Ambiente pronto para uso em um comando** abaixo.
+configurado e os gestores de acessos instalados, veja **Ambiente pronto para uso** abaixo.
 Para o stack completo (infra + APIs + frontend), veja **Subir a stack completa** abaixo.
 
-### Ambiente pronto para uso em um comando
+### Ambiente pronto para uso
 
 Para ir de um clone novo a um ambiente com a API no ar, o Keycloak configurado e os dois primeiros gestores
-de acessos instalados, rode, a partir da raiz (só Docker):
+de acessos instalados, copie o `.env` e suba o compose (só Docker):
 
 ```bash
-scripts/dev-up.sh
+cd docker
+cp .env.example .env
+docker compose up --build
 ```
 
-O comando cria `docker/.env` e `docker/docker-compose.override.yml` a partir dos exemplos, acusa a chave que
-faltar numa cópia antiga e sobe o compose: infraestrutura, verificador de arquivos, API e o serviço
-`ambiente-init`, que configura o Keycloak e instala os gestores pela API. Com o override copiado, o
-`docker compose up -d` sozinho faz o mesmo. Rodar de novo não altera o estado. Para um segundo ambiente na mesma máquina,
-use `scripts/dev-up.sh --deslocamento-de-portas 100`. Detalhes e o procedimento manual em
+O `.env.example` traz todos os valores do ambiente local. O compose sobe a infraestrutura, o verificador de
+arquivos, a API e o serviço `ambiente-init`, que configura o Keycloak e instala os gestores pela API. Rodar de
+novo não altera o estado. Para trocar uma porta ou subir um segundo ambiente, edite as variáveis `*_PORT` (e
+`COMPOSE_PROJECT_NAME`) no `.env`. Detalhes e o procedimento manual em
 [`docs/guia-instalacao-gestores-ambiente-local.md`](docs/guia-instalacao-gestores-ambiente-local.md).
 
 ### Subir a stack completa (backend + frontend)

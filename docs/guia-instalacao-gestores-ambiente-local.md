@@ -11,65 +11,51 @@ acessos** sejam instalados.
 
 ## Caminho principal: o compose deixa tudo pronto
 
-Com Docker (Compose v2), a partir da raiz do repositório:
+Com Docker (Compose v2), a partir da pasta `docker/` do repositório:
 
 ```bash
-scripts/dev-up.sh
+cp .env.example .env
+docker compose up --build
 ```
 
-O comando leva o ambiente do zero a "dois gestores de acessos instalados e acesso funcionando":
+O comando leva o ambiente do zero a "dois gestores de acessos instalados e acesso funcionando". O serviço
+**`ambiente-init`**, que roda depois da infraestrutura e da API:
 
-1. cria `docker/.env` e `docker/docker-compose.override.yml` a partir dos exemplos, quando não existem (só
-   valores de desenvolvimento, sem segredo real); se existem, confere se têm todas as chaves dos exemplos e
-   o serviço `ambiente-init` e, faltando algo, **para antes de subir qualquer serviço** nomeando o que falta
-   e como obtê-lo;
-2. sobe o compose: a infraestrutura, o `kafka-init` (tópico do registro de acesso), o verificador de arquivos
-   (`clamd` + `verificador`), o Geo, a API e o serviço **`ambiente-init`**;
-3. acompanha o `ambiente-init` até terminar. Ele configura o Keycloak (`scripts/setup-keycloak-dev.sh`: senha
-   do `admin`, personas fictícias do portal, papel `uniplus-instalacao`), instala os dois gestores
-   (`diogo.souza` e `leandro.viana`) pelos quatro passos da API, lendo o código no Mailpit
-   (`scripts/dev-instalar-gestores.sh`), e confere o acesso: `GET /api/autorizacao/concessoes` responde 200
-   para os dois gestores e 403 para o executor (`admin`) e para o `candidato`.
+1. configura o Keycloak (`scripts/setup-keycloak-dev.sh`: senha do `admin`, personas fictícias do portal, papel
+   `uniplus-instalacao`);
+2. instala os dois gestores (`diogo.souza` e `leandro.viana`) pelos quatro passos da API, lendo o código no
+   Mailpit (`scripts/dev-instalar-gestores.sh`);
+3. confere o acesso: `GET /api/autorizacao/concessoes` responde 200 para os dois gestores e 403 para o executor
+   (`admin`) e para o `candidato`.
 
-O `ambiente-init` é um serviço do próprio compose, então **o `docker compose up -d` sozinho (com o override)
-produz o mesmo resultado**; o script só acrescenta a conferência dos arquivos locais, o deslocamento de portas
-e a espera até ficar pronto. Sem o script, acompanhe com
-`docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs -f ambiente-init`.
-
-Nada grava concessão direto no banco: a instalação passa pela mesma regra da [ADR-0152](adrs/0152-governanca-das-concessoes-de-acesso.md).
+Acompanhe com `docker compose logs -f ambiente-init`. Nada grava concessão direto no banco: a instalação passa
+pela mesma regra da [ADR-0152](adrs/0152-governanca-das-concessoes-de-acesso.md).
 
 | Situação | O que acontece |
 |---|---|
-| Rodar de novo (`dev-up.sh` ou `docker compose up -d`) com os gestores instalados | O `ambiente-init` roda de novo, confere o acesso e não altera nada (sem concessão nem instalação nova). |
-| Banco ou volume recriado (`docker compose ... down -v`) | O `ambiente-init` reconfigura o Keycloak e reinstala os gestores. |
-| `docker/.env` ou override de uma cópia antiga | O `dev-up.sh` falha antes de subir serviço, nomeando a chave, a variável ou o serviço ausente. Com `docker compose` direto, o override antigo não tem o `ambiente-init`: nada configura o Keycloak. |
-| `--completo` | Sobe também o `portal-api`, o gateway e os quatro frontends (exige o `uniplus-web` clonado ao lado). |
-| `--sem-instalacao` (ou `INSTALAR_GESTORES=false`) | Configura o Keycloak, sem instalar os gestores. |
-| `--so-validar` | Só confere `.env`, override e compose. |
+| Rodar `docker compose up` de novo com os gestores instalados | O `ambiente-init` roda de novo, confere o acesso e não altera nada (sem concessão nem instalação nova). |
+| Banco ou volume recriado (`docker compose down -v`) | O `ambiente-init` reconfigura o Keycloak e reinstala os gestores. |
+| `docker/.env` de uma cópia antiga, sem uma chave obrigatória | O compose para antes de subir serviço e nomeia a chave (`defina X no docker/.env`). Copie a linha do `.env.example`. |
+| `docker/docker-compose.override.yml` de antes da API ir para o `docker-compose.yml` | Ele sobrepõe os valores da API e do `ambiente-init`. Apague-o; só o stack completo o usa (recopie o exemplo). |
+| `INSTALAR_GESTORES=false` no `.env` | Configura o Keycloak, sem instalar os gestores. |
+| Stack completo | `cp docker-compose.override.example.yml docker-compose.override.yml`: sobe também o `portal-api`, o gateway e os quatro frontends (exige o `uniplus-web` clonado ao lado). |
 
 ### Mais de um ambiente na mesma máquina
 
 Cada serviço publica numa porta que vem de uma variável (`API_PORT`, `KEYCLOAK_PORT`, `POSTGRES_PORT`,
-`MAILPIT_UI_PORT` e as demais, todas já listadas em `docker/.env.example` com o valor padrão). Defina-as no shell ou no
-`docker/.env`, ou some um deslocamento a todas de uma vez:
-
-```bash
-scripts/dev-up.sh --deslocamento-de-portas 100   # API em 5300, Keycloak em 8180, Mailpit em 8125...
-```
-
-O deslocamento usa um projeto do compose próprio (`uniplus-desloc-100`), então contêineres e volumes não se
-misturam com os do ambiente nas portas padrão. Para escolher as portas à mão, defina também
-`COMPOSE_PROJECT_NAME` diferente. Os frontends só autenticam nas portas padrão (o realm importado registra os
-redirecionamentos de `4200` a `4203`); o `dev-up.sh` ajusta apenas o client da Configuração.
+`MAILPIT_UI_PORT` e as demais, todas em `docker/.env.example` com o valor padrão). Para um segundo ambiente,
+use outra cópia do repositório, troque **todas** as portas no `.env` dela e defina `COMPOSE_PROJECT_NAME`
+diferente, para contêineres e volumes não se misturarem. Os frontends só autenticam nas portas padrão (o realm
+importado registra os redirecionamentos de `4200` a `4203`).
 
 ### Domínios institucionais de desenvolvimento
 
 A API aceita e-mail de gestor e do executor só em domínio institucional, por igualdade exata. No local, os
-e-mails são `admin@teste.unifesspa.edu.br` e `*@uniplus-test.local`. Por isso o
-`docker-compose.override.example.yml` — arquivo só de desenvolvimento — configura
-`Autorizacao__Instalacao__DominiosInstitucionais__0..2`. Nenhum `appsettings` nem o `docker-compose.yml`
-base traz esses domínios, e o CI confere isso (`tools/dev-up/validate.sh`): em HML e produção vale o domínio
-exato da instituição.
+e-mails são `admin@teste.unifesspa.edu.br` e `*@uniplus-test.local`. Por isso o `docker/docker-compose.yml`
+— compose só de desenvolvimento, nunca implantado — configura
+`Autorizacao__Instalacao__DominiosInstitucionais__0..2` no serviço da API. Nenhum `appsettings` traz esses
+domínios, e o CI confere isso (`tools/dev-up/validate.sh`): em HML e produção vale o domínio exato da
+instituição.
 
 O restante deste guia descreve o que o comando automatiza, para quem precisa entender, depurar ou repetir um
 passo à mão.
@@ -97,50 +83,10 @@ Regras que aparecem como recusa se não forem cumpridas:
 
 Não há tela de instalação: é só API.
 
-## 2. Procedimento manual (alternativa ao comando)
+## 2. Procedimento manual (alternativa ao compose)
 
-Use só se não puder rodar o `scripts/dev-up.sh`. Antes do passo 1, deixe cinco peças no lugar (2.0 a 2.4).
-
-### 2.0 Atualizar o `.env` e o override do compose
-
-`docker/.env` e `docker/docker-compose.override.yml` **não são versionados** (estão no `.gitignore`): um
-`git pull` não os atualiza, e quem clonou há algumas semanas tem cópias desatualizadas dos
-`.env.example` e `docker-compose.override.example.yml`. O `scripts/dev-up.sh --so-validar` acusa o que falta.
-À mão, compare:
-
-```bash
-# Chaves que o .env.example tem e o seu .env não tem
-comm -13 <(grep -E '^[A-Z_]+=' docker/.env | cut -d= -f1 | sort -u) \
-         <(grep -E '^[A-Z_]+=' docker/.env.example | cut -d= -f1 | sort -u)
-
-# Variáveis de configuração do override de exemplo que o seu override não tem
-diff <(grep -oE '^\s+[A-Za-z_]+(__[A-Za-z_0-9]+)+:' docker/docker-compose.override.yml | sort -u) \
-     <(grep -oE '^\s+[A-Za-z_]+(__[A-Za-z_0-9]+)+:' docker/docker-compose.override.example.yml | sort -u)
-```
-
-Linhas com `>` são o que falta no seu arquivo. Se você não personalizou nada, o mais simples é guardar uma
-cópia e recopiar os exemplos (valores de desenvolvimento, sem segredo real):
-
-```bash
-cp docker/.env docker/.env.bak && cp docker/.env.example docker/.env
-cp docker/docker-compose.override.yml docker/docker-compose.override.yml.bak
-cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml
-```
-
-O que costuma faltar em cópias antigas:
-
-| Arquivo | Chave | O que acontece sem ela |
-|---|---|---|
-| `docker/.env` | `UNIPLUS_API_SELECAO_CLIENT_SECRET` (`uniplus-dev-m2m`) | `setup-keycloak-dev.sh` aborta ("vazio em docker/.env") e o `docker compose` recusa subir a API (`:?defina ...`). |
-| `docker/.env` | `GEO_IMAGE_TAG` (`v1.0.1`) | O compose recusa subir o serviço do Geo: não existe tag `latest`. |
-| override | `ConnectionStrings__AutorizacaoDb` | A API não conecta no schema de autorização: é o banco onde ficam as concessões. |
-| override | `ArquivosDoCandidato__AccessKey` e `__SecretKey` | A URL de envio do PDF e o verificador não acessam os buckets. |
-| override | `RabbitMq__Uri` | O pedido de verificação do PDF não chega ao verificador: o passo 2 nunca sai de "em verificação". |
-| override | `Geo__BaseUrl`, `Geo__OAuth__*` | `Geo__BaseUrl` é obrigatório: sem ele a API não sobe. |
-| override | `Autorizacao__Instalacao__DominiosInstitucionais__0..2` | A API recusa os e-mails locais (2.2). |
-
-A lista não é exaustiva. Depois de ajustar, confira `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml config -q`,
-que acusa variável obrigatória sem valor.
+Use só para depurar ou rodar a API fora do Docker (`dotnet run`). Antes do passo 1, deixe as peças 2.1 a 2.4 no
+lugar. O `docker/.env` não é versionado: um `git pull` não o atualiza, e o compose acusa a chave que faltar.
 
 ### 2.1 Papel `uniplus-instalacao` no realm `unifesspa`
 
@@ -164,7 +110,7 @@ e o login é recusado com `invalid_grant`.
 ### 2.2 Domínio institucional aceito pela API
 
 A API compara o domínio do e-mail por **igualdade exata** com `Autorizacao:Instalacao:DominiosInstitucionais`
-(padrão: `unifesspa.edu.br`). O `docker-compose.override.example.yml` já traz os três domínios locais, no serviço
+(padrão: `unifesspa.edu.br`). O `docker/docker-compose.yml` já traz os três domínios locais, no serviço
 `uniplus-api`:
 
 ```yaml
@@ -195,7 +141,7 @@ minutos); o healthcheck do clamd só fica `healthy` depois disso.
 
 MinIO (buckets `uniplus-candidato-envio` e `uniplus-candidato-definitivo`, criados pelo `minio-init`),
 RabbitMQ, Mailpit (interface em <http://localhost:8025>), a API e o **`kafka-init`**. A API precisa de
-`Storage__PublicEndpoint` apontando para o MinIO publicado no host (já no `docker-compose.override.example.yml`,
+`Storage__PublicEndpoint` apontando para o MinIO publicado no host (já no `docker/docker-compose.yml`,
 acompanhando `MINIO_PORT`) para a URL de PUT funcionar a partir da sua máquina.
 
 O `kafka-init` cria o tópico `autorizacao_registros_de_acesso`. Subir só os serviços de infraestrutura
@@ -311,11 +257,11 @@ aprovação da ADR-0152, pela tela da Configuração. O `admin` volta a ser só 
 | `422 instalacao.gestores_invalidos` | E-mail de gestor fora dos domínios configurados (2.2), ou campo ausente. |
 | `422 instalacao.email_nao_institucional` no passo 3 | E-mail do executor fora dos domínios configurados, ou `emailVerified=false`. |
 | `422 instalacao.executor_entre_gestores` | O executor foi listado como gestor. Use outro usuário para executar. |
-| Passo 3 recusa com `instalacao.situacao_invalida` | O verificador não está rodando (2.3) ou ainda não deu o veredicto. Veja `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs verificador clamd-verificador`. |
+| Passo 3 recusa com `instalacao.situacao_invalida` | O verificador não está rodando (2.3) ou ainda não deu o veredicto. Veja `docker compose -f docker/docker-compose.yml logs verificador clamd-verificador`. |
 | `422 instalacao.documento_invalido` | Arquivo que não é PDF, acima de 10 MB, ou ETag que não é o do PUT. |
 | `422 instalacao.codigo_invalido` | Código errado, expirado (2 h), já usado ou de outra instalação. Esgotadas as 5 tentativas, recomece no passo 1. |
 | `422 instalacao.ja_ha_gestor` | O banco já tem gestor ativo. Para reinstalar, recrie o banco ou o volume do Postgres. |
-| Banco recriado e tudo voltou a dar 403 | As concessões foram junto. Rode `scripts/dev-up.sh` de novo (ou refaça 2.1 e 2.6); o realm do Keycloak só é afetado por `down -v`. |
+| Banco recriado e tudo voltou a dar 403 | As concessões foram junto. Rode `docker compose up` de novo (ou refaça 2.1 e 2.6); o realm do Keycloak só é afetado por `down -v`. |
 
 ## 4. Limitações conhecidas
 
@@ -327,23 +273,23 @@ aprovação da ADR-0152, pela tela da Configuração. O `admin` volta a ser só 
   o perfil "Gestor de acessos", escopo `instituicao` e origem `instalacao`.
 - O `ambiente-init` redireciona o envio do PDF (a URL assinada aponta para a porta publicada do MinIO) com
   `curl --connect-to`, sem trocar o `Host` da assinatura; se mudar o endereço público do MinIO, ajuste
-  `ARMAZENAMENTO_CONNECT_TO` no override.
+  `ARMAZENAMENTO_CONNECT_TO` no `docker-compose.yml`.
 - Os frontends só autenticam nas portas padrão (ver "Mais de um ambiente na mesma máquina").
-- O teste automatizado do CI (`tools/dev-up/validate.sh`) cobre shellcheck, a validação de `.env` e override,
-  o deslocamento das portas e a coerência dos compose; **não** sobe o ambiente. O percurso completo leva
+- O teste automatizado do CI (`tools/dev-up/validate.sh`) cobre shellcheck, o `.env.example` frente ao compose,
+  a recusa de `.env` sem chave obrigatória e a coerência dos compose; **não** sobe o ambiente. O percurso completo leva
   vários minutos e baixa a base de assinaturas do clamd, então é validado à mão a cada mudança nos scripts.
 
 ## 5. Validação
 
-Percurso executado de ponta a ponta em 06/11/2026 a partir de um clone limpo (sem `docker/.env` nem override),
-com `scripts/dev-up.sh --deslocamento-de-portas 30000`, ao lado de outros ambientes nas portas padrão, e repetido
-com `docker compose up -d` direto nas duas últimas situações:
+Percurso executado de ponta a ponta em 06/11/2026 a partir de um clone limpo, só com `cp .env.example .env` e
+`docker compose up --build`, ao lado de outros ambientes nas portas padrão (portas e projeto do compose trocados
+no `.env`):
 
 - primeira subida: a infraestrutura, o verificador e a API sobem, o Keycloak é configurado e os dois gestores são
   instalados (passos 1 a 4, código lido no Mailpit);
 - `GET /api/autorizacao/concessoes`: 200 para `diogo.souza` e `leandro.viana`, 403 para `admin` e `candidato`;
-- segunda execução (`dev-up.sh` e `docker compose up -d`): "Gestores já instalados", e a contagem de concessões e instalações
+- segunda execução de `docker compose up`: "Gestores já instalados", e a contagem de concessões e instalações
   no banco não muda (2 e 1);
-- volumes do projeto removidos (`down -v`) e `docker compose up -d` de novo: os dois gestores são reinstalados.
+- volumes do projeto removidos (`down -v`) e `docker compose up` de novo: os dois gestores são reinstalados.
 
-Não exercitados: `--completo` (exige o `uniplus-web`) e a tela da Configuração.
+Não exercitados: o stack completo (exige o `uniplus-web`), o login gov.br pelo navegador e a tela da Configuração.
