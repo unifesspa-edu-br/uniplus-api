@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>Handler da reativação de perfil.</summary>
-public static class AtivarPerfilCommandHandler
+public static class ReativarPerfilCommandHandler
 {
     public static async Task<Result> Handle(
-        AtivarPerfilCommand command,
+        ReativarPerfilCommand command,
         IPerfilRepository repository,
         IAutorizacaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
@@ -24,7 +24,7 @@ public static class AtivarPerfilCommandHandler
             return Result.Failure(PerfilHandlerErros.NaoEncontrado(command.Id));
         }
 
-        Result resultado = perfil.Ativar();
+        Result resultado = perfil.Reativar();
         if (resultado.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();

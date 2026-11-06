@@ -111,7 +111,7 @@ public sealed class Perfil : EntityBase
     }
 
     /// <summary>Reativa o perfil. Reativar o que já está ativo não muda nada.</summary>
-    public Result Ativar()
+    public Result Reativar()
     {
         if (Governanca is not null)
         {
@@ -250,7 +250,7 @@ public sealed class Perfil : EntityBase
 
     private static DomainError GovernancaImutavel() => new(
         PerfilErrorCodes.GovernancaImutavel,
-        "Perfil de governança é de sistema e não pode ser editado, ativado nem desativado.");
+        "Perfil de governança é de sistema e não pode ser editado, reativado nem desativado.");
 
     private void AplicarCampos(CamposValidados campos)
     {

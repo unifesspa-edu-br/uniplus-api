@@ -165,10 +165,10 @@ public sealed class PerfisController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Ativar(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Reativar(Guid id, CancellationToken cancellationToken)
     {
         Result resultado = await _commandBus
-            .Send(new AtivarPerfilCommand(id), cancellationToken)
+            .Send(new ReativarPerfilCommand(id), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);

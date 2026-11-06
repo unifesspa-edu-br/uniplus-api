@@ -105,7 +105,7 @@ public sealed class PerfilTests
         perfil.Permissoes.Select(p => p.Codigo).Should().Equal("selecao:processos:publicar");
     }
 
-    [Fact(DisplayName = "Perfil de governança recusa edição, ativação e desativação")]
+    [Fact(DisplayName = "Perfil de governança recusa edição, reativação e desativação")]
     public void Governanca_RecusaAlteracao()
     {
         Perfil perfil = PerfilDeGovernanca();
@@ -113,7 +113,7 @@ public sealed class PerfilTests
         CodigosDaRecusa(perfil.Atualizar("Outro", "Descrição válida.", [Consultar], Catalogo))
             .Should().Equal(PerfilErrorCodes.GovernancaImutavel);
         perfil.Desativar().Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
-        perfil.Ativar().Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
+        perfil.Reativar().Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
         perfil.Ativo.Should().BeTrue();
     }
 
@@ -124,7 +124,7 @@ public sealed class PerfilTests
 
         perfil.Desativar().IsSuccess.Should().BeTrue();
         perfil.Ativo.Should().BeFalse();
-        perfil.Ativar().IsSuccess.Should().BeTrue();
+        perfil.Reativar().IsSuccess.Should().BeTrue();
         perfil.Ativo.Should().BeTrue();
     }
 
