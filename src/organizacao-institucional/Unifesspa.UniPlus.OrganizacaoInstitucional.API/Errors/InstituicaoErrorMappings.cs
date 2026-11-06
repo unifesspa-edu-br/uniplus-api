@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.API.Errors;
 
 using Microsoft.AspNetCore.Http;
 
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
 /// <summary>Mapeamentos HTTP dos erros de Instituicao (singleton e-MEC).</summary>
 internal static class InstituicaoErrorMappings

@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.API.Errors;
 
 using Microsoft.AspNetCore.Http;
 
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
 internal static class UnidadeErrorMappings
 {

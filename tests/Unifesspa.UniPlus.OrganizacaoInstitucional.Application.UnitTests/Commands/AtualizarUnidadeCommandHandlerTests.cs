@@ -71,7 +71,8 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Guid id = Guid.NewGuid();
         AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(id)
-            with { Sigla = null, MotivoMudancaIdentificador = new string('m', 501) };
+            with
+        { Sigla = null, MotivoMudancaIdentificador = new string('m', 501) };
 
         Result resultado = await AtualizarUnidadeCommandHandler.Handle(
             command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
