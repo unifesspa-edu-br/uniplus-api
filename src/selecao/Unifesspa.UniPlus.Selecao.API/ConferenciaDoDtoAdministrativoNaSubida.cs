@@ -26,6 +26,14 @@ internal sealed class ConferenciaDoDtoAdministrativoNaSubida : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
+        ExigirDtoConforme();
+        return Task.CompletedTask;
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private void ExigirDtoConforme()
+    {
         using IServiceScope escopo = _escopos.CreateScope();
         SelecaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
 
@@ -33,11 +41,10 @@ internal sealed class ConferenciaDoDtoAdministrativoNaSubida : IHostedService
             typeof(InscricaoAdministrativaDto).Assembly.GetExportedTypes(),
             ConferenciaDaClassificacaoDoModelo.Classificacoes(contexto.Model));
 
-        return violacoes.Count == 0
-            ? Task.CompletedTask
-            : throw new InvalidOperationException(
+        if (violacoes.Count > 0)
+        {
+            throw new InvalidOperationException(
                 "O DTO administrativo da Seleção classifica o dado abaixo do modelo: " + string.Join(" ", violacoes));
+        }
     }
-
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
