@@ -125,6 +125,23 @@ jobs:
         # próprio workflow e os exercita contra fixtures.
         run: bash tools/bump-infra-tag/validate.sh
 
+  dev-up:
+    name: Ambiente local (scripts de subida)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Validar os scripts de subida do ambiente local
+        # Sem subir o ambiente: o percurso completo (imagens, clamd, Keycloak, instalação dos gestores)
+        # leva vários minutos e depende de rede externa. Confere shellcheck, a validação do .env e do
+        # override contra os exemplos, o deslocamento das portas e a coerência dos compose.
+        run: bash tools/dev-up/validate.sh
+
   formatacao:
     name: Formatação (dotnet format)
     runs-on: ubuntu-latest
