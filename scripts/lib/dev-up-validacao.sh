@@ -37,10 +37,26 @@ chaves_do_env() {
     grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$1" | cut -d= -f1 | sort -u
 }
 
-# Chaves do .env de exemplo que o .env real não tem.
+# Chaves que algum compose usa com valor padrão (`${CHAVE:-padrão}`): se faltarem no .env, nada quebra.
+chaves_com_padrao_nos_compose() {
+    grep -ohE '\$\{[A-Za-z_][A-Za-z0-9_]*:-' "$@" | sed -E 's/^\$\{//; s/:-$//' | sort -u
+}
+
+# Chaves do .env de exemplo que o .env real não tem e que o compose exige: as que têm padrão nos arquivos de
+# compose informados depois do segundo argumento (portas, credenciais do RabbitMQ...) não contam como falta.
 chaves_ausentes_do_env() {
     local exemplo="$1" real="$2"
-    comm -13 <(chaves_do_env "$real") <(chaves_do_env "$exemplo")
+    shift 2
+    if [ "$#" -eq 0 ]; then
+        comm -13 <(chaves_do_env "$real") <(chaves_do_env "$exemplo")
+    else
+        comm -13 <(chaves_do_env "$real") <(comm -23 <(chaves_do_env "$exemplo") <(chaves_com_padrao_nos_compose "$@"))
+    fi
+}
+
+# Variáveis `${CHAVE...}` que os compose usam, uma por linha.
+variaveis_usadas_nos_compose() {
+    grep -ohE '\$\{[A-Za-z_][A-Za-z0-9_]*' "$@" | sed -E 's/^\$\{//' | sort -u
 }
 
 # Chaves de configuração do .NET (`Secao__Chave`) declaradas como variável de ambiente de um serviço
