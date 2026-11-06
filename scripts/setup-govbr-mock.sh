@@ -500,7 +500,7 @@ main() {
     # sobrescrevem o claim `sub` — comportamento intencionalmente inseguro.
     # Travamos para localhost / 127.0.0.1; rodar contra HML/PRD quebra a
     # premissa do realm institucional.
-    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]]; then
+    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]] && [[ "$KC_URL" != http://keycloak:* ]]; then
         warn "setup-govbr-mock.sh é DEV ONLY — KC_URL='$KC_URL' não é localhost."
         warn "Em HML/PRD use o gov.br staging/produção real via setup-govbr-idp.sh."
         warn "Defina ALLOW_NON_LOCALHOST_MOCK=true para forçar (ciente do risco)."

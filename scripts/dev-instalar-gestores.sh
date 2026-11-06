@@ -23,6 +23,9 @@
 #   TEST_PASSWORD           (default: Uni+Teste26) — senha das personas e do executor
 #   KEYCLOAK_ADMIN / KEYCLOAK_ADMIN_PASSWORD — administrador do realm master (default: admin)
 #   ESPERA_VERIFICACAO      (default: 240) — segundos para o verificador liberar o PDF
+#   ARMAZENAMENTO_CONNECT_TO — `host:porta:destino:porta` do curl para o envio do PDF. Dentro da rede do
+#                           compose a URL assinada aponta para localhost:<porta do host>, que não é o MinIO ali;
+#                           o ambiente-init a redireciona para minio:9000 sem trocar o Host, que entra na assinatura.
 
 set -euo pipefail
 
@@ -191,7 +194,9 @@ instalar() {
     [[ -n "$id" && -n "$url" ]] || falha "o passo 1 não devolveu id e URL de envio: $inicio"
 
     log "Passo 2 — enviando o PDF de designação e confirmando o documento"
-    etag=$(curl -fsS -D - -o /dev/null -X PUT -H "Content-Type: application/pdf" --data-binary @"$PDF_DE_DESIGNACAO" "$url" \
+    local -a redirecionamento=()
+    [ -z "${ARMAZENAMENTO_CONNECT_TO:-}" ] || redirecionamento=(--connect-to "$ARMAZENAMENTO_CONNECT_TO")
+    etag=$(curl -fsS -D - -o /dev/null -X PUT -H "Content-Type: application/pdf" ${redirecionamento[@]+"${redirecionamento[@]}"} --data-binary @"$PDF_DE_DESIGNACAO" "$url" \
         | tr -d '\r' | awk -F': ' 'tolower($1)=="etag"{print $2}') \
         || falha "o envio do PDF à URL assinada falhou (MinIO em porta acessível? Storage__PublicEndpoint do override)."
     etag="${etag//\"/}"
