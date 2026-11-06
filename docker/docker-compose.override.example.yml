@@ -71,7 +71,7 @@ services:
       # precisam de um endpoint alcançável de fora da rede Docker — minio:9000
       # só resolve dentro dela. Porta 9000 já é publicada no host (ver serviço
       # minio), então localhost funciona para quem roda o frontend fora do Docker.
-      Storage__PublicEndpoint: "localhost:9000"
+      Storage__PublicEndpoint: "localhost:${MINIO_PORT:-9000}"
       # Credencial dos buckets do candidato; local, a root do MinIO.
       ArquivosDoCandidato__AccessKey: "${MINIO_ROOT_USER}"
       ArquivosDoCandidato__SecretKey: "${MINIO_ROOT_PASSWORD}"
@@ -86,7 +86,7 @@ services:
       # produção: além de falhar em CORS, manda a requisição (e a credencial colada no
       # Authorize) para o ambiente errado. Só de desenvolvimento; em HML/PROD a variável
       # não existe e o documento volta a anunciar apenas Produção e Homologação.
-      UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299"
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:${OPENAPI_DOCS_PORT:-5299}"
       # Conferência do endereço do candidato no Geo (issue #1865, ADR-0136) — BaseUrl é
       # obrigatório, sem ele a API não sobe. O OAuth usa o client M2M uniplus-api-selecao:
       # em HML/PROD a infra o provisiona (uniplus-infra#163) e o secret vem de Vault/ESO;
@@ -95,8 +95,14 @@ services:
       Geo__OAuth__TokenEndpoint: "http://keycloak:8080/realms/unifesspa/protocol/openid-connect/token"
       Geo__OAuth__ClientId: "uniplus-api-selecao"
       Geo__OAuth__ClientSecret: "${UNIPLUS_API_SELECAO_CLIENT_SECRET:?defina UNIPLUS_API_SELECAO_CLIENT_SECRET no docker/.env}"
+      # Domínios cujo e-mail a instalação dos gestores de acessos aceita (igualdade exata, ADR-0152).
+      # Só de desenvolvimento: o admin local é admin@teste.unifesspa.edu.br e as personas fictícias
+      # são @uniplus-test.local. Em HML e produção a variável não existe e vale o domínio da instituição.
+      Autorizacao__Instalacao__DominiosInstitucionais__0: "unifesspa.edu.br"
+      Autorizacao__Instalacao__DominiosInstitucionais__1: "teste.unifesspa.edu.br"
+      Autorizacao__Instalacao__DominiosInstitucionais__2: "uniplus-test.local"
     ports:
-      - "5200:8080"
+      - "${API_PORT:-5200}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,13 +167,13 @@ services:
       # O appsettings.Development do Geo não lista todos os frontends locais; a lista
       # inteira vai aqui, para a busca de CEP e de município funcionar em qualquer um.
       Cors__AllowedOrigins__0: "http://localhost:4100"
-      Cors__AllowedOrigins__1: "http://localhost:4200"
-      Cors__AllowedOrigins__2: "http://localhost:4201"
-      Cors__AllowedOrigins__3: "http://localhost:4202"
-      Cors__AllowedOrigins__4: "http://localhost:4203"
+      Cors__AllowedOrigins__1: "http://localhost:${SELECAO_WEB_PORT:-4200}"
+      Cors__AllowedOrigins__2: "http://localhost:${INGRESSO_WEB_PORT:-4201}"
+      Cors__AllowedOrigins__3: "http://localhost:${PORTAL_WEB_PORT:-4202}"
+      Cors__AllowedOrigins__4: "http://localhost:${CONFIGURACAO_WEB_PORT:-4203}"
       Cors__AllowedOrigins__5: "http://localhost:4300"
     ports:
-      - "5400:8080"
+      - "${GEO_API_PORT:-5400}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -206,13 +212,13 @@ services:
       # path mandaria essas chamadas ao processo errado — respondendo 200 sem ter
       # passado por aqui. Sob /portal, tudo que o documento do Portal invoca chega a
       # este processo, seja qual for o path da operação.
-      UniPlus__OpenApi__LocalServerUrl: "http://localhost:5299/portal"
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:${OPENAPI_DOCS_PORT:-5299}/portal"
       # Origens da página pública do certame (ADR-0131): Seleção e Publicações são
       # servidos pelo monólito, consultados sem credencial pela rede interna do compose.
       Origens__SelecaoBaseUrl: "http://uniplus-api:8080"
       Origens__PublicacoesBaseUrl: "http://uniplus-api:8080"
     ports:
-      - "5302:8080"
+      - "${PORTAL_API_PORT:-5302}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -267,7 +273,7 @@ services:
     volumes:
       - ./openapi-ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "5299:8080"
+      - "${OPENAPI_DOCS_PORT:-5299}:8080"
     depends_on:
       - openapi-ui
 
@@ -288,8 +294,8 @@ services:
       - --ping=true
       - --log.level=INFO
     ports:
-      - "5000:80"     # gateway consumido pelos frontends (apiUrl=http://localhost:5000)
-      - "5080:8080"   # dashboard do Traefik -> http://localhost:5080/dashboard/
+      - "${GATEWAY_PORT:-5000}:80"     # gateway consumido pelos frontends (apiUrl=http://localhost:5000)
+      - "${GATEWAY_DASHBOARD_PORT:-5080}:8080"   # dashboard do Traefik -> http://localhost:5080/dashboard/
     volumes:
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     depends_on:
@@ -319,7 +325,7 @@ services:
     volumes:
       - ../../uniplus-web/apps/selecao/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
     ports:
-      - "4200:8080"
+      - "${SELECAO_WEB_PORT:-4200}:8080"
     depends_on:
       traefik:
         condition: service_healthy
@@ -338,7 +344,7 @@ services:
     volumes:
       - ../../uniplus-web/apps/ingresso/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
     ports:
-      - "4201:8080"
+      - "${INGRESSO_WEB_PORT:-4201}:8080"
     depends_on:
       traefik:
         condition: service_healthy
@@ -357,7 +363,7 @@ services:
     volumes:
       - ../../uniplus-web/apps/portal/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
     ports:
-      - "4202:8080"
+      - "${PORTAL_WEB_PORT:-4202}:8080"
     depends_on:
       traefik:
         condition: service_healthy
@@ -376,7 +382,7 @@ services:
     volumes:
       - ../../uniplus-web/apps/configuracao/public/assets/runtime-config.json:/usr/share/nginx/html/assets/runtime-config.json:ro
     ports:
-      - "4203:8080"
+      - "${CONFIGURACAO_WEB_PORT:-4203}:8080"
     depends_on:
       traefik:
         condition: service_healthy
