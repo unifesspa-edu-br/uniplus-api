@@ -464,12 +464,12 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         context.Result = Result.Failure(error).ToActionResult(_errorMapper);
     }
 
+    private static byte[] CorpoCifrado(IdempotencyEntry entry) =>
+        entry.ResponseBodyCipher ?? throw new InvalidOperationException("A entrada de idempotência não guarda o corpo da resposta.");
+
     private async Task ReplayAsync(ResourceExecutingContext context, IdempotencyEntry entry, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(entry.ResponseBodyCipher);
-
-        byte[] body = await _encryption.DecryptAsync(
-            IdempotencyOptions.EncryptionKeyName, entry.ResponseBodyCipher, cancellationToken).ConfigureAwait(false);
+        byte[] body = await _encryption.DecryptAsync(IdempotencyOptions.EncryptionKeyName, CorpoCifrado(entry), cancellationToken).ConfigureAwait(false);
 
         Dictionary<string, string>? headers = string.IsNullOrEmpty(entry.ResponseHeadersJson)
             ? null
