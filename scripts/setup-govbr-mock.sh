@@ -480,10 +480,10 @@ EOF
   IdP no realm '$TARGET_REALM': $IDP_ALIAS  (firstBrokerLoginFlow=$IDP_FIRST_BROKER_LOGIN_FLOW)
 
   Console admin do realm fake:
-    $KC_URL/admin/master/console/#/$MOCK_REALM/
+    $KC_PUBLIC_URL/admin/master/console/#/$MOCK_REALM/
 
   Como validar via browser:
-    1. Abrir incognito em $KC_URL/realms/$TARGET_REALM/account/
+    1. Abrir incognito em $KC_PUBLIC_URL/realms/$TARGET_REALM/account/
     2. Sign In → "Entrar com gov.br (MOCK)"
     3. No realm fake, logar com username=07094871422 / senha=$MOCK_USER_PASSWORD
     4. Após login, voltar pro Account Console e verificar atributo cpf
