@@ -24,7 +24,7 @@
 494 src/publicacoes/Unifesspa.UniPlus.Publicacoes.Application/Commands/AtosNormativos/RegistrarAtoNormativoCommandHandler.cs
 544 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoClassificacao.cs
 696 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ConfiguracaoDistribuicaoVagas.cs
-592 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/DocumentoExigido.cs
+590 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/DocumentoExigido.cs
 1052 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/EtapaProcesso.cs
 812 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs
 1383 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/Inscricao.cs
@@ -38,5 +38,4 @@
 425 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Errors/InvalidRequestProblemFactory.cs
 558 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyFilter.cs
 525 src/shared/Unifesspa.UniPlus.Regras/Formularios/FormaDoFormulario.cs
-485 src/shared/Unifesspa.UniPlus.Regras/Formularios/FormularioPortavel.cs
 415 src/shared/Unifesspa.UniPlus.Regras/Formularios/RestricaoValor.cs

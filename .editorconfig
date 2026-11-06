@@ -125,14 +125,11 @@ dotnet_diagnostic.MA0006.severity = suggestion
 dotnet_diagnostic.MA0008.severity = suggestion
 dotnet_diagnostic.MA0009.severity = suggestion
 dotnet_diagnostic.MA0011.severity = suggestion
-dotnet_diagnostic.MA0015.severity = suggestion
 dotnet_diagnostic.MA0016.severity = suggestion
 dotnet_diagnostic.MA0023.severity = suggestion
 dotnet_diagnostic.MA0026.severity = suggestion
 dotnet_diagnostic.MA0048.severity = suggestion
 dotnet_diagnostic.MA0084.severity = suggestion
-dotnet_diagnostic.MA0100.severity = suggestion
-dotnet_diagnostic.MA0134.severity = suggestion
 dotnet_diagnostic.MA0244.severity = suggestion
 
 # Roslynator é sugestão na IDE, nunca barra a build. As demais regras dele já nascem abaixo
