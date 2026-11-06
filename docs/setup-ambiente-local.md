@@ -46,9 +46,12 @@ Variações (todas por variável no `docker/.env`):
 | Um segundo ambiente na mesma máquina | Copie o repositório para outra pasta, troque todas as portas e defina `COMPOSE_PROJECT_NAME` diferente |
 | Stack completo (`portal-api`, gateway Traefik e frontends; exige o `uniplus-web` clonado ao lado) | `cp docker-compose.override.example.yml docker-compose.override.yml` e `docker compose up --build` |
 
-Quando algo não sobe, `scripts/diagnosticar-ambiente.sh` faz o diagnóstico sem alterar nada:
+Quando algo não sobe, `scripts/diagnosticar-ambiente.sh` faz o diagnóstico (só lê os arquivos):
 chaves do `.env` que faltam ou estão vazias frente ao `.env.example`, override antigo que redefine a API ou o
-`ambiente-init`, recusa do compose e portas já ocupadas. Não faz parte da subida.
+`ambiente-init`, recusa do compose e portas já ocupadas, e mostra o comando que corrige cada um. Não faz parte da
+subida. Com `--corrigir` ele aplica a correção, guardando cópia de segurança (`.env.bak-<data>`,
+`docker-compose.override.yml.bak-<data>`): acrescenta ao `.env` as chaves que faltam sem mexer nos seus valores,
+preenche as obrigatórias vazias e põe o override antigo de lado.
 
 Se você tem um `docker/docker-compose.override.yml` de antes desta mudança, apague-o ou recopie o exemplo:
 a API e o `ambiente-init` agora vivem no `docker-compose.yml`, e o override antigo sobrepõe os valores deles.

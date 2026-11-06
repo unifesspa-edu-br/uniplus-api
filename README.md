@@ -66,8 +66,10 @@ Para atualizar as dependências localmente:
 # Criar arquivo de variáveis de ambiente
 cp docker/.env.example docker/.env
 
-# Subir infraestrutura (PostgreSQL, Redis, Kafka, MinIO, Keycloak)
-docker compose -f docker/docker-compose.yml up -d
+# Subir só a infraestrutura (PostgreSQL, Redis, Kafka, MinIO, Keycloak, verificador de arquivos), sem a
+# API do compose, para rodar a API com dotnet run. Para subir tudo, inclusive a API e a instalação dos
+# gestores de acessos, use `cd docker && docker compose up --build`.
+(cd docker && docker compose up -d postgres redis kafka kafka-init minio minio-init rabbitmq mailpit apicurio keycloak clamd-verificador verificador)
 
 # Executar a API (processo único: o Host compõe Seleção, Ingresso,
 # Configuração e Organização — os módulos internos são class libraries)

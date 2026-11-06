@@ -190,8 +190,8 @@ Os ajustes vivem só na memória do Keycloak — `docker compose down -v` revert
 ### Exemplo de fluxo completo
 
 ```bash
-# 1. Stack docker no ar + setup pós-import
-docker compose -f docker/docker-compose.yml up -d
+# 1. Keycloak e LDAP no ar + setup pós-import (o `docker compose up` completo já roda esse setup no ambiente-init)
+docker compose -f docker/docker-compose.yml up -d openldap keycloak
 scripts/setup-keycloak-dev.sh
 
 # 2. Token de candidato (--data-urlencode, não -d: a senha tem '+', que -d não escapa)
@@ -310,7 +310,7 @@ Para validar o login, abra `https://keycloak-hom.unifesspa.edu.br/realms/unifess
 O `setup-govbr-idp.sh` pode ser rodado contra o Keycloak local para validar a configuração estrutural do IdP/mappers (útil ao iterar no script ou no SPI customizado). O **fluxo end-to-end gov.br não funciona contra `localhost`** — gov.br não aceita esse host como redirect URI registrado.
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml up -d openldap keycloak
 scripts/setup-keycloak-dev.sh   # roles, usuários de teste, clients, LDAP federation
 
 GOVBR_CLIENT_ID=... GOVBR_CLIENT_SECRET=... scripts/setup-govbr-idp.sh
@@ -368,7 +368,7 @@ O ambiente de desenvolvimento usa um **segundo realm no mesmo Keycloak** (`govbr
 
 ```bash
 # 1. Sobe a stack (a imagem ghcr.io/.../uniplus-keycloak:26.7.2 já traz o JAR embutido)
-docker compose -f docker/docker-compose.yml up -d
+docker compose -f docker/docker-compose.yml up -d openldap keycloak
 
 # 2. Setup completo do realm DEV — flow custom + LDAP sintético + mock IdP
 scripts/setup-keycloak-dev.sh
