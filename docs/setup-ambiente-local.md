@@ -13,6 +13,11 @@ Guia para configurar e executar o ambiente de desenvolvimento da Uni+ API.
 
 ## Setup rápido
 
+Para ter a API no ar, o Keycloak configurado e os dois primeiros gestores de acessos instalados, rode
+`scripts/dev-up.sh` (só Docker, `jq` e `curl`). Veja o
+[guia da instalação dos gestores](guia-instalacao-gestores-ambiente-local.md). Os passos abaixo são o caminho
+manual, só da infraestrutura.
+
 ```bash
 # 1. Clonar o repositório
 git clone https://github.com/unifesspa-edu-br/uniplus-api.git
