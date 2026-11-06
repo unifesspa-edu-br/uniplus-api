@@ -25,7 +25,9 @@ DOCKER="$RAIZ/docker"
 ENV_ARQUIVO="$DOCKER/.env"
 EXEMPLO="$DOCKER/.env.example"
 OVERRIDE="$DOCKER/docker-compose.override.yml"
-SERVICOS_DO_BASE=(uniplus-api geo-api ambiente-init verificador clamd-verificador)
+# Serviços que o override antigo definia por inteiro e que agora vivem no docker-compose.yml. O override de
+# exemplo do stack completo não os define (só ajusta variáveis do uniplus-api, ver abaixo).
+SERVICOS_DO_BASE=(geo-api ambiente-init verificador clamd-verificador)
 OBRIGATORIAS=(KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD MINIO_ROOT_USER MINIO_ROOT_PASSWORD POSTGRES_DB
     POSTGRES_PASSWORD POSTGRES_USER UNIPLUS_API_SELECAO_CLIENT_SECRET GEO_IMAGE_TAG)
 
@@ -93,12 +95,18 @@ verificar() {
         for servico in "${SERVICOS_DO_BASE[@]}"; do
             grep -qx "$servico" <<< "$definidos" && colisao="$colisao $servico"
         done
+        # O uniplus-api também aparece no override de exemplo, só com variáveis soltas. O override antigo o
+        # definia por inteiro: com `build:` ou as connection strings, que agora vêm do docker-compose.yml.
+        bloco_api=$(awk '/^services:/{d=1;next} /^[^ #]/{d=0} d && /^  [A-Za-z0-9_-]+:[[:space:]]*$/{em=($1=="uniplus-api:");next} d && em' "$OVERRIDE")
+        if grep -qE '^[[:space:]]+(build:|ConnectionStrings__)' <<< "$bloco_api"; then
+            colisao="$colisao uniplus-api"
+        fi
         if [[ -n "$colisao" ]]; then
             OVERRIDE_ANTIGO=true
             falha "o docker-compose.override.yml redefine serviço que agora vive no docker-compose.yml:$colisao"
             dica "mv docker/docker-compose.override.yml docker/docker-compose.override.yml.bak (ou use --corrigir). Só o stack completo precisa de override: cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml"
         else
-            ok "o override não redefine serviço do compose base"
+            ok "o override não redefine serviço do compose base (o do stack completo é válido)"
         fi
     fi
 
