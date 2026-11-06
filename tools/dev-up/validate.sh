@@ -27,7 +27,7 @@ confere() {
 echo "== shellcheck"
 if command -v shellcheck >/dev/null; then
     if shellcheck -x -P SCRIPTDIR "$RAIZ/scripts/ambiente-init.sh" "$RAIZ/scripts/dev-instalar-gestores.sh" \
-        "$RAIZ/scripts/setup-keycloak-dev.sh" "$RAIZ/scripts/setup-govbr-mock.sh"; then
+        "$RAIZ/scripts/diagnosticar-ambiente.sh" "$RAIZ/scripts/setup-keycloak-dev.sh" "$RAIZ/scripts/setup-govbr-mock.sh"; then
         ok "scripts sem aviso do shellcheck"
     else
         erro "shellcheck acusou aviso"
