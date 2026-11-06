@@ -31,14 +31,17 @@ public sealed record FormatoDeTexto : RestricaoValor
 
     public FormatoDeTexto(string formato)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(formato);
-        if (!FormasCanonicas.ContainsKey(formato))
+        ArgumentNullException.ThrowIfNull(formato);
+        if (Violacao(formato) is { } violacao)
         {
-            throw new ArgumentException($"O formato de texto '{formato}' não é do vocabulário do catálogo.", nameof(formato));
+            throw new ArgumentException(violacao, nameof(formato));
         }
 
         Formato = formato;
     }
+
+    internal static string? Violacao(string formato) =>
+        FormasCanonicas.ContainsKey(formato) ? null : $"O formato de texto '{formato}' não é do vocabulário do catálogo.";
 
     public override TipoRestricaoValor Tipo => TipoRestricaoValor.FormatoTexto;
 

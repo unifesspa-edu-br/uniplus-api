@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Formularios;
 
+using System.Globalization;
+
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
@@ -29,20 +31,9 @@ public sealed record DefinicaoFormulario
         ArgumentNullException.ThrowIfNull(derivacoes);
         IReadOnlyList<DefinicaoAgregado> sobreGrupos = agregados ?? [];
 
-        GarantirUnicos(etapas.Select(static e => e.Codigo), "etapa");
-        GarantirUnicos(termos.Select(static t => t.Codigo), "termo");
-        GarantirUnicos(
-            etapas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo)
-                .Concat(etapas.SelectMany(static e => e.Grupos).SelectMany(static g => g.Subitens).Select(static i => i.FatoCodigo))
-                .Concat(derivacoes.Select(static d => d.CodigoFato))
-                .Concat(sobreGrupos.Select(static a => a.Codigo))
-                .Concat(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo)),
-            "fato produzido ou grupo do formulário");
-
-        HashSet<string> codigosDosGrupos = new(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
-        if (sobreGrupos.FirstOrDefault(a => !codigosDosGrupos.Contains(a.GrupoCodigo)) is { } semGrupo)
+        if (Violacao(etapas, termos, derivacoes, sobreGrupos) is { } violacao)
         {
-            throw new ArgumentException($"O agregado '{semGrupo.Codigo}' é sobre o grupo '{semGrupo.GrupoCodigo}', que o formulário não tem.");
+            throw new ArgumentException(violacao, nameof(etapas));
         }
 
         Etapas = [.. etapas];
@@ -60,16 +51,42 @@ public sealed record DefinicaoFormulario
     /// <summary>Os fatos agregados sobre os grupos repetíveis, citáveis fora do grupo (ADR-0138).</summary>
     public IReadOnlyList<DefinicaoAgregado> Agregados { get; }
 
-    private static void GarantirUnicos(IEnumerable<string> codigos, string oQue)
+    /// <summary>
+    /// A primeira invariante que a descrição viola, em texto para o administrador; nula quando não viola.
+    /// Quem monta a definição a partir de conteúdo de fora confere aqui antes de construir.
+    /// </summary>
+    internal static string? Violacao(
+        IReadOnlyList<DefinicaoEtapa> etapas,
+        IReadOnlyList<DefinicaoTermo> termos,
+        IReadOnlyList<DerivacaoDoFato> derivacoes,
+        IReadOnlyList<DefinicaoAgregado> sobreGrupos)
+    {
+        return Repetido(etapas.Select(static e => e.Codigo), "etapa")
+            ?? Repetido(termos.Select(static t => t.Codigo), "termo")
+            ?? Repetido(
+                etapas.SelectMany(static e => e.Itens).Select(static i => i.FatoCodigo)
+                    .Concat(etapas.SelectMany(static e => e.Grupos).SelectMany(static g => g.Subitens).Select(static i => i.FatoCodigo))
+                    .Concat(derivacoes.Select(static d => d.CodigoFato))
+                    .Concat(sobreGrupos.Select(static a => a.Codigo))
+                    .Concat(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo)),
+                "fato produzido ou grupo do formulário")
+            ?? AgregadoSemGrupo(etapas, sobreGrupos);
+    }
+
+    private static string? AgregadoSemGrupo(IReadOnlyList<DefinicaoEtapa> etapas, IReadOnlyList<DefinicaoAgregado> sobreGrupos)
+    {
+        HashSet<string> codigosDosGrupos = new(etapas.SelectMany(static e => e.Grupos).Select(static g => g.Codigo), StringComparer.Ordinal);
+        return sobreGrupos.FirstOrDefault(a => !codigosDosGrupos.Contains(a.GrupoCodigo)) is { } semGrupo
+            ? $"O agregado '{semGrupo.Codigo}' é sobre o grupo '{semGrupo.GrupoCodigo}', que o formulário não tem."
+            : null;
+    }
+
+    private static string? Repetido(IEnumerable<string> codigos, string oQue)
     {
         HashSet<string> vistos = new(StringComparer.Ordinal);
-        foreach (string codigo in codigos)
-        {
-            if (!vistos.Add(codigo))
-            {
-                throw new ArgumentException($"O código '{codigo}' aparece mais de uma vez como {oQue}.");
-            }
-        }
+        return codigos.FirstOrDefault(codigo => !vistos.Add(codigo)) is { } repetido
+            ? $"O código '{repetido}' aparece mais de uma vez como {oQue}."
+            : null;
     }
 }
 
@@ -82,7 +99,11 @@ public sealed record DefinicaoEtapa
     public DefinicaoEtapa(
         string codigo, PredicadoDnf? exibicao, IReadOnlyList<DefinicaoItem> itens, IReadOnlyList<DefinicaoGrupo>? grupos = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        if (Violacao(codigo) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(codigo));
+        }
+
         ArgumentNullException.ThrowIfNull(itens);
 
         Codigo = codigo;
@@ -90,6 +111,9 @@ public sealed record DefinicaoEtapa
         Itens = [.. itens];
         Grupos = [.. grupos ?? []];
     }
+
+    internal static string? Violacao(string? codigo) =>
+        string.IsNullOrWhiteSpace(codigo) ? "Uma etapa do formulário não tem código." : null;
 
     public string Codigo { get; }
 
@@ -119,14 +143,13 @@ public sealed record DefinicaoGrupo
         IReadOnlyList<DefinicaoItem> subitens,
         bool incluiCandidato = false)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        if (Violacao(codigo, minimo, maximo) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(codigo));
+        }
+
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentNullException.ThrowIfNull(subitens);
-        ArgumentOutOfRangeException.ThrowIfNegative(minimo);
-        if (maximo is { } teto)
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(teto, Math.Max(minimo, 1), nameof(maximo));
-        }
 
         Codigo = codigo;
         Exibicao = exibicao;
@@ -136,6 +159,13 @@ public sealed record DefinicaoGrupo
         Subitens = [.. subitens];
         IncluiCandidato = incluiCandidato;
     }
+
+    /// <summary>A recusa do grupo sem código ou com limites de ocorrências incoerentes: mínimo negativo, ou máximo que não comporta o mínimo nem uma ocorrência.</summary>
+    internal static string? Violacao(string? codigo, int minimo, int? maximo) =>
+        string.IsNullOrWhiteSpace(codigo) ? "Um grupo do formulário não tem código."
+        : minimo < 0 || (maximo is { } teto && teto < Math.Max(minimo, 1))
+            ? $"Os limites de ocorrências do grupo '{codigo}' ({minimo}, {(maximo is { } m ? m.ToString(CultureInfo.InvariantCulture) : "sem máximo")}) são incoerentes."
+            : null;
 
     public string Codigo { get; }
 
@@ -184,7 +214,11 @@ public sealed record DefinicaoItem
         Impedimento? impedimento = null,
         string? formato = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
+        if (Violacao(fatoCodigo, formato) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(fatoCodigo));
+        }
+
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
         ArgumentNullException.ThrowIfNull(restricoes);
 
@@ -198,6 +232,12 @@ public sealed record DefinicaoItem
         Formato = formato;
         RestricoesDaResposta = formato is null ? Restricoes : [.. Restricoes, new FormatoDeTexto(formato)];
     }
+
+    /// <summary>A recusa do item sem código do fato, ou cujo formato, no campo de texto, não é do catálogo.</summary>
+    internal static string? Violacao(string? fatoCodigo, string? formato) =>
+        string.IsNullOrWhiteSpace(fatoCodigo) ? "Um campo do formulário não tem o código do fato."
+        : ConjuntoBasicoDaInscricao.FormatoDaResposta(fatoCodigo, formato) is { } daResposta ? FormatoDeTexto.Violacao(daResposta)
+        : null;
 
     public string FatoCodigo { get; }
 
@@ -237,9 +277,11 @@ public sealed record DefinicaoAgregado
 {
     public DefinicaoAgregado(string codigo, string grupoCodigo, string fatoDeMembro, OperacaoAgregado operacao)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(grupoCodigo);
-        ArgumentException.ThrowIfNullOrWhiteSpace(fatoDeMembro);
+        if (Violacao(codigo, grupoCodigo, fatoDeMembro) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(codigo));
+        }
+
         if (operacao == OperacaoAgregado.Nenhuma || !Enum.IsDefined(operacao))
         {
             throw new ArgumentOutOfRangeException(nameof(operacao), operacao, "O agregado é EXISTE ou VALORES_PRESENTES.");
@@ -250,6 +292,12 @@ public sealed record DefinicaoAgregado
         FatoDeMembro = fatoDeMembro;
         Operacao = operacao;
     }
+
+    internal static string? Violacao(string? codigo, string? grupoCodigo, string? fatoDeMembro) =>
+        string.IsNullOrWhiteSpace(codigo) ? "Um agregado do formulário não tem código."
+        : string.IsNullOrWhiteSpace(grupoCodigo) ? "Um agregado do formulário não diz o grupo que agrega."
+        : string.IsNullOrWhiteSpace(fatoDeMembro) ? "Um agregado do formulário não diz o fato de membro que agrega."
+        : null;
 
     public string Codigo { get; }
 
@@ -268,13 +316,20 @@ public sealed record DefinicaoTermo
 {
     public DefinicaoTermo(string codigo, PredicadoDnf? exibicao, Obrigatoriedade obrigatoriedade)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        if (Violacao(codigo) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(codigo));
+        }
+
         ArgumentNullException.ThrowIfNull(obrigatoriedade);
 
         Codigo = codigo;
         Exibicao = exibicao;
         Obrigatoriedade = obrigatoriedade;
     }
+
+    internal static string? Violacao(string? codigo) =>
+        string.IsNullOrWhiteSpace(codigo) ? "Um termo do formulário não tem código." : null;
 
     public string Codigo { get; }
 

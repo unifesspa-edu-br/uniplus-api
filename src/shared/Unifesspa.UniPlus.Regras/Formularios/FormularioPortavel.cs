@@ -40,33 +40,10 @@ public sealed record FormularioPortavel(
         IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados = ofertas ?? new Dictionary<string, IReadOnlySet<string>>();
 
         return new(
-            [.. definicao.Etapas.Select(e => new EtapaPortavel(
-                e.Codigo,
-                ParaFio(e.Exibicao),
-                [.. e.Itens.Select(i => Item(i, ofertados))],
-                [.. e.Grupos.Select(g => new GrupoPortavel(
-                    g.Codigo,
-                    ParaFio(g.Exibicao),
-                    EntradaDeRegras.ParaEntrada(g.Obrigatoriedade),
-                    ParaFio(g.Obrigatoriedade.Predicado),
-                    g.Minimo,
-                    g.Maximo,
-                    g.IncluiCandidato,
-                    [.. g.Subitens.Select(s => Item(s, ofertados))]))]))],
-            [.. definicao.Termos.Select(static t => new TermoPortavel(
-                t.Codigo,
-                ParaFio(t.Exibicao),
-                EntradaDeRegras.ParaEntrada(t.Obrigatoriedade),
-                ParaFio(t.Obrigatoriedade.Predicado)))],
-            [.. definicao.Derivacoes.Select(static d => new DerivacaoPortavel(
-                d.CodigoFato,
-                d.Booleano,
-                [.. d.Regras.Select(static r => new RegraDerivacaoPortavel(ParaFio(r.Quando)!, r.Contribui))]))],
-            [.. definicao.Agregados.Select(static a => new AgregadoPortavel(
-                a.Codigo,
-                a.GrupoCodigo,
-                a.FatoDeMembro,
-                AgregadoDeGrupo.ParaToken(a.Operacao)))]);
+            [.. definicao.Etapas.Select(e => Etapa(e, ofertados))],
+            [.. definicao.Termos.Select(Termo)],
+            [.. definicao.Derivacoes.Select(Derivacao)],
+            [.. definicao.Agregados.Select(Agregado)]);
     }
 
     /// <summary>
@@ -82,72 +59,7 @@ public sealed record FormularioPortavel(
                 FormularioPortavelErrorCodes.EstruturaInvalida, $"O elemento '{nulo}' das regras é nulo."));
         }
 
-        // As invariantes da definição são protegidas por exceção, porque a definição montada pelo
-        // módulo nunca as viola; o portável vem de fora e é recusado com a causa.
-        try
-        {
-            return Converter();
-        }
-        catch (ArgumentException excecao)
-        {
-            return Result<DefinicaoFormulario>.Failure(new DomainError(FormularioPortavelErrorCodes.EstruturaInvalida, excecao.Message));
-        }
-    }
-
-    private Result<DefinicaoFormulario> Converter()
-    {
-        List<DefinicaoEtapa> etapas = [];
-        foreach (EtapaPortavel etapa in Etapas ?? [])
-        {
-            Result<DefinicaoEtapa> lida = Etapa(etapa);
-            if (lida.IsFailure)
-            {
-                return Result<DefinicaoFormulario>.Failure(lida.Error!);
-            }
-
-            etapas.Add(lida.Value!);
-        }
-
-        List<DefinicaoTermo> termos = [];
-        foreach (TermoPortavel termo in Termos ?? [])
-        {
-            Result<PredicadoDnf?> exibicao = DoFio(termo.Exibicao);
-            Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(termo.Obrigatoriedade, termo.PredicadoObrigatoriedade, $"termo '{termo.Codigo}'");
-            if (exibicao.IsFailure || obrigatoriedade.IsFailure)
-            {
-                return Result<DefinicaoFormulario>.Failure((exibicao.Error ?? obrigatoriedade.Error)!);
-            }
-
-            termos.Add(new DefinicaoTermo(termo.Codigo, exibicao.Value, obrigatoriedade.Value!));
-        }
-
-        List<DerivacaoDoFato> derivacoes = [];
-        foreach (DerivacaoPortavel derivacao in Derivacoes ?? [])
-        {
-            Result<DerivacaoDoFato> lida = Derivacao(derivacao);
-            if (lida.IsFailure)
-            {
-                return Result<DefinicaoFormulario>.Failure(lida.Error!);
-            }
-
-            derivacoes.Add(lida.Value!);
-        }
-
-        List<DefinicaoAgregado> agregados = [];
-        foreach (AgregadoPortavel agregado in Agregados ?? [])
-        {
-            OperacaoAgregado operacao = AgregadoDeGrupo.DoToken(agregado.Operacao);
-            if (operacao == OperacaoAgregado.Nenhuma)
-            {
-                return Result<DefinicaoFormulario>.Failure(new DomainError(
-                    FormularioPortavelErrorCodes.OperacaoDeAgregadoInvalida,
-                    $"A operação do agregado '{agregado.Codigo}' é EXISTE ou VALORES_PRESENTES."));
-            }
-
-            agregados.Add(new DefinicaoAgregado(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, operacao));
-        }
-
-        return Result<DefinicaoFormulario>.Success(new DefinicaoFormulario(etapas, termos, derivacoes, agregados));
+        return ConversaoDoPortavel.Converter(this);
     }
 
     /// <summary>
@@ -232,8 +144,13 @@ public sealed record FormularioPortavel(
             return Result<AvaliacaoFormulario>.Failure(definicao.Error!);
         }
 
+        return Result<AvaliacaoFormulario>.Success(AvaliadorFormulario.Avaliar(definicao.Value!, DentroDaOferta(entrada)));
+    }
+
+    private EntradaAvaliacaoFormulario DentroDaOferta(EntradaAvaliacaoFormulario entrada)
+    {
         IReadOnlyDictionary<string, IReadOnlySet<string>> ofertas = Ofertas();
-        EntradaAvaliacaoFormulario dentroDaOferta = entrada with
+        return entrada with
         {
             Respostas = RespostaDeCampo.DentroDaOferta(entrada.Respostas, ofertas),
             RespostasDosGrupos = entrada.RespostasDosGrupos?.ToDictionary(
@@ -241,9 +158,41 @@ public sealed record FormularioPortavel(
                 g => (IReadOnlyList<OcorrenciaRespondida>)[.. g.Value.Select(o => o with { Respostas = RespostaDeCampo.DentroDaOferta(o.Respostas, ofertas) })],
                 StringComparer.Ordinal),
         };
-
-        return Result<AvaliacaoFormulario>.Success(AvaliadorFormulario.Avaliar(definicao.Value!, dentroDaOferta));
     }
+
+    private static EtapaPortavel Etapa(DefinicaoEtapa etapa, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
+        new(
+            etapa.Codigo,
+            ParaFio(etapa.Exibicao),
+            [.. etapa.Itens.Select(i => Item(i, ofertados))],
+            [.. etapa.Grupos.Select(g => Grupo(g, ofertados))]);
+
+    private static GrupoPortavel Grupo(DefinicaoGrupo grupo, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
+        new(
+            grupo.Codigo,
+            ParaFio(grupo.Exibicao),
+            EntradaDeRegras.ParaEntrada(grupo.Obrigatoriedade),
+            ParaFio(grupo.Obrigatoriedade.Predicado),
+            grupo.Minimo,
+            grupo.Maximo,
+            grupo.IncluiCandidato,
+            [.. grupo.Subitens.Select(s => Item(s, ofertados))]);
+
+    private static TermoPortavel Termo(DefinicaoTermo termo) =>
+        new(
+            termo.Codigo,
+            ParaFio(termo.Exibicao),
+            EntradaDeRegras.ParaEntrada(termo.Obrigatoriedade),
+            ParaFio(termo.Obrigatoriedade.Predicado));
+
+    private static DerivacaoPortavel Derivacao(DerivacaoDoFato derivacao) =>
+        new(
+            derivacao.CodigoFato,
+            derivacao.Booleano,
+            [.. derivacao.Regras.Select(static r => new RegraDerivacaoPortavel(ParaFio(r.Quando)!, r.Contribui))]);
+
+    private static AgregadoPortavel Agregado(DefinicaoAgregado agregado) =>
+        new(agregado.Codigo, agregado.GrupoCodigo, agregado.FatoDeMembro, AgregadoDeGrupo.ParaToken(agregado.Operacao));
 
     private static ItemPortavel Item(DefinicaoItem item, IReadOnlyDictionary<string, IReadOnlySet<string>> ofertados) =>
         new(
@@ -256,230 +205,7 @@ public sealed record FormularioPortavel(
             ofertados.TryGetValue(item.FatoCodigo, out IReadOnlySet<string>? oferta) ? [.. oferta.Order(StringComparer.Ordinal)] : null,
             item.Formato);
 
-    private static Result<DefinicaoEtapa> Etapa(EtapaPortavel etapa)
-    {
-        Result<PredicadoDnf?> exibicao = DoFio(etapa.Exibicao);
-        if (exibicao.IsFailure)
-        {
-            return Result<DefinicaoEtapa>.Failure(exibicao.Error!);
-        }
-
-        List<DefinicaoItem> itens = [];
-        foreach (ItemPortavel item in etapa.Itens ?? [])
-        {
-            Result<DefinicaoItem> lido = Item(item);
-            if (lido.IsFailure)
-            {
-                return Result<DefinicaoEtapa>.Failure(lido.Error!);
-            }
-
-            itens.Add(lido.Value!);
-        }
-
-        List<DefinicaoGrupo> grupos = [];
-        foreach (GrupoPortavel grupo in etapa.Grupos ?? [])
-        {
-            Result<DefinicaoGrupo> lido = Grupo(grupo);
-            if (lido.IsFailure)
-            {
-                return Result<DefinicaoEtapa>.Failure(lido.Error!);
-            }
-
-            grupos.Add(lido.Value!);
-        }
-
-        return Construir(() => new DefinicaoEtapa(etapa.Codigo, exibicao.Value, itens, grupos));
-    }
-
-    private static Result<DefinicaoGrupo> Grupo(GrupoPortavel grupo)
-    {
-        Result<PredicadoDnf?> exibicao = DoFio(grupo.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(grupo.Obrigatoriedade, grupo.PredicadoObrigatoriedade, $"grupo '{grupo.Codigo}'");
-        if (exibicao.IsFailure || obrigatoriedade.IsFailure)
-        {
-            return Result<DefinicaoGrupo>.Failure((exibicao.Error ?? obrigatoriedade.Error)!);
-        }
-
-        List<DefinicaoItem> subitens = [];
-        foreach (ItemPortavel subitem in grupo.Subitens ?? [])
-        {
-            Result<DefinicaoItem> lido = Item(subitem);
-            if (lido.IsFailure)
-            {
-                return Result<DefinicaoGrupo>.Failure(lido.Error!);
-            }
-
-            subitens.Add(lido.Value!);
-        }
-
-        return Construir(() => new DefinicaoGrupo(
-            grupo.Codigo, exibicao.Value, obrigatoriedade.Value!, grupo.Minimo, grupo.Maximo, subitens, grupo.IncluiCandidato));
-    }
-
-    private static Result<DefinicaoItem> Item(ItemPortavel item)
-    {
-        Result<PredicadoDnf?> exibicao = DoFio(item.Exibicao);
-        Result<Obrigatoriedade> obrigatoriedade = Obrigatoriedade(item.Obrigatoriedade, item.PredicadoObrigatoriedade, $"campo '{item.FatoCodigo}'");
-        Result<Impedimento?> impedimento = EntradaDeRegras.Impedimento(item.Impedimento);
-        if (exibicao.IsFailure || obrigatoriedade.IsFailure || impedimento.IsFailure)
-        {
-            return Result<DefinicaoItem>.Failure((exibicao.Error ?? obrigatoriedade.Error ?? impedimento.Error)!);
-        }
-
-        List<RestricaoValor> restricoes = [];
-        foreach (RestricaoValorInput restricao in item.Restricoes ?? [])
-        {
-            Result<RestricaoValor> lida = EntradaDeRegras.Restricao(restricao);
-            if (lida.IsFailure)
-            {
-                return Result<DefinicaoItem>.Failure(lida.Error!);
-            }
-
-            restricoes.Add(lida.Value!);
-        }
-
-        return Construir(() => new DefinicaoItem(item.FatoCodigo, exibicao.Value, obrigatoriedade.Value!, restricoes, impedimento.Value, item.Formato));
-    }
-
-    private static Result<DerivacaoDoFato> Derivacao(DerivacaoPortavel derivacao)
-    {
-        List<RegraDerivacao> regras = [];
-        foreach (RegraDerivacaoPortavel regra in derivacao.Regras ?? [])
-        {
-            if (regra.Quando is null)
-            {
-                return Result<DerivacaoDoFato>.Failure(new DomainError(
-                    FormularioPortavelErrorCodes.DerivacaoInvalida,
-                    $"Uma regra de '{derivacao.FatoCodigo}' não diz quando ativa; a regra sempre ativa tem a lista vazia."));
-            }
-
-            Result<PredicadoDnf?> quando = DoFio(regra.Quando);
-            if (quando.IsFailure)
-            {
-                return Result<DerivacaoDoFato>.Failure(quando.Error!);
-            }
-
-            if (derivacao.Booleano)
-            {
-                regras.Add(RegraDerivacao.CriarBooleana(quando.Value!));
-                continue;
-            }
-
-            Result<RegraDerivacao> criada = RegraDerivacao.Criar(quando.Value!, regra.Contribui ?? string.Empty);
-            if (criada.IsFailure)
-            {
-                return Result<DerivacaoDoFato>.Failure(criada.Error!);
-            }
-
-            regras.Add(criada.Value!);
-        }
-
-        // As dependências são as que as regras citam, e o domínio do categórico é o que elas
-        // contribuem: o avaliador não usa mais que isso do derivado.
-        string[] dependencias = [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
-        Result<DerivacaoDoFato> lida = derivacao.Booleano
-            ? DerivacaoDoFato.CriarBooleana(derivacao.FatoCodigo, regras, dependencias)
-            : DerivacaoDoFato.Criar(
-                derivacao.FatoCodigo, regras, dependencias, [.. regras.Select(static r => r.Contribui!).Distinct(StringComparer.Ordinal)]);
-        return lida.IsSuccess
-            ? lida
-            : Result<DerivacaoDoFato>.Failure(new DomainError(FormularioPortavelErrorCodes.DerivacaoInvalida, lida.Error!.Message));
-    }
-
-    private static Result<Obrigatoriedade> Obrigatoriedade(
-        string? token, IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? predicado, string dono)
-    {
-        Result<PredicadoDnf?> quando = DoFio(predicado);
-        if (quando.IsFailure)
-        {
-            return Result<Obrigatoriedade>.Failure(quando.Error!);
-        }
-
-        return EntradaDeRegras.Obrigatoriedade(token, quando.Value) is { } obrigatoriedade
-            ? Result<Obrigatoriedade>.Success(obrigatoriedade)
-            : Result<Obrigatoriedade>.Failure(new DomainError(
-                FormularioPortavelErrorCodes.ObrigatoriedadeInvalida,
-                $"A obrigatoriedade do {dono} é SEMPRE ou NUNCA sem predicado, ou QUANDO com ele."));
-    }
-
     /// <summary>O predicado na forma do fio: nulo sem condição, a lista vazia sem cláusula.</summary>
     private static IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? ParaFio(PredicadoDnf? predicado) =>
         EntradaDeRegras.ParaEntrada(predicado);
-
-    /// <summary>O predicado do fio: nulo é sem condição, e a lista vazia é o predicado sem cláusula.</summary>
-    private static Result<PredicadoDnf?> DoFio(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? clausulas)
-    {
-        if (clausulas is { Count: 0 })
-        {
-            Result<PredicadoDnf> semClausula = PredicadoDnf.CriarDeCondicoesAgrupadas([]);
-            return Result<PredicadoDnf?>.Success(semClausula.Value);
-        }
-
-        return EntradaDeRegras.Predicado(clausulas);
-    }
-
-    private static Result<T> Construir<T>(Func<T> construir)
-    {
-        try
-        {
-            return Result<T>.Success(construir());
-        }
-        catch (ArgumentException excecao)
-        {
-            return Result<T>.Failure(new DomainError(FormularioPortavelErrorCodes.EstruturaInvalida, excecao.Message));
-        }
-    }
 }
-
-/// <summary>Uma etapa: o código com que o avaliador a identifica, a exibição da etapa inteira, os itens e os grupos.</summary>
-public sealed record EtapaPortavel(
-    string Codigo,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
-    IReadOnlyList<ItemPortavel> Itens,
-    IReadOnlyList<GrupoPortavel> Grupos);
-
-/// <summary>
-/// Um campo: o fato que ele produz, a exibição, a obrigatoriedade — <c>SEMPRE</c>, <c>NUNCA</c> ou
-/// <c>QUANDO</c> com o predicado —, as restrições de valor, o impedimento, a oferta de valores, quando o
-/// campo tem uma — a resposta fora dela não vale —, e o formato do campo de texto, como <c>CPF</c> ou
-/// <c>EMAIL</c>, que a resposta tem de atender.
-/// </summary>
-public sealed record ItemPortavel(
-    string FatoCodigo,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
-    string Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,
-    IReadOnlyList<RestricaoValorInput> Restricoes,
-    ImpedimentoInput? Impedimento,
-    IReadOnlyList<string>? Oferta,
-    string? Formato = null);
-
-/// <summary>Um grupo repetível: exibição, obrigatoriedade, mínimo e máximo de ocorrências, se o candidato é um dos membros e os subitens.</summary>
-public sealed record GrupoPortavel(
-    string Codigo,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
-    string Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade,
-    int Minimo,
-    int? Maximo,
-    bool IncluiCandidato,
-    IReadOnlyList<ItemPortavel> Subitens);
-
-/// <summary>Um termo exigido: o código com que o avaliador o identifica, a exibição e a obrigatoriedade.</summary>
-public sealed record TermoPortavel(
-    string Codigo,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? Exibicao,
-    string Obrigatoriedade,
-    IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>>? PredicadoObrigatoriedade);
-
-/// <summary>
-/// As regras de um fato derivado: booleano (alguma regra ativa) ou categórico (a união do que as regras
-/// ativas contribuem).
-/// </summary>
-public sealed record DerivacaoPortavel(string FatoCodigo, bool Booleano, IReadOnlyList<RegraDerivacaoPortavel> Regras);
-
-/// <summary>Uma regra de derivação: quando ela ativa — a lista vazia é a âncora, sempre ativa — e o código que contribui no categórico.</summary>
-public sealed record RegraDerivacaoPortavel(IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> Quando, string? Contribui);
-
-/// <summary>Um fato agregado sobre um grupo: o fato de membro que ele agrega e a operação, <c>EXISTE</c> ou <c>VALORES_PRESENTES</c>.</summary>
-public sealed record AgregadoPortavel(string Codigo, string GrupoCodigo, string FatoDeMembro, string Operacao);

@@ -46,6 +46,9 @@ public sealed record DerivacaoDoFato
     /// <summary>União exata dos fatos citados pelas regras — a lista que o motor espera resolver.</summary>
     public IReadOnlyCollection<string> DependenciasDeclaradas => _dependencias;
 
+    internal static string? Violacao(string? codigoFato) =>
+        string.IsNullOrWhiteSpace(codigoFato) ? "Uma derivação do formulário não tem o código do fato." : null;
+
     /// <summary>
     /// Cria a regra de derivação de um fato validando a coerência estrutural.
     /// </summary>
@@ -62,30 +65,14 @@ public sealed record DerivacaoDoFato
         IReadOnlyCollection<string> dependenciasDeclaradas,
         IReadOnlyCollection<string> dominioDoFato)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigoFato);
+        ArgumentNullException.ThrowIfNull(codigoFato);
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(dependenciasDeclaradas);
         ArgumentNullException.ThrowIfNull(dominioDoFato);
-
-        if (regras.Count == 0)
-        {
-            return Result<DerivacaoDoFato>.Failure(new DomainError(
-                DerivacaoDoFatoErrorCodes.SemRegras,
-                $"A derivação de '{codigoFato}' precisa de ao menos uma regra."));
-        }
-
-        HashSet<string> dominio = new(dominioDoFato, StringComparer.Ordinal);
-        foreach (RegraDerivacao regra in regras)
-        {
-            if (regra.Contribui is null || !dominio.Contains(regra.Contribui))
-            {
-                return Result<DerivacaoDoFato>.Failure(new DomainError(
-                    DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio,
-                    $"A regra que contribui '{regra.Contribui}' cita um código fora do domínio de '{codigoFato}'."));
-            }
-        }
-
-        return CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: false);
+        ExigirCodigo(codigoFato);
+        return RecusaSemRegras(codigoFato, regras)
+            ?? RecusaForaDoDominio(codigoFato, regras, dominioDoFato)
+            ?? CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: false);
     }
 
     /// <summary>
@@ -97,26 +84,45 @@ public sealed record DerivacaoDoFato
         IReadOnlyList<RegraDerivacao> regras,
         IReadOnlyCollection<string> dependenciasDeclaradas)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigoFato);
+        ArgumentNullException.ThrowIfNull(codigoFato);
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(dependenciasDeclaradas);
-
-        if (regras.Count == 0)
-        {
-            return Result<DerivacaoDoFato>.Failure(new DomainError(
-                DerivacaoDoFatoErrorCodes.SemRegras,
-                $"A derivação de '{codigoFato}' precisa de ao menos uma regra."));
-        }
-
-        if (regras.Any(static r => r.Contribui is not null))
-        {
-            return Result<DerivacaoDoFato>.Failure(new DomainError(
-                DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio,
-                $"A derivação booleana de '{codigoFato}' não contribui código: a regra ativa torna o derivado verdadeiro."));
-        }
-
-        return CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: true);
+        ExigirCodigo(codigoFato);
+        return RecusaSemRegras(codigoFato, regras)
+            ?? RecusaContribuicaoNaBooleana(codigoFato, regras)
+            ?? CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: true);
     }
+
+    private static void ExigirCodigo(string codigoFato)
+    {
+        if (Violacao(codigoFato) is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(codigoFato));
+        }
+    }
+
+    private static Result<DerivacaoDoFato>? RecusaSemRegras(string codigoFato, IReadOnlyList<RegraDerivacao> regras) =>
+        regras.Count == 0
+            ? Falha(DerivacaoDoFatoErrorCodes.SemRegras, $"A derivação de '{codigoFato}' precisa de ao menos uma regra.")
+            : null;
+
+    private static Result<DerivacaoDoFato>? RecusaForaDoDominio(
+        string codigoFato, IReadOnlyList<RegraDerivacao> regras, IReadOnlyCollection<string> dominioDoFato)
+    {
+        HashSet<string> dominio = new(dominioDoFato, StringComparer.Ordinal);
+        return regras.FirstOrDefault(r => r.Contribui is null || !dominio.Contains(r.Contribui)) is { } fora
+            ? Falha(
+                DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio,
+                $"A regra que contribui '{fora.Contribui}' cita um código fora do domínio de '{codigoFato}'.")
+            : null;
+    }
+
+    private static Result<DerivacaoDoFato>? RecusaContribuicaoNaBooleana(string codigoFato, IReadOnlyList<RegraDerivacao> regras) =>
+        regras.Any(static r => r.Contribui is not null)
+            ? Falha(
+                DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio,
+                $"A derivação booleana de '{codigoFato}' não contribui código: a regra ativa torna o derivado verdadeiro.")
+            : null;
 
     private static Result<DerivacaoDoFato> CriarComEstrutura(
         string codigoFato,
@@ -125,38 +131,42 @@ public sealed record DerivacaoDoFato
         bool booleano)
     {
         HashSet<string> citados = new(regras.SelectMany(static r => r.FatosCitados), StringComparer.Ordinal);
-
-        // Auto-referência: uma regra que cita o próprio fato derivado exigiria que ele já estivesse
-        // resolvido para ser computado — o gate do motor o manteria indeterminado para sempre, ou o
-        // decidiria por um valor pré-computado obsoleto. É recusada no cadastro.
-        string codigoNormalizado = codigoFato.Trim();
-        if (citados.Contains(codigoNormalizado))
-        {
-            return Result<DerivacaoDoFato>.Failure(new DomainError(
-                DerivacaoDoFatoErrorCodes.DerivacaoAutorreferente,
-                $"A derivação de '{codigoNormalizado}' cita o próprio fato — um derivado não pode depender de si mesmo."));
-        }
-
         HashSet<string> declarados = new(dependenciasDeclaradas, StringComparer.Ordinal);
-
-        if (!citados.SetEquals(declarados))
-        {
-            IEnumerable<string> naoDeclarados = citados.Except(declarados, StringComparer.Ordinal);
-            IEnumerable<string> naoCitados = declarados.Except(citados, StringComparer.Ordinal);
-            string detalhe = string.Join("; ", new[]
-            {
-                naoDeclarados.Any() ? $"citados mas não declarados: {string.Join(", ", naoDeclarados.Order(StringComparer.Ordinal))}" : null,
-                naoCitados.Any() ? $"declarados mas não citados: {string.Join(", ", naoCitados.Order(StringComparer.Ordinal))}" : null,
-            }.Where(static s => s is not null));
-
-            return Result<DerivacaoDoFato>.Failure(new DomainError(
-                DerivacaoDoFatoErrorCodes.DependenciasIncoerentes,
-                $"As dependências declaradas de '{codigoFato}' devem ser exatamente os fatos citados ({detalhe})."));
-        }
-
-        return Result<DerivacaoDoFato>.Success(
-            new DerivacaoDoFato(codigoFato.Trim(), [.. regras], declarados, booleano));
+        return RecusaAutorreferencia(codigoFato.Trim(), citados)
+            ?? RecusaDependenciasIncoerentes(codigoFato, citados, declarados)
+            ?? Result<DerivacaoDoFato>.Success(new DerivacaoDoFato(codigoFato.Trim(), [.. regras], declarados, booleano));
     }
+
+    // Auto-referência: uma regra que cita o próprio fato derivado exigiria que ele já estivesse
+    // resolvido para ser computado — o gate do motor o manteria indeterminado para sempre, ou o
+    // decidiria por um valor pré-computado obsoleto. É recusada no cadastro.
+    private static Result<DerivacaoDoFato>? RecusaAutorreferencia(string codigoNormalizado, HashSet<string> citados) =>
+        citados.Contains(codigoNormalizado)
+            ? Falha(
+                DerivacaoDoFatoErrorCodes.DerivacaoAutorreferente,
+                $"A derivação de '{codigoNormalizado}' cita o próprio fato — um derivado não pode depender de si mesmo.")
+            : null;
+
+    private static Result<DerivacaoDoFato>? RecusaDependenciasIncoerentes(string codigoFato, HashSet<string> citados, HashSet<string> declarados) =>
+        citados.SetEquals(declarados)
+            ? null
+            : Falha(
+                DerivacaoDoFatoErrorCodes.DependenciasIncoerentes,
+                $"As dependências declaradas de '{codigoFato}' devem ser exatamente os fatos citados ({DetalheDasDependencias(citados, declarados)}).");
+
+    private static string DetalheDasDependencias(HashSet<string> citados, HashSet<string> declarados)
+    {
+        IEnumerable<string> naoDeclarados = citados.Except(declarados, StringComparer.Ordinal);
+        IEnumerable<string> naoCitados = declarados.Except(citados, StringComparer.Ordinal);
+        return string.Join("; ", new[]
+        {
+            naoDeclarados.Any() ? $"citados mas não declarados: {string.Join(", ", naoDeclarados.Order(StringComparer.Ordinal))}" : null,
+            naoCitados.Any() ? $"declarados mas não citados: {string.Join(", ", naoCitados.Order(StringComparer.Ordinal))}" : null,
+        }.Where(static s => s is not null));
+    }
+
+    private static Result<DerivacaoDoFato> Falha(string codigo, string mensagem) =>
+        Result<DerivacaoDoFato>.Failure(new DomainError(codigo, mensagem));
 }
 
 /// <summary>Códigos de erro de <see cref="DerivacaoDoFato"/>.</summary>
