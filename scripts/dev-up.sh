@@ -115,7 +115,7 @@ preparar_arquivos_locais() {
     fi
 
     local ausentes
-    ausentes=$(chaves_ausentes_do_env "$ENV_EXEMPLO" "$ENV_ARQUIVO")
+    ausentes=$(chaves_ausentes_do_env "$ENV_EXEMPLO" "$ENV_ARQUIVO" "$DOCKER_DIR/docker-compose.yml" "$OVERRIDE_EXEMPLO")
     if [ -n "$ausentes" ]; then
         {
             echo "[dev-up] ERRO: docker/.env está desatualizado. Falta(m) a(s) chave(s):"

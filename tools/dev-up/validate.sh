@@ -64,6 +64,27 @@ confere "aponta só a chave que falta (a comentada não é exigida)" "C" "$(chav
 printf 'A=1\nB=2\nC=3\n' > "$TRABALHO/env.completo"
 confere ".env completo não acusa nada" "" "$(chaves_ausentes_do_env "$TRABALHO/env.exemplo" "$TRABALHO/env.completo")"
 
+printf 'A=1\nB=2\nPORTA_PORT=9\n' > "$TRABALHO/env.exemplo2"
+printf 'A=1\nB=2\n' > "$TRABALHO/env.real2"
+cat > "$TRABALHO/compose.fake" <<'EOF'
+x: "${PORTA_PORT:-9}:80 ${B}"
+EOF
+confere "chave com padrão no compose não é exigida" "" \
+    "$(chaves_ausentes_do_env "$TRABALHO/env.exemplo2" "$TRABALHO/env.real2" "$TRABALHO/compose.fake")"
+confere "chave sem padrão no compose continua exigida" "B" \
+    "$(printf 'A=1\n' > "$TRABALHO/env.real3"; chaves_ausentes_do_env "$TRABALHO/env.exemplo2" "$TRABALHO/env.real3" "$TRABALHO/compose.fake")"
+
+echo "== .env.example reúne os valores do ambiente local"
+COMPOSES=("$RAIZ/docker/docker-compose.yml" "$RAIZ/docker/docker-compose.override.example.yml")
+confere "toda variável que os compose usam está no .env.example" "" \
+    "$(comm -23 <(variaveis_usadas_nos_compose "${COMPOSES[@]}") <(chaves_do_env "$RAIZ/docker/.env.example"))"
+divergentes=""
+for par in "${DEV_PORTAS_PADRAO[@]}"; do
+    linha=$(grep -E "^${par%%:*}=" "$RAIZ/docker/.env.example" || true)
+    [ "$linha" = "${par%%:*}=${par##*:}" ] || divergentes="$divergentes ${par%%:*}"
+done
+confere "as portas do .env.example são os padrões dos compose" "" "${divergentes# }"
+
 echo "== chaves do override"
 cat > "$TRABALHO/override.exemplo" <<'EOF'
 services:
