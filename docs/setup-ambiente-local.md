@@ -14,51 +14,47 @@ Guia para configurar e executar o ambiente de desenvolvimento da Uni+ API.
 
 ## Setup rápido
 
-Um clone novo chega a **API no ar, Keycloak configurado e dois gestores de acessos instalados** com um comando,
-a partir da raiz do repositório:
+Um clone novo chega a **infraestrutura, API no ar, Keycloak configurado e dois gestores de acessos instalados**
+com dois comandos:
 
 ```bash
 git clone https://github.com/unifesspa-edu-br/uniplus-api.git
-cd uniplus-api
-scripts/dev-up.sh
+cd uniplus-api/docker
+cp .env.example .env
+docker compose up --build
 ```
 
-O script cria `docker/.env` e `docker/docker-compose.override.yml` a partir dos exemplos (só valores de
-desenvolvimento), acusa a chave ou o serviço que faltar numa cópia antiga, sobe o compose e acompanha o serviço
-`ambiente-init` até o ambiente ficar pronto. Rodar de novo não altera nada; no fim ele mostra as URLs da API, do
-Keycloak e do Mailpit. O primeiro `up` constrói imagens e o clamd baixa a base de assinaturas: conte alguns minutos.
+O `.env.example` já traz todos os valores do ambiente local (só desenvolvimento, sem segredo real): copiar é
+tudo. O primeiro `up` constrói imagens e o clamd baixa a base de assinaturas: conte alguns minutos. Quando o
+`ambiente-init` termina com "Ambiente pronto", a API responde em http://localhost:5200/health.
 
 O `ambiente-init` é um serviço do próprio compose, que configura o Keycloak (senha do `admin`, personas
-fictícias, papel de instalação) e instala os dois gestores pela API. Por isso, com os dois arquivos locais já
-criados, **o `docker compose up -d` sozinho dá o mesmo resultado**:
-
-```bash
-cp docker/.env.example docker/.env
-cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build
-# acompanhar a configuração e a instalação:
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs -f ambiente-init
-```
+fictícias, papel de instalação) e instala os dois gestores pela API. Rodar `docker compose up` de novo não altera
+nada: ele confere o acesso e termina. Para acompanhar a configuração: `docker compose logs -f ambiente-init`.
 
 Sem a instalação dos gestores ninguém acessa nada além da área do candidato: o token não concede acesso, toda
 permissão vem de uma concessão gravada no Uni+ ([ADR-0152](adrs/0152-governanca-das-concessoes-de-acesso.md)).
 Detalhes, o procedimento manual e a solução dos problemas comuns estão no
 [guia da instalação dos gestores](guia-instalacao-gestores-ambiente-local.md).
 
-Variações de `scripts/dev-up.sh`:
+Variações (todas por variável no `docker/.env`):
 
-| Opção | Efeito |
+| Quero | Faça |
 |---|---|
-| `--completo` | Sobe também `portal-api`, gateway Traefik e os quatro frontends (exige o `uniplus-web` clonado ao lado). |
-| `--sem-instalacao` | Configura o Keycloak, sem instalar os gestores. |
-| `--deslocamento-de-portas N` | Soma `N` a todas as portas publicadas e usa um projeto do compose próprio: um segundo ambiente na mesma máquina. |
-| `--so-validar` | Só confere `.env`, override e compose, sem subir nada. |
+| Configurar o Keycloak sem instalar os gestores | `INSTALAR_GESTORES=false` |
+| Trocar uma porta ocupada | Edite a variável `*_PORT` correspondente |
+| Um segundo ambiente na mesma máquina | Copie o repositório para outra pasta, troque todas as portas e defina `COMPOSE_PROJECT_NAME` diferente |
+| Stack completo (`portal-api`, gateway Traefik e frontends; exige o `uniplus-web` clonado ao lado) | `cp docker-compose.override.example.yml docker-compose.override.yml` e `docker compose up --build` |
+
+Se você tem um `docker/docker-compose.override.yml` de antes desta mudança, apague-o ou recopie o exemplo:
+a API e o `ambiente-init` agora vivem no `docker-compose.yml`, e o override antigo sobrepõe os valores deles.
+Se o `.env` é antigo e falta uma chave, o compose para e nomeia a chave (copie-a do `.env.example`).
 
 ## Serviços e portas
 
 Cada porta publicada vem de uma variável (coluna "Variável"), com o padrão abaixo. Para trocá-la sem editar
 arquivo versionado, edite a variável no `docker/.env` (o `docker/.env.example` já traz todas, com o valor padrão)
-ou defina-a no shell, que vence o arquivo; ou use `scripts/dev-up.sh --deslocamento-de-portas N`.
+ou defina-a no shell, que vence o arquivo.
 
 | Serviço | Variável | Padrão | URL de acesso | Credenciais (.env.example) |
 |---|---|---|---|---|
@@ -74,7 +70,7 @@ ou defina-a no shell, que vence o arquivo; ou use `scripts/dev-up.sh --deslocame
 | Uni+ API (Host com os módulos internos) | `API_PORT` | 5200 (via Docker) | http://localhost:5200/health | — |
 | Geo API | `GEO_API_PORT` | 5400 | http://localhost:5400 | — |
 
-Só no modo completo (`--completo`): `portal-api` (`PORTAL_API_PORT`, 5302), documentação OpenAPI
+Só no stack completo (com o override de exemplo): `portal-api` (`PORTAL_API_PORT`, 5302), documentação OpenAPI
 (`OPENAPI_DOCS_PORT`, 5299), gateway Traefik (`GATEWAY_PORT`, 5000; painel em `GATEWAY_DASHBOARD_PORT`, 5080) e
 os frontends (`SELECAO_WEB_PORT` 4200, `INGRESSO_WEB_PORT` 4201, `PORTAL_WEB_PORT` 4202,
 `CONFIGURACAO_WEB_PORT` 4203). Os frontends só autenticam nas portas padrão.
@@ -98,11 +94,14 @@ O script `docker/init-db.sql` cria automaticamente:
 
 ## Modos de execução
 
-### Modo 1: APIs locais + infraestrutura Docker (recomendado para desenvolvimento)
+### Modo 1: API local (`dotnet run`) + infraestrutura Docker
 
 ```bash
-# Subir infraestrutura e verificador de arquivos (sem o override, não há API nem ambiente-init no Docker)
-docker compose -f docker/docker-compose.yml up -d
+cd docker
+# Só a infraestrutura e o verificador de arquivos, sem a API do compose
+docker compose up -d postgres redis kafka kafka-init minio minio-init rabbitmq mailpit apicurio keycloak \
+  clamd-verificador verificador
+cd ..
 
 # Executar a API — processo único, o Host compõe Seleção, Ingresso,
 # Configuração e Organização (os módulos internos são class libraries,
@@ -112,8 +111,8 @@ dotnet run --project src/host/Unifesspa.UniPlus.Host
 
 A API usa o `appsettings.Development.json` do Host, com connection strings de todos os módulos apontando para `localhost`.
 
-Neste modo nada configura o Keycloak nem instala os gestores (o `ambiente-init` pertence ao override e depende
-da API do compose). Faça-o uma vez, e de novo a cada banco recriado, com `jq` e `curl` instalados:
+Neste modo o `ambiente-init` não roda (ele depende da API do compose). Configure o Keycloak e instale os gestores
+uma vez, e de novo a cada banco recriado, com `jq` e `curl` instalados:
 
 ```bash
 scripts/setup-keycloak-dev.sh
@@ -121,38 +120,35 @@ API_URL=http://localhost:<porta da API> scripts/dev-instalar-gestores.sh
 ```
 
 O e-mail do código vai para o Mailpit na porta que o `appsettings.Development.json` configura; com portas
-diferentes das padrão, a chave do SMTP é `Email__Smtp__Porta`. O verificador de arquivos, que a instalação exige
-para liberar o PDF, já sobe com a infraestrutura (`clamd-verificador` e `verificador` estão no
-`docker-compose.yml`).
+diferentes das padrão, a chave do SMTP é `Email__Smtp__Porta`.
 
-### Modo 2: Tudo via Docker (útil para testes de integração)
+### Modo 2: Tudo via Docker
 
-```bash
-# Infraestrutura + APIs + verificador + ambiente-init (ou scripts/dev-up.sh)
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build
-```
-
-As APIs rodam dentro da rede Docker e se comunicam com os serviços pelo nome do container (`postgres`, `redis`, `kafka`, `minio`, `keycloak`).
+É o setup rápido acima: `cd docker && cp .env.example .env && docker compose up --build`. As APIs rodam dentro
+da rede Docker e se comunicam com os serviços pelo nome do container (`postgres`, `redis`, `kafka`, `minio`,
+`keycloak`).
 
 ## Comandos úteis
 
+Os comandos do compose rodam em `docker/`.
+
 ```bash
 # Ver status dos serviços
-docker compose -f docker/docker-compose.yml ps
+docker compose ps
 
 # Ver logs de um serviço específico
-docker compose -f docker/docker-compose.yml logs -f postgres
-docker compose -f docker/docker-compose.yml logs -f keycloak
+docker compose logs -f postgres
+docker compose logs -f keycloak
 
 # Parar todos os serviços (mantém dados)
-docker compose -f docker/docker-compose.yml down
+docker compose down
 
-# Parar e remover volumes (reset completo). Com o override, o próximo `up -d` (ou
-# scripts/dev-up.sh) reconfigura o Keycloak e reinstala os gestores sozinho
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml down -v
+# Parar e remover volumes (reset completo). O próximo `up` reconfigura o Keycloak
+# e reinstala os gestores sozinho
+docker compose down -v
 
 # Rebuild da API UniPlus (monólito) após alteração de código
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d --build uniplus-api
+docker compose up -d --build uniplus-api
 
 # Build da solution
 dotnet build UniPlus.slnx
@@ -183,32 +179,29 @@ sudo lsof -i :5432
 sudo systemctl stop postgresql
 ```
 
-Para manter dois ambientes na mesma máquina, ou desviar de uma porta ocupada, troque a porta por variável em
-vez de parar o outro processo:
+Para manter dois ambientes na mesma máquina, ou desviar de uma porta ocupada, troque a porta no `docker/.env`
+em vez de parar o outro processo (`API_PORT=5201`, `KEYCLOAK_PORT=8180`...). Num segundo ambiente, troque todas
+as portas e defina `COMPOSE_PROJECT_NAME` diferente, para contêineres e volumes não se misturarem.
 
-```bash
-scripts/dev-up.sh --deslocamento-de-portas 100   # tudo +100, projeto do compose próprio
-API_PORT=5201 KEYCLOAK_PORT=8180 docker compose ... up -d   # ou só as que colidem
-```
+### O compose recusa o `.env` ou o override
 
-### `scripts/dev-up.sh` aponta `docker/.env` ou o override desatualizado
-
-`docker/.env` e `docker/docker-compose.override.yml` não são versionados: um `git pull` não os atualiza. O script
-para antes de subir qualquer serviço e nomeia a chave, a variável de configuração ou o serviço (`ambiente-init`)
-que falta. Copie o trecho do `.env.example` ou do override de exemplo, ou recopie o exemplo (guarde uma cópia):
+`docker/.env` e `docker/docker-compose.override.yml` não são versionados: um `git pull` não os atualiza. Chave
+obrigatória ausente no `.env` faz o compose parar antes de subir qualquer serviço, com a mensagem
+`defina X no docker/.env`. Copie a linha do `.env.example`, ou recopie o exemplo (guarde uma cópia):
 
 ```bash
 cp docker/.env docker/.env.bak && cp docker/.env.example docker/.env
-cp docker/docker-compose.override.yml docker/docker-compose.override.yml.bak
-cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml
 ```
+
+Um `docker-compose.override.yml` de antes da API ir para o `docker-compose.yml` sobrepõe os valores dela: apague-o
+(só é necessário para o stack completo, e então recopie `docker-compose.override.example.yml`).
 
 ### O ambiente sobe, mas toda rota protegida responde 403 ou 503
 
-O `ambiente-init` falhou ou não rodou (override antigo sem o serviço). Veja o motivo:
+O `ambiente-init` falhou ou não rodou. Veja o motivo:
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs ambiente-init
+docker compose logs ambiente-init
 ```
 
 Os casos mais comuns, o verificador parado e o tópico do registro de acesso ausente, estão na tabela do
@@ -218,12 +211,12 @@ Os casos mais comuns, o verificador parado e o tópico do registro de acesso aus
 
 ```bash
 # Remover volume e recriar
-docker compose -f docker/docker-compose.yml down -v
-docker compose -f docker/docker-compose.yml up -d
+docker compose down -v
+docker compose up -d
 ```
 
-**Atenção:** isso apaga todos os dados locais, inclusive as concessões e o realm do Keycloak. Com o override, rode
-`scripts/dev-up.sh` (ou `docker compose ... up -d`) para reconfigurar e reinstalar os gestores.
+**Atenção:** isso apaga todos os dados locais, inclusive as concessões e o realm do Keycloak. O `docker compose up -d`
+seguinte reconfigura o Keycloak e reinstala os gestores.
 
 ### Keycloak demora para ficar healthy
 
@@ -231,10 +224,10 @@ O Keycloak leva ~50 segundos na primeira inicialização (executa migrations Liq
 
 ```bash
 # Verificar logs
-docker compose -f docker/docker-compose.yml logs -f keycloak
+docker compose logs -f keycloak
 
 # Verificar health manualmente
-docker compose -f docker/docker-compose.yml exec keycloak bash -c "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && timeout 1 cat <&3"
+docker compose exec keycloak bash -c "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && timeout 1 cat <&3"
 ```
 
 ### Build Docker das APIs falha
