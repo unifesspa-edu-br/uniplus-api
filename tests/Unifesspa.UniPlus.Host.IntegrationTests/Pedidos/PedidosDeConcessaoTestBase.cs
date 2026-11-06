@@ -26,6 +26,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 using Wolverine;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// Base das suítes dos pedidos de concessão pelo host real. As personas são as do portal: Diogo e Isabella são gestores
@@ -228,16 +229,13 @@ public abstract class PedidosDeConcessaoTestBase
     {
         string sufixo = Guid.NewGuid().ToString("N")[..8];
         Unidade unidade = Unidade.Criar(
-            nome: $"Centro de Estudos {sufixo}",
-            alias: null,
-            slug: $"ceps-{sufixo}",
-            sigla: $"C{sufixo}".ToUpperInvariant(),
-            codigo: $"PD{sufixo}".ToUpperInvariant(),
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Centro,
-            unidadeAcademica: true,
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: null).Value!;
+            $"Centro de Estudos {sufixo}",
+            new IdentificadoresDaUnidade($"ceps-{sufixo}", $"C{sufixo}".ToUpperInvariant(), $"PD{sufixo}".ToUpperInvariant(), null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
+            null,
+            TipoUnidade.Centro,
+            true).Value!;
 
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         OrganizacaoInstitucionalDbContext db = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();

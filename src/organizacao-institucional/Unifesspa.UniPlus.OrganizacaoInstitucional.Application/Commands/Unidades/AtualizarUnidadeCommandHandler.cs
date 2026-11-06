@@ -8,10 +8,9 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
-/// Handler do <see cref="AtualizarUnidadeCommand"/>. Valida o payload por
-/// inteiro (incluindo o formato do Slug) ANTES de qualquer I/O — validação
-/// sempre vence 404 — e só então busca a Unidade por Id, confere unicidade e
-/// hierarquia.
+/// Handler do <see cref="AtualizarUnidadeCommand"/>. Valida o payload por inteiro
+/// antes de qualquer I/O (validação sempre vence 404) e só então busca a Unidade,
+/// confere unicidade e hierarquia.
 /// </summary>
 public static class AtualizarUnidadeCommandHandler
 {
@@ -29,114 +28,23 @@ public static class AtualizarUnidadeCommandHandler
         ArgumentNullException.ThrowIfNull(cacheInvalidator);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Result validacao = Unidade.ValidarCampos(
-            command.Nome,
-            command.Alias,
-            command.Slug,
-            command.Sigla,
-            command.Codigo,
-            command.Tipo,
-            // VigenciaInicio não é editável — a checagem de coerência com VigenciaFim
-            // exige o valor persistido, então roda de novo dentro de Atualizar
-            // (após o fetch), com o VigenciaInicio real da Unidade existente.
-            DateOnly.MinValue,
-            null,
-            command.CidadeCodigoIbge,
-            command.CidadeNome,
-            command.CidadeUf);
-        if (validacao.IsFailure)
+        Result payload = ValidarPayload(command);
+        if (payload.IsFailure)
         {
-            return Result.ValidationFailure(validacao.Errors);
+            return payload;
         }
 
         Unidade? unidade = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (unidade is null)
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.NaoEncontrada,
-                "Unidade não encontrada."));
+            return Result.Failure(new DomainError(UnidadeErrorCodes.NaoEncontrada, "Unidade não encontrada."));
         }
 
-        // O payload já foi confirmado válido acima, com o mesmo Slug — não pode
-        // falhar de novo.
-        Slug slug = Slug.From(command.Slug).Value!;
-
-        if (!string.Equals(slug.Valor, unidade.Slug.Valor, StringComparison.OrdinalIgnoreCase)
-            && await repository.SlugExisteEntreLivosAsync(slug, command.Id, cancellationToken).ConfigureAwait(false))
+        Result conflito = await ValidarConflitosAsync(command, unidade, repository, cancellationToken).ConfigureAwait(false);
+        Result atualizacao = conflito.IsFailure ? conflito : AtualizarUnidade(unidade, command, timeProvider);
+        if (atualizacao.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.SlugJaExiste,
-                $"Já existe uma Unidade viva com o slug '{slug}'."));
-        }
-
-        if (!string.Equals(command.Sigla, unidade.Sigla, StringComparison.OrdinalIgnoreCase)
-            && await repository.SiglaExisteEntreLivosAsync(command.Sigla!, command.Id, cancellationToken).ConfigureAwait(false))
-        {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.SiglaJaExiste,
-                $"Já existe uma Unidade viva com a sigla '{command.Sigla}'."));
-        }
-
-        // Codigo é case-sensitive (o agregado preserva a caixa e o índice único é
-        // case-sensitive) — compara com Ordinal para que ABC→abc conte como
-        // mudança e dispare a checagem, em vez de estourar no índice (500).
-        if (!string.Equals(command.Codigo!.Trim(), unidade.Codigo, StringComparison.Ordinal)
-            && await repository.CodigoExisteEntreLivosAsync(command.Codigo, command.Id, cancellationToken).ConfigureAwait(false))
-        {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.CodigoJaExiste,
-                $"Já existe uma Unidade viva com o código '{command.Codigo}'."));
-        }
-
-        if (command.UnidadeSuperiorId.HasValue)
-        {
-            if (command.UnidadeSuperiorId.Value == command.Id)
-            {
-                return Result.Failure(new DomainError(
-                    UnidadeErrorCodes.SuperiorFormaCiclo,
-                    "Uma Unidade não pode ser superior de si mesma."));
-            }
-
-            Unidade? superior = await repository.ObterPorIdAsync(
-                command.UnidadeSuperiorId.Value, cancellationToken).ConfigureAwait(false);
-
-            if (superior is null)
-            {
-                return Result.Failure(new DomainError(
-                    UnidadeErrorCodes.SuperiorNaoEncontrado,
-                    "A Unidade superior informada não foi encontrada."));
-            }
-
-            // Ciclo: o superior proposto é descendente da própria unidade editada.
-            if (await repository.EhDescendenteAsync(command.UnidadeSuperiorId.Value, command.Id, cancellationToken).ConfigureAwait(false))
-            {
-                return Result.Failure(new DomainError(
-                    UnidadeErrorCodes.SuperiorFormaCiclo,
-                    "A Unidade superior informada é descendente da Unidade sendo editada — formaria ciclo na hierarquia."));
-            }
-        }
-
-        DateOnly dataAtual = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-
-        Result atualizarResult = unidade.Atualizar(
-            command.Nome,
-            command.Alias,
-            command.Slug,
-            command.Sigla,
-            command.Codigo,
-            command.UnidadeSuperiorId,
-            command.Tipo,
-            command.UnidadeAcademica,
-            command.VigenciaFim,
-            dataAtual,
-            command.MotivoMudancaIdentificador,
-            command.CidadeCodigoIbge,
-            command.CidadeNome,
-            command.CidadeUf);
-
-        if (atualizarResult.IsFailure)
-        {
-            return atualizarResult;
+            return atualizacao;
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
@@ -144,4 +52,107 @@ public static class AtualizarUnidadeCommandHandler
 
         return Result.Success();
     }
+
+    private static async Task<Result> ValidarConflitosAsync(
+        AtualizarUnidadeCommand command,
+        Unidade unidade,
+        IUnidadeRepository repository,
+        CancellationToken cancellationToken)
+    {
+        Result unicidade = await ValidarUnicidadeAsync(command, unidade, repository, cancellationToken).ConfigureAwait(false);
+
+        return unicidade.IsFailure
+            ? unicidade
+            : await ValidarSuperiorAsync(command, repository, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Result AtualizarUnidade(Unidade unidade, AtualizarUnidadeCommand command, TimeProvider timeProvider) =>
+        unidade.Atualizar(
+            command.Nome,
+            new MudancaDeIdentificadores(
+                command.Identificadores(),
+                DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
+                command.MotivoMudancaIdentificador),
+            command.Cidade(),
+            command.VigenciaFim,
+            command.UnidadeSuperiorId,
+            command.Tipo,
+            command.UnidadeAcademica);
+
+    // A coerência entre VigenciaFim e VigenciaInicio exige o valor persistido, então
+    // roda de novo dentro de Unidade.Atualizar, depois de buscar a Unidade.
+    private static Result ValidarPayload(AtualizarUnidadeCommand command)
+    {
+        Result campos = Unidade.ValidarCampos(
+            command.Nome,
+            command.Identificadores(),
+            command.Cidade(),
+            command.Tipo,
+            new VigenciaDaUnidade(DateOnly.MinValue, null));
+        Result motivo = UnidadeIdentificadorHistorico.ValidarMotivoMudanca(command.MotivoMudancaIdentificador);
+
+        return campos.IsFailure || motivo.IsFailure
+            ? Result.ValidationFailure([.. campos.Errors, .. motivo.Errors])
+            : Result.Success();
+    }
+
+    private static async Task<Result> ValidarUnicidadeAsync(
+        AtualizarUnidadeCommand command,
+        Unidade unidade,
+        IUnidadeRepository repository,
+        CancellationToken cancellationToken)
+    {
+        Slug slug = Slug.From(command.Slug).Value!;
+
+        if (!string.Equals(slug.Valor, unidade.Slug.Valor, StringComparison.OrdinalIgnoreCase)
+            && await repository.SlugExisteEntreLivosAsync(slug, command.Id, cancellationToken).ConfigureAwait(false))
+        {
+            return Falha(UnidadeErrorCodes.SlugJaExiste, $"Já existe uma Unidade viva com o slug '{slug}'.");
+        }
+
+        if (!string.Equals(command.Sigla, unidade.Sigla, StringComparison.OrdinalIgnoreCase)
+            && await repository.SiglaExisteEntreLivosAsync(command.Sigla!, command.Id, cancellationToken).ConfigureAwait(false))
+        {
+            return Falha(UnidadeErrorCodes.SiglaJaExiste, $"Já existe uma Unidade viva com a sigla '{command.Sigla}'.");
+        }
+
+        // Codigo é case-sensitive (o agregado preserva a caixa e o índice único também):
+        // Ordinal faz ABC→abc disparar a checagem em vez de estourar no índice.
+        if (!string.Equals(command.Codigo!.Trim(), unidade.Codigo, StringComparison.Ordinal)
+            && await repository.CodigoExisteEntreLivosAsync(command.Codigo, command.Id, cancellationToken).ConfigureAwait(false))
+        {
+            return Falha(UnidadeErrorCodes.CodigoJaExiste, $"Já existe uma Unidade viva com o código '{command.Codigo}'.");
+        }
+
+        return Result.Success();
+    }
+
+    private static async Task<Result> ValidarSuperiorAsync(
+        AtualizarUnidadeCommand command,
+        IUnidadeRepository repository,
+        CancellationToken cancellationToken)
+    {
+        if (command.UnidadeSuperiorId is not { } superiorId)
+        {
+            return Result.Success();
+        }
+
+        if (superiorId == command.Id)
+        {
+            return Falha(UnidadeErrorCodes.SuperiorFormaCiclo, "Uma Unidade não pode ser superior de si mesma.");
+        }
+
+        if (await repository.ObterPorIdAsync(superiorId, cancellationToken).ConfigureAwait(false) is null)
+        {
+            return Falha(UnidadeErrorCodes.SuperiorNaoEncontrado, "A Unidade superior informada não foi encontrada.");
+        }
+
+        return await repository.EhDescendenteAsync(superiorId, command.Id, cancellationToken).ConfigureAwait(false)
+            ? Falha(
+                UnidadeErrorCodes.SuperiorFormaCiclo,
+                "A Unidade superior informada é descendente da Unidade sendo editada — formaria ciclo na hierarquia.")
+            : Result.Success();
+    }
+
+    private static Result Falha(string codigo, string mensagem) => Result.Failure(new DomainError(codigo, mensagem));
 }

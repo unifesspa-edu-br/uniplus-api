@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// A recusa da criação do processo não prende a chave de idempotência. A permissão é decidida
@@ -136,19 +137,13 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
             OrganizacaoInstitucionalDbContext org = scope.ServiceProvider
                 .GetRequiredService<OrganizacaoInstitucionalDbContext>();
             Unidade unidade = Unidade.Criar(
-                nome: "Centro de Processos Seletivos — chave",
-                alias: null,
-                slug: $"ceps-chave-{sufixo}",
-                sigla: $"CEPSC{sufixo}",
-                codigo: $"CEPSC-{sufixo}",
-                unidadeSuperiorId: null,
-                tipo: TipoUnidade.Centro,
-                unidadeAcademica: true,
-                vigenciaInicio: new DateOnly(2020, 1, 1),
-                vigenciaFim: null,
-                cidadeCodigoIbge: "1504208",
-                cidadeNome: "Marabá",
-                cidadeUf: "PA").Value!;
+                "Centro de Processos Seletivos — chave",
+                new IdentificadoresDaUnidade($"ceps-chave-{sufixo}", $"CEPSC{sufixo}", $"CEPSC-{sufixo}", null),
+                new CidadeDaUnidade("1504208", "Marabá", "PA"),
+                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+                null,
+                TipoUnidade.Centro,
+                true).Value!;
             org.Unidades.Add(unidade);
             await org.SaveChangesAsync();
             unidadeId = unidade.Id;

@@ -1006,21 +1006,15 @@ public sealed class EnvelopeFechadoE2ETests
         {
             OrganizacaoInstitucionalDbContext org = scopeOrg.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
             Unidade unidade = Unidade.Criar(
-                nome: "Centro de Processos Seletivos E2E",
-                alias: null,
-                slug: $"ceps-e2e-{sufixo}",
-                sigla: $"CEPS{sufixo}",
-                codigo: $"CEPS-{sufixo}",
-                unidadeSuperiorId: null,
-                tipo: TipoUnidade.Centro,
-                unidadeAcademica: true,
-                vigenciaInicio: new DateOnly(2020, 1, 1),
-                vigenciaFim: null,
+                "Centro de Processos Seletivos E2E",
+                new IdentificadoresDaUnidade($"ceps-e2e-{sufixo}", $"CEPS{sufixo}", $"CEPS-{sufixo}", null),
                 // Issue #1114 (CA-02): Unidade administradora sem cidade recusa a criação do
                 // processo — este catálogo é consumido justamente para criar um.
-                cidadeCodigoIbge: "1504208",
-                cidadeNome: "Marabá",
-                cidadeUf: "PA").Value!;
+                new CidadeDaUnidade("1504208", "Marabá", "PA"),
+                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+                null,
+                TipoUnidade.Centro,
+                true).Value!;
             org.Unidades.Add(unidade);
             await org.SaveChangesAsync().ConfigureAwait(false);
             unidadeId = unidade.Id;

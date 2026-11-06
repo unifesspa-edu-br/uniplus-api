@@ -18,15 +18,12 @@ public sealed class RemoverUnidadeCommandHandlerTests
     private static Unidade CriarUnidade() =>
         Unidade.Criar(
             "Centro de Processos Seletivos",
-            null,
-            "ceps",
-            "CEPS",
-            "0001",
+            new IdentificadoresDaUnidade("ceps", "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
             null,
             TipoUnidade.Centro,
-            false,
-            new DateOnly(2026, 1, 1),
-            null).Value!;
+            false).Value!;
 
     [Fact(DisplayName = "Handle com unidade válida e sem subordinadas remove e invalida cache")]
     public async Task Handle_ComUnidadeValida_RemoveEInvalidaCache()

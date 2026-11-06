@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// Cadastra na Organização Institucional as unidades de <see cref="UnidadesDeTeste"/>, com os mesmos
@@ -24,19 +25,13 @@ internal static class UnidadesDeTesteNoCadastro
         foreach (UnidadeResponsavelSnapshot modelo in new[] { UnidadesDeTeste.Ceps, UnidadesDeTeste.Cga })
         {
             Unidade unidade = Unidade.Criar(
-                nome: modelo.Nome,
-                alias: null,
-                slug: modelo.Sigla.ToLowerInvariant(),
-                sigla: modelo.Sigla,
-                codigo: modelo.Sigla,
-                unidadeSuperiorId: null,
-                tipo: TipoUnidade.Centro,
-                unidadeAcademica: true,
-                vigenciaInicio: new DateOnly(2020, 1, 1),
-                vigenciaFim: null,
-                cidadeCodigoIbge: "1504208",
-                cidadeNome: "Marabá",
-                cidadeUf: "PA").Value!;
+                modelo.Nome,
+                new IdentificadoresDaUnidade(modelo.Sigla.ToLowerInvariant(), modelo.Sigla, modelo.Sigla, null),
+                new CidadeDaUnidade("1504208", "Marabá", "PA"),
+                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+                null,
+                TipoUnidade.Centro,
+                true).Value!;
             org.Entry(unidade).Property(u => u.Id).CurrentValue = modelo.OrigemId;
             org.Unidades.Add(unidade);
         }

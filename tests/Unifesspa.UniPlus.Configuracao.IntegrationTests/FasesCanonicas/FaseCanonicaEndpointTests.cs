@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// Smoke + caminho de escrita dos endpoints de <c>FaseCanonica</c> (UNI-REQ-0139):
@@ -369,16 +370,13 @@ public sealed class FaseCanonicaEndpointTests
     {
         string sufixo = Guid.NewGuid().ToString("N")[..8];
         Unidade unidade = Unidade.Criar(
-            nome: nome,
-            alias: null,
-            slug: $"{siglaBase.ToLowerInvariant()}-{sufixo}",
-            sigla: $"{siglaBase}{sufixo[..4]}".ToUpperInvariant(),
-            codigo: $"FSC{sufixo}".ToUpperInvariant(),
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Centro,
-            unidadeAcademica: false,
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: null).Value!;
+            nome,
+            new IdentificadoresDaUnidade($"{siglaBase.ToLowerInvariant()}-{sufixo}", $"{siglaBase}{sufixo[..4]}".ToUpperInvariant(), $"FSC{sufixo}".ToUpperInvariant(), null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
+            null,
+            TipoUnidade.Centro,
+            false).Value!;
         if (inativa)
         {
             unidade.MarkAsDeleted("teste", DateTimeOffset.UtcNow);

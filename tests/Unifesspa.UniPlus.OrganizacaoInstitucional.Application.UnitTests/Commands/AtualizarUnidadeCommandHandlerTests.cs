@@ -19,15 +19,12 @@ public sealed class AtualizarUnidadeCommandHandlerTests
 
     private static Unidade UnidadeExistente() => Unidade.Criar(
         "Centro de Processos Seletivos",
-        null,
-        "ceps",
-        "CEPS",
-        "0001",
+        new IdentificadoresDaUnidade("ceps", "CEPS", "0001", null),
+        CidadeDaUnidade.Nenhuma,
+        new VigenciaDaUnidade(DataInicio, null),
         null,
         TipoUnidade.Centro,
-        false,
-        DataInicio,
-        null).Value!;
+        false).Value!;
 
     // Command que reapresenta os mesmos identificadores da unidade existente —
     // as verificações de unicidade são puladas (não houve mudança).
@@ -66,6 +63,23 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NaoEncontrada);
         await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         await cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com motivo > 500 chars e sigla ausente acumula os dois erros sem buscar a unidade")]
+    public async Task Handle_ComMotivoLongoESiglaAusente_AcumulaErrosAntesDeBuscar()
+    {
+        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        Guid id = Guid.NewGuid();
+        AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(id)
+            with { Sigla = null, MotivoMudancaIdentificador = new string('m', 501) };
+
+        Result resultado = await AtualizarUnidadeCommandHandler.Handle(
+            command, repo, uow, cache, TimeProvider.System, CancellationToken.None);
+
+        resultado.Errors.Select(e => e.Error.Code).Should()
+            .BeEquivalentTo([UnidadeErrorCodes.SiglaObrigatoria, UnidadeErrorCodes.MotivoMudancaTamanho]);
+        await repo.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Handle trocando slug para um já existente entre vivos retorna SlugJaExiste")]
@@ -170,15 +184,12 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = Unidade.Criar(
             "Centro de Processos Seletivos",
-            null,
-            "ceps",
-            "CEPS",
-            "ABC",
+            new IdentificadoresDaUnidade("ceps", "CEPS", "ABC", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
             null,
             TipoUnidade.Centro,
-            false,
-            DataInicio,
-            null).Value!;
+            false).Value!;
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         repo.CodigoExisteEntreLivosAsync("abc", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
 

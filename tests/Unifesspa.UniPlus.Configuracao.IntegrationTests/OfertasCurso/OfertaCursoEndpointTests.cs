@@ -494,16 +494,13 @@ public sealed class OfertaCursoEndpointTests
     private async Task<Unidade> SemearUnidadeAsync(string slug, string sigla, string codigo)
     {
         Unidade unidade = Unidade.Criar(
-            nome: $"Unidade {sigla}",
-            alias: null,
-            slug: slug,
-            sigla: sigla,
-            codigo: codigo,
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Centro,
-            unidadeAcademica: true,
-            vigenciaInicio: VigenciaInicio,
-            vigenciaFim: null).Value!;
+            $"Unidade {sigla}",
+            new IdentificadoresDaUnidade(slug, sigla, codigo, null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(VigenciaInicio, null),
+            null,
+            TipoUnidade.Centro,
+            true).Value!;
 
         // Semeia pelo DbContext do MÓDULO Organização resolvido do container do
         // host — o schema `organizacao` foi criado pelas migrations no boot; o

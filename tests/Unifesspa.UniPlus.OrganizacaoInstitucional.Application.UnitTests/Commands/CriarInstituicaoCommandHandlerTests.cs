@@ -45,8 +45,13 @@ public sealed class CriarInstituicaoCommandHandlerTests
 
     private static Unidade NovaUnidade(TipoUnidade tipo) =>
         Unidade.Criar(
-            "Reitoria", null, "reitoria", "REIT", "REIT001",
-            null, tipo, false, new DateOnly(2026, 1, 1), null).Value!;
+            "Reitoria",
+            new IdentificadoresDaUnidade("reitoria", "REIT", "REIT001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
+            null,
+            tipo,
+            false).Value!;
 
     [Fact(DisplayName = "Handle sem Instituição existente cria, persiste e invalida cache")]
     public async Task Handle_SemInstituicaoExistente_CriaInstituicaoAtiva()

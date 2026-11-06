@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// O token que a leitura devolve é o mesmo que a escrita aceita (issue #1294): grava,
@@ -127,20 +128,14 @@ public sealed class VocabularioIdaEVoltaEndpointTests
             OrganizacaoInstitucionalDbContext org = scope.ServiceProvider
                 .GetRequiredService<OrganizacaoInstitucionalDbContext>();
             Unidade unidade = Unidade.Criar(
-                nome: "Centro de Processos Seletivos — vocabulário",
-                alias: null,
-                slug: $"ceps-vocab-{sufixo}",
-                sigla: $"CEPSV{sufixo}",
-                codigo: $"CEPSV-{sufixo}",
-                unidadeSuperiorId: null,
-                tipo: TipoUnidade.Centro,
-                unidadeAcademica: true,
-                vigenciaInicio: new DateOnly(2020, 1, 1),
-                vigenciaFim: null,
+                "Centro de Processos Seletivos — vocabulário",
+                new IdentificadoresDaUnidade($"ceps-vocab-{sufixo}", $"CEPSV{sufixo}", $"CEPSV-{sufixo}", null),
                 // A Unidade administradora sem cidade recusa a criação do processo (issue #1114).
-                cidadeCodigoIbge: "1504208",
-                cidadeNome: "Marabá",
-                cidadeUf: "PA").Value!;
+                new CidadeDaUnidade("1504208", "Marabá", "PA"),
+                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+                null,
+                TipoUnidade.Centro,
+                true).Value!;
             org.Unidades.Add(unidade);
             await org.SaveChangesAsync().ConfigureAwait(false);
             unidadeId = unidade.Id;

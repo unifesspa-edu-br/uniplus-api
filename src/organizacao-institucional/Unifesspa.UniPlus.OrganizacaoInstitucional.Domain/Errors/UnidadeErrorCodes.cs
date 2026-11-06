@@ -15,6 +15,7 @@ public static class UnidadeErrorCodes
     public const string SlugFormatoInvalido = "Unidade.SlugFormatoInvalido";
     public const string SlugJaExiste = "Unidade.SlugJaExiste";
     public const string AliasTamanho = "Unidade.AliasTamanho";
+    public const string MotivoMudancaTamanho = "Unidade.MotivoMudancaTamanho";
     public const string TipoInvalido = "Unidade.TipoInvalido";
     public const string VigenciaFimAnteriorAoInicio = "Unidade.VigenciaFimAnteriorAoInicio";
     public const string SuperiorNaoEncontrado = "Unidade.SuperiorNaoEncontrado";

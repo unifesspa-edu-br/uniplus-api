@@ -23,6 +23,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// A unidade que responde por cada fase do cronograma, pelo HTTP e contra Postgres real: o
@@ -250,19 +251,13 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
             OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
             Unidade unidade = Unidade.Criar(
-                nome: nome,
-                alias: null,
-                slug: $"{sigla.ToLowerInvariant()}-{sufixo}",
-                sigla: $"{sigla}{sufixo}",
-                codigo: $"{sigla}-{sufixo}",
-                unidadeSuperiorId: null,
-                tipo: TipoUnidade.Centro,
-                unidadeAcademica: true,
-                vigenciaInicio: new DateOnly(2020, 1, 1),
-                vigenciaFim: null,
-                cidadeCodigoIbge: "1504208",
-                cidadeNome: "Marabá",
-                cidadeUf: "PA").Value!;
+                nome,
+                new IdentificadoresDaUnidade($"{sigla.ToLowerInvariant()}-{sufixo}", $"{sigla}{sufixo}", $"{sigla}-{sufixo}", null),
+                new CidadeDaUnidade("1504208", "Marabá", "PA"),
+                new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+                null,
+                TipoUnidade.Centro,
+                true).Value!;
             org.Unidades.Add(unidade);
             await org.SaveChangesAsync().ConfigureAwait(false);
             return unidade;
@@ -283,10 +278,13 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
             OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
             Unidade unidade = await org.Unidades.SingleAsync(u => u.Id == unidadeId).ConfigureAwait(false);
             unidade.Atualizar(
-                novoNome, unidade.Alias, unidade.Slug.Valor, novaSigla, unidade.Codigo, unidade.UnidadeSuperiorId,
-                unidade.Tipo, unidade.UnidadeAcademica, unidade.VigenciaFim, new DateOnly(2026, 10, 28),
-                motivoMudancaIdentificador: "Renomeada pelo cadastro",
-                cidadeCodigoIbge: unidade.CidadeCodigoIbge, cidadeNome: unidade.CidadeNome, cidadeUf: unidade.CidadeUf)
+                novoNome,
+                new MudancaDeIdentificadores(new IdentificadoresDaUnidade(unidade.Slug.Valor, novaSigla, unidade.Codigo, unidade.Alias), new DateOnly(2026, 10, 28), "Renomeada pelo cadastro"),
+                new CidadeDaUnidade(unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf),
+                unidade.VigenciaFim,
+                unidade.UnidadeSuperiorId,
+                unidade.Tipo,
+                unidade.UnidadeAcademica)
                 .IsSuccess.Should().BeTrue();
             await org.SaveChangesAsync().ConfigureAwait(false);
         }

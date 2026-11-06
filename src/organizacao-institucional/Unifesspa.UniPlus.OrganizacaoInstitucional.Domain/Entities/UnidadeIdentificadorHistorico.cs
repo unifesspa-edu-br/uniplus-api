@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 
 /// <summary>
 /// Registro histórico de um identificador (<see cref="TipoIdentificador"/>) de
@@ -20,6 +22,8 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 /// </remarks>
 public sealed class UnidadeIdentificadorHistorico : EntityBase
 {
+    private const int MotivoMudancaMaxLength = 500;
+
     public Guid UnidadeId { get; private set; }
     public TipoIdentificador TipoIdentificador { get; private set; }
     public string Valor { get; private set; } = string.Empty;
@@ -31,6 +35,18 @@ public sealed class UnidadeIdentificadorHistorico : EntityBase
     private UnidadeIdentificadorHistorico()
     {
     }
+
+    /// <summary>
+    /// Valida o motivo da mudança, opcional, contra o tamanho da coluna. Público porque
+    /// o handler de atualização o roda junto de <see cref="Unidade.ValidarCampos"/>
+    /// antes de buscar a Unidade.
+    /// </summary>
+    public static Result ValidarMotivoMudanca(string? motivo) =>
+        motivo is not null && motivo.Trim().Length > MotivoMudancaMaxLength
+            ? Result.ValidationFailure([new FieldError("motivoMudancaIdentificador", new DomainError(
+                UnidadeErrorCodes.MotivoMudancaTamanho,
+                $"Motivo da mudança de identificador não pode ter mais que {MotivoMudancaMaxLength} caracteres."))])
+            : Result.Success();
 
     internal static UnidadeIdentificadorHistorico Abrir(
         Guid unidadeId,

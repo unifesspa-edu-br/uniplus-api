@@ -81,16 +81,13 @@ public sealed class LeituraInProcessTests
     private async Task<Unidade> SemearUnidadeAsync(string slug, string sigla, string codigo)
     {
         Unidade unidade = Unidade.Criar(
-            nome: $"Unidade {sigla}",
-            alias: null,
-            slug: slug,
-            sigla: sigla,
-            codigo: codigo,
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Centro,
-            unidadeAcademica: false,
-            vigenciaInicio: DataInicio,
-            vigenciaFim: null).Value!;
+            $"Unidade {sigla}",
+            new IdentificadoresDaUnidade(slug, sigla, codigo, null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false).Value!;
 
         // Semeia pelo DbContext do MÓDULO resolvido do container do host — o
         // schema `organizacao` já foi criado pelas migrations on startup no boot.

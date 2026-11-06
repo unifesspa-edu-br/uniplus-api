@@ -92,16 +92,12 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
             Result atualizarResult = tracked.Atualizar(
                 tracked.Nome,
-                "Alias atualizado",
-                tracked.Slug.Valor,
-                tracked.Sigla,
-                tracked.Codigo,
+                new MudancaDeIdentificadores(new IdentificadoresDaUnidade(tracked.Slug.Valor, tracked.Sigla, tracked.Codigo, "Alias atualizado"), dataMudanca, "ajuste de alias"),
+                CidadeDaUnidade.Nenhuma,
+                tracked.VigenciaFim,
                 tracked.UnidadeSuperiorId,
                 tracked.Tipo,
-                tracked.UnidadeAcademica,
-                tracked.VigenciaFim,
-                dataMudanca,
-                "ajuste de alias");
+                tracked.UnidadeAcademica);
 
             atualizarResult.IsSuccess.Should().BeTrue();
 
@@ -472,17 +468,11 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         string? cidadeNome = null,
         string? cidadeUf = null) =>
         Unidade.Criar(
-            nome: $"Unidade {sigla}",
-            alias: alias,
-            slug: slug,
-            sigla: sigla,
-            codigo: codigo,
-            unidadeSuperiorId: superiorId,
-            tipo: TipoUnidade.Centro,
-            unidadeAcademica: false,
-            vigenciaInicio: DataInicio,
-            vigenciaFim: null,
-            cidadeCodigoIbge: cidadeCodigoIbge,
-            cidadeNome: cidadeNome,
-            cidadeUf: cidadeUf).Value!;
+            $"Unidade {sigla}",
+            new IdentificadoresDaUnidade(slug, sigla, codigo, alias),
+            new CidadeDaUnidade(cidadeCodigoIbge, cidadeNome, cidadeUf),
+            new VigenciaDaUnidade(DataInicio, null),
+            superiorId,
+            TipoUnidade.Centro,
+            false).Value!;
 }

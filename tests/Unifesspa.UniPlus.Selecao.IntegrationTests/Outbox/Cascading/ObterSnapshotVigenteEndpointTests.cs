@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 // Contrato HTTP do seletor de snapshot vigente (Story #759, T6 #787,
 // ADR-0075/0076/0068): GET .../snapshot-vigente resolve a publicação vigente
@@ -313,19 +314,13 @@ public sealed class ObterSnapshotVigenteEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
         Unidade unidade = Unidade.Criar(
-            nome: "Centro de Gestão Acadêmica",
-            alias: null,
-            slug: $"cga-{sufixo}",
-            sigla: $"CGA{sufixo}",
-            codigo: $"CGA-{sufixo}",
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Centro,
-            unidadeAcademica: true,
-            vigenciaInicio: new DateOnly(2020, 1, 1),
-            vigenciaFim: null,
-            cidadeCodigoIbge: "1504208",
-            cidadeNome: "Marabá",
-            cidadeUf: "PA").Value!;
+            "Centro de Gestão Acadêmica",
+            new IdentificadoresDaUnidade($"cga-{sufixo}", $"CGA{sufixo}", $"CGA-{sufixo}", null),
+            new CidadeDaUnidade("1504208", "Marabá", "PA"),
+            new VigenciaDaUnidade(new DateOnly(2020, 1, 1), null),
+            null,
+            TipoUnidade.Centro,
+            true).Value!;
         org.Unidades.Add(unidade);
         await org.SaveChangesAsync().ConfigureAwait(false);
         return unidade.Id;
@@ -337,10 +332,13 @@ public sealed class ObterSnapshotVigenteEndpointTests
         OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
         Unidade unidade = await org.Unidades.SingleAsync(u => u.Id == unidadeId).ConfigureAwait(false);
         unidade.Atualizar(
-            novoNome, unidade.Alias, unidade.Slug.Valor, novaSigla, unidade.Codigo, unidade.UnidadeSuperiorId,
-            unidade.Tipo, unidade.UnidadeAcademica, unidade.VigenciaFim, new DateOnly(2026, 10, 28),
-            motivoMudancaIdentificador: "Renomeada pelo cadastro",
-            cidadeCodigoIbge: unidade.CidadeCodigoIbge, cidadeNome: unidade.CidadeNome, cidadeUf: unidade.CidadeUf)
+            novoNome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade(unidade.Slug.Valor, novaSigla, unidade.Codigo, unidade.Alias), new DateOnly(2026, 10, 28), "Renomeada pelo cadastro"),
+            new CidadeDaUnidade(unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf),
+            unidade.VigenciaFim,
+            unidade.UnidadeSuperiorId,
+            unidade.Tipo,
+            unidade.UnidadeAcademica)
             .IsSuccess.Should().BeTrue();
         await org.SaveChangesAsync().ConfigureAwait(false);
     }

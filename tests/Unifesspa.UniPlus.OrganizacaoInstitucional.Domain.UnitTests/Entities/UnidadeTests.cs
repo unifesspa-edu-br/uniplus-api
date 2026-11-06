@@ -17,15 +17,12 @@ public sealed class UnidadeTests
     private static Unidade CriarUnidadeValida(string? alias = null, Guid? superiorId = null) =>
         Unidade.Criar(
             "Centro de Processos Seletivos",
-            alias,
-            SlugValido.Valor,
-            "CEPS",
-            "0001",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", alias),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
             superiorId,
             TipoUnidade.Centro,
-            false,
-            DataInicio,
-            null).Value!;
+            false).Value!;
 
     // ── Criar ──────────────────────────────────────────────────────────
 
@@ -34,15 +31,12 @@ public sealed class UnidadeTests
     {
         Result<Unidade> resultado = Unidade.Criar(
             "Centro de Processos Seletivos",
-            null,
-            SlugValido.Valor,
-            "CEPS",
-            "0001",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
             null,
             TipoUnidade.Centro,
-            false,
-            DataInicio,
-            null);
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         Unidade u = resultado.Value!;
@@ -85,8 +79,13 @@ public sealed class UnidadeTests
     public void Criar_ComNomeVazio_DeveRetornarNomeObrigatorio(string nomeInvalido)
     {
         Result<Unidade> resultado = Unidade.Criar(
-            nomeInvalido, null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            nomeInvalido,
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NomeObrigatorio);
@@ -96,8 +95,13 @@ public sealed class UnidadeTests
     public void Criar_ComNomeMuitoCurto_DeveRetornarNomeTamanho()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "a", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "a",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NomeTamanho);
@@ -107,8 +111,13 @@ public sealed class UnidadeTests
     public void Criar_ComSiglaVazia_DeveRetornarSiglaObrigatoria()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "  ", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "  ", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaObrigatoria);
@@ -118,8 +127,13 @@ public sealed class UnidadeTests
     public void Criar_ComSiglaMuitoLonga_DeveRetornarSiglaTamanho()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, new string('A', 51), "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, new string('A', 51), "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaTamanho);
@@ -129,8 +143,13 @@ public sealed class UnidadeTests
     public void Criar_ComCodigoVazio_DeveRetornarCodigoObrigatorio()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "  ", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "  ", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.CodigoObrigatorio);
@@ -140,8 +159,13 @@ public sealed class UnidadeTests
     public void Criar_ComAliasMuitoLongo_DeveRetornarAliasTamanho()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", new string('a', 101), SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", new string('a', 101)),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.AliasTamanho);
@@ -153,8 +177,13 @@ public sealed class UnidadeTests
     public void Criar_ComTipoInvalido_DeveRetornarTipoInvalido(TipoUnidade tipoInvalido)
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
-            tipoInvalido, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            tipoInvalido,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.TipoInvalido);
@@ -166,8 +195,13 @@ public sealed class UnidadeTests
         DateOnly fimAnterior = DataInicio.AddDays(-1);
 
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, fimAnterior);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, fimAnterior),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.VigenciaFimAnteriorAoInicio);
@@ -184,13 +218,56 @@ public sealed class UnidadeTests
 
         Result resultado = unidade.Atualizar(
             "Centro de Processos Seletivos Alterado",
-            null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, true, null, dataAtual);
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null), dataAtual, null),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            true);
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.Nome.Should().Be("Centro de Processos Seletivos Alterado");
         unidade.UnidadeAcademica.Should().BeTrue();
         unidade.Historico.Should().HaveCount(historicoAntes, "nenhum identificador mudou");
+    }
+
+    [Fact(DisplayName = "Atualizar com motivo de mudança > 500 chars retorna MotivoMudancaTamanho sem alterar a Unidade")]
+    public void Atualizar_ComMotivoMuitoLongo_DeveRetornarMotivoMudancaTamanho()
+    {
+        Unidade unidade = CriarUnidadeValida();
+
+        Result resultado = unidade.Atualizar(
+            unidade.Nome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade("ceps-unifesspa", "CEPS", "0001", null), DataInicio.AddMonths(1), new string('m', 501)),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Errors.Should().ContainSingle(e =>
+            e.Field == "motivoMudancaIdentificador" && e.Error.Code == UnidadeErrorCodes.MotivoMudancaTamanho);
+        unidade.Slug.Valor.Should().Be("ceps");
+    }
+
+    [Fact(DisplayName = "Atualizar com motivo de 500 chars mais espaços grava o histórico com 500 chars")]
+    public void Atualizar_ComMotivoNoLimiteMaisEspacos_GravaMotivoAparado()
+    {
+        Unidade unidade = CriarUnidadeValida();
+
+        Result resultado = unidade.Atualizar(
+            unidade.Nome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade("ceps-unifesspa", "CEPS", "0001", null), DataInicio.AddMonths(1), new string('m', 500) + "   "),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
+
+        resultado.IsSuccess.Should().BeTrue();
+        unidade.Historico.Single(h => h.TipoIdentificador == TipoIdentificador.Slug && h.VigenciaFim is null)
+            .MotivoMudanca.Should().HaveLength(500);
     }
 
     [Fact(DisplayName = "Atualizar com novo Slug fecha vigência antiga e abre nova entrada de histórico")]
@@ -201,8 +278,13 @@ public sealed class UnidadeTests
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, novoSlug.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, null, dataAtual, "Adequação de naming");
+            unidade.Nome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade(novoSlug.Valor, "CEPS", "0001", null), dataAtual, "Adequação de naming"),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.Slug.Should().Be(novoSlug);
@@ -224,13 +306,23 @@ public sealed class UnidadeTests
     public void Atualizar_ComCodigoMudandoApenasCaixa_AdicionaEntradaDeHistorico()
     {
         Unidade unidade = Unidade.Criar(
-            "Centro de Processos Seletivos", null, SlugValido.Valor, "CEPS", "ABC", null,
-            TipoUnidade.Centro, false, DataInicio, null).Value!;
+            "Centro de Processos Seletivos",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "ABC", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false).Value!;
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, SlugValido.Valor, "CEPS", "abc", null,
-            TipoUnidade.Centro, false, null, dataAtual, "Correção de caixa");
+            unidade.Nome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "abc", null), dataAtual, "Correção de caixa"),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.Codigo.Should().Be("abc");
@@ -249,8 +341,13 @@ public sealed class UnidadeTests
     public void Criar_SiglaEhNormalizadaParaUppercase()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "ceps", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "ceps", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Sigla.Should().Be("CEPS");
@@ -262,8 +359,13 @@ public sealed class UnidadeTests
     public void Criar_SemCidade_Sucesso()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.CidadeCodigoIbge.Should().BeNull();
@@ -275,9 +377,13 @@ public sealed class UnidadeTests
     public void Criar_ComCidadeCompleta_Sucesso()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null,
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "pa");
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            new CidadeDaUnidade("1504208", "Marabá", "pa"),
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.CidadeCodigoIbge.Should().Be("1504208");
@@ -292,9 +398,13 @@ public sealed class UnidadeTests
     public void Criar_ComCidadeParcial_Falha(string? codigo, string? nome, string? uf)
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null,
-            cidadeCodigoIbge: codigo, cidadeNome: nome, cidadeUf: uf);
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            new CidadeDaUnidade(codigo, nome, uf),
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -303,9 +413,13 @@ public sealed class UnidadeTests
     public void Criar_ComCidadeUfIncoerente_Falha()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            "Nome valido", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null,
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP");
+            "Nome valido",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            new CidadeDaUnidade("1504208", "Marabá", "SP"),
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.UfIncoerente);
@@ -318,9 +432,13 @@ public sealed class UnidadeTests
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, null, dataAtual,
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
+            unidade.Nome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null), dataAtual, null),
+            new CidadeDaUnidade("1504208", "Marabá", "PA"),
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.CidadeCodigoIbge.Should().Be("1504208");
@@ -332,14 +450,23 @@ public sealed class UnidadeTests
     public void Atualizar_RemovendoCidade_ZeraOsTresCampos()
     {
         Unidade unidade = Unidade.Criar(
-            "Centro de Processos Seletivos", null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, DataInicio, null,
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!;
+            "Centro de Processos Seletivos",
+            new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null),
+            new CidadeDaUnidade("1504208", "Marabá", "PA"),
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Centro,
+            false).Value!;
         DateOnly dataAtual = DataInicio.AddMonths(1);
 
         Result resultado = unidade.Atualizar(
-            unidade.Nome, null, SlugValido.Valor, "CEPS", "0001", null,
-            TipoUnidade.Centro, false, null, dataAtual);
+            unidade.Nome,
+            new MudancaDeIdentificadores(new IdentificadoresDaUnidade(SlugValido.Valor, "CEPS", "0001", null), dataAtual, null),
+            CidadeDaUnidade.Nenhuma,
+            null,
+            null,
+            TipoUnidade.Centro,
+            false);
 
         resultado.IsSuccess.Should().BeTrue();
         unidade.CidadeCodigoIbge.Should().BeNull();
@@ -351,16 +478,13 @@ public sealed class UnidadeTests
     public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
     {
         Result<Unidade> resultado = Unidade.Criar(
-            nome: "",
-            alias: null,
-            slug: "SLUG-INVALIDO",
-            sigla: "CEPS",
-            codigo: "0001",
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Nenhum,
-            unidadeAcademica: false,
-            vigenciaInicio: DataInicio,
-            vigenciaFim: null);
+            "",
+            new IdentificadoresDaUnidade("SLUG-INVALIDO", "CEPS", "0001", null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Nenhum,
+            false);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
@@ -373,17 +497,11 @@ public sealed class UnidadeTests
     public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
     {
         Result validacao = Unidade.ValidarCampos(
-            nome: null,
-            alias: null,
-            slug: null,
-            sigla: "CEPS",
-            codigo: "0001",
-            tipo: TipoUnidade.Centro,
-            vigenciaInicio: DataInicio,
-            vigenciaFim: null,
-            cidadeCodigoIbge: null,
-            cidadeNome: null,
-            cidadeUf: null);
+            null,
+            new IdentificadoresDaUnidade(null, "CEPS", "0001", null),
+            new CidadeDaUnidade(null, null, null),
+            TipoUnidade.Centro,
+            new VigenciaDaUnidade(DataInicio, null));
 
         validacao.IsFailure.Should().BeTrue();
         validacao.Errors.Should().ContainSingle(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);

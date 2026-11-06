@@ -419,14 +419,11 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
 
     private static Unidade NovaReitoria(string slug, string sigla, string codigo) =>
         Unidade.Criar(
-            nome: "Reitoria",
-            alias: null,
-            slug: slug,
-            sigla: sigla,
-            codigo: codigo,
-            unidadeSuperiorId: null,
-            tipo: TipoUnidade.Reitoria,
-            unidadeAcademica: false,
-            vigenciaInicio: DataInicio,
-            vigenciaFim: null).Value!;
+            "Reitoria",
+            new IdentificadoresDaUnidade(slug, sigla, codigo, null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(DataInicio, null),
+            null,
+            TipoUnidade.Reitoria,
+            false).Value!;
 }

@@ -179,15 +179,12 @@ public sealed class UnidadeEndpointTests
         string sufixo = Guid.NewGuid().ToString("N")[..8];
         Unidade unidade = Unidade.Criar(
             nome,
-            null,
-            $"u-{sufixo}",
-            sigla,
-            sufixo,
+            new IdentificadoresDaUnidade($"u-{sufixo}", sigla, sufixo, null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
             null,
             tipo,
-            false,
-            new DateOnly(2026, 1, 1),
-            null).Value!;
+            false).Value!;
 
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
         OrganizacaoInstitucionalDbContext ctx =
