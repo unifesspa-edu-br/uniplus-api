@@ -188,7 +188,7 @@ instalar() {
     inicio=$(cat "$TMP_DIR/corpo")
     id=$(jq -r '.id // empty' <<< "$inicio")
     url=$(jq -r '.urlDeEnvio // empty' <<< "$inicio")
-    [ -n "$id" ] && [ -n "$url" ] || falha "o passo 1 não devolveu id e URL de envio: $inicio"
+    [[ -n "$id" && -n "$url" ]] || falha "o passo 1 não devolveu id e URL de envio: $inicio"
 
     log "Passo 2 — enviando o PDF de designação e confirmando o documento"
     etag=$(curl -fsS -D - -o /dev/null -X PUT -H "Content-Type: application/pdf" --data-binary @"$PDF_DE_DESIGNACAO" "$url" \
