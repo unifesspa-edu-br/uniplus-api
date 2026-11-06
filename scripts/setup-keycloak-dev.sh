@@ -38,6 +38,10 @@
 # Os ajustes deste script não sobrevivem a `docker compose down -v` — re-rode
 # após recriar o volume do Postgres.
 #
+# KC_URL local: localhost, 127.0.0.1 ou http://keycloak:* (nome do serviço na rede do compose, onde roda o
+# serviço ambiente-init; só resolve ali). As travas de DEV ONLY aceitam os três. Dentro da rede, KC_PUBLIC_URL
+# informa o endereço que o navegador alcança, para as URLs de login do gov.br simulado.
+#
 # Pré-requisitos:
 #   - Stack docker no ar: docker compose -f docker/docker-compose.yml up -d
 #   - JAR cpf-matcher buildado: scripts/build-keycloak-providers.sh cpf-matcher
@@ -98,8 +102,6 @@ LDAP_USERS_DN="${LDAP_USERS_DN:-ou=Users,$LDAP_BASE_DN}"
 readonly LDAP_PROVIDER_NAME="ldap-local-sintetico"
 
 # Diretório onde vivem os scripts auxiliares chamados como subprocesso
-# `http://keycloak:*` é o nome do serviço na rede do compose (contêiner ambiente-init): tão local quanto
-# localhost, e só resolve dentro dessa rede. As travas de DEV ONLY abaixo o aceitam por isso.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Definidos durante a execução
