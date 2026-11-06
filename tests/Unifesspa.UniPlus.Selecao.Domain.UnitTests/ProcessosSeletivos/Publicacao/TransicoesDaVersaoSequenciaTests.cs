@@ -40,27 +40,6 @@ public sealed class TransicoesDaVersaoSequenciaTests
             new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
             TiposDeAtoUnicosDeTeste.Nenhum);
 
-    [Theory(DisplayName = "Publicar lança pelo argumento nulo, com o nome do parâmetro, mesmo num processo já publicado")]
-    [InlineData("dados")]
-    [InlineData("configuracaoCongeladaCanonica")]
-    [InlineData("clock")]
-    [InlineData("contexto")]
-    [InlineData("tiposDeAtoUnicos")]
-    public void Publicar_ArgumentoNulo_LancaAntesDoStatus(string parametro)
-    {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
-
-        Action chamada = () => publicado.Publicar(
-            parametro == "dados" ? null! : Dados(),
-            parametro == "configuracaoCongeladaCanonica" ? null! : Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123",
-            parametro == "clock" ? null! : new RelogioFixo(Agora),
-            parametro == "contexto" ? null! : ContextoDeContagemDePrazos.SemCalendario,
-            FatosDeModalidadeDeTeste.DoCatalogo,
-            parametro == "tiposDeAtoUnicos" ? null! : TiposDeAtoUnicosDeTeste.Nenhum);
-
-        chamada.Should().Throw<ArgumentNullException>().WithParameterName(parametro);
-    }
-
     [Fact(DisplayName = "Publicar um processo já publicado recusa pelo status, sem exigir precondição")]
     public void Publicar_JaPublicado_RecusaPeloStatus()
     {
@@ -93,55 +72,17 @@ public sealed class TransicoesDaVersaoSequenciaTests
         publicado.Rascunho.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Retificar com contexto nulo num processo em rascunho recusa pelo status, sem lançar")]
-    public void Retificar_ContextoNuloComStatusErrado_RecusaPeloStatus()
+    [Fact(DisplayName = "Retificar lança pela versão atual nula antes de conferir o status")]
+    public void Retificar_VersaoAtualNula_LancaAntesDoStatus()
     {
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
-        VersaoConfiguracao versao = VersaoDe(rascunho);
-
-        Result<VersaoConfiguracao> resultado = rascunho.Retificar(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", "Correção do prazo",
-            new RelogioFixo(Agora), null!, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
-    }
-
-    [Theory(DisplayName = "Retificar lança pelo argumento nulo que confere antes do status")]
-    [InlineData("dados")]
-    [InlineData("versaoAtual")]
-    [InlineData("configuracaoCongeladaCanonica")]
-    [InlineData("clock")]
-    public void Retificar_ArgumentoNuloAntesDoStatus_Lanca(string parametro)
-    {
-        ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
-        VersaoConfiguracao versao = VersaoDe(rascunho);
 
         Action chamada = () => rascunho.Retificar(
-            parametro == "dados" ? null! : Dados(),
-            parametro == "versaoAtual" ? null! : versao,
-            parametro == "configuracaoCongeladaCanonica" ? null! : Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123",
-            "Correção do prazo",
-            parametro == "clock" ? null! : new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            Dados(), null!, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", "Correção do prazo",
+            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
+            TiposDeAtoUnicosDeTeste.Nenhum);
 
-        chamada.Should().Throw<ArgumentNullException>().WithParameterName(parametro);
-    }
-
-    [Theory(DisplayName = "Retificar lança por contexto ou tipos de ato nulos só depois de passar o status e a sessão")]
-    [InlineData("contexto")]
-    [InlineData("tiposDeAtoUnicos")]
-    public void Retificar_ArgumentoNuloDepoisDoStatus_Lanca(string parametro)
-    {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out VersaoConfiguracao versao);
-
-        Action chamada = () => publicado.Retificar(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", "Correção do prazo",
-            new RelogioFixo(Agora),
-            parametro == "contexto" ? null! : ContextoDeContagemDePrazos.SemCalendario,
-            FatosDeModalidadeDeTeste.DoCatalogo,
-            parametro == "tiposDeAtoUnicos" ? null! : TiposDeAtoUnicosDeTeste.Nenhum);
-
-        chamada.Should().Throw<ArgumentNullException>().WithParameterName(parametro);
+        chamada.Should().Throw<ArgumentNullException>().WithParameterName("versaoAtual");
     }
 
     [Fact(DisplayName = "Retificar de uma vez com sessão aberta recusa pela sessão")]

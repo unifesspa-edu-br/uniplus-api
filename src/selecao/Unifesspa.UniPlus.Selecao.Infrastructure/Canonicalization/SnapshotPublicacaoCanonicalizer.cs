@@ -53,9 +53,10 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
     {
         ArgumentNullException.ThrowIfNull(entrada);
-        ArgumentNullException.ThrowIfNull(entrada.Processo);
-        ArgumentNullException.ThrowIfNull(entrada.Dados);
-        ArgumentException.ThrowIfNullOrWhiteSpace(entrada.HashDocumento);
+        if (string.IsNullOrWhiteSpace(entrada.HashDocumento))
+        {
+            throw new ArgumentException("A entrada da canonicalização precisa do hash do documento.", nameof(entrada));
+        }
 
         JsonObject payload = [];
         ProjetarEdital(payload, entrada);

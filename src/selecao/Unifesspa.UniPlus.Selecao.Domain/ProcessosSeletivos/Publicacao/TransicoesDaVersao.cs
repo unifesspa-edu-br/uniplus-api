@@ -21,11 +21,6 @@ internal static class TransicoesDaVersao
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(pedido);
-        ArgumentNullException.ThrowIfNull(pedido.Dados, "dados");
-        ArgumentNullException.ThrowIfNull(pedido.Documento.Canonico, "configuracaoCongeladaCanonica");
-        ArgumentNullException.ThrowIfNull(pedido.Clock, "clock");
-        ArgumentNullException.ThrowIfNull(pedido.Contexto, "contexto");
-        ArgumentNullException.ThrowIfNull(pedido.TiposDeAtoUnicos, "tiposDeAtoUnicos");
 
         if (estado.Status != StatusProcesso.Rascunho)
         {
@@ -51,10 +46,7 @@ internal static class TransicoesDaVersao
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(pedido);
-        ArgumentNullException.ThrowIfNull(pedido.Dados, "dados");
         ArgumentNullException.ThrowIfNull(versaoAtual);
-        ArgumentNullException.ThrowIfNull(pedido.Documento.Canonico, "configuracaoCongeladaCanonica");
-        ArgumentNullException.ThrowIfNull(pedido.Clock, "clock");
 
         if (estado.Status != StatusProcesso.Publicado)
         {
@@ -86,12 +78,7 @@ internal static class TransicoesDaVersao
         EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo, bool encerraSessao)
     {
         ArgumentNullException.ThrowIfNull(pedido);
-        ArgumentNullException.ThrowIfNull(pedido.Dados, "dados");
         ArgumentNullException.ThrowIfNull(versaoAtual);
-        ArgumentNullException.ThrowIfNull(pedido.Contexto, "contexto");
-        ArgumentNullException.ThrowIfNull(pedido.Documento.Canonico, "configuracaoCongeladaCanonica");
-        ArgumentNullException.ThrowIfNull(pedido.Clock, "clock");
-        ArgumentNullException.ThrowIfNull(pedido.TiposDeAtoUnicos, "tiposDeAtoUnicos");
 
         if (estado.Status != StatusProcesso.Publicado)
         {

@@ -235,8 +235,6 @@ public sealed class AtoDoProcesso : EntityBase
 
     private static void GuardarDocumentos(NovoAtoDoProcesso novo)
     {
-        ArgumentNullException.ThrowIfNull(novo.Anexos);
-
         if (novo.DocumentoPrincipalId == Guid.Empty)
         {
             throw new ArgumentException("O ato do processo deve ter um documento principal.", nameof(novo));

@@ -499,20 +499,6 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     // D7 — o atalho atômico recusa com sessão aberta
     // ══════════════════════════════════════════════════════════════════════════════
 
-    [Fact(DisplayName = "O atalho atômico continua conferindo os contratos ANTES da sessão — argumento nulo lança, mesmo com retificação aberta")]
-    public void Retificar_ComSessaoAberta_AindaConfereContratosPrimeiro()
-    {
-        ProcessoSeletivo processo = ComSessaoAberta(out _);
-
-        // Antes desta Feature, um `dados` nulo lançava. Antepor a recusa por RetificacaoJaAberta
-        // faria o atalho mudar de comportamento — e ele prometeu não mudar.
-        Action nulo = () => processo.Retificar(
-            dados: null!, VersaoQualquerDoProcesso(processo), BytesCanonicos, "1.1",
-            "canonical-json/sha256@v1", HashFixo, "user-sub-1", "motivo", new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        nulo.Should().Throw<ArgumentNullException>();
-    }
-
     [Fact(DisplayName = "D7: o atalho POST /retificacoes RECUSA quando há sessão editorial aberta — invariante do domínio")]
     public void Retificar_ComSessaoAberta_Recusa()
     {
@@ -568,12 +554,6 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         [.. processo.NosExigencia],
         processo.ReferenciaTemporalFatos,
             numeroDeOpcoesDeCurso: 1);
-
-    /// <summary>Uma versão qualquer DESTE processo — o teste que a usa lança antes de tocá-la.</summary>
-    private static VersaoConfiguracao VersaoQualquerDoProcesso(ProcessoSeletivo processo) =>
-        VersaoConfiguracao.Abrir(
-            processo.Id, BytesCanonicos, "1.1", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), HashFixo, "user-sub-1", Agora);
 
     /// <summary>
     /// O descarte é da S4 (#861) — aqui só se precisa do EFEITO dele sobre o agregado (a

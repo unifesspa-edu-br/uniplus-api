@@ -28,7 +28,6 @@ public static class AlterarDefinicaoDoFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(modeloRepository);
         ArgumentNullException.ThrowIfNull(modalidadeRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(command.Definicao);
 
         DefinicaoDoFato definicao = Ler(command.Definicao);
 
