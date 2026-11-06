@@ -24,7 +24,9 @@ O projeto depende de serviços externos que rodam localmente via Docker. Para su
 docker compose -f docker/docker-compose.yml up -d
 ```
 
-Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft), MinIO, Apicurio e Keycloak (dev mode).
+Isso inicia: PostgreSQL 18, Redis, Kafka (KRaft) e o `kafka-init`, MinIO, RabbitMQ, Mailpit, Apicurio, Keycloak
+(dev mode) e o verificador de arquivos (`clamd-verificador` e `verificador`). Para ter também o Keycloak
+configurado e os gestores de acessos instalados, veja **Ambiente pronto para uso em um comando** abaixo.
 Para o stack completo (infra + APIs + frontend), veja **Subir a stack completa** abaixo.
 
 ### Ambiente pronto para uso em um comando
