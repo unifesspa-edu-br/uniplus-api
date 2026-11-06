@@ -2,9 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
@@ -22,7 +19,7 @@ public static class RegrasDoDesempate
 
     internal static Result ConferirSubstituicao(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempate> criterios)
     {
-        List<FieldError> erros = ValidarCriteriosDesempate(estado, [.. criterios.Select(CriterioDesempateInformado.De)]);
+        List<FieldError> erros = ConferirCriteriosDesempate(estado, [.. criterios.Select(CriterioDesempateInformado.De)]);
         return erros.Count > 0
             ? Result.ValidationFailure(AnexarAreasAceitasDoDesempate(estado, erros))
             : Result.Success();
@@ -33,7 +30,7 @@ public static class RegrasDoDesempate
     /// recebe a lista recusá-la acima do teto antes de consultar o <c>rol_de_regras</c> e
     /// antes de conferir item a item.
     /// </summary>
-    public static List<FieldError> ValidarQuantidadeDeCriteriosDesempate(int quantidade)
+    public static List<FieldError> ConferirQuantidadeDeCriteriosDesempate(int quantidade)
     {
         List<FieldError> erros = [];
 
@@ -64,12 +61,12 @@ public static class RegrasDoDesempate
     /// foi possível montá-los. Assim a ordem duplicada e a área fora do quadro saem junto com a
     /// recusa do item, e não só na tentativa seguinte.
     /// </param>
-    public static List<FieldError> ValidarCriteriosDesempate(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempateInformado> criterios)
+    public static List<FieldError> ConferirCriteriosDesempate(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempateInformado> criterios)
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(criterios);
 
-        List<FieldError> erros = ValidarQuantidadeDeCriteriosDesempate(criterios.Count);
+        List<FieldError> erros = ConferirQuantidadeDeCriteriosDesempate(criterios.Count);
         if (erros.Count > 0)
         {
             return erros;
@@ -97,7 +94,7 @@ public static class RegrasDoDesempate
         // O desempate é gravado antes da classificação no fluxo de configuração: num processo
         // novo ela ainda é nula aqui, e só então a coerência com o quadro de pesos por área
         // fica para DefinirClassificacao conferir.
-        List<ViolacaoDoDesempatePorArea> contraOQuadro = ValidarDesempatePorAreaDoEnem(criterios, estado.Classificacao);
+        List<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, estado.Classificacao);
 
         // A área citada por outro critério e também fora do quadro recebe só a recusa do
         // quadro, que traz a lista de aceitas: o mesmo campo não recebe duas.
@@ -133,7 +130,7 @@ public static class RegrasDoDesempate
     /// <see langword="null"/> enquanto a classificação não foi gravada — aí a coerência com
     /// ela ainda não é conferível, e fica para quando for.
     /// </param>
-    internal static List<ViolacaoDoDesempatePorArea> ValidarDesempatePorAreaDoEnem(
+    internal static List<ViolacaoDoDesempatePorArea> ConferirDesempatePorAreaContraOQuadro(
         IReadOnlyList<CriterioDesempateInformado> criterios,
         ConfiguracaoClassificacao? classificacao)
     {
@@ -269,27 +266,6 @@ public static class RegrasDoDesempate
             : erro;
 
     /// <summary>
-    /// O teto de critérios e as regras do desempate por área do ENEM, como gate de publicação.
-    /// Os caminhos de gravação e a restauração já os conferem; o gate é defesa em profundidade
-    /// para o estado que chega por outro caminho — um rascunho gravado antes do teto, uma
-    /// gravação feita fora do agregado ou uma rota nova que esqueça a conferência. Sem ele o
-    /// processo publicaria, e a restauração daquela versão recusaria depois pela mesma regra.
-    /// </summary>
-    internal static DomainError? PendenciaDosCriteriosDesempate(EstadoDaConfiguracao estado)
-    {
-        if (ValidarQuantidadeDeCriteriosDesempate(estado.CriteriosDesempate.Count) is [var excesso, ..])
-        {
-            return excesso.Error;
-        }
-
-        // A lista vem na precedência de sempre: forma e repetição das áreas antes do quadro. A
-        // lista de áreas aceitas acompanha só a recusa contra o quadro.
-        return ViolacoesDoDesempatePorAreaDoEnem(estado) is [var primeira, ..]
-            ? primeira.Erro.Code == DesempatePorAreaEnemErrorCodes.ForaDoQuadro ? ComAreasAceitas(primeira.Erro, estado.Classificacao) : primeira.Erro
-            : null;
-    }
-
-    /// <summary>
     /// A primeira violação das regras do desempate por área do ENEM, para quem recusa com um
     /// erro só. A lista de áreas aceitas acompanha só a recusa contra o quadro: as demais não
     /// dependem dele.
@@ -308,7 +284,7 @@ public static class RegrasDoDesempate
             return areaRepetida.Erro;
         }
 
-        return ValidarDesempatePorAreaDoEnem(criterios, classificacao) is [var violacaoDeArea, ..]
+        return ConferirDesempatePorAreaContraOQuadro(criterios, classificacao) is [var violacaoDeArea, ..]
             ? ComAreasAceitas(violacaoDeArea.Erro, classificacao)
             : null;
     }
@@ -321,10 +297,10 @@ public static class RegrasDoDesempate
     /// pela mesma causa, uma delas longe de onde se corrige. A gravação do desempate e a
     /// restauração recusam pela regra inteira.
     /// </summary>
-    internal static List<ViolacaoDoDesempatePorArea> ViolacoesDoDesempatePorAreaDoEnem(EstadoDaConfiguracao estado)
+    internal static List<ViolacaoDoDesempatePorArea> ConferirDesempatePorAreaParaPublicar(EstadoDaConfiguracao estado)
     {
         List<CriterioDesempateInformado> criterios = EmOrdem(estado.CriteriosDesempate);
-        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ValidarDesempatePorAreaDoEnem(criterios, estado.Classificacao);
+        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, estado.Classificacao);
         if (estado.Classificacao is { CalculaPelosPesosPorAreaDoEnem: true })
         {
             contraOQuadro = contraOQuadro.Where(static violacao => violacao.Erro.Code != DesempatePorAreaEnemErrorCodes.SemQuadro);

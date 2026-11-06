@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A regra de recurso de uma <see cref="FaseCronograma"/> (0..1, Story #851 §3.6): a
+/// A regra de recurso de uma <see cref="FaseCronograma"/> (0..1): a
 /// <b>presença</b> desta entidade é o que faz a fase admitir recurso — sem enum, sem
 /// flag, sem lista de fases recorríveis em código.
 /// </summary>
@@ -104,9 +104,9 @@ public sealed class RegraRecursoFase : EntityBase
         // As invariantes puras sobre os args — prazo e os dois pares de suspensividade — são
         // do próprio value object: ele é o mesmo que a janela recursal da etapa carrega, e
         // enquanto elas viviam aqui a etapa aceitava prazo zero e par pela metade.
-        if (ValidacaoDeArgsDeRecurso.Validar(args) is { } recusa)
+        if (ValidacaoDosArgumentosDoRecurso.Validar(args) is { } recusa)
         {
-            return Result<RegraRecursoFase>.Failure(ErroDosArgs(recusa));
+            return Result<RegraRecursoFase>.Failure(ErroDosArgumentos(recusa));
         }
 
         return Result<RegraRecursoFase>.Success(
@@ -120,16 +120,16 @@ public sealed class RegraRecursoFase : EntityBase
     /// registro de erros consegue enxergá-los — um código interpolado nunca apareceria na
     /// varredura, e um erro sem registro vira 500 em vez de 422.
     /// </summary>
-    private static DomainError ErroDosArgs(RecusaDeArgsDeRecurso recusa) => recusa.Motivo switch
+    private static DomainError ErroDosArgumentos(RecusaDosArgumentosDoRecurso recusa) => recusa.Motivo switch
     {
-        MotivoDeRecusaDeArgs.PrazoNaoPositivo => new("RegraRecursoFase.PrazoNaoPositivo", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.PrazoEmDiasCorridos => new("RegraRecursoFase.PrazoEmDiasCorridos", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.PrazoSemUnidadeDeclaravel => new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.PrazoEmFracaoDeDiaUtil => new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeNaoPositiva => new("RegraRecursoFase.SuspensividadeNaoPositiva", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeUnidadeNaoDeclaravel => new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeIncompleta => new("RegraRecursoFase.SuspensividadeIncompleta", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeSuperiorSemInstanciaSuperior => new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoNaoPositivo => new("RegraRecursoFase.PrazoNaoPositivo", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoEmDiasCorridos => new("RegraRecursoFase.PrazoEmDiasCorridos", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoSemUnidadeDeclaravel => new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoEmFracaoDeDiaUtil => new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeNaoPositiva => new("RegraRecursoFase.SuspensividadeNaoPositiva", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeUnidadeNaoDeclaravel => new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeIncompleta => new("RegraRecursoFase.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeSuperiorSemInstanciaSuperior => new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 

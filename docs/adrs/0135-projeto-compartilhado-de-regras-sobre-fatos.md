@@ -48,7 +48,7 @@ Três restrições delimitam onde esse código pode morar:
 
 - o predicado e suas partes (`PredicadoDnf`, `ClausulaDnf`, `CondicaoDnf`, `Operador`, `EstadoAtomo`), com o mapeamento entre o operador e o código que viaja no contrato (`OperadorCodigo`). A Configuração recebe condições com o operador em texto e precisa da mesma conversão;
 - a validação do predicado (`PredicadoDnfValidador`, `PredicadoDnfErrorCodes`) e a descrição do fato de que ela depende (`DescritorFatoCandidato`, `TipoDominioFato`, com o mapeamento do tipo de domínio para o código, `TipoDominioFatoCodigo`);
-- a derivação (`MotorDerivacao`, `RegraDerivacao`, `RegrasDerivacaoFato`, `ResultadoDerivacao`), com os códigos de erro declarados nos mesmos arquivos (`RegraDerivacaoErrorCodes`, `RegrasDerivacaoFatoErrorCodes`);
+- a derivação (`MotorDerivacao`, `RegraDerivacao`, `DerivacaoDoFato`, `ResultadoDerivacao`), com os códigos de erro declarados nos mesmos arquivos (`RegraDerivacaoErrorCodes`, `DerivacaoDoFatoErrorCodes`);
 - o estado resolvido do fato (`FatoResolvido`, `EstadoFato`, `Ternario`).
 
 **É extraída para o projeto** a detecção de ciclo entre dependências de fatos, como função sobre códigos de fato. Hoje ela é um método privado do agregado do processo seletivo, sobre `FatoColetado`. **É criada no projeto** a ordenação topológica de que o avaliador de formulário precisa. A única ordenação que existe hoje é a do grafo conjunto do congelamento (`GrafoDependenciaConjunta`), que continua na Seleção, porque inclui exigências e arestas que só existem ali.

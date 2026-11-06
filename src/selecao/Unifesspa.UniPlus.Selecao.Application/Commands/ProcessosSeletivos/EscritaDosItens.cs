@@ -18,11 +18,11 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
-/// <summary>Os itens lidos pela forma, sem leitura externa: as regras de cada item cuja forma foi aceita.</summary>
-internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<RegrasDoItem?> Regras, IReadOnlyList<FieldError> Erros);
+/// <summary>Os itens lidos pela forma, sem leitura externa: a configuração de cada item cuja forma foi aceita.</summary>
+internal sealed record ItensLidos(IReadOnlyList<FatoColetadoInput> Entradas, IReadOnlyList<ConfiguracaoDoItem?> Configuracoes, IReadOnlyList<FieldError> Erros);
 
 /// <summary>A obrigatoriedade, as restrições e o impedimento de um item cuja forma foi aceita.</summary>
-internal sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null);
+internal sealed record ConfiguracaoDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes, Impedimento? Impedimento = null);
 
 /// <summary>
 /// Os grupos lidos pela forma, sem leitura externa: a exibição e a obrigatoriedade de cada grupo
@@ -30,13 +30,13 @@ internal sealed record RegrasDoItem(Obrigatoriedade Obrigatoriedade, IReadOnlyLi
 /// </summary>
 internal sealed record GruposLidos(
     IReadOnlyList<GrupoColetadoInput> Entradas,
-    IReadOnlyList<RegrasDoGrupo?> Regras,
+    IReadOnlyList<ConfiguracaoDoGrupo?> Configuracoes,
     IReadOnlyList<bool> FormaValida,
     IReadOnlyList<ItensLidos> Campos,
     IReadOnlyList<FieldError> Erros);
 
 /// <summary>A exibição e a obrigatoriedade de um grupo cuja forma foi aceita.</summary>
-internal sealed record RegrasDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedade Obrigatoriedade);
+internal sealed record ConfiguracaoDoGrupo(PredicadoDnf? Exibicao, Obrigatoriedade Obrigatoriedade);
 
 /// <summary>
 /// A escrita dos itens do formulário do processo, sem ler nem mudar o processo: primeiro a forma
@@ -51,7 +51,7 @@ internal static class EscritaDosItens
     {
         ArgumentNullException.ThrowIfNull(entradas);
         List<FieldError> erros = [];
-        RegrasDoItem?[] regras = new RegrasDoItem?[entradas.Count];
+        ConfiguracaoDoItem?[] configuracoes = new ConfiguracaoDoItem?[entradas.Count];
         for (int indice = 0; indice < entradas.Count; indice++)
         {
             FatoColetadoInput input = entradas[indice];
@@ -69,10 +69,10 @@ internal static class EscritaDosItens
                 erros.Add(new($"{campo}.impedimento.quando", impedimento.Error!));
             }
 
-            regras[indice] = erros.Count == recusasAntes ? new RegrasDoItem(obrigatoriedade!, restricoes, impedimento.Value) : null;
+            configuracoes[indice] = erros.Count == recusasAntes ? new ConfiguracaoDoItem(obrigatoriedade!, restricoes, impedimento.Value) : null;
         }
 
-        return new ItensLidos(entradas, regras, erros);
+        return new ItensLidos(entradas, configuracoes, erros);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ internal static class EscritaDosItens
     {
         ArgumentNullException.ThrowIfNull(entradas);
         List<FieldError> erros = [];
-        RegrasDoGrupo?[] regras = new RegrasDoGrupo?[entradas.Count];
+        ConfiguracaoDoGrupo?[] configuracoes = new ConfiguracaoDoGrupo?[entradas.Count];
         bool[] formaValida = new bool[entradas.Count];
         ItensLidos[] campos = new ItensLidos[entradas.Count];
         for (int indice = 0; indice < entradas.Count; indice++)
@@ -100,7 +100,7 @@ internal static class EscritaDosItens
             }
 
             Obrigatoriedade? obrigatoriedade = ConferirObrigatoriedade(input.Obrigatoriedade, input.PredicadoObrigatoriedade, caminho, erros);
-            regras[indice] = erros.Count == recusasAntes ? new RegrasDoGrupo(exibicao.Value, obrigatoriedade!) : null;
+            configuracoes[indice] = erros.Count == recusasAntes ? new ConfiguracaoDoGrupo(exibicao.Value, obrigatoriedade!) : null;
 
             erros.AddRange(FormaDoGrupo.Conferir(
                     input.Codigo, input.Ordem, input.Rotulo, input.Minimo, input.Maximo,
@@ -122,7 +122,7 @@ internal static class EscritaDosItens
             erros.AddRange(campos[indice].Erros);
         }
 
-        return new GruposLidos(entradas, regras, formaValida, campos, erros);
+        return new GruposLidos(entradas, configuracoes, formaValida, campos, erros);
     }
 
     /// <summary>
@@ -130,8 +130,8 @@ internal static class EscritaDosItens
     /// própria recusa e conta aqui como conforme, para que só a falta do parentesco seja acusada.
     /// </summary>
     private static List<FieldError> ConferirCandidatoComoMembro(int minimo, IReadOnlyList<FatoColetadoInput> subitens, ItensLidos lidos) =>
-        CandidatoComoMembro.Conferir(minimo, [.. subitens.Select((subitem, indice) => lidos.Regras[indice] is { } regras
-            ? (subitem.FatoCodigo, subitem.Precondicao is { Count: > 0 }, regras.Obrigatoriedade, regras.Restricoes)
+        CandidatoComoMembro.Conferir(minimo, [.. subitens.Select((subitem, indice) => lidos.Configuracoes[indice] is { } configuracao
+            ? (subitem.FatoCodigo, subitem.Precondicao is { Count: > 0 }, configuracao.Obrigatoriedade, configuracao.Restricoes)
             : (subitem.FatoCodigo, false, Obrigatoriedade.Sempre, (IReadOnlyList<RestricaoValor>)[]))]);
 
     /// <summary>
@@ -152,13 +152,13 @@ internal static class EscritaDosItens
             (List<FatoColetado> campos, List<FieldError> dosCampos) =
                 Resolver(lidos.Campos[indice] with { Erros = [] }, contexto, $"{caminho}.subitens", campoDeGrupo: true);
             erros.AddRange(dosCampos);
-            if (lidos.Regras[indice] is not { } regras)
+            if (lidos.Configuracoes[indice] is not { } configuracao)
             {
                 continue;
             }
 
             int recusasAntes = erros.Count;
-            erros.AddRange(ConferenciaDoItemNoCatalogo.DoGrupo(regras.Exibicao, regras.Obrigatoriedade, contexto)
+            erros.AddRange(ConferenciaDoItemNoCatalogo.DoGrupo(configuracao.Exibicao, configuracao.Obrigatoriedade, contexto)
                 .Select(erro => erro with { Field = string.IsNullOrEmpty(erro.Field) ? caminho : $"{caminho}.{erro.Field}" }));
 
             if (erros.Count > recusasAntes || !lidos.FormaValida[indice] || dosCampos.Count > 0 || lidos.Campos[indice].Erros.Count > 0)
@@ -170,7 +170,7 @@ internal static class EscritaDosItens
             // fábrica as repete e devolve o grupo.
             GrupoColetadoInput input = lidos.Entradas[indice];
             grupos.Add(GrupoColetado.Criar(
-                input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, regras.Exibicao, regras.Obrigatoriedade, campos,
+                input.Codigo, input.Ordem, input.EtapaCodigo, input.Rotulo, input.Minimo, input.Maximo, configuracao.Exibicao, configuracao.Obrigatoriedade, campos,
                 incluiCandidato: input.IncluiCandidato).Value!);
         }
 
@@ -190,13 +190,13 @@ internal static class EscritaDosItens
         List<FatoColetado> fatos = [];
         for (int indice = 0; indice < lidos.Entradas.Count; indice++)
         {
-            if (lidos.Regras[indice] is not { } regrasDoItem)
+            if (lidos.Configuracoes[indice] is not { } configuracaoDoItem)
             {
                 continue;
             }
 
             string campo = $"{caminho}[{indice}]";
-            Result<FatoColetado> fato = ResolverFato(lidos.Entradas[indice], regrasDoItem, contexto, campoDeGrupo);
+            Result<FatoColetado> fato = ResolverFato(lidos.Entradas[indice], configuracaoDoItem, contexto, campoDeGrupo);
             if (fato.IsSuccess)
             {
                 fatos.Add(fato.Value!);
@@ -258,7 +258,7 @@ internal static class EscritaDosItens
         return restricoes;
     }
 
-    private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, RegrasDoItem regras, ContextoDoCatalogo contexto, bool campoDeGrupo)
+    private static Result<FatoColetado> ResolverFato(FatoColetadoInput input, ConfiguracaoDoItem configuracao, ContextoDoCatalogo contexto, bool campoDeGrupo)
     {
         // O item coleta fato declarado do próprio candidato; o campo de grupo, fato declarado de
         // membro. Derivados e calculados não se respondem.
@@ -286,17 +286,17 @@ internal static class EscritaDosItens
         erros.AddRange(ConferenciaDoItemNoCatalogo.Semantica(
             view, tipoRenderizacao, precondicao.IsSuccess ? precondicao.Value?.Predicado : null,
             (input.Precondicao ?? []).SelectMany(static c => c).Where(static c => c is not null).Select(static c => c.Fato),
-            regras.Obrigatoriedade, regras.Restricoes, regras.Impedimento, contexto));
+            configuracao.Obrigatoriedade, configuracao.Restricoes, configuracao.Impedimento, contexto));
         bool precondicaoRecusada = erros.Any(static e => e.Field == "precondicao");
 
         // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
         // saem junto das semânticas, no mesmo lote.
         TextosDoItem textos = contexto.TextosDoItem(view);
         Result<FatoColetado> fato = FatoColetado.Criar(
-            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, regras.Obrigatoriedade,
+            input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, configuracao.Obrigatoriedade,
             precondicaoRecusada ? null : precondicao.Value?.Condicoes,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
-            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: regras.Restricoes, impedimento: regras.Impedimento,
+            ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: configuracao.Restricoes, impedimento: configuracao.Impedimento,
             classificacaoProtecao: view.ClassificacaoProtecao, hipoteseLegal: textos.HipoteseLegal, finalidadeTratamento: textos.FinalidadeTratamento,
             descricao: textos.Descricao, componenteExibicao: textos.ComponenteExibicao);
         return erros.Count == 0

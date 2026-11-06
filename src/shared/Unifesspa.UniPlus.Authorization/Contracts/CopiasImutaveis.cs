@@ -9,7 +9,7 @@ using System.Collections.Frozen;
 /// pela referência de origem. Estes ajudantes materializam uma cópia imutável,
 /// tratando <c>null</c> como coleção vazia.
 /// </summary>
-internal static class ColecoesSomenteLeitura
+internal static class CopiasImutaveis
 {
     /// <summary>Cópia somente-leitura e imutável de uma sequência, preservando a ordem.</summary>
     public static IReadOnlyList<T> Lista<T>(IEnumerable<T>? itens)

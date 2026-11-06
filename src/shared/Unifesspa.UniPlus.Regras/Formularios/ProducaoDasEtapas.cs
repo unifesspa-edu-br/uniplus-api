@@ -10,13 +10,13 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class ProducaoDasEtapas
 {
-    private readonly IReadOnlyDictionary<string, RegrasDerivacaoFato> _derivacoes;
+    private readonly IReadOnlyDictionary<string, DerivacaoDoFato> _derivacoes;
     private readonly IReadOnlyDictionary<string, DefinicaoAgregado> _agregados;
 
     private ProducaoDasEtapas(
         IReadOnlySet<string> grupos,
         IReadOnlySet<string> produzidos,
-        IReadOnlyDictionary<string, RegrasDerivacaoFato> derivacoes,
+        IReadOnlyDictionary<string, DerivacaoDoFato> derivacoes,
         IReadOnlyDictionary<string, DefinicaoAgregado> agregados)
     {
         Grupos = grupos;

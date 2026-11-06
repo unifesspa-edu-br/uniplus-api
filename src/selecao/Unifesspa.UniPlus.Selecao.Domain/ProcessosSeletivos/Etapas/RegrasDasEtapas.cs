@@ -47,7 +47,7 @@ internal static class RegrasDasEtapas
     /// tipo de ato exige o definitivo do mesmo tipo na mesma etapa, pelo mesmo pareamento que as
     /// fases usam (<see cref="CicloRecursal"/>). Sem I/O e sem navegação.
     /// </remarks>
-    internal static List<FieldError> ViolacoesDoFechamentoDoCicloDasEtapas(IReadOnlyList<EtapaProcesso> etapas)
+    internal static List<FieldError> ConferirFechamentoDoCicloDasEtapas(IReadOnlyList<EtapaProcesso> etapas)
     {
         List<FieldError> violacoes = [];
 
@@ -81,7 +81,7 @@ internal static class RegrasDasEtapas
         // ela ainda é nula aqui.
         DomainError? recusa =
             OrdemDuplicada(etapas)
-            ?? ValidarEtapaDeNotaDoEnem(etapas, estado.Classificacao)
+            ?? ConferirEtapaDeNotaDoEnem(etapas, estado.Classificacao)
             ?? NenhumaEtapaComponeNota(etapas)
             ?? EtapaCitadaPeloDesempate(estado, novosIds)
             ?? EtapaCitadaPelaClassificacao(estado, etapas, novosIds)
@@ -94,7 +94,7 @@ internal static class RegrasDasEtapas
             return Result.Failure(recusa);
         }
 
-        List<FieldError> violacoesDoCiclo = ViolacoesDoFechamentoDoCicloDasEtapas(etapas);
+        List<FieldError> violacoesDoCiclo = ConferirFechamentoDoCicloDasEtapas(etapas);
         return violacoesDoCiclo.Count > 0 ? Result.ValidationFailure(violacoesDoCiclo) : Result.Success();
     }
 
@@ -230,7 +230,7 @@ internal static class RegrasDasEtapas
     /// <see langword="null"/> enquanto a classificação não foi gravada — aí a coerência
     /// com ela ainda não é conferível, e fica para quando for.
     /// </param>
-    internal static DomainError? ValidarEtapaDeNotaDoEnem(
+    internal static DomainError? ConferirEtapaDeNotaDoEnem(
         IEnumerable<EtapaProcesso> etapas,
         ConfiguracaoClassificacao? classificacao)
     {

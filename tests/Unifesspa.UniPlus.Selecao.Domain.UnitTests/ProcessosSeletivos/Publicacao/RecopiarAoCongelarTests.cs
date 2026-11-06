@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class PrepararCongelamentoTests
+public sealed class RecopiarAoCongelarTests
 {
     [Fact(DisplayName = "A recusa dos itens deixa intactas as unidades das fases e a proteção das exigências")]
     public void CatalogoIncoerente_RecusaSemRefazerUnidadesNemProtecao()
@@ -24,7 +24,7 @@ public sealed class PrepararCongelamentoTests
         FatoColetado item = processo.FatosColetados.First(static f => f.Formato is not null);
         UnidadeResponsavelSnapshot renomeada = new(UnidadesDeTeste.Ceps.OrigemId, "NOVA", "Unidade renomeada");
 
-        Result preparado = processo.PrepararCongelamento(new CopiasDoCongelamento(
+        Result recopiado = processo.RecopiarAoCongelar(new CopiasDoCongelamento(
             new Dictionary<string, CopiaDoItemNoCatalogo>
             {
                 [item.FatoCodigo] = new(OrigemValoresColeta.Catalogo, null, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento, item.Descricao, null),
@@ -36,7 +36,7 @@ public sealed class PrepararCongelamentoTests
                 new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) },
                 new HashSet<string>())));
 
-        preparado.IsFailure.Should().BeTrue();
+        recopiado.IsFailure.Should().BeTrue();
         processo.CronogramaFases.Single().UnidadeResponsavelSigla.Should().Be(UnidadesDeTeste.Ceps.Sigla);
         exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
     }

@@ -24,7 +24,7 @@ public sealed partial class RaizDoAgregadoTests
         ["SombraParaVerificacao"] = "cópia da identidade sem configuração, sem regra",
         ["FormularioDe"] = "consulta que só lê a vista da configuração, sem regra",
         ["DerivacoesEfetivas"] = "consulta que só lê a vista da configuração, sem regra",
-        ["PrepararCongelamento"] = "coordena as três recópias do congelamento, cada uma delegada à sua política; não há regra na raiz",
+        ["RecopiarAoCongelar"] = "coordena as três recópias do congelamento, cada uma delegada à sua política; não há regra na raiz",
         ["MutacaoBloqueada"] = "a guarda de mutação: comportamento do status e da sessão da própria raiz, sem regra de configuração",
         ["AlterarMotivoRetificacao"] = "altera a própria sessão (RascunhoRetificacao) depois da guarda da sessão; não há regra de configuração",
     };

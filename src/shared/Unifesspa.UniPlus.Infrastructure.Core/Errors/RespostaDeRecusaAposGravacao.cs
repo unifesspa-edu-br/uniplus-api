@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 /// pelo tipo e armazena a resposta, em vez de liberar a chave como faz com a recusa que não
 /// executou nada.
 /// </summary>
-internal sealed class RecusaAposGravacaoResult : ObjectResult
+internal sealed class RespostaDeRecusaAposGravacao : ObjectResult
 {
-    public RecusaAposGravacaoResult(ProblemDetails problem)
+    public RespostaDeRecusaAposGravacao(ProblemDetails problem)
         : base(problem)
     {
     }

@@ -1,13 +1,13 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Services;
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Publicacao;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 /// <summary>
 /// Vetores normativos e de borda da regra <see cref="RegrasDeNomeAbreviado.Vigente"/>
-/// (ADR-0082, issue #563) — fechados em vetores porque a ADR só dá um exemplo, e o
+/// (ADR-0082) — fechados em vetores porque a ADR só dá um exemplo, e o
 /// identificador congelado nunca pode ter seu significado reinterpretado.
 /// </summary>
 public sealed class RegrasDeNomeAbreviadoTests
@@ -23,6 +23,8 @@ public sealed class RegrasDeNomeAbreviadoTests
     [InlineData("Da Silva", "D. Silva")]
     [InlineData("Maria Silva de", "M. Silva")]
     [InlineData("Maria de", "M.")]
+    [InlineData("de da", "D. da")]
+    [InlineData("Maria\u00A0Lima\u3000Almeida", "M. L. Almeida")]
     public void Abreviar_AplicaOsVetoresNormativos(string nome, string esperado)
     {
         Result<string> resultado = RegrasDeNomeAbreviado.Abreviar(RegrasDeNomeAbreviado.Vigente, nome);

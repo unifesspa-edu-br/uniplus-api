@@ -205,7 +205,7 @@ public sealed class AvaliacaoDaInscricaoTests
         string[] perguntas = [.. rendaSoParaBaixaRenda ? [BaixaRenda, .. Perguntas] : Perguntas, .. municipioDoBonus ? new[] { PedeOFator, MunicipioDoBonus } : municipioNoGrupo ? new[] { PedeOFator } : []];
         PredicadoDnf soSePedeOFator = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(1, CondicaoDnf.Criar(PedeOFator, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
-        RegrasDerivacaoFato egresso = RegrasDerivacaoFato.CriarBooleana(
+        DerivacaoDoFato egresso = DerivacaoDoFato.CriarBooleana(
             OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!;
         FatoColetado[] campos = [.. perguntas.Select(static (f, ordem) => FatoColetado.Criar(
             f, ordem, $"Rótulo de {f}", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, "SENSIVEL", ProtecaoDoFatoDeTeste.HipoteseLegal, ProtecaoDoFatoDeTeste.Finalidade, ProtecaoDoFatoDeTeste.Descricao,
@@ -214,9 +214,9 @@ public sealed class AvaliacaoDaInscricaoTests
         ModalidadeSelecionada[] ofertadas = [.. Ofertadas()];
         // Com a modalidade derivada, a oferta tem cota da lei e as derivações efetivas já trazem o
         // egresso pela regra do sistema.
-        List<RegrasDerivacaoFato> derivacoes = derivaModalidade
+        List<DerivacaoDoFato> derivacoes = derivaModalidade
             ? [.. DerivacoesDaOferta.Efetivas([], ofertadas).Select(static d =>
-                d.ParaRegrasDerivacao([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!)]
+                d.ParaDerivacaoDoFato([.. d.Regras.Select(static r => r.Contribui).OfType<string>()]).Value!)]
             : [egresso];
 
         DefinicaoFormulario definicao = new(

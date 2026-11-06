@@ -326,7 +326,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregadaConfig.Regras.Single(r => r.Contribui == "AC_PCD").Condicoes.Should().ContainSingle(c => c.Fato == "CONCORRER_PCD");
 
         // Round-trip completo: a reconstrução do value object que o motor consome bate com o cadastro.
-        RegrasDerivacaoFato vo = recarregadaConfig.ParaRegrasDerivacao(["AC", "AC_PCD"]).Value!;
+        DerivacaoDoFato vo = recarregadaConfig.ParaDerivacaoDoFato(["AC", "AC_PCD"]).Value!;
         vo.Regras.Should().HaveCount(2);
         vo.DependenciasDeclaradas.Should().BeEquivalentTo(["CONCORRER_PCD"]);
     }

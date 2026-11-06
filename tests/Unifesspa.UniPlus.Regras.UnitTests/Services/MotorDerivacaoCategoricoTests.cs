@@ -17,7 +17,7 @@ public sealed class MotorDerivacaoCategoricoTests
 {
     private static readonly string[] Dominio = ["AMPLA", "RESERVA", "RESERVA_COM_RENDA"];
 
-    private static readonly RegrasDerivacaoFato Regras = RegrasDerivacaoFato.Criar(
+    private static readonly DerivacaoDoFato Regras = DerivacaoDoFato.Criar(
         "VAGA",
         [Ancora("AMPLA"), Regra("RESERVA", ("OPTOU", true)), Regra("RESERVA_COM_RENDA", ("OPTOU", true), ("RENDA", true))],
         ["OPTOU", "RENDA"],
@@ -52,10 +52,10 @@ public sealed class MotorDerivacaoCategoricoTests
     [Fact(DisplayName = "Código contribuído fora do domínio é recusado no cadastro")]
     public void ContribuiForaDoDominio_Recusado()
     {
-        Result<RegrasDerivacaoFato> resultado = RegrasDerivacaoFato.Criar("VAGA", [Ancora("OUTRA")], [], Dominio);
+        Result<DerivacaoDoFato> resultado = DerivacaoDoFato.Criar("VAGA", [Ancora("OUTRA")], [], Dominio);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
+        resultado.Error!.Code.Should().Be(DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio);
     }
 
     [Theory(DisplayName = "As dependências declaradas são exatamente os fatos citados")]
@@ -63,20 +63,20 @@ public sealed class MotorDerivacaoCategoricoTests
     [InlineData("OPTOU")]
     public void DependenciasIncoerentes_Recusadas(params string[] declaradas)
     {
-        Result<RegrasDerivacaoFato> resultado = RegrasDerivacaoFato.Criar(
+        Result<DerivacaoDoFato> resultado = DerivacaoDoFato.Criar(
             "VAGA", [Regra("RESERVA", ("OPTOU", true)), Regra("RESERVA_COM_RENDA", ("CONCORRER", true))], declaradas, Dominio);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.DependenciasIncoerentes);
+        resultado.Error!.Code.Should().Be(DerivacaoDoFatoErrorCodes.DependenciasIncoerentes);
     }
 
     [Fact(DisplayName = "Derivação que cita o próprio fato é recusada")]
     public void Autorreferente_Recusada()
     {
-        Result<RegrasDerivacaoFato> resultado = RegrasDerivacaoFato.Criar("VAGA", [Regra("AMPLA", ("VAGA", true))], ["VAGA"], Dominio);
+        Result<DerivacaoDoFato> resultado = DerivacaoDoFato.Criar("VAGA", [Regra("AMPLA", ("VAGA", true))], ["VAGA"], Dominio);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.DerivacaoAutorreferente);
+        resultado.Error!.Code.Should().Be(DerivacaoDoFatoErrorCodes.DerivacaoAutorreferente);
     }
 
     private static string[] Derivar(params (string Fato, FatoResolvido Estado)[] fatos)

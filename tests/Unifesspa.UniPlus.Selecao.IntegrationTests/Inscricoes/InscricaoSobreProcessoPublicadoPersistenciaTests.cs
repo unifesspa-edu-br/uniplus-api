@@ -1068,7 +1068,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             modalidades: [.. RegrasDaLei.Select(static r => ModalidadeDaLei(r.Key, r.Value))]);
         processo.DefinirRegrasDerivacao(
         [
-            Configurada(RegrasDerivacaoFato.CriarBooleana(
+            Configurada(DerivacaoDoFato.CriarBooleana(
                 OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!),
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
@@ -1129,7 +1129,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null, regra, null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 2).Value!;
 
     /// <summary>A derivação na forma que o processo grava: cada cláusula do predicado vira um grupo de condições.</summary>
-    private static ConfiguracaoDerivacaoFato Configurada(RegrasDerivacaoFato derivacao) =>
+    private static ConfiguracaoDerivacaoFato Configurada(DerivacaoDoFato derivacao) =>
         ConfiguracaoDerivacaoFato.Criar(derivacao.CodigoFato,
         [
             .. derivacao.Regras.Select((regra, ordem) => RegraDerivacaoConfigurada.Criar(

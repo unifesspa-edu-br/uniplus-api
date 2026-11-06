@@ -17,7 +17,7 @@ internal static class ConsequenciaDeIndeferimento
     /// <see cref="DocumentoExigido"/> e a ação da vaga, lida de
     /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/>, sem campo duplicado em
     /// <see cref="DocumentoExigido"/>. Avaliada depois de
-    /// <see cref="ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais"/> e sem cache: uma mudança de
+    /// <see cref="PendenciasDasExigencias.PendenciaDasExigenciasDocumentais"/> e sem cache: uma mudança de
     /// gatilho ou de distribuição de vagas entre versões é sempre reavaliada.
     /// </summary>
     /// <remarks>

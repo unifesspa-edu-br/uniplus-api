@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Services;
+namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 using System.Globalization;
 using System.Text;
@@ -6,7 +6,7 @@ using System.Text;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Algoritmos de abreviação de nome para a divulgação pública (ADR-0082, issue #563), por
+/// Algoritmos de abreviação de nome para a divulgação pública (ADR-0082), por
 /// <b>identificador congelado</b> — nunca a regra vigente resolvida por fora. Um edital
 /// publicado com <c>nome_abreviado</c> guarda o identificador da regra que abreviou o nome
 /// naquele instante; mudar o algoritmo depois não pode reinterpretar um certame já publicado.
@@ -49,65 +49,47 @@ public static class RegrasDeNomeAbreviado
                 $"O identificador de regra de abreviação '{identificador}' não é conhecido."));
         }
 
-        // Espaço em branco Unicode, colapsando repetições — a sobrecarga sem separador
-        // explícito do runtime já trata qualquer caractere que char.IsWhiteSpace reconheça.
+        // Sem separador, o Split quebra em qualquer espaço Unicode e colapsa as repetições.
         string[] tokens = nome.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Length == 0)
-        {
-            return Result<string>.Failure(new DomainError(
-                "RegrasDeNomeAbreviado.NomeEmBranco",
-                "O nome a abreviar não pode ser vazio ou só espaços."));
-        }
 
-        // Palavra única: nunca o nome inteiro — abriria a mesma exposição que "nome" (sem a
-        // justificativa que ele exige). É o caso do nome social de uma só palavra.
+        return tokens.Length == 0
+            ? Result<string>.Failure(new DomainError(
+                "RegrasDeNomeAbreviado.NomeEmBranco",
+                "O nome a abreviar não pode ser vazio ou só espaços."))
+            : Result<string>.Success(AbreviarTokens(tokens));
+    }
+
+    // Palavra única e sobrenome sem nome antes viram só a inicial: o nome por extenso abriria a
+    // mesma exposição que o nome completo.
+    private static string AbreviarTokens(string[] tokens)
+    {
         if (tokens.Length == 1)
         {
-            return Result<string>.Success($"{PrimeiroElementoDeTexto(tokens[0])}.");
+            return Inicial(tokens[0]);
         }
 
-        // O sobrenome é o ÚLTIMO token que não é partícula — nunca tokens[^1] direto: "Maria
-        // Silva de" tem partícula na cauda, e o sobrenome é "Silva", não "de".
+        // O sobrenome é o último token que não é partícula, e não tokens[^1]: em "Maria Silva de"
+        // o sobrenome é "Silva". As partículas depois dele são descartadas.
         int indiceSobrenome = UltimoIndiceNaoParticula(tokens);
-
         if (indiceSobrenome < 0)
         {
-            // Entrada só de partículas: nenhum token sobra como sobrenome "de verdade". Mantém
-            // o mesmo tratamento de quando havia um sobrenome não-partícula — o último token
-            // por extenso, os anteriores como inicial — para não devolver string vazia.
-            string sobrenomeDegenerado = tokens[^1];
-            string iniciaisDegeneradas = string.Join(
-                " ", tokens[..^1].Select(static t => $"{PrimeiroElementoDeTexto(t)}."));
-            return Result<string>.Success($"{iniciaisDegeneradas} {sobrenomeDegenerado}");
+            // Só partículas: o último token fica por extenso para não devolver texto vazio.
+            return $"{Iniciais(tokens[..^1])} {tokens[^1]}";
         }
 
-        // Tokens depois do sobrenome são partícula final (por construção de
-        // UltimoIndiceNaoParticula) e são simplesmente ignorados — é o que descarta o "de" de
-        // "Maria Silva de" em vez de congelá-lo como se fosse o sobrenome.
         string sobrenome = tokens[indiceSobrenome];
-        string[] tokensAntes = tokens[..indiceSobrenome];
-        string[] iniciaisReais = [.. tokensAntes.Where(static t => !EhParticula(t))];
+        string[] antesDoSobrenome = tokens[..indiceSobrenome];
+        string[] nomesProprios = [.. antesDoSobrenome.Where(static t => !EhParticula(t))];
 
-        if (iniciaisReais.Length > 0)
-        {
-            string iniciais = string.Join(" ", iniciaisReais.Select(static t => $"{PrimeiroElementoDeTexto(t)}."));
-            return Result<string>.Success($"{iniciais} {sobrenome}");
-        }
+        // Em "Da Silva" só há partícula antes do sobrenome, e ela vira a inicial.
+        string[] tokensDasIniciais = nomesProprios.Length > 0 ? nomesProprios : antesDoSobrenome;
 
-        if (tokensAntes.Length > 0)
-        {
-            // Todos os tokens antes do sobrenome eram partícula ("Da Silva"): usa-os como
-            // vieram em vez de descartá-los, senão não sobraria nenhuma inicial.
-            string iniciaisDeParticulas = string.Join(
-                " ", tokensAntes.Select(static t => $"{PrimeiroElementoDeTexto(t)}."));
-            return Result<string>.Success($"{iniciaisDeParticulas} {sobrenome}");
-        }
-
-        // Não há token nenhum antes do sobrenome ("Maria de", onde "de" é descartado e "Maria"
-        // é o sobrenome): ele é o único conteúdo do nome, e vira só a inicial — nunca por
-        // extenso, mesmo raciocínio da palavra única.
-        return Result<string>.Success($"{PrimeiroElementoDeTexto(sobrenome)}.");
+        return tokensDasIniciais.Length > 0 ? $"{Iniciais(tokensDasIniciais)} {sobrenome}" : Inicial(sobrenome);
     }
+
+    private static string Inicial(string token) => $"{PrimeiroElementoDeTexto(token)}.";
+
+    private static string Iniciais(IEnumerable<string> tokens) => string.Join(" ", tokens.Select(Inicial));
 
     /// <summary>O índice do último token que NÃO é partícula, ou -1 se todos forem.</summary>
     private static int UltimoIndiceNaoParticula(string[] tokens)

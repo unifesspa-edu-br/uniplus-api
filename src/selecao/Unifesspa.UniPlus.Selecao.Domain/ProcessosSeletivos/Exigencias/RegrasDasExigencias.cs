@@ -25,7 +25,7 @@ public static class RegrasDasExigencias
         // monta o mesmo grafo sem passar por aqui.
         DomainError? recusa =
             ValidadorVinculoDaExigencia.PrimeiroVinculoInvalido(folhas, estado.CronogramaFases, estado.Etapas)
-            ?? RecusaDaRepeticaoPorGrupo(estado, todosOsNos)
+            ?? ConferirRepeticaoPorGrupo(estado, todosOsNos)
             ?? folhas.Select(folha => RecusaDaIdadeMaximaDeEmissao(estado, folha)).FirstOrDefault(static r => r is not null)
             ?? RecusaDaPendenciaDeReenvio(estado, todosOsNos);
         return recusa is null
@@ -94,7 +94,7 @@ public static class RegrasDasExigencias
                 : no.Consequencia;
             if (consequenciaDoNo == "PENDENCIA_REENVIO"
                 && no.FaseComum() is { } faseId
-                && ValidarConsequenciaPendenciaReenvio(estado, faseId) is { } erro)
+                && ConferirConsequenciaPendenciaReenvio(estado, faseId) is { } erro)
             {
                 return erro;
             }
@@ -108,7 +108,7 @@ public static class RegrasDasExigencias
     /// para folha e grupo, forward (aqui, na escrita da exigência) e reverso (em
     /// <see cref="ProcessoSeletivo.DefinirCronogramaFases"/>, via <see cref="ExisteConsequenciaPendenciaReenvioNaFase"/>).
     /// </summary>
-    internal static DomainError? ValidarConsequenciaPendenciaReenvio(EstadoDaConfiguracao estado, Guid faseId)
+    internal static DomainError? ConferirConsequenciaPendenciaReenvio(EstadoDaConfiguracao estado, Guid faseId)
     {
         FaseCronograma? fase = estado.CronogramaFases.FirstOrDefault(f => f.Id == faseId);
         if (fase is null)
@@ -136,7 +136,7 @@ public static class RegrasDasExigencias
     /// de fase e de formulário dos gatilhos, inclusive a do grupo coletado só na isenção. A fase que o
     /// catálogo dá a cada campo é conferida com os gatilhos, por quem lê o catálogo.
     /// </summary>
-    internal static DomainError? RecusaDaRepeticaoPorGrupo(EstadoDaConfiguracao estado, IReadOnlyCollection<NoExigencia> nos)
+    internal static DomainError? ConferirRepeticaoPorGrupo(EstadoDaConfiguracao estado, IReadOnlyCollection<NoExigencia> nos)
     {
         if (Services.ValidadorRepeticaoPorGrupo.PrimeiraSemGrupo(nos, estado.GruposColetados) is { } semGrupo)
         {
@@ -163,9 +163,6 @@ public static class RegrasDasExigencias
 
         return null;
     }
-
-    /// <summary>A repetição por entidade de exigência viva que deixou de valer: o grupo saiu ou mudou de formulário.</summary>
-    internal static DomainError? PendenciaDaRepeticaoPorGrupo(EstadoDaConfiguracao estado) => RecusaDaRepeticaoPorGrupo(estado, estado.NosExigencia);
 
     /// <summary>
     /// Os campos do grupo pelo qual a folha do documento se repete, subindo pelos ancestrais; vazio
@@ -194,25 +191,5 @@ public static class RegrasDasExigencias
                 estado.GruposColetados.Where(g => string.Equals(g.Codigo, codigoDoGrupo, StringComparison.Ordinal))
                     .SelectMany(static g => g.Subitens).Select(static s => s.FatoCodigo),
                 StringComparer.Ordinal);
-    }
-}
-
-/// <summary>As duas coleções que a troca da árvore de exigências reescreve: as folhas e os nós.</summary>
-internal sealed record PlanoDasExigencias(
-    IReadOnlyList<NoExigencia> Raizes,
-    IReadOnlyList<NoExigencia> TodosOsNos,
-    IReadOnlyList<DocumentoExigido> Folhas)
-{
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        PartesDoProcesso.Substituir(colecoes.DocumentosExigidos, Folhas, processoId);
-
-        colecoes.NosExigencia.Clear();
-        foreach (NoExigencia raiz in Raizes)
-        {
-            ((IParteDoProcesso)raiz).VincularProcesso(processoId);
-        }
-
-        colecoes.NosExigencia.AddRange(TodosOsNos);
     }
 }

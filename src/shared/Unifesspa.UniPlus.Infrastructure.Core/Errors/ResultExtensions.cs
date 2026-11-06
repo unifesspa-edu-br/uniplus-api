@@ -93,7 +93,7 @@ public static class ResultExtensions
         }
 
         return mapper.TryGetMapping(errors[0].Error.Code, out DomainErrorMapping? mapping) && mapping.RecusaAposGravacao
-            ? new RecusaAposGravacaoResult(problem) { StatusCode = status }
+            ? new RespostaDeRecusaAposGravacao(problem) { StatusCode = status }
             : new ObjectResult(problem) { StatusCode = status };
     }
 }

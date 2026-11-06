@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>
 /// <b>Perfis de governança</b> (<see cref="Governanca"/> preenchida) são de sistema: nascem da
 /// carga inicial, são os únicos que podem reunir permissões reservadas à governança e não se
-/// editam, ativam nem desativam por esta API.
+/// editam, reativam nem desativam por esta API.
 /// </para>
 /// </remarks>
 public sealed class Perfil : EntityBase

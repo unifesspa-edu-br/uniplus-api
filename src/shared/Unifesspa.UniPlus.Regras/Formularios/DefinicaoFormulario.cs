@@ -21,7 +21,7 @@ public sealed record DefinicaoFormulario
     public DefinicaoFormulario(
         IReadOnlyList<DefinicaoEtapa> etapas,
         IReadOnlyList<DefinicaoTermo> termos,
-        IReadOnlyList<RegrasDerivacaoFato> derivacoes,
+        IReadOnlyList<DerivacaoDoFato> derivacoes,
         IReadOnlyList<DefinicaoAgregado>? agregados = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
@@ -55,7 +55,7 @@ public sealed record DefinicaoFormulario
 
     public IReadOnlyList<DefinicaoTermo> Termos { get; }
 
-    public IReadOnlyList<RegrasDerivacaoFato> Derivacoes { get; }
+    public IReadOnlyList<DerivacaoDoFato> Derivacoes { get; }
 
     /// <summary>Os fatos agregados sobre os grupos repetíveis, citáveis fora do grupo (ADR-0138).</summary>
     public IReadOnlyList<DefinicaoAgregado> Agregados { get; }

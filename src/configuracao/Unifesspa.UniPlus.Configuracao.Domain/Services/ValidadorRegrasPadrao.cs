@@ -142,9 +142,9 @@ public static class ValidadorRegrasPadrao
         for (int i = 0; i < regras.Count; i++)
         {
             string[] citados = [.. regras[i].FatosCitados.Distinct(StringComparer.Ordinal)];
-            Result<RegrasDerivacaoFato> estrutura = derivado.Dominio == DominioFato.Booleano
-                ? RegrasDerivacaoFato.CriarBooleana(derivado.Codigo, [regras[i]], citados)
-                : RegrasDerivacaoFato.Criar(derivado.Codigo, [regras[i]], citados, dominio);
+            Result<DerivacaoDoFato> estrutura = derivado.Dominio == DominioFato.Booleano
+                ? DerivacaoDoFato.CriarBooleana(derivado.Codigo, [regras[i]], citados)
+                : DerivacaoDoFato.Criar(derivado.Codigo, [regras[i]], citados, dominio);
             if (estrutura.IsFailure)
             {
                 recusar($"regras[{i}]", estrutura.Error!.Code, estrutura.Error.Message);

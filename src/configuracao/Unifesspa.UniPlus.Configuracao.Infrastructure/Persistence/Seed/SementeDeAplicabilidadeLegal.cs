@@ -31,7 +31,7 @@ using Atomo = (string Fato, Unifesspa.UniPlus.Regras.Enums.Operador Operador, ob
 /// por elas, sem condição de escola, renda ou cor.
 /// </para>
 /// </remarks>
-internal static class RegrasDeAplicabilidadeLegais
+internal static class SementeDeAplicabilidadeLegal
 {
     private static readonly Atomo OptouPelasCotas = (OpcaoPelasCotasDaLei.Fato, Operador.Igual, true);
     private static readonly Atomo NaoOptouPelasCotas = (OpcaoPelasCotasDaLei.Fato, Operador.Igual, false);

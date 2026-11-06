@@ -23,7 +23,7 @@ public static class DefinicaoDoProcesso
         IReadOnlyCollection<FatoColetado> itens,
         IReadOnlyCollection<GrupoColetado> grupos,
         IReadOnlyCollection<TermoExigidoFormulario> termos,
-        IReadOnlyList<RegrasDerivacaoFato> derivacoes,
+        IReadOnlyList<DerivacaoDoFato> derivacoes,
         IReadOnlyList<DefinicaoAgregado> agregados)
     {
         ArgumentNullException.ThrowIfNull(formularios);

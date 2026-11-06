@@ -100,7 +100,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ProcessoSeletivo processo = Processo();
         Aplicar(processo, null);
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente);
         ItemVermelho(processo).Should().BeTrue();
     }
 
@@ -111,7 +111,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         Aplicar(processo, null);
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.OrigemCandidatos))!.SetValue(processo, OrigemCandidatos.ImportacaoExterna);
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo).Should().BeNull();
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo).Should().BeNull();
         ItemVermelho(processo).Should().BeFalse();
     }
 
@@ -123,7 +123,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ProcessoSeletivo processo = Processo();
         Aplicar(processo, fato);
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeForaDoProcesso);
     }
 
     [Fact(DisplayName = "O campo de membro de grupo não decide o acréscimo, que é decidido por um fato do candidato")]
@@ -132,7 +132,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ProcessoSeletivo processo = Processo();
         Aplicar(processo, "MEMBRO_PEDE_O_ACRESCIMO");
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeDeMembroDeGrupo);
     }
 
     [Fact(DisplayName = "O campo da inscrição citado como fato de elegibilidade é booleano")]
@@ -141,7 +141,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         ProcessoSeletivo processo = Processo();
         Aplicar(processo, "RENDA_FAMILIAR");
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano);
     }
 
     [Fact(DisplayName = "O derivado citado como fato de elegibilidade é booleano")]
@@ -151,7 +151,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         Derivar(processo, "ELEGIVEL_AO_ACRESCIMO", "PEDE_O_ACRESCIMO", contribui: "SIM");
         Aplicar(processo, "ELEGIVEL_AO_ACRESCIMO");
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeNaoBooleano);
     }
 
     [Fact(DisplayName = "O derivado de fato da habilitação só é conhecido depois da inscrição")]
@@ -161,7 +161,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         Derivar(processo, "ELEGIVEL_AO_ACRESCIMO", "COMPROVANTE_RENDA");
         Aplicar(processo, "ELEGIVEL_AO_ACRESCIMO");
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
     }
 
     [Fact(DisplayName = "O ponto de resolução que o catálogo dá ao fato conta: fato da inscrição que o catálogo resolve na habilitação é conhecido depois")]
@@ -171,8 +171,8 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         Aplicar(processo, "PEDE_O_ACRESCIMO");
         Dictionary<string, string> catalogo = new(StringComparer.Ordinal) { ["PEDE_O_ACRESCIMO"] = FormularioProcesso.CodigoFaseHabilitacao };
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo).Should().BeNull();
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), catalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo).Should().BeNull();
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), catalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
     }
 
     [Fact(DisplayName = "O derivado de fato que só a isenção coleta não decide o acréscimo, mesmo na fase da inscrição")]
@@ -182,7 +182,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         Derivar(processo, "ELEGIVEL_AO_ACRESCIMO", "BOLSISTA");
         Aplicar(processo, "ELEGIVEL_AO_ACRESCIMO");
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao);
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo)!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao);
     }
 
     [Theory(DisplayName = "Campo booleano da inscrição, ou derivado booleano dele, decide o acréscimo")]
@@ -198,7 +198,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
 
         Aplicar(processo, fato);
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo).Should().BeNull();
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), SemCatalogo, SemCatalogo).Should().BeNull();
         ItemVermelho(processo).Should().BeFalse();
     }
 }

@@ -135,10 +135,10 @@ public sealed class RecorteDaFinalidadeTests
             Booleana("NAO_CITADO", Quando("TIPO_ESCOLA", "PRIVADA")),
         ]);
 
-    private static RegrasDerivacaoFato Booleana(string fato, PredicadoDnf quando)
+    private static DerivacaoDoFato Booleana(string fato, PredicadoDnf quando)
     {
         RegraDerivacao regra = RegraDerivacao.CriarBooleana(quando);
-        return RegrasDerivacaoFato.CriarBooleana(fato, [regra], regra.FatosCitados).Value!;
+        return DerivacaoDoFato.CriarBooleana(fato, [regra], regra.FatosCitados).Value!;
     }
 
     private static PredicadoDnf Quando(string fato, object valor) =>

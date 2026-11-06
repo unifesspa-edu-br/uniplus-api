@@ -77,7 +77,7 @@ public static class ObterFormularioRenderizavelDoModeloQueryHandler
         }
 
         RecorteDaFinalidade recorte = RecorteDaFinalidade.DoFormulario(
-            conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes));
+            conteudo.ParaAvaliacao(VocabularioDoCatalogo.DerivacoesDosFatos(fatos), agregados), VocabularioDoCatalogo.Ofertas(opcoes));
 
         return FormularioRenderizavel.Montar(
             EstruturaFormulario.ParaToken(modelo.Finalidade),

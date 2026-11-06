@@ -2,25 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
 using System.Text.Json;
 
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -228,57 +215,5 @@ public static class RegrasDaColeta
         IReadOnlyList<FieldError> itensForaDasSecoes = EstruturaFormulario.ValidarItens(
             formulario.Estrutura, CitacoesDosFormularios.ParaEstrutura(fatosColetados, grupos), secaoObrigatoria: false);
         return itensForaDasSecoes.Count > 0 ? Result.ValidationFailure(itensForaDasSecoes) : Result.Success();
-    }
-}
-
-/// <summary>O que gravar quando a coleta de uma finalidade é trocada: os itens e os grupos com os campos deles.</summary>
-internal sealed record PlanoDaColeta(
-    FinalidadeFormulario Finalidade,
-    IReadOnlyList<FatoColetado> Fatos,
-    IReadOnlyList<GrupoColetado> Grupos)
-{
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        // Sai tudo o que o formulário coletava, itens e campos dos grupos, e entra o novo.
-        colecoes.Campos.RemoveAll(f => f.Finalidade == Finalidade);
-        foreach (FatoColetado fato in Fatos)
-        {
-            ((IParteDoProcesso)fato).VincularProcesso(processoId);
-            fato.VincularFinalidade(Finalidade);
-            colecoes.Campos.Add(fato);
-        }
-
-        AplicarGrupos(colecoes, processoId);
-    }
-
-    internal void AplicarGrupos(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        colecoes.GruposColetados.RemoveAll(g => g.Finalidade == Finalidade);
-        foreach (GrupoColetado grupo in Grupos)
-        {
-            ((IParteDoProcesso)grupo).VincularProcesso(processoId);
-            grupo.VincularFinalidade(Finalidade);
-            colecoes.GruposColetados.Add(grupo);
-            colecoes.Campos.AddRange(grupo.Subitens);
-        }
-    }
-}
-
-/// <summary>A cópia do catálogo que cada item recebe: só a apresentação, para o fato que uma versão publicada já coletou, ou a cópia inteira.</summary>
-internal sealed record PlanoDaRecopiaDoCatalogo(IReadOnlyList<(FatoColetado Item, CopiaDoItemNoCatalogo Copia, bool SoApresentacao)> Itens)
-{
-    internal void Aplicar()
-    {
-        foreach ((FatoColetado item, CopiaDoItemNoCatalogo copia, bool soApresentacao) in Itens)
-        {
-            if (soApresentacao)
-            {
-                item.RecopiarApresentacaoDoCatalogo(copia);
-            }
-            else
-            {
-                item.RecopiarDoCatalogo(copia);
-            }
-        }
     }
 }

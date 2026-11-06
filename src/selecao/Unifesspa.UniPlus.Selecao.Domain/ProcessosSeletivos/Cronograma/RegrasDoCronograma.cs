@@ -10,68 +10,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O que trocar o cronograma faz além de gravar as fases novas: atualiza as que continuam e poda o
-/// que existia só por causa das que saem. Tudo foi calculado antes de qualquer mutação, e
-/// <see cref="Aplicar"/> não falha.
-/// </summary>
-internal sealed record PlanoDoCronograma(
-    IReadOnlyList<(FaseCronograma Existente, FaseCronograma Nova)> Retidas,
-    IReadOnlyList<FaseCronograma> Resultantes,
-    IReadOnlyList<string> CodigosRemovidos,
-    IReadOnlySet<Guid> IdsRemovidos)
-{
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        foreach ((FaseCronograma existente, FaseCronograma nova) in Retidas)
-        {
-            existente.AtualizarDe(nova, [.. nova.Produtos]);
-        }
-
-        PartesDoProcesso.Substituir(colecoes.CronogramaFases, Resultantes, processoId);
-        PodarDependentes(colecoes);
-    }
-
-    // Sem a poda, a etapa ficava apontando para uma fase que não existe mais e a gravação seguinte era
-    // recusada por EtapaSemFaseNoCronograma: o operador removia uma fase e o passo travava.
-    private void PodarDependentes(ColecoesDoProcesso colecoes)
-    {
-        if (CodigosRemovidos.Count == 0)
-        {
-            return;
-        }
-
-        colecoes.Etapas.RemoveAll(e => e.FaseCodigo is { } codigo
-            && CodigosRemovidos.Contains(codigo, StringComparer.Ordinal));
-
-        // O Id da fase, e não o código, porque é por Id que a exigência a referencia.
-        HashSet<Guid> exigenciasRemovidas = [.. colecoes.DocumentosExigidos
-            .Where(d => IdsRemovidos.Contains(d.ExigidoNaFaseId))
-            .Select(static d => d.Id)];
-        if (exigenciasRemovidas.Count == 0)
-        {
-            return;
-        }
-
-        colecoes.DocumentosExigidos.RemoveAll(d => exigenciasRemovidas.Contains(d.Id));
-
-        // A folha sai com o nó que a carregava; o grupo que ficou sem filho nenhum sai atrás, senão
-        // sobraria um "um destes documentos" sem documento algum.
-        List<NoExigencia> nos = colecoes.NosExigencia;
-        nos.RemoveAll(no => no.DocumentoExigidoId is { } id && exigenciasRemovidas.Contains(id));
-        while (nos.RemoveAll(no => no.Tipo != TipoNo.Folha && !nos.Exists(filho => filho.NoPaiId == no.Id)) > 0)
-        {
-            // Um grupo pode ter ficado vazio porque o filho dele era outro grupo que acabou de sair:
-            // repete até a floresta parar de encolher.
-        }
-    }
-}
-
-/// <summary>
-/// As recusas de trocar o cronograma, na ordem em que orientam, e o plano de reconciliação. As fases
+/// As recusas de trocar o cronograma, na ordem em que orientam, e o plano. As fases
 /// são casadas por <c>FaseCanonicaOrigemId</c>, a identidade estável de uma fase: <c>Ordem</c> é só
 /// um atributo mutável dela, e casar por ela confundiria reordenar com trocar de fase.
 /// </summary>
-internal static class ReconciliacaoDoCronograma
+internal static class RegrasDoCronograma
 {
     internal static Result<PlanoDoCronograma> Planejar(
         EstadoDaConfiguracao estado,
@@ -108,7 +51,7 @@ internal static class ReconciliacaoDoCronograma
 
         // A conclusão do ciclo recursal roda sobre o conjunto candidato, não sobre o agregado
         // corrente, e acumula as violações: duas fases mal declaradas saem na mesma resposta.
-        List<FieldError> violacoesDaConclusao = CicloRecursalDoCronograma.ViolacoesDaConclusaoDoCicloRecursal(fases);
+        List<FieldError> violacoesDaConclusao = CicloRecursalDoCronograma.ConferirConclusaoDoCicloRecursal(fases);
         if (violacoesDaConclusao.Count > 0)
         {
             return Result<PlanoDoCronograma>.ValidationFailure(violacoesDaConclusao);
@@ -121,10 +64,10 @@ internal static class ReconciliacaoDoCronograma
             return Result<PlanoDoCronograma>.Failure(etapaForaDaFase);
         }
 
-        return Result<PlanoDoCronograma>.Success(Reconciliar(fases, antigasPorOrigem, novasPorOrigem));
+        return Result<PlanoDoCronograma>.Success(MontarPlano(fases, antigasPorOrigem, novasPorOrigem));
     }
 
-    internal static void RecopiarUnidades(IEnumerable<FaseCronograma> fases, IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)
+    internal static void AplicarUnidadesVivas(IEnumerable<FaseCronograma> fases, IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)
     {
         ArgumentNullException.ThrowIfNull(vivas);
 
@@ -137,7 +80,7 @@ internal static class ReconciliacaoDoCronograma
         }
     }
 
-    private static PlanoDoCronograma Reconciliar(
+    private static PlanoDoCronograma MontarPlano(
         IReadOnlyList<FaseCronograma> fases,
         Dictionary<Guid, FaseCronograma> antigasPorOrigem,
         Dictionary<Guid, FaseCronograma> novasPorOrigem)

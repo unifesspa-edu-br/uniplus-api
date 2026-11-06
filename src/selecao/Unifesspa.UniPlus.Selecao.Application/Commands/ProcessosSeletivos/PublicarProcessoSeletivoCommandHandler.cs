@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Handler convention-based do <see cref="PublicarProcessoSeletivoCommand"/>
-/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T4 #785, ADR-0005 + ADR-0041): carrega o agregado,
+/// (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0005 + ADR-0041): carrega o agregado,
 /// valida o documento confirmado (T3), canonicaliza a configuração
 /// (ADR-0100) e delega a orquestração de negócio a
 /// <see cref="ProcessoSeletivo.Publicar"/>. Cascading messages — o
@@ -58,7 +58,7 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         // A recópia das cópias do item altera o agregado rastreado antes dos gates seguintes; a
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
-        return PreparoDoCongelamento.SemPersistirEmRecusaAsync(
+        return RecopiaAoCongelar.SemPersistirEmRecusaAsync(
             unitOfWork,
             () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, timeProvider, cancellationToken));
     }
@@ -142,15 +142,15 @@ public static class PublicarProcessoSeletivoCommandHandler
         IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.PorCodigo;
         FatosDeModalidade fatosDeModalidade = catalogo.FatosDeModalidade;
 
-        Result<ProtecaoVigenteDoProcesso> preparo = await PreparoDoCongelamento
-            .PrepararAsync(processo, catalogo, null, null, unidadeResponsavelResolvedor, cancellationToken)
+        Result<ProtecaoVigenteDoProcesso> recopia = await RecopiaAoCongelar
+            .RecopiarAsync(processo, catalogo, null, null, unidadeResponsavelResolvedor, cancellationToken)
             .ConfigureAwait(false);
-        if (preparo.IsFailure)
+        if (recopia.IsFailure)
         {
-            return (Result.ValidationFailure(preparo.Errors), []);
+            return (Result.ValidationFailure(recopia.Errors), []);
         }
 
-        ProtecaoVigenteDoProcesso protecaoDoProcesso = preparo.Value!;
+        ProtecaoVigenteDoProcesso protecaoDoProcesso = recopia.Value!;
         ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
 
         // O gate precede a canonicalização (ADR-0109 D5): um processo não conforme
@@ -163,7 +163,7 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(pendencia), []);
         }
 
-        // Cascata de remanejamento de cotas (UNI-REQ-0056, Story #575) — cross-dimensão,
+        // Cascata de remanejamento de cotas (UNI-REQ-0056) — cross-dimensão,
         // fora do agregador genérico acima (o item "Cascata de remanejamento" nunca
         // entra em PendenciaDeConformidade, só em PendenciaDaCascata). Mesma antecipação
         // e mesmo motivo das demais (ADR-0109 D5).
@@ -173,7 +173,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         }
 
         // Antecipado: a conferência legal abaixo precisa do fuso para derivar o dia civil do
-        // início da inscrição. Falha aqui é defeito de instalação (500), não gate (issue #1350).
+        // início da inscrição. Falha aqui é defeito de instalação (500), não gate.
         Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
         if (fusoResult.IsFailure)
         {
@@ -235,7 +235,7 @@ public static class PublicarProcessoSeletivoCommandHandler
             return (Result.Failure(conformidadeLegal.Error!), []);
         }
 
-        // Terceira dimensão de conformidade (Story #554, PR #903, ADR-0109 D5): documentos
+        // Terceira dimensão de conformidade (ADR-0109 D5): documentos
         // exigidos, coerência da consequência de indeferimento e referência temporal de
         // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
         // quando a política não resolve — sem este guard antes dela, um processo inválido
@@ -246,13 +246,13 @@ public static class PublicarProcessoSeletivoCommandHandler
         }
 
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
-            ConferenciaFinalDosFatos.Conferir(processo, catalogoPorCodigo);
+            ConferenciaDosFatosAoCongelar.Conferir(processo, catalogoPorCodigo);
         if (metadadosFatosResult.IsFailure)
         {
             return (Result.Failure(metadadosFatosResult.Error!), []);
         }
 
-        // Story #1059 (UNI-REQ-0072): os valores que o candidato pode escolher para cada fato de
+        // UNI-REQ-0072: os valores que o candidato pode escolher para cada fato de
         // seleção coletado — do domínio estático do catálogo ou da oferta do próprio processo.
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =
             ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogoPorCodigo);

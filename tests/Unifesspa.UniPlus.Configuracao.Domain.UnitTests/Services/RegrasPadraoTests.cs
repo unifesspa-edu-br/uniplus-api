@@ -104,7 +104,7 @@ public sealed class RegrasPadraoTests
             resultado.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "regras[0]",
-                Error = new { Code = RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio },
+                Error = new { Code = DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio },
             }, "a recusa aponta a regra que contribui fora do domínio");
         }
     }

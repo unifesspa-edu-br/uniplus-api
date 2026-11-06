@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A regra de derivação completa de um fato: a lista de regras <c>{quando, contribui}</c> mais a
-/// lista <b>explícita</b> de fatos dependentes (Story #927). É o dado de estrutura fechada que o
+/// lista <b>explícita</b> de fatos dependentes. É o dado de estrutura fechada que o
 /// binding <c>REGRA_DERIVACAO:</c> referencia.
 /// </summary>
 /// <remarks>
@@ -20,11 +20,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// configuração nunca é traduzido.
 /// </para>
 /// </remarks>
-public sealed record RegrasDerivacaoFato
+public sealed record DerivacaoDoFato
 {
     private readonly HashSet<string> _dependencias;
 
-    private RegrasDerivacaoFato(string codigoFato, IReadOnlyList<RegraDerivacao> regras, HashSet<string> dependencias, bool booleano)
+    private DerivacaoDoFato(string codigoFato, IReadOnlyList<RegraDerivacao> regras, HashSet<string> dependencias, bool booleano)
     {
         CodigoFato = codigoFato;
         Regras = regras;
@@ -56,7 +56,7 @@ public sealed record RegrasDerivacaoFato
     /// Os códigos de valor válidos do domínio do fato; cada <see cref="RegraDerivacao.Contribui"/>
     /// precisa pertencer a ele.
     /// </param>
-    public static Result<RegrasDerivacaoFato> Criar(
+    public static Result<DerivacaoDoFato> Criar(
         string codigoFato,
         IReadOnlyList<RegraDerivacao> regras,
         IReadOnlyCollection<string> dependenciasDeclaradas,
@@ -69,8 +69,8 @@ public sealed record RegrasDerivacaoFato
 
         if (regras.Count == 0)
         {
-            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
-                RegrasDerivacaoFatoErrorCodes.SemRegras,
+            return Result<DerivacaoDoFato>.Failure(new DomainError(
+                DerivacaoDoFatoErrorCodes.SemRegras,
                 $"A derivação de '{codigoFato}' precisa de ao menos uma regra."));
         }
 
@@ -79,8 +79,8 @@ public sealed record RegrasDerivacaoFato
         {
             if (regra.Contribui is null || !dominio.Contains(regra.Contribui))
             {
-                return Result<RegrasDerivacaoFato>.Failure(new DomainError(
-                    RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio,
+                return Result<DerivacaoDoFato>.Failure(new DomainError(
+                    DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio,
                     $"A regra que contribui '{regra.Contribui}' cita um código fora do domínio de '{codigoFato}'."));
             }
         }
@@ -92,7 +92,7 @@ public sealed record RegrasDerivacaoFato
     /// Cria a derivação de um fato booleano: as regras não contribuem código, e a ativa torna o
     /// derivado verdadeiro.
     /// </summary>
-    public static Result<RegrasDerivacaoFato> CriarBooleana(
+    public static Result<DerivacaoDoFato> CriarBooleana(
         string codigoFato,
         IReadOnlyList<RegraDerivacao> regras,
         IReadOnlyCollection<string> dependenciasDeclaradas)
@@ -103,22 +103,22 @@ public sealed record RegrasDerivacaoFato
 
         if (regras.Count == 0)
         {
-            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
-                RegrasDerivacaoFatoErrorCodes.SemRegras,
+            return Result<DerivacaoDoFato>.Failure(new DomainError(
+                DerivacaoDoFatoErrorCodes.SemRegras,
                 $"A derivação de '{codigoFato}' precisa de ao menos uma regra."));
         }
 
         if (regras.Any(static r => r.Contribui is not null))
         {
-            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
-                RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio,
+            return Result<DerivacaoDoFato>.Failure(new DomainError(
+                DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio,
                 $"A derivação booleana de '{codigoFato}' não contribui código: a regra ativa torna o derivado verdadeiro."));
         }
 
         return CriarComEstrutura(codigoFato, regras, dependenciasDeclaradas, booleano: true);
     }
 
-    private static Result<RegrasDerivacaoFato> CriarComEstrutura(
+    private static Result<DerivacaoDoFato> CriarComEstrutura(
         string codigoFato,
         IReadOnlyList<RegraDerivacao> regras,
         IReadOnlyCollection<string> dependenciasDeclaradas,
@@ -132,8 +132,8 @@ public sealed record RegrasDerivacaoFato
         string codigoNormalizado = codigoFato.Trim();
         if (citados.Contains(codigoNormalizado))
         {
-            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
-                RegrasDerivacaoFatoErrorCodes.DerivacaoAutorreferente,
+            return Result<DerivacaoDoFato>.Failure(new DomainError(
+                DerivacaoDoFatoErrorCodes.DerivacaoAutorreferente,
                 $"A derivação de '{codigoNormalizado}' cita o próprio fato — um derivado não pode depender de si mesmo."));
         }
 
@@ -149,18 +149,18 @@ public sealed record RegrasDerivacaoFato
                 naoCitados.Any() ? $"declarados mas não citados: {string.Join(", ", naoCitados.Order(StringComparer.Ordinal))}" : null,
             }.Where(static s => s is not null));
 
-            return Result<RegrasDerivacaoFato>.Failure(new DomainError(
-                RegrasDerivacaoFatoErrorCodes.DependenciasIncoerentes,
+            return Result<DerivacaoDoFato>.Failure(new DomainError(
+                DerivacaoDoFatoErrorCodes.DependenciasIncoerentes,
                 $"As dependências declaradas de '{codigoFato}' devem ser exatamente os fatos citados ({detalhe})."));
         }
 
-        return Result<RegrasDerivacaoFato>.Success(
-            new RegrasDerivacaoFato(codigoFato.Trim(), [.. regras], declarados, booleano));
+        return Result<DerivacaoDoFato>.Success(
+            new DerivacaoDoFato(codigoFato.Trim(), [.. regras], declarados, booleano));
     }
 }
 
-/// <summary>Códigos de erro de <see cref="RegrasDerivacaoFato"/>.</summary>
-public static class RegrasDerivacaoFatoErrorCodes
+/// <summary>Códigos de erro de <see cref="DerivacaoDoFato"/>.</summary>
+public static class DerivacaoDoFatoErrorCodes
 {
     public const string SemRegras = "RegrasDerivacaoFato.SemRegras";
     public const string ContribuiForaDoDominio = "RegrasDerivacaoFato.ContribuiForaDoDominio";

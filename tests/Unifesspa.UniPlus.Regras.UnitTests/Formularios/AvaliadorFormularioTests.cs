@@ -555,9 +555,9 @@ public class AvaliadorFormularioTests : TestesDeAvaliacao
     private static PredicadoDnf Predicado(params CondicaoDnf[] condicoes) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([.. condicoes.Select(static c => (0, c))]).Value!;
 
-    private static RegrasDerivacaoFato Derivacao(string fato, PredicadoDnf quando, string contribui)
+    private static DerivacaoDoFato Derivacao(string fato, PredicadoDnf quando, string contribui)
     {
         RegraDerivacao regra = RegraDerivacao.Criar(quando, contribui).Value!;
-        return RegrasDerivacaoFato.Criar(fato, [regra], regra.FatosCitados, [contribui]).Value!;
+        return DerivacaoDoFato.Criar(fato, [regra], regra.FatosCitados, [contribui]).Value!;
     }
 }

@@ -54,7 +54,7 @@ public static class AvaliadorFormulario
             [.. definicao.Etapas.SelectMany(static etapa => etapa.Itens.Select(item => (etapa, item)))];
         Dictionary<string, (DefinicaoEtapa Etapa, DefinicaoItem Item)> itemPorFato =
             itens.ToDictionary(static par => par.Item.FatoCodigo, StringComparer.Ordinal);
-        Dictionary<string, RegrasDerivacaoFato> derivacaoPorFato =
+        Dictionary<string, DerivacaoDoFato> derivacaoPorFato =
             definicao.Derivacoes.ToDictionary(static d => d.CodigoFato, StringComparer.Ordinal);
         List<(DefinicaoEtapa Etapa, DefinicaoGrupo Grupo)> grupos =
             [.. definicao.Etapas.SelectMany(static etapa => etapa.Grupos.Select(grupo => (etapa, grupo)))];
@@ -85,7 +85,7 @@ public static class AvaliadorFormulario
 
         foreach (string codigo in ordem.Ordem)
         {
-            if (derivacaoPorFato.TryGetValue(codigo, out RegrasDerivacaoFato? derivacao))
+            if (derivacaoPorFato.TryGetValue(codigo, out DerivacaoDoFato? derivacao))
             {
                 fatos[codigo] = Derivar(derivacao, fatos);
                 continue;
@@ -154,7 +154,7 @@ public static class AvaliadorFormulario
             [.. definicao.Etapas.Select(etapa => new AvaliacaoEtapa(etapa.Codigo, etapa.Exibicao?.Avaliar(fatos) ?? Ternario.Verdadeiro))]);
     }
 
-    private static FatoResolvido Derivar(RegrasDerivacaoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatos)
+    private static FatoResolvido Derivar(DerivacaoDoFato derivacao, IReadOnlyDictionary<string, FatoResolvido> fatos)
     {
         ResultadoDerivacao resultado = MotorDerivacao.Derivar(derivacao, fatos);
         if (resultado.Estado != EstadoFato.Resolvido)

@@ -5,10 +5,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDosFormularios
 {
@@ -210,43 +206,4 @@ public static class RegrasDosFormularios
     public static DomainError FormularioInexistente(FinalidadeFormulario finalidade) => new(
         FormularioProcessoErrorCodes.FormularioInexistente,
         $"O processo não tem formulário de {EstruturaFormulario.ParaToken(finalidade)}; defina o formulário antes dos itens e termos.");
-}
-
-/// <summary>A definição do formulário de uma finalidade: troca o existente ou cria o novo, com os itens iniciais.</summary>
-internal sealed record PlanoDoFormulario(
-    FinalidadeFormulario Finalidade,
-    FormularioProcesso Novo,
-    FormularioProcesso? Existente,
-    IReadOnlyList<FatoColetado>? ItensIniciais)
-{
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        if (Existente is not null)
-        {
-            Existente.Substituir(Novo);
-            return;
-        }
-
-        ((IParteDoProcesso)Novo).VincularProcesso(processoId);
-        colecoes.Formularios.Add(Novo);
-        if (ItensIniciais is not null)
-        {
-            new PlanoDaColeta(Finalidade, ItensIniciais, []).Aplicar(colecoes, processoId);
-        }
-    }
-}
-
-/// <summary>Os termos que substituem os da finalidade, já vinculados a ela.</summary>
-internal sealed record PlanoDosTermos(FinalidadeFormulario Finalidade, IReadOnlyList<TermoExigidoFormulario> Termos)
-{
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        colecoes.TermosExigidos.RemoveAll(t => t.Finalidade == Finalidade);
-        foreach (TermoExigidoFormulario termo in Termos)
-        {
-            ((IParteDoProcesso)termo).VincularProcesso(processoId);
-            termo.VincularFinalidade(Finalidade);
-            colecoes.TermosExigidos.Add(termo);
-        }
-    }
 }

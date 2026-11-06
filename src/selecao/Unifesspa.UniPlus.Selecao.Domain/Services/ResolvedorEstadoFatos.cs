@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Resolve o estado de cada fato do candidato a partir do grafo de coleta congelado e das
-/// respostas que ele efetivamente deu (Story #926). É a ponte entre a configuração — quais campos
+/// respostas que ele efetivamente deu. É a ponte entre a configuração — quais campos
 /// existem e sob que pré-condição — e a álgebra que avalia gatilhos.
 /// </summary>
 /// <remarks>
@@ -51,7 +51,7 @@ public static class ResolvedorEstadoFatos
     public static IReadOnlyDictionary<string, FatoResolvido> Resolver(
         IReadOnlyCollection<FormularioProcesso> formularios,
         IReadOnlyCollection<FatoColetado> fatosColetados,
-        IReadOnlyList<RegrasDerivacaoFato> derivacoes,
+        IReadOnlyList<DerivacaoDoFato> derivacoes,
         IReadOnlyDictionary<string, JsonElement> respostasBrutas,
         IReadOnlyDictionary<string, IReadOnlySet<string>> valoresOfertados)
     {

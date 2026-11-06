@@ -182,7 +182,7 @@ public sealed class FatoDeElegibilidadeGateTests
                 [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        PendenciasDosFatos.RecusaDoFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
             .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
         return processo;
     }

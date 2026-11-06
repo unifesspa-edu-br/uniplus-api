@@ -49,7 +49,7 @@ internal static class ValidacaoDoGrafo
         // Mesma regra de DefinirEtapas e DefinirClassificacao, na mesma posição de
         // DefinirEtapas: sem o espelho, um envelope restaurado reintroduziria o estado que os
         // caminhos de gravação recusam.
-        if (RegrasDasEtapas.ValidarEtapaDeNotaDoEnem(grafo.Etapas, grafo.Classificacao) is { } erroNotaDoEnem)
+        if (RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(grafo.Etapas, grafo.Classificacao) is { } erroNotaDoEnem)
         {
             return erroNotaDoEnem;
         }
@@ -118,7 +118,7 @@ internal static class ValidacaoDoGrafo
 
         // O mesmo teto da gravação: sem o espelho, a restauração aplicaria uma lista que o PUT
         // seguinte da mesma lista recusaria.
-        if (RegrasDoDesempate.ValidarQuantidadeDeCriteriosDesempate(grafo.CriteriosDesempate.Count) is [var excesso, ..])
+        if (RegrasDoDesempate.ConferirQuantidadeDeCriteriosDesempate(grafo.CriteriosDesempate.Count) is [var excesso, ..])
         {
             return excesso.Error;
         }

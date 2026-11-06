@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// O veredito de submissão (issue #1859) — NOVO: diferente da validação estrutural do rascunho
+/// O veredito de submissão: diferente da validação estrutural do rascunho
 /// (<c>SalvarInscricaoCommandHandler</c>), aqui a ausência de resposta a um item visível e
 /// obrigatório, um impedimento verdadeiro, um grupo fora do mínimo/máximo ou sem o candidato, e um
 /// termo obrigatório não aceito (ou aceito com versão/hash diferente da versão fixada) TODOS
@@ -46,7 +46,7 @@ public static class VeredictoDeSubmissao
     /// indeterminado: com o Geo de volta, a recusa pode deixar de valer, e por isso não orienta o candidato.
     /// </summary>
     /// <param name="geo">O que o Geo deixou indeterminado; nulo quando o Geo respondeu, e então nenhuma recusa depende dele.</param>
-    public static IReadOnlyList<RecusaDoVeredito> AvaliarDistinguindoOGeo(
+    public static IReadOnlyList<RecusaDaSubmissao> AvaliarDistinguindoOGeo(
         AvaliacaoFormulario avaliacao,
         IReadOnlyList<TermoExigidoFormulario> termosExigidos,
         IReadOnlyList<AceiteDeTermo> aceites,
@@ -58,7 +58,7 @@ public static class VeredictoDeSubmissao
         ArgumentNullException.ThrowIfNull(aceites);
 
         ClassificadorDoGeo classificador = new(geo);
-        List<RecusaDoVeredito> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio, classificador)];
+        List<RecusaDaSubmissao> recusas = [.. ProblemasDosItens(avaliacao.Itens, avaliacao.Fatos, caminho: null, diaDoEnvio, classificador)];
 
         foreach (AvaliacaoGrupo grupo in avaliacao.Grupos)
         {
@@ -69,7 +69,7 @@ public static class VeredictoDeSubmissao
 
             if (!grupo.ContagemValida)
             {
-                recusas.Add(new RecusaDoVeredito(
+                recusas.Add(new RecusaDaSubmissao(
                     Recusa(grupo.Codigo, InscricaoErrorCodes.GrupoContagemInvalida, "O número de ocorrências do grupo não respeita o mínimo ou o máximo exigido."),
                     classificador.ContagemAbaixoDoMinimo(grupo)));
             }
@@ -176,7 +176,7 @@ public static class VeredictoDeSubmissao
         }
     }
 
-    private static IEnumerable<RecusaDoVeredito> ProblemasDosItens(
+    private static IEnumerable<RecusaDaSubmissao> ProblemasDosItens(
         IReadOnlyList<AvaliacaoItem> itens, IReadOnlyDictionary<string, FatoResolvido> fatos, string? caminho, DateOnly diaDoEnvio, ClassificadorDoGeo classificador)
     {
         foreach (AvaliacaoItem item in itens)
@@ -195,19 +195,19 @@ public static class VeredictoDeSubmissao
 
             if (item.RestricoesVioladas.Count > 0)
             {
-                yield return new RecusaDoVeredito(RecusaDaResposta.De(campo, item, diaDoEnvio), classificador.RestricaoViolada(item));
+                yield return new RecusaDaSubmissao(RecusaDaResposta.De(campo, item, diaDoEnvio), classificador.RestricaoViolada(item));
             }
 
             if (fatos.TryGetValue(item.FatoCodigo, out FatoResolvido? resolvido) && resolvido.Estado == EstadoFato.Indeterminado)
             {
-                yield return new RecusaDoVeredito(
+                yield return new RecusaDaSubmissao(
                     Recusa(campo, InscricaoErrorCodes.ItemObrigatorioAusente, $"O item '{item.FatoCodigo}' é obrigatório e está sem resposta."),
                     classificador.ItemObrigatorioAusente(item, campo));
             }
         }
     }
 
-    private static RecusaDoVeredito Independente(FieldError recusa) => new(recusa, DependeDoGeo: false);
+    private static RecusaDaSubmissao Independente(FieldError recusa) => new(recusa, DependeDoGeo: false);
 
     /// <summary>
     /// Diz quais recusas dependem do Geo: só as que a falta dele pode ter causado, por deixar indeterminado um derivado de
@@ -253,7 +253,7 @@ public static class VeredictoDeSubmissao
 }
 
 /// <summary>Uma recusa do veredito e se ela só existe por causa do Geo fora do ar (<see cref="DependenciaDoGeo"/>).</summary>
-public readonly record struct RecusaDoVeredito(FieldError Recusa, bool DependeDoGeo);
+public readonly record struct RecusaDaSubmissao(FieldError Recusa, bool DependeDoGeo);
 
 /// <summary>
 /// O que o Geo fora do ar deixou indeterminado na avaliação: a definição do formulário, para saber o que cada regra cita, e os

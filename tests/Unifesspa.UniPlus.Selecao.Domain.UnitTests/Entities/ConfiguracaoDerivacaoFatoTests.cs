@@ -103,9 +103,9 @@ public sealed class ConfiguracaoDerivacaoFatoTests
             "EGRESSO_ESCOLA_PUBLICA",
             [RegraDerivacaoConfigurada.Criar(0, null, [CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("INDIGENA")).Value!]).Value!]).Value!;
 
-        RegrasDerivacaoFato regras = config.ParaRegrasDerivacao([]).Value!;
+        DerivacaoDoFato derivacao = config.ParaDerivacaoDoFato([]).Value!;
         ResultadoDerivacao resultado = MotorDerivacao.Derivar(
-            regras, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["COR_RACA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("PRETA")) });
+            derivacao, new Dictionary<string, FatoResolvido>(StringComparer.Ordinal) { ["COR_RACA"] = FatoResolvido.Resolvido(JsonSerializer.SerializeToElement("PRETA")) });
 
         resultado.ValorBooleano.Should().BeFalse();
     }

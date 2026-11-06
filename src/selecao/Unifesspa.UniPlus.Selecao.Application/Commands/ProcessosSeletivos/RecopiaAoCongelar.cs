@@ -17,12 +17,12 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// os gates avaliam a cópia. Tudo é conferido antes e a recusa sai num só lote (ADR-0125); só então o
 /// agregado refaz as cópias.
 /// </summary>
-internal static class PreparoDoCongelamento
+internal static class RecopiaAoCongelar
 {
     /// <param name="fatosJaColetados">Os fatos que alguma versão publicada já coletou; nulo na publicação inicial.</param>
     /// <param name="daVersaoVigente">O que a versão vigente congelou das exigências; nulo na publicação inicial.</param>
     /// <returns>A proteção do processo que a canonicalização congela, ou as recusas de itens e unidades somadas.</returns>
-    internal static async Task<Result<ProtecaoVigenteDoProcesso>> PrepararAsync(
+    internal static async Task<Result<ProtecaoVigenteDoProcesso>> RecopiarAsync(
         ProcessoSeletivo processo,
         CatalogoConferido catalogo,
         IReadOnlySet<string>? fatosJaColetados,
@@ -45,12 +45,12 @@ internal static class PreparoDoCongelamento
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor vigente é
         // o que se congela, e a montagem não lê o que o agregado refaz a seguir.
         ProtecaoVigenteDoProcesso protecao = ProtecaoVigenteDasExigenciasDoProcesso.Montar(processo, catalogo.TiposVivos, catalogo.Fatos, daVersaoVigente);
-        Result preparado = processo.PrepararCongelamento(
+        Result recopiado = processo.RecopiarAoCongelar(
             new CopiasDoCongelamento(copias.Value!.Copias, copias.Value.FatosJaColetados, unidades.Value!, protecao.Exigencias));
 
-        return preparado.IsSuccess
+        return recopiado.IsSuccess
             ? Result<ProtecaoVigenteDoProcesso>.Success(protecao)
-            : Result<ProtecaoVigenteDoProcesso>.ValidationFailure(preparado.Errors);
+            : Result<ProtecaoVigenteDoProcesso>.ValidationFailure(recopiado.Errors);
     }
 
     /// <summary>

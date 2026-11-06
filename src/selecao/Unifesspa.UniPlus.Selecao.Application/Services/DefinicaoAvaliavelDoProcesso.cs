@@ -54,7 +54,7 @@ public static class DefinicaoAvaliavelDoProcesso
             return Result<DefinicaoAvaliavel>.Failure(oferta.Error!);
         }
 
-        Result<IReadOnlyList<RegrasDerivacaoFato>> derivacoes = Derivacoes(processo, porCodigo);
+        Result<IReadOnlyList<DerivacaoDoFato>> derivacoes = Derivacoes(processo, porCodigo);
         if (derivacoes.IsFailure)
         {
             return Result<DefinicaoAvaliavel>.Failure(derivacoes.Error!);
@@ -93,16 +93,16 @@ public static class DefinicaoAvaliavelDoProcesso
         ArgumentNullException.ThrowIfNull(envelope);
 
         GrafoConfiguracao grafo = envelope.Grafo;
-        List<RegrasDerivacaoFato> derivacoes = [];
+        List<DerivacaoDoFato> derivacoes = [];
         foreach (ConfiguracaoDerivacaoFato configuracao in grafo.DerivacoesEfetivas(ofertasDeCurso).OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
-            Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(Contribuicoes(configuracao));
-            if (regras.IsFailure)
+            Result<DerivacaoDoFato> derivacao = configuracao.ParaDerivacaoDoFato(Contribuicoes(configuracao));
+            if (derivacao.IsFailure)
             {
-                return Result<DefinicaoAvaliavel>.Failure(regras.Error!);
+                return Result<DefinicaoAvaliavel>.Failure(derivacao.Error!);
             }
 
-            derivacoes.Add(regras.Value!);
+            derivacoes.Add(derivacao.Value!);
         }
 
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> valores =
@@ -145,27 +145,27 @@ public static class DefinicaoAvaliavelDoProcesso
     /// As derivações do processo, cada uma conferida contra o domínio em que contribui: o dinâmico
     /// do processo, o do catálogo ou, quando o servidor não enumera a fonte, o das próprias regras.
     /// </summary>
-    private static Result<IReadOnlyList<RegrasDerivacaoFato>> Derivacoes(
+    private static Result<IReadOnlyList<DerivacaoDoFato>> Derivacoes(
         ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
     {
         Dictionary<string, DominioDeValores> dominios = VocabularioDeFatos.DominiosDinamicos(processo, catalogo.Values);
-        List<RegrasDerivacaoFato> derivacoes = [];
+        List<DerivacaoDoFato> derivacoes = [];
         foreach (ConfiguracaoDerivacaoFato configuracao in processo.DerivacoesEfetivas().OrderBy(static c => c.CodigoFato, StringComparer.Ordinal))
         {
             IReadOnlyCollection<string> dominio =
                 catalogo.TryGetValue(configuracao.CodigoFato, out FatoCandidatoView? fato) && VocabularioDeFatos.DominioDeContribuicao(fato, dominios) is { } doCatalogo
                     ? doCatalogo
                     : Contribuicoes(configuracao);
-            Result<RegrasDerivacaoFato> regras = configuracao.ParaRegrasDerivacao(dominio);
-            if (regras.IsFailure)
+            Result<DerivacaoDoFato> derivacao = configuracao.ParaDerivacaoDoFato(dominio);
+            if (derivacao.IsFailure)
             {
-                return Result<IReadOnlyList<RegrasDerivacaoFato>>.Failure(regras.Error!);
+                return Result<IReadOnlyList<DerivacaoDoFato>>.Failure(derivacao.Error!);
             }
 
-            derivacoes.Add(regras.Value!);
+            derivacoes.Add(derivacao.Value!);
         }
 
-        return Result<IReadOnlyList<RegrasDerivacaoFato>>.Success(derivacoes);
+        return Result<IReadOnlyList<DerivacaoDoFato>>.Success(derivacoes);
     }
 
     /// <summary>Os códigos que as regras da derivação contribuem.</summary>

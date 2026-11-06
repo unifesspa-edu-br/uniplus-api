@@ -32,12 +32,12 @@ public sealed class MatrizDasRegrasDeAplicabilidadeTests
         "CONCORRER_PPI", "QUILOMBOLA", "CONCORRER_Q", "PCD", "CONCORRER_PCD", "INDIGENA", "CONCORRER_VAGA_POR_ACRESCIMO",
     ];
 
-    private static readonly RegrasDerivacaoFato Opcao = RegrasDerivacaoFato.CriarBooleana(
+    private static readonly DerivacaoDoFato Opcao = DerivacaoDoFato.CriarBooleana(
         OpcaoPelasCotasDaLei.Fato,
         OpcaoPelasCotasDaLei.RegrasDaOpcao,
         [OrigemEscolar.FatoEgresso, OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica]).Value!;
 
-    private static readonly RegrasDerivacaoFato Modalidades = RegrasDerivacaoFato.Criar(
+    private static readonly DerivacaoDoFato Modalidades = DerivacaoDoFato.Criar(
         ModalidadeDoCandidato.Fato,
         [.. ModalidadeSeed.Itens.Select(static i => RegraDerivacao.Criar(i.RegraDeAplicabilidade, i.Codigo).Value!)],
         [.. ModalidadeSeed.Itens.SelectMany(static i => i.RegraDeAplicabilidade.FatosCitados).Distinct(StringComparer.Ordinal)],

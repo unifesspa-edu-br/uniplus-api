@@ -2,52 +2,11 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-
-/// <summary>O que a aplicação do modelo grava: o formulário novo no lugar do existente e a cópia dos itens, grupos, termos e derivações.</summary>
-internal sealed record PlanoDoModelo(
-    CopiaDeModeloDeFormulario Copia,
-    FormularioProcesso Novo,
-    FormularioProcesso? Existente,
-    IReadOnlySet<string> FatosDaCopia)
-{
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
-    {
-        FinalidadeFormulario finalidade = Copia.Finalidade;
-        if (Existente is not null)
-        {
-            Existente.Substituir(Novo);
-            Existente.RegistrarOrigem(Copia.ModeloId, Copia.ModeloCodigo);
-        }
-        else
-        {
-            ((IParteDoProcesso)Novo).VincularProcesso(processoId);
-            colecoes.Formularios.Add(Novo);
-        }
-
-        colecoes.Campos.RemoveAll(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && FatosDaCopia.Contains(f.FatoCodigo)));
-        PartesDoProcesso.Substituir(colecoes.Campos, static _ => false, Copia.Itens, processoId);
-        new PlanoDaColeta(finalidade, [], Copia.Grupos).AplicarGrupos(colecoes, processoId);
-        PartesDoProcesso.Substituir(colecoes.TermosExigidos, t => t.Finalidade == finalidade, Copia.Termos, processoId);
-        PartesDoProcesso.Substituir(colecoes.RegrasDerivacao, static _ => false, Copia.DerivacoesNovas, processoId);
-    }
-}
 
 /// <summary>
 /// As recusas de aplicar um modelo de formulário, que substitui o formulário inteiro da finalidade.
@@ -56,7 +15,7 @@ internal sealed record PlanoDoModelo(
 /// </summary>
 internal static class AplicacaoDeModeloDeFormulario
 {
-    internal static Result<PlanoDoModelo> Planejar(EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia)
+    internal static Result<PlanoDaCopiaDoModelo> Planejar(EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
@@ -66,7 +25,7 @@ internal static class AplicacaoDeModeloDeFormulario
             finalidade, existente?.FaseId, copia.Titulo, copia.Etapas, copia.ModeloId, copia.ModeloCodigo);
         if (formulario.IsFailure)
         {
-            return Result<PlanoDoModelo>.ValidationFailure(formulario.Errors);
+            return Result<PlanoDaCopiaDoModelo>.ValidationFailure(formulario.Errors);
         }
 
         FormularioProcesso novo = formulario.Value!;
@@ -74,11 +33,11 @@ internal static class AplicacaoDeModeloDeFormulario
         List<FieldError> erros = [.. ErrosDaCopia(estado, copia, novo, daCopia)];
         if (erros.Count > 0)
         {
-            return Result<PlanoDoModelo>.ValidationFailure(erros);
+            return Result<PlanoDaCopiaDoModelo>.ValidationFailure(erros);
         }
 
         VincularFinalidadeAosItens(copia);
-        Result<PlanoDoModelo> recusaDoEstadoFinal = ConferirEstadoFinal(estado, copia, novo, existente, daCopia);
+        Result<PlanoDaCopiaDoModelo> recusaDoEstadoFinal = ConferirEstadoFinal(estado, copia, novo, existente, daCopia);
         return recusaDoEstadoFinal;
     }
 
@@ -166,7 +125,7 @@ internal static class AplicacaoDeModeloDeFormulario
         FatoColetadoErrorCodes.FatoDuplicado, $"O código '{codigo}' já é usado por um fato ou grupo de outro formulário do processo.");
 
     // O estado final: os outros formulários sem o que a cópia trouxe para cá, e a cópia.
-    private static Result<PlanoDoModelo> ConferirEstadoFinal(
+    private static Result<PlanoDaCopiaDoModelo> ConferirEstadoFinal(
         EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente, HashSet<string> daCopia)
     {
         FinalidadeFormulario finalidade = copia.Finalidade;
@@ -181,7 +140,7 @@ internal static class AplicacaoDeModeloDeFormulario
 
         if (CitacoesDosFormularios.ValidarGrafoDeFatos(novo.Etapas, copia.Itens, copia.Grupos, daInscricao, dependenciasDasDerivacoes) is { } grafo)
         {
-            return Result<PlanoDoModelo>.ValidationFailure([new("itens", grafo)]);
+            return Result<PlanoDaCopiaDoModelo>.ValidationFailure([new("itens", grafo)]);
         }
 
         List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. copia.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
@@ -196,7 +155,7 @@ internal static class AplicacaoDeModeloDeFormulario
 
         if (erros.Count > 0)
         {
-            return Result<PlanoDoModelo>.ValidationFailure(erros);
+            return Result<PlanoDaCopiaDoModelo>.ValidationFailure(erros);
         }
 
         // O formulário novo é conferido por inteiro; nos outros, só a citação que a cópia invalida é
@@ -209,7 +168,7 @@ internal static class AplicacaoDeModeloDeFormulario
             .Concat(CitacoesDosFormularios.CitacaoInvalidaNosFormularios([novo], itensFinais, termosFinais, derivacoesFinais, gruposFinais) is { } doNovo ? [doNovo] : [])
             .Select(static recusa => new FieldError(string.Empty, recusa))];
         return orfas.Length > 0
-            ? Result<PlanoDoModelo>.ValidationFailure(orfas)
-            : Result<PlanoDoModelo>.Success(new PlanoDoModelo(copia, novo, existente, daCopia));
+            ? Result<PlanoDaCopiaDoModelo>.ValidationFailure(orfas)
+            : Result<PlanoDaCopiaDoModelo>.Success(new PlanoDaCopiaDoModelo(copia, novo, existente, daCopia));
     }
 }

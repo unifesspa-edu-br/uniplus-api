@@ -4,7 +4,7 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
 /// <summary>
 /// Trava a premissa de <see cref="RegrasDeNomeAbreviado"/> que sustenta a decisão de

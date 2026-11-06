@@ -120,9 +120,9 @@ public sealed class ResolvedorEstadoFatosTests
     [Fact(DisplayName = "Campo que cita derivado de campos anteriores é avaliado com a derivação entre os campos")]
     public void CampoQueCitaDerivado_AvaliaADerivacao()
     {
-        RegrasDerivacaoFato modalidade = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
+        DerivacaoDoFato modalidade = ConfiguracaoDerivacaoFato.Criar("MODALIDADE",
             [RegraDerivacaoConfigurada.Criar(0, "LB_EP", [CondicaoRegraDerivacao.Criar(0, "EGRESSO_ESCOLA_PUBLICA", Operador.Igual, Sim).Value!]).Value!])
-            .Value!.ParaRegrasDerivacao(["LB_EP"]).Value!;
+            .Value!.ParaDerivacaoDoFato(["LB_EP"]).Value!;
         FatoColetado[] fatos =
         [
             Fato("EGRESSO_ESCOLA_PUBLICA", 0),

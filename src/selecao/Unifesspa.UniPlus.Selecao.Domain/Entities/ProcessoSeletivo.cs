@@ -264,15 +264,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Define ou remove a divulgação pública (UNI-REQ-0050); nula volta ao padrão minimizado, que é publicável.</summary>
     public Result DefinirConfiguracaoDivulgacao(ConfiguracaoDivulgacao? configuracao, PrecondicaoIfMatch precondicao) =>
-        Editar(precondicao, () => ConferenciaDeEdicao.Livre(configuracao), nova => ConfiguracaoDivulgacao = Vincular(nova));
+        Editar(precondicao, () => PlanejamentoDaEdicao.Livre(configuracao), nova => ConfiguracaoDivulgacao = Vincular(nova));
 
     /// <summary>Define ou remove a taxa e os fundamentos de isenção; nula volta a "não declarado", que bloqueia a publicação.</summary>
     public Result DefinirTaxaInscricao(ConfiguracaoTaxaInscricao? configuracao, PrecondicaoIfMatch precondicao) =>
-        Editar(precondicao, () => ConferenciaDeEdicao.Livre(configuracao), nova => ConfiguracaoTaxaInscricao = Vincular(nova));
+        Editar(precondicao, () => PlanejamentoDaEdicao.Livre(configuracao), nova => ConfiguracaoTaxaInscricao = Vincular(nova));
 
     /// <summary>Define ou remove a cascata de remanejamento.</summary>
     public Result DefinirCascataRemanejamento(ConfiguracaoCascataRemanejamento? cascata, PrecondicaoIfMatch precondicao) =>
-        Editar(precondicao, () => ConferenciaDeEdicao.Livre(cascata), nova => Cascata = Vincular(nova));
+        Editar(precondicao, () => PlanejamentoDaEdicao.Livre(cascata), nova => Cascata = Vincular(nova));
 
     /// <summary>Substitui os critérios de desempate; todo <c>etapa_ref</c> precisa existir entre as etapas.</summary>
     public Result DefinirCriteriosDesempate(IReadOnlyList<CriterioDesempate> criterios, PrecondicaoIfMatch precondicao)
@@ -333,8 +333,8 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     {
         ArgumentNullException.ThrowIfNull(copia);
 
-        Result<PlanoDoModelo> plano = RecusaDeAplicarModelo(precondicao) is { } recusa
-            ? Result<PlanoDoModelo>.Failure(recusa)
+        Result<PlanoDaCopiaDoModelo> plano = RecusaDeAplicarModelo(precondicao) is { } recusa
+            ? Result<PlanoDaCopiaDoModelo>.Failure(recusa)
             : AplicacaoDeModeloDeFormulario.Planejar(EstadoDaConfiguracao.De(this), copia);
         if (plano.IsFailure)
         {
@@ -373,7 +373,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(precedencias);
 
         return Editar(precondicao,
-            () => ReconciliacaoDoCronograma.Planejar(EstadoDaConfiguracao.De(this), fases, precedencias),
+            () => RegrasDoCronograma.Planejar(EstadoDaConfiguracao.De(this), fases, precedencias),
             plano => plano.Aplicar(Colecoes(), Id));
     }
 
@@ -407,15 +407,15 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>Refaz a cópia dos itens, a das unidades das fases e a proteção das exigências, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>
-    public Result PrepararCongelamento(CopiasDoCongelamento preparacao)
+    public Result RecopiarAoCongelar(CopiasDoCongelamento copias)
     {
-        ArgumentNullException.ThrowIfNull(preparacao);
+        ArgumentNullException.ThrowIfNull(copias);
 
-        Result itens = RecopiarItensDoCatalogo(preparacao.CopiasDoCatalogo, preparacao.FatosJaColetados);
+        Result itens = RecopiarItensDoCatalogo(copias.CopiasDoCatalogo, copias.FatosJaColetados);
         if (itens.IsSuccess)
         {
-            RecopiarUnidadesDasFases(preparacao.UnidadesVivas);
-            AplicarProtecaoVigente(preparacao.ProtecaoVigente);
+            RecopiarUnidadesDasFases(copias.UnidadesVivas);
+            AplicarProtecaoVigente(copias.ProtecaoVigente);
         }
 
         return itens;
@@ -436,7 +436,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Refaz nas fases a cópia de sigla e nome da unidade responsável ao congelar a versão; a fase sem unidade em <paramref name="vivas"/> fica como está.</summary>
     internal void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas) =>
-        ReconciliacaoDoCronograma.RecopiarUnidades(_cronogramaFases, vivas);
+        RegrasDoCronograma.AplicarUnidadesVivas(_cronogramaFases, vivas);
 
     public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao, PrecondicaoIfMatch precondicao)
     {

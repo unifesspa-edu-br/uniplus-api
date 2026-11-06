@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// A configuração da derivação de um fato num processo (Story #927): o código do fato derivado e a
+/// A configuração da derivação de um fato num processo: o código do fato derivado e a
 /// lista de regras que o resolvem. É a forma persistida da regra que o binding
 /// <c>REGRA_DERIVACAO:{codigoDoFato}</c> referencia.
 /// </summary>
@@ -88,7 +88,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
     /// não dependem do vocabulário cross-módulo nem das regras já resolvidas — só do código cru e
     /// das ordens e contribuições brutas do payload. Existe separada para o handler poder
     /// confirmar a forma de TODAS as configurações numa primeira passada, antes de resolver o
-    /// catálogo (mesmo padrão de <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
+    /// catálogo (mesmo padrão de <c>FormaDoItem.ValidarFormaBasica</c>).
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(
         string? codigoFato,
@@ -133,14 +133,14 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>
-    /// Reconstrói o VO <see cref="RegrasDerivacaoFato"/> que o motor consome, contra o domínio de
+    /// Reconstrói o VO <see cref="DerivacaoDoFato"/> que o motor consome, contra o domínio de
     /// valores do fato — que, para um fato de escopo-processo como <c>MODALIDADE</c>, é o conjunto
     /// de modalidades ofertadas pelo processo, e não uma lista global do catálogo. O domínio é dado
     /// pelo chamador; a reconstrução valida a coerência (dependências, auto-referência, código
     /// contribuído no domínio) e devolve <see cref="Result{T}"/> — nunca lança. O derivado booleano
     /// não contribui código, e o domínio não se aplica a ele.
     /// </summary>
-    public Result<RegrasDerivacaoFato> ParaRegrasDerivacao(IReadOnlyCollection<string> dominioContribui)
+    public Result<DerivacaoDoFato> ParaDerivacaoDoFato(IReadOnlyCollection<string> dominioContribui)
     {
         ArgumentNullException.ThrowIfNull(dominioContribui);
 
@@ -150,7 +150,7 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
             Result<RegraDerivacao> regraResult = regra.ParaRegraDerivacao();
             if (regraResult.IsFailure)
             {
-                return Result<RegrasDerivacaoFato>.Failure(regraResult.Error!);
+                return Result<DerivacaoDoFato>.Failure(regraResult.Error!);
             }
 
             regras.Add(regraResult.Value!);
@@ -162,8 +162,8 @@ public sealed class ConfiguracaoDerivacaoFato : EntityBase, IParteDoProcesso
             [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
 
         return Booleano
-            ? RegrasDerivacaoFato.CriarBooleana(CodigoFato, regras, dependencias)
-            : RegrasDerivacaoFato.Criar(CodigoFato, regras, dependencias, dominioContribui);
+            ? DerivacaoDoFato.CriarBooleana(CodigoFato, regras, dependencias)
+            : DerivacaoDoFato.Criar(CodigoFato, regras, dependencias, dominioContribui);
     }
 }
 

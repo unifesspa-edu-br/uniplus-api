@@ -8,7 +8,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
-internal static class ConferenciaFinalDosFatos
+internal static class ConferenciaDosFatosAoCongelar
 {
     /// <summary>
     /// Reconfere os fatos contra o catálogo vivo e congela o metadado dos que as condições citam.

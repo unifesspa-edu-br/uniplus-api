@@ -9,22 +9,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
-/// <summary>O que a troca da classificação faz além de gravá-la: as edições do ENEM que deixam de existir.</summary>
-internal sealed record PlanoDaClassificacao(
-    ConfiguracaoClassificacao Classificacao,
-    IReadOnlyList<OpcaoDeclaradaFato> EdicoesDoEnemARetirar)
-{
-    internal void RetirarEdicoes(ColecoesDoProcesso colecoes)
-    {
-        ArgumentNullException.ThrowIfNull(colecoes);
-
-        foreach (OpcaoDeclaradaFato edicao in EdicoesDoEnemARetirar)
-        {
-            colecoes.OpcoesDeclaradas.Remove(edicao);
-        }
-    }
-}
-
 /// <summary>
 /// As recusas de trocar a classificação que dependem de outras dimensões do processo: as etapas que
 /// as regras de eliminação citam, a etapa de nota do ENEM, o quadro de pesos por área que o desempate
@@ -42,12 +26,12 @@ internal static class RegrasDaClassificacao
         List<FieldError> erros = [.. EtapasDeEliminacaoRecusadas(estado, classificacao)];
 
         bool calculaPelosPesosPorArea = classificacao.CalculaPelosPesosPorAreaDoEnem;
-        DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ValidarEtapaDeNotaDoEnem(estado.Etapas, classificacao);
+        DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(estado.Etapas, classificacao);
         DomainError? erroDasEtapas = calculaPelosPesosPorArea ? erroDaEtapaDoEnem : null;
         DomainError? erroSemCalculoLocal = calculaPelosPesosPorArea ? null : erroDaEtapaDoEnem;
 
         List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoesDeArea =
-            RegrasDoDesempate.ValidarDesempatePorAreaDoEnem(RegrasDoDesempate.EmOrdem(estado.CriteriosDesempate), classificacao);
+            RegrasDoDesempate.ConferirDesempatePorAreaContraOQuadro(RegrasDoDesempate.EmOrdem(estado.CriteriosDesempate), classificacao);
         if (erroSemCalculoLocal is null && violacoesDeArea.FirstOrDefault(static v => v.IndiceArea is null) is { Erro: { } semQuadro })
         {
             erroSemCalculoLocal = semQuadro;

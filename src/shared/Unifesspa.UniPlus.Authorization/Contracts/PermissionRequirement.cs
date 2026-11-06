@@ -97,8 +97,8 @@ public sealed record PermissionRequirement
             baseLegalPadrao ?? string.Empty,
             requerMfa,
             requerDuplaAprovacao,
-            ColecoesSomenteLeitura.Lista(escopoContextoObrigatorio),
-            ColecoesSomenteLeitura.Lista(verificacoesDeContexto)));
+            CopiasImutaveis.Lista(escopoContextoObrigatorio),
+            CopiasImutaveis.Lista(verificacoesDeContexto)));
     }
 
     // Igualdade por valor (CA-01): o Equals sintetizado pelo record compararia as

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class PreparoDoCongelamentoTests
+public sealed class RecopiaAoCongelarTests
 {
     [Fact(DisplayName = "O item incoerente e a unidade excluída saem no mesmo lote, os itens primeiro")]
     public async Task ItemIncoerenteEUnidadeExcluida_SaemNoMesmoLoteComOsItensPrimeiro()
@@ -21,11 +21,11 @@ public sealed class PreparoDoCongelamentoTests
             fatos, fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal), FatosDeModalidadeDeTeste.DoCatalogo,
             new Dictionary<Guid, TipoDocumentoView>());
 
-        Result<ProtecaoVigenteDoProcesso> preparo = await PreparoDoCongelamento
-            .PrepararAsync(processo, catalogo, null, null, ResolvedorDeUnidadeDeTeste.Com(), CancellationToken.None);
+        Result<ProtecaoVigenteDoProcesso> recopia = await RecopiaAoCongelar
+            .RecopiarAsync(processo, catalogo, null, null, ResolvedorDeUnidadeDeTeste.Com(), CancellationToken.None);
 
-        preparo.IsFailure.Should().BeTrue();
-        string[] codigos = [.. preparo.Errors.Select(static e => e.Error.Code)];
+        recopia.IsFailure.Should().BeTrue();
+        string[] codigos = [.. recopia.Errors.Select(static e => e.Error.Code)];
         codigos.Should().Contain("FaseCronograma.UnidadeResponsavelNaoEncontrada");
         codigos.First().Should().NotBe("FaseCronograma.UnidadeResponsavelNaoEncontrada", "as recusas dos itens vêm antes das das unidades");
         codigos.Length.Should().BeGreaterThan(1);

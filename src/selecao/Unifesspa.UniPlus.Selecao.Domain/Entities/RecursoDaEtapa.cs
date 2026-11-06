@@ -83,9 +83,9 @@ public sealed class RecursoDaEtapa : EntityBase
         // positivo, em dia útil ou hora, sem fração de dia útil, e cada par de suspensividade
         // inteiro ou inteiramente ausente. A janela da etapa recorre nas mesmas condições; o
         // que muda entre as duas é a ÂNCORA, e ela não alcança estas regras.
-        if (ValidacaoDeArgsDeRecurso.Validar(args) is { } recusa)
+        if (ValidacaoDosArgumentosDoRecurso.Validar(args) is { } recusa)
         {
-            return Result<RecursoDaEtapa>.Failure(ErroDosArgs(recusa));
+            return Result<RecursoDaEtapa>.Failure(ErroDosArgumentos(recusa));
         }
 
         return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
@@ -101,16 +101,16 @@ public sealed class RecursoDaEtapa : EntityBase
     /// Traduz o motivo da recusa no código de erro desta entidade — literal, para que a
     /// cobertura do registro de erros o alcance.
     /// </summary>
-    private static DomainError ErroDosArgs(RecusaDeArgsDeRecurso recusa) => recusa.Motivo switch
+    private static DomainError ErroDosArgumentos(RecusaDosArgumentosDoRecurso recusa) => recusa.Motivo switch
     {
-        MotivoDeRecusaDeArgs.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
-        MotivoDeRecusaDeArgs.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDaRecusaDosArgumentos.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 

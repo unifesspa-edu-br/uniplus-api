@@ -37,8 +37,8 @@ public sealed class FronteirasDoProcessoSeletivoTests
     /// <summary>Os tipos que calculam um plano e o aplicam sobre as coleções da raiz, com os registros do plano.</summary>
     private static readonly string[] Planos =
     [
-        "ReconciliacaoDoCronograma", "PlanoDoCronograma",
-        "AplicacaoDeModeloDeFormulario", "PlanoDoModelo",
+        "RegrasDoCronograma", "PlanoDoCronograma",
+        "AplicacaoDeModeloDeFormulario", "PlanoDaCopiaDoModelo",
         "RegrasDaColeta", "PlanoDaColeta", "PlanoDaRecopiaDoCatalogo",
         "ReposicaoDaConfiguracao",
         "PlanoDaProtecaoVigente",

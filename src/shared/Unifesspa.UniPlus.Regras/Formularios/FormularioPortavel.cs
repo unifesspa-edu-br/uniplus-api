@@ -121,10 +121,10 @@ public sealed record FormularioPortavel(
             termos.Add(new DefinicaoTermo(termo.Codigo, exibicao.Value, obrigatoriedade.Value!));
         }
 
-        List<RegrasDerivacaoFato> derivacoes = [];
+        List<DerivacaoDoFato> derivacoes = [];
         foreach (DerivacaoPortavel derivacao in Derivacoes ?? [])
         {
-            Result<RegrasDerivacaoFato> lida = Derivacao(derivacao);
+            Result<DerivacaoDoFato> lida = Derivacao(derivacao);
             if (lida.IsFailure)
             {
                 return Result<DefinicaoFormulario>.Failure(lida.Error!);
@@ -341,14 +341,14 @@ public sealed record FormularioPortavel(
         return Construir(() => new DefinicaoItem(item.FatoCodigo, exibicao.Value, obrigatoriedade.Value!, restricoes, impedimento.Value, item.Formato));
     }
 
-    private static Result<RegrasDerivacaoFato> Derivacao(DerivacaoPortavel derivacao)
+    private static Result<DerivacaoDoFato> Derivacao(DerivacaoPortavel derivacao)
     {
         List<RegraDerivacao> regras = [];
         foreach (RegraDerivacaoPortavel regra in derivacao.Regras ?? [])
         {
             if (regra.Quando is null)
             {
-                return Result<RegrasDerivacaoFato>.Failure(new DomainError(
+                return Result<DerivacaoDoFato>.Failure(new DomainError(
                     FormularioPortavelErrorCodes.DerivacaoInvalida,
                     $"Uma regra de '{derivacao.FatoCodigo}' não diz quando ativa; a regra sempre ativa tem a lista vazia."));
             }
@@ -356,7 +356,7 @@ public sealed record FormularioPortavel(
             Result<PredicadoDnf?> quando = DoFio(regra.Quando);
             if (quando.IsFailure)
             {
-                return Result<RegrasDerivacaoFato>.Failure(quando.Error!);
+                return Result<DerivacaoDoFato>.Failure(quando.Error!);
             }
 
             if (derivacao.Booleano)
@@ -368,7 +368,7 @@ public sealed record FormularioPortavel(
             Result<RegraDerivacao> criada = RegraDerivacao.Criar(quando.Value!, regra.Contribui ?? string.Empty);
             if (criada.IsFailure)
             {
-                return Result<RegrasDerivacaoFato>.Failure(criada.Error!);
+                return Result<DerivacaoDoFato>.Failure(criada.Error!);
             }
 
             regras.Add(criada.Value!);
@@ -377,13 +377,13 @@ public sealed record FormularioPortavel(
         // As dependências são as que as regras citam, e o domínio do categórico é o que elas
         // contribuem: o avaliador não usa mais que isso do derivado.
         string[] dependencias = [.. regras.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
-        Result<RegrasDerivacaoFato> lida = derivacao.Booleano
-            ? RegrasDerivacaoFato.CriarBooleana(derivacao.FatoCodigo, regras, dependencias)
-            : RegrasDerivacaoFato.Criar(
+        Result<DerivacaoDoFato> lida = derivacao.Booleano
+            ? DerivacaoDoFato.CriarBooleana(derivacao.FatoCodigo, regras, dependencias)
+            : DerivacaoDoFato.Criar(
                 derivacao.FatoCodigo, regras, dependencias, [.. regras.Select(static r => r.Contribui!).Distinct(StringComparer.Ordinal)]);
         return lida.IsSuccess
             ? lida
-            : Result<RegrasDerivacaoFato>.Failure(new DomainError(FormularioPortavelErrorCodes.DerivacaoInvalida, lida.Error!.Message));
+            : Result<DerivacaoDoFato>.Failure(new DomainError(FormularioPortavelErrorCodes.DerivacaoInvalida, lida.Error!.Message));
     }
 
     private static Result<Obrigatoriedade> Obrigatoriedade(

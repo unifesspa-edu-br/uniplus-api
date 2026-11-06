@@ -249,14 +249,14 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
 
             // Só se armazena a resposta que reflete uma mutação persistida (ADR-0027
             // §"Status codes em cache"): o 2xx, e o 4xx que o handler devolve depois de gravar
-            // (RecusaAposGravacaoResult), pois um retry o executaria sobre o estado já mudado.
+            // (RespostaDeRecusaAposGravacao), pois um retry o executaria sobre o estado já mudado.
             // Todo outro 4xx produzido dentro do MVC, e todo 5xx, libera a reserva: o 4xx recusa a
             // requisição, não a executa, e guardá-lo prenderia por 24 h o cliente que corrige a
             // causa — permissão concedida, precondição relida, credencial completa — e repete a
             // chave. Sem a reserva, um retry executa do zero e o 5xx não fica preso em 409
             // ProcessingConflict. CancellationToken None no DeleteAsync porque RequestAborted
             // já está disparado quando o request foi cancelado pelo cliente.
-            bool recusaAposGravacao = status < 500 && executed.Result is RecusaAposGravacaoResult;
+            bool recusaAposGravacao = status < 500 && executed.Result is RespostaDeRecusaAposGravacao;
             if ((status >= 400 && !recusaAposGravacao) || executed.Canceled)
             {
                 await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)

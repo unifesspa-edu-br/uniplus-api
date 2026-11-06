@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
-/// Handler do <see cref="DefinirRegrasDerivacaoCommand"/> (Story #985): substitui integralmente as
+/// Handler do <see cref="DefinirRegrasDerivacaoCommand"/>: substitui integralmente as
 /// regras de derivação de um processo em rascunho, em duas passadas. A primeira confirma a
 /// <b>forma básica</b> de TODAS as configurações e regras (<see cref="ConfiguracaoDerivacaoFato.ValidarFormaBasica"/>/
 /// <see cref="RegraDerivacaoConfigurada.ValidarFormaBasica"/>) sem tocar o vocabulário
@@ -67,7 +67,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
         // Acumula (ADR-0125) a forma básica de TODAS as configurações e regras numa primeira
         // passada, ANTES de resolver o vocabulário cross-módulo — mesmo padrão de
-        // DefinirFatosColetadosCommandHandler (PR #1214): rodar depois da resolução semântica
+        // DefinirFatosColetadosCommandHandler: rodar depois da resolução semântica
         // trocaria um código/contribuição vazios por um erro semântico menos específico, e uma
         // violação de forma podia ser mascarada pelo erro semântico de outra configuração/regra
         // do mesmo payload.
@@ -222,7 +222,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
         // conferência aqui.
         if (VocabularioDeFatos.DominioDeContribuicao(view, dominiosDinamicos) is { } dominio)
         {
-            Result<RegrasDerivacaoFato> dominioResult = configResult.Value!.ParaRegrasDerivacao(dominio);
+            Result<DerivacaoDoFato> dominioResult = configResult.Value!.ParaDerivacaoDoFato(dominio);
             if (dominioResult.IsFailure)
             {
                 return Result<ConfiguracaoDerivacaoFato>.Failure(dominioResult.Error!);
@@ -327,7 +327,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 }
 
 /// <summary>
-/// Política de derivabilidade de um fato (Story #985). Só pode ter regras de derivação configuradas
+/// Política de derivabilidade de um fato. Só pode ter regras de derivação configuradas
 /// o fato de <c>Origem = DERIVADO</c> cujo binding é o da própria regra de derivação
 /// (<c>REGRA_DERIVACAO:{codigo}</c>). Um fato declarado, ou derivado por outro mecanismo (ex.:
 /// computado de atributo do candidato), não é alvo de configuração de regras.

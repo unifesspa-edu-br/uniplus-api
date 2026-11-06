@@ -129,7 +129,7 @@ public sealed record ConteudoDoModelo(
     /// termos; as derivações por regra do catálogo, resolvidas com as respostas simuladas; e os agregados
     /// do catálogo sobre os grupos.
     /// </summary>
-    public DefinicaoFormulario ParaAvaliacao(IReadOnlyList<RegrasDerivacaoFato> derivacoes, IReadOnlyList<DefinicaoAgregado> agregados)
+    public DefinicaoFormulario ParaAvaliacao(IReadOnlyList<DerivacaoDoFato> derivacoes, IReadOnlyList<DefinicaoAgregado> agregados)
     {
         ArgumentNullException.ThrowIfNull(derivacoes);
         ArgumentNullException.ThrowIfNull(agregados);

@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <summary>
 /// Args aplicados de <see cref="Entities.RegraRecursoFase"/> — os parâmetros que o
 /// admin preenche ao ancorar o prazo de recurso de uma fase na regra
-/// <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c> (#854, Story #851 §3.0/§3.6).
+/// <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -43,7 +43,7 @@ public sealed record ArgsRegraPrazoRecurso(
 /// Por que os args de um recurso foram recusados. O código de erro NÃO é montado aqui: ele é
 /// literal em cada entidade, senão a cobertura do registro de erros não consegue enxergá-lo.
 /// </summary>
-public enum MotivoDeRecusaDeArgs
+public enum MotivoDaRecusaDosArgumentos
 {
     Nenhum = 0,
     PrazoNaoPositivo,
@@ -57,7 +57,7 @@ public enum MotivoDeRecusaDeArgs
 }
 
 /// <summary>A recusa: o motivo, que vira código, e a mensagem já redigida.</summary>
-public readonly record struct RecusaDeArgsDeRecurso(MotivoDeRecusaDeArgs Motivo, string Mensagem);
+public readonly record struct RecusaDosArgumentosDoRecurso(MotivoDaRecusaDosArgumentos Motivo, string Mensagem);
 
 /// <summary>
 /// As invariantes que <see cref="ArgsRegraPrazoRecurso"/> prova sozinho, sem saber quem o
@@ -82,10 +82,10 @@ public readonly record struct RecusaDeArgsDeRecurso(MotivoDeRecusaDeArgs Motivo,
 /// literal em cada entidade para que a cobertura do registro o alcance.
 /// </para>
 /// </remarks>
-public static class ValidacaoDeArgsDeRecurso
+public static class ValidacaoDosArgumentosDoRecurso
 {
     /// <summary>Valida o prazo de interposição e os dois pares de suspensividade.</summary>
-    public static RecusaDeArgsDeRecurso? Validar(ArgsRegraPrazoRecurso args)
+    public static RecusaDosArgumentosDoRecurso? Validar(ArgsRegraPrazoRecurso args)
     {
         ArgumentNullException.ThrowIfNull(args);
 
@@ -100,7 +100,7 @@ public static class ValidacaoDeArgsDeRecurso
         if (args.PrazoValor <= 0)
         {
             return new(
-                MotivoDeRecusaDeArgs.PrazoNaoPositivo,
+                MotivoDaRecusaDosArgumentos.PrazoNaoPositivo,
                 $"O prazo de interposição deve ser estritamente positivo — recebido '{args.PrazoValor}'.");
         }
 
@@ -111,7 +111,7 @@ public static class ValidacaoDeArgsDeRecurso
         if (args.PrazoUnidade == UnidadePrazo.Dias)
         {
             return new(
-                MotivoDeRecusaDeArgs.PrazoEmDiasCorridos,
+                MotivoDaRecusaDosArgumentos.PrazoEmDiasCorridos,
                 "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos.");
         }
 
@@ -122,7 +122,7 @@ public static class ValidacaoDeArgsDeRecurso
         if (args.PrazoUnidade is not (UnidadePrazo.DiasUteis or UnidadePrazo.Horas))
         {
             return new(
-                MotivoDeRecusaDeArgs.PrazoSemUnidadeDeclaravel,
+                MotivoDaRecusaDosArgumentos.PrazoSemUnidadeDeclaravel,
                 $"O prazo de interposição exige unidade declarável — dias úteis ou horas; recebido '{args.PrazoUnidade}'.");
         }
 
@@ -132,11 +132,11 @@ public static class ValidacaoDeArgsDeRecurso
         if (args.PrazoUnidade == UnidadePrazo.DiasUteis && decimal.Truncate(args.PrazoValor) != args.PrazoValor)
         {
             return new(
-                MotivoDeRecusaDeArgs.PrazoEmFracaoDeDiaUtil,
+                MotivoDaRecusaDosArgumentos.PrazoEmFracaoDeDiaUtil,
                 $"O prazo de interposição em dias úteis exige valor inteiro — recebido '{args.PrazoValor}'. Para prazo menor que um dia, declare em horas.");
         }
 
-        RecusaDeArgsDeRecurso? primeira = ValidarParDeSuspensividade(
+        RecusaDosArgumentosDoRecurso? primeira = ValidarParDeSuspensividade(
             args.SuspensividadePrimeiraInstanciaValor,
             args.SuspensividadePrimeiraInstanciaUnidade,
             "1ª instância");
@@ -154,7 +154,7 @@ public static class ValidacaoDeArgsDeRecurso
             && (args.SuspensividadeSegundaInstanciaValor is not null || args.SuspensividadeSegundaInstanciaUnidade is not null))
         {
             return new(
-                MotivoDeRecusaDeArgs.SuspensividadeSuperiorSemInstanciaSuperior,
+                MotivoDaRecusaDosArgumentos.SuspensividadeSuperiorSemInstanciaSuperior,
                 "A janela não admite recurso em instância superior, então não pode declarar tempo de bloqueio da instância superior. Remova o bloqueio ou declare que a janela admite instância superior.");
         }
 
@@ -174,7 +174,7 @@ public static class ValidacaoDeArgsDeRecurso
     /// janela alguma. A ausência dos dois é legítima e significa que aquela instância não
     /// bloqueia — é assim que se desativa a suspensão da instância superior, sem <c>if</c> por módulo.
     /// </summary>
-    private static RecusaDeArgsDeRecurso? ValidarParDeSuspensividade(
+    private static RecusaDosArgumentosDoRecurso? ValidarParDeSuspensividade(
         decimal? valor,
         UnidadePrazo? unidade,
         string instancia)
@@ -192,7 +192,7 @@ public static class ValidacaoDeArgsDeRecurso
         if (valor is { } magnitude && magnitude <= 0)
         {
             return new(
-                MotivoDeRecusaDeArgs.SuspensividadeNaoPositiva,
+                MotivoDaRecusaDosArgumentos.SuspensividadeNaoPositiva,
                 $"O valor da suspensividade da {instancia} deve ser estritamente positivo — recebido '{magnitude}'.");
         }
 
@@ -202,7 +202,7 @@ public static class ValidacaoDeArgsDeRecurso
             && declarada is not (UnidadePrazo.Horas or UnidadePrazo.Dias or UnidadePrazo.DiasUteis))
         {
             return new(
-                MotivoDeRecusaDeArgs.SuspensividadeUnidadeNaoDeclaravel,
+                MotivoDaRecusaDosArgumentos.SuspensividadeUnidadeNaoDeclaravel,
                 $"A unidade da suspensividade da {instancia} não é declarável — recebido '{declarada}'.");
         }
 
@@ -211,7 +211,7 @@ public static class ValidacaoDeArgsDeRecurso
         if (valor is null || unidade is null)
         {
             return new(
-                MotivoDeRecusaDeArgs.SuspensividadeIncompleta,
+                MotivoDaRecusaDosArgumentos.SuspensividadeIncompleta,
                 $"A suspensividade da {instancia} exige valor e unidade juntos, ou nenhum dos dois.");
         }
 

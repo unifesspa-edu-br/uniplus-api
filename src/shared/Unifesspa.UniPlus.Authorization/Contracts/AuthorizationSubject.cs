@@ -90,13 +90,13 @@ public sealed record AuthorizationSubject
 
         return Result<AuthorizationSubject>.Success(new AuthorizationSubject(
             usuario,
-            ColecoesSomenteLeitura.Conjunto(gruposOidc),
-            ColecoesSomenteLeitura.Conjunto(unidadesAdministradas),
-            ColecoesSomenteLeitura.Lista(escoposAuditoria),
+            CopiasImutaveis.Conjunto(gruposOidc),
+            CopiasImutaveis.Conjunto(unidadesAdministradas),
+            CopiasImutaveis.Lista(escoposAuditoria),
             atuacaoAtiva,
             mfaSatisfeito,
             jti,
-            ColecoesSomenteLeitura.Lista(concessoesEfetivas)));
+            CopiasImutaveis.Lista(concessoesEfetivas)));
     }
 
     // Igualdade por valor (CA-01): o Equals sintetizado pelo record compararia as

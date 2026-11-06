@@ -2,10 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Services;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -21,17 +18,6 @@ internal static class ProtecaoDasExigencias
             .Where(exigencia => protecao.PorExigencia.ContainsKey(exigencia.Id))
             .Select(exigencia => (exigencia, protecao.PorExigencia[exigencia.Id]))]);
     }
-
-    /// <summary>
-    /// A finalidade de cada exigência continua coerente com a fase dela: a escrita confere, e o
-    /// cronograma pode ter tirado da fase, depois, o formulário que a exigência declara.
-    /// </summary>
-    internal static DomainError? PendenciaDaFinalidadeDasExigencias(EstadoDaConfiguracao estado) =>
-        estado.DocumentosExigidos
-            .Select(exigencia => estado.CronogramaFases.FirstOrDefault(f => f.Id == exigencia.ExigidoNaFaseId) is { } fase
-                ? Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(exigencia.Finalidade, fase)
-                : null)
-            .FirstOrDefault(static recusa => recusa is not null);
 
     internal static ClassificacaoDeProtecao ClassificacaoEfetiva(DocumentoExigido exigencia, ProtecaoVigenteDasExigencias? protecao) =>
         protecao is not null && protecao.PorExigencia.TryGetValue(exigencia.Id, out ProtecaoDoDocumento? efetiva)
@@ -115,46 +101,5 @@ internal static class ProtecaoDasExigencias
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Pendências dos documentos exigidos. Chamado por
-    /// a publicação e a sucessão de versão (retificação e fechamento da sessão), sempre
-    /// <b>depois</b> da pendência do cronograma.
-    /// </summary>
-    /// <remarks>
-    /// Uma exigência <c>CONDICIONAL</c> sem nenhuma condição de gatilho viva que
-    /// <see cref="DocumentoExigido.DeterminaResultado"/> é "exigência morta": nunca seria cobrada de
-    /// ninguém. A decisão sobre o que é exigido para cada modalidade é do gate de conformidade legal
-    /// (<see cref="Services.AvaliadorConformidadeLegal.Avaliar"/>), com base no que está configurado.
-    /// </remarks>
-    internal static DomainError? PendenciaDasExigenciasDocumentais(EstadoDaConfiguracao estado)
-    {
-        foreach (DocumentoExigido exigencia in estado.DocumentosExigidos)
-        {
-            bool possuiCondicaoViva = exigencia.Condicoes.Count > 0;
-            if (exigencia.Aplicabilidade == Aplicabilidade.Condicional
-                && !possuiCondicaoViva
-                && exigencia.DeterminaResultado())
-            {
-                return new DomainError(
-                    "DocumentoExigido.CondicionalVaziaDeterminaResultado",
-                    $"A exigência '{exigencia.TipoDocumentoCodigo}' é CONDICIONAL, determina resultado, mas não tem nenhuma condição de gatilho viva — nunca seria cobrada de ninguém.");
-            }
-        }
-
-        return null;
-    }
-}
-
-/// <summary>A proteção vigente que cada exigência recebe ao congelar; só a raiz aplica.</summary>
-internal sealed record PlanoDaProtecaoVigente(IReadOnlyList<(DocumentoExigido Exigencia, ProtecaoDoDocumento Efetiva)> Exigencias)
-{
-    internal void Aplicar()
-    {
-        foreach ((DocumentoExigido exigencia, ProtecaoDoDocumento efetiva) in Exigencias)
-        {
-            exigencia.RecongelarProtecao(efetiva);
-        }
     }
 }

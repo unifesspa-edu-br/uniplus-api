@@ -155,7 +155,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
         config.Regras.Single().Condicoes.Should().BeEmpty("a âncora não tem condição");
 
-        RegrasDerivacaoFato vo = config.ParaRegrasDerivacao(DominioDoDerivado).Value!;
+        DerivacaoDoFato vo = config.ParaDerivacaoDoFato(DominioDoDerivado).Value!;
         vo.Regras.Single().EhAncora.Should().BeTrue("uma regra sem condição é a âncora incondicional");
     }
 
@@ -164,7 +164,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ConfiguracaoDerivacaoFato config = ConfigDerivado();
 
-        Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(DominioDoDerivado);
+        Result<DerivacaoDoFato> vo = config.ParaDerivacaoDoFato(DominioDoDerivado);
 
         vo.IsSuccess.Should().BeTrue(vo.Error?.Message);
         vo.Value!.CodigoFato.Should().Be(Derivado);
@@ -179,7 +179,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar(Derivado,
             [Ancora(0, "CODIGO_INEXISTENTE")]).Value!;
 
-        Result<RegrasDerivacaoFato> vo = config.ParaRegrasDerivacao(DominioDoDerivado);
+        Result<DerivacaoDoFato> vo = config.ParaDerivacaoDoFato(DominioDoDerivado);
 
         vo.IsFailure.Should().BeTrue("um código fora do domínio congelado do processo é recusado, nunca traduzido");
     }

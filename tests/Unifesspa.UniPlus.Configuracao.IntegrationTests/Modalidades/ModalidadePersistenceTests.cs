@@ -493,19 +493,19 @@ public sealed class ModalidadePersistenceTests
 
     private static Modalidade Ampla(string codigo) =>
         Modalidade.Criar(codigo, null, "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null,
-            RegrasDeAplicabilidadeLegais.AmplaConcorrencia, null, null).Value!;
+            SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null).Value!;
 
     private static Modalidade Cota(string codigo) =>
         Modalidade.Criar(codigo, "Cota", "COTA_RESERVADA", "DENTRO_DO_VR", null, "SEGUE_CASCATA", null, null, null,
-            RegrasDeAplicabilidadeLegais.LiEp, null, null).Value!;
+            SementeDeAplicabilidadeLegal.LiEp, null, null).Value!;
 
     private static Modalidade RetiraDe(string codigo, string origem) =>
         Modalidade.Criar(codigo, null, "AMPLA", "RETIRA_DE", origem, null, null, null, null,
-            RegrasDeAplicabilidadeLegais.AmplaConcorrencia, null, null).Value!;
+            SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null).Value!;
 
     private static Modalidade DestinoUnico(string codigo, string destino) =>
         Modalidade.Criar(codigo, null, "ACAO_AFIRMATIVA", "SUPLEMENTAR_AO_TOTAL", null, "DESTINO_UNICO", destino, null, null,
-            RegrasDeAplicabilidadeLegais.AcPcd, null, null).Value!;
+            SementeDeAplicabilidadeLegal.AcPcd, null, null).Value!;
 
     private static string CodigoUnico() => $"MOD_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

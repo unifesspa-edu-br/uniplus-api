@@ -80,8 +80,8 @@ public static class OrigemEscolar
         [.. RegrasDoEgresso.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
 
     /// <summary>A derivação do egresso de escola pública.</summary>
-    public static RegrasDerivacaoFato DerivacaoDoEgresso() =>
-        Exigir(RegrasDerivacaoFato.CriarBooleana(FatoEgresso, RegrasDoEgresso, DependenciasDoEgresso));
+    public static DerivacaoDoFato DerivacaoDoEgresso() =>
+        Exigir(DerivacaoDoFato.CriarBooleana(FatoEgresso, RegrasDoEgresso, DependenciasDoEgresso));
 
     private static CondicaoDnf Condicao<T>(string fato, Operador operador, T valor) =>
         Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)));

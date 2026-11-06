@@ -61,7 +61,7 @@ public static class ReferenciaTemporalDosFatos
 
     /// <summary>
     /// Pendência de <see cref="ReferenciaTemporalFatos"/>, avaliada depois de
-    /// <see cref="ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais"/>.
+    /// <see cref="PendenciasDasExigencias.PendenciaDasExigenciasDocumentais"/>.
     /// </summary>
     /// <remarks>
     /// Sem fallback silencioso (ADR-0111:235-236): se alguma regra — gatilho de exigência ou regra

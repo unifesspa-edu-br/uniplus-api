@@ -46,7 +46,7 @@ internal static class CicloRecursalDoCronograma
     /// Sem I/O e sem navegação — só o que já está em memória (CA-11).
     /// </para>
     /// </remarks>
-    internal static List<FieldError> ViolacoesDaConclusaoDoCicloRecursal(IReadOnlyList<FaseCronograma> fases)
+    internal static List<FieldError> ConferirConclusaoDoCicloRecursal(IReadOnlyList<FaseCronograma> fases)
     {
         List<FieldError> violacoes = [];
 
@@ -164,13 +164,13 @@ internal static class CicloRecursalDoCronograma
     /// <remarks>
     /// O gate devolve uma; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item só. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacoesDoRecorteDeCompetencia"/>), que por sua vez chama o predicado de
+    /// (<see cref="ConferirRecorteDeCompetencia"/>), que por sua vez chama o predicado de
     /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
     /// também chamam.
     /// </remarks>
     internal static DomainError? PendenciaDoRecorteDeCompetencia(EstadoDaConfiguracao estado)
     {
-        List<FieldError> violacoes = ViolacoesDoRecorteDeCompetencia([.. estado.CronogramaFases]);
+        List<FieldError> violacoes = ConferirRecorteDeCompetencia([.. estado.CronogramaFases]);
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;
     }
@@ -180,7 +180,7 @@ internal static class CicloRecursalDoCronograma
     /// localiza cada uma.
     /// </summary>
     /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
-    internal static List<FieldError> ViolacoesDoRecorteDeCompetencia(IReadOnlyList<FaseCronograma> fases)
+    internal static List<FieldError> ConferirRecorteDeCompetencia(IReadOnlyList<FaseCronograma> fases)
     {
         List<FieldError> violacoes = [];
 
@@ -201,13 +201,13 @@ internal static class CicloRecursalDoCronograma
     /// <remarks>
     /// O gate devolve uma; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item só. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacoesDaAncoraDoRecurso"/>), que por sua vez chama o predicado de
+    /// (<see cref="ConferirAncoraDoRecurso"/>), que por sua vez chama o predicado de
     /// <c>FaseCronograma</c> que a fábrica, a reidratação e o decodificador do envelope
     /// também chamam — não há um segundo <c>if</c> para lembrar de sincronizar.
     /// </remarks>
     internal static DomainError? PendenciaDaAncoraDoRecurso(EstadoDaConfiguracao estado)
     {
-        List<FieldError> violacoes = ViolacoesDaAncoraDoRecurso([.. estado.CronogramaFases]);
+        List<FieldError> violacoes = ConferirAncoraDoRecurso([.. estado.CronogramaFases]);
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;
     }
@@ -235,7 +235,7 @@ internal static class CicloRecursalDoCronograma
     /// que localiza cada uma.
     /// </summary>
     /// <remarks>Sem I/O e sem navegação — só o que já está em memória.</remarks>
-    internal static List<FieldError> ViolacoesDaAncoraDoRecurso(IReadOnlyList<FaseCronograma> fases)
+    internal static List<FieldError> ConferirAncoraDoRecurso(IReadOnlyList<FaseCronograma> fases)
     {
         List<FieldError> violacoes = [];
 
@@ -257,15 +257,15 @@ internal static class CicloRecursalDoCronograma
     /// <remarks>
     /// O gate devolve uma; <see cref="ChecklistDeConformidade.AvaliarConformidade"/> projeta o mesmo predicado num
     /// item só. As duas metades vêm da MESMA travessia
-    /// (<see cref="ViolacoesDaConclusaoDoCicloRecursal"/>), que é o que mantém a
+    /// (<see cref="ConferirConclusaoDoCicloRecursal"/>), que é o que mantém a
     /// bicondicional de pé sem um segundo <c>if</c> para lembrar de sincronizar.
     /// </remarks>
     internal static DomainError? PendenciaDaConclusaoDoCicloRecursal(EstadoDaConfiguracao estado)
     {
         List<FieldError> violacoes =
         [
-            .. CicloRecursalDoCronograma.ViolacoesDaConclusaoDoCicloRecursal([.. estado.CronogramaFases]),
-            .. RegrasDasEtapas.ViolacoesDoFechamentoDoCicloDasEtapas([.. estado.Etapas]),
+            .. CicloRecursalDoCronograma.ConferirConclusaoDoCicloRecursal([.. estado.CronogramaFases]),
+            .. RegrasDasEtapas.ConferirFechamentoDoCicloDasEtapas([.. estado.Etapas]),
         ];
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;

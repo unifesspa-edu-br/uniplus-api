@@ -30,7 +30,7 @@ public sealed record FechamentoDasDependencias(
     public static FechamentoDasDependencias De(
         IEnumerable<string> citados,
         IReadOnlySet<string> perguntados,
-        IReadOnlyDictionary<string, RegrasDerivacaoFato> derivacoes,
+        IReadOnlyDictionary<string, DerivacaoDoFato> derivacoes,
         IReadOnlyDictionary<string, DefinicaoAgregado> agregados,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>>? condicoes = null)
     {
@@ -57,7 +57,7 @@ public sealed record FechamentoDasDependencias(
                 perguntadosAlcancados.Add(fato);
                 SeguirCondicoes(fato);
             }
-            else if (derivacoes.TryGetValue(fato, out RegrasDerivacaoFato? derivacao))
+            else if (derivacoes.TryGetValue(fato, out DerivacaoDoFato? derivacao))
             {
                 derivacoesAlcancadas.Add(fato);
                 foreach (string dependencia in derivacao.DependenciasDeclaradas)

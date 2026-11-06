@@ -228,7 +228,7 @@ public static class VocabularioDoCatalogo
     /// por regra sem regra padrão não entra — quem o deriva é o processo.
     /// </summary>
     public static Dictionary<string, IReadOnlyCollection<string>> Derivacoes(IEnumerable<FatoCandidato> fatos) =>
-        DerivadosDoSistema.ComAsDoSistema(RegrasDeDerivacao(fatos).Select(static r => KeyValuePair.Create(r.CodigoFato, r.DependenciasDeclaradas)));
+        DerivadosDoSistema.ComAsDoSistema(DerivacoesDosFatos(fatos).Select(static r => KeyValuePair.Create(r.CodigoFato, r.DependenciasDeclaradas)));
 
     /// <summary>O formato da resposta de cada fato de texto, em token canônico.</summary>
     public static Dictionary<string, string> Formatos(IEnumerable<FatoCandidato> fatos)
@@ -244,7 +244,7 @@ public static class VocabularioDoCatalogo
     /// regra, booleano ou categórico, com as dependências citadas por elas. O catálogo as conferiu ao
     /// gravá-las, então uma recusa aqui é defeito.
     /// </summary>
-    public static IReadOnlyList<RegrasDerivacaoFato> RegrasDeDerivacao(IEnumerable<FatoCandidato> fatos)
+    public static IReadOnlyList<DerivacaoDoFato> DerivacoesDosFatos(IEnumerable<FatoCandidato> fatos)
     {
         ArgumentNullException.ThrowIfNull(fatos);
         return [.. fatos
@@ -252,12 +252,12 @@ public static class VocabularioDoCatalogo
             .Select(static f =>
             {
                 string[] dependencias = [.. f.RegrasPadrao.SelectMany(static r => r.FatosCitados).Distinct(StringComparer.Ordinal)];
-                Result<RegrasDerivacaoFato> regras = f.Dominio == DominioFato.Booleano
-                    ? RegrasDerivacaoFato.CriarBooleana(f.Codigo, f.RegrasPadrao, dependencias)
-                    : RegrasDerivacaoFato.Criar(f.Codigo, f.RegrasPadrao, dependencias, [.. f.ValoresDominioDeclarados.Select(static v => v.Codigo)]);
-                return regras.IsSuccess
-                    ? regras.Value!
-                    : throw new InvalidOperationException($"As regras padrão gravadas de '{f.Codigo}' não formam uma derivação: {regras.Error!.Message}");
+                Result<DerivacaoDoFato> derivacao = f.Dominio == DominioFato.Booleano
+                    ? DerivacaoDoFato.CriarBooleana(f.Codigo, f.RegrasPadrao, dependencias)
+                    : DerivacaoDoFato.Criar(f.Codigo, f.RegrasPadrao, dependencias, [.. f.ValoresDominioDeclarados.Select(static v => v.Codigo)]);
+                return derivacao.IsSuccess
+                    ? derivacao.Value!
+                    : throw new InvalidOperationException($"As regras padrão gravadas de '{f.Codigo}' não formam uma derivação: {derivacao.Error!.Message}");
             })];
     }
 }

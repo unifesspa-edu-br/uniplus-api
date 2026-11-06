@@ -43,11 +43,11 @@ public static class ConferenciaDosMunicipiosDaInscricao
         ArgumentNullException.ThrowIfNull(conferencia);
 
         Dictionary<string, string> ufDoMunicipio = UfDeCadaCampoDeMunicipio(definicao, admitidas);
-        ConferenciaEmAndamento andamento = new(conferencia, camposRecusados);
+        ApuracaoDosMunicipios apuracao = new(conferencia, camposRecusados);
 
         foreach (AvaliacaoItem item in avaliacao.Itens.Where(i => ufDoMunicipio.ContainsKey(i.FatoCodigo)))
         {
-            await andamento.ConferirAsync(
+            await apuracao.ConferirAsync(
                 item.FatoCodigo, respostas, avaliacao.Fatos, avaliacao.Fatos, ufDoMunicipio[item.FatoCodigo], cancellationToken).ConfigureAwait(false);
         }
 
@@ -64,14 +64,14 @@ public static class ConferenciaDosMunicipiosDaInscricao
             {
                 foreach (AvaliacaoItem subitem in ocorrencia.Itens.Where(i => ufDoMunicipio.ContainsKey(i.FatoCodigo)))
                 {
-                    await andamento.ConferirAsync(
+                    await apuracao.ConferirAsync(
                         subitem.FatoCodigo, respondidaPorId[ocorrencia.Id].Respostas, ocorrencia.Fatos, avaliacao.Fatos,
                         ufDoMunicipio[subitem.FatoCodigo], cancellationToken, caminho: $"{grupo.Codigo}.{ocorrencia.Id}").ConfigureAwait(false);
                 }
             }
         }
 
-        return andamento.Resultado();
+        return apuracao.Resultado();
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ public static class ConferenciaDosMunicipiosDaInscricao
         return ufDoMunicipio;
     }
 
-    private sealed class ConferenciaEmAndamento(IConferenciaEnderecoGeo conferencia, IReadOnlySet<string> camposRecusados)
+    private sealed class ApuracaoDosMunicipios(IConferenciaEnderecoGeo conferencia, IReadOnlySet<string> camposRecusados)
     {
         private readonly List<FieldError> _recusas = [];
         private readonly Dictionary<string, string> _nomes = new(StringComparer.Ordinal);

@@ -23,7 +23,7 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
 
-        // Story #851 §3.5: lista vazia passa a ser um payload válido (processo sem
+        // Lista vazia é um payload válido (processo sem
         // prova, ex. SiSU) — só a nulidade do array em si é recusada aqui.
         RuleFor(x => x.Etapas)
             .NotNull()
@@ -38,7 +38,7 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
 
         RuleForEach(x => x.Etapas).ChildRules(etapa =>
         {
-            // Issue #1071: toda etapa declara o tipo de origem — sem produção em
+            // Toda etapa declara o tipo de origem — sem produção em
             // nenhum ambiente, não há transição com tipo opcional.
             etapa.RuleFor(e => e.TipoEtapaOrigemId)
                 .NotEmpty()
@@ -137,7 +137,7 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
 
             // O prazo de interposição e os dois pares de suspensividade são persistidos como
             // numeric(18,4), e o que sobra de escala o banco ARREDONDA em silêncio: um prazo
-            // de 0,00001 hora é estritamente positivo para ValidacaoDeArgsDeRecurso, vira
+            // de 0,00001 hora é estritamente positivo para ValidacaoDosArgumentosDoRecurso, vira
             // 0,0000 na coluna, e a janela recursal passa a fechar no mesmo instante em que
             // abre — exatamente o que aquela validação existe para impedir. Acima de catorze
             // dígitos inteiros o banco nem arredonda: estoura 22003 como 500 no meio do PUT.

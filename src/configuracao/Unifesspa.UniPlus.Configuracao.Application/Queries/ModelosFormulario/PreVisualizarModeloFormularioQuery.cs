@@ -82,7 +82,7 @@ public static class PreVisualizarModeloFormularioQueryHandler
         await OpcoesDoCadastroInstitucional.CompletarAsync(opcoes, fatos, condicaoRepository, recursoRepository, tipoDeficienciaRepository, baseLegalBonusRepository, cancellationToken).ConfigureAwait(false);
         Dictionary<string, IReadOnlySet<string>> ofertas = VocabularioDoCatalogo.Ofertas(opcoes);
         AvaliacaoFormulario avaliacao = AvaliadorFormulario.Avaliar(
-            conteudo.ParaAvaliacao(VocabularioDoCatalogo.RegrasDeDerivacao(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos)),
+            conteudo.ParaAvaliacao(VocabularioDoCatalogo.DerivacoesDosFatos(fatos), VocabularioDoCatalogo.AgregadosDosGrupos(fatos, conteudo.Grupos)),
             new EntradaAvaliacaoFormulario(
                 RespostaDeCampo.DentroDaOferta(simulacao.Respostas ?? new Dictionary<string, JsonElement>(), ofertas),
                 new HashSet<string>(simulacao.EtapasConcluidas ?? [], StringComparer.Ordinal),

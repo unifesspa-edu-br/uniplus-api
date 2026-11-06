@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Deriva o valor de um fato a partir da sua regra de derivação e dos fatos resolvidos do candidato
-/// (Story #927). Função pura: avalia todas as regras ativas e une as contribuições.
+/// Deriva o valor de um fato a partir da sua regra de derivação e dos fatos resolvidos do candidato.
+/// Função pura: avalia todas as regras ativas e une as contribuições.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -35,13 +35,13 @@ public static class MotorDerivacao
     public const string VersaoSemantica = "2";
 
     public static ResultadoDerivacao Derivar(
-        RegrasDerivacaoFato regras,
+        DerivacaoDoFato derivacao,
         IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos)
     {
-        ArgumentNullException.ThrowIfNull(regras);
+        ArgumentNullException.ThrowIfNull(derivacao);
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
 
-        foreach (string dependencia in regras.DependenciasDeclaradas)
+        foreach (string dependencia in derivacao.DependenciasDeclaradas)
         {
             if (!fatosResolvidos.TryGetValue(dependencia, out FatoResolvido? fato)
                 || fato is null
@@ -53,7 +53,7 @@ public static class MotorDerivacao
 
         HashSet<string> derivado = new(StringComparer.Ordinal);
         bool algumaAtiva = false;
-        foreach (RegraDerivacao regra in regras.Regras)
+        foreach (RegraDerivacao regra in derivacao.Regras)
         {
             switch (regra.AvaliarQuando(fatosResolvidos))
             {
@@ -79,6 +79,6 @@ public static class MotorDerivacao
             }
         }
 
-        return regras.Booleano ? ResultadoDerivacao.ResolvidoBooleano(algumaAtiva) : ResultadoDerivacao.Resolvido(derivado);
+        return derivacao.Booleano ? ResultadoDerivacao.ResolvidoBooleano(algumaAtiva) : ResultadoDerivacao.Resolvido(derivado);
     }
 }

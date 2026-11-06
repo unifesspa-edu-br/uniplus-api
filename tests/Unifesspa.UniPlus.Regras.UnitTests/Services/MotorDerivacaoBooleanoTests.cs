@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public sealed class MotorDerivacaoBooleanoTests
 {
-    private static readonly RegrasDerivacaoFato EgressoDeEscolaPublica = RegrasDerivacaoFato.CriarBooleana(
+    private static readonly DerivacaoDoFato EgressoDeEscolaPublica = DerivacaoDoFato.CriarBooleana(
         "EGRESSO_ESCOLA_PUBLICA",
         [RegraDerivacao.CriarBooleana(Predicado("TIPO_ESCOLA", Operador.Em, new[] { "PUBLICA_INTEGRAL", "COMUNITARIA_CAMPO_CONVENIADA" }))],
         ["TIPO_ESCOLA"]).Value!;
@@ -44,10 +44,10 @@ public sealed class MotorDerivacaoBooleanoTests
 
     [Fact(DisplayName = "Derivação booleana recusa regra que contribui código")]
     public void CriarBooleana_RegraComContribuicao_Recusa() =>
-        RegrasDerivacaoFato.CriarBooleana(
+        DerivacaoDoFato.CriarBooleana(
             "EGRESSO_ESCOLA_PUBLICA",
             [RegraDerivacao.Criar(Predicado("TIPO_ESCOLA", Operador.Igual, "PUBLICA_INTEGRAL"), "SIM").Value!],
-            ["TIPO_ESCOLA"]).Error!.Code.Should().Be(RegrasDerivacaoFatoErrorCodes.ContribuiForaDoDominio);
+            ["TIPO_ESCOLA"]).Error!.Code.Should().Be(DerivacaoDoFatoErrorCodes.ContribuiForaDoDominio);
 
     private static PredicadoDnf Predicado(string fato, Operador operador, object valor) =>
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;

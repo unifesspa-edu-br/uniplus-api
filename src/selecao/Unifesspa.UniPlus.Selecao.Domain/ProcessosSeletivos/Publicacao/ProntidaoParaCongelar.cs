@@ -85,8 +85,8 @@ public static class ProntidaoParaCongelar
 
         Func<DomainError?>[] emOrdem =
         [
-            () => ProtecaoDasExigencias.PendenciaDasExigenciasDocumentais(estado),
-            () => ProtecaoDasExigencias.PendenciaDaFinalidadeDasExigencias(estado),
+            () => PendenciasDasExigencias.PendenciaDasExigenciasDocumentais(estado),
+            () => PendenciasDasExigencias.PendenciaDaFinalidadeDasExigencias(estado),
             () => ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(estado, protecao),
             () => ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(estado, protecao),
             () => ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(estado, fatosDeModalidade),
@@ -95,7 +95,7 @@ public static class ProntidaoParaCongelar
             () => PendenciasDosFatos.PendenciaDeFatosCitados(estado),
             () => CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(estado),
             () => PendenciasDosFatos.PendenciaDeCampoOpcionalQueAlimentaRegra(estado),
-            () => RegrasDasExigencias.PendenciaDaRepeticaoPorGrupo(estado),
+            () => PendenciasDasExigencias.PendenciaDaRepeticaoPorGrupo(estado),
             // Antes da falta de opções: fora do ENEM, a edição não tem opções a declarar, e o que se
             // corrige é o campo ou a classificação.
             () => PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(estado.Campos, estado.Classificacao),
@@ -111,11 +111,11 @@ public static class ProntidaoParaCongelar
             () => PendenciasDosFormularios.PendenciaDosItensEmExcesso(estado),
             () => RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(estado.DistribuicaoVagas),
             () => RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(estado.DistribuicaoVagas),
-            () => RegrasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(estado),
-            () => RegrasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(estado),
+            () => PendenciasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(estado),
+            () => PendenciasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(estado),
             () => ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(estado),
             () => PendenciasDosFatos.PendenciaDoGrafoConjunto(estado),
-            () => RegrasDoDesempate.PendenciaDosCriteriosDesempate(estado),
+            () => PendenciasDoDesempate.PendenciaDosCriteriosDesempate(estado),
         ];
 
         return emOrdem.Select(static portao => portao()).FirstOrDefault(static pendencia => pendencia is not null);

@@ -19,15 +19,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
-/// Handler do <see cref="DefinirCriteriosDesempateCommand"/> (Story #774). Lê o catálogo de
-/// critérios do <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772) e, quando
+/// Handler do <see cref="DefinirCriteriosDesempateCommand"/>. Lê o catálogo de
+/// critérios do <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>) e, quando
 /// preciso, o vocabulário de fatos antes de travar o processo; depois do 404, do If-Match e do
 /// teto, resolve cada critério no catálogo já lido, monta os args tipados conforme o código da
 /// regra e congela a referência — a
 /// existência do <c>etapa_ref</c> no processo (INV-B6) é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum critério referencia
 /// <c>DESEMPATE-PREDICADO-FATO</c>, resolve também o vocabulário fechado de fatos do candidato
-/// (<see cref="IFatoCandidatoReader"/>, #846, ADR-0111) para que
+/// (<see cref="IFatoCandidatoReader"/>, ADR-0111) para que
 /// <see cref="CriterioDesempate.Criar"/> valide a condição contra ele (fecha o INV-B6 do
 /// <c>Fato</c>). As recusas de todos os critérios se acumulam, cada uma no campo do item,
 /// granularidade nunca coberta pelo FluentValidation.
@@ -50,7 +50,7 @@ public static class DefinirCriteriosDesempateCommandHandler
 
         // Acima do teto a lista não é lida item a item: o validator não confere os itens dela,
         // e a recusa do agregado é a única resposta.
-        List<FieldError> quantidadeErros = RegrasDoDesempate.ValidarQuantidadeDeCriteriosDesempate(command.Criterios.Count);
+        List<FieldError> quantidadeErros = RegrasDoDesempate.ConferirQuantidadeDeCriteriosDesempate(command.Criterios.Count);
         bool resolverCriterios = quantidadeErros.Count == 0 && command.Criterios.Count > 0;
 
         // As leituras que não dependem do processo rodam antes de travá-lo para a mutação. O
@@ -130,7 +130,7 @@ public static class DefinirCriteriosDesempateCommandHandler
 
         if (erros.Count > 0)
         {
-            erros.AddRange(RegrasDoDesempate.ValidarCriteriosDesempate(EstadoDaConfiguracao.De(processo), informados));
+            erros.AddRange(RegrasDoDesempate.ConferirCriteriosDesempate(EstadoDaConfiguracao.De(processo), informados));
             return Result<MutacaoAceita>.ValidationFailure(RegrasDoDesempate.AnexarAreasAceitasDoDesempate(EstadoDaConfiguracao.De(processo), erros));
         }
 
@@ -163,7 +163,7 @@ public static class DefinirCriteriosDesempateCommandHandler
     }
 
     /// <summary>
-    /// Mapeia <see cref="FatoCandidatoView"/> (o DTO cross-módulo real do #846)
+    /// Mapeia <see cref="FatoCandidatoView"/> (o DTO cross-módulo real do catálogo)
     /// para o <see cref="DescritorFatoCandidato"/> próprio do Domain de
     /// Selecao. Um fato categórico de <b>escopo-processo</b> (<c>Dominio ==
     /// "CATEGORICO"</c> com <c>ValoresDominio</c> nulo — ex.: <c>MODALIDADE</c>,
