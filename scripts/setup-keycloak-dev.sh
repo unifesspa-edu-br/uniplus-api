@@ -14,6 +14,10 @@
 #   4b. ensure_geo_m2m_client               — client M2M uniplus-api-selecao, com
 #                                             que a API confere o endereço no Geo
 #   5. reset_test_user_passwords            — 4 users de teste, senha não-temporária
+#   5a. ensure_instalacao_role              — papel uniplus-instalacao no realm e
+#                                             atribuição ao executor (admin); só
+#                                             este papel habilita a instalação dos
+#                                             primeiros gestores de acessos
 #   5b. ensure_personas                     — 60 personas fictícias do portal de
 #                                             documentação (api#1861), mesma senha
 #   6. configure_ldap_federation_if_available — User Federation contra openldap
@@ -50,6 +54,9 @@
 #   KC_ADMIN_PASS           (default: admin)
 #   UNIPLUS_API_SELECAO_CLIENT_SECRET (default: o valor de docker/.env) — secret do
 #                           client M2M do Geo; tem de ser o mesmo que a API recebe
+#   INSTALACAO_EXECUTOR     (default: admin) — usuário que recebe o papel uniplus-instalacao
+#   CONFIGURACAO_WEB_ORIGIN (default: http://localhost:4203) — origem do app Configuração
+#                           (redirect URI e web origin do client configuracao-web)
 #   TEST_PASSWORD           (default: Uni+Teste26) — vale para os 4 usuários de
 #                           teste e para as personas fictícias (etapa 5b)
 #
@@ -74,7 +81,9 @@ TEST_PASSWORD="${TEST_PASSWORD:-Uni+Teste26}"
 
 readonly TEST_USERS=("admin" "gestor" "avaliador" "candidato")
 readonly CONFIGURACAO_WEB_CLIENT_ID="configuracao-web"
-readonly CONFIGURACAO_WEB_ORIGIN="http://localhost:4203"
+CONFIGURACAO_WEB_ORIGIN="${CONFIGURACAO_WEB_ORIGIN:-http://localhost:4203}"
+readonly INSTALACAO_ROLE="uniplus-instalacao"
+INSTALACAO_EXECUTOR="${INSTALACAO_EXECUTOR:-admin}"
 readonly GEO_M2M_CLIENT_ID="uniplus-api-selecao"
 
 LDAP_HOST="${LDAP_HOST:-openldap}"
@@ -381,6 +390,30 @@ reset_test_user_passwords() {
         auth_json -X PUT "$API/users/$user_id" -d '{"requiredActions":[]}' >/dev/null
         ok "$user — senha=$TEST_PASSWORD (não-temporária), required_actions limpos"
     done
+}
+
+# ---- Etapa 5a — Papel de instalação dos gestores de acessos ----------------
+
+# O papel só existe no realm-export-dev-local.json; o realm `unifesspa`, que a API valida, não o traz.
+# Habilita apenas a instalação dos primeiros gestores (ADR-0152), enquanto não houver gestor ativo.
+# Fica no executor (`admin`), que não será gestor — é a pessoa que roda a instalação.
+ensure_instalacao_role() {
+    log "Garantindo o papel '$INSTALACAO_ROLE' e atribuindo a '$INSTALACAO_EXECUTOR'"
+
+    if ! auth "$API/roles/$INSTALACAO_ROLE" >/dev/null 2>&1; then
+        auth_json -X POST "$API/roles" -d "$(jq -nc --arg n "$INSTALACAO_ROLE" \
+            '{name: $n, description: "Habilita só a instalação dos primeiros gestores de acessos"}')" >/dev/null
+        ok "papel '$INSTALACAO_ROLE' criado"
+    fi
+
+    local role user_id
+    role=$(auth "$API/roles/$INSTALACAO_ROLE")
+    user_id=$(auth "$API/users?username=$INSTALACAO_EXECUTOR&exact=true" | jq -r '.[0].id // empty')
+    [ -n "$user_id" ] || fail "Usuário '$INSTALACAO_EXECUTOR' não existe no realm $KC_REALM"
+
+    # O POST de role-mappings é idempotente (204 também quando o papel já está atribuído).
+    auth_json -X POST "$API/users/$user_id/role-mappings/realm" -d "[$role]" >/dev/null
+    ok "'$INSTALACAO_EXECUTOR' tem '$INSTALACAO_ROLE'"
 }
 
 # ---- Etapa 5b — Personas fictícias do portal (dev local) -------------------
@@ -835,6 +868,7 @@ main() {
     ensure_configuracao_web_client
     ensure_geo_m2m_client
     reset_test_user_passwords
+    ensure_instalacao_role
     ensure_personas
     configure_ldap_federation_if_available
     configure_first_broker_login_with_cpf
