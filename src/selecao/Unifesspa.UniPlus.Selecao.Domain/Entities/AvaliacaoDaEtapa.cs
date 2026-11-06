@@ -45,30 +45,7 @@ public sealed class AvaliacaoDaEtapa : IForensicEntity
 
     public static AvaliacaoDaEtapa Registrar(Guid loteId, Guid etapaProcessoId, AvaliacaoApurada apurada)
     {
-        ArgumentNullException.ThrowIfNull(apurada);
-        ArgumentOutOfRangeException.ThrowIfEqual(loteId, Guid.Empty);
-        ArgumentOutOfRangeException.ThrowIfEqual(etapaProcessoId, Guid.Empty);
-        ArgumentOutOfRangeException.ThrowIfEqual(apurada.InscricaoId, Guid.Empty);
-        ArgumentOutOfRangeException.ThrowIfEqual(apurada.OfertaCursoId, Guid.Empty);
-        ArgumentException.ThrowIfNullOrWhiteSpace(apurada.GrupoAreaEnemCodigo);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(apurada.GrupoAreaEnemCodigo.Length, GrupoAreaEnemSnapshot.CodigoMaxLength);
-
-        if (!Enum.IsDefined(apurada.Situacao))
-        {
-            throw new ArgumentOutOfRangeException(nameof(apurada), "Situação da avaliação desconhecida.");
-        }
-
-        if ((apurada.Situacao == SituacaoDaAvaliacao.Apurada) != apurada.Nota.HasValue)
-        {
-            throw new ArgumentException("Só a avaliação apurada tem nota, e toda avaliação apurada tem.", nameof(apurada));
-        }
-
-        if (apurada.Nota is { } nota)
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(nota, 0m);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(nota, NotaMaxima);
-        }
-
+        ExigirRegistravel(loteId, etapaProcessoId, apurada);
         return new AvaliacaoDaEtapa
         {
             LoteId = loteId,
@@ -79,5 +56,16 @@ public sealed class AvaliacaoDaEtapa : IForensicEntity
             Situacao = apurada.Situacao,
             Nota = apurada.Nota,
         };
+    }
+
+    private static void ExigirRegistravel(Guid loteId, Guid etapaProcessoId, AvaliacaoApurada apurada)
+    {
+        ArgumentNullException.ThrowIfNull(apurada);
+        ArgumentOutOfRangeException.ThrowIfEqual(loteId, Guid.Empty);
+        ArgumentOutOfRangeException.ThrowIfEqual(etapaProcessoId, Guid.Empty);
+        if (apurada.Violacao() is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(apurada));
+        }
     }
 }

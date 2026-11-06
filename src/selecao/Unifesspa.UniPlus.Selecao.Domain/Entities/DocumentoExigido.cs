@@ -391,11 +391,9 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     private static void ExigirProtecao(ProtecaoDoDocumento protecao)
     {
         ArgumentNullException.ThrowIfNull(protecao);
-        ArgumentException.ThrowIfNullOrWhiteSpace(protecao.Finalidade);
-        ArgumentException.ThrowIfNullOrWhiteSpace(protecao.HipoteseLegal);
-        if (protecao.Classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(protecao.Classificacao))
+        if (protecao.Violacao() is { } violacao)
         {
-            throw new ArgumentException("A classificação de proteção do tipo de documento é obrigatória.", nameof(protecao));
+            throw new ArgumentException(violacao, nameof(protecao));
         }
     }
 

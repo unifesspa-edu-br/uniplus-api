@@ -9,4 +9,12 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Mudar o tipo depois não altera a exigência que já o copiou.
 /// </summary>
 public sealed record ProtecaoDoDocumento(
-    ClassificacaoDeProtecao Classificacao, string Finalidade, string HipoteseLegal);
+    ClassificacaoDeProtecao Classificacao, string Finalidade, string HipoteseLegal)
+{
+    /// <summary>O que falta à proteção para ser copiada; nulo quando está completa.</summary>
+    internal string? Violacao() =>
+        string.IsNullOrWhiteSpace(Finalidade) ? "A proteção do tipo de documento precisa de finalidade do tratamento."
+        : string.IsNullOrWhiteSpace(HipoteseLegal) ? "A proteção do tipo de documento precisa de hipótese legal."
+        : Classificacao == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(Classificacao) ? "A classificação de proteção do tipo de documento é obrigatória."
+        : null;
+}

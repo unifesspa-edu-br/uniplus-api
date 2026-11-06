@@ -16,7 +16,15 @@ public sealed record CopiaDoItemNoCatalogo(
     string HipoteseLegal,
     string FinalidadeTratamento,
     string Descricao,
-    string? ComponenteExibicao);
+    string? ComponenteExibicao)
+{
+    /// <summary>O que falta à cópia para conferir a forma do item; nulo quando os três textos obrigatórios vieram.</summary>
+    internal string? Violacao() =>
+        string.IsNullOrWhiteSpace(HipoteseLegal) ? "A cópia do catálogo precisa de hipótese legal."
+        : string.IsNullOrWhiteSpace(FinalidadeTratamento) ? "A cópia do catálogo precisa de finalidade do tratamento."
+        : string.IsNullOrWhiteSpace(Descricao) ? "A cópia do catálogo precisa de descrição."
+        : null;
+}
 
 /// <summary>A recusa da cópia que um item ou campo de grupo tirou do catálogo, com o item de origem.</summary>
 public sealed record RecusaDaCopiaDoItem(FatoColetado Item, FieldError Erro);

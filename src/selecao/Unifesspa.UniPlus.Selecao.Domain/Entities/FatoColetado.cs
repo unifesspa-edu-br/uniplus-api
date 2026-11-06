@@ -221,9 +221,10 @@ public sealed class FatoColetado : EntityBase, IParteDoProcesso
     /// </summary>
     internal Result ConferirCopiaDoCatalogo(CopiaDoItemNoCatalogo copia)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(copia.HipoteseLegal);
-        ArgumentException.ThrowIfNullOrWhiteSpace(copia.FinalidadeTratamento);
-        ArgumentException.ThrowIfNullOrWhiteSpace(copia.Descricao);
+        if (copia.Violacao() is { } violacao)
+        {
+            throw new ArgumentException(violacao, nameof(copia));
+        }
 
         // A mesma forma e o mesmo vocabulário que Criar confere.
         List<FieldError> erros = ConferirFormaEClassificacao(
