@@ -82,10 +82,10 @@ cp "$DIAG/docker/.env.example" "$DIAG/docker/.env"
 cp "$DIAG/docker/docker-compose.override.example.yml" "$DIAG/docker/docker-compose.override.yml"
 ANTIGO="redefine serviço que agora vive"
 "$DIAG/scripts/diagnosticar-ambiente.sh" >"$TRABALHO/diag.log" 2>&1
-if grep -q "$ANTIGO" "$TRABALHO/diag.log"; then
-    erro "o diagnóstico recusou o override de exemplo"
-else
+if grep -q "o override não redefine serviço do compose base" "$TRABALHO/diag.log"; then
     ok "o diagnóstico aceita o override de exemplo"
+else
+    erro "o diagnóstico não aceitou o override de exemplo: $(grep -E 'FALHA' "$TRABALHO/diag.log" | head -n2)"
 fi
 printf 'services:\n  uniplus-api:\n    build:\n      context: ..\n' > "$DIAG/docker/docker-compose.override.yml"
 "$DIAG/scripts/diagnosticar-ambiente.sh" >"$TRABALHO/diag.log" 2>&1

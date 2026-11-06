@@ -28,8 +28,8 @@ OVERRIDE="$DOCKER/docker-compose.override.yml"
 # Serviços que o override antigo definia por inteiro e que agora vivem no docker-compose.yml. O override de
 # exemplo do stack completo não os define (só ajusta variáveis do uniplus-api, ver abaixo).
 SERVICOS_DO_BASE=(geo-api ambiente-init verificador clamd-verificador)
-OBRIGATORIAS=(KEYCLOAK_ADMIN KEYCLOAK_ADMIN_PASSWORD MINIO_ROOT_USER MINIO_ROOT_PASSWORD POSTGRES_DB
-    POSTGRES_PASSWORD POSTGRES_USER UNIPLUS_API_SELECAO_CLIENT_SECRET GEO_IMAGE_TAG)
+# As obrigatórias são as que o compose exige com `${VAR:?...}`: a lista sai dele, não de uma cópia à mão.
+mapfile -t OBRIGATORIAS < <(grep -ohE '\$\{[A-Za-z_][A-Za-z0-9_]*:\?' "$DOCKER/docker-compose.yml" "$DOCKER/docker-compose.override.example.yml" | sed -E 's/^\$\{//; s/:\?$//' | sort -u)
 
 CORRIGIR=false
 case "${1:-}" in
