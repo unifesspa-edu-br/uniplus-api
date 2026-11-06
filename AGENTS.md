@@ -12,7 +12,7 @@ in `docker/`, `infra/`, `scripts/`, and `tools/`.
 
 ## Build, Test, and Development Commands
 ```bash
-docker compose -f docker/docker-compose.yml up -d
+(cd docker && docker compose up -d postgres redis kafka kafka-init minio minio-init rabbitmq mailpit apicurio keycloak clamd-verificador verificador)
 dotnet restore UniPlus.slnx --locked-mode
 dotnet build UniPlus.slnx
 dotnet test UniPlus.slnx --filter "FullyQualifiedName!~IntegrationTests"
