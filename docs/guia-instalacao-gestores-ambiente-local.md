@@ -50,7 +50,7 @@ Nada grava concessão direto no banco: a instalação passa pela mesma regra da 
 ### Mais de um ambiente na mesma máquina
 
 Cada serviço publica numa porta que vem de uma variável (`API_PORT`, `KEYCLOAK_PORT`, `POSTGRES_PORT`,
-`MAILPIT_UI_PORT` e as demais listadas, comentadas, no fim de `docker/.env.example`). Defina-as no shell ou no
+`MAILPIT_UI_PORT` e as demais, todas já listadas em `docker/.env.example` com o valor padrão). Defina-as no shell ou no
 `docker/.env`, ou some um deslocamento a todas de uma vez:
 
 ```bash
