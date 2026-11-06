@@ -31,10 +31,16 @@ internal sealed class MotivoDecisaoIsencaoConfiguration : IEntityTypeConfigurati
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-
         builder.ToTable("motivos_decisao_isencao");
         builder.HasKey(m => m.Id);
 
+        MapearColunas(builder);
+        MapearConcorrenciaEAuditoria(builder);
+        MapearIndices(builder);
+    }
+
+    private static void MapearColunas(EntityTypeBuilder<MotivoDecisaoIsencao> builder)
+    {
         builder.Property(m => m.Codigo)
             .HasConversion(
                 codigo => codigo.Valor,
@@ -46,9 +52,8 @@ internal sealed class MotivoDecisaoIsencaoConfiguration : IEntityTypeConfigurati
             .HasMaxLength(DescricaoMaxLength)
             .IsRequired();
 
-        // Enum como texto, e não como inteiro: a coluna é lida por auditoria e
-        // por consulta manual, e o número exigiria conhecer a ordem de
-        // declaração no C# para saber o que a linha diz.
+        // Texto, e não inteiro: auditoria e consulta manual leem a coluna sem conhecer a
+        // ordem de declaração do enum.
         builder.Property(m => m.Fundamento)
             .HasConversion<string>()
             .HasMaxLength(FundamentoMaxLength)
@@ -60,32 +65,30 @@ internal sealed class MotivoDecisaoIsencaoConfiguration : IEntityTypeConfigurati
             .IsRequired();
 
         builder.Property(m => m.Ativo).IsRequired();
+    }
 
-        // Token de concorrência otimista mapeado para a coluna de sistema `xmin`
-        // do Postgres (shadow property `uint` + IsRowVersion — convenção do
-        // provider Npgsql, sem coluna nem migration própria; ADR-0119, mesmo
-        // padrão de TermoConsentimentoConfiguration). Ativar e desativar são
-        // check-then-act: duas requisições concorrentes leem o mesmo `Ativo`,
-        // ambas passam a guarda do agregado e ambas gravam, de modo que a
-        // segunda relataria uma transição que não aconteceu e sobrescreveria a
-        // auditoria da primeira. O xmin amarra o UPDATE à versão lida.
+    private static void MapearConcorrenciaEAuditoria(EntityTypeBuilder<MotivoDecisaoIsencao> builder)
+    {
+        // xmin do Postgres como token de concorrência otimista (ADR-0119), sem coluna nem
+        // migration própria. Reativar e desativar são check-then-act: sem o token, a segunda de
+        // duas requisições concorrentes relataria uma transição que não aconteceu e
+        // sobrescreveria a auditoria da primeira.
         builder.Property<uint>("Version").IsRowVersion();
 
         builder.Property(m => m.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(m => m.UpdatedBy).HasMaxLength(AuditUserMaxLength);
+    }
 
-        // Unicidade total, sem filtro por situação: o código é citado nas
-        // decisões já proferidas, e liberá-lo ao desativar o motivo faria dois
-        // motivos diferentes responderem pelo mesmo rótulo na leitura do
-        // histórico. O CodigoExisteAsync do handler é check-then-act não
-        // atômico e serve para devolver 409 antes do INSERT; a corrida real é
-        // barrada aqui.
+    private static void MapearIndices(EntityTypeBuilder<MotivoDecisaoIsencao> builder)
+    {
+        // Unicidade total, sem filtro por situação: o código é citado nas decisões já proferidas, e
+        // liberá-lo ao desativar faria dois motivos responderem pelo mesmo rótulo no histórico. O
+        // CodigoExisteAsync do handler devolve 409 antes do INSERT; a corrida real é barrada aqui.
         builder.HasIndex(m => m.Codigo)
             .IsUnique()
             .HasDatabaseName("ux_motivos_decisao_isencao_codigo");
 
-        // Caminho de leitura do catálogo: quem monta uma publicação pede os
-        // motivos ativos de um fundamento.
+        // Leitura do catálogo: quem monta uma publicação pede os motivos ativos de um fundamento.
         builder.HasIndex(m => new { m.Fundamento, m.Ativo })
             .HasDatabaseName("ix_motivos_decisao_isencao_fundamento_ativo");
     }
