@@ -262,7 +262,7 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         {
             return Result.Failure(new DomainError(
                 TipoEtapaErrorCodes.JaDesativado,
-                "Tipo de etapa já está desativado."));
+                "Tipo de etapa já foi removido."));
         }
 
         // Desativado, o tipo sai da leitura cross-módulo, e nenhuma etapa de nota do ENEM
@@ -271,7 +271,7 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         {
             return Result.Failure(new DomainError(
                 TipoEtapaErrorCodes.NotaDeOrigemNoEnemNaoDesativa,
-                "O tipo de etapa com nota de origem no ENEM não pode ser desativado."));
+                "O tipo de etapa com nota de origem no ENEM não pode ser removido."));
         }
 
         Ativo = false;

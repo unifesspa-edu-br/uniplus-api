@@ -239,7 +239,7 @@ public sealed class TipoEtapaTests
         tipo.NotaDeOrigemNoEnem.Should().BeTrue("a origem da nota é identidade, e a atualização não a toca");
     }
 
-    [Fact(DisplayName = "Tipo com nota de origem no ENEM não pode ser desativado")]
+    [Fact(DisplayName = "Tipo com nota de origem no ENEM não pode ser removido")]
     public void Desativar_NotaDeOrigemNoEnem_Recusa()
     {
         TipoEtapa tipo = TipoEtapaDeTeste.NotaDoEnem();
