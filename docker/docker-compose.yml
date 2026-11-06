@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
@@ -24,7 +24,7 @@ services:
     image: redis:8-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -37,8 +37,8 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:${KAFKA_PORT:-9092}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9092}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
@@ -50,9 +50,10 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
     ports:
-      - "9092:9092"
+      # O listener do host usa a mesma porta dentro e fora do contêiner: o broker a anuncia ao cliente.
+      - "${KAFKA_PORT:-9092}:${KAFKA_PORT:-9092}"
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server localhost:9092 | grep -q Cluster"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server localhost:${KAFKA_PORT:-9092} | grep -q Cluster"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,8 +78,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -123,8 +124,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-uniplus}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-uniplus_dev}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -140,8 +141,8 @@ services:
     image: axllent/mailpit:v1.27
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
     healthcheck:
       test: ["CMD", "/mailpit", "readyz"]
       interval: 10s
@@ -177,7 +178,7 @@ services:
       # SSH tunnel (ssh -L 1389:localhost:1389 dev-host).
       # Imagem osixia/openldap:1.5.0 não recebe updates desde 2021 — não é
       # apropriada para PROD; o isolamento por loopback compensa.
-      - "127.0.0.1:1389:389"
+      - "127.0.0.1:${LDAP_PORT:-1389}:389"
     volumes:
       - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
       - openldap_data:/var/lib/ldap
@@ -204,12 +205,12 @@ services:
       # do hostname usado pra acessar o Keycloak (host: localhost; rede docker: keycloak).
       # Sem isso, tokens emitidos via host têm iss=localhost mas a discovery via
       # rede interna retorna iss=keycloak, quebrando a validação JWT nas APIs.
-      KC_HOSTNAME: "http://localhost:8080"
+      KC_HOSTNAME: "http://localhost:${KEYCLOAK_PORT:-8080}"
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     ports:
-      - "8080:8080"
+      - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
     depends_on:
@@ -221,6 +222,44 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+
+  # Verificação antivírus dos arquivos do candidato (ADR-0146 e ADR-0147). O clamd escuta só em
+  # 127.0.0.1, então o verificador compartilha a rede dele (network_mode). Sem este par o PDF da
+  # designação dos gestores nunca é verificado e a instalação não passa do segundo passo. Só o
+  # ambiente local: em homologação o par roda como sidecar, publicado pelo pipeline de imagens.
+  clamd-verificador:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.clamd-verificador
+    restart: unless-stopped
+    healthcheck:
+      # O teste da imagem de origem consulta um socket Unix que a configuração do projeto não abre.
+      test: ["CMD-SHELL", "echo PING | timeout 3 nc 127.0.0.1 3310 | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 150s
+
+  verificador:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.verificador
+    restart: unless-stopped
+    network_mode: "service:clamd-verificador"
+    environment:
+      Verificador__Armazenamento__Endpoint: "minio:9000"
+      Verificador__Armazenamento__AccessKey: "${MINIO_ROOT_USER}"
+      Verificador__Armazenamento__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      Verificador__Armazenamento__BucketEnvios: "uniplus-candidato-envio"
+      Verificador__Armazenamento__BucketArquivos: "uniplus-candidato-definitivo"
+      Verificador__RabbitMq__Uri: "amqp://${RABBITMQ_USER:-uniplus}:${RABBITMQ_PASSWORD:-uniplus_dev}@rabbitmq:5672"
+    depends_on:
+      clamd-verificador:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
 
   apicurio:
     # Apicurio Schema Registry — modo Confluent-compat para os clients .NET
@@ -239,7 +278,7 @@ services:
       APICURIO_AUTH_ENABLED: "false"
       QUARKUS_OIDC_ENABLED: "false"
     ports:
-      - "8081:8081"
+      - "${APICURIO_PORT:-8081}:8081"
     healthcheck:
       # Apicurio 3.x não expõe /q/health/ready nem /health — verificamos a API
       # principal (/apis/registry/v3/system/info) que só retorna 200 quando
