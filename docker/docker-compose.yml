@@ -6,16 +6,16 @@ services:
     image: postgis/postgis:18-3.6
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no docker/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no docker/.env}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?defina POSTGRES_USER no docker/.env}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -75,8 +75,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?defina MINIO_ROOT_USER no docker/.env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no docker/.env}
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -101,8 +101,8 @@ services:
       minio:
         condition: service_healthy
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?defina MINIO_ROOT_USER no docker/.env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no docker/.env}
     volumes:
       - ./minio/acervo-publico.policy.json:/politicas/acervo-publico.policy.json:ro
     entrypoint: ["/bin/sh", "-c"]
@@ -197,8 +197,8 @@ services:
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: ${POSTGRES_USER}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_DB_USERNAME: ${POSTGRES_USER:?defina POSTGRES_USER no docker/.env}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       # Canonicaliza o issuer dos tokens para http://localhost:8080 — independente
@@ -207,8 +207,8 @@ services:
       # rede interna retorna iss=keycloak, quebrando a validação JWT nas APIs.
       KC_HOSTNAME: "http://localhost:${KEYCLOAK_PORT:-8080}"
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:?defina KEYCLOAK_ADMIN no docker/.env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD no docker/.env}
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
@@ -248,8 +248,8 @@ services:
     network_mode: "service:clamd-verificador"
     environment:
       Verificador__Armazenamento__Endpoint: "minio:9000"
-      Verificador__Armazenamento__AccessKey: "${MINIO_ROOT_USER}"
-      Verificador__Armazenamento__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      Verificador__Armazenamento__AccessKey: "${MINIO_ROOT_USER:?defina MINIO_ROOT_USER no docker/.env}"
+      Verificador__Armazenamento__SecretKey: "${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no docker/.env}"
       Verificador__Armazenamento__BucketEnvios: "uniplus-candidato-envio"
       Verificador__Armazenamento__BucketArquivos: "uniplus-candidato-definitivo"
       Verificador__RabbitMq__Uri: "amqp://${RABBITMQ_USER:-uniplus}:${RABBITMQ_PASSWORD:-uniplus_dev}@rabbitmq:5672"
@@ -288,6 +288,207 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # API UniPlus — o MONÓLITO modular (composition root). Co-hospeda os 5 módulos
+  # internos num único processo, contra o banco único `uniplus` (schema-por-módulo).
+  uniplus-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.host
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      # As 6 connection strings apontam para o MESMO banco `uniplus`; cada
+      # DbContext usa seu schema (HasDefaultSchema). UniPlusDb é o outbox
+      # Wolverine (schema `wolverine`) + health checks agregados. Role única.
+      ConnectionStrings__UniPlusDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__ConfiguracaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__AutorizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      ConnectionStrings__DiscentesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
+      # E-mail: o appsettings.Development aponta para localhost; dentro da rede Docker o Mailpit é o serviço mailpit.
+      Email__Smtp__Host: "mailpit"
+      Redis__ConnectionString: "redis:6379"
+      Kafka__BootstrapServers: "kafka:29092"
+      # Registro de acesso a dado pessoal: Kafka próprio, independente do transporte do Wolverine acima.
+      RegistroDeAcesso__Kafka__BootstrapServers: "kafka:29092"
+      # Schema Registry (Apicurio em modo Confluent-compat) — sufixo /apis/ccompat/v7
+      # é mandatório (Apicurio 3.x). Auth desligada em dev (AuthType=None default).
+      SchemaRegistry__Url: "http://apicurio:8081/apis/ccompat/v7"
+      Storage__Endpoint: "minio:9000"
+      Storage__AccessKey: "${MINIO_ROOT_USER:?defina MINIO_ROOT_USER no docker/.env}"
+      Storage__SecretKey: "${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no docker/.env}"
+      # URLs pre-assinadas devolvidas a clientes externos (browser, Postman)
+      # precisam de um endpoint alcançável de fora da rede Docker — minio:9000
+      # só resolve dentro dela. Porta 9000 já é publicada no host (ver serviço
+      # minio), então localhost funciona para quem roda o frontend fora do Docker.
+      Storage__PublicEndpoint: "localhost:${MINIO_PORT:-9000}"
+      # Credencial dos buckets do candidato; local, a root do MinIO.
+      ArquivosDoCandidato__AccessKey: "${MINIO_ROOT_USER:?defina MINIO_ROOT_USER no docker/.env}"
+      ArquivosDoCandidato__SecretKey: "${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no docker/.env}"
+      # Fila da verificação dos arquivos do candidato (serviço rabbitmq do docker-compose.yml).
+      RabbitMq__Uri: "amqp://${RABBITMQ_USER:-uniplus}:${RABBITMQ_PASSWORD:-uniplus_dev}@rabbitmq:5672"
+      # Realm `unifesspa` — o mesmo em que os frontends `*-web` autenticam. Para smoke
+      # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Audience: "uniplus"
+      # Anuncia o proxy da documentação como PRIMEIRO servidor do documento — é o que a
+      # interface seleciona por padrão. Sem isto o "Try it out" dispara contra a URL de
+      # produção: além de falhar em CORS, manda a requisição (e a credencial colada no
+      # Authorize) para o ambiente errado. Só de desenvolvimento; em HML/PROD a variável
+      # não existe e o documento volta a anunciar apenas Produção e Homologação.
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:${OPENAPI_DOCS_PORT:-5299}"
+      # Conferência do endereço do candidato no Geo (issue #1865, ADR-0136) — BaseUrl é
+      # obrigatório, sem ele a API não sobe. O OAuth usa o client M2M uniplus-api-selecao:
+      # em HML/PROD a infra o provisiona (uniplus-infra#163) e o secret vem de Vault/ESO;
+      # aqui o scripts/setup-keycloak-dev.sh o cria com o secret de dev do docker/.env.
+      Geo__BaseUrl: "http://geo-api:8080"
+      Geo__OAuth__TokenEndpoint: "http://keycloak:8080/realms/unifesspa/protocol/openid-connect/token"
+      Geo__OAuth__ClientId: "uniplus-api-selecao"
+      Geo__OAuth__ClientSecret: "${UNIPLUS_API_SELECAO_CLIENT_SECRET:?defina UNIPLUS_API_SELECAO_CLIENT_SECRET no docker/.env}"
+      # Domínios cujo e-mail a instalação dos gestores de acessos aceita (igualdade exata, ADR-0152).
+      # Só de desenvolvimento: o admin local é admin@teste.unifesspa.edu.br e as personas fictícias
+      # são @uniplus-test.local. Em HML e produção a variável não existe e vale o domínio da instituição.
+      Autorizacao__Instalacao__DominiosInstitucionais__0: "unifesspa.edu.br"
+      Autorizacao__Instalacao__DominiosInstitucionais__1: "teste.unifesspa.edu.br"
+      Autorizacao__Instalacao__DominiosInstitucionais__2: "uniplus-test.local"
+    ports:
+      - "${API_PORT:-5200}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      apicurio:
+        condition: service_healthy
+      geo-api:
+        condition: service_healthy
+      # MinIO entra no /health agregado (readiness) — declarar a dependência evita
+      # que a API fique unhealthy quando subida isolada (storage é lazy no uso, mas
+      # o health check o pinga no readiness).
+      minio:
+        condition: service_healthy
+      # O acervo público precisa existir, com a política de leitura anônima, antes de a API
+      # publicar o primeiro documento nele — a aplicação não o cria. O endereço que os links
+      # divulgam vem do appsettings.Development.json (MinIO local, porta 9000).
+      minio-init:
+        condition: service_completed_successfully
+      # Keycloak sobe junto da API (a API valida JWT contra o realm unifesspa).
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Deixa o ambiente pronto depois que a API e o Keycloak sobem: configura o Keycloak (senha do admin, personas
+  # fictícias, papel uniplus-instalacao) e instala os dois primeiros gestores de acessos pela API (ADR-0152).
+  # Idempotente: com tudo configurado e os gestores instalados, não altera nada e termina com sucesso; banco
+  # recriado, refaz tudo. Os scripts entram por volume (scripts/ambiente-init.sh). Só o ambiente local.
+  # Acompanhe com `docker compose ... logs -f ambiente-init`; INSTALAR_GESTORES=false pula só a instalação.
+  ambiente-init:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ambiente-init
+    restart: "no"
+    environment:
+      KC_URL: "http://keycloak:8080"
+      # O que o navegador do host alcança (KC_HOSTNAME do Keycloak): entra nas URLs de login do gov.br simulado.
+      KC_PUBLIC_URL: "http://localhost:${KEYCLOAK_PORT:-8080}"
+      API_URL: "http://uniplus-api:8080"
+      MAILPIT_URL: "http://mailpit:8025"
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN:?defina KEYCLOAK_ADMIN no docker/.env}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD no docker/.env}"
+      UNIPLUS_API_SELECAO_CLIENT_SECRET: "${UNIPLUS_API_SELECAO_CLIENT_SECRET:?defina UNIPLUS_API_SELECAO_CLIENT_SECRET no docker/.env}"
+      CONFIGURACAO_WEB_ORIGIN: "http://localhost:${CONFIGURACAO_WEB_PORT:-4203}"
+      # A URL assinada de envio do PDF aponta para o MinIO publicado no host (Storage__PublicEndpoint);
+      # aqui dentro ela é redirecionada para o serviço, sem trocar o Host que entra na assinatura.
+      ARMAZENAMENTO_CONNECT_TO: "localhost:${MINIO_PORT:-9000}:minio:9000"
+      INSTALAR_GESTORES: "${INSTALAR_GESTORES:-true}"
+      LDAP_PROBE_HOST: "openldap"
+      LDAP_PROBE_PORT: "389"
+    volumes:
+      - ../scripts:/repo/scripts:ro
+      - ./keycloak:/repo/docker/keycloak:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      # A API só precisa estar de pé: o próprio ambiente-init espera o /health por até 5 minutos, mais do que a
+      # janela do healthcheck cobre na primeira subida, com as migrations de todos os módulos.
+      uniplus-api:
+        condition: service_started
+      mailpit:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      verificador:
+        condition: service_started
+
+  # API Geo — deploy autônomo (banco isolado uniplus_geo com PostGIS, ADR-0090/0091).
+  # Dono do banco: usuário _app dedicado (uniplus_geo_app), provisionado por init-db.sql.
+  # Extraído para repositório dedicado (issue #732, ADR-0099): a imagem do Geo passa
+  # a ser publicada por `unifesspa-geo-api`, não mais construída aqui. O serviço
+  # permanece no stack local apontando para a imagem publicada, contra o banco
+  # `uniplus_geo` que o init-db.sql continua provisionando.
+  #
+  # O workflow do repo Geo publica tags `sha-<short-sha>` e tags de release (usa
+  # `latest=false` — NÃO há tag `latest`). Defina GEO_IMAGE_TAG no seu .env com uma
+  # tag Geo publicada concreta (ex.: `GEO_IMAGE_TAG=v1.0.0`) para manter o stack
+  # reprodutível — sem isso o compose falha rápido em vez de puxar tag móvel.
+  geo-api:
+    image: "ghcr.io/unifesspa-edu-br/unifesspa-geo-api:${GEO_IMAGE_TAG:?defina GEO_IMAGE_TAG com uma tag Geo publicada (sha-<short> ou release); o repo nao publica latest}"
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__GeoDb: "Host=postgres;Port=5432;Database=uniplus_geo;Username=uniplus_geo_app;Password=uniplus_dev"
+      # Banco de staging da DNE (unifesspa-geo-api#12) — só passa a ter efeito
+      # quando GEO_IMAGE_TAG apontar para uma imagem que já inclua a correção.
+      ConnectionStrings__GeoStagingDb: "Host=postgres;Port=5432;Database=uniplus_geo_staging;Username=uniplus_geo_staging_app;Password=uniplus_dev"
+      Redis__ConnectionString: "redis:6379"
+      Kafka__BootstrapServers: "kafka:29092"
+      Storage__Endpoint: "minio:9000"
+      Storage__AccessKey: "${MINIO_ROOT_USER:?defina MINIO_ROOT_USER no docker/.env}"
+      Storage__SecretKey: "${MINIO_ROOT_PASSWORD:?defina MINIO_ROOT_PASSWORD no docker/.env}"
+      Auth__Authority: "http://keycloak:8080/realms/unifesspa"
+      Auth__Audience: "uniplus"
+      # O appsettings.Development do Geo não lista todos os frontends locais; a lista
+      # inteira vai aqui, para a busca de CEP e de município funcionar em qualquer um.
+      Cors__AllowedOrigins__0: "http://localhost:4100"
+      Cors__AllowedOrigins__1: "http://localhost:${SELECAO_WEB_PORT:-4200}"
+      Cors__AllowedOrigins__2: "http://localhost:${INGRESSO_WEB_PORT:-4201}"
+      Cors__AllowedOrigins__3: "http://localhost:${PORTAL_WEB_PORT:-4202}"
+      Cors__AllowedOrigins__4: "http://localhost:${CONFIGURACAO_WEB_PORT:-4203}"
+      Cors__AllowedOrigins__5: "http://localhost:4300"
+    ports:
+      - "${GEO_API_PORT:-5400}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   postgres_data:

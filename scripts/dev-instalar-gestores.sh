@@ -7,7 +7,7 @@
 # recriado, sem gestor, reinstala. Uma tentativa abandonada no meio é cancelada pela API ao iniciar
 # a seguinte.
 #
-# Pré-requisitos: ambiente no ar e Keycloak configurado (scripts/dev-up.sh faz os dois), jq e curl.
+# Pré-requisitos: ambiente no ar e Keycloak configurado (o serviço ambiente-init do compose faz os dois), jq e curl.
 #
 # Uso:
 #   scripts/dev-instalar-gestores.sh

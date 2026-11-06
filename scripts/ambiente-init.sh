@@ -4,10 +4,9 @@
 # instala os dois primeiros gestores de acessos pela API (ADR-0152).
 #
 # Idempotente: com tudo configurado e os gestores instalados, não altera nada e termina com sucesso.
-# Banco recriado, reconfigura e reinstala. Roda dentro da rede do compose; o mesmo percurso, no host,
-# é scripts/dev-up.sh. DEV ONLY.
+# Banco recriado, reconfigura e reinstala. Roda dentro da rede do compose. DEV ONLY.
 #
-# Variáveis (definidas pelo serviço no override): KC_URL, API_URL, MAILPIT_URL, KEYCLOAK_ADMIN,
+# Variáveis (definidas pelo serviço em docker/docker-compose.yml): KC_URL, API_URL, MAILPIT_URL, KEYCLOAK_ADMIN,
 # KEYCLOAK_ADMIN_PASSWORD, UNIPLUS_API_SELECAO_CLIENT_SECRET, CONFIGURACAO_WEB_ORIGIN,
 # ARMAZENAMENTO_CONNECT_TO e INSTALAR_GESTORES (false pula a instalação).
 
