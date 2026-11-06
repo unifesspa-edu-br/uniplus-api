@@ -418,6 +418,8 @@ services:
       # aqui dentro ela é redirecionada para o serviço, sem trocar o Host que entra na assinatura.
       ARMAZENAMENTO_CONNECT_TO: "localhost:${MINIO_PORT:-9000}:minio:9000"
       INSTALAR_GESTORES: "${INSTALAR_GESTORES:-true}"
+      # Marca o ambiente local do compose: é o que libera o KC_URL http://keycloak:* nas travas DEV ONLY dos scripts.
+      AMBIENTE_LOCAL_DOCKER: "true"
       LDAP_PROBE_HOST: "openldap"
       LDAP_PROBE_PORT: "389"
     volumes:
@@ -431,6 +433,9 @@ services:
       uniplus-api:
         condition: service_started
       mailpit:
+        condition: service_healthy
+      # O setup do Keycloak só cria a federação LDAP se o openldap já escuta; sem esperar, o passo é pulado.
+      openldap:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
