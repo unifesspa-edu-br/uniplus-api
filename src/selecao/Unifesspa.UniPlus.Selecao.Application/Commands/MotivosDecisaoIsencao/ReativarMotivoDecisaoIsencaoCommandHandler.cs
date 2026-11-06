@@ -6,10 +6,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>Handler convention-based da reativação de motivo.</summary>
-public static class AtivarMotivoDecisaoIsencaoCommandHandler
+public static class ReativarMotivoDecisaoIsencaoCommandHandler
 {
     public static async Task<Result> Handle(
-        AtivarMotivoDecisaoIsencaoCommand command,
+        ReativarMotivoDecisaoIsencaoCommand command,
         IMotivoDecisaoIsencaoRepository repository,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
@@ -18,20 +18,17 @@ public static class AtivarMotivoDecisaoIsencaoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        MotivoDecisaoIsencao? motivo = await repository
-            .ObterPorIdAsync(command.Id, cancellationToken)
-            .ConfigureAwait(false);
-
+        MotivoDecisaoIsencao? motivo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (motivo is null)
         {
             return Result.Failure(MotivoDecisaoIsencaoHandlerErros.NaoEncontrado(command.Id));
         }
 
-        Result ativar = motivo.Ativar();
-        if (ativar.IsFailure)
+        Result reativacao = motivo.Reativar();
+        if (reativacao.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return ativar;
+            return reativacao;
         }
 
         try
@@ -40,11 +37,8 @@ public static class AtivarMotivoDecisaoIsencaoCommandHandler
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
-            // Outra requisição mudou a situação entre a leitura e a gravação. A
-            // guarda do agregado não alcança essa corrida: as duas leram o mesmo
-            // estado e as duas a atravessaram. Sem o descarte, o SaveChangesAsync
-            // que o Wolverine dispara depois do handler tentaria o mesmo UPDATE
-            // fora deste catch.
+            // As duas requisições leram o mesmo estado e atravessaram a guarda do agregado. Sem o
+            // descarte, o SaveChanges que o Wolverine dispara depois do handler repetiria o UPDATE.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(MotivoDecisaoIsencaoHandlerErros.SituacaoAlteradaConcorrentemente());
         }

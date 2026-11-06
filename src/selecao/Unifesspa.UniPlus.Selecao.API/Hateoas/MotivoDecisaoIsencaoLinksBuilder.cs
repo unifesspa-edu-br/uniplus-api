@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 /// <summary>
 /// Constrói <c>_links</c> hypermedia (HATEOAS Level 1, ADR-0029 + ADR-0049)
-/// para <see cref="MotivoDecisaoIsencaoDto"/>. Action links (ativar,
+/// para <see cref="MotivoDecisaoIsencaoDto"/>. Action links (reativar,
 /// desativar, etc.) NÃO entram aqui — são descobertos via OpenAPI (ADR-0030).
 /// </summary>
 [SuppressMessage(

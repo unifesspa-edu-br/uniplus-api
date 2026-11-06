@@ -190,7 +190,7 @@ public sealed class MotivoDecisaoIsencao : EntityBase, IAuditableEntity
     /// disponibilizado, o que só a seleção por processo saberá responder.
     /// </para>
     /// <para>
-    /// Também não altera <see cref="Ativo"/>: ativar e desativar são operações
+    /// Também não altera <see cref="Ativo"/>: reativar e desativar são operações
     /// próprias, com sua própria autorização e sua própria trilha, e
     /// escondê-las dentro da edição faria uma retirada do catálogo passar por
     /// correção de texto.
@@ -215,7 +215,7 @@ public sealed class MotivoDecisaoIsencao : EntityBase, IAuditableEntity
     /// idempotente por natureza — ela registra ator e instante —, e aceitar o
     /// nada gravaria uma reativação que não mudou estado algum.
     /// </summary>
-    public Result Ativar()
+    public Result Reativar()
     {
         if (Ativo)
         {

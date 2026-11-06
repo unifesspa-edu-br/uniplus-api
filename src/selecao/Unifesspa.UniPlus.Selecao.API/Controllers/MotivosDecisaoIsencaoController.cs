@@ -228,10 +228,10 @@ public sealed class MotivosDecisaoIsencaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Ativar(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Reativar(Guid id, CancellationToken cancellationToken)
     {
         Result resultado = await _commandBus
-            .Send(new AtivarMotivoDecisaoIsencaoCommand(id), cancellationToken)
+            .Send(new ReativarMotivoDecisaoIsencaoCommand(id), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);

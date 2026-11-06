@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -133,6 +136,63 @@ public sealed class MotivoDecisaoIsencaoCommandHandlersTests
         resultado.Error!.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.JaInativo);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Reativar devolve o motivo desativado às novas publicações e salva")]
+    public async Task Reativar_MotivoDesativado_Salva()
+    {
+        MotivoDecisaoIsencao motivo = MotivoValido();
+        motivo.Desativar();
+        _repository.ObterPorIdAsync(motivo.Id, Arg.Any<CancellationToken>()).Returns(motivo);
+
+        Result resultado = await ReativarMotivoDecisaoIsencaoCommandHandler.Handle(
+            new ReativarMotivoDecisaoIsencaoCommand(motivo.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        motivo.Ativo.Should().BeTrue();
+        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Reativar motivo já ativo recusa e descarta o rastreamento sem salvar")]
+    public async Task Reativar_MotivoJaAtivo_RecusaSemSalvar()
+    {
+        MotivoDecisaoIsencao motivo = MotivoValido();
+        _repository.ObterPorIdAsync(motivo.Id, Arg.Any<CancellationToken>()).Returns(motivo);
+
+        Result resultado = await ReativarMotivoDecisaoIsencaoCommandHandler.Handle(
+            new ReativarMotivoDecisaoIsencaoCommand(motivo.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.JaAtivo);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Conflito de concorrência ao reativar descarta o rastreamento e devolve a situação alterada")]
+    public async Task Reativar_ConflitoDeConcorrencia_DescartaEDevolveConflito()
+    {
+        MotivoDecisaoIsencao motivo = MotivoValido();
+        motivo.Desativar();
+        _repository.ObterPorIdAsync(motivo.Id, Arg.Any<CancellationToken>()).Returns(motivo);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await ReativarMotivoDecisaoIsencaoCommandHandler.Handle(
+            new ReativarMotivoDecisaoIsencaoCommand(motivo.Id), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Reativar motivo inexistente devolve não encontrado")]
+    public async Task Reativar_MotivoInexistente_NaoEncontrado()
+    {
+        _repository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((MotivoDecisaoIsencao?)null);
+
+        Result resultado = await ReativarMotivoDecisaoIsencaoCommandHandler.Handle(
+            new ReativarMotivoDecisaoIsencaoCommand(Guid.CreateVersion7()), _repository, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "Atualizar troca a descrição e salva")]

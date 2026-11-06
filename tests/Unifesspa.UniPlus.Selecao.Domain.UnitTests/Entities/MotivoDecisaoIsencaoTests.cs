@@ -171,23 +171,23 @@ public sealed class MotivoDecisaoIsencaoTests
     }
 
     [Fact(DisplayName = "Reativar devolve o motivo às novas publicações")]
-    public void Ativar_MotivoInativo_Reativa()
+    public void Reativar_MotivoInativo_Reativa()
     {
         MotivoDecisaoIsencao motivo = CriarValido();
         motivo.Desativar();
 
-        Result resultado = motivo.Ativar();
+        Result resultado = motivo.Reativar();
 
         resultado.IsSuccess.Should().BeTrue();
         motivo.Ativo.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Reativar motivo já ativo é recusado")]
-    public void Ativar_MotivoAtivo_Recusa()
+    public void Reativar_MotivoAtivo_Recusa()
     {
         MotivoDecisaoIsencao motivo = CriarValido();
 
-        Result resultado = motivo.Ativar();
+        Result resultado = motivo.Reativar();
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(MotivoDecisaoIsencaoErrorCodes.JaAtivo);
