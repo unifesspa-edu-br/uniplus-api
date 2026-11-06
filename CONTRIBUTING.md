@@ -30,15 +30,16 @@ Para o stack completo (infra + APIs + frontend), veja **Subir a stack completa**
 ### Ambiente pronto para uso em um comando
 
 Para ir de um clone novo a um ambiente com a API no ar, o Keycloak configurado e os dois primeiros gestores
-de acessos instalados, rode, a partir da raiz (só Docker, `jq` e `curl`):
+de acessos instalados, rode, a partir da raiz (só Docker):
 
 ```bash
 scripts/dev-up.sh
 ```
 
 O comando cria `docker/.env` e `docker/docker-compose.override.yml` a partir dos exemplos, acusa a chave que
-faltar numa cópia antiga, sobe a infraestrutura, o verificador de arquivos e a API, configura o Keycloak e
-instala os gestores pela API. Rodar de novo não altera o estado. Para um segundo ambiente na mesma máquina,
+faltar numa cópia antiga e sobe o compose: infraestrutura, verificador de arquivos, API e o serviço
+`ambiente-init`, que configura o Keycloak e instala os gestores pela API. Com o override copiado, o
+`docker compose up -d` sozinho faz o mesmo. Rodar de novo não altera o estado. Para um segundo ambiente na mesma máquina,
 use `scripts/dev-up.sh --deslocamento-de-portas 100`. Detalhes e o procedimento manual em
 [`docs/guia-instalacao-gestores-ambiente-local.md`](docs/guia-instalacao-gestores-ambiente-local.md).
 

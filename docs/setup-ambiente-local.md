@@ -14,7 +14,7 @@ Guia para configurar e executar o ambiente de desenvolvimento da Uni+ API.
 ## Setup rápido
 
 Para ter a API no ar, o Keycloak configurado e os dois primeiros gestores de acessos instalados, rode
-`scripts/dev-up.sh` (só Docker, `jq` e `curl`). Veja o
+`scripts/dev-up.sh` (só Docker). Veja o
 [guia da instalação dos gestores](guia-instalacao-gestores-ambiente-local.md). Os passos abaixo são o caminho
 manual, só da infraestrutura.
 

@@ -9,9 +9,9 @@ acessos** sejam instalados.
 > Complementa o [setup do ambiente local](setup-ambiente-local.md). Vale para banco novo ou recriado
 > (`down -v`, `DROP DATABASE`): as concessões vivem no schema `autorizacao` do banco `uniplus`.
 
-## Caminho principal: um comando
+## Caminho principal: o compose deixa tudo pronto
 
-Com Docker (Compose v2), `jq` e `curl` instalados, a partir da raiz do repositório:
+Com Docker (Compose v2), a partir da raiz do repositório:
 
 ```bash
 scripts/dev-up.sh
@@ -20,25 +20,31 @@ scripts/dev-up.sh
 O comando leva o ambiente do zero a "dois gestores de acessos instalados e acesso funcionando":
 
 1. cria `docker/.env` e `docker/docker-compose.override.yml` a partir dos exemplos, quando não existem (só
-   valores de desenvolvimento, sem segredo real); se existem, confere se têm todas as chaves dos exemplos e,
-   faltando alguma, **para antes de subir qualquer serviço** nomeando a chave e como obtê-la;
-2. sobe a infraestrutura, o `kafka-init` (tópico do registro de acesso), o verificador de arquivos (`clamd` +
-   `verificador`), o Geo e a API;
-3. configura o Keycloak com `scripts/setup-keycloak-dev.sh`: senha do `admin`, as personas fictícias do portal e
-   o papel `uniplus-instalacao` do executor;
-4. instala os dois gestores (`diogo.souza` e `leandro.viana`) pelos quatro passos da API, lendo o código no
-   Mailpit, com `scripts/dev-instalar-gestores.sh`, e confere o acesso: `GET /api/autorizacao/concessoes`
-   responde 200 para os dois gestores e 403 para o executor (`admin`) e para o `candidato`.
+   valores de desenvolvimento, sem segredo real); se existem, confere se têm todas as chaves dos exemplos e
+   o serviço `ambiente-init` e, faltando algo, **para antes de subir qualquer serviço** nomeando o que falta
+   e como obtê-lo;
+2. sobe o compose: a infraestrutura, o `kafka-init` (tópico do registro de acesso), o verificador de arquivos
+   (`clamd` + `verificador`), o Geo, a API e o serviço **`ambiente-init`**;
+3. acompanha o `ambiente-init` até terminar. Ele configura o Keycloak (`scripts/setup-keycloak-dev.sh`: senha
+   do `admin`, personas fictícias do portal, papel `uniplus-instalacao`), instala os dois gestores
+   (`diogo.souza` e `leandro.viana`) pelos quatro passos da API, lendo o código no Mailpit
+   (`scripts/dev-instalar-gestores.sh`), e confere o acesso: `GET /api/autorizacao/concessoes` responde 200
+   para os dois gestores e 403 para o executor (`admin`) e para o `candidato`.
+
+O `ambiente-init` é um serviço do próprio compose, então **o `docker compose up -d` sozinho (com o override)
+produz o mesmo resultado**; o script só acrescenta a conferência dos arquivos locais, o deslocamento de portas
+e a espera até ficar pronto. Sem o script, acompanhe com
+`docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs -f ambiente-init`.
 
 Nada grava concessão direto no banco: a instalação passa pela mesma regra da [ADR-0152](adrs/0152-governanca-das-concessoes-de-acesso.md).
 
 | Situação | O que acontece |
 |---|---|
-| Rodar de novo com os gestores instalados | Termina com sucesso, confere o acesso e não altera nada (sem concessão nem instalação nova). |
-| Banco ou volume recriado (`docker compose ... down -v`) | Reinstala os gestores. |
-| `docker/.env` ou override de uma cópia antiga | Falha antes de subir serviço, nomeando a chave ou a variável ausente. |
+| Rodar de novo (`dev-up.sh` ou `docker compose up -d`) com os gestores instalados | O `ambiente-init` roda de novo, confere o acesso e não altera nada (sem concessão nem instalação nova). |
+| Banco ou volume recriado (`docker compose ... down -v`) | O `ambiente-init` reconfigura o Keycloak e reinstala os gestores. |
+| `docker/.env` ou override de uma cópia antiga | O `dev-up.sh` falha antes de subir serviço, nomeando a chave, a variável ou o serviço ausente. Com `docker compose` direto, o override antigo não tem o `ambiente-init`: nada configura o Keycloak. |
 | `--completo` | Sobe também o `portal-api`, o gateway e os quatro frontends (exige o `uniplus-web` clonado ao lado). |
-| `--sem-instalacao` | Sobe e configura o Keycloak, sem instalar os gestores. |
+| `--sem-instalacao` (ou `INSTALAR_GESTORES=false`) | Configura o Keycloak, sem instalar os gestores. |
 | `--so-validar` | Só confere `.env`, override e compose. |
 
 ### Mais de um ambiente na mesma máquina
@@ -319,6 +325,9 @@ aprovação da ADR-0152, pela tela da Configuração. O `admin` volta a ser só 
   `uniplus.autorizacao.instalacao.codigo_invalido`); a tabela acima os abrevia.
 - O `nome` informado para cada gestor não volta na resposta da instalação (`nome: null`); a concessão grava
   o perfil "Gestor de acessos", escopo `instituicao` e origem `instalacao`.
+- O `ambiente-init` redireciona o envio do PDF (a URL assinada aponta para a porta publicada do MinIO) com
+  `curl --connect-to`, sem trocar o `Host` da assinatura; se mudar o endereço público do MinIO, ajuste
+  `ARMAZENAMENTO_CONNECT_TO` no override.
 - Os frontends só autenticam nas portas padrão (ver "Mais de um ambiente na mesma máquina").
 - O teste automatizado do CI (`tools/dev-up/validate.sh`) cobre shellcheck, a validação de `.env` e override,
   o deslocamento das portas e a coerência dos compose; **não** sobe o ambiente. O percurso completo leva
@@ -327,13 +336,14 @@ aprovação da ADR-0152, pela tela da Configuração. O `admin` volta a ser só 
 ## 5. Validação
 
 Percurso executado de ponta a ponta em 06/11/2026 a partir de um clone limpo (sem `docker/.env` nem override),
-com `scripts/dev-up.sh --deslocamento-de-portas 30000`, ao lado de outros ambientes nas portas padrão:
+com `scripts/dev-up.sh --deslocamento-de-portas 30000`, ao lado de outros ambientes nas portas padrão, e repetido
+com `docker compose up -d` direto nas duas últimas situações:
 
 - primeira subida: a infraestrutura, o verificador e a API sobem, o Keycloak é configurado e os dois gestores são
   instalados (passos 1 a 4, código lido no Mailpit);
 - `GET /api/autorizacao/concessoes`: 200 para `diogo.souza` e `leandro.viana`, 403 para `admin` e `candidato`;
-- segunda execução: termina em segundos, "Gestores já instalados", e a contagem de concessões e instalações
+- segunda execução (`dev-up.sh` e `docker compose up -d`): "Gestores já instalados", e a contagem de concessões e instalações
   no banco não muda (2 e 1);
-- volumes do projeto removidos (`down -v`) e comando de novo: os dois gestores são reinstalados.
+- volumes do projeto removidos (`down -v`) e `docker compose up -d` de novo: os dois gestores são reinstalados.
 
 Não exercitados: `--completo` (exige o `uniplus-web`) e a tela da Configuração.
