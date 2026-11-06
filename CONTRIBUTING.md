@@ -74,21 +74,13 @@ rode uma vez `docker compose -f docker/docker-compose.yml -f docker/docker-compo
 > resíduo da extração, ver [`docs/geo-servico-externo.md`](docs/geo-servico-externo.md).
 
 O repositório `unifesspa-geo-api` não publica tag `latest` — a versão consumida
-localmente fica fixada em `GEO_IMAGE_TAG` (`docker/.env`). Como `docker/.env` e
-`docker/docker-compose.override.yml` são **locais e gitignored**, um `git pull`
-não os atualiza. Ao notar uma nova release do Geo:
+localmente fica fixada em `GEO_IMAGE_TAG` (`docker/.env`). Como `docker/.env` é
+**local e gitignored**, um `git pull` não o atualiza. Ao notar uma nova release do Geo:
 
 1. Confira a tag mais recente na aba Releases do `unifesspa-geo-api` e atualize
    `GEO_IMAGE_TAG` no seu `docker/.env`.
-2. Rode `diff docker/docker-compose.override.yml docker/docker-compose.override.example.yml`
-   para conferir se o template ganhou variáveis novas desde a última vez que
-   você copiou — o serviço `geo-api` costuma subir `healthy` mesmo com uma
-   variável faltando (a validação pode ficar adiada para o primeiro uso real),
-   então a ausência não aparece no health check, só ao exercitar a
-   funcionalidade correspondente.
-3. Propague sem recriar o stack inteiro:
-   `docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml pull geo-api`
-   seguido de `up -d geo-api`.
+2. Propague sem recriar o stack inteiro, a partir de `docker/`:
+   `docker compose pull geo-api` seguido de `docker compose up -d geo-api`.
 
 | App | URL | Client OIDC |
 |---|---|---|
@@ -119,7 +111,7 @@ a API não emite `Access-Control-Allow-Origin`, então todos os documentos
 falhariam em CORS.
 
 O seletor **Servers** já vem no ambiente local: o documento anuncia
-`http://localhost:5299` como primeiro servidor porque o override define
+`http://localhost:5299` como primeiro servidor porque o compose local define
 `UniPlus__OpenApi__LocalServerUrl`. Sem isso o "Try it out" dispararia contra a
 URL de produção — o que falha em CORS e, pior, manda requisição e credencial
 para o ambiente errado. Em HML e PROD a variável não existe e o documento volta

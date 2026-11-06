@@ -309,7 +309,7 @@ ensure_configuracao_web_client() {
 
 # ---- Etapa 4b — Client M2M do Geo -------------------------------------------
 
-# O secret sai do docker/.env, que também o entrega à API pelo override de exemplo.
+# O secret sai do docker/.env, que também o entrega à API pelo docker-compose.yml.
 geo_m2m_client_secret() {
     if [ -n "${UNIPLUS_API_SELECAO_CLIENT_SECRET:-}" ]; then
         printf '%s' "$UNIPLUS_API_SELECAO_CLIENT_SECRET"
