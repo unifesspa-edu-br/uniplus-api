@@ -57,8 +57,8 @@ Variações de `scripts/dev-up.sh`:
 ## Serviços e portas
 
 Cada porta publicada vem de uma variável (coluna "Variável"), com o padrão abaixo. Para trocá-la sem editar
-arquivo versionado, defina a variável no shell ou no `docker/.env` (as variáveis estão comentadas no fim do
-`docker/.env.example`), ou use `scripts/dev-up.sh --deslocamento-de-portas N`.
+arquivo versionado, edite a variável no `docker/.env` (o `docker/.env.example` já traz todas, com o valor padrão)
+ou defina-a no shell, que vence o arquivo; ou use `scripts/dev-up.sh --deslocamento-de-portas N`.
 
 | Serviço | Variável | Padrão | URL de acesso | Credenciais (.env.example) |
 |---|---|---|---|---|
