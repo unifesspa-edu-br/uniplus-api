@@ -1,0 +1,7 @@
+# Contêiner do serviço `ambiente-init` do ambiente local: só o que os scripts de configuração do Keycloak
+# e de instalação dos gestores de acessos pedem (bash, curl, jq e o stat/base64 do coreutils). Os scripts
+# entram por volume, em tempo de execução, para o contêiner nunca ficar para trás deles. DEV ONLY.
+FROM alpine:3.22
+RUN apk add --no-cache bash curl jq coreutils
+WORKDIR /repo
+ENTRYPOINT ["bash", "/repo/scripts/ambiente-init.sh"]

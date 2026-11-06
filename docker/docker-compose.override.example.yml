@@ -136,6 +136,45 @@ services:
       retries: 5
       start_period: 20s
 
+  # Deixa o ambiente pronto depois que a API e o Keycloak sobem: configura o Keycloak (senha do admin, personas
+  # fictícias, papel uniplus-instalacao) e instala os dois primeiros gestores de acessos pela API (ADR-0152).
+  # Idempotente: com tudo configurado e os gestores instalados, não altera nada e termina com sucesso; banco
+  # recriado, refaz tudo. Os scripts entram por volume (scripts/ambiente-init.sh). Só o ambiente local.
+  # Acompanhe com `docker compose ... logs -f ambiente-init`; INSTALAR_GESTORES=false pula só a instalação.
+  ambiente-init:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ambiente-init
+    restart: "no"
+    environment:
+      KC_URL: "http://keycloak:8080"
+      API_URL: "http://uniplus-api:8080"
+      MAILPIT_URL: "http://mailpit:8025"
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD}"
+      UNIPLUS_API_SELECAO_CLIENT_SECRET: "${UNIPLUS_API_SELECAO_CLIENT_SECRET:?defina UNIPLUS_API_SELECAO_CLIENT_SECRET no docker/.env}"
+      CONFIGURACAO_WEB_ORIGIN: "http://localhost:${CONFIGURACAO_WEB_PORT:-4203}"
+      # A URL assinada de envio do PDF aponta para o MinIO publicado no host (Storage__PublicEndpoint);
+      # aqui dentro ela é redirecionada para o serviço, sem trocar o Host que entra na assinatura.
+      ARMAZENAMENTO_CONNECT_TO: "localhost:${MINIO_PORT:-9000}:minio:9000"
+      INSTALAR_GESTORES: "${INSTALAR_GESTORES:-true}"
+      LDAP_PROBE_HOST: "openldap"
+      LDAP_PROBE_PORT: "389"
+    volumes:
+      - ../scripts:/repo/scripts:ro
+      - ./keycloak:/repo/docker/keycloak:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      uniplus-api:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      verificador:
+        condition: service_started
+
   # API Geo — deploy autônomo (banco isolado uniplus_geo com PostGIS, ADR-0090/0091).
   # Dono do banco: usuário _app dedicado (uniplus_geo_app), provisionado por init-db.sql.
   # Extraído para repositório dedicado (issue #732, ADR-0099): a imagem do Geo passa

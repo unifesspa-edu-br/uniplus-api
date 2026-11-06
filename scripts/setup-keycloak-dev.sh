@@ -98,6 +98,8 @@ LDAP_USERS_DN="${LDAP_USERS_DN:-ou=Users,$LDAP_BASE_DN}"
 readonly LDAP_PROVIDER_NAME="ldap-local-sintetico"
 
 # Diretório onde vivem os scripts auxiliares chamados como subprocesso
+# `http://keycloak:*` é o nome do serviço na rede do compose (contêiner ambiente-init): tão local quanto
+# localhost, e só resolve dentro dessa rede. As travas de DEV ONLY abaixo o aceitam por isso.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Definidos durante a execução
@@ -323,7 +325,7 @@ ensure_geo_m2m_client() {
     log "Garantindo client M2M '$GEO_M2M_CLIENT_ID' (conferência do endereço no Geo)"
 
     # Fora daqui o client é da infra, com o secret do Vault: o de dev não pode sobrescrevê-lo.
-    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]]; then
+    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]] && [[ "$KC_URL" != http://keycloak:* ]]; then
         warn "KC_URL não é localhost — client '$GEO_M2M_CLIENT_ID' não foi tocado."
         return
     fi
@@ -595,7 +597,7 @@ ensure_personas() {
 is_local_ldap_reachable() {
     # Só faz sentido em dev local; em HML, o LDAP institucional não é o
     # nosso openldap sintético.
-    [[ "$KC_URL" == http://localhost:* ]] || [[ "$KC_URL" == http://127.0.0.1:* ]] || return 1
+    [[ "$KC_URL" == http://localhost:* ]] || [[ "$KC_URL" == http://127.0.0.1:* ]] || [[ "$KC_URL" == http://keycloak:* ]] || return 1
 
     # Probe TCP via /dev/tcp do bash (não exige nc).
     (timeout 2 bash -c "</dev/tcp/$LDAP_PROBE_HOST/$LDAP_PROBE_PORT") 2>/dev/null
@@ -852,7 +854,7 @@ main() {
     # admin-cli (compartilhado com ficha_facil/sisplad em HML), sobrescreve
     # senhas dos 4 users de teste, configura LDAP federation contra OpenLDAP
     # sintético. Para HML/PRD use setup-cpf-matcher-flow.sh + setup-govbr-idp.sh.
-    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]]; then
+    if [[ "$KC_URL" != http://localhost:* ]] && [[ "$KC_URL" != http://127.0.0.1:* ]] && [[ "$KC_URL" != http://keycloak:* ]]; then
         warn "setup-keycloak-dev.sh é DEV ONLY — KC_URL='$KC_URL' não é localhost."
         warn "Patches deste script (admin-cli, senhas de teste, LDAP) afetam realms"
         warn "compartilhados em HML/PRD. Para HML/PRD use:"
