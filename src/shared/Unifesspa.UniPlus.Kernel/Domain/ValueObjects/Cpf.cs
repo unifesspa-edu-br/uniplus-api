@@ -37,7 +37,10 @@ public sealed record Cpf
     public static string Mascarar(string onzeDigitos)
     {
         ArgumentNullException.ThrowIfNull(onzeDigitos);
-        ArgumentOutOfRangeException.ThrowIfNotEqual(onzeDigitos.Length, 11);
+        if (onzeDigitos.Length != 11)
+        {
+            throw new ArgumentOutOfRangeException(nameof(onzeDigitos), "O CPF a mascarar tem onze dígitos.");
+        }
 
         return $"***.{onzeDigitos[3..6]}.{onzeDigitos[6..9]}-**";
     }

@@ -28,7 +28,7 @@ public sealed class AnexoDoAtoDoProcesso : EntityBase
     internal static AnexoDoAtoDoProcesso Criar(Guid atoDoProcessoId, int ordem, Guid documentoAPublicarId, string nomeDeExibicao)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nomeDeExibicao);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(nomeDeExibicao.Length, NomeDeExibicaoMaxLength);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(nomeDeExibicao.Length, NomeDeExibicaoMaxLength, nameof(nomeDeExibicao));
         if (documentoAPublicarId == Guid.Empty)
         {
             throw new ArgumentException("O anexo deve referenciar um documento a publicar.", nameof(documentoAPublicarId));

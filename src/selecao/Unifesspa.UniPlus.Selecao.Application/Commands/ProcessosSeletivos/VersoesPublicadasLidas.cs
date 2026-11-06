@@ -24,7 +24,7 @@ internal sealed record VersoesPublicadasLidas(FatosDasVersoesPublicadas Fatos, I
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(versoes);
         // Só se retifica processo publicado: sem versão, quem chama tem defeito, não o pedido.
-        ArgumentOutOfRangeException.ThrowIfZero(versoes.Count);
+        ArgumentOutOfRangeException.ThrowIfZero(versoes.Count, nameof(versoes));
 
         VersaoConfiguracao versaoAtual = versoes[^1];
         List<GrafoConfiguracao> grafos = new(versoes.Count);
