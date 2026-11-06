@@ -47,7 +47,7 @@ public sealed record LimiteDeData
 
     public static LimiteDeData NoEnvio(int anos, int dias) =>
         ViolacaoDoDeslocamento(anos, dias) is { } violacao
-            ? throw new ArgumentException(violacao)
+            ? throw new ArgumentException(violacao, nameof(anos))
             : new(AncoraDoLimiteDeData.Envio, null, anos, dias);
 
     /// <summary>O dia do limite; nulo quando ele conta do envio e o dia do envio não se sabe.</summary>

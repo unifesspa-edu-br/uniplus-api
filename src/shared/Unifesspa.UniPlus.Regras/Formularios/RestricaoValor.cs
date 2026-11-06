@@ -54,7 +54,7 @@ public sealed record FaixaNumerica : RestricaoValor
     {
         if (Violacao(minimo, maximo) is { } violacao)
         {
-            throw new ArgumentException(violacao);
+            throw new ArgumentException(violacao, nameof(minimo));
         }
 
         Minimo = minimo;
@@ -92,7 +92,7 @@ public sealed record TamanhoTexto : RestricaoValor
     {
         if (Violacao(minimo, maximo) is { } violacao)
         {
-            throw new ArgumentException(violacao);
+            throw new ArgumentException(violacao, nameof(minimo));
         }
 
         Minimo = minimo;
@@ -371,7 +371,7 @@ public sealed record FaixaDeData : RestricaoValor
     {
         if (Violacao(minima, maxima) is { } violacao)
         {
-            throw new ArgumentException(violacao);
+            throw new ArgumentException(violacao, nameof(minima));
         }
 
         Minima = minima;
