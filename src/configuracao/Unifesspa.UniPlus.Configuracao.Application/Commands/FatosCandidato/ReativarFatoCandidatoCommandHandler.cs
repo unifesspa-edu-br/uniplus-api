@@ -17,6 +17,6 @@ public static class ReativarFatoCandidatoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         return MutacaoDoFato.AplicarAsync(
-            command.Id, static fato => fato.Ativar(), repository, unitOfWork, cancellationToken);
+            command.Id, static fato => fato.Reativar(), repository, unitOfWork, cancellationToken);
     }
 }

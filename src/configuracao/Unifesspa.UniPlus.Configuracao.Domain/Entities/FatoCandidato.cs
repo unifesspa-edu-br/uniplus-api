@@ -1061,7 +1061,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         HipoteseLegalTratamento Hipotese);
 
     /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>
-    public Result Ativar()
+    public Result Reativar()
     {
         if (RecusaSeSistema() is { } recusa)
         {

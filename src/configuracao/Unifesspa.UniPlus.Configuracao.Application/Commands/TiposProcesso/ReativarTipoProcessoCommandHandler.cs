@@ -25,10 +25,10 @@ public static class ReativarTipoProcessoCommandHandler
             return Result.Failure(new DomainError(TipoProcessoErrorCodes.NaoEncontrado, "Tipo de processo seletivo não encontrado."));
         }
 
-        Result ativar = tipo.Ativar();
-        if (ativar.IsFailure)
+        Result reativar = tipo.Reativar();
+        if (reativar.IsFailure)
         {
-            return ativar;
+            return reativar;
         }
 
         try
@@ -37,15 +37,7 @@ public static class ReativarTipoProcessoCommandHandler
         }
         catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
         {
-            // Duas reativações concorrentes do mesmo tipo leem `Ativo == false` e
-            // ambas atravessam a guarda do agregado — a corrida só é vista pelo
-            // xmin, na gravação. Como o endpoint tem [RequiresIdempotencyKey], a
-            // exceção não pode propagar sem catch (ADR-0119: o IdempotencyFilter
-            // não confere ResourceExecutedContext.Exception antes de cachear a
-            // resposta). O descarte vem antes do retorno porque o
-            // SaveChangesAsync automático do outbox roda depois que o handler
-            // retorna e reencontraria a mesma entidade modificada, estourando de
-            // novo fora deste catch — 500 em vez de 409.
+            // Descarta antes de retornar: o SaveChanges do outbox rodaria depois e estouraria fora deste catch (ADR-0119).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 TipoProcessoErrorCodes.ConflitoDeConcorrencia,

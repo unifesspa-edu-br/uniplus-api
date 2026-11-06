@@ -184,7 +184,7 @@ public sealed class TipoProcesso : EntityBase, IAuditableEntity
     /// uma reativação que não mudou estado algum. O código continua sendo o
     /// mesmo — reativar não é caminho lateral para reaproveitar identidade.
     /// </summary>
-    public Result Ativar()
+    public Result Reativar()
     {
         if (Ativo)
         {

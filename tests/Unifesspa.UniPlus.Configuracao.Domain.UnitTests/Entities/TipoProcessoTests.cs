@@ -132,12 +132,12 @@ public sealed class TipoProcessoTests
     }
 
     [Fact(DisplayName = "Reativação devolve o tipo desativado ao estado ativo preservando código e nome")]
-    public void Ativar_ItemDesativado_ReativaPreservandoIdentidade()
+    public void Reativar_ItemDesativado_ReativaPreservandoIdentidade()
     {
         TipoProcesso tipo = TipoProcesso.Criar("PS_TESTE", "Processo teste", "Descrição").Value!;
         tipo.Desativar();
 
-        Result result = tipo.Ativar();
+        Result result = tipo.Reativar();
 
         result.IsSuccess.Should().BeTrue();
         tipo.Ativo.Should().BeTrue();
@@ -147,11 +147,11 @@ public sealed class TipoProcessoTests
     }
 
     [Fact(DisplayName = "Reativar o que já está ativo é recusado em vez de aceito em silêncio")]
-    public void Ativar_ItemJaAtivo_Recusa()
+    public void Reativar_ItemJaAtivo_Recusa()
     {
         TipoProcesso tipo = TipoProcesso.Criar("PS_TESTE", "Processo teste", null).Value!;
 
-        Result result = tipo.Ativar();
+        Result result = tipo.Reativar();
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(TipoProcessoErrorCodes.JaAtivo);

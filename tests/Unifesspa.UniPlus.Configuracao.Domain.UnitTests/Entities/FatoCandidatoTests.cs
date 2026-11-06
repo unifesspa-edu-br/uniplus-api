@@ -350,7 +350,7 @@ public sealed class FatoCandidatoTests
     {
         FatoCandidato fato = Criar().Value!;
 
-        fato.Ativar().Error!.Code.Should().Be(FatoCandidatoErrorCodes.JaAtivo);
+        fato.Reativar().Error!.Code.Should().Be(FatoCandidatoErrorCodes.JaAtivo);
         fato.Desativar().IsSuccess.Should().BeTrue();
         fato.Desativar().Error!.Code.Should().Be(FatoCandidatoErrorCodes.JaDesativado);
         fato.Ativo.Should().BeFalse();
