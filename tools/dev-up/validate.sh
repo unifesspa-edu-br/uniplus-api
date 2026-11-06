@@ -71,6 +71,30 @@ else
     echo "  (docker compose ausente; etapa ignorada)"
 fi
 
+echo "== diagnóstico do ambiente"
+# O diagnóstico precisa aceitar o override de exemplo do stack completo e recusar o override antigo, que
+# definia a API por inteiro.
+DIAG="$TRABALHO/diag"
+mkdir -p "$DIAG/scripts" "$DIAG/docker"
+cp "$RAIZ/scripts/diagnosticar-ambiente.sh" "$DIAG/scripts/"
+cp "$RAIZ"/docker/docker-compose.yml "$RAIZ"/docker/docker-compose.override.example.yml "$RAIZ/docker/.env.example" "$DIAG/docker/"
+cp "$DIAG/docker/.env.example" "$DIAG/docker/.env"
+cp "$DIAG/docker/docker-compose.override.example.yml" "$DIAG/docker/docker-compose.override.yml"
+ANTIGO="redefine serviço que agora vive"
+"$DIAG/scripts/diagnosticar-ambiente.sh" >"$TRABALHO/diag.log" 2>&1
+if grep -q "$ANTIGO" "$TRABALHO/diag.log"; then
+    erro "o diagnóstico recusou o override de exemplo"
+else
+    ok "o diagnóstico aceita o override de exemplo"
+fi
+printf 'services:\n  uniplus-api:\n    build:\n      context: ..\n' > "$DIAG/docker/docker-compose.override.yml"
+"$DIAG/scripts/diagnosticar-ambiente.sh" >"$TRABALHO/diag.log" 2>&1
+if grep -q "$ANTIGO" "$TRABALHO/diag.log"; then
+    ok "o diagnóstico acusa o override antigo"
+else
+    erro "o diagnóstico não acusou o override antigo"
+fi
+
 echo "== domínio de desenvolvimento fora de HML e produção"
 # Os domínios locais só existem no compose de desenvolvimento (docker/, nunca implantado: HML e produção usam
 # o chart do uniplus-infra). Nenhuma configuração do código os traz.
