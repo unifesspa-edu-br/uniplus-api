@@ -183,8 +183,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0152](0152-governanca-das-concessoes-de-acesso.md) | Toda concessão nasce de pedido no Uni+, aprovado pelo gestor de acessos e, havendo permissão pessoal ou sensível, também pela encarregada de dados; o token identifica e não concede; fora a transição, só o papel de instalação vem do token — emenda a ADR-0078 e supera a ADR-0083 | accepted | 2026-10-28 |
 | [0153](0153-projecao-por-protecao.md) | A resposta administrativa é um DTO único classificado item a item, projetado no handler por permissão de (natureza, classificação), com o acesso ao dado protegido auditado e a classificação do catálogo aprovada pela proteção de dados — emenda as ADRs 0081, 0136 e 0151 | proposed | 2026-10-31 |
 | [0154](0154-classificacao-da-modalidade-e-dos-opt-ins.md) | A modalidade e os opt-ins de concorrência passam a `Interno`, como reclassificação de fato de sistema pela aprovação da proteção de dados | proposed | 2026-10-31 |
+| [0155](0155-analisadores-de-qualidade-na-build.md) | Sonar, Meziantou e Roslynator rodam na build, com um dono por regra; as métricas de qualidade avisam até o fim da refatoração e depois passam a erro; emenda a 0117 nesse ponto | accepted | 2026-11-06 |
 
-> **Nota de numeração:** a sequência de `0001` a `0154` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0155+`.
+> **Nota de numeração:** a sequência de `0001` a `0155` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0156+`.
 
 ## Como adicionar um novo ADR
 

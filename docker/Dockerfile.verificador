@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0.400 AS build
 WORKDIR /src
 
 # .editorconfig vive junto da solution porque as políticas de análise por glob estão nele.
-COPY Directory.Build.props Directory.Packages.props global.json UniPlus.slnx .editorconfig ./
+COPY Directory.Build.props Directory.Packages.props SonarLint.xml .globalconfig global.json UniPlus.slnx .editorconfig ./
 
 # O verificador não depende de src/shared nem de módulo de negócio: só dos seus dois projetos.
 COPY src/verificador/ src/verificador/

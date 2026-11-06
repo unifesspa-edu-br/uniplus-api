@@ -329,8 +329,8 @@ Nenhum arquivo `*.cs` de `src/` passa de **400 linhas físicas** (comentários, 
 ### 3. Testar
 
 ```bash
-# Compilar sem warnings
-dotnet build --warnaserrors
+# Compilar: só os avisos de métrica da ADR-0155 são admitidos
+dotnet build
 
 # Testes unitários
 dotnet test --filter "FullyQualifiedName!~IntegrationTests"
@@ -596,10 +596,9 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 
 O PR será bloqueado se qualquer gate falhar:
 
-- [ ] Build sem erros e sem warnings (`dotnet build --warnaserrors`)
+- [ ] Build sem erros e sem warnings além das métricas em modo aviso da ADR-0155 (`dotnet build`)
 - [ ] Todos os testes passando
 - [ ] Cobertura de código >= 80% nas camadas Domain e Application
-- [ ] SonarQube: zero issues críticos ou bloqueadores
 - [ ] Nenhuma vulnerabilidade crítica em dependências
 - [ ] Formatação correta — job `Formatação (dotnet format)` no CI; ver [§ Formatação e o filtro CA1515](#formatação-e-o-filtro-ca1515)
 - [ ] Pacotes proibidos ausentes (`bash tools/forbidden-deps/check.sh`) — ver [§ Pacotes proibidos](#pacotes-proibidos)

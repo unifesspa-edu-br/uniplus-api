@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AnalysisInput>
+  <Rules>
+    <Rule>
+      <Key>S138</Key>
+      <Parameters>
+        <Parameter><Key>max</Key><Value>15</Value></Parameter>
+      </Parameters>
+    </Rule>
+    <Rule>
+      <Key>S3776</Key>
+      <Parameters>
+        <Parameter><Key>threshold</Key><Value>15</Value></Parameter>
+        <Parameter><Key>propertyThreshold</Key><Value>15</Value></Parameter>
+      </Parameters>
+    </Rule>
+    <Rule>
+      <Key>S1541</Key>
+      <Parameters>
+        <Parameter><Key>maximumFunctionComplexityThreshold</Key><Value>10</Value></Parameter>
+      </Parameters>
+    </Rule>
+    <Rule>
+      <Key>S107</Key>
+      <Parameters>
+        <Parameter><Key>max</Key><Value>7</Value></Parameter>
+      </Parameters>
+    </Rule>
+  </Rules>
+</AnalysisInput>

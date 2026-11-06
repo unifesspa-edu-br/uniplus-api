@@ -126,4 +126,11 @@
          em runtime (ReferenceOutputAssembly=false no ProjectReference que ordena o build). -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
+  <!-- Analisadores da build, um dono por regra (ADR-0155): Sonar responde pelas métricas,
+       Meziantou por comportamento e Roslynator por estilo, como sugestão na IDE. -->
+  <ItemGroup>
+    <GlobalPackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" />
+    <GlobalPackageReference Include="Meziantou.Analyzer" Version="3.0.321" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="5.0.1" />
+  </ItemGroup>
 </Project>

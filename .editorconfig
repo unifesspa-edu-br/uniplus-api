@@ -82,6 +82,71 @@ dotnet_naming_style.camel_case_underscore_prefix.capitalization = camel_case
 [*.{json,yml,yaml}]
 indent_size = 2
 
+[*.cs]
+# Métricas de qualidade: limites em SonarLint.xml. Avisam até o fim da refatoração.
+dotnet_diagnostic.S138.severity = warning
+dotnet_diagnostic.S3776.severity = warning
+dotnet_diagnostic.S1541.severity = warning
+dotnet_diagnostic.S107.severity = warning
+
+# Dono único de cada regra. Tamanho de método é da S138. Estas têm dono na análise do .NET:
+# CA2007 (ConfigureAwait), CA1822 (membro que pode ser estático), CA2200 (relançar exceção),
+# CA1825 (array vazio), CA1018 (AttributeUsage), CA1050 (tipo fora de namespace),
+# CA2201 (exceção reservada), CA1041 (Obsolete sem mensagem), CA1067 (Equals de IEquatable),
+# CA2211 (campo estático visível).
+dotnet_diagnostic.CA2007.severity = warning
+# CA1000 (membro estático em tipo genérico) está desligada por decisão, e a duplicata sai junto.
+dotnet_diagnostic.MA0051.severity = none
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0018.severity = none
+dotnet_diagnostic.MA0041.severity = none
+dotnet_diagnostic.MA0038.severity = none
+dotnet_diagnostic.MA0027.severity = none
+dotnet_diagnostic.MA0005.severity = none
+dotnet_diagnostic.MA0010.severity = none
+dotnet_diagnostic.MA0047.severity = none
+dotnet_diagnostic.MA0012.severity = none
+dotnet_diagnostic.MA0070.severity = none
+dotnet_diagnostic.MA0095.severity = none
+dotnet_diagnostic.MA0069.severity = none
+# Comportamento fica com o Meziantou ou com a análise do .NET, não com o Roslynator:
+# MA0064 (lock), MA0081 (params), MA0022 (Task nula), CA1862 (comparação de texto), CA2200, CA1018.
+dotnet_diagnostic.RCS1059.severity = none
+dotnet_diagnostic.RCS1193.severity = none
+dotnet_diagnostic.RCS1210.severity = none
+dotnet_diagnostic.RCS1155.severity = none
+dotnet_diagnostic.RCS1044.severity = none
+dotnet_diagnostic.RCS1203.severity = none
+
+# Regras do Meziantou com ocorrências no código: sugestão enquanto são corrigidas.
+# Ao zerar uma regra, retirá-la daqui para que volte a barrar a build.
+dotnet_diagnostic.MA0002.severity = suggestion
+dotnet_diagnostic.MA0006.severity = suggestion
+dotnet_diagnostic.MA0008.severity = suggestion
+dotnet_diagnostic.MA0009.severity = suggestion
+dotnet_diagnostic.MA0011.severity = suggestion
+dotnet_diagnostic.MA0015.severity = suggestion
+dotnet_diagnostic.MA0016.severity = suggestion
+dotnet_diagnostic.MA0023.severity = suggestion
+dotnet_diagnostic.MA0026.severity = suggestion
+dotnet_diagnostic.MA0048.severity = suggestion
+dotnet_diagnostic.MA0084.severity = suggestion
+dotnet_diagnostic.MA0100.severity = suggestion
+dotnet_diagnostic.MA0134.severity = suggestion
+dotnet_diagnostic.MA0244.severity = suggestion
+
+# Roslynator é sugestão na IDE, nunca barra a build. As demais regras dele já nascem abaixo
+# de aviso; aqui ficam as que nascem como aviso.
+dotnet_diagnostic.RCS1075.severity = suggestion
+dotnet_diagnostic.RCS1102.severity = suggestion
+dotnet_diagnostic.RCS1138.severity = suggestion
+dotnet_diagnostic.RCS1139.severity = suggestion
+dotnet_diagnostic.RCS1172.severity = suggestion
+dotnet_diagnostic.RCS1194.severity = suggestion
+dotnet_diagnostic.RCS1215.severity = suggestion
+dotnet_diagnostic.RCS1242.severity = suggestion
+dotnet_diagnostic.RCS1263.severity = suggestion
+
 [*.md]
 trim_trailing_whitespace = false
 
@@ -104,17 +169,27 @@ dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.CA1861.severity = none
 
+# Mapeamento do EF é lista declarativa de propriedades: dividi-la só para caber em tamanho de
+# método seria artificial. Mapeamento longo se divide por assunto; quem cobra é a revisão.
+[{src/**/Persistence/Configurations/**.cs,src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyEntryConfiguration.cs,src/shared/Unifesspa.UniPlus.Infrastructure.Core/Persistence/EnderecoGeoOwnedConfiguration.cs}]
+dotnet_diagnostic.S138.severity = none
+
 # Migrations EF Core são auto-geradas pelo tool — analyzers que cobram
 # defensive coding, perf de array literal ou estilo C# moderno não se aplicam:
 # - CA1062: tool não emite ArgumentNullException no migrationBuilder
 # - CA1861: tool emite arrays inline (`new[] { ... }`) em CreateIndex
 # - IDE0161: tool emite namespace-block clássico, não file-scoped
+# - S138, S3776, S1541, S107: tamanho e complexidade de Up/Down vêm do modelo, não de quem escreve
 #
 # Pelo mesmo motivo, duas regras de formatação seguem o que o `dotnet ef`
 # emite, em vez de exigir retrabalho manual a cada migration gerada:
 # - charset: o tool grava com BOM
 # - separate_import_directive_groups: o tool não separa grupos de using
 [src/**/Migrations/**.cs]
+dotnet_diagnostic.S138.severity = none
+dotnet_diagnostic.S3776.severity = none
+dotnet_diagnostic.S1541.severity = none
+dotnet_diagnostic.S107.severity = none
 charset = utf-8-bom
 dotnet_separate_import_directive_groups = false
 dotnet_diagnostic.CA1062.severity = none

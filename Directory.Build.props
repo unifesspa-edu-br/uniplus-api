@@ -9,7 +9,17 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);S138;S3776;S1541;S107</WarningsNotAsErrors>
+    <ErrorLog>$(MSBuildThisFileDirectory)artifacts/analise/$(MSBuildProjectName).sarif,version=2.1</ErrorLog>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)SonarLint.xml" />
+  </ItemGroup>
+
+  <Target Name="CriarPastaDoRelatorioDeAnalise" BeforeTargets="CoreCompile">
+    <MakeDir Directories="$(MSBuildThisFileDirectory)artifacts/analise" />
+  </Target>
 
   <!-- O analyzer transitivo da MR (MR.EntityFrameworkCore.KeysetPagination.Analyzers,
        ADR-0094) referencia um Roslyn (5.3) mais novo que o do SDK das imagens Docker (5.0),
