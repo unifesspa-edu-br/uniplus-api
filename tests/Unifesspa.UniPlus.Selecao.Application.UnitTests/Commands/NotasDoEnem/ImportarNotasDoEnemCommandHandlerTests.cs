@@ -172,9 +172,9 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
 
         Received.InOrder(() =>
         {
-            _indices.CalcularAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
-            _cenario.Processos.TravarAsync(_cenario.ProcessoId, Arg.Any<CancellationToken>());
-            _lotes.ObterVigenteAsync(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, Arg.Any<CancellationToken>());
+            _ = _indices.CalcularAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+            _ = _cenario.Processos.TravarAsync(_cenario.ProcessoId, Arg.Any<CancellationToken>());
+            _ = _lotes.ObterVigenteAsync(_cenario.ProcessoId, _cenario.EtapaDoEnem.Id, Edicao, Arg.Any<CancellationToken>());
         });
     }
 

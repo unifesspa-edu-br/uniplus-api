@@ -91,8 +91,8 @@ public sealed class CriarPrecedenciaFaseCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         Received.InOrder(() =>
         {
-            _repository.TravarGrafoParaEscritaAsync(Arg.Any<CancellationToken>());
-            _repository.ListarVivasAsync(Arg.Any<CancellationToken>());
+            _ = _repository.TravarGrafoParaEscritaAsync(Arg.Any<CancellationToken>());
+            _ = _repository.ListarVivasAsync(Arg.Any<CancellationToken>());
         });
     }
 

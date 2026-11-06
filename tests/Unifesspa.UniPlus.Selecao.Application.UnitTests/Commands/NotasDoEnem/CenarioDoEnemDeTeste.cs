@@ -97,7 +97,7 @@ internal sealed class CenarioDoEnemDeTeste
 
     /// <summary>O processo vivo não pode ser lido: o escopo é o da versão divulgada.</summary>
     public void ProcessoVivoNaoFoiConsultado() =>
-        Processos.DidNotReceiveWithAnyArgs().ObterComConfiguracaoAsync(default, default);
+        _ = Processos.DidNotReceiveWithAnyArgs().ObterComConfiguracaoAsync(default, default);
 
     private static EtapaProcesso Etapa(string nome, string tipo, bool notaDeOrigemNoEnem) =>
         EtapaProcesso.Criar(

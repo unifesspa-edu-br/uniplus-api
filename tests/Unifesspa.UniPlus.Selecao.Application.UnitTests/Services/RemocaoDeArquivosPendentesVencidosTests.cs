@@ -47,10 +47,10 @@ public sealed class RemocaoDeArquivosPendentesVencidosTests
         removidos.Should().Be(2);
         Received.InOrder(() =>
         {
-            _storage.RemoverAsync(documento.ObjectKey, Arg.Any<CancellationToken>());
-            _documentos.RemoverSePendenteVencidoAsync(documento.Id, Corte, Arg.Any<CancellationToken>());
-            _storage.RemoverAsync(modelo.ObjectKey, Arg.Any<CancellationToken>());
-            _modelos.RemoverSePendenteVencidoAsync(modelo.Id, Corte, Arg.Any<CancellationToken>());
+            _ = _storage.RemoverAsync(documento.ObjectKey, Arg.Any<CancellationToken>());
+            _ = _documentos.RemoverSePendenteVencidoAsync(documento.Id, Corte, Arg.Any<CancellationToken>());
+            _ = _storage.RemoverAsync(modelo.ObjectKey, Arg.Any<CancellationToken>());
+            _ = _modelos.RemoverSePendenteVencidoAsync(modelo.Id, Corte, Arg.Any<CancellationToken>());
         });
     }
 
