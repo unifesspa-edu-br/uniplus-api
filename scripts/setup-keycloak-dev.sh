@@ -818,26 +818,30 @@ configure_govbr_mock_idp() {
 # ---- Etapa 8 — Hint de smoke test ------------------------------------------
 
 print_smoke_test_hint() {
+    # Endereços que o host alcança: dentro do compose, KC_URL é http://keycloak:8080 e só resolve na rede do compose.
+    local keycloak_publico="${KC_PUBLIC_URL:-$KC_URL}"
+    local api_publica="${API_PUBLIC_URL:-http://localhost:${API_PORT:-5200}}"
+    local ldap_publico="${LDAP_PUBLIC_URL:-ldap://$LDAP_PROBE_HOST:$LDAP_PROBE_PORT}"
     echo
     log "Setup DEV concluído. Caminhos de validação:"
     cat <<EOF >&2
 
   ── Login direto via ROPC (sem broker) ──
-  TOKEN=\$(curl -s -X POST '$KC_URL/realms/$KC_REALM/protocol/openid-connect/token' \\
+  TOKEN=\$(curl -s -X POST '$keycloak_publico/realms/$KC_REALM/protocol/openid-connect/token' \\
     --data-urlencode 'grant_type=password' --data-urlencode 'client_id=admin-cli' \\
     --data-urlencode 'username=candidato' --data-urlencode 'password=$TEST_PASSWORD' \\
     | jq -r .access_token)
   # --data-urlencode, não -d: a senha tem '+', que -d não escapa (vira espaço).
 
-  curl -s -H "Authorization: Bearer \$TOKEN" http://localhost:5202/api/profile/me | jq
+  curl -s -H "Authorization: Bearer \$TOKEN" $api_publica/api/profile/me | jq
 
   ── Login via gov.br MOCK (E2E do cpf-matcher) ──
-  Browser:   http://localhost:8080/realms/$KC_REALM/account → "Entrar com gov.br (MOCK)"
+  Browser:   $keycloak_publico/realms/$KC_REALM/account → "Entrar com gov.br (MOCK)"
              user: 09876543210  senha: Mock!1234
   Smoke:     scripts/smoke-test-cpf-matcher.sh
 
   ── Inspeções rápidas ──
-  ldapsearch -x -H ldap://$LDAP_PROBE_HOST:$LDAP_PROBE_PORT \\
+  ldapsearch -x -H $ldap_publico \\
     -b $LDAP_USERS_DN \\
     -D '$LDAP_BIND_DN' -w '$LDAP_BIND_CREDENTIAL' \\
     '(objectClass=inetOrgPerson)' uid cn employeeNumber
