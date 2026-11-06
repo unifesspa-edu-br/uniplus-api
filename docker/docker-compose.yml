@@ -409,6 +409,8 @@ services:
       # O que o navegador do host alcança (KC_HOSTNAME do Keycloak): entra nas URLs de login do gov.br simulado.
       KC_PUBLIC_URL: "http://localhost:${KEYCLOAK_PORT:-8080}"
       API_URL: "http://uniplus-api:8080"
+      # O que o host alcança, para os exemplos de validação que o setup do Keycloak imprime.
+      API_PUBLIC_URL: "http://localhost:${API_PORT:-5200}"
       MAILPIT_URL: "http://mailpit:8025"
       KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN:?defina KEYCLOAK_ADMIN no docker/.env}"
       KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD no docker/.env}"
@@ -420,6 +422,8 @@ services:
       INSTALAR_GESTORES: "${INSTALAR_GESTORES:-true}"
       # Marca o ambiente local do compose: é o que libera o KC_URL http://keycloak:* nas travas DEV ONLY dos scripts.
       AMBIENTE_LOCAL_DOCKER: "true"
+      # O que o host alcança, para o exemplo de ldapsearch; o teste de conexão do setup segue em openldap:389.
+      LDAP_PUBLIC_URL: "ldap://127.0.0.1:${LDAP_PORT:-1389}"
       LDAP_PROBE_HOST: "openldap"
       LDAP_PROBE_PORT: "389"
     volumes:
