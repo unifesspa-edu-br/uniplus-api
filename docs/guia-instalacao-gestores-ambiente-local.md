@@ -119,9 +119,17 @@ A API compara o domínio do e-mail por **igualdade exata** com `Autorizacao:Inst
       Autorizacao__Instalacao__DominiosInstitucionais__2: "uniplus-test.local"
 ```
 
-Com `dotnet run`, a chave equivalente vai no `appsettings.Development.json` do Host, seção
-`Autorizacao:Instalacao:DominiosInstitucionais`. Não faça isso em HML ou produção: lá o domínio é o exato
-da instituição.
+Com `dotnet run`, defina as mesmas chaves como variáveis de ambiente no shell que roda a API (ou em
+`dotnet user-secrets`), nunca no `appsettings.Development.json`, que é versionado e que o CI proíbe de
+trazer esses domínios:
+
+```bash
+export Autorizacao__Instalacao__DominiosInstitucionais__0=unifesspa.edu.br
+export Autorizacao__Instalacao__DominiosInstitucionais__1=teste.unifesspa.edu.br
+export Autorizacao__Instalacao__DominiosInstitucionais__2=uniplus-test.local
+```
+
+Não faça isso em HML ou produção: lá o domínio é o exato da instituição.
 
 ### 2.3 Verificador de arquivos (clamd + verificador)
 

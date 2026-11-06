@@ -120,7 +120,7 @@ aguardar_documento_verificado() {
         [ "$situacao" = "documento_verificado" ] && return 0
         sleep 3
     done
-    falha "o documento não chegou a 'documento_verificado' em ${ESPERA_VERIFICACAO}s (última situação: '${situacao:-desconhecida}'). Confira o serviço 'verificador': docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs verificador clamd-verificador (com COMPOSE_PROJECT_NAME igual ao do ambiente, se houver)."
+    falha "o documento não chegou a 'documento_verificado' em ${ESPERA_VERIFICACAO}s (última situação: '${situacao:-desconhecida}'). Confira o serviço 'verificador': docker compose -f docker/docker-compose.yml logs verificador clamd-verificador (com COMPOSE_PROJECT_NAME igual ao do ambiente, se houver)."
 }
 
 # Lê o código mais recente enviado ao e-mail. A caixa do executor é limpa antes do passo 3, então só
@@ -198,7 +198,7 @@ instalar() {
     [ -z "${ARMAZENAMENTO_CONNECT_TO:-}" ] || redirecionamento=(--connect-to "$ARMAZENAMENTO_CONNECT_TO")
     etag=$(curl -fsS -D - -o /dev/null -X PUT -H "Content-Type: application/pdf" ${redirecionamento[@]+"${redirecionamento[@]}"} --data-binary @"$PDF_DE_DESIGNACAO" "$url" \
         | tr -d '\r' | awk -F': ' 'tolower($1)=="etag"{print $2}') \
-        || falha "o envio do PDF à URL assinada falhou (MinIO em porta acessível? Storage__PublicEndpoint do override)."
+        || falha "o envio do PDF à URL assinada falhou (MinIO em porta acessível? Storage__PublicEndpoint do docker-compose.yml)."
     etag="${etag//\"/}"
     [ -n "$etag" ] || falha "o armazenamento não devolveu ETag no envio do PDF."
     chamar "o passo 2 (confirmar o documento)" 200 POST "$API_URL/api/autorizacao/instalacao/$id/documento/confirmacao" "$token_executor" \
