@@ -2,22 +2,27 @@
 # Leva o ambiente local do zero a "dois gestores de acessos instalados e acesso funcionando".
 #
 # O que faz, em ordem:
-#   1. confere as ferramentas (docker, jq, curl) e cria docker/.env e docker/docker-compose.override.yml
-#      a partir dos exemplos, quando não existem; se existem, acusa a chave que lhes falta;
-#   2. sobe a infraestrutura, o kafka-init, o verificador de arquivos (clamd + verificador), o Geo e a API;
-#   3. configura o Keycloak (scripts/setup-keycloak-dev.sh): realm, personas fictícias, papel de instalação;
-#   4. instala os dois gestores pela API (scripts/dev-instalar-gestores.sh) e confere o acesso.
+#   1. confere o Docker e cria docker/.env e docker/docker-compose.override.yml a partir dos exemplos, quando
+#      não existem; se existem, acusa a chave ou o serviço que lhes falta, antes de subir qualquer coisa;
+#   2. sobe o compose (`docker compose up -d --build`): infraestrutura, kafka-init, verificador de arquivos
+#      (clamd + verificador), Geo, API e o serviço `ambiente-init`;
+#   3. acompanha o `ambiente-init`, que configura o Keycloak (realm, personas fictícias, papel de instalação),
+#      instala os dois gestores pela API e confere o acesso (scripts/ambiente-init.sh).
+#
+# O `ambiente-init` é um serviço do compose: quem prefere `docker compose up -d` direto obtém o mesmo resultado
+# e acompanha com `docker compose ... logs -f ambiente-init`. Este script acrescenta a conferência dos
+# arquivos locais, o deslocamento de portas e a espera até o ambiente ficar pronto.
 #
 # Idempotente: rodar de novo com o ambiente no ar e os gestores instalados não altera o estado. Banco
 # recriado (`docker compose down -v`), roda e reinstala.
 #
-# Pré-requisitos: Docker (com Compose v2), jq e curl.
+# Pré-requisito: Docker com Compose v2.
 #
 # Uso:
 #   scripts/dev-up.sh                                     # ambiente mínimo para a API e a instalação
 #   scripts/dev-up.sh --completo                          # também portal-api, gateway e os 4 frontends
 #   scripts/dev-up.sh --deslocamento-de-portas 100        # todas as portas +100 (segundo ambiente)
-#   scripts/dev-up.sh --sem-instalacao                    # sobe e configura, sem instalar os gestores
+#   scripts/dev-up.sh --sem-instalacao                    # sobe e configura o Keycloak, sem instalar os gestores
 #   scripts/dev-up.sh --so-validar                        # só confere .env, override e compose
 #
 # Portas: cada serviço publica em ${NOME_PORT:-padrão} (lista em docker/.env.example). Defina a
@@ -44,7 +49,7 @@ OVERRIDE_EXEMPLO="$DOCKER_DIR/docker-compose.override.example.yml"
 # gateway e os frontends ficam para --completo (os frontends precisam do uniplus-web ao lado).
 SERVICOS_MINIMOS=(
     postgres redis kafka kafka-init minio minio-init rabbitmq mailpit keycloak apicurio
-    geo-api clamd-verificador verificador uniplus-api
+    geo-api clamd-verificador verificador uniplus-api ambiente-init
 )
 
 COMPLETO=false
@@ -85,10 +90,7 @@ ler_argumentos() {
 }
 
 conferir_ferramentas() {
-    local ferramenta
-    for ferramenta in docker jq curl; do
-        command -v "$ferramenta" >/dev/null || falha "'$ferramenta' não encontrado no PATH."
-    done
+    command -v docker >/dev/null || falha "'docker' não encontrado no PATH."
     docker compose version >/dev/null 2>&1 || falha "Docker Compose v2 ('docker compose') não encontrado."
     docker info >/dev/null 2>&1 || falha "o daemon do Docker não responde. Inicie o Docker e tente de novo."
 }
@@ -151,18 +153,9 @@ conferir_compose() {
     }
 }
 
-aguardar_http() {
-    local nome="$1" url="$2" segundos="$3" fim=$((SECONDS + $3))
-    log "Aguardando $nome ($url)"
-    while [ "$SECONDS" -lt "$fim" ]; do
-        curl -fsS -o /dev/null "$url" 2>/dev/null && return 0
-        sleep 3
-    done
-    falha "$nome não respondeu em ${segundos}s em $url. Veja: docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs"
-}
-
 subir_servicos() {
     log "Subindo os serviços (a primeira vez constrói imagens; o clamd baixa a base de assinaturas)."
+    $SEM_INSTALACAO && export INSTALAR_GESTORES=false
     if $COMPLETO; then
         compose up -d --build
     else
@@ -170,25 +163,28 @@ subir_servicos() {
     fi
 }
 
-configurar_keycloak() {
-    local kc_url admin senha
-    kc_url="http://localhost:$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_PORT 8080)"
-    admin=$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_ADMIN admin)
-    senha=$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_ADMIN_PASSWORD admin)
-
-    log "Configurando o Keycloak (realm, personas fictícias, papel de instalação)."
-    KC_URL="$kc_url" KC_ADMIN_USER="$admin" KC_ADMIN_PASS="$senha" \
-        CONFIGURACAO_WEB_ORIGIN="http://localhost:$(valor_do_env "$ENV_ARQUIVO" CONFIGURACAO_WEB_PORT 4203)" \
-        bash "$SCRIPT_DIR/setup-keycloak-dev.sh" >/dev/null
+# O serviço pode não existir num override antigo: sem ele o compose sobe tudo, mas nada configura o Keycloak
+# nem instala os gestores.
+conferir_servico_de_inicializacao() {
+    compose config --services | grep -qx 'ambiente-init' || {
+        {
+            echo "[dev-up] ERRO: docker/docker-compose.override.yml está desatualizado: falta o serviço 'ambiente-init'."
+            echo "[dev-up] Copie o bloco 'ambiente-init' de docker/docker-compose.override.example.yml, ou recopie o exemplo:"
+            echo "[dev-up]   cp docker/docker-compose.override.yml docker/docker-compose.override.yml.bak"
+            echo "[dev-up]   cp docker/docker-compose.override.example.yml docker/docker-compose.override.yml"
+        } >&2
+        exit 1
+    }
 }
 
-instalar_gestores() {
-    KC_URL="http://localhost:$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_PORT 8080)" \
-        API_URL="http://localhost:$(valor_do_env "$ENV_ARQUIVO" API_PORT 5200)" \
-        MAILPIT_URL="http://localhost:$(valor_do_env "$ENV_ARQUIVO" MAILPIT_UI_PORT 8025)" \
-        KEYCLOAK_ADMIN="$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_ADMIN admin)" \
-        KEYCLOAK_ADMIN_PASSWORD="$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_ADMIN_PASSWORD admin)" \
-        bash "$SCRIPT_DIR/dev-instalar-gestores.sh"
+# Acompanha o ambiente-init até terminar e devolve o resultado dele.
+acompanhar_inicializacao() {
+    local conteiner codigo
+    conteiner=$(compose ps -aq ambiente-init | head -1)
+    [ -n "$conteiner" ] || falha "o serviço ambiente-init não foi criado."
+    compose logs -f ambiente-init >&2 || true
+    codigo=$(docker wait "$conteiner")
+    [ "$codigo" = "0" ] || falha "o ambiente-init terminou com erro ($codigo). Veja: docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml logs ambiente-init"
 }
 
 resumo() {
@@ -212,22 +208,14 @@ main() {
     conferir_ferramentas
     preparar_arquivos_locais
     conferir_compose
+    conferir_servico_de_inicializacao
     if $SO_VALIDAR; then
         log "Arquivos de configuração conferidos."
         exit 0
     fi
 
     subir_servicos
-    aguardar_http "o Keycloak" \
-        "http://localhost:$(valor_do_env "$ENV_ARQUIVO" KEYCLOAK_PORT 8080)/realms/unifesspa" 240
-    configurar_keycloak
-    aguardar_http "a API" "http://localhost:$(valor_do_env "$ENV_ARQUIVO" API_PORT 5200)/health" 300
-
-    if $SEM_INSTALACAO; then
-        log "Instalação dos gestores ignorada (--sem-instalacao)."
-    else
-        instalar_gestores
-    fi
+    acompanhar_inicializacao
     resumo
 }
 
