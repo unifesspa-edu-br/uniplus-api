@@ -336,12 +336,15 @@ services:
       # via password grant, o override docker-compose.smoke.yml realinha para dev-local.
       Auth__Authority: "http://keycloak:8080/realms/unifesspa"
       Auth__Audience: "uniplus"
-      # Anuncia o proxy da documentação como PRIMEIRO servidor do documento — é o que a
-      # interface seleciona por padrão. Sem isto o "Try it out" dispara contra a URL de
-      # produção: além de falhar em CORS, manda a requisição (e a credencial colada no
-      # Authorize) para o ambiente errado. Só de desenvolvimento; em HML/PROD a variável
-      # não existe e o documento volta a anunciar apenas Produção e Homologação.
-      UniPlus__OpenApi__LocalServerUrl: "http://localhost:${OPENAPI_DOCS_PORT:-5299}"
+      # Anuncia a própria API como PRIMEIRO servidor do documento — é o que a interface seleciona
+      # por padrão. Sem isto o "Try it out" dispara contra a URL de produção: além de falhar em CORS,
+      # manda a requisição (e a credencial colada no Authorize) para o ambiente errado. No stack
+      # completo, o override de exemplo troca pelo proxy da documentação. Só de desenvolvimento; em
+      # HML/PROD a variável não existe e o documento volta a anunciar apenas Produção e Homologação.
+      UniPlus__OpenApi__LocalServerUrl: "http://localhost:${API_PORT:-5200}"
+      # Links públicos do acervo (edital e anexos publicados) lidos direto da porta de dados do MinIO
+      # publicada no host; acompanha MINIO_PORT, senão dois ambientes na mesma máquina misturam links.
+      AcervoPublico__EnderecoBase: "http://localhost:${MINIO_PORT:-9000}/uniplus-acervo-publico"
       # Conferência do endereço do candidato no Geo (issue #1865, ADR-0136) — BaseUrl é
       # obrigatório, sem ele a API não sobe. O OAuth usa o client M2M uniplus-api-selecao:
       # em HML/PROD a infra o provisiona (uniplus-infra#163) e o secret vem de Vault/ESO;
