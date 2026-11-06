@@ -217,12 +217,16 @@ instalar() {
 }
 
 main() {
-    if [ "$(acesso_as_concessoes "${LISTA_DE_GESTORES[0]}")" = "200" ]; then
-        log "Gestores já instalados; nada a fazer."
-    else
-        instalar
-        log "Gestores instalados: ${LISTA_DE_GESTORES[*]}"
-    fi
+    local situacao
+    situacao=$(acesso_as_concessoes "${LISTA_DE_GESTORES[0]}")
+    case "$situacao" in
+        200) log "Gestores já instalados; nada a fazer." ;;
+        403)
+            instalar
+            log "Gestores instalados: ${LISTA_DE_GESTORES[*]}"
+            ;;
+        *) falha "não deu para saber se os gestores já estão instalados (GET /api/autorizacao/concessoes respondeu '${situacao}'). Confira a API e rode de novo." ;;
+    esac
     conferir_acesso || falha "o acesso não ficou como esperado (gestores 200; executor e candidato 403)."
 }
 
