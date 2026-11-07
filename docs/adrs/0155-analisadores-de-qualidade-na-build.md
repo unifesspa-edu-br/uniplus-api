@@ -33,7 +33,7 @@ Os limites de tamanho de método, complexidade e parâmetros não eram medidos. 
 - **Meziantou** é dono das regras de comportamento que não têm dono no .NET. A regra que repete uma do .NET fica desligada. As que têm ocorrências ficam como sugestão até serem corrigidas.
 - **Roslynator** é dono do estilo, como sugestão na IDE, e nunca barra a build. A regra dele que repete uma de comportamento fica desligada.
 
-As quatro métricas são avisos (`WarningsNotAsErrors`) até o fim da refatoração em andamento e depois passam a erro. Até lá, esta ADR emenda a [ADR-0117](0117-politica-de-analise-estatica-e-supressao.md): a build sem avisos admite esses quatro. Cada build grava relatório SARIF em `artifacts/analise/`.
+As quatro métricas são avisos (`WarningsNotAsErrors`) até as ocorrências acabarem, conforme a [ADR-0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md), e depois passam a erro. Até lá, esta ADR emenda a [ADR-0117](0117-politica-de-analise-estatica-e-supressao.md): a build sem avisos admite esses quatro. Cada build grava relatório SARIF em `artifacts/analise/`.
 
 A licença SSAL v1.0 do Sonar não é aprovada pela OSI. A adoção é uma exceção deliberada à preferência do projeto por licenças OSI, porque o uso é só de análise do próprio código.
 

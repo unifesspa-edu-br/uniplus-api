@@ -145,7 +145,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
 | [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem; sucedida em parte pela ADR-0136: governança por seed e marco de imutabilidade só para fatos de sistema (eixos do fato do administrador editáveis, por emenda de 17/10/2026), e novo mapa de prefixos | accepted | 2026-07-19 |
-| [0117](0117-politica-de-analise-estatica-e-supressao.md) | Política de análise estática e supressão de diagnósticos: `AnalysisLevel=latest-recommended` com opt-in/opt-out nomeado no `.editorconfig` e critério de supressão por alcance | proposed | 2026-07-22 |
+| [0117](0117-politica-de-analise-estatica-e-supressao.md) | Política de análise estática e supressão de diagnósticos: `AnalysisLevel=latest-recommended` com opt-in/opt-out nomeado no `.editorconfig` e critério de supressão por alcance; emendada pela ADR-0155 quanto às métricas em modo aviso | proposed | 2026-07-22 |
 | [0118](0118-identidade-publica-modulos-api-metadado-assembly.md) | Identidade pública de módulos de API via metadado de assembly | proposed | 2026-07-29 |
 | [0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md) | Padrão de conflito de concorrência otimista em handlers Wolverine — propagar sem catch quando o endpoint não é idempotency-protected; mapeamento centralizado no GlobalExceptionMiddleware | accepted | 2026-08-03 |
 | [0120](0120-fonte-normativa-matriz-cascata-remanejamento.md) | Fonte normativa da matriz de remanejamento de cotas (Portaria MEC 704/2025, Anexo — art. 20-A da Portaria Normativa MEC 21/2012) e decisão de alcance institucional além do Sisu | accepted | 2026-08-03 |
@@ -183,9 +183,10 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0152](0152-governanca-das-concessoes-de-acesso.md) | Toda concessão nasce de pedido no Uni+, aprovado pelo gestor de acessos e, havendo permissão pessoal ou sensível, também pela encarregada de dados; o token identifica e não concede; fora a transição, só o papel de instalação vem do token — emenda a ADR-0078 e supera a ADR-0083 | accepted | 2026-10-28 |
 | [0153](0153-projecao-por-protecao.md) | A resposta administrativa é um DTO único classificado item a item, projetado no handler por permissão de (natureza, classificação), com o acesso ao dado protegido auditado e a classificação do catálogo aprovada pela proteção de dados — emenda as ADRs 0081, 0136 e 0151 | proposed | 2026-10-31 |
 | [0154](0154-classificacao-da-modalidade-e-dos-opt-ins.md) | A modalidade e os opt-ins de concorrência passam a `Interno`, como reclassificação de fato de sistema pela aprovação da proteção de dados | proposed | 2026-10-31 |
-| [0155](0155-analisadores-de-qualidade-na-build.md) | Sonar, Meziantou e Roslynator rodam na build, com um dono por regra; as métricas de qualidade avisam até o fim da refatoração e depois passam a erro; emenda a 0117 nesse ponto | accepted | 2026-11-06 |
+| [0155](0155-analisadores-de-qualidade-na-build.md) | Sonar, Meziantou e Roslynator rodam na build, com um dono por regra; as métricas de qualidade avisam até as ocorrências acabarem e depois passam a erro; emenda a 0117 nesse ponto | accepted | 2026-11-06 |
+| [0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md) | Limites de 400 linhas por arquivo, 15 por método, complexidade e parâmetros; o que o código atual ainda não cumpre é dívida registrada, e as métricas seguem como aviso até acabar | accepted | 2026-11-06 |
 
-> **Nota de numeração:** a sequência de `0001` a `0155` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0156+`.
+> **Nota de numeração:** a sequência de `0001` a `0156` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0157+`.
 
 ## Como adicionar um novo ADR
 
