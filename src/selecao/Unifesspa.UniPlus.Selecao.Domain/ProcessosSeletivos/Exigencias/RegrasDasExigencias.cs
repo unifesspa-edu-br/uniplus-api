@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDasExigencias
 {
-    internal static Result<PlanoDasExigencias> Planejar(EstadoDaConfiguracao estado, IReadOnlyList<NoExigencia> raizes)
+    internal static Result<MudancaDaConfiguracao> Planejar(EstadoDaConfiguracao estado, IReadOnlyList<NoExigencia> raizes)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
@@ -29,9 +29,16 @@ public static class RegrasDasExigencias
             ?? folhas.Select(folha => RecusaDaIdadeMaximaDeEmissao(estado, folha)).FirstOrDefault(static r => r is not null)
             ?? RecusaDaPendenciaDeReenvio(estado, todosOsNos);
         return recusa is null
-            ? Result<PlanoDasExigencias>.Success(new PlanoDasExigencias(raizes, todosOsNos, folhas))
-            : Result<PlanoDasExigencias>.Failure(recusa);
+            ? Result<MudancaDaConfiguracao>.Success(MudancaDaTroca(estado, todosOsNos, folhas))
+            : Result<MudancaDaConfiguracao>.Failure(recusa);
     }
+
+    private static MudancaDaConfiguracao MudancaDaTroca(
+        EstadoDaConfiguracao estado, IReadOnlyList<NoExigencia> todosOsNos, IReadOnlyList<DocumentoExigido> folhas) => new()
+        {
+            DocumentosExigidos = Troca.Substituindo(estado.DocumentosExigidos, folhas),
+            NosExigencia = Troca.Substituindo(estado.NosExigencia, todosOsNos),
+        };
 
     // A âncora de fase da idade máxima de emissão é conferida na escrita, e não na publicação: a regra
     // vive na exigência, que está sendo escrita agora. Fase viva do mesmo processo com o extremo

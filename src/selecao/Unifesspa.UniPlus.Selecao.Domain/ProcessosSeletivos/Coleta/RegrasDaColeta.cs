@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDaColeta
 {
-    internal static Result<PlanoDaColeta> Planejar(
+    internal static Result<MudancaDaConfiguracao> Planejar(
         EstadoDaConfiguracao estado,
         FinalidadeFormulario finalidade,
         IReadOnlyList<FatoColetado> fatosColetados,
@@ -25,13 +25,48 @@ public static class RegrasDaColeta
         IReadOnlyList<GrupoColetado> gruposFinais = grupos ?? [.. CitacoesDosFormularios.GruposDaFinalidade(estado, finalidade)];
         if (estado.FormularioDe(finalidade) is not { } formulario)
         {
-            return Result<PlanoDaColeta>.Failure(RegrasDosFormularios.FormularioInexistente(finalidade));
+            return Result<MudancaDaConfiguracao>.Failure(RegrasDosFormularios.FormularioInexistente(finalidade));
         }
 
         Result conferencia = ConferirFatosColetados(estado, formulario, finalidade, fatosColetados, gruposFinais);
         return conferencia.IsFailure
-            ? Result<PlanoDaColeta>.ValidationFailure(conferencia.Errors)
-            : Result<PlanoDaColeta>.Success(new PlanoDaColeta(finalidade, fatosColetados, gruposFinais));
+            ? Result<MudancaDaConfiguracao>.ValidationFailure(conferencia.Errors)
+            : Result<MudancaDaConfiguracao>.Success(PlanejarTroca(estado, finalidade, fatosColetados, gruposFinais));
+    }
+
+    /// <summary>
+    /// Sai tudo o que a finalidade coletava, itens e campos dos grupos, e entram os itens e os grupos
+    /// novos, já vinculados a ela.
+    /// </summary>
+    internal static MudancaDaConfiguracao PlanejarTroca(
+        EstadoDaConfiguracao estado,
+        FinalidadeFormulario finalidade,
+        IReadOnlyList<FatoColetado> fatosColetados,
+        IReadOnlyList<GrupoColetado> grupos)
+    {
+        MudancaDaConfiguracao mudanca = new()
+        {
+            Campos = Troca.Substituindo(
+                estado.Campos.Where(f => f.Finalidade == finalidade),
+                [.. fatosColetados, .. grupos.SelectMany(static g => g.Subitens)]),
+            GruposColetados = Troca.Substituindo(estado.GruposColetados.Where(g => g.Finalidade == finalidade), grupos),
+        };
+        VincularFinalidade(finalidade, fatosColetados, grupos);
+        return mudanca;
+    }
+
+    private static void VincularFinalidade(
+        FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
+    {
+        foreach (FatoColetado fato in fatosColetados)
+        {
+            fato.VincularFinalidade(finalidade);
+        }
+
+        foreach (GrupoColetado grupo in grupos)
+        {
+            grupo.VincularFinalidade(finalidade);
+        }
     }
 
     internal static Result ConferirDerivacoes(EstadoDaConfiguracao estado, IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao)
@@ -65,15 +100,18 @@ public static class RegrasDaColeta
         return Result.Success();
     }
 
-    internal static void LimparParaRestauracao(ColecoesDoProcesso colecoes)
+    internal static MudancaDaConfiguracao PlanejarLimpezaParaRestauracao(EstadoDaConfiguracao estado)
     {
-        ArgumentNullException.ThrowIfNull(colecoes);
+        ArgumentNullException.ThrowIfNull(estado);
 
-        colecoes.Campos.Clear();
-        colecoes.GruposColetados.Clear();
-        colecoes.RegrasDerivacao.Clear();
-        colecoes.TermosExigidos.Clear();
-        colecoes.Formularios.Clear();
+        return new MudancaDaConfiguracao
+        {
+            Campos = Troca.Retirando(estado.Campos),
+            GruposColetados = Troca.Retirando(estado.GruposColetados),
+            RegrasDerivacao = Troca.Retirando(estado.RegrasDerivacao),
+            TermosExigidos = Troca.Retirando(estado.TermosExigidos),
+            Formularios = Troca.Retirando(estado.Formularios),
+        };
     }
 
     internal static Result<PlanoDaRecopiaDoCatalogo> PlanejarRecopia(

@@ -64,7 +64,7 @@ internal static class RegrasDoCronograma
             return Result<PlanoDoCronograma>.Failure(etapaForaDaFase);
         }
 
-        return Result<PlanoDoCronograma>.Success(MontarPlano(fases, antigasPorOrigem, novasPorOrigem));
+        return Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases, antigasPorOrigem, novasPorOrigem));
     }
 
     internal static void AplicarUnidadesVivas(IEnumerable<FaseCronograma> fases, IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)
@@ -81,31 +81,17 @@ internal static class RegrasDoCronograma
     }
 
     private static PlanoDoCronograma MontarPlano(
+        EstadoDaConfiguracao estado,
         IReadOnlyList<FaseCronograma> fases,
         Dictionary<Guid, FaseCronograma> antigasPorOrigem,
         Dictionary<Guid, FaseCronograma> novasPorOrigem)
     {
-        List<(FaseCronograma Existente, FaseCronograma Nova)> retidas = [];
-        List<FaseCronograma> resultantes = [];
-        foreach (FaseCronograma nova in fases)
-        {
-            if (antigasPorOrigem.TryGetValue(nova.FaseCanonicaOrigemId, out FaseCronograma? existente))
-            {
-                retidas.Add((existente, nova));
-                resultantes.Add(existente);
-            }
-            else
-            {
-                resultantes.Add(nova);
-            }
-        }
-
+        List<(FaseCronograma Existente, FaseCronograma Nova)> retidas =
+            [.. fases.Where(f => antigasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId)).Select(f => (antigasPorOrigem[f.FaseCanonicaOrigemId], f))];
+        List<FaseCronograma> resultantes = [.. fases.Select(f => antigasPorOrigem.GetValueOrDefault(f.FaseCanonicaOrigemId) ?? f)];
         List<FaseCronograma> removidas = [.. antigasPorOrigem.Values.Where(f => !novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))];
-        return new PlanoDoCronograma(
-            retidas,
-            resultantes,
-            [.. removidas.Select(static f => f.Codigo)],
-            removidas.Select(static f => f.Id).ToHashSet());
+        MudancaDaConfiguracao poda = PodaDoCronograma.Planejar(estado, removidas);
+        return new PlanoDoCronograma(retidas, poda with { CronogramaFases = Troca.Substituindo(estado.CronogramaFases, resultantes) });
     }
 
     private static DomainError? CronogramaVazio(IReadOnlyList<FaseCronograma> fases) =>

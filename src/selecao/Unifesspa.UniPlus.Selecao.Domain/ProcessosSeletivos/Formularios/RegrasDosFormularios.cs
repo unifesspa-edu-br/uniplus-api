@@ -36,14 +36,28 @@ public static class RegrasDosFormularios
 
         // A conferência acima já recusou o que a fábrica recusaria.
         FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas).Value!;
-        if (existente is null
-            && itensIniciais is not null
-            && RegrasDaColeta.ConferirFatosColetados(estado, novo, finalidade, itensIniciais, []) is { IsFailure: true } recusaDosItens)
+        Result itens = itensIniciais is null
+            ? Result.Success()
+            : RegrasDaColeta.ConferirFatosColetados(estado, novo, finalidade, itensIniciais, []);
+        return itens.IsFailure
+            ? Result<PlanoDoFormulario>.ValidationFailure(itens.Errors)
+            : Result<PlanoDoFormulario>.Success(new PlanoDoFormulario(novo, existente, MudancaDaDefinicao(estado, finalidade, novo, existente, itensIniciais)));
+    }
+
+    private static MudancaDaConfiguracao MudancaDaDefinicao(
+        EstadoDaConfiguracao estado,
+        FinalidadeFormulario finalidade,
+        FormularioProcesso novo,
+        FormularioProcesso? existente,
+        IReadOnlyList<FatoColetado>? itensIniciais)
+    {
+        if (existente is not null)
         {
-            return Result<PlanoDoFormulario>.ValidationFailure(recusaDosItens.Errors);
+            return new MudancaDaConfiguracao();
         }
 
-        return Result<PlanoDoFormulario>.Success(new PlanoDoFormulario(finalidade, novo, existente, itensIniciais));
+        MudancaDaConfiguracao itens = itensIniciais is null ? new MudancaDaConfiguracao() : RegrasDaColeta.PlanejarTroca(estado, finalidade, itensIniciais, []);
+        return itens with { Formularios = Troca.Acrescentando([novo]) };
     }
 
     /// <summary>
@@ -146,61 +160,80 @@ public static class RegrasDosFormularios
         FormularioProcessoErrorCodes.RemocaoSoEmRascunho,
         "A retificação acrescenta formulário, mas não remove o que o edital publicou.");
 
-    internal static void Remover(ColecoesDoProcesso colecoes, FormularioProcesso formulario)
-    {
-        ArgumentNullException.ThrowIfNull(colecoes);
-        ArgumentNullException.ThrowIfNull(formulario);
-
-        colecoes.Formularios.Remove(formulario);
-        colecoes.Campos.RemoveAll(f => f.Finalidade == formulario.Finalidade);
-        colecoes.GruposColetados.RemoveAll(g => g.Finalidade == formulario.Finalidade);
-        colecoes.TermosExigidos.RemoveAll(t => t.Finalidade == formulario.Finalidade);
-    }
-
-    internal static Result<FormularioProcesso> ConferirRemocao(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade)
+    internal static Result<MudancaDaConfiguracao> PlanejarRemocao(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
         if (estado.FormularioDe(finalidade) is not { } formulario)
         {
-            return Result<FormularioProcesso>.Failure(FormularioInexistente(finalidade));
+            return Result<MudancaDaConfiguracao>.Failure(FormularioInexistente(finalidade));
         }
 
         return finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(estado, []) is { } orfa
-            ? Result<FormularioProcesso>.Failure(orfa)
-            : Result<FormularioProcesso>.Success(formulario);
+            ? Result<MudancaDaConfiguracao>.Failure(orfa)
+            : Result<MudancaDaConfiguracao>.Success(MudancaDaRemocao(estado, formulario));
     }
 
-    internal static Result<PlanoDosTermos> PlanejarTermos(
+    private static MudancaDaConfiguracao MudancaDaRemocao(EstadoDaConfiguracao estado, FormularioProcesso formulario) => new()
+    {
+        Formularios = Troca.Retirando([formulario]),
+        Campos = Troca.Retirando(estado.Campos.Where(f => f.Finalidade == formulario.Finalidade)),
+        GruposColetados = Troca.Retirando(estado.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade)),
+        TermosExigidos = Troca.Retirando(estado.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade)),
+    };
+
+    internal static Result<MudancaDaConfiguracao> PlanejarTermos(
         EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
         if (estado.FormularioDe(finalidade) is null)
         {
-            return Result<PlanoDosTermos>.Failure(FormularioInexistente(finalidade));
+            return Result<MudancaDaConfiguracao>.Failure(FormularioInexistente(finalidade));
         }
 
+        List<FieldError> erros = RecusasDosTermos(estado, finalidade, termos);
+        return erros.Count > 0
+            ? Result<MudancaDaConfiguracao>.ValidationFailure(erros)
+            : Result<MudancaDaConfiguracao>.Success(MudancaDosTermos(estado, finalidade, termos));
+    }
+
+    private static List<FieldError> RecusasDosTermos(
+        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
+    {
         List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
         DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(
             estado, finalidade, estado.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.FatosDaInscricao(estado.Itens));
         for (int indice = 0; indice < termos.Count; indice++)
         {
-            DomainError? recusa = GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias)
-                ?? CitacoesDosFormularios.CitacaoNaoGarantida(
-                    estado,
-                    CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDoTermo(termos[indice])),
-                    finalidade,
-                    CitacoesDosFormularios.SemCatalogo);
-            if (recusa is not null)
+            if (RecusaDaCitacaoDoTermo(estado, finalidade, dependencias, termos[indice]) is { } recusa)
             {
                 erros.Add(new($"termos[{indice}]", recusa));
             }
         }
 
-        return erros.Count > 0
-            ? Result<PlanoDosTermos>.ValidationFailure(erros)
-            : Result<PlanoDosTermos>.Success(new PlanoDosTermos(finalidade, termos));
+        return erros;
+    }
+
+    private static DomainError? RecusaDaCitacaoDoTermo(
+        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, DependenciasDoFormulario dependencias, TermoExigidoFormulario termo) =>
+        GrafoDoFormulario.CitacaoInvalidaDoTermo(termo.ParaGrafo(), dependencias)
+        ?? CitacoesDosFormularios.CitacaoNaoGarantida(
+            estado,
+            CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDoTermo(termo)),
+            finalidade,
+            CitacoesDosFormularios.SemCatalogo);
+
+    private static MudancaDaConfiguracao MudancaDosTermos(
+        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
+    {
+        MudancaDaConfiguracao mudanca = new() { TermosExigidos = Troca.Substituindo(estado.TermosExigidos.Where(t => t.Finalidade == finalidade), termos) };
+        foreach (TermoExigidoFormulario termo in termos)
+        {
+            termo.VincularFinalidade(finalidade);
+        }
+
+        return mudanca;
     }
 
     public static DomainError FormularioInexistente(FinalidadeFormulario finalidade) => new(

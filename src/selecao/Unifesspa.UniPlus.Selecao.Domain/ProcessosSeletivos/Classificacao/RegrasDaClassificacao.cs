@@ -24,38 +24,22 @@ internal static class RegrasDaClassificacao
         // As recusas de campo se acumulam (todas de uma vez para quem edita); a das etapas, que nenhum
         // campo deste comando corrige, sai depois delas porque o errors[] só carrega erro de campo.
         List<FieldError> erros = [.. EtapasDeEliminacaoRecusadas(estado, classificacao)];
-
-        bool calculaPelosPesosPorArea = classificacao.CalculaPelosPesosPorAreaDoEnem;
         DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(estado.Etapas, classificacao);
-        DomainError? erroDasEtapas = calculaPelosPesosPorArea ? erroDaEtapaDoEnem : null;
-        DomainError? erroSemCalculoLocal = calculaPelosPesosPorArea ? null : erroDaEtapaDoEnem;
+        erros.AddRange(RecusasDoCalculoLocalEDoDesempate(estado, classificacao, erroDaEtapaDoEnem));
 
-        List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoesDeArea =
-            RegrasDoDesempate.ConferirDesempatePorAreaContraOQuadro(RegrasDoDesempate.EmOrdem(estado.CriteriosDesempate), classificacao);
-        if (erroSemCalculoLocal is null && violacoesDeArea.FirstOrDefault(static v => v.IndiceArea is null) is { Erro: { } semQuadro })
-        {
-            erroSemCalculoLocal = semQuadro;
-        }
-
-        // A etapa de nota do ENEM e o desempate sem quadro pedem a mesma correção, nos mesmos campos:
-        // cada campo sai uma vez, com a primeira das duas causas.
-        if (erroSemCalculoLocal is not null)
-        {
-            erros.AddRange(CamposSemCalculoLocalDoEnem(classificacao).Select(campo => new FieldError(campo, erroSemCalculoLocal)));
-        }
-
-        erros.AddRange(DesempateForaDoQuadro(violacoesDeArea));
-
-        // As edições do ENEM só existem com classificação baseada em ENEM; uma condição viva que cite
-        // uma delas ficaria sem como se satisfazer.
         List<OpcaoDeclaradaFato> edicoesARetirar = EdicoesDoEnemSemClassificacaoEnem(estado, classificacao);
-        if (edicoesARetirar.Count > 0 && ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, EdicaoDoEnem.Fato, []))
-        {
-            erros.Add(new("baseadoEmEnem", new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
-                "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma edição do ENEM, que deixaria de existir com a classificação sem ENEM — ajuste ou remova a condição antes.")));
-        }
+        erros.AddRange(RecusaDasEdicoesDoEnemCitadas(estado, edicoesARetirar));
 
+        DomainError? erroDasEtapas = classificacao.CalculaPelosPesosPorAreaDoEnem ? erroDaEtapaDoEnem : null;
+        return ResultadoDoPlano(classificacao, erros, erroDasEtapas, edicoesARetirar);
+    }
+
+    private static Result<PlanoDaClassificacao> ResultadoDoPlano(
+        ConfiguracaoClassificacao classificacao,
+        List<FieldError> erros,
+        DomainError? erroDasEtapas,
+        List<OpcaoDeclaradaFato> edicoesARetirar)
+    {
         if (erros.Count > 0)
         {
             return Result<PlanoDaClassificacao>.ValidationFailure(RegrasDoDesempate.AnexarAreasAceitas(erros, classificacao));
@@ -63,7 +47,52 @@ internal static class RegrasDaClassificacao
 
         return erroDasEtapas is not null
             ? Result<PlanoDaClassificacao>.Failure(erroDasEtapas)
-            : Result<PlanoDaClassificacao>.Success(new PlanoDaClassificacao(classificacao, edicoesARetirar));
+            : Result<PlanoDaClassificacao>.Success(new PlanoDaClassificacao(
+                classificacao, new MudancaDaConfiguracao { OpcoesDeclaradas = Troca.Retirando(edicoesARetirar) }));
+    }
+
+    // A etapa de nota do ENEM e o desempate sem quadro pedem a mesma correção, nos mesmos campos:
+    // cada campo sai uma vez, com a primeira das duas causas.
+    private static List<FieldError> RecusasDoCalculoLocalEDoDesempate(
+        EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao, DomainError? erroDaEtapaDoEnem)
+    {
+        List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoes =
+            RegrasDoDesempate.ConferirDesempatePorAreaContraOQuadro(RegrasDoDesempate.EmOrdem(estado.CriteriosDesempate), classificacao);
+        List<FieldError> erros = [];
+        if (ErroSemCalculoLocal(classificacao, erroDaEtapaDoEnem, violacoes) is { } erroSemCalculoLocal)
+        {
+            erros.AddRange(CamposSemCalculoLocalDoEnem(classificacao).Select(campo => new FieldError(campo, erroSemCalculoLocal)));
+        }
+
+        erros.AddRange(DesempateForaDoQuadro(violacoes));
+        return erros;
+    }
+
+    private static DomainError? ErroSemCalculoLocal(
+        ConfiguracaoClassificacao classificacao,
+        DomainError? erroDaEtapaDoEnem,
+        List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoes)
+    {
+        if (!classificacao.CalculaPelosPesosPorAreaDoEnem && erroDaEtapaDoEnem is not null)
+        {
+            return erroDaEtapaDoEnem;
+        }
+
+        return violacoes.FirstOrDefault(static v => v.IndiceArea is null) is { Erro: { } semQuadro } ? semQuadro : null;
+    }
+
+    // As edições do ENEM só existem com classificação baseada em ENEM; uma condição viva que cite
+    // uma delas ficaria sem como se satisfazer.
+    private static List<FieldError> RecusaDasEdicoesDoEnemCitadas(EstadoDaConfiguracao estado, List<OpcaoDeclaradaFato> edicoesARetirar)
+    {
+        if (edicoesARetirar.Count == 0 || !ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, EdicaoDoEnem.Fato, []))
+        {
+            return [];
+        }
+
+        return [new("baseadoEmEnem", new DomainError(
+            OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
+            "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma edição do ENEM, que deixaria de existir com a classificação sem ENEM — ajuste ou remova a condição antes."))];
     }
 
     private static List<FieldError> EtapasDeEliminacaoRecusadas(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao)

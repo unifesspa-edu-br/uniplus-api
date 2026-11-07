@@ -169,6 +169,22 @@ internal static class AplicacaoDeModeloDeFormulario
             .Select(static recusa => new FieldError(string.Empty, recusa))];
         return orfas.Length > 0
             ? Result<PlanoDaCopiaDoModelo>.ValidationFailure(orfas)
-            : Result<PlanoDaCopiaDoModelo>.Success(new PlanoDaCopiaDoModelo(copia, novo, existente, daCopia));
+            : Result<PlanoDaCopiaDoModelo>.Success(new PlanoDaCopiaDoModelo(copia, novo, existente, MudancaDaCopia(estado, copia, novo, existente, daCopia)));
+    }
+
+    private static MudancaDaConfiguracao MudancaDaCopia(
+        EstadoDaConfiguracao estado, CopiaDeModeloDeFormulario copia, FormularioProcesso novo, FormularioProcesso? existente, HashSet<string> daCopia)
+    {
+        FinalidadeFormulario finalidade = copia.Finalidade;
+        return new MudancaDaConfiguracao
+        {
+            Formularios = existente is null ? Troca.Acrescentando([novo]) : default,
+            Campos = Troca.Substituindo(
+                estado.Campos.Where(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && daCopia.Contains(f.FatoCodigo))),
+                [.. copia.Itens, .. copia.Grupos.SelectMany(static g => g.Subitens)]),
+            GruposColetados = Troca.Substituindo(estado.GruposColetados.Where(g => g.Finalidade == finalidade), copia.Grupos),
+            TermosExigidos = Troca.Substituindo(estado.TermosExigidos.Where(t => t.Finalidade == finalidade), copia.Termos),
+            RegrasDerivacao = Troca.Acrescentando(copia.DerivacoesNovas),
+        };
     }
 }

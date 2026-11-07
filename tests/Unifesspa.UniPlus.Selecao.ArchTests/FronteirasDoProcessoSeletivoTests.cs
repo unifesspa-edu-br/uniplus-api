@@ -19,14 +19,12 @@ using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
 /// As fronteiras do agregado <see cref="ProcessoSeletivo"/>: as regras vivem em políticas puras que
-/// recebem uma vista somente leitura, e só a raiz e os planos que ela aplica mexem nas coleções.
+/// recebem uma vista somente leitura, e só a raiz muda as coleções, e os planos que ela aplica só atualizam no lugar as partes que continuam.
 /// </summary>
 public sealed class FronteirasDoProcessoSeletivoTests
 {
     private const string NamespaceDasPoliticas = "Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos";
     private const string EstadoFullName = NamespaceDasPoliticas + ".Edicao.EstadoDaConfiguracao";
-    private const string ColecoesFullName = NamespaceDasPoliticas + ".Edicao.ColecoesDoProcesso";
-    private const string PartesFullName = NamespaceDasPoliticas + ".Edicao.PartesDoProcesso";
     private const string ParteFullName = "Unifesspa.UniPlus.Selecao.Domain.Entities.IParteDoProcesso";
 
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(
@@ -34,18 +32,18 @@ public sealed class FronteirasDoProcessoSeletivoTests
         typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
         typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly).Build();
 
-    /// <summary>Os tipos que calculam um plano e o aplicam sobre as coleções da raiz, com os registros do plano.</summary>
+    /// <summary>
+    /// Os únicos tipos fora da raiz que chamam mutadores de partes do processo: os que atualizam no lugar
+    /// uma parte que continua viva ou vinculam a finalidade ao que entra, e os registros que os carregam.
+    /// </summary>
     private static readonly string[] Planos =
     [
         "RegrasDoCronograma", "PlanoDoCronograma",
         "AplicacaoDeModeloDeFormulario", "PlanoDaCopiaDoModelo",
-        "RegrasDaColeta", "PlanoDaColeta", "PlanoDaRecopiaDoCatalogo",
+        "RegrasDaColeta", "PlanoDaRecopiaDoCatalogo",
         "ReposicaoDaConfiguracao",
         "PlanoDaProtecaoVigente",
-        "RegrasDasOpcoesDeclaradas",
-        "RegrasDosFormularios", "PlanoDoFormulario", "PlanoDosTermos",
-        "RegrasDasExigencias", "PlanoDasExigencias",
-        "RegrasDaClassificacao", "PlanoDaClassificacao",
+        "RegrasDosFormularios", "PlanoDoFormulario",
     ];
 
     private static readonly string[] OperacoesDeVinculoEMutacao =
@@ -67,27 +65,6 @@ public sealed class FronteirasDoProcessoSeletivoTests
         regra.Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "A2: só os planos dependem de ColecoesDoProcesso, e só a raiz o constrói")]
-    public void A2_SoOsPlanosTocamAsColecoes()
-    {
-        string[] dependentes = [.. Arquitetura.Types
-            .Where(static t => t.Dependencies.Any(static d => d.Target.FullName == ColecoesFullName))
-            .Select(static t => DonoDe(t.FullName))
-            .Distinct(StringComparer.Ordinal)
-            .Where(static dono => !EhPlanoOuRaiz(dono))
-            .Order(StringComparer.Ordinal)];
-
-        dependentes.Should().BeEmpty("a mutação das coleções é da raiz e dos planos que ela aplica");
-
-        string[] construtores = [.. ChamadasNoDomain()
-            .Where(static c => c.Callee is ConstructorInfo { DeclaringType.FullName: ColecoesFullName })
-            .Select(static c => DonoDe(c.Caller.FullName!))
-            .Where(static dono => dono != ColecoesFullName)
-            .Distinct(StringComparer.Ordinal)];
-
-        construtores.Should().Equal([typeof(ProcessoSeletivo).FullName], "só a raiz constrói as coleções vivas");
-    }
-
     [Fact(DisplayName = "A3: as classes das políticas são estáticas, salvo os registros")]
     public void A3_PoliticasSaoEstaticas()
     {
@@ -105,8 +82,8 @@ public sealed class FronteirasDoProcessoSeletivoTests
     {
         (string Dono, string Tipo, string Nome)[] controles =
         [
-            (NamespaceDasPoliticas + ".Restauracao.ReposicaoDaConfiguracao", PartesFullName, "Substituir"),
-            (PartesFullName, ParteFullName, "VincularProcesso"),
+            (typeof(ProcessoSeletivo).FullName!, ParteFullName, "VincularProcesso"),
+            (NamespaceDasPoliticas + ".Restauracao.ReposicaoDaConfiguracao", "Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", "ReporDe"),
             (NamespaceDasPoliticas + ".Exigencias.PlanoDaProtecaoVigente", "Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", "RecongelarProtecao"),
         ];
         foreach ((string dono, string tipo, string nome) in controles)
@@ -123,7 +100,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
 
         string[] infratores = [.. ChamadasNoDomain()
             .Where(static c => c.Callee.DeclaringType is { } tipo
-                && (tipo.FullName is ParteFullName or PartesFullName || tipo.Namespace == typeof(ProcessoSeletivo).Namespace)
+                && (tipo.FullName is ParteFullName || tipo.Namespace == typeof(ProcessoSeletivo).Namespace)
                 && (EhOperacaoDeVinculoOuMutacao(c.Callee.Name) || AlteraAParte(c.Callee)))
             .Select(static c => DonoDe(c.Caller.FullName!) + " -> " + c.Callee.DeclaringType!.Name + "." + c.Callee.Name)
             .Where(static dono => dono.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal) && !EhPlanoOuRaiz(dono.Split(" -> ")[0]))
@@ -163,7 +140,6 @@ public sealed class FronteirasDoProcessoSeletivoTests
 
     private static bool EhPlanoOuRaiz(string dono) =>
         dono == typeof(ProcessoSeletivo).FullName
-        || dono is PartesFullName or ColecoesFullName
         || Planos.Contains(dono[(dono.LastIndexOf('.') + 1)..], StringComparer.Ordinal);
 
     private static bool EhRegistro(System.Type tipo) => tipo.GetMethod("<Clone>$") is not null;

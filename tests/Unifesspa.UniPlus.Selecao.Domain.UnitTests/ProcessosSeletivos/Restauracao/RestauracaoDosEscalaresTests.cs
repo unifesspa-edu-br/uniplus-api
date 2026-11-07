@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-public sealed class ReposicaoDosEscalaresTests
+public sealed class RestauracaoDosEscalaresTests
 {
     [Fact(DisplayName = "O grafo sem localidade não apaga a viva, e a convenção de contagem ausente é reposta")]
     public void Restaurar_GrafoSemLocalidade_MantemALocalidadeViva()

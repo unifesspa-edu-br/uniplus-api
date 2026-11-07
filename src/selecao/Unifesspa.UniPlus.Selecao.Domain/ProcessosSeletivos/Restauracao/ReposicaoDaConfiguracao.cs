@@ -102,53 +102,75 @@ internal static class ReposicaoDaConfiguracao
         }
     }
 
-    internal static ReposicaoDosEscalares Repor(ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo)
+    /// <summary>
+    /// Repõe no lugar as partes rastreadas que a versão congelada também tem e devolve a mudança nas
+    /// coleções: o que sai e o que entra, com a instância rastreada no lugar da congelada sempre que há uma.
+    /// </summary>
+    internal static ReposicaoRealizada Repor(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
     {
-        ArgumentNullException.ThrowIfNull(colecoes);
+        ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(grafo);
 
-        ReporEtapas(colecoes, processoId, grafo);
-        PartesDoProcesso.Substituir(colecoes.DistribuicaoVagas, grafo.DistribuicaoVagas, processoId);
-        PartesDoProcesso.Substituir(colecoes.CriteriosDesempate, grafo.CriteriosDesempate, processoId);
-        ReporTermos(colecoes, processoId, grafo);
-        Dictionary<Guid, Guid> faseCongeladaParaViva = ReporFases(colecoes, processoId, grafo);
-        List<DocumentoExigido> documentos = ReporDocumentos(colecoes, processoId, grafo, faseCongeladaParaViva);
-        ReporFormularios(colecoes, processoId, grafo, faseCongeladaParaViva);
-        ReporArvoreDeExigencias(colecoes, processoId, grafo, documentos);
-        ReporColeta(colecoes, processoId, grafo);
-        ReporOpcoesDeclaradas(colecoes, processoId, grafo);
+        MudancaDaConfiguracao mudanca = ReporOQueNaoDependeDasFases(estado, grafo);
+        FasesRepostas fases = ReporFases(estado, grafo);
+        mudanca = ReporOQueDependeDasFases(estado, grafo, fases.CongeladaParaViva, mudanca with { CronogramaFases = fases.Troca });
 
-        return ReposicaoDosEscalares.De(grafo, ReferenciaTemporalRemapeada(grafo, faseCongeladaParaViva));
+        return new ReposicaoRealizada(mudanca, ReferenciaTemporalRemapeada(grafo, fases.CongeladaParaViva));
     }
 
-    private static void ReporEtapas(ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo)
+    private static MudancaDaConfiguracao ReporOQueNaoDependeDasFases(EstadoDaConfiguracao estado, GrafoConfiguracao grafo) =>
+        ReporColeta(estado, grafo) with
+        {
+            Etapas = ReporEtapas(estado, grafo),
+            DistribuicaoVagas = Troca.Substituindo(estado.DistribuicaoVagas, grafo.DistribuicaoVagas),
+            CriteriosDesempate = Troca.Substituindo(estado.CriteriosDesempate, grafo.CriteriosDesempate),
+            TermosExigidos = ReporTermos(estado, grafo),
+            OpcoesDeclaradas = ReporOpcoesDeclaradas(estado, grafo),
+            RegrasDerivacao = ReporDerivacoes(estado, grafo),
+        };
+
+    private static MudancaDaConfiguracao ReporOQueDependeDasFases(
+        EstadoDaConfiguracao estado, GrafoConfiguracao grafo, IReadOnlyDictionary<Guid, Guid> faseCongeladaParaViva, MudancaDaConfiguracao mudanca)
     {
-        Dictionary<Guid, EtapaProcesso> rastreadas = colecoes.Etapas.ToDictionary(e => e.Id);
+        Troca<DocumentoExigido> documentos = ReporDocumentos(estado, grafo, faseCongeladaParaViva);
+        return mudanca with
+        {
+            DocumentosExigidos = documentos,
+            Formularios = ReporFormularios(estado, grafo, faseCongeladaParaViva),
+            NosExigencia = ReporArvoreDeExigencias(estado, grafo, documentos.Entram),
+        };
+    }
+
+    private static Troca<EtapaProcesso> ReporEtapas(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
+    {
+        Dictionary<Guid, EtapaProcesso> rastreadas = estado.Etapas.ToDictionary(e => e.Id);
         List<EtapaProcesso> etapas = [];
         foreach (EtapaProcesso congelada in grafo.Etapas)
         {
-            if (rastreadas.TryGetValue(congelada.Id, out EtapaProcesso? viva))
-            {
-                viva.ReporDe(congelada);
-                etapas.Add(viva);
-            }
-            else
-            {
-                etapas.Add(congelada);
-            }
+            etapas.Add(ReporEtapa(rastreadas, congelada));
         }
 
-        PartesDoProcesso.Substituir(colecoes.Etapas, etapas, processoId);
+        return Troca.Substituindo(estado.Etapas, etapas);
     }
 
-    private static void ReporTermos(ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo)
+    private static EtapaProcesso ReporEtapa(Dictionary<Guid, EtapaProcesso> rastreadas, EtapaProcesso congelada)
+    {
+        if (!rastreadas.TryGetValue(congelada.Id, out EtapaProcesso? viva))
+        {
+            return congelada;
+        }
+
+        viva.ReporDe(congelada);
+        return viva;
+    }
+
+    private static Troca<TermoExigidoFormulario> ReporTermos(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
     {
         Dictionary<(FinalidadeFormulario, string), TermoExigidoFormulario> rastreados =
-            colecoes.TermosExigidos.ToDictionary(static t => (t.Finalidade, t.Codigo));
-        PartesDoProcesso.Substituir(
-            colecoes.TermosExigidos,
-            grafo.TermosExigidos.Select(congelado => rastreados.GetValueOrDefault((congelado.Finalidade, congelado.Codigo)) ?? congelado),
-            processoId);
+            estado.TermosExigidos.ToDictionary(static t => (t.Finalidade, t.Codigo));
+        return Troca.Substituindo(
+            estado.TermosExigidos,
+            grafo.TermosExigidos.Select(congelado => rastreados.GetValueOrDefault((congelado.Finalidade, congelado.Codigo)) ?? congelado));
     }
 
     /// <summary>
@@ -156,37 +178,38 @@ internal static class ReposicaoDaConfiguracao
     /// recebe o conteúdo congelado. O mapa devolvido leva as referências feitas ao Id congelado
     /// (documentos, formulários, âncora temporal) para o Id da fase que ficou.
     /// </summary>
-    private static Dictionary<Guid, Guid> ReporFases(ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo)
+    private static FasesRepostas ReporFases(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
     {
-        Dictionary<int, FaseCronograma> rastreadas = colecoes.CronogramaFases.ToDictionary(f => f.Ordem);
-        Dictionary<Guid, Guid> congeladaParaViva = [];
-        List<FaseCronograma> fases = [];
+        Dictionary<int, FaseCronograma> rastreadas = estado.CronogramaFases.ToDictionary(f => f.Ordem);
+        List<(FaseCronograma Congelada, FaseCronograma Final)> pares = [];
         foreach (FaseCronograma congelada in grafo.CronogramaFases)
         {
-            if (!rastreadas.TryGetValue(congelada.Ordem, out FaseCronograma? viva))
-            {
-                fases.Add(congelada);
-                continue;
-            }
-
-            IReadOnlyList<ProdutoDaFase> produtos = ProdutosParaAFaseViva(congelada, viva);
-            ReancorarRecursoNosProdutosRecriados(congelada, produtos);
-            viva.AtualizarDe(congelada, produtos);
-            fases.Add(viva);
-            if (viva.Id != congelada.Id)
-            {
-                congeladaParaViva[congelada.Id] = viva.Id;
-            }
+            pares.Add((congelada, ReporFase(rastreadas, congelada)));
         }
 
-        PartesDoProcesso.Substituir(colecoes.CronogramaFases, fases, processoId);
-        return congeladaParaViva;
+        Dictionary<Guid, Guid> congeladaParaViva = pares
+            .Where(static par => par.Final.Id != par.Congelada.Id)
+            .ToDictionary(static par => par.Congelada.Id, static par => par.Final.Id);
+        return new FasesRepostas(Troca.Substituindo(estado.CronogramaFases, pares.Select(static par => par.Final)), congeladaParaViva);
     }
 
-    private static List<DocumentoExigido> ReporDocumentos(
-        ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo, Dictionary<Guid, Guid> faseCongeladaParaViva)
+    private static FaseCronograma ReporFase(Dictionary<int, FaseCronograma> rastreadas, FaseCronograma congelada)
     {
-        Dictionary<Guid, DocumentoExigido> rastreados = colecoes.DocumentosExigidos.ToDictionary(d => d.Id);
+        if (!rastreadas.TryGetValue(congelada.Ordem, out FaseCronograma? viva))
+        {
+            return congelada;
+        }
+
+        IReadOnlyList<ProdutoDaFase> produtos = ProdutosParaAFaseViva(congelada, viva);
+        ReancorarRecursoNosProdutosRecriados(congelada, produtos);
+        viva.AtualizarDe(congelada, produtos);
+        return viva;
+    }
+
+    private static Troca<DocumentoExigido> ReporDocumentos(
+        EstadoDaConfiguracao estado, GrafoConfiguracao grafo, IReadOnlyDictionary<Guid, Guid> faseCongeladaParaViva)
+    {
+        Dictionary<Guid, DocumentoExigido> rastreados = estado.DocumentosExigidos.ToDictionary(d => d.Id);
         List<DocumentoExigido> documentos = [];
         foreach (DocumentoExigido congelado in grafo.DocumentosExigidos)
         {
@@ -198,34 +221,37 @@ internal static class ReposicaoDaConfiguracao
             documentos.Add(rastreados.GetValueOrDefault(congelado.Id) ?? congelado);
         }
 
-        PartesDoProcesso.Substituir(colecoes.DocumentosExigidos, documentos, processoId);
-        return documentos;
+        return Troca.Substituindo(estado.DocumentosExigidos, documentos);
     }
 
-    private static void ReporFormularios(
-        ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo, Dictionary<Guid, Guid> faseCongeladaParaViva)
+    private static Troca<FormularioProcesso> ReporFormularios(
+        EstadoDaConfiguracao estado, GrafoConfiguracao grafo, IReadOnlyDictionary<Guid, Guid> faseCongeladaParaViva)
     {
-        Dictionary<FinalidadeFormulario, FormularioProcesso> rastreados = colecoes.Formularios.ToDictionary(static f => f.Finalidade);
+        Dictionary<FinalidadeFormulario, FormularioProcesso> rastreados = estado.Formularios.ToDictionary(static f => f.Finalidade);
         List<FormularioProcesso> formularios = [];
         foreach (FormularioProcesso congelado in grafo.Formularios)
         {
-            if (congelado.FaseId is { } faseCongelada && faseCongeladaParaViva.TryGetValue(faseCongelada, out Guid faseViva))
-            {
-                congelado.RemapearFase(faseViva);
-            }
-
-            if (rastreados.TryGetValue(congelado.Finalidade, out FormularioProcesso? vivo))
-            {
-                vivo.Repor(congelado);
-                formularios.Add(vivo);
-            }
-            else
-            {
-                formularios.Add(congelado);
-            }
+            formularios.Add(ReporFormulario(rastreados, faseCongeladaParaViva, congelado));
         }
 
-        PartesDoProcesso.Substituir(colecoes.Formularios, formularios, processoId);
+        return Troca.Substituindo(estado.Formularios, formularios);
+    }
+
+    private static FormularioProcesso ReporFormulario(
+        Dictionary<FinalidadeFormulario, FormularioProcesso> rastreados, IReadOnlyDictionary<Guid, Guid> faseCongeladaParaViva, FormularioProcesso congelado)
+    {
+        if (congelado.FaseId is { } faseCongelada && faseCongeladaParaViva.TryGetValue(faseCongelada, out Guid faseViva))
+        {
+            congelado.RemapearFase(faseViva);
+        }
+
+        if (!rastreados.TryGetValue(congelado.Finalidade, out FormularioProcesso? vivo))
+        {
+            return congelado;
+        }
+
+        vivo.Repor(congelado);
+        return vivo;
     }
 
     /// <summary>
@@ -233,30 +259,28 @@ internal static class ReposicaoDaConfiguracao
     /// reconciliação dos documentos escolheu); sem o remapeamento ela ficaria apontando para o
     /// objeto congelado descartado.
     /// </summary>
-    private static void ReporArvoreDeExigencias(
-        ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo, List<DocumentoExigido> documentos)
+    private static Troca<NoExigencia> ReporArvoreDeExigencias(
+        EstadoDaConfiguracao estado, GrafoConfiguracao grafo, IReadOnlyList<DocumentoExigido> documentos)
     {
         Dictionary<Guid, DocumentoExigido> documentosPorId = documentos.ToDictionary(d => d.Id);
-        Dictionary<Guid, NoExigencia> rastreados = colecoes.NosExigencia.ToDictionary(n => n.Id);
+        Dictionary<Guid, NoExigencia> rastreados = estado.NosExigencia.ToDictionary(n => n.Id);
         List<NoExigencia> nos = [];
         foreach (NoExigencia congelado in grafo.NosExigencia)
         {
-            NoExigencia no = rastreados.GetValueOrDefault(congelado.Id) ?? congelado;
-            if (no.Tipo == TipoNo.Folha && documentosPorId.TryGetValue(no.DocumentoExigidoId!.Value, out DocumentoExigido? documento))
-            {
-                no.RemapearDocumentoExigido(documento);
-            }
-
-            nos.Add(no);
+            nos.Add(ReporNo(rastreados.GetValueOrDefault(congelado.Id) ?? congelado, documentosPorId));
         }
 
-        colecoes.NosExigencia.Clear();
-        foreach (NoExigencia raiz in nos.Where(static n => n.NoPaiId is null))
+        return Troca.Substituindo(estado.NosExigencia, nos);
+    }
+
+    private static NoExigencia ReporNo(NoExigencia no, Dictionary<Guid, DocumentoExigido> documentosPorId)
+    {
+        if (no.Tipo == TipoNo.Folha && documentosPorId.TryGetValue(no.DocumentoExigidoId!.Value, out DocumentoExigido? documento))
         {
-            PartesDoProcesso.Vincular(raiz, processoId);
+            no.RemapearDocumentoExigido(documento);
         }
 
-        colecoes.NosExigencia.AddRange(nos);
+        return no;
     }
 
     /// <summary>
@@ -264,23 +288,37 @@ internal static class ReposicaoDaConfiguracao
     /// chegam vazias e as instâncias congeladas entram como inserção; o ramo rastreado só vale
     /// quando a coleção viva não foi editada (sombra de verificação, restauração sem edição).
     /// </summary>
-    private static void ReporColeta(ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo)
+    private static MudancaDaConfiguracao ReporColeta(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
     {
-        Dictionary<string, FatoColetado> fatosRastreados = colecoes.Campos
-            .Where(static f => f.GrupoColetadoId is null).ToDictionary(f => f.FatoCodigo, StringComparer.Ordinal);
+        Dictionary<string, FatoColetado> itensRastreados = estado.Itens.ToDictionary(f => f.FatoCodigo, StringComparer.Ordinal);
         Dictionary<(FinalidadeFormulario, string), GrupoColetado> gruposRastreados =
-            colecoes.GruposColetados.ToDictionary(static g => (g.Finalidade, g.Codigo));
-        Dictionary<string, ConfiguracaoDerivacaoFato> derivacoesRastreadas =
-            colecoes.RegrasDerivacao.ToDictionary(c => c.CodigoFato, StringComparer.Ordinal);
-
-        PartesDoProcesso.Substituir(colecoes.Campos, grafo.FatosColetados.Select(c => fatosRastreados.GetValueOrDefault(c.FatoCodigo) ?? c), processoId);
+            estado.GruposColetados.ToDictionary(static g => (g.Finalidade, g.Codigo));
+        IEnumerable<FatoColetado> itens = grafo.FatosColetados.Select(c => itensRastreados.GetValueOrDefault(c.FatoCodigo) ?? c);
         List<GrupoColetado> grupos = [.. grafo.GruposColetados.Select(c => gruposRastreados.GetValueOrDefault((c.Finalidade, c.Codigo)) ?? c)];
-        PartesDoProcesso.Substituir(colecoes.GruposColetados, grupos, processoId);
-        colecoes.Campos.AddRange(grupos.SelectMany(static g => g.Subitens));
-        PartesDoProcesso.Substituir(
-            colecoes.RegrasDerivacao,
-            grafo.RegrasDerivacao.Select(c => derivacoesRastreadas.GetValueOrDefault(c.CodigoFato) ?? c),
-            processoId);
+        return new MudancaDaConfiguracao
+        {
+            Campos = Troca.Substituindo(estado.Campos, [.. itens, .. grupos.SelectMany(static g => g.Subitens)]),
+            GruposColetados = Troca.Substituindo(estado.GruposColetados, grupos),
+        };
+    }
+
+    private static Troca<ConfiguracaoDerivacaoFato> ReporDerivacoes(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
+    {
+        Dictionary<string, ConfiguracaoDerivacaoFato> rastreadas = estado.RegrasDerivacao.ToDictionary(c => c.CodigoFato, StringComparer.Ordinal);
+        return Troca.Substituindo(
+            estado.RegrasDerivacao,
+            grafo.RegrasDerivacao.Select(c => rastreadas.GetValueOrDefault(c.CodigoFato) ?? c));
+    }
+
+    private static Troca<OpcaoDeclaradaFato> ReporOpcoesDeclaradas(EstadoDaConfiguracao estado, GrafoConfiguracao grafo)
+    {
+        List<Troca<OpcaoDeclaradaFato>> trocas = [];
+        foreach (IGrouping<string, OpcaoDeclaradaFato> doFato in grafo.OpcoesDeclaradas.GroupBy(static o => o.FatoCodigo))
+        {
+            trocas.Add(ReporOpcoesDoFato(estado.OpcoesDeclaradas, doFato));
+        }
+
+        return Troca.Reunindo(trocas);
     }
 
     /// <summary>
@@ -288,34 +326,32 @@ internal static class ReposicaoDaConfiguracao
     /// congelados, a viva que a versão não tem sai e a congelada que falta entra. Opções de fato
     /// que a versão não congela são configuração viva e ficam como estão.
     /// </summary>
-    private static void ReporOpcoesDeclaradas(ColecoesDoProcesso colecoes, Guid processoId, GrafoConfiguracao grafo)
+    private static Troca<OpcaoDeclaradaFato> ReporOpcoesDoFato(
+        IReadOnlyCollection<OpcaoDeclaradaFato> opcoesDoProcesso, IGrouping<string, OpcaoDeclaradaFato> doFato)
     {
-        foreach (IGrouping<string, OpcaoDeclaradaFato> doFato in grafo.OpcoesDeclaradas.GroupBy(static o => o.FatoCodigo))
+        List<OpcaoDeclaradaFato> vivas = [.. opcoesDoProcesso.Where(o => string.Equals(o.FatoCodigo, doFato.Key, StringComparison.Ordinal))];
+        Dictionary<string, OpcaoDeclaradaFato> congeladas = doFato.ToDictionary(static o => o.Codigo, StringComparer.Ordinal);
+        List<OpcaoDeclaradaFato> entram = [];
+        foreach (OpcaoDeclaradaFato congelada in congeladas.Values)
         {
-            Dictionary<string, OpcaoDeclaradaFato> congeladas = doFato.ToDictionary(static o => o.Codigo, StringComparer.Ordinal);
-            colecoes.OpcoesDeclaradas.RemoveAll(o => string.Equals(o.FatoCodigo, doFato.Key, StringComparison.Ordinal)
-                && !congeladas.ContainsKey(o.Codigo));
-
-            foreach (OpcaoDeclaradaFato congelada in congeladas.Values)
+            if (vivas.Find(o => string.Equals(o.Codigo, congelada.Codigo, StringComparison.Ordinal)) is { } viva)
             {
-                OpcaoDeclaradaFato? viva = colecoes.OpcoesDeclaradas.FirstOrDefault(o =>
-                    string.Equals(o.FatoCodigo, congelada.FatoCodigo, StringComparison.Ordinal)
-                    && string.Equals(o.Codigo, congelada.Codigo, StringComparison.Ordinal));
-                if (viva is not null)
-                {
-                    viva.ReporConteudo(congelada.Rotulo, congelada.Ordem);
-                    continue;
-                }
-
-                PartesDoProcesso.Vincular(congelada, processoId);
-                colecoes.OpcoesDeclaradas.Add(congelada);
+                viva.ReporConteudo(congelada.Rotulo, congelada.Ordem);
+            }
+            else
+            {
+                entram.Add(congelada);
             }
         }
+
+        return Troca.Substituindo(vivas.Where(o => !congeladas.ContainsKey(o.Codigo)), entram);
     }
 
-    private static ReferenciaTemporalFatos? ReferenciaTemporalRemapeada(GrafoConfiguracao grafo, Dictionary<Guid, Guid> faseCongeladaParaViva) =>
+    private static ReferenciaTemporalFatos? ReferenciaTemporalRemapeada(GrafoConfiguracao grafo, IReadOnlyDictionary<Guid, Guid> faseCongeladaParaViva) =>
         grafo.ReferenciaTemporalFatos is { FaseId: { } faseCongelada } referencia
             && faseCongeladaParaViva.TryGetValue(faseCongelada, out Guid faseViva)
                 ? referencia.ComFaseIdRemapeada(faseViva)
                 : grafo.ReferenciaTemporalFatos;
+
+    private sealed record FasesRepostas(Troca<FaseCronograma> Troca, IReadOnlyDictionary<Guid, Guid> CongeladaParaViva);
 }

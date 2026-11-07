@@ -37,49 +37,43 @@ public sealed class GrafoConfiguracao
         IReadOnlyList<DocumentoExigido> documentosExigidos,
         IReadOnlyList<NoExigencia> nosExigencia,
         ReferenciaTemporalFatos? referenciaTemporalFatos,
-        // Fatos e regras (Story #928, §7.4) são opcionais com default vazio: um processo sem coleta
-        // nem derivação é estado válido, e os muitos grafos de teste que antecedem a fatia não os
-        // constroem. O decoder do envelope sempre os passa explicitamente.
+        // Fatos e regras são opcionais com default vazio: um processo sem coleta nem derivação é
+        // estado válido. O decoder do envelope sempre os passa explicitamente.
         IReadOnlyList<FatoColetado>? fatosColetados = null,
         IReadOnlyList<ConfiguracaoDerivacaoFato>? regrasDerivacao = null,
-        // Cascata de remanejamento (Story #575) — opcional, mesmo padrão de BonusRegional
-        // (ausência = nenhuma cascata configurada, toggle por presença).
+        // Cascata de remanejamento: ausência = nenhuma cascata configurada (toggle por presença,
+        // como o bônus regional).
         ConfiguracaoCascataRemanejamento? cascataRemanejamento = null,
         // Formulários por finalidade (UNI-REQ-0144) e os termos que eles exigem (UNI-REQ-0086);
         // ausência = nenhum.
         IReadOnlyList<FormularioProcesso>? formularios = null,
         IReadOnlyList<TermoExigidoFormulario>? termosExigidos = null,
-        // Divulgação pública (UNI-REQ-0050, issue #563) — opcional, ausência = default
-        // minimizado (só o número de inscrição), mesmo padrão de BonusRegional/CascataRemanejamento
-        // (toggle por presença — D5 do congelamento).
+        // Divulgação pública (UNI-REQ-0050): ausência = default minimizado (só o número de
+        // inscrição), toggle por presença como o bônus regional e a cascata.
         ConfiguracaoDivulgacao? configuracaoDivulgacao = null,
-        // Taxa de inscrição e isenção (issue #1112) — ausência = "ainda não declarado", ESTADO
-        // QUE BLOQUEIA PUBLICAÇÃO (CA-01), diferente do toggle-por-presença de BonusRegional
-        // (onde ausência é estado válido). O grafo só carrega o valor tal como veio congelado;
-        // a recusa de "não declarado" acontece na publicação, não aqui.
+        // Taxa de inscrição e isenção: ausência = "ainda não declarado", estado que bloqueia a
+        // publicação, diferente do bônus regional (onde ausência é estado válido). O grafo só
+        // carrega o valor tal como veio congelado; a recusa acontece na publicação, não aqui.
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = null,
-        // Localidade regente (UNI-REQ-0111) — opcional na assinatura só porque os muitos grafos de
-        // teste anteriores a esta fatia não a constroem; o decoder do envelope sempre a passa, e
-        // AplicarGrafo só repõe quando presente. Diferente do fuso, que acompanha o envelope
-        // reidratado: este é estado vivo da raiz, e volta para ela no descarte da retificação.
+        // Localidade regente (UNI-REQ-0111): a raiz só a repõe quando presente. Diferente do fuso,
+        // que acompanha o envelope reidratado, é estado vivo da raiz e volta para ela no descarte
+        // da retificação.
         LocalidadeRegente? localidade = null,
-        // Convenção de contagem (UNI-REQ-0112) — aqui a ausência é dupla: grafo de teste que
-        // não a constrói, e versão publicada que legitimamente não declarou porque nenhuma
-        // contagem sua distingue dia útil. AplicarGrafo repõe o que veio, inclusive a
-        // ausência, para que o descarte devolva a configuração que a versão de fato tinha.
+        // Convenção de contagem (UNI-REQ-0112): a versão publicada pode não ter declarado, porque
+        // nenhuma contagem sua distingue dia útil. A raiz repõe o que veio, inclusive a ausência,
+        // para que o descarte devolva a configuração que a versão de fato tinha.
         ReferenciaRegra? algoritmoContagemPrazo = null,
-        // Identificador legível (issue #1480) — o endereço público do certame, congelado com a
-        // versão. AplicarGrafo repõe o que veio, inclusive a ausência: descartar uma retificação
-        // devolve o identificador que a versão vigente de fato tinha.
+        // Identificador legível: o endereço público do certame, congelado com a versão. A raiz
+        // repõe o que veio, inclusive a ausência: descartar uma retificação devolve o identificador
+        // que a versão vigente de fato tinha.
         IdentificadorLegivel? identificadorLegivel = null,
-        // Opções declaradas pelo processo (issue #1619) — reconstruídas pelo decoder a partir dos
-        // valores selecionáveis congelados dos fatos coletados de fonte do processo.
+        // Opções declaradas pelo processo: reconstruídas pelo decoder a partir dos valores
+        // selecionáveis congelados dos fatos coletados de fonte do processo.
         IReadOnlyList<OpcaoDeclaradaFato>? opcoesDeclaradas = null,
         // Grupos repetíveis dos formulários (UNI-REQ-0146), com os seus campos; ausência = nenhum.
         IReadOnlyList<GrupoColetado>? gruposColetados = null,
-        // Número de opções de curso (1 ou 2) — dimensão da raiz, congelada em bloco próprio. Opcional
-        // na assinatura só porque os grafos de teste anteriores a ela não a constroem; o decoder
-        // sempre a passa, e AplicarGrafo repõe o que veio.
+        // Número de opções de curso (1 ou 2): dimensão da raiz, congelada em bloco próprio. A raiz
+        // repõe o que veio.
         int? numeroDeOpcoesDeCurso = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
@@ -129,34 +123,32 @@ public sealed class GrafoConfiguracao
 
     public IReadOnlyList<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas { get; }
 
-    /// <summary>Ausência = sem bônus (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, INV-B5) — não existe "BONUS-NENHUM".</summary>
+    /// <summary>Ausência = sem bônus (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015); não existe "BONUS-NENHUM".</summary>
     public ConfiguracaoBonusRegional? BonusRegional { get; }
 
     public IReadOnlyList<CriterioDesempate> CriteriosDesempate { get; }
 
     public ConfiguracaoClassificacao Classificacao { get; }
 
-    /// <summary>O cronograma de fases (Story #851) — 7ª dimensão do grafo, 1..*.</summary>
+    /// <summary>O cronograma de fases, 1..*.</summary>
     public IReadOnlyList<FaseCronograma> CronogramaFases { get; }
 
-    /// <summary>Documentos exigidos (Story #554, PR #903) — 8ª dimensão do grafo, 0..* (as folhas, com sua config por-exigência).</summary>
+    /// <summary>Documentos exigidos, 0..* (as folhas, com a configuração de cada exigência).</summary>
     public IReadOnlyList<DocumentoExigido> DocumentosExigidos { get; }
 
-    /// <summary>Árvore de satisfação (Story #920) — 9ª dimensão do grafo, 0..* (TODOS os nós, planos — raízes têm <c>NoPaiId == null</c>).</summary>
+    /// <summary>Árvore de satisfação, 0..* (todos os nós, planos: as raízes têm <c>NoPaiId == null</c>).</summary>
     public IReadOnlyList<NoExigencia> NosExigencia { get; }
 
     /// <summary>
-    /// Política de <see cref="ValueObjects.ReferenciaTemporalFatos"/> (Story #554, PR #903,
-    /// B-03) — o INSUMO que <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/>
-    /// resolve para a <c>dataReferenciaFatos</c> congelada. Ausência = nenhuma política
-    /// configurada (estado válido enquanto não existir gatilho por <c>FAIXA_ETARIA</c>).
+    /// A <see cref="ValueObjects.ReferenciaTemporalFatos"/>: o insumo que
+    /// <see cref="Entities.ProcessoSeletivo.ResolverDataReferenciaFatos"/> resolve para a
+    /// <c>dataReferenciaFatos</c> congelada. Ausência = nenhuma política configurada (estado
+    /// válido enquanto não existir gatilho por <c>FAIXA_ETARIA</c>).
     /// </summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; }
 
     /// <summary>
-    /// Os fatos que o processo coleta do candidato (Story #928, §7.4) — congelados no envelope e
-    /// repostos na restauração. Imutáveis após a primeira publicação (a edição sob retificação chega
-    /// no §8), então reusar a instância viva de mesmo código na reconciliação é seguro por construção.
+    /// Os fatos que o processo coleta do candidato, congelados no envelope e repostos na restauração.
     /// </summary>
     public IReadOnlyList<FatoColetado> FatosColetados { get; }
 
@@ -165,8 +157,7 @@ public sealed class GrafoConfiguracao
     public IReadOnlyList<OpcaoDeclaradaFato> OpcoesDeclaradas { get; }
 
     /// <summary>
-    /// As regras de derivação dos fatos derivados do processo (Story #928, §7.4) — congeladas no
-    /// envelope e repostas na restauração, mesma garantia de imutabilidade de <see cref="FatosColetados"/>.
+    /// As regras de derivação dos fatos derivados do processo, congeladas no envelope e repostas na restauração.
     /// </summary>
     public IReadOnlyList<ConfiguracaoDerivacaoFato> RegrasDerivacao { get; }
 
@@ -180,9 +171,9 @@ public sealed class GrafoConfiguracao
         DerivacoesDaOferta.Efetivas(RegrasDerivacao, DerivacoesDaOferta.DistribuicaoDasOfertas(DistribuicaoVagas, ofertasDeCurso ?? []));
 
     /// <summary>
-    /// A cascata de remanejamento das cotas reservadas (Story #575) — congelada no envelope e
-    /// reposta na restauração. Ausência = nenhuma cascata configurada (toggle por presença,
-    /// mesmo padrão de <see cref="BonusRegional"/>).
+    /// A cascata de remanejamento das cotas reservadas, congelada no envelope e reposta na
+    /// restauração. Ausência = nenhuma cascata configurada (toggle por presença, como
+    /// <see cref="BonusRegional"/>).
     /// </summary>
     public ConfiguracaoCascataRemanejamento? CascataRemanejamento { get; }
 
@@ -193,23 +184,22 @@ public sealed class GrafoConfiguracao
     public IReadOnlyList<TermoExigidoFormulario> TermosExigidos { get; }
 
     /// <summary>
-    /// Divulgação pública do certame (UNI-REQ-0050, issue #563) — congelada no envelope e
-    /// reposta na restauração. Ausência = default minimizado (só o número de inscrição),
-    /// toggle por presença, mesmo padrão de <see cref="BonusRegional"/>.
+    /// Divulgação pública do certame (UNI-REQ-0050), congelada no envelope e reposta na
+    /// restauração. Ausência = default minimizado (só o número de inscrição), toggle por
+    /// presença como <see cref="BonusRegional"/>.
     /// </summary>
     public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; }
 
     /// <summary>
-    /// Taxa de inscrição e isenção (issue #1112) — congelada no envelope e reposta na
-    /// restauração. Ausência = "ainda não declarado" (CA-01), não um estado válido de
-    /// publicação — diferente de <see cref="BonusRegional"/>.
+    /// Taxa de inscrição e isenção, congelada no envelope e reposta na restauração. Ausência =
+    /// "ainda não declarado", que não é estado válido de publicação, diferente de
+    /// <see cref="BonusRegional"/>.
     /// </summary>
     public ConfiguracaoTaxaInscricao? ConfiguracaoTaxaInscricao { get; }
 
     /// <summary>
     /// Município cujo calendário regia a contagem dos prazos quando esta versão foi publicada
-    /// (UNI-REQ-0111). <see langword="null"/> só em grafos de teste anteriores à fatia que a
-    /// introduziu — o decoder do envelope sempre a traz.
+    /// (UNI-REQ-0111). <see langword="null"/> quando o grafo não a traz: a raiz mantém a viva.
     /// </summary>
     public LocalidadeRegente? Localidade { get; }
 

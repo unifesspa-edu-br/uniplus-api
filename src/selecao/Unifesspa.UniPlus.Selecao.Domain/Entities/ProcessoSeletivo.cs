@@ -128,7 +128,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         string fato = fatoCodigo.Trim();
         return Editar(precondicao,
             () => RegrasDasOpcoesDeclaradas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), fato, opcoes, agregadosDoFato).Com(opcoes),
-            novas => Substituir(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal), novas));
+            novas => SubstituirOnde(_opcoesDeclaradas, o => string.Equals(o.FatoCodigo, fato, StringComparison.Ordinal), novas));
     }
 
     private readonly List<ConfiguracaoDerivacaoFato> _regrasDerivacao = [];
@@ -293,7 +293,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             () => RegrasDaClassificacao.Planejar(EstadoDaConfiguracao.De(this), classificacao),
             plano =>
             {
-                plano.RetirarEdicoes(Colecoes());
+                AplicarMudanca(plano.Mudanca);
                 Classificacao = Vincular(plano.Classificacao);
             });
     }
@@ -307,21 +307,21 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return Editar(precondicao,
             () => RegrasDosFormularios.PlanejarDefinicao(EstadoDaConfiguracao.De(this), finalidade, faseId, titulo, etapas, itensDaCriacao),
-            plano => plano.Aplicar(Colecoes(), Id));
+            Aplicar);
     }
 
     public Result RemoverFormulario(FinalidadeFormulario finalidade, PrecondicaoIfMatch precondicao)
     {
         DomainError? recusa = RecusaDeOperacaoSoEmRascunho(RegrasDosFormularios.RemocaoSoEmRascunho(), precondicao);
-        Result<FormularioProcesso> remocao = recusa is null
-            ? RegrasDosFormularios.ConferirRemocao(EstadoDaConfiguracao.De(this), finalidade)
-            : Result<FormularioProcesso>.Failure(recusa);
+        Result<MudancaDaConfiguracao> remocao = recusa is null
+            ? RegrasDosFormularios.PlanejarRemocao(EstadoDaConfiguracao.De(this), finalidade)
+            : Result<MudancaDaConfiguracao>.Failure(recusa);
         if (remocao.IsFailure)
         {
             return Result.Failure(remocao.Error!);
         }
 
-        RegrasDosFormularios.Remover(Colecoes(), remocao.Value!);
+        AplicarMudanca(remocao.Value!);
         return Result.Success();
     }
 
@@ -341,7 +341,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             return Result.ValidationFailure(plano.Errors);
         }
 
-        plano.Value!.Aplicar(Colecoes(), Id);
+        Aplicar(plano.Value!);
         return Result.Success();
     }
 
@@ -356,7 +356,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return Editar(precondicao,
             () => RegrasDosFormularios.PlanejarTermos(EstadoDaConfiguracao.De(this), finalidade, termos),
-            plano => plano.Aplicar(Colecoes(), Id));
+            AplicarMudanca);
     }
 
     /// <summary>O formulário da finalidade, quando o processo o tem.</summary>
@@ -374,7 +374,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return Editar(precondicao,
             () => RegrasDoCronograma.Planejar(EstadoDaConfiguracao.De(this), fases, precedencias),
-            plano => plano.Aplicar(Colecoes(), Id));
+            Aplicar);
     }
 
     /// <summary>Substitui a árvore de satisfação dos documentos exigidos, conferindo a fase de cada documento no cronograma.</summary>
@@ -384,7 +384,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return Editar(precondicao,
             () => RegrasDasExigencias.Planejar(EstadoDaConfiguracao.De(this), raizes),
-            plano => plano.Aplicar(Colecoes(), Id));
+            AplicarMudanca);
     }
 
     /// <summary>
@@ -403,7 +403,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
         return Editar(precondicao,
             () => RegrasDaColeta.Planejar(EstadoDaConfiguracao.De(this), finalidade, fatosColetados, grupos),
-            plano => plano.Aplicar(Colecoes(), Id));
+            AplicarMudanca);
     }
 
     /// <summary>Refaz a cópia dos itens, a das unidades das fases e a proteção das exigências, nessa ordem, antes de canonicalizar; a recusa dos itens deixa o resto como está.</summary>
@@ -436,7 +436,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Refaz nas fases a cópia de sigla e nome da unidade responsável ao congelar a versão; a fase sem unidade em <paramref name="vivas"/> fica como está.</summary>
     internal void RecopiarUnidadesDasFases(IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas) =>
-        RegrasDoCronograma.AplicarUnidadesVivas(_cronogramaFases, vivas);
+        RegrasDoCronograma.AplicarUnidadesVivas(CronogramaFases, vivas);
 
     public Result DefinirRegrasDerivacao(IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao, PrecondicaoIfMatch precondicao)
     {
@@ -449,7 +449,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     /// <summary>Limpa a coleta e a derivação antes da reposição fiel do descarte, que grava os <c>DELETE</c>s antes de aplicar o grafo: repor por cima das vivas colidiria no índice único de ordem.</summary>
     public void LimparColetaEDerivacaoParaRestauracao() =>
-        RegrasDaColeta.LimparParaRestauracao(Colecoes());
+        AplicarMudanca(RegrasDaColeta.PlanejarLimpezaParaRestauracao(EstadoDaConfiguracao.De(this)));
 
     /// <summary>Define a âncora de <c>FAIXA_ETARIA</c>; nula é válida enquanto nenhuma exigência tem gatilho por idade.</summary>
     public Result DefinirReferenciaTemporalFatos(ReferenciaTemporalFatos? referencia, PrecondicaoIfMatch precondicao) =>
@@ -585,23 +585,28 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// da validação não há caminho de falha, e é isso que faz a restauração recusada não alterar nada
     /// (ADR-0110 D2).
     /// </summary>
-    private void AplicarGrafo(GrafoConfiguracao grafo) =>
-        AplicarEscalares(ReposicaoDaConfiguracao.Repor(Colecoes(), Id, grafo));
-
-    private void AplicarEscalares(ReposicaoDosEscalares reposicao)
+    private void AplicarGrafo(GrafoConfiguracao grafo)
     {
-        OfertaAtendimento = Vincular(reposicao.OfertaAtendimento);
-        BonusRegional = Vincular(reposicao.BonusRegional);
-        AplicaBonusRegional = reposicao.BonusRegional is not null;
-        NumeroDeOpcoesDeCurso = reposicao.NumeroDeOpcoesDeCurso;
-        Cascata = Vincular(reposicao.Cascata);
-        Classificacao = Vincular(reposicao.Classificacao);
-        ConfiguracaoDivulgacao = Vincular(reposicao.ConfiguracaoDivulgacao);
-        ConfiguracaoTaxaInscricao = Vincular(reposicao.ConfiguracaoTaxaInscricao);
-        Localidade = reposicao.Localidade ?? Localidade;
-        AlgoritmoContagemPrazo = reposicao.AlgoritmoContagemPrazo;
-        IdentificadorLegivel = reposicao.IdentificadorLegivel;
-        ReferenciaTemporalFatos = reposicao.ReferenciaTemporalFatos;
+        ReposicaoRealizada reposicao = ReposicaoDaConfiguracao.Repor(EstadoDaConfiguracao.De(this), grafo);
+        AplicarMudanca(reposicao.Mudanca);
+        AplicarEscalares(grafo, reposicao.ReferenciaTemporalFatos);
+    }
+
+    /// <summary>A localidade é a única reposição condicional: o grafo que não a traz (anterior à declaração) não apaga a viva.</summary>
+    private void AplicarEscalares(GrafoConfiguracao grafo, ReferenciaTemporalFatos? referenciaTemporal)
+    {
+        OfertaAtendimento = Vincular(grafo.OfertaAtendimento);
+        BonusRegional = Vincular(grafo.BonusRegional);
+        AplicaBonusRegional = grafo.BonusRegional is not null;
+        NumeroDeOpcoesDeCurso = grafo.NumeroDeOpcoesDeCurso;
+        Cascata = Vincular(grafo.CascataRemanejamento);
+        Classificacao = Vincular(grafo.Classificacao);
+        ConfiguracaoDivulgacao = Vincular(grafo.ConfiguracaoDivulgacao);
+        ConfiguracaoTaxaInscricao = Vincular(grafo.ConfiguracaoTaxaInscricao);
+        Localidade = grafo.Localidade ?? Localidade;
+        AlgoritmoContagemPrazo = grafo.AlgoritmoContagemPrazo;
+        IdentificadorLegivel = grafo.IdentificadorLegivel;
+        ReferenciaTemporalFatos = referenciaTemporal;
     }
 
     /// <summary>Abre a sessão editorial sobre a configuração de um certame publicado (ADR-0110 D3); o <see cref="Status"/> não muda.</summary>
@@ -684,9 +689,38 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         return plano.IsSuccess ? Result.Success() : Result.ValidationFailure(plano.Errors);
     }
 
-    private ColecoesDoProcesso Colecoes() => new(
-        _etapas, _cronogramaFases, _documentosExigidos, _nosExigencia, _campos, _gruposColetados,
-        _formularios, _termosExigidos, _opcoesDeclaradas, _regrasDerivacao, _distribuicaoVagas, _criteriosDesempate);
+    private void Aplicar(IPlanoDaEdicao plano)
+    {
+        plano.AtualizarPartes();
+        AplicarMudanca(plano.Mudanca);
+    }
+
+    private void AplicarMudanca(MudancaDaConfiguracao mudanca)
+    {
+        Trocar(_etapas, mudanca.Etapas);
+        Trocar(_cronogramaFases, mudanca.CronogramaFases);
+        Trocar(_documentosExigidos, mudanca.DocumentosExigidos);
+        Trocar(_nosExigencia, mudanca.NosExigencia);
+        Trocar(_campos, mudanca.Campos);
+        Trocar(_gruposColetados, mudanca.GruposColetados);
+        Trocar(_formularios, mudanca.Formularios);
+        Trocar(_termosExigidos, mudanca.TermosExigidos);
+        Trocar(_opcoesDeclaradas, mudanca.OpcoesDeclaradas);
+        Trocar(_regrasDerivacao, mudanca.RegrasDerivacao);
+        Trocar(_distribuicaoVagas, mudanca.DistribuicaoVagas);
+        Trocar(_criteriosDesempate, mudanca.CriteriosDesempate);
+    }
+
+    private void Trocar<T>(List<T> lista, Troca<T> troca)
+        where T : class, IParteDoProcesso
+    {
+        lista.RemoveAll(troca.Saem.Contains);
+        foreach (T parte in troca.Entram)
+        {
+            parte.VincularProcesso(Id);
+            lista.Add(parte);
+        }
+    }
 
     private T? Vincular<T>(T? parte)
         where T : class, IParteDoProcesso
@@ -697,9 +731,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private void Substituir<T>(List<T> lista, IEnumerable<T> novas)
         where T : class, IParteDoProcesso =>
-        PartesDoProcesso.Substituir(lista, novas, Id);
+        Trocar(lista, Troca.Substituindo(lista, novas));
 
-    private void Substituir<T>(List<T> lista, Predicate<T> substituidas, IEnumerable<T> novas)
+    private void SubstituirOnde<T>(List<T> lista, Predicate<T> saem, IEnumerable<T> novas)
         where T : class, IParteDoProcesso =>
-        PartesDoProcesso.Substituir(lista, substituidas, novas, Id);
+        Trocar(lista, Troca.Substituindo(lista.FindAll(saem), novas));
 }

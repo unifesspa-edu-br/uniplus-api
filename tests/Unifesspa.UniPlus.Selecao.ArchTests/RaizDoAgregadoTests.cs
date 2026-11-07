@@ -90,8 +90,7 @@ public sealed partial class RaizDoAgregadoTests
         typeof(ProcessoSeletivo).Assembly.GetTypes()
             .Where(static t => t.Namespace is { } ns && ns.StartsWith("Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos", StringComparison.Ordinal))
             .Where(static t => t.IsAbstract && t.IsSealed && !t.IsNested && !Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)))
-            .Select(static t => t.Name)
-            .Where(static nome => nome is not "PartesDoProcesso");
+            .Select(static t => t.Name);
 
     /// <summary>
     /// O que vem depois da assinatura: o nome de uma política citado como tipo de parâmetro ou de retorno

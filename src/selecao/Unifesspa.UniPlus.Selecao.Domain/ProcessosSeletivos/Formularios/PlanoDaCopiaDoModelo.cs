@@ -1,9 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -12,26 +9,16 @@ internal sealed record PlanoDaCopiaDoModelo(
     CopiaDeModeloDeFormulario Copia,
     FormularioProcesso Novo,
     FormularioProcesso? Existente,
-    IReadOnlySet<string> FatosDaCopia)
+    MudancaDaConfiguracao Mudanca) : IPlanoDaEdicao
 {
-    internal void Aplicar(ColecoesDoProcesso colecoes, Guid processoId)
+    public void AtualizarPartes()
     {
-        FinalidadeFormulario finalidade = Copia.Finalidade;
-        if (Existente is not null)
+        if (Existente is null)
         {
-            Existente.Substituir(Novo);
-            Existente.RegistrarOrigem(Copia.ModeloId, Copia.ModeloCodigo);
-        }
-        else
-        {
-            ((IParteDoProcesso)Novo).VincularProcesso(processoId);
-            colecoes.Formularios.Add(Novo);
+            return;
         }
 
-        colecoes.Campos.RemoveAll(f => f.Finalidade == finalidade || (f.GrupoColetadoId is null && FatosDaCopia.Contains(f.FatoCodigo)));
-        PartesDoProcesso.Substituir(colecoes.Campos, static _ => false, Copia.Itens, processoId);
-        new PlanoDaColeta(finalidade, [], Copia.Grupos).AplicarGrupos(colecoes, processoId);
-        PartesDoProcesso.Substituir(colecoes.TermosExigidos, t => t.Finalidade == finalidade, Copia.Termos, processoId);
-        PartesDoProcesso.Substituir(colecoes.RegrasDerivacao, static _ => false, Copia.DerivacoesNovas, processoId);
+        Existente.Substituir(Novo);
+        Existente.RegistrarOrigem(Copia.ModeloId, Copia.ModeloCodigo);
     }
 }
