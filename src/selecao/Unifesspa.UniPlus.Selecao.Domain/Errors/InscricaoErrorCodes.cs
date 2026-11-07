@@ -52,6 +52,9 @@ public static class InscricaoErrorCodes
     public const string DescarteSoDeRascunho = "Inscricao.DescarteSoDeRascunho";
     public const string CancelamentoSoDeEnviada = "Inscricao.CancelamentoSoDeEnviada";
     public const string InscricaoCancelada = "Inscricao.InscricaoCancelada";
+
+    /// <summary>A inscrição cancelada não tem comprovante para exibir nem imprimir.</summary>
+    public const string ComprovanteDeInscricaoCancelada = "Inscricao.ComprovanteDeInscricaoCancelada";
     public const string MotivoDoCancelamentoLongo = "Inscricao.MotivoDoCancelamentoLongo";
     public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
     public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";

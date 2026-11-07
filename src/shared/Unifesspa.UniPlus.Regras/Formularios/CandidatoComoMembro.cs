@@ -65,9 +65,16 @@ public static class CandidatoComoMembro
     {
         ArgumentNullException.ThrowIfNull(ocorrencias);
 
-        return ocorrencias.Count(static o =>
-            o.Respostas.TryGetValue(FatoParentesco, out JsonElement parentesco)
+        return ocorrencias.Count(static o => EhDoCandidato(o.Respostas)) == 1;
+    }
+
+    /// <summary>A ocorrência é a do próprio candidato: o parentesco dela é <see cref="ProprioCandidato"/>.</summary>
+    public static bool EhDoCandidato(IReadOnlyDictionary<string, JsonElement> respostas)
+    {
+        ArgumentNullException.ThrowIfNull(respostas);
+
+        return respostas.TryGetValue(FatoParentesco, out JsonElement parentesco)
             && parentesco.ValueKind == JsonValueKind.String
-            && parentesco.GetString() == ProprioCandidato) == 1;
+            && parentesco.GetString() == ProprioCandidato;
     }
 }

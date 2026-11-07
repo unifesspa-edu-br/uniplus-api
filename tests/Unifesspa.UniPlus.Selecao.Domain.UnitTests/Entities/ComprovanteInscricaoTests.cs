@@ -132,4 +132,31 @@ public sealed class ComprovanteInscricaoTests
 
         comprovante.IntegridadeConfere().Should().BeFalse();
     }
+
+    [Fact(DisplayName = "TodasAsRespostas junta as respostas comuns e as sensíveis de cifra individual")]
+    public void TodasAsRespostas_JuntaComunsESensiveis()
+    {
+        Conteudo c = Base();
+        ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
+            Inscricao, c.Numero, c.Instante, c.Oferta, Valores(("APELIDO", "Nanda")), c.Derivados, c.Grupos, c.Aceites, c.Documentos, c.Modalidades,
+            Valores(("IDENTIDADE_GENERO", "PESSOA_CIS")));
+
+        comprovante.TodasAsRespostas().Keys.Should().BeEquivalentTo(["APELIDO", "IDENTIDADE_GENERO"]);
+    }
+
+    [Fact(DisplayName = "A posição vale só no último comprovante, e os vizinhos faltam nas pontas")]
+    public void ComprovanteNaPosicao_ValeEVizinhos()
+    {
+        Conteudo c = Base();
+        ComprovanteInscricao comprovante = ComprovanteInscricao.Emitir(
+            Inscricao, c.Numero, c.Instante, c.Oferta, c.Respostas, c.Derivados, c.Grupos, c.Aceites, c.Documentos, c.Modalidades);
+
+        ComprovanteNaPosicao primeiro = new(comprovante, 1, 3);
+        ComprovanteNaPosicao ultimo = new(comprovante, 3, 3);
+        ComprovanteNaPosicao unico = new(comprovante, 1, 1);
+
+        (primeiro.Vale, primeiro.NumeroAnterior, primeiro.NumeroSeguinte).Should().Be((false, (int?)null, (int?)2));
+        (ultimo.Vale, ultimo.NumeroAnterior, ultimo.NumeroSeguinte).Should().Be((true, (int?)2, (int?)null));
+        (unico.Vale, unico.NumeroAnterior, unico.NumeroSeguinte).Should().Be((true, (int?)null, (int?)null));
+    }
 }

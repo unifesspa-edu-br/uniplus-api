@@ -236,7 +236,7 @@ inscrever_persona() {
 
     resposta=$(curl -sS -w '\n%{http_code}' -X POST "$url/submissao" -H "Authorization: Bearer $token" -H "Idempotency-Key: $(idem)" \
         -H "If-Match: $(jq -r '.eTag' <<< "$rascunho")" -H "Content-Type: application/json" \
-        -H "Accept: application/vnd.uniplus.comprovante-inscricao.v1+json" -d "$corpo")
+        -H "Accept: application/vnd.uniplus.recibo-da-inscricao.v1+json" -d "$corpo")
     http_code=$(tail -n1 <<< "$resposta")
     [ "$http_code" = "200" ] || fail "enviar a inscrição de $username → $http_code: $(sed '$d' <<< "$resposta" | head -c 600)"
 }

@@ -355,6 +355,17 @@ public sealed class InscricaoTests
         inscricao.DomainEvents.Should().ContainSingle().Which.Should().BeOfType<InscricaoCanceladaEvent>();
     }
 
+    [Fact(DisplayName = "A inscrição cancelada não emite comprovante, e a enviada ou o rascunho não têm o que conferir")]
+    public void ConferirComprovanteEmitivel_SoRecusaACancelada()
+    {
+        Inscricao enviada = NovaInscricaoEnviada();
+        enviada.ConferirComprovanteEmitivel().Should().BeNull();
+
+        enviada.Cancelar("Mudei de curso", "sub-1", Instante(), PrecondicaoIfMatch.DeTags([enviada.ETag])).IsSuccess.Should().BeTrue();
+
+        enviada.ConferirComprovanteEmitivel()!.Code.Should().Be(InscricaoErrorCodes.ComprovanteDeInscricaoCancelada);
+    }
+
     [Theory(DisplayName = "Cancelar sem motivo grava \"a pedido do candidato\"")]
     [InlineData(null)]
     [InlineData("   ")]

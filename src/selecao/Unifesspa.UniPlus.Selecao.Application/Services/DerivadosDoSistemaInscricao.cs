@@ -24,7 +24,7 @@ public static class DerivadosDoSistemaInscricao
     public static readonly IReadOnlyDictionary<string, DefinicaoDaResposta> DefinicoesDasRespostas = new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal)
     {
         ["FAIXA_ETARIA"] = new(TipoDoValorDeResposta.Numero, Multivalorado: false, Identificador: false),
-        ["UF_RESIDENCIA"] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
+        [UfDeResidencia] = new(TipoDoValorDeResposta.Codigo, Multivalorado: false, Identificador: false),
         ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),
     };
 
@@ -41,11 +41,14 @@ public static class DerivadosDoSistemaInscricao
     /// <summary>O fato do endereço de que saem os derivados de residência.</summary>
     public const string EnderecoResidencial = "ENDERECO_RESIDENCIAL";
 
+    /// <summary>O derivado com a UF do endereço residencial, gravado pela sigla.</summary>
+    public const string UfDeResidencia = "UF_RESIDENCIA";
+
     private static readonly IReadOnlySet<string> SemDerivadosIndeterminados = new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>Os derivados de residência: saem do endereço residencial e dependem do Geo.</summary>
     public static readonly IReadOnlySet<string> FatosDaResidencia =
-        new HashSet<string>(["UF_RESIDENCIA", "MUNICIPIO_RESIDENCIA"], StringComparer.Ordinal);
+        new HashSet<string>([UfDeResidencia, "MUNICIPIO_RESIDENCIA"], StringComparer.Ordinal);
 
     /// <summary>
     /// Calcula os derivados do envio. A residência sai do que o Geo resolveu pelo CEP do endereço residencial na conferência do

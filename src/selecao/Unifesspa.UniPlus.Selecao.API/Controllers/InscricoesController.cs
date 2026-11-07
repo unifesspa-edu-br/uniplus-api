@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Application.Commands.Inscricoes;
 using Application.DTOs;
+using Application.DTOs.Comprovantes;
 using Application.Queries.Inscricoes;
 
 using Http;
@@ -21,8 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A inscrição de quem chama num processo seletivo. As rotas do processo não recebem id de inscrição: o
-/// titular, pelo CPF do token, resolve a ativa. Só a leitura do comprovante recebe o id, para alcançar a
-/// cancelada.
+/// titular, pelo CPF do token, resolve a ativa. Só a leitura do comprovante recebe o id da inscrição.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -227,12 +227,13 @@ public sealed class InscricoesController : ControllerBase
     /// Envia ou corrige a inscrição: exige obrigatórios, restrições, impedimentos, grupos e termos
     /// — a validação completa do veredito de submissão. Exige <c>If-Match</c> com o
     /// <see cref="InscricaoDto.ETag"/> corrente, e <c>Idempotency-Key</c> (ADR-0027): a repetição da
-    /// mesma chave devolve o comprovante já emitido, sem gerar outro número de inscrição.
+    /// mesma chave devolve o mesmo recibo, sem gerar outro comprovante nem outro número de inscrição. O recibo
+    /// diz qual comprovante abrir, em <c>GET /inscricoes/{inscricaoId}/comprovantes/{numeroDoComprovante}</c>.
     /// </summary>
     [HttpPost("processos-seletivos/{id:guid}/inscricao/submissao")]
     [RequiresIdempotencyKey]
-    [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
-    [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
+    [VendorMediaType(Resource = "recibo-da-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(ReciboDaInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -254,44 +255,28 @@ public sealed class InscricoesController : ControllerBase
             return analise.ToActionResult(_mapper);
         }
 
-        Result<ComprovanteInscricaoDto> resultado = await _commandBus
+        Result<ReciboDaInscricaoDto> resultado = await _commandBus
             .Send(new SubmeterInscricaoCommand(id, request, analise.Value!), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
-    /// O comprovante número <paramref name="numero"/> da inscrição do dono do token:
-    /// a primeira submissão é o comprovante 1, cada correção emite o próximo — append-only, o
-    /// anterior nunca muda.
-    /// </summary>
-    [HttpGet("processos-seletivos/{id:guid}/inscricao/comprovantes/{numero:int}")]
-    [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
-    [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    public async Task<IActionResult> ObterComprovante(Guid id, int numero, CancellationToken cancellationToken)
-    {
-        Result<ComprovanteInscricaoDto> resultado = await _queryBus
-            .Send(new ObterComprovanteQuery(id, numero), cancellationToken)
-            .ConfigureAwait(false);
-        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>
-    /// O comprovante número <paramref name="numero"/> de uma inscrição do dono do token, pelo id dela —
-    /// também a cancelada, que a rota por processo não alcança. O id é o de <see cref="MinhaInscricaoDto.InscricaoId"/>.
+    /// O comprovante número <paramref name="numero"/> de uma inscrição do dono do token, pelo id dela, pronto para exibir: o
+    /// primeiro envio é o comprovante 1 e cada correção emite o próximo, append-only. O texto é o da versão do formulário em que a
+    /// inscrição foi enviada. A inscrição cancelada não tem comprovante para exibir e responde 422. O id é o de
+    /// <see cref="MinhaInscricaoDto.InscricaoId"/>.
     /// </summary>
     [HttpGet("inscricoes/{inscricaoId:guid}/comprovantes/{numero:int}")]
     [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
-    [ProducesResponseType(typeof(ComprovanteInscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ComprovanteDaInscricaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ObterComprovanteDaInscricao(Guid inscricaoId, int numero, CancellationToken cancellationToken)
     {
-        Result<ComprovanteInscricaoDto> resultado = await _queryBus
+        Result<ComprovanteDaInscricaoDto> resultado = await _queryBus
             .Send(new ObterComprovanteDaInscricaoQuery(inscricaoId, numero), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);

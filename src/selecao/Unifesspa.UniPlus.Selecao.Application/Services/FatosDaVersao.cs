@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
-/// <summary>Um grupo repetível do formulário congelado, com os fatos dos campos dele.</summary>
+/// <summary>Um grupo repetível do formulário congelado, com os fatos dos campos dele e se o próprio candidato é um dos membros.</summary>
 internal sealed record GrupoDoProcesso(
-    string Codigo, string Rotulo, string? Secao, int Ordem, IReadOnlyDictionary<string, FatoDoProcesso> Subitens);
+    string Codigo, string Rotulo, string? Secao, int Ordem, IReadOnlyDictionary<string, FatoDoProcesso> Subitens, bool IncluiCandidato);
 
 /// <summary>Um campo identificador do formulário congelado: o fato e o grupo repetível que o abriga, quando há.</summary>
 internal sealed record CampoIdentificador(string FatoCodigo, string? GrupoCodigo, bool EhCpf);
@@ -30,6 +30,16 @@ internal sealed record FatosDaVersao(
     {
         ArgumentNullException.ThrowIfNull(envelope);
 
+        Dictionary<string, Dictionary<string, string>> declaradas = OpcoesDeclaradasPorFato(envelope);
+        Dictionary<string, FatoDoProcesso> derivados = envelope.FatosDerivadosCongelados.ToDictionary(
+            static d => d.Key, d => Derivado(d.Value, envelope), StringComparer.Ordinal);
+
+        return new FatosDaVersao(
+            ColetadosForaDeGrupo(envelope, declaradas), GruposDaInscricao(envelope, declaradas), derivados, TitulosDasEtapas(envelope));
+    }
+
+    private static Dictionary<string, Dictionary<string, string>> OpcoesDeclaradasPorFato(EnvelopeReidratado envelope)
+    {
         Dictionary<string, Dictionary<string, string>> doProcesso = [];
         foreach (OpcaoDeclaradaFato opcao in envelope.Grafo.OpcoesDeclaradas)
         {
@@ -41,50 +51,50 @@ internal sealed record FatosDaVersao(
             porCodigo[opcao.Codigo] = opcao.Rotulo;
         }
 
-        FatoDoProcesso Coletado(FatoColetado fato) => new(
-            fato.FatoCodigo,
-            fato.Rotulo,
-            fato.Descricao,
-            TiposDeItem.De(fato.TipoRenderizacao),
-            ComponentesDeItem.De(
-                fato.ComponenteExibicao,
-                EhCpf(fato.FatoCodigo, fato.Formato),
-                Classificacao(fato.ClassificacaoProtecao) == ClassificacaoDeProtecao.Identificador),
-            Classificacao(fato.ClassificacaoProtecao),
-            string.IsNullOrWhiteSpace(fato.HipoteseLegal) ? null : fato.HipoteseLegal,
-            fato.EtapaCodigo,
-            fato.Ordem,
-            fato.OrigemValores == OrigemValoresColeta.UnidadesFederativas ? NomesDasUfs() : Opcoes(fato.FatoCodigo, doProcesso, envelope),
-            EhCpf(fato.FatoCodigo, fato.Formato));
+        return doProcesso;
+    }
 
-        IEnumerable<FatoColetado> daInscricao = envelope.Grafo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao);
-        Dictionary<string, FatoDoProcesso> coletados = daInscricao
-            .Where(static f => f.GrupoColetadoId is null)
+    private static FatoDoProcesso Coletado(
+        FatoColetado fato, Dictionary<string, Dictionary<string, string>> declaradas, EnvelopeReidratado envelope) => new(
+        fato.FatoCodigo,
+        fato.Rotulo,
+        fato.Descricao,
+        TiposDeItem.De(fato.TipoRenderizacao),
+        ComponentesDeItem.De(
+            fato.ComponenteExibicao,
+            EhCpf(fato.FatoCodigo, fato.Formato),
+            Classificacao(fato.ClassificacaoProtecao) == ClassificacaoDeProtecao.Identificador),
+        Classificacao(fato.ClassificacaoProtecao),
+        string.IsNullOrWhiteSpace(fato.HipoteseLegal) ? null : fato.HipoteseLegal,
+        fato.EtapaCodigo,
+        fato.Ordem,
+        fato.OrigemValores == OrigemValoresColeta.UnidadesFederativas ? NomesDasUfs() : Opcoes(fato.FatoCodigo, declaradas, envelope),
+        EhCpf(fato.FatoCodigo, fato.Formato));
+
+    private static Dictionary<string, FatoDoProcesso> ColetadosForaDeGrupo(
+        EnvelopeReidratado envelope, Dictionary<string, Dictionary<string, string>> declaradas) =>
+        envelope.Grafo.FatosColetados
+            .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao && f.GrupoColetadoId is null)
             .GroupBy(static f => f.FatoCodigo, StringComparer.Ordinal)
-            .ToDictionary(static g => g.Key, g => Coletado(g.First()), StringComparer.Ordinal);
+            .ToDictionary(static g => g.Key, g => Coletado(g.First(), declaradas, envelope), StringComparer.Ordinal);
 
-        List<GrupoDoProcesso> grupos =
-        [
-            .. envelope.Grafo.GruposColetados
-                .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
-                .Select(g => new GrupoDoProcesso(
-                    g.Codigo, g.Rotulo, g.EtapaCodigo, g.Ordem,
-                    g.Subitens.GroupBy(static s => s.FatoCodigo, StringComparer.Ordinal)
-                        .ToDictionary(static s => s.Key, s => Coletado(s.First()), StringComparer.Ordinal))),
-        ];
+    private static List<GrupoDoProcesso> GruposDaInscricao(
+        EnvelopeReidratado envelope, Dictionary<string, Dictionary<string, string>> declaradas) =>
+    [
+        .. envelope.Grafo.GruposColetados
+            .Where(static g => g.Finalidade == FinalidadeFormulario.Inscricao)
+            .Select(g => new GrupoDoProcesso(
+                g.Codigo, g.Rotulo, g.EtapaCodigo, g.Ordem,
+                g.Subitens.GroupBy(static s => s.FatoCodigo, StringComparer.Ordinal)
+                    .ToDictionary(static s => s.Key, s => Coletado(s.First(), declaradas, envelope), StringComparer.Ordinal),
+                g.IncluiCandidato)),
+    ];
 
-        Dictionary<string, FatoDoProcesso> derivados = envelope.FatosDerivadosCongelados.ToDictionary(
-            static d => d.Key,
-            d => Derivado(d.Value, envelope),
-            StringComparer.Ordinal);
-
-        Dictionary<string, string> titulos = envelope.Grafo.Formularios
+    private static Dictionary<string, string> TitulosDasEtapas(EnvelopeReidratado envelope) =>
+        envelope.Grafo.Formularios
             .Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)
             .SelectMany(static f => f.Etapas)
             .ToDictionary(static e => e.Codigo, static e => e.Titulo, StringComparer.Ordinal);
-
-        return new FatosDaVersao(coletados, grupos, derivados, titulos);
-    }
 
     /// <summary>
     /// Os campos identificadores de código <paramref name="fatoCodigo"/>: com <paramref name="emGrupo"/>, um por grupo
@@ -158,8 +168,14 @@ internal sealed record FatosDaVersao(
             string.IsNullOrWhiteSpace(derivado.HipoteseLegal) ? null : derivado.HipoteseLegal,
             Secao: null,
             Ordem: 0,
-            DescricoesDoDominio(derivado.Codigo, envelope),
+            OpcoesDoDerivado(derivado.Codigo, envelope),
             EhCpf: false);
+
+    /// <summary>A UF de residência sai pelo nome, como a UF coletada; os demais derivados, pelo vocabulário que a versão congelou.</summary>
+    private static Dictionary<string, string> OpcoesDoDerivado(string codigo, EnvelopeReidratado envelope) =>
+        string.Equals(codigo, DerivadosDoSistemaInscricao.UfDeResidencia, StringComparison.Ordinal)
+            ? NomesDasUfs()
+            : DescricoesDoDominio(codigo, envelope);
 
     /// <summary>
     /// O rótulo de cada UF, pela lista fixa do Kernel e não pelo que a versão congelou: a UF sai sempre pelo nome, venha o

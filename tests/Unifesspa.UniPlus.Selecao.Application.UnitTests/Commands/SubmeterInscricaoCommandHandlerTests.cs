@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -52,7 +53,25 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         return contexto;
     }
 
-    private static Task<Result<ComprovanteInscricaoDto>> SubmeterAsync(
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Inscricao, ComprovanteInscricao> Emitidos = [];
+
+    /// <summary>O comprovante que o envio gravou para a inscrição: o recibo não o repete, quem o lê é a consulta.</summary>
+    private static ComprovanteInscricao Emitido(Inscricao inscricao) =>
+        Emitidos.TryGetValue(inscricao, out ComprovanteInscricao? comprovante) ? comprovante : throw new InvalidOperationException("O envio não gravou comprovante.");
+
+    private static void Guardar(Inscricao inscricao, IInscricaoRepository repositorio)
+    {
+        ComprovanteInscricao? gravado = repositorio.ReceivedCalls()
+            .Where(static c => c.GetMethodInfo().Name == nameof(IInscricaoRepository.AdicionarComprovanteAsync))
+            .Select(static c => (ComprovanteInscricao)c.GetArguments()[0]!)
+            .LastOrDefault();
+        if (gravado is not null)
+        {
+            Emitidos.AddOrUpdate(inscricao, gravado);
+        }
+    }
+
+    private static Task<Result<ReciboDaInscricaoDto>> SubmeterAsync(
         SubmeterInscricaoCommand command,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -133,7 +152,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
             Substitute.For<ISelecaoUnitOfWork>(), userContext);
@@ -150,7 +169,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
             Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
@@ -169,7 +188,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
             unitOfWork, UsuarioComCpf(cpf, sub: "sub-outro"));
@@ -197,7 +216,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
@@ -221,7 +240,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
         IGeradorDeNumeroInscricao gerador = GeradorQueDevolve("00000001");
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
             geradorDeNumeroInscricao: gerador, relogio: new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)));
@@ -250,7 +269,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo),
             divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo.AddDays(30)));
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([DivulgacaoDeTeste.ETagDepoisDeAdotar(existente, divulgada)])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
             geradorDeNumeroInscricao: GeradorQueDevolve("00000007"), relogio: new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)));
@@ -329,11 +348,11 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             ofertaB, null, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
             Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
 
-        Result<ComprovanteInscricaoDto> daOfertaA = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, existente, ofertaA);
+        Result<ReciboDaInscricaoDto> daOfertaA = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, existente, ofertaA);
 
         daOfertaA.IsSuccess.Should().BeTrue(daOfertaA.Error?.Message);
-        daOfertaA.Value!.OfertaCursoId.Should().Be(ofertaA);
-        daOfertaA.Value!.Modalidades!.Select(static m => m.Codigo).Should().Equal(
+        Emitido(existente).OfertaCursoId.Should().Be(ofertaA);
+        Emitido(existente).Modalidades!.Select(static m => m.Codigo).Should().Equal(
             ["AC"], "a modalidade que só a oferta B tem não vale para quem enviou na oferta A");
     }
 
@@ -347,10 +366,11 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
 
-        Result<ComprovanteInscricaoDto> daOfertaB = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, NovaInscricao(cpf, "sub-1", versao.Id), ofertaB);
+        Inscricao inscricao = NovaInscricao(cpf, "sub-1", versao.Id);
+        Result<ReciboDaInscricaoDto> daOfertaB = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, ofertaB);
 
         daOfertaB.IsSuccess.Should().BeTrue(daOfertaB.Error?.Message);
-        daOfertaB.Value!.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
+        Emitido(inscricao).Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
     }
 
     [Fact(DisplayName = "O envio com 1ª e 2ª opção concorre às modalidades da distribuição de cada oferta, na versão que declara duas opções")]
@@ -364,14 +384,15 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             OfertasDeTeste.ComDistribuicao(grafoBase, OfertasDeTeste.Distribuicao(direito, "AC", "AC_FEM"), OfertasDeTeste.Distribuicao(computacao, "AC")),
             numeroDeOpcoesDeCurso: 2);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterNaOfertaAsync(
-            cpf, versao, grafo, termo, NovaInscricao(cpf, "sub-1", versao.Id), direito, computacao);
+        Inscricao inscricao = NovaInscricao(cpf, "sub-1", versao.Id);
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, direito, computacao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.OfertaCursoId.Should().Be(direito);
-        resultado.Value.OfertaCursoSegundaOpcaoId.Should().Be(computacao);
-        resultado.Value.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
-        resultado.Value.ModalidadesSegundaOpcao!.Select(static m => m.Codigo).Should().Equal("AC");
+        ComprovanteInscricao comprovante = Emitido(inscricao);
+        comprovante.OfertaCursoId.Should().Be(direito);
+        comprovante.OfertaCursoSegundaOpcaoId.Should().Be(computacao);
+        comprovante.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "AC_FEM");
+        comprovante.ModalidadesSegundaOpcao!.Select(static m => m.Codigo).Should().Equal("AC");
     }
 
     [Fact(DisplayName = "A 2ª opção é recusada quando a versão que a inscrição fixou declara uma opção só")]
@@ -384,14 +405,14 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(direito, "AC"), OfertasDeTeste.Distribuicao(computacao, "AC"));
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterNaOfertaAsync(
-            cpf, versao, grafo, termo, NovaInscricao(cpf, "sub-1", versao.Id), direito, computacao);
+        Inscricao inscricao = NovaInscricao(cpf, "sub-1", versao.Id);
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, direito, computacao);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
             e => e.Field == "ofertaCursoSegundaOpcaoId" && e.Error.Code == InscricaoErrorCodes.SegundaOpcaoNaoAdmitida);
     }
 
-    private static async Task<Result<ComprovanteInscricaoDto>> SubmeterNaOfertaAsync(
+    private static async Task<Result<ReciboDaInscricaoDto>> SubmeterNaOfertaAsync(
         Cpf cpf, VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo, Inscricao inscricao, Guid ofertaEnviada,
         Guid? segundaOpcaoEnviada = null)
     {
@@ -407,9 +428,11 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             OfertaCursoId = ofertaEnviada,
             OfertaCursoSegundaOpcaoId = segundaOpcaoEnviada,
         };
-        return await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([inscricao.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+        Guardar(inscricao, inscricaoRepository);
+        return resultado;
     }
 
     [Fact(DisplayName = "O envio recusa o documento obrigatório sem arquivo; com o arquivo confirmado submete, fixa o que conta e agenda a limpeza do que não se aplica")]
@@ -428,7 +451,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             return ([laudo, naoSeAplica], [NoExigencia.CriarFolha(laudo, 0).Value!, NoExigencia.CriarFolha(naoSeAplica, 1).Value!]);
         });
 
-        async Task<(Result<ComprovanteInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao)> EnviarAsync(bool comLaudo, bool semApelido = false, bool laudoEmVerificacao = false)
+        async Task<(Result<ReciboDaInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao, Inscricao Inscricao)> EnviarAsync(bool comLaudo, bool semApelido = false, bool laudoEmVerificacao = false)
         {
             Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
             IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
@@ -465,32 +488,33 @@ public sealed class SubmeterInscricaoCommandHandlerTests
                 request = request with { Respostas = request.Respostas!.Where(static r => r.Key != "APELIDO").ToDictionary(static r => r.Key, static r => r.Value) };
             }
 
-            Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+            Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
                 new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
                 inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), documentoRepository: documentos);
-            return (resultado, documentos, fixado, orfao);
+            Guardar(existente, inscricaoRepository);
+            return (resultado, documentos, fixado, orfao, existente);
         }
 
-        (Result<ComprovanteInscricaoDto> semArquivo, IDocumentoDaInscricaoRepository repoSem, _, _) = await EnviarAsync(comLaudo: false);
+        (Result<ReciboDaInscricaoDto> semArquivo, IDocumentoDaInscricaoRepository repoSem, _, _, _) = await EnviarAsync(comLaudo: false);
         semArquivo.IsFailure.Should().BeTrue();
         semArquivo.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.DocumentoObrigatorioAusente);
         await repoSem.DidNotReceiveWithAnyArgs().RemoverArquivoAsync(default!, default);
 
-        (Result<ComprovanteInscricaoDto> emVerificacao, _, _, _) = await EnviarAsync(comLaudo: false, laudoEmVerificacao: true);
+        (Result<ReciboDaInscricaoDto> emVerificacao, _, _, _, _) = await EnviarAsync(comLaudo: false, laudoEmVerificacao: true);
         emVerificacao.Errors.Should().ContainSingle(e => e.Error.Code == InscricaoErrorCodes.DocumentoObrigatorioEmVerificacao)
             .Which.Error.Message.Should().Be("Aguarde a verificação completa dos documentos obrigatórios para enviar a inscrição.");
 
-        (Result<ComprovanteInscricaoDto> semTudo, _, _, _) = await EnviarAsync(comLaudo: false, semApelido: true);
+        (Result<ReciboDaInscricaoDto> semTudo, _, _, _, _) = await EnviarAsync(comLaudo: false, semApelido: true);
         semTudo.Errors.Select(static e => e.Error.Code).Should().Contain(InscricaoErrorCodes.DocumentoObrigatorioAusente)
             .And.Contain(c => c != InscricaoErrorCodes.DocumentoObrigatorioAusente, "a falta do documento sai junto das recusas do formulário");
 
-        (Result<ComprovanteInscricaoDto> comArquivo, IDocumentoDaInscricaoRepository repo, ArquivoDaApresentacao fixado, ArquivoDaApresentacao orfao) = await EnviarAsync(comLaudo: true);
+        (Result<ReciboDaInscricaoDto> comArquivo, IDocumentoDaInscricaoRepository repo, ArquivoDaApresentacao fixado, ArquivoDaApresentacao orfao, Inscricao enviada) = await EnviarAsync(comLaudo: true);
         comArquivo.IsSuccess.Should().BeTrue(comArquivo.Error?.Message);
         fixado.ConstouDeEnvio.Should().BeTrue();
-        DocumentoDoComprovanteDto noComprovante = comArquivo.Value!.Documentos.Should().ContainSingle("a exigência que não se aplica não consta do comprovante").Subject;
+        DocumentoDoComprovante noComprovante = Emitido(enviada).Documentos.Should().ContainSingle("a exigência que não se aplica não consta do comprovante").Subject;
         noComprovante.Nome.Should().Be("Laudo");
         noComprovante.Situacao.Should().Be(SituacaoDoDocumentoCodigo.Satisfeita);
-        noComprovante.Arquivos.Should().Equal(new ArquivoDoComprovanteDto(new string('a', 64), 1024, "PDF"));
+        noComprovante.Arquivos.Should().Equal(new ArquivoDoComprovante(new string('a', 64), 1024, "PDF"));
         await repo.Received(1).RemoverArquivoAsync(orfao, Arg.Any<CancellationToken>());
         await repo.Received(1).AgendarLimpezaAsync(orfao.ChaveDefinitivaPrevista, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
     }
@@ -513,17 +537,21 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
         IGeradorDeNumeroInscricao gerador = GeradorQueDevolve("00000042");
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), geradorDeNumeroInscricao: gerador);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.NumeroInscricao.Should().Be("00000042");
-        resultado.Value!.CpfMascarado.Should().Be(cpf.Mascarado);
-        resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
-        resultado.Value!.Respostas["IDENTIDADE_GENERO"].GetString().Should().Be("PREFIRO_NAO_INFORMAR", "'Prefiro não informar' é resposta válida e volta ao titular no comprovante");
-        resultado.Value!.Respostas["ORIENTACAO_SEXUAL"].GetString().Should().Be("PREFIRO_NAO_INFORMAR");
-        HashCanonicalComputer.IsValidHashShape(resultado.Value!.HashIntegridade).Should().BeTrue();
+        resultado.Value!.InscricaoId.Should().Be(existente.Id);
+        resultado.Value!.NumeroDoComprovante.Should().Be(1);
+        Guardar(existente, inscricaoRepository);
+        ComprovanteInscricao emitido = Emitido(existente);
+        resultado.Value!.Instante.Should().Be(emitido.Instante);
+        emitido.TodasAsRespostas().Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
+        emitido.TodasAsRespostas()["IDENTIDADE_GENERO"].GetString().Should().Be("PREFIRO_NAO_INFORMAR", "'Prefiro não informar' é resposta válida e volta ao titular no comprovante");
+        emitido.TodasAsRespostas()["ORIENTACAO_SEXUAL"].GetString().Should().Be("PREFIRO_NAO_INFORMAR");
+        HashCanonicalComputer.IsValidHashShape(emitido.HashIntegridade).Should().BeTrue();
         await inscricaoRepository.Received(1).AtualizarAsync(existente, Arg.Any<CancellationToken>());
         await inscricaoRepository.Received(1).AdicionarComprovanteAsync(Arg.Any<ComprovanteInscricao>(), Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -553,7 +581,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), geradorDeNumeroInscricao: gerador);
 
@@ -585,7 +613,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
         InscricaoRequest request = new(null, respostas, null, null);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
@@ -602,7 +630,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "sem cobertura")));
 
-        (Result<ComprovanteInscricaoDto> resultado, ISelecaoUnitOfWork unitOfWork) = await SubmeterComEnderecoAsync(geo);
+        (Result<ReciboDaInscricaoDto> resultado, ISelecaoUnitOfWork unitOfWork) = await SubmeterComEnderecoAsync(geo);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoEncontrado);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -615,7 +643,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<CepResolvido>.Success(new CepResolvido("1501402", "Marabá", "PA", "cep-geral")));
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
 
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
             [InscricaoErrorCodes.EnderecoLogradouroObrigatorio, InscricaoErrorCodes.EnderecoBairroObrigatorio]);
@@ -628,7 +656,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel, "fora do ar")));
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo);
 
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
     }
@@ -640,13 +668,13 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         geo.ConferirMunicipioAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<string>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente, "UF divergente")));
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo, cep: null);
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComEnderecoAsync(geo, cep: null);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoSemCep);
         resultado.Errors.Should().NotContain(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente);
     }
 
-    private static async Task<(Result<ComprovanteInscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
+    private static async Task<(Result<ReciboDaInscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
@@ -665,7 +693,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep, cidade = new { codigoIbge = "1501402", uf = "PA" } });
         InscricaoRequest request = new(OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf), geo);
         return (resultado, unitOfWork);
@@ -703,7 +731,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             OfertaDo(grafo), respostas, null, [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
@@ -742,12 +770,13 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             OfertaDo(grafo), new Dictionary<string, JsonElement>(StringComparer.Ordinal), null,
             [new AceiteDeTermoInput("TERMO_VERACIDADE", termo.VersaoId, termo.Hash)]);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
+        Guardar(existente, inscricaoRepository);
+        Emitido(existente).Respostas.Should().ContainKey("APELIDO").WhoseValue.GetString().Should().Be("Nanda");
     }
 
     /// <summary>Um booleano que, respondido "não", esconde o que depende dele.</summary>
@@ -760,7 +789,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         [CondicaoPrecondicaoFato.Criar(0, pergunta, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
         classificacaoProtecao: "SENSIVEL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-    private static async Task<(Result<ComprovanteInscricaoDto> Resultado, Inscricao Inscricao)> SubmeterComAsync(
+    private static async Task<(Result<ReciboDaInscricaoDto> Resultado, Inscricao Inscricao)> SubmeterComAsync(
         IReadOnlyList<FatoColetado> itens,
         IReadOnlyList<GrupoColetado>? grupos,
         IReadOnlyDictionary<string, JsonElement> respostas,
@@ -792,9 +821,10 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             todas[fato] = valor;
         }
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, comApelido with { Respostas = todas, Grupos = respostasDosGrupos }, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf, nomeSocial: nomeSocialDaConta), geo);
+        Guardar(existente, inscricaoRepository);
         return (resultado, existente);
     }
 
@@ -808,7 +838,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Sem nenhuma modalidade aplicável, o envio é recusado no campo de que ela depende, sem gravar nada")]
     public async Task Handle_NenhumaModalidade_RecusaNoCampoQueADecide()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [Pergunta("CONCORRER_PCD", 1)], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false) },
             ajustar: AmplaSoComDeficiencia);
@@ -822,7 +852,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com o Geo fora do ar, a modalidade decidida em que o candidato não concorre a nenhuma segue como recusa 422")]
     public async Task Handle_NenhumaModalidadeComGeoForaDoAr_Recusa422()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [Pergunta("CONCORRER_PCD", 1)], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false) },
             ajustar: AmplaSoComDeficiencia, geo: GeoQueConhece().Indisponivel());
@@ -833,7 +863,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com o Geo fora do ar, a modalidade que deriva da residência e fica sem decidir não é recusa: o envio devolve indisponível")]
     public async Task Handle_ModalidadeQueDependeDaResidenciaComGeoForaDoAr_Recusa503()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [], grupos: null, Texto(),
             ajustar: processo => processo.DefinirDistribuicaoVagas(
                 [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
@@ -848,13 +878,13 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com a modalidade aplicável, o envio a grava como derivada e o comprovante a traz com o nome congelado")]
     public async Task Handle_ComModalidade_GravaEComprova()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [Pergunta("CONCORRER_PCD", 1)], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true) },
             ajustar: AmplaSoComDeficiencia);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Modalidades.Should().Equal(new ModalidadeDaInscricaoDto("AC", "AC", 0));
+        Emitido(inscricao).Modalidades.Should().Equal(new ModalidadeDeConcorrencia("AC", "AC", 0));
         inscricao.Derivados["MODALIDADE"].EnumerateArray().Select(static v => v.GetString()).Should().Equal("AC");
         inscricao.Comprovantes.Should().ContainSingle().Which.IntegridadeConfere().Should().BeTrue();
     }
@@ -862,7 +892,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "A modalidade enviada pelo candidato é recusada e nunca gravada")]
     public async Task Handle_ModalidadeEnviadaPeloCandidato_Recusa()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [Pergunta("CONCORRER_PCD", 1)], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
@@ -883,7 +913,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             Guid.CreateVersion7(), Guid.CreateVersion7(), "Termo da isenção", "Declaro a renda informada.",
             "Lei 12.799/2013", "ACEITE_EXPLICITO", new string('d', 64));
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], grupos: null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             ajustar: processo =>
             {
@@ -905,7 +935,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "A resposta ao item que outra resposta esconde é descartada no envio: não fica gravada nem sai no comprovante, e o envio passa")]
     public async Task Handle_RespostaDeItemOculto_EDescartadaSemRecusar()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [Pergunta("PRECISA_ATENDIMENTO", 1), SoComSim("CONDICAO_DESCRITA", 2, "PRECISA_ATENDIMENTO")],
             grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
@@ -915,14 +945,14 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
+        Emitido(inscricao).TodasAsRespostas().Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
         inscricao.Respostas.Should().NotContainKey("CONDICAO_DESCRITA", "a inscrição enviada guarda só o que se aplica");
     }
 
     [Fact(DisplayName = "Com sim e a conta sem nome social, o envio recusa o campo só com a orientação do Meu perfil, no lugar da obrigatoriedade genérica")]
     public async Task Handle_SimSemNomeSocialNaConta_RecusaComOrientacaoAntesDaObrigatoriedade()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DESEJA_NOME_SOCIAL"] = JsonSerializer.SerializeToElement(true) });
 
@@ -934,7 +964,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com sim e o nome social da conta, o envio passa e grava o nome social")]
     public async Task Handle_SimComNomeSocialDaConta_Aceita()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
@@ -950,7 +980,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com não, o envio passa e não grava o nome social, ainda que a conta tenha um")]
     public async Task Handle_NaoDesejaNomeSocial_NaoGravaNomeSocial()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [], grupos: null,
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
@@ -961,7 +991,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         inscricao.Respostas.Should().NotContainKey("NOME_SOCIAL");
-        resultado.Value!.Respostas.Should().NotContainKey("NOME_SOCIAL");
+        Emitido(inscricao).TodasAsRespostas().Should().NotContainKey("NOME_SOCIAL");
     }
 
     [Fact(DisplayName = "O grupo que outra resposta esconde é descartado inteiro no envio")]
@@ -974,17 +1004,17 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             [FatoColetado.Criar("NOME_DEPENDENTE", 0, "Nome", TipoRenderizacao.Texto, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             FinalidadeFormulario.Inscricao).Value!;
 
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [Pergunta("TEM_DEPENDENTES", 1)],
             [dependentes],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["TEM_DEPENDENTES"] = JsonSerializer.SerializeToElement(false) },
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
             {
-                ["DEPENDENTES"] = [new("dependente-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["NOME_DEPENDENTE"] = JsonSerializer.SerializeToElement("Ana Drumond") })],
+                ["DEPENDENTES"] = [new("dependente-1", new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["NOME_DEPENDENTE"] = JsonSerializer.SerializeToElement(PersonasDeTeste.Candidatas[2].Nome) })],
             });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Grupos.Should().NotContainKey("DEPENDENTES");
+        Emitido(inscricao).Grupos.Should().NotContainKey("DEPENDENTES");
         inscricao.Grupos.Should().NotContainKey("DEPENDENTES");
     }
 
@@ -997,7 +1027,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             [Pergunta("MEMBRO_TEM_RENDA", 0), SoComSim("RENDA_DO_MEMBRO", 1, "MEMBRO_TEM_RENDA")],
             FinalidadeFormulario.Inscricao).Value!;
 
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [],
             [composicao],
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
@@ -1011,7 +1041,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().ContainKey("MEMBRO_TEM_RENDA").And.NotContainKey("RENDA_DO_MEMBRO");
+        Emitido(inscricao).Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().ContainKey("MEMBRO_TEM_RENDA").And.NotContainKey("RENDA_DO_MEMBRO");
         inscricao.Grupos["COMPOSICAO_FAMILIAR"].Single().Respostas.Should().NotContainKey("RENDA_DO_MEMBRO");
     }
 
@@ -1034,7 +1064,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf));
 
@@ -1072,7 +1102,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
 
         // 23:59:59,9 de 15/01 em Belém; cada leitura seguinte do relógio já cai em 16/01.
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-16"), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, unitOfWork, UsuarioComCpf(cpf),
             relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200)));
@@ -1095,7 +1125,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        Result<ComprovanteInscricaoDto> resultado = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-15"), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
             relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200)));
@@ -1117,13 +1147,13 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        Result<ComprovanteInscricaoDto> envio = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> envio = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-15"), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
             relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero)));
         envio.IsSuccess.Should().BeTrue(envio.Error?.Message);
 
-        Result<ComprovanteInscricaoDto> correcao = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> correcao = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-16"), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
             relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 16, 12, 0, 0, TimeSpan.Zero)));
@@ -1155,14 +1185,14 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Dictionary<string, JsonElement> respostas = Texto();
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = "66010000", cidade = new { codigoIbge = Belem, nome = "BELEM-PA", uf = "PA" } });
 
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([], null, respostas, geo: GeoQueConhece());
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([], null, respostas, geo: GeoQueConhece());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         string esperado = ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText();
         inscricao.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(esperado);
         inscricao.Derivados["MUNICIPIO_RESIDENCIA"].GetRawText().Should().Be(esperado);
         inscricao.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cidade").GetProperty("nome").GetString().Should().Be("Belém");
-        resultado.Value!.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(esperado);
+        Emitido(inscricao).TodasAsRespostas()["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(esperado);
     }
 
     [Fact(DisplayName = "O município subitem de grupo também fica gravado com o nome do Geo")]
@@ -1170,7 +1200,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         GrupoColetado locais = GrupoMunicipal();
 
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [], [locais], Texto(), OcorrenciaMunicipal(Belem), geo: GeoQueConhece());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -1180,7 +1210,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "O município de outra UF dentro de grupo é recusado no caminho do subitem, com uma recusa só")]
     public async Task Handle_MunicipioEmGrupoDeOutraUf_RecusaNoSubitem()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], [GrupoMunicipal()], Texto(), OcorrenciaMunicipal(Salvador), geo: GeoQueConhece().ComMunicipio(Salvador, "BA", "Salvador"));
 
         resultado.Errors.Where(e => e.Field == "LOCAIS.local-1.LOCAL_MUNICIPIO").Should().ContainSingle()
@@ -1201,7 +1231,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "O município que o Geo não conhece é recusado no campo com município não encontrado")]
     public async Task Handle_MunicipioInexistente_RecusaNoCampo()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], null, Texto(("NATURALIDADE_MUNICIPIO", "1599999")), geo: GeoQueConhece());
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "NATURALIDADE_MUNICIPIO")
@@ -1211,7 +1241,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "O município de outra UF é recusado no campo com município divergente, no lugar da recusa genérica da restrição")]
     public async Task Handle_MunicipioDeOutraUf_RecusaSoComADoGeo()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], null, Texto(("NATURALIDADE_MUNICIPIO", Salvador)), geo: GeoQueConhece().ComMunicipio(Salvador, "BA", "Salvador"));
 
         resultado.Errors.Where(e => e.Field == "NATURALIDADE_MUNICIPIO").Should().ContainSingle()
@@ -1225,7 +1255,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = Belem, uf = "PA" } });
         respostas.Remove("NOME_MAE");
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], null, respostas, geo: GeoQueConhece().ComMunicipio(Salvador, "BA", "Salvador"));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Contain(
@@ -1242,7 +1272,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Dictionary<string, JsonElement> respostas = Texto();
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = (string?)null, cidade = new { codigoIbge = Belem, uf = "PA" } });
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync([], null, respostas, geo: GeoQueConhece().Indisponivel());
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync([], null, respostas, geo: GeoQueConhece().Indisponivel());
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoSemCep);
         resultado.Error?.Code.Should().NotBe(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -1251,7 +1281,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com o Geo fora do ar e nenhuma outra recusa, o envio inteiro é recusado como indisponível e nada é gravado")]
     public async Task Handle_GeoForaDoArSemOutraRecusa_Recusa503()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([], null, Texto(), geo: GeoQueConhece().Indisponivel());
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([], null, Texto(), geo: GeoQueConhece().Indisponivel());
 
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
         inscricao.EhRascunho.Should().BeTrue();
@@ -1267,7 +1297,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         geo.ConferirCepAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<string>.Success("Belém"));
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Result<CepResolvido>.Success(new CepResolvido(Belem, "Belém", "PA", "logradouro")));
 
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [], null, respostas, geo: geo, remover: ["RG_NUMERO", "RG_ORGAO_EMISSOR", "RG_UF", "RG_DATA_EMISSAO"]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -1285,7 +1315,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         respostas["ENDERECO_RESIDENCIAL"] = JsonSerializer.SerializeToElement(new { cep = "66010000", cidade = new { nome = "SSA" } });
         respostas["ENDERECO_COMERCIAL"] = JsonSerializer.SerializeToElement(new { cep = "66010000", cidade = new { codigoIbge = Belem, nome = "BEL", uf = "PA" } });
 
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([comercial], null, respostas, geo: GeoQueConhece());
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync([comercial], null, respostas, geo: GeoQueConhece());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         foreach (string endereco in new[] { "ENDERECO_RESIDENCIAL", "ENDERECO_COMERCIAL" })
@@ -1301,7 +1331,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Com o Geo fora do ar, o CPF de outra pessoa é recusado como 422 e não vira indisponibilidade")]
     public async Task Handle_GeoForaDoArComCpfDeOutraPessoa_Recusa422()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], null, Texto(("CPF", PersonasDeTeste.KevinCarvalho.Valor)), geo: GeoQueConhece().Indisponivel());
 
         resultado.Errors.Should().Contain(e => e.Field == "CPF" && e.Error.Code == InscricaoErrorCodes.CpfDiferenteDoDono);
@@ -1310,7 +1340,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "As recusas do agregado, como o CPF de outra pessoa, saem junto das demais na resposta única")]
     public async Task Handle_CpfDeOutraPessoaComOutraRecusa_SaemJuntas()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], null, Texto(("CPF", PersonasDeTeste.KevinCarvalho.Valor), ("NATURALIDADE_MUNICIPIO", Salvador)),
             geo: GeoQueConhece().ComMunicipio(Salvador, "BA", "Salvador"));
 
@@ -1324,7 +1354,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Grupo com ocorrências de id repetido é recusado na forma, sem chegar à avaliação nem à conferência dos municípios")]
     public async Task Handle_GrupoComIdRepetido_RecusaSemExcecao()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [], [GrupoMunicipal()], Texto(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal)
             {
@@ -1345,7 +1375,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Obrigatoriedade que depende da residência com o Geo fora do ar: o envio é recusado como indisponível, e não como campo obrigatório")]
     public async Task Handle_ObrigatoriedadeDependenteDaResidenciaComGeoForaDoAr_Recusa503()
     {
-        (Result<ComprovanteInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, Inscricao inscricao) = await SubmeterComAsync(
             [ObrigatorioSoParaQuemMoraEm("9999999")], null, Texto(), geo: GeoQueConhece().Indisponivel());
 
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
@@ -1355,7 +1385,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     [Fact(DisplayName = "Campo obrigatório em definitivo e vazio, com o Geo fora do ar, é recusa que conta: 422 com a recusa do campo")]
     public async Task Handle_ObrigatorioEmDefinitivoVazioComGeoForaDoAr_Recusa422()
     {
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync(
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(
             [ObrigatorioSoParaQuemMoraEm("9999999")], null, Texto(), geo: GeoQueConhece().Indisponivel(), remover: ["NOME_MAE"]);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "NOME_MAE" && e.Error.Code == InscricaoErrorCodes.ItemObrigatorioAusente);
@@ -1370,7 +1400,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao,
             restricoes: [new MunicipiosDaUf("UF_RESIDENCIA")]).Value!;
 
-        (Result<ComprovanteInscricaoDto> resultado, _) = await SubmeterComAsync([doEstado], null, Texto(), geo: GeoQueConhece().Indisponivel());
+        (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync([doEstado], null, Texto(), geo: GeoQueConhece().Indisponivel());
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "LOCAL_NO_ESTADO" && e.Error.Code == InscricaoErrorCodes.ItemObrigatorioAusente);
     }
@@ -1402,7 +1432,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             },
         };
 
-        Result<ComprovanteInscricaoDto> enviada = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> enviada = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, pedido, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece());
 
@@ -1443,7 +1473,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        Result<ComprovanteInscricaoDto> enviada = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> enviada = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece());
         enviada.IsSuccess.Should().BeTrue(enviada.Error?.Message);
@@ -1530,7 +1560,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         };
         FakeConferenciaEnderecoGeo geo = GeoQueConhece();
 
-        Result<ComprovanteInscricaoDto> corrigida = await SubmeterAsync(
+        Result<ReciboDaInscricaoDto> corrigida = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, correcao, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), geo);
 

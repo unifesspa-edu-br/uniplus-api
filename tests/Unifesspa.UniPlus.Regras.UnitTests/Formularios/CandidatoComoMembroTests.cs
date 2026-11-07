@@ -40,6 +40,17 @@ public sealed class CandidatoComoMembroTests
         erros.Should().AllSatisfy(static e => e.Error.Code.Should().Be(GrupoFormularioErrorCodes.CandidatoComoMembroIncompleto));
     }
 
+    [Theory(DisplayName = "A ocorrência é do candidato só quando o parentesco é o próprio candidato")]
+    [InlineData("PROPRIO_CANDIDATO", true)]
+    [InlineData("MAE", false)]
+    public void EhDoCandidato_PeloParentesco(string parentesco, bool esperado)
+    {
+        Dictionary<string, System.Text.Json.JsonElement> respostas = new() { [Parentesco] = System.Text.Json.JsonSerializer.SerializeToElement(parentesco) };
+
+        CandidatoComoMembro.EhDoCandidato(respostas).Should().Be(esperado);
+        CandidatoComoMembro.EhDoCandidato(new Dictionary<string, System.Text.Json.JsonElement>()).Should().BeFalse("sem parentesco não há como saber");
+    }
+
     private static OpcoesPermitidas Opcoes(params string[] valores) => new([new OpcoesCondicionadas(null, valores)]);
 
     private sealed record Subitem(string FatoCodigo, bool TemExibicao, Obrigatoriedade Obrigatoriedade, IReadOnlyList<RestricaoValor> Restricoes);

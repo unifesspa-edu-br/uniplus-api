@@ -41,6 +41,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
     private readonly IUniPlusBlindIndexService _blindIndex;
     private readonly CalculadorDoIndiceCegoDoCpf _indiceDoCpf;
     private readonly TimeProvider _timeProvider;
+    private readonly SensiveisDoComprovante _sensiveis;
 
     public InscricaoRepository(
         SelecaoDbContext dbContext,
@@ -58,6 +59,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
         _blindIndex = blindIndex;
         _indiceDoCpf = new CalculadorDoIndiceCegoDoCpf(blindIndex);
         _timeProvider = timeProvider;
+        _sensiveis = new SensiveisDoComprovante(encryption, blindIndex);
     }
 
     public async Task<Inscricao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -291,53 +293,37 @@ public sealed class InscricaoRepository : IInscricaoRepository
         _dbContext.Inscricoes.Remove(record);
     }
 
-    public async Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
+    public async Task<ComprovanteNaPosicao?> ObterComprovanteAsync(
+        Guid inscricaoId, int numero, CancellationToken cancellationToken = default)
+    {
+        IQueryable<ComprovanteInscricao> daInscricao = _dbContext.ComprovantesInscricao.AsNoTracking().Where(c => c.InscricaoId == inscricaoId);
+        int total = await daInscricao.CountAsync(cancellationToken).ConfigureAwait(false);
+        if (numero < 1 || numero > total)
+        {
+            return null;
+        }
+
+        ComprovanteInscricao comprovante = await EmOrdemDeEmissao(daInscricao).Skip(numero - 1).Take(1)
+            .SingleAsync(cancellationToken).ConfigureAwait(false);
+        await _sensiveis.RestaurarAsync(comprovante, cancellationToken).ConfigureAwait(false);
+
+        return new ComprovanteNaPosicao(comprovante, numero, total);
+    }
+
+    public async Task<IReadOnlyList<EmissaoDoComprovante>> ObterEmissoesAsync(
         IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(inscricoes);
 
-        List<ComprovanteInscricao> comprovantes = await _dbContext.ComprovantesInscricao
-            .AsNoTracking()
-            .Where(c => inscricoes.Contains(c.InscricaoId))
-            // O número público do comprovante é a posição nesta lista: o Id (UUIDv7, gerado na
-            // emissão) desempata dois comprovantes do mesmo instante, e a ordem fica estável.
-            .OrderBy(static c => c.Instante)
-            .ThenBy(static c => c.Id)
+        return await EmOrdemDeEmissao(_dbContext.ComprovantesInscricao.AsNoTracking().Where(c => inscricoes.Contains(c.InscricaoId)))
+            .Select(static c => new EmissaoDoComprovante(c.InscricaoId, c.Instante))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-
-        foreach (ComprovanteInscricao comprovante in comprovantes.Where(static c => c.SensiveisCifrados is not null || c.SensiveisHmac is not null))
-        {
-            if (comprovante.SensiveisCifrados is null || comprovante.SensiveisHmac is null)
-            {
-                throw new InvalidOperationException($"O comprovante {comprovante.Id} tem só uma das colunas dos dados sensíveis: o envelope cifrado e o HMAC andam juntos.");
-            }
-
-            byte[] plano = await _encryption
-                .DecryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, comprovante.SensiveisCifrados!, cancellationToken)
-                .ConfigureAwait(false);
-
-            // O envelope cifrado é autêntico, mas nada o prende a este comprovante: o HMAC de id e valores,
-            // gravado ao lado, acusa o envelope copiado de outro comprovante (falha alto, como o CPF corrompido).
-            byte[] esperado = await HmacDosSensiveisAsync(comprovante.Id, plano, cancellationToken).ConfigureAwait(false);
-            if (comprovante.SensiveisHmac is not { } gravado || !CryptographicOperations.FixedTimeEquals(gravado, esperado))
-            {
-                throw new InvalidOperationException($"As respostas sensíveis do comprovante {comprovante.Id} não pertencem a ele: o vínculo não confere.");
-            }
-
-            comprovante.RestaurarSensiveis(
-                JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(plano)
-                ?? throw new InvalidOperationException($"As respostas sensíveis do comprovante {comprovante.Id} decifradas não são um objeto JSON."));
-
-            // Os fatos restaurados têm de ser os que o hash do comprovante cobre.
-            if (!comprovante.IntegridadeConfere())
-            {
-                throw new InvalidOperationException($"Os fatos sensíveis restaurados do comprovante {comprovante.Id} não são os que o hash dele cobre.");
-            }
-        }
-
-        return comprovantes;
     }
+
+    /// <summary>A ordem que dá o número público do comprovante: o instante da emissão e, no empate, o identificador.</summary>
+    private static IOrderedQueryable<ComprovanteInscricao> EmOrdemDeEmissao(IQueryable<ComprovanteInscricao> comprovantes) =>
+        comprovantes.OrderBy(static c => c.Instante).ThenBy(static c => c.Id);
 
     public async Task<bool> TentarAvancarRevisaoAsync(
         Guid id, int revisaoLida, bool apenasRascunho, CancellationToken cancellationToken = default)
@@ -358,25 +344,9 @@ public sealed class InscricaoRepository : IInscricaoRepository
     {
         ArgumentNullException.ThrowIfNull(comprovante);
 
-        if (comprovante.RespostasSensiveis.Count > 0)
-        {
-            byte[] plano = JsonSerializer.SerializeToUtf8Bytes(comprovante.RespostasSensiveis);
-            byte[] cifrados = await _encryption
-                .EncryptAsync(SelecaoEncryptionKeys.SensiveisAesGcm, plano, cancellationToken)
-                .ConfigureAwait(false);
-            comprovante.GuardarSensiveisCifrados(
-                cifrados, await HmacDosSensiveisAsync(comprovante.Id, plano, cancellationToken).ConfigureAwait(false));
-        }
-
+        await _sensiveis.GuardarAsync(comprovante, cancellationToken).ConfigureAwait(false);
         _dbContext.ComprovantesInscricao.Add(comprovante);
     }
-
-    /// <summary>O HMAC do id do comprovante e dos valores sensíveis, exatamente como foram cifrados.</summary>
-    private Task<byte[]> HmacDosSensiveisAsync(Guid comprovanteId, byte[] valores, CancellationToken cancellationToken) =>
-        _blindIndex.ComputarAsync(
-            SelecaoEncryptionKeys.SensiveisHmac,
-            (byte[])[.. Encoding.UTF8.GetBytes($"comprovante:{comprovanteId:D}:"), .. valores],
-            cancellationToken);
 
     /// <summary>A chave da categoria da resposta cifrada: documento ou dado sensível de cifra individual.</summary>
     private static string ChaveDaResposta(string fatoCodigo) =>

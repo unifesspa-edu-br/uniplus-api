@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Domain.ValueObjects;
 
 using DTOs;
+using DTOs.Comprovantes;
 
 using Kernel.Results;
 
@@ -14,4 +15,4 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// de submissão (issue #1859).
 /// </summary>
 public sealed record SubmeterInscricaoCommand(
-    Guid ProcessoSeletivoId, InscricaoRequest Request, PrecondicaoIfMatch Precondicao) : ICommand<Result<ComprovanteInscricaoDto>>;
+    Guid ProcessoSeletivoId, InscricaoRequest Request, PrecondicaoIfMatch Precondicao) : ICommand<Result<ReciboDaInscricaoDto>>;

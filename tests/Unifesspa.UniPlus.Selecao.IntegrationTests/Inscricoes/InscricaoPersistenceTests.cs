@@ -328,14 +328,12 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
 
-        Result<ComprovanteInscricaoDto> lido = await ObterComprovanteQueryHandler.Handle(
-            new ObterComprovanteQuery(processo, 1), leitura, dono, CancellationToken.None);
+        ComprovanteInscricao lido = (await leitura.ObterComprovanteAsync(original.Id, 1))!.Comprovante;
         Inscricao relida = (await leitura.ObterPorIdAsync(original.Id))!;
 
-        lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
-        lido.Value!.Respostas["IDENTIDADE_GENERO"].GetString().Should().Be("PESSOA_NAO_BINARIA");
-        lido.Value.Respostas["ORIENTACAO_SEXUAL"].GetString().Should().Be("BISSEXUAL");
-        lido.Value.Respostas["SEXO_CIVIL"].GetString().Should().Be("FEMININO");
+        lido.TodasAsRespostas()["IDENTIDADE_GENERO"].GetString().Should().Be("PESSOA_NAO_BINARIA");
+        lido.TodasAsRespostas()["ORIENTACAO_SEXUAL"].GetString().Should().Be("BISSEXUAL");
+        lido.TodasAsRespostas()["SEXO_CIVIL"].GetString().Should().Be("FEMININO");
         relida.Respostas["ORIENTACAO_SEXUAL"].GetString().Should().Be("BISSEXUAL");
         relida.DefinicoesDasRespostas["ORIENTACAO_SEXUAL"].Should().Match<DefinicaoDaResposta>(static d => d.CifraIndividual && !d.Identificador);
     }
@@ -697,14 +695,16 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
 
         await using SelecaoDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
-        Result<ComprovanteInscricaoDto> segundo = await ObterComprovanteQueryHandler.Handle(
-            new ObterComprovanteQuery(processo, 2), leitura, dono, CancellationToken.None);
-        Result<ComprovanteInscricaoDto> terceiro = await ObterComprovanteQueryHandler.Handle(
-            new ObterComprovanteQuery(processo, 3), leitura, dono, CancellationToken.None);
+        ComprovanteNaPosicao? segundo = await leitura.ObterComprovanteAsync(original.Id, 2);
+        ComprovanteNaPosicao? primeiro = await leitura.ObterComprovanteAsync(original.Id, 1);
 
-        segundo.IsSuccess.Should().BeTrue(segundo.Error?.Message);
-        segundo.Value!.HashIntegridade.Should().Be(hashDaCorrecao, "o 2 é a correção, emitida depois, mesmo gravada antes");
-        terceiro.Error!.Code.Should().Be("Inscricao.ComprovanteNaoEncontrado");
+        segundo!.Comprovante.HashIntegridade.Should().Be(hashDaCorrecao, "o 2 é a correção, emitida depois, mesmo gravada antes");
+        (segundo.Numero, segundo.Total, segundo.Vale).Should().Be((2, 2, true));
+        (primeiro!.NumeroSeguinte, primeiro.Vale).Should().Be((2, false));
+        (await leitura.ObterComprovanteAsync(original.Id, 3)).Should().BeNull();
+        (await leitura.ObterComprovanteAsync(original.Id, 0)).Should().BeNull("a numeração começa em 1");
+        (await leitura.ObterComprovanteAsync(original.Id, -1)).Should().BeNull();
+        (await leitura.ObterEmissoesAsync([original.Id])).Select(static e => e.Instante).Should().Equal(primeira, primeira.AddMinutes(5));
     }
 
     [Fact(DisplayName = "Os documentos do comprovante voltam do banco como foram emitidos e a integridade confere")]

@@ -111,95 +111,18 @@ public sealed record InscricaoDto(
 }
 
 /// <summary>
-/// O comprovante de uma submissão: cópia do que foi enviado, sem nenhum número de documento (§4.1
-/// do plano da #1855), com o hash de integridade (SHA-256 do conteúdo) para provar que não mudou.
-/// <see cref="Respostas"/> é o que o candidato informou; <see cref="Derivados"/>, o que o sistema
-/// calculou delas.
-/// O CPF do titular vem mascarado (issue #1860) — o comprovante nunca o devolve em claro, mesmo
-/// para o próprio dono.
-/// <see cref="FusoHorario"/> é a zona em que o <see cref="Instante"/> se lê: o comprovante se
-/// apresenta sem depender de o certame estar disponível.
-/// <see cref="Modalidades"/> são as modalidades em que o candidato concorre na 1ª opção, na ordem das
-/// ofertadas; nulas quando o processo não define pela inscrição as modalidades de concorrência.
-/// <see cref="OfertaCursoSegundaOpcaoId"/> e <see cref="ModalidadesSegundaOpcao"/> são a 2ª opção de curso
-/// e as modalidades em que o candidato concorre nela — a oferta tem a própria distribuição de vagas —,
-/// nulas quando a inscrição não declarou a 2ª opção.
-/// </summary>
-public sealed record ComprovanteInscricaoDto(
-    string CpfMascarado,
-    string NumeroInscricao,
-    DateTimeOffset Instante,
-    FusoHorarioDto FusoHorario,
-    string HashIntegridade,
-    Guid? OfertaCursoId,
-    Guid? OfertaCursoSegundaOpcaoId,
-    [property: Description("As respostas por código do fato. O município vem como objeto { \"codigo\", \"rotulo\" }, com o nome que o Geo conferiu no envio; a cidade do endereço conferido pelo CEP traz o nome do Geo.")]
-    IReadOnlyDictionary<string, JsonElement> Respostas,
-    [property: Description("O que o sistema calculou das respostas. O município de residência vem na mesma forma do município das respostas: { \"codigo\", \"rotulo\" } na inscrição enviada.")]
-    IReadOnlyDictionary<string, JsonElement> Derivados,
-    IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> Grupos,
-    IReadOnlyList<AceiteDeTermoInput> Aceites,
-    IReadOnlyList<DocumentoDoComprovanteDto> Documentos,
-    IReadOnlyList<ModalidadeDaInscricaoDto>? Modalidades,
-    IReadOnlyList<ModalidadeDaInscricaoDto>? ModalidadesSegundaOpcao)
-{
-    public static ComprovanteInscricaoDto De(ComprovanteInscricao comprovante, Cpf cpf)
-    {
-        ArgumentNullException.ThrowIfNull(comprovante);
-        ArgumentNullException.ThrowIfNull(cpf);
-
-        return new ComprovanteInscricaoDto(
-            cpf.Mascarado,
-            comprovante.NumeroInscricao,
-            comprovante.Instante,
-            FusoHorarioDto.Institucional,
-            comprovante.HashIntegridade,
-            comprovante.OfertaCursoId,
-            comprovante.OfertaCursoSegundaOpcaoId,
-            comprovante.Respostas.Concat(comprovante.RespostasSensiveis).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal),
-            comprovante.Derivados,
-            comprovante.Grupos.ToDictionary(
-                static g => g.Key,
-                g => (IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>)
-                    [.. g.Value.Select(static o => new OcorrenciaDeGrupoInscricaoInput(o.Id, o.Respostas))],
-                StringComparer.Ordinal),
-            [.. comprovante.Aceites.Select(static a => new AceiteDeTermoInput(a.Codigo, a.VersaoId, a.HashVersao))],
-            [.. comprovante.Documentos.Select(static d => new DocumentoDoComprovanteDto(
-                d.ExigenciaId, d.TipoDocumentoCodigo, d.Nome, d.Obrigatorio, d.Situacao, d.OcorrenciaId, d.Consequencia,
-                [.. d.Arquivos.Select(static a => new ArquivoDoComprovanteDto(a.HashSha256, a.TamanhoBytes, a.Formato))]))],
-            comprovante.Modalidades?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList(),
-            comprovante.ModalidadesSegundaOpcao?.Select(static m => new ModalidadeDaInscricaoDto(m.Codigo, m.Nome, m.Ordem)).ToList());
-    }
-}
-
-/// <summary>
-/// Uma exigência documental da inscrição no comprovante (UNI-REQ-0029): a obrigatoriedade, a situação no
-/// envio (<c>SATISFEITA</c>, <c>PENDENTE</c>, <c>PODE_SER_EXIGIDO</c>, <c>DEPENDE_DE_FASE_POSTERIOR</c> ou <c>DISPENSADA</c> — a alternativa que um grupo "um ou outro" já atendido dispensou) e a
-/// consequência escrita de não atender; nula quando a exigência não declara consequência.
-/// </summary>
-public sealed record DocumentoDoComprovanteDto(
-    Guid ExigenciaId,
-    string TipoDocumentoCodigo,
-    string Nome,
-    bool Obrigatorio,
-    string Situacao,
-    string? OcorrenciaId,
-    string? Consequencia,
-    IReadOnlyList<ArquivoDoComprovanteDto> Arquivos);
-
-/// <summary>Um arquivo no comprovante: o SHA-256 do conteúdo, o tamanho e o formato (<c>PDF</c>, <c>JPEG</c> ou <c>PNG</c>); nunca o nome nem o local de armazenamento.</summary>
-public sealed record ArquivoDoComprovanteDto(string HashSha256, long TamanhoBytes, string Formato);
-
-/// <summary>
 /// Um item de "Minhas inscrições" (issue #1860). O titular da conta é o único dono das inscrições que
 /// lista, então a lista não repete o nome nem o CPF dele: o que distingue uma inscrição da outra é o
 /// processo e o curso escolhido.
 /// </summary>
-/// <param name="InscricaoId">A identidade da inscrição: o processo pode ter mais de uma, uma cancelada e a ativa, e o comprovante da cancelada se lê por ela.</param>
+/// <param name="InscricaoId">A identidade da inscrição: o processo pode ter mais de uma, uma cancelada e a ativa, e o comprovante se lê por ela.</param>
 /// <param name="NomeDoProcesso">O nome do processo como está divulgado; nulo se ele deixou de ser público.</param>
 /// <param name="OpcoesDeCurso">Os cursos escolhidos, em ordem, como a versão da inscrição os nomeia; vazio enquanto o rascunho não escolheu nenhum.</param>
+/// <param name="CanceladaEm">O instante do cancelamento, quando cancelada.</param>
+/// <param name="MotivoDoCancelamento">O motivo do cancelamento, quando cancelada.</param>
 /// <param name="Acoes">O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</param>
-/// <param name="Comprovantes">Os comprovantes emitidos, em ordem de emissão; vazio em rascunho.</param>
+/// <param name="Comprovantes">Os comprovantes emitidos, em ordem de emissão; vazio em rascunho e na inscrição cancelada, que não tem comprovante para exibir.</param>
+/// <param name="NumeroDoUltimoComprovante">O número do comprovante que vale, o último emitido, para abrir o comprovante da inscrição; nulo sem comprovantes.</param>
 public sealed record MinhaInscricaoDto(
     Guid InscricaoId,
     Guid ProcessoSeletivoId,
@@ -210,29 +133,35 @@ public sealed record MinhaInscricaoDto(
     DateTimeOffset? CanceladaEm,
     string? MotivoDoCancelamento,
     AcoesDaInscricaoDto Acoes,
-    IReadOnlyList<ComprovanteEmitidoDto> Comprovantes)
+    IReadOnlyList<ComprovanteEmitidoDto> Comprovantes,
+    int? NumeroDoUltimoComprovante)
 {
     /// <param name="inscricoesAbertas">Se o processo está no período de inscrição neste instante.</param>
-    /// <param name="comprovantes">Os da inscrição, em ordem de emissão.</param>
+    /// <param name="emissoes">Os instantes de emissão dos comprovantes da inscrição, em ordem de emissão.</param>
     /// <param name="ofertasDaVersao">As ofertas de curso da versão em que a inscrição está, com o nome congelado na publicação.</param>
     public static MinhaInscricaoDto De(
-        Inscricao inscricao,
-        string? nomeDoProcesso,
-        bool inscricoesAbertas,
-        IReadOnlyList<ComprovanteInscricao> comprovantes,
-        IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao)
+        Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
-        ArgumentNullException.ThrowIfNull(comprovantes);
-        ArgumentNullException.ThrowIfNull(ofertasDaVersao);
-        AcoesDaInscricao acoes = inscricao.AcoesPermitidas(inscricoesAbertas);
+
+        List<ComprovanteEmitidoDto> comprovantes = ComprovantesParaExibir(inscricao, emissoes);
         return new MinhaInscricaoDto(
             inscricao.Id, inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
-            OpcoesDe(inscricao, ofertasDaVersao),
-            inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
-            new AcoesDaInscricaoDto(acoes.PodeContinuar, acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar),
-            [.. comprovantes.Select(static (c, i) => new ComprovanteEmitidoDto(i + 1, c.Instante))]);
+            OpcoesDe(inscricao, ofertasDaVersao), inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
+            AcoesDa(inscricao, inscricoesAbertas), comprovantes, comprovantes.Count > 0 ? comprovantes[^1].Numero : null);
     }
+
+    private static AcoesDaInscricaoDto AcoesDa(Inscricao inscricao, bool inscricoesAbertas)
+    {
+        AcoesDaInscricao acoes = inscricao.AcoesPermitidas(inscricoesAbertas);
+
+        return new AcoesDaInscricaoDto(acoes.PodeContinuar, acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar);
+    }
+
+    private static List<ComprovanteEmitidoDto> ComprovantesParaExibir(Inscricao inscricao, IReadOnlyList<DateTimeOffset> emissoes) =>
+        inscricao.ConferirComprovanteEmitivel() is null
+            ? [.. emissoes.Select(static (instante, i) => new ComprovanteEmitidoDto(i + 1, instante))]
+            : [];
 
     /// <summary>A 2ª opção só conta com a 1ª escolhida, como no agregado: sem a 1ª nomeada pela versão, não há opções a listar.</summary>
     private static List<OpcaoDeCursoDaInscricaoDto> OpcoesDe(Inscricao inscricao, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
@@ -264,5 +193,5 @@ public sealed record AcoesDaInscricaoDto(bool PodeContinuar, bool PodeCorrigir, 
 /// <summary>O corpo do cancelamento da inscrição: o motivo é opcional.</summary>
 public sealed record CancelamentoDaInscricaoRequest(string? Motivo);
 
-/// <summary>Um comprovante emitido, pelo número com que se lê em <c>GET .../comprovantes/{numero}</c>.</summary>
+/// <summary>Um comprovante emitido, pelo número com que se lê em <c>GET /inscricoes/{inscricaoId}/comprovantes/{numero}</c>.</summary>
 public sealed record ComprovanteEmitidoDto(int Numero, DateTimeOffset Instante);

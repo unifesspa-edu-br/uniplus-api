@@ -16,33 +16,26 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A inscrição de um candidato num processo seletivo (issue #1858, UNI-REQ-0023): uma ativa por CPF e
-/// processo; a cancelada sai da conta e o candidato pode se inscrever de novo. Nasce <see cref="SituacaoInscricao.Rascunho"/> ao <see cref="Iniciar"/> e passa a
-/// <see cref="SituacaoInscricao.Submetida"/> na primeira <see cref="Submeter"/>, e a enviada desfeita pelo
-/// candidato fica <see cref="SituacaoInscricao.Cancelada"/> (<see cref="Cancelar"/>) — não existe
-/// terceiro estado para "corrigida": uma submissão seguinte é uma correção da mesma inscrição, com
-/// comprovante novo, e a anterior não muda (ela é <see cref="ComprovanteInscricao"/>, append-only).
+/// A inscrição de um candidato num processo seletivo (issue #1858, UNI-REQ-0023): uma ativa por CPF e processo; a cancelada
+/// sai da conta e o candidato pode se inscrever de novo. Nasce <see cref="SituacaoInscricao.Rascunho"/> ao <see cref="Iniciar"/>,
+/// passa a <see cref="SituacaoInscricao.Submetida"/> na primeira <see cref="Submeter"/> e fica
+/// <see cref="SituacaoInscricao.Cancelada"/> ao <see cref="Cancelar"/>. Não há estado "corrigida": uma nova submissão corrige
+/// a mesma inscrição com comprovante novo, e o anterior não muda (<see cref="ComprovanteInscricao"/>, append-only).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A versão do formulário segue a vigente enquanto a inscrição é rascunho</b> (UNI-REQ-0084): o
-/// rascunho adota a versão divulgada (<see cref="AdotarVersao"/>), e só o primeiro envio a congela. A
-/// inscrição enviada lê e valida sempre <see cref="VersaoFormularioId"/>, e uma retificação divulgada
-/// depois não a muda; a correção continua na versão congelada.
+/// <b>A versão do formulário segue a vigente enquanto a inscrição é rascunho</b> (UNI-REQ-0084): o rascunho adota a
+/// versão divulgada (<see cref="AdotarVersao"/>), e só o primeiro envio a congela; a retificação divulgada depois não a muda.
 /// </para>
 /// <para>
 /// <b>Cada valor gravado tem definição.</b> <see cref="DefinicoesDasRespostas"/> diz o tipo de cada fato respondido e se
-/// ele é número de documento; um fato sem definição na versão da inscrição, ou um valor fora do tipo dela, é
-/// recusado antes de mudar o agregado. O repositório cifra os números de documento na fronteira
-/// (ADR-0121), guiado pela definição.
+/// ele é número de documento; fato sem definição ou valor fora do tipo é recusado antes de mudar o agregado. O repositório
+/// cifra os números de documento na fronteira (ADR-0121), guiado pela definição.
 /// </para>
 /// <para>
-/// <b>Concorrência (ADR-0119).</b> <see cref="Revisao"/> é o token de concorrência: a Infrastructure
-/// o mapeia como <c>IsConcurrencyToken</c>, então uma corrida de verdade (duas gravações que leram a
-/// mesma revisão) estoura <c>DbUpdateConcurrencyException</c> no <c>SaveChanges</c>, mesmo que
-/// <see cref="ConferirPrecondicao"/> — chamado ANTES de mutar, para devolver um <b>412</b> limpo em
-/// vez de depender só da exceção — tenha passado com dados já defasados entre a leitura do handler e
-/// o commit.
+/// <b>Concorrência (ADR-0119).</b> <see cref="Revisao"/> é o token de concorrência: duas gravações que leram a mesma
+/// revisão estouram <c>DbUpdateConcurrencyException</c> no <c>SaveChanges</c>, mesmo que <see cref="ConferirPrecondicao"/>,
+/// chamado antes de mutar para devolver um <b>412</b> limpo, tenha passado com dados já defasados.
 /// </para>
 /// </remarks>
 public sealed class Inscricao : EntityBase
@@ -311,6 +304,11 @@ public sealed class Inscricao : EntityBase
                 InscricaoErrorCodes.InscricaoCancelada,
                 "Esta inscrição foi cancelada e não pode mais ser alterada. Para participar, inicie uma nova inscrição.")
             : null;
+
+    /// <summary>A inscrição cancelada não tem comprovante para exibir nem imprimir; os já emitidos ficam preservados, sem exibição.</summary>
+    public DomainError? ConferirComprovanteEmitivel() => Situacao == SituacaoInscricao.Cancelada
+        ? new DomainError(InscricaoErrorCodes.ComprovanteDeInscricaoCancelada, "Esta inscrição foi cancelada e não tem comprovante para exibir nem imprimir.")
+        : null;
 
     /// <summary>
     /// Confere o descarte do rascunho: inscrição ainda não enviada e <c>If-Match</c> corrente — a recusa definitiva vem antes da que pede releitura. A enviada

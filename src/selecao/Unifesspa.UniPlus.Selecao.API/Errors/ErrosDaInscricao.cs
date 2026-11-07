@@ -85,6 +85,7 @@ internal static class ErrosDaInscricao
         new("Inscricao.EnderecoResidencialInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.endereco_residencial_invalido", "O endereço residencial não tem a cidade que a conferência no Geo exige")),
         new(InscricaoErrorCodes.ConflitoDeConcorrencia, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.inscricao.conflito_de_concorrencia", "Esta inscrição foi alterada por outra operação", RetryableConflict: true)),
         // Comprovante por número.
+        new(InscricaoErrorCodes.ComprovanteDeInscricaoCancelada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.comprovante_de_inscricao_cancelada", "A inscrição cancelada não tem comprovante para exibir nem imprimir")),
         new(InscricaoErrorCodes.ComprovanteNaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.inscricao.comprovante_nao_encontrado", "A inscrição não tem o comprovante com este número")),
     ];
 }

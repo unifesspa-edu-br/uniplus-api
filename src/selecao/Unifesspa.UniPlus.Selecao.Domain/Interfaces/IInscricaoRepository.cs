@@ -73,10 +73,16 @@ public interface IInscricaoRepository
     Task RemoverAsync(Inscricao entity, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Os comprovantes gravados das inscrições, em ordem de emissão — o agregado reidratado não os
-    /// carrega.
+    /// O comprovante que ocupa a posição <paramref name="numero"/> na ordem de emissão da inscrição (o instante, e o id para
+    /// desempatar), com o total emitido. Só ele é lido e decifrado; <see langword="null"/> quando a posição não existe.
     /// </summary>
-    Task<IReadOnlyList<ComprovanteInscricao>> ObterComprovantesAsync(
+    Task<ComprovanteNaPosicao?> ObterComprovanteAsync(Guid inscricaoId, int numero, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Quando cada inscrição emitiu cada comprovante, em ordem de emissão, lido só por projeção, sem carregar nem decifrar o
+    /// conteúdo. A posição de cada emissão na sua inscrição é o número do comprovante.
+    /// </summary>
+    Task<IReadOnlyList<EmissaoDoComprovante>> ObterEmissoesAsync(
         IReadOnlyCollection<Guid> inscricoes, CancellationToken cancellationToken = default);
 
     /// <summary>

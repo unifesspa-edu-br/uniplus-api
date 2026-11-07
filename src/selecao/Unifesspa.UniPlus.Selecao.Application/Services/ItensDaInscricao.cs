@@ -27,66 +27,88 @@ internal static class ItensDaInscricao
     public const string MascaraTotal = "•••••••";
 
     /// <summary>As respostas do formulário agrupadas por seção, na ordem de coleta, com todos os itens, sem decidir a saída.</summary>
-    public static IReadOnlyList<SecaoDaInscricaoDto> Secoes(Inscricao inscricao, FatosDaVersao fatos, bool podeRevelar)
+    public static IReadOnlyList<SecaoDaInscricaoDto> Secoes(
+        IReadOnlyDictionary<string, JsonElement> respostas,
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> gruposRespondidos,
+        FatosDaVersao fatos,
+        bool podeRevelar)
     {
-        ArgumentNullException.ThrowIfNull(inscricao);
+        ArgumentNullException.ThrowIfNull(respostas);
+        ArgumentNullException.ThrowIfNull(gruposRespondidos);
         ArgumentNullException.ThrowIfNull(fatos);
 
-        List<(int Ordem, string Secao, ItemDeRespostaDto Item)> itens = [];
-        foreach ((string codigo, JsonElement valor) in inscricao.Respostas)
+        return AgruparPorSecao(
+            ItensDeFora(respostas, fatos, podeRevelar), GruposRespondidos(gruposRespondidos, fatos, podeRevelar), fatos.TitulosDasSecoes);
+    }
+
+    private sealed record ItemNaSecao(int Ordem, string Secao, ItemDeRespostaDto Item);
+
+    private sealed record GrupoNaSecao(int Ordem, string Secao, GrupoDaInscricaoDto Grupo);
+
+    private static List<ItemNaSecao> ItensDeFora(IReadOnlyDictionary<string, JsonElement> respostas, FatosDaVersao fatos, bool podeRevelar)
+    {
+        List<ItemNaSecao> itens = [];
+        foreach ((string codigo, JsonElement valor) in respostas)
         {
             if (fatos.Coletados.TryGetValue(codigo, out FatoDoProcesso? fato) && Item(fato, valor, podeRevelar) is { } item)
             {
-                itens.Add((fato.Ordem, fato.Secao ?? string.Empty, item));
+                itens.Add(new ItemNaSecao(fato.Ordem, fato.Secao ?? string.Empty, item));
             }
         }
 
-        List<(int Ordem, string Secao, GrupoDaInscricaoDto Grupo)> grupos = [];
-        foreach (GrupoDoProcesso grupo in fatos.Grupos)
-        {
-            if (!inscricao.Grupos.TryGetValue(grupo.Codigo, out IReadOnlyList<OcorrenciaDeGrupoInscricao>? ocorrencias))
-            {
-                continue;
-            }
-
-            List<OcorrenciaDaInscricaoDto> daOcorrencia =
-            [
-                .. ocorrencias.Select(o => new OcorrenciaDaInscricaoDto(
-                    o.Id,
-                    [.. o.Respostas
-                        .Where(r => grupo.Subitens.ContainsKey(r.Key))
-                        .OrderBy(r => grupo.Subitens[r.Key].Ordem)
-                        .Select(r => Item(grupo.Subitens[r.Key], r.Value, podeRevelar))
-                        .OfType<ItemDeRespostaDto>()])),
-            ];
-            grupos.Add((grupo.Ordem, grupo.Secao ?? string.Empty, new GrupoDaInscricaoDto(grupo.Codigo, grupo.Rotulo, daOcorrencia)));
-        }
-
-        return
-        [
-            .. itens.Select(static i => i.Secao).Concat(grupos.Select(static g => g.Secao)).Distinct(StringComparer.Ordinal)
-                .Select(secao => (
-                    Ordem: itens.Where(i => i.Secao == secao).Select(static i => i.Ordem)
-                        .Concat(grupos.Where(g => g.Secao == secao).Select(static g => g.Ordem)).Min(),
-                    Dto: new SecaoDaInscricaoDto(
-                        secao,
-                        fatos.TitulosDasSecoes.GetValueOrDefault(secao),
-                        [.. itens.Where(i => i.Secao == secao).OrderBy(static i => i.Ordem).Select(static i => i.Item)],
-                        [.. grupos.Where(g => g.Secao == secao).OrderBy(static g => g.Ordem).Select(static g => g.Grupo)])))
-                .OrderBy(static s => s.Ordem)
-                .Select(static s => s.Dto),
-        ];
+        return itens;
     }
 
+    private static List<GrupoNaSecao> GruposRespondidos(
+        IReadOnlyDictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> respondidos, FatosDaVersao fatos, bool podeRevelar) =>
+    [
+        .. fatos.Grupos
+            .Where(g => respondidos.ContainsKey(g.Codigo))
+            .Select(g => new GrupoNaSecao(
+                g.Ordem,
+                g.Secao ?? string.Empty,
+                new GrupoDaInscricaoDto(g.Codigo, g.Rotulo, [.. respondidos[g.Codigo].Select(o => Ocorrencia(g, o, podeRevelar))]))),
+    ];
+
+    private static OcorrenciaDaInscricaoDto Ocorrencia(GrupoDoProcesso grupo, OcorrenciaDeGrupoInscricao ocorrencia, bool podeRevelar) =>
+        new(
+            ocorrencia.Id,
+            [.. ocorrencia.Respostas
+                .Where(r => grupo.Subitens.ContainsKey(r.Key))
+                .OrderBy(r => grupo.Subitens[r.Key].Ordem)
+                .Select(r => Item(grupo.Subitens[r.Key], r.Value, podeRevelar))
+                .OfType<ItemDeRespostaDto>()]);
+
+    private static List<SecaoDaInscricaoDto> AgruparPorSecao(
+        List<ItemNaSecao> itens, List<GrupoNaSecao> grupos, IReadOnlyDictionary<string, string> titulos) =>
+    [
+        .. itens.Select(static i => i.Secao).Concat(grupos.Select(static g => g.Secao)).Distinct(StringComparer.Ordinal)
+            .Select(secao => (Ordem: PrimeiraOrdem(secao, itens, grupos), Dto: Secao(secao, itens, grupos, titulos)))
+            .OrderBy(static s => s.Ordem)
+            .Select(static s => s.Dto),
+    ];
+
+    private static int PrimeiraOrdem(string secao, List<ItemNaSecao> itens, List<GrupoNaSecao> grupos) =>
+        itens.Where(i => i.Secao == secao).Select(static i => i.Ordem)
+            .Concat(grupos.Where(g => g.Secao == secao).Select(static g => g.Ordem)).Min();
+
+    private static SecaoDaInscricaoDto Secao(
+        string secao, List<ItemNaSecao> itens, List<GrupoNaSecao> grupos, IReadOnlyDictionary<string, string> titulos) =>
+        new(
+            secao,
+            titulos.GetValueOrDefault(secao),
+            [.. itens.Where(i => i.Secao == secao).OrderBy(static i => i.Ordem).Select(static i => i.Item)],
+            [.. grupos.Where(g => g.Secao == secao).OrderBy(static g => g.Ordem).Select(static g => g.Grupo)]);
+
     /// <summary>O que o sistema calculou, com a proteção e a apresentação que a publicação congelou do fato derivado.</summary>
-    public static IReadOnlyList<ItemDeRespostaDto> Derivados(Inscricao inscricao, FatosDaVersao fatos)
+    public static IReadOnlyList<ItemDeRespostaDto> Derivados(IReadOnlyDictionary<string, JsonElement> derivados, FatosDaVersao fatos)
     {
-        ArgumentNullException.ThrowIfNull(inscricao);
+        ArgumentNullException.ThrowIfNull(derivados);
         ArgumentNullException.ThrowIfNull(fatos);
 
         return
         [
-            .. inscricao.Derivados
+            .. derivados
                 .Where(d => fatos.Derivados.ContainsKey(d.Key))
                 .OrderBy(static d => d.Key, StringComparer.Ordinal)
                 .Select(d => Item(fatos.Derivados[d.Key], d.Value, podeRevelar: false))

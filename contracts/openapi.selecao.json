@@ -3296,9 +3296,9 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/vnd.uniplus.comprovante-inscricao.v1\u002Bjson": {
+              "application/vnd.uniplus.recibo-da-inscricao.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/ComprovanteInscricaoDto"
+                  "$ref": "#/components/schemas/ReciboDaInscricaoDto"
                 }
               }
             }
@@ -3412,90 +3412,6 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/selecao/processos-seletivos/{id}/inscricao/comprovantes/{numero}": {
-      "get": {
-        "tags": [
-          "Inscricoes"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "numero",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/vnd.uniplus.comprovante-inscricao.v1\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ComprovanteInscricaoDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "406": {
-            "description": "Not Acceptable",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/api/selecao/inscricoes/{inscricaoId}/comprovantes/{numero}": {
       "get": {
         "tags": [
@@ -3527,7 +3443,7 @@
             "content": {
               "application/vnd.uniplus.comprovante-inscricao.v1\u002Bjson": {
                 "schema": {
-                  "$ref": "#/components/schemas/ComprovanteInscricaoDto"
+                  "$ref": "#/components/schemas/ComprovanteDaInscricaoDto"
                 }
               }
             }
@@ -3554,6 +3470,16 @@
           },
           "406": {
             "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -13072,6 +12998,32 @@
           }
         }
       },
+      "CandidatoDoComprovanteDto": {
+        "required": [
+          "nomeCivil",
+          "nomeSocial",
+          "usaNomeSocial",
+          "cpfMascarado"
+        ],
+        "type": "object",
+        "properties": {
+          "nomeCivil": {
+            "type": "string"
+          },
+          "nomeSocial": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "usaNomeSocial": {
+            "type": "boolean"
+          },
+          "cpfMascarado": {
+            "type": "string"
+          }
+        }
+      },
       "CaraterEtapa": {
         "enum": [
           "nenhum",
@@ -13320,6 +13272,113 @@
           }
         }
       },
+      "ComprovanteDaInscricaoDto": {
+        "required": [
+          "inscricaoId",
+          "numero",
+          "total",
+          "vale",
+          "processoSeletivoId",
+          "nomeDoProcesso",
+          "envio",
+          "candidato",
+          "numeroDeOpcoesDeCurso",
+          "opcoesDeCurso",
+          "secoes",
+          "derivados",
+          "termosAceitos",
+          "documentos"
+        ],
+        "type": "object",
+        "properties": {
+          "inscricaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vale": {
+            "type": "boolean"
+          },
+          "numeroAnterior": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "numeroSeguinte": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nomeDoProcesso": {
+            "type": "string"
+          },
+          "envio": {
+            "$ref": "#/components/schemas/EnvioDoComprovanteDto"
+          },
+          "candidato": {
+            "$ref": "#/components/schemas/CandidatoDoComprovanteDto"
+          },
+          "prazoDaCorrecao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PrazoDaCorrecaoDto"
+              }
+            ]
+          },
+          "numeroDeOpcoesDeCurso": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "opcoesDeCurso": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpcaoDeCursoDoComprovanteDto"
+            }
+          },
+          "secoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SecaoDoComprovanteDto"
+            }
+          },
+          "derivados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDoComprovanteDto"
+            }
+          },
+          "termosAceitos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoAceitoDoComprovanteDto"
+            }
+          },
+          "documentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentoDoComprovanteDto"
+            }
+          }
+        }
+      },
       "ComprovanteEmitidoDto": {
         "required": [
           "numero",
@@ -13334,104 +13393,6 @@
           "instante": {
             "type": "string",
             "format": "date-time"
-          }
-        }
-      },
-      "ComprovanteInscricaoDto": {
-        "required": [
-          "cpfMascarado",
-          "numeroInscricao",
-          "instante",
-          "fusoHorario",
-          "hashIntegridade",
-          "ofertaCursoId",
-          "ofertaCursoSegundaOpcaoId",
-          "respostas",
-          "derivados",
-          "grupos",
-          "aceites",
-          "documentos",
-          "modalidades",
-          "modalidadesSegundaOpcao"
-        ],
-        "type": "object",
-        "properties": {
-          "cpfMascarado": {
-            "type": "string"
-          },
-          "numeroInscricao": {
-            "type": "string"
-          },
-          "instante": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "fusoHorario": {
-            "$ref": "#/components/schemas/FusoHorarioDto"
-          },
-          "hashIntegridade": {
-            "type": "string"
-          },
-          "ofertaCursoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "ofertaCursoSegundaOpcaoId": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "uuid"
-          },
-          "respostas": {
-            "type": "object",
-            "description": "As respostas por c\u00F3digo do fato. O munic\u00EDpio vem como objeto { \u0022codigo\u0022, \u0022rotulo\u0022 }, com o nome que o Geo conferiu no envio; a cidade do endere\u00E7o conferido pelo CEP traz o nome do Geo."
-          },
-          "derivados": {
-            "type": "object",
-            "description": "O que o sistema calculou das respostas. O munic\u00EDpio de resid\u00EAncia vem na mesma forma do munic\u00EDpio das respostas: { \u0022codigo\u0022, \u0022rotulo\u0022 } na inscri\u00E7\u00E3o enviada."
-          },
-          "grupos": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "$ref": "#/components/schemas/OcorrenciaDeGrupoInscricaoInput"
-              }
-            }
-          },
-          "aceites": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AceiteDeTermoInput"
-            }
-          },
-          "documentos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentoDoComprovanteDto"
-            }
-          },
-          "modalidades": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/ModalidadeDaInscricaoDto"
-            }
-          },
-          "modalidadesSegundaOpcao": {
-            "type": [
-              "null",
-              "array"
-            ],
-            "items": {
-              "$ref": "#/components/schemas/ModalidadeDaInscricaoDto"
-            }
           }
         }
       },
@@ -15206,38 +15167,29 @@
       },
       "DocumentoDoComprovanteDto": {
         "required": [
-          "exigenciaId",
-          "tipoDocumentoCodigo",
           "nome",
+          "integrante",
           "obrigatorio",
           "situacao",
-          "ocorrenciaId",
           "consequencia",
           "arquivos"
         ],
         "type": "object",
         "properties": {
-          "exigenciaId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipoDocumentoCodigo": {
-            "type": "string"
-          },
           "nome": {
             "type": "string"
+          },
+          "integrante": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "obrigatorio": {
             "type": "boolean"
           },
           "situacao": {
             "type": "string"
-          },
-          "ocorrenciaId": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "consequencia": {
             "type": [
@@ -15502,6 +15454,30 @@
             "items": {
               "$ref": "#/components/schemas/DocumentoDoAtoCertameDto"
             }
+          }
+        }
+      },
+      "EnvioDoComprovanteDto": {
+        "required": [
+          "numeroInscricao",
+          "enviadoEm",
+          "fusoHorario",
+          "hashIntegridade"
+        ],
+        "type": "object",
+        "properties": {
+          "numeroInscricao": {
+            "type": "string"
+          },
+          "enviadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fusoHorario": {
+            "$ref": "#/components/schemas/FusoHorarioDto"
+          },
+          "hashIntegridade": {
+            "type": "string"
           }
         }
       },
@@ -17237,6 +17213,28 @@
           }
         }
       },
+      "GrupoDoComprovanteDto": {
+        "required": [
+          "codigo",
+          "rotulo",
+          "ocorrencias"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "ocorrencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OcorrenciaDoComprovanteDto"
+            }
+          }
+        }
+      },
       "GrupoPesoAreaEnemCongeladoDto": {
         "required": [
           "grupoAreaEnem",
@@ -18152,6 +18150,39 @@
           }
         }
       },
+      "ItemDoComprovanteDto": {
+        "required": [
+          "rotulo",
+          "descricao",
+          "tipo",
+          "componente"
+        ],
+        "type": "object",
+        "properties": {
+          "rotulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "componente": {
+            "type": "string"
+          },
+          "valor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          }
+        }
+      },
       "ItemDocumentoExigidoInput": {
         "required": [
           "exigidoNaFaseId",
@@ -18648,7 +18679,8 @@
           "canceladaEm",
           "motivoDoCancelamento",
           "acoes",
-          "comprovantes"
+          "comprovantes",
+          "numeroDoUltimoComprovante"
         ],
         "type": "object",
         "properties": {
@@ -18702,6 +18734,13 @@
             "items": {
               "$ref": "#/components/schemas/ComprovanteEmitidoDto"
             }
+          },
+          "numeroDoUltimoComprovante": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -19364,6 +19403,28 @@
           }
         }
       },
+      "OcorrenciaDoComprovanteDto": {
+        "required": [
+          "id",
+          "titulo",
+          "itens"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDoComprovanteDto"
+            }
+          }
+        }
+      },
       "OcorrenciaDoLoteDto": {
         "required": [
           "tipo",
@@ -19665,6 +19726,35 @@
           }
         }
       },
+      "OpcaoDeCursoDoComprovanteDto": {
+        "required": [
+          "ordem",
+          "nome",
+          "modalidades"
+        ],
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "modalidades": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ModalidadeDaInscricaoDto"
+            }
+          }
+        }
+      },
       "OpcaoDoProcessoDto": {
         "required": [
           "codigo",
@@ -19924,6 +20014,27 @@
           "fim": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "PrazoDaCorrecaoDto": {
+        "required": [
+          "fim",
+          "fusoHorario",
+          "aberto"
+        ],
+        "type": "object",
+        "properties": {
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fusoHorario": {
+            "$ref": "#/components/schemas/FusoHorarioDto"
+          },
+          "aberto": {
+            "type": "boolean",
+            "description": "Se o candidato pode corrigir a inscri\u00E7\u00E3o agora: inscri\u00E7\u00E3o enviada e per\u00EDodo de inscri\u00E7\u00E3o aberto."
           }
         }
       },
@@ -20908,6 +21019,32 @@
           }
         }
       },
+      "ReciboDaInscricaoDto": {
+        "required": [
+          "inscricaoId",
+          "numeroInscricao",
+          "numeroDoComprovante",
+          "instante"
+        ],
+        "type": "object",
+        "properties": {
+          "inscricaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numeroInscricao": {
+            "type": "string"
+          },
+          "numeroDoComprovante": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "RecursoDaEtapaDto": {
         "required": [
           "id",
@@ -21804,6 +21941,37 @@
           }
         }
       },
+      "SecaoDoComprovanteDto": {
+        "required": [
+          "codigo",
+          "itens",
+          "grupos"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemDoComprovanteDto"
+            }
+          },
+          "grupos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrupoDoComprovanteDto"
+            }
+          }
+        }
+      },
       "SecaoRenderizavel": {
         "required": [
           "codigo",
@@ -21982,6 +22150,30 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "TermoAceitoDoComprovanteDto": {
+        "required": [
+          "codigo",
+          "nome",
+          "versaoId",
+          "hashVersao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "versaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hashVersao": {
+            "type": "string"
           }
         }
       },

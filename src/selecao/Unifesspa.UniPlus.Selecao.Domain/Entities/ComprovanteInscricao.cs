@@ -164,6 +164,10 @@ public sealed class ComprovanteInscricao : IForensicEntity
         RespostasSensiveis = decifradas;
     }
 
+    /// <summary>Todas as respostas do envio: as gravadas em claro e as de cifra individual, que o repositório restaura ao ler.</summary>
+    public IReadOnlyDictionary<string, JsonElement> TodasAsRespostas() =>
+        Respostas.Concat(RespostasSensiveis).ToDictionary(static r => r.Key, static r => r.Value, StringComparer.Ordinal);
+
     /// <summary>Recalcula o hash a partir do conteúdo, como faria quem audita o comprovante.</summary>
     public bool IntegridadeConfere() =>
         string.Equals(

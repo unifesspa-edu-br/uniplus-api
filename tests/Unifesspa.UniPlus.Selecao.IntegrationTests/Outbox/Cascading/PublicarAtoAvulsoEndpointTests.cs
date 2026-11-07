@@ -263,14 +263,15 @@ public sealed class PublicarAtoAvulsoEndpointTests
     internal static async Task<(Guid ProcessoId, Guid EditalAtoId)> PublicarEditalAsync(
         CascadingApiFactory api,
         HttpClient client,
-        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null)
+        IReadOnlyList<ProdutoDaFase>? produtosDaFase = null,
+        DateTimeOffset? fimDasInscricoes = null)
     {
         Guid processoId;
         Guid documentoEdital;
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}", produtosDaFase: produtosDaFase);
+                escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}", produtosDaFase: produtosDaFase, fimDasInscricoes: fimDasInscricoes);
             processoId = processo.Id;
             documentoEdital = documento.Id;
         }

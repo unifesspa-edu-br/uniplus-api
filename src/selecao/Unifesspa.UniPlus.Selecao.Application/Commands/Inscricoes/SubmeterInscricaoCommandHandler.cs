@@ -11,6 +11,7 @@ using Domain.Services;
 using Domain.ValueObjects;
 
 using DTOs;
+using DTOs.Comprovantes;
 
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
@@ -29,7 +30,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 public static class SubmeterInscricaoCommandHandler
 {
-    public static async Task<Result<ComprovanteInscricaoDto>> Handle(
+    public static async Task<Result<ReciboDaInscricaoDto>> Handle(
         SubmeterInscricaoCommand command,
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -59,7 +60,7 @@ public static class SubmeterInscricaoCommandHandler
 
         if (userContext.Cpf is not { } cpfDoToken)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+            return Result<ReciboDaInscricaoDto>.Failure(new DomainError(
                 "Inscricao.CpfAusenteNoToken",
                 "O token não traz o claim cpf — só um candidato autenticado com CPF pode submeter a inscrição."));
         }
@@ -67,7 +68,7 @@ public static class SubmeterInscricaoCommandHandler
         Result<Cpf> cpfResult = Cpf.Criar(cpfDoToken);
         if (cpfResult.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+            return Result<ReciboDaInscricaoDto>.Failure(new DomainError(
                 "Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."));
         }
 
@@ -76,12 +77,12 @@ public static class SubmeterInscricaoCommandHandler
             .ConfigureAwait(false);
         if (inscricao is null)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(Inscricao.NaoEncontrada);
+            return Result<ReciboDaInscricaoDto>.Failure(Inscricao.NaoEncontrada);
         }
 
         if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(erroDono);
+            return Result<ReciboDaInscricaoDto>.Failure(erroDono);
         }
 
         // Um instante só para o envio inteiro: confere o período, é o dia de que se contam os limites
@@ -93,7 +94,7 @@ public static class SubmeterInscricaoCommandHandler
             instante, cancellationToken).ConfigureAwait(false);
         if (foraDoPeriodo is not null)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(foraDoPeriodo);
+            return Result<ReciboDaInscricaoDto>.Failure(foraDoPeriodo);
         }
 
         Result adotada = await Services.VersaoDaInscricaoResolver
@@ -101,7 +102,7 @@ public static class SubmeterInscricaoCommandHandler
             .ConfigureAwait(false);
         if (adotada.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(adotada.Error!);
+            return Result<ReciboDaInscricaoDto>.Failure(adotada.Error!);
         }
 
         Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
@@ -110,21 +111,21 @@ public static class SubmeterInscricaoCommandHandler
             .ConfigureAwait(false);
         if (contexto.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(contexto.Error!);
+            return Result<ReciboDaInscricaoDto>.Failure(contexto.Error!);
         }
 
         Dictionary<string, JsonElement> respostasDoCorpo = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
         Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> gruposLidos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
         if (gruposLidos.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.ValidationFailure(gruposLidos.Errors);
+            return Result<ReciboDaInscricaoDto>.ValidationFailure(gruposLidos.Errors);
         }
 
         Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = gruposLidos.Value!;
         Result<List<AceiteDeTermo>> aceitesLidos = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
         if (aceitesLidos.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.ValidationFailure(aceitesLidos.Errors);
+            return Result<ReciboDaInscricaoDto>.ValidationFailure(aceitesLidos.Errors);
         }
 
         List<AceiteDeTermo> aceites = aceitesLidos.Value!;
@@ -154,7 +155,7 @@ public static class SubmeterInscricaoCommandHandler
         // já diz o que corrigir.
         if (recusas.Any(static r => r.Error.Code == InscricaoErrorCodes.GrupoIdDuplicado))
         {
-            return Result<ComprovanteInscricaoDto>.ValidationFailure(recusas);
+            return Result<ReciboDaInscricaoDto>.ValidationFailure(recusas);
         }
 
         // 2) O endereço pelo CEP, antes da avaliação, porque os derivados de residência dependem dele. O Geo fora do ar
@@ -170,7 +171,7 @@ public static class SubmeterInscricaoCommandHandler
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(fuso.Error!);
+            return Result<ReciboDaInscricaoDto>.Failure(fuso.Error!);
         }
 
         // 3) A avaliação da definição inteira da versão fixada (ADR-0143), a mesma do rascunho e da
@@ -196,7 +197,7 @@ public static class SubmeterInscricaoCommandHandler
             naFaseDaInscricao: true));
         if (avaliacao.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(avaliacao.Error!);
+            return Result<ReciboDaInscricaoDto>.Failure(avaliacao.Error!);
         }
 
         // 4) Os municípios dos campos que a avaliação deu como aplicáveis, conferidos no Geo.
@@ -251,16 +252,17 @@ public static class SubmeterInscricaoCommandHandler
         // 5) Resposta única: com recusa, 422 com todas; sem recusa e com o Geo fora do ar em alguma conferência, 503.
         if (recusas.Count > 0)
         {
-            return Result<ComprovanteInscricaoDto>.ValidationFailure(recusas);
+            return Result<ReciboDaInscricaoDto>.ValidationFailure(recusas);
         }
 
         if ((geoForaDoAr ?? dosMunicipios.GeoIndisponivel) is { } geoIndisponivel)
         {
-            return Result<ComprovanteInscricaoDto>.Failure(geoIndisponivel);
+            return Result<ReciboDaInscricaoDto>.Failure(geoIndisponivel);
         }
 
         IReadOnlyList<ArquivoConfirmado> arquivosConfirmados = arquivos.Verificados();
         string numeroGerado = await geradorDeNumeroInscricao.ProximoAsync(cancellationToken).ConfigureAwait(false);
+        int comprovantesJaEmitidos = (await inscricaoRepository.ObterEmissoesAsync([inscricao.Id], cancellationToken).ConfigureAwait(false)).Count;
 
         Result<ComprovanteInscricao> submetido = inscricao.Submeter(
             numeroGerado, command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, respostasDoCorpo, grupos, aceites, admitidas,
@@ -269,7 +271,7 @@ public static class SubmeterInscricaoCommandHandler
             new MunicipiosConferidos(dosMunicipios.Nomes, doEndereco.Cidades, derivados.Nomes));
         if (submetido.IsFailure)
         {
-            return Result<ComprovanteInscricaoDto>.ValidationFailure(submetido.Errors);
+            return Result<ReciboDaInscricaoDto>.ValidationFailure(submetido.Errors);
         }
 
         // O envio fixa os arquivos que contam e remove os de exigência que não se aplica na versão fixada;
@@ -289,12 +291,16 @@ public static class SubmeterInscricaoCommandHandler
             // O endpoint tem Idempotency-Key (ADR-0119): captura local e descarte, para o
             // SaveChangesAsync do outbox não reencontrar a entidade modificada.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<ComprovanteInscricaoDto>.Failure(new DomainError(
+            return Result<ReciboDaInscricaoDto>.Failure(new DomainError(
                 InscricaoErrorCodes.ConflitoDeConcorrencia, "Esta inscrição foi alterada concorrentemente. Tente novamente."));
         }
 
-        return Result<ComprovanteInscricaoDto>.Success(ComprovanteInscricaoDto.De(submetido.Value!, inscricao.Cpf));
+        return Result<ReciboDaInscricaoDto>.Success(ReciboDe(inscricao, submetido.Value!, comprovantesJaEmitidos + 1));
     }
+
+    /// <summary>O recibo do envio: o suficiente para abrir o comprovante emitido, que ocupa a posição seguinte às já emitidas.</summary>
+    private static ReciboDaInscricaoDto ReciboDe(Inscricao inscricao, ComprovanteInscricao comprovante, int numeroDoComprovante) =>
+        new(inscricao.Id, comprovante.NumeroInscricao, numeroDoComprovante, comprovante.Instante);
 
     /// <summary>Os caminhos dos campos que o candidato respondeu: <c>FATO</c> no nível superior e <c>GRUPO.ocorrencia.FATO</c> nos grupos.</summary>
     private static HashSet<string> CaminhosRespondidos(

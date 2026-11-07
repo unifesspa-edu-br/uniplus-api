@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Time;
 
 public static class SelecaoInfrastructureRegistration
@@ -83,6 +84,9 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IDocumentoDaInscricaoRepository, DocumentoDaInscricaoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
+        services.AddScoped<PrazoDaCorrecaoDoComprovante>();
+        services.AddScoped<MontadorDoComprovante>();
+        services.AddScoped<ProcessosDasInscricoes>();
         services.AddScoped<IGeradorDeNumeroInscricao, GeradorDeNumeroInscricao>();
         services.AddScoped<IResolvedorDaUnidadeResponsavel, ResolvedorDaUnidadeResponsavel>();
         services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();

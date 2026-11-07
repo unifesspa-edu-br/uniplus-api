@@ -97,7 +97,6 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         Acao(typeof(InscricoesController), nameof(InscricoesController.Descartar)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.Cancelar)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.Submeter)),
-        Acao(typeof(InscricoesController), nameof(InscricoesController.ObterComprovante)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.ObterComprovanteDaInscricao)),
         Acao(typeof(InscricoesController), nameof(InscricoesController.MinhasInscricoes)),
         Acao(typeof(DocumentosDaInscricaoController), nameof(DocumentosDaInscricaoController.IniciarEnvio)),

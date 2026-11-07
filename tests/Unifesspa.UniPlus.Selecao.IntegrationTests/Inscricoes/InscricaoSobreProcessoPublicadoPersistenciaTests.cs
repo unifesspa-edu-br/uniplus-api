@@ -21,9 +21,11 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -1266,7 +1268,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return iniciar.Value!.ETag;
     }
 
-    private async Task<Result<ComprovanteInscricaoDto>> EnviarAsync(SelecaoDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
+    private async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(SelecaoDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
         await SubmeterInscricaoCommandHandler.Handle(
             new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -1330,7 +1332,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         pedido = pedido with { Respostas = comSubitemSolto };
 
         Result<InscricaoDto> salvar = await SalvarAsync(db, processoId, pedido, etag);
-        Result<ComprovanteInscricaoDto> envio = await EnviarAsync(db, processoId, pedido, etag, "00000103");
+        Result<ReciboDaInscricaoDto> envio = await EnviarAsync(db, processoId, pedido, etag, "00000103");
 
         salvar.Errors.Should().ContainSingle().Which.Field.Should().Be("PARENTESCO");
         salvar.Errors[0].Error.Code.Should().Be(InscricaoErrorCodes.FatoSoDeGrupo);
@@ -1357,8 +1359,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Result<InscricaoDto> salvarListaNula = await SalvarAsync(db, processoId, listaNula, etag);
         Result<InscricaoDto> salvarOcorrenciaNula = await SalvarAsync(db, processoId, ocorrenciaNula, etag);
-        Result<ComprovanteInscricaoDto> enviarListaNula = await EnviarAsync(db, processoId, listaNula, etag, "00000104");
-        Result<ComprovanteInscricaoDto> enviarOcorrenciaNula = await EnviarAsync(db, processoId, ocorrenciaNula, etag, "00000105");
+        Result<ReciboDaInscricaoDto> enviarListaNula = await EnviarAsync(db, processoId, listaNula, etag, "00000104");
+        Result<ReciboDaInscricaoDto> enviarOcorrenciaNula = await EnviarAsync(db, processoId, ocorrenciaNula, etag, "00000105");
 
         salvarListaNula.Errors.Should().ContainSingle().Which.Field.Should().Be("COMPOSICAO_FAMILIAR");
         enviarListaNula.Errors.Should().ContainSingle().Which.Field.Should().Be("COMPOSICAO_FAMILIAR");
@@ -1384,8 +1386,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         Result<InscricaoDto> salvarNulo = await SalvarAsync(db, processoId, aceiteNulo, etag);
         Result<InscricaoDto> salvarIncompleto = await SalvarAsync(db, processoId, semCodigoNemHash, etag);
-        Result<ComprovanteInscricaoDto> enviarNulo = await EnviarAsync(db, processoId, aceiteNulo, etag, "00000106");
-        Result<ComprovanteInscricaoDto> enviarIncompleto = await EnviarAsync(db, processoId, semCodigoNemHash, etag, "00000107");
+        Result<ReciboDaInscricaoDto> enviarNulo = await EnviarAsync(db, processoId, aceiteNulo, etag, "00000106");
+        Result<ReciboDaInscricaoDto> enviarIncompleto = await EnviarAsync(db, processoId, semCodigoNemHash, etag, "00000107");
 
         salvarNulo.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[0]");
         enviarNulo.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[0]");
@@ -1411,8 +1413,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Result<InscricaoDto> salvarRepetido = await SalvarAsync(db, processoId, repetido, etag);
         Result<InscricaoDto> salvarForaDoFormulario = await SalvarAsync(db, processoId, foraDoFormulario, etag);
         Result<InscricaoDto> salvarOutraVersao = await SalvarAsync(db, processoId, outraVersao, etag);
-        Result<ComprovanteInscricaoDto> enviarRepetido = await EnviarAsync(db, processoId, repetido, etag, "00000108");
-        Result<ComprovanteInscricaoDto> enviarForaDoFormulario = await EnviarAsync(db, processoId, foraDoFormulario, etag, "00000109");
+        Result<ReciboDaInscricaoDto> enviarRepetido = await EnviarAsync(db, processoId, repetido, etag, "00000108");
+        Result<ReciboDaInscricaoDto> enviarForaDoFormulario = await EnviarAsync(db, processoId, foraDoFormulario, etag, "00000109");
 
         salvarRepetido.Errors.Should().ContainSingle().Which.Field.Should().Be("aceites[1]");
         salvarRepetido.Error!.Code.Should().Be(InscricaoErrorCodes.AceiteRepetido);
@@ -1433,7 +1435,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
 
-        Result<ComprovanteInscricaoDto> envio = await EnviarAsync(
+        Result<ReciboDaInscricaoDto> envio = await EnviarAsync(
             db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: true, renda: true)),
             etag, "00000101");
 
@@ -1457,7 +1459,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
         string etag = await IniciarAsync(db, processoId);
 
-        Result<ComprovanteInscricaoDto> envio = await EnviarAsync(
+        Result<ReciboDaInscricaoDto> envio = await EnviarAsync(
             db, processoId,
             PedidoDeEnvio(processo, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(false) }),
             etag, "00000102");
@@ -1469,6 +1471,44 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         comprovantes.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "O comprovante lido do banco sai montado com a versão fixada, o CPF mascarado, a posição e o prazo da correção aberto")]
+    public async Task ComprovanteGravado_SaiMontadoParaExibir()
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(ComprovanteGravado_SaiMontadoParaExibir));
+        (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
+        string etag = await IniciarAsync(db, processoId);
+        Result<ReciboDaInscricaoDto> primeiro = await EnviarAsync(
+            db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: false, renda: false)),
+            etag, "00000104");
+        primeiro.IsSuccess.Should().BeTrue(primeiro.Error?.Message);
+        (Inscricao enviada, _) = await RelerAsync(processoId);
+        Result<ReciboDaInscricaoDto> correcao = await EnviarAsync(
+            db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: false, ppi: false, renda: false)),
+            enviada.ETag, "00000104");
+        correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message);
+
+        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
+        ProcessoSeletivoRepository processos = new(leitura, TimeProvider.System);
+        MontadorDoComprovante montador = new(
+            processos, RegistroCodecs, new PrazoDaCorrecaoDoComprovante(new CertameDivulgadoRepository(leitura), processos, RegistroCodecs, Fuso(), DentroDoPeriodo));
+        Inscricao inscricao = (await repositorio.ObterPorIdAsync(primeiro.Value!.InscricaoId))!;
+
+        ComprovanteDaInscricaoDto antigo = (await montador.MontarAsync(inscricao, (await repositorio.ObterComprovanteAsync(inscricao.Id, 1))!, CancellationToken.None)).Value!;
+        ComprovanteDaInscricaoDto atual = (await montador.MontarAsync(inscricao, (await repositorio.ObterComprovanteAsync(inscricao.Id, 2))!, CancellationToken.None)).Value!;
+
+        (antigo.Numero, antigo.Total, antigo.Vale, antigo.NumeroSeguinte).Should().Be((1, 2, false, (int?)2));
+        (atual.Numero, atual.Vale, atual.NumeroAnterior, atual.NumeroSeguinte).Should().Be((2, true, (int?)1, (int?)null));
+        antigo.PrazoDaCorrecao.Should().BeNull("o comprovante substituído não mostra prazo");
+        atual.PrazoDaCorrecao!.Aberto.Should().BeTrue("a inscrição enviada, dentro do período, pode ser corrigida");
+        atual.Candidato.CpfMascarado.Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        atual.ProcessoSeletivoId.Should().Be(processoId);
+        atual.NomeDoProcesso.Should().NotBeNullOrWhiteSpace();
+        atual.Envio.NumeroInscricao.Should().Be("00000104");
+        System.Text.Json.JsonSerializer.Serialize(atual).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor, "o CPF só sai mascarado");
+    }
+
     [Fact(DisplayName = "A correção que troca as modalidades emite um comprovante novo, com hash próprio, e o anterior fica como estava")]
     public async Task Correcao_QueTrocaAsModalidades_EmiteComprovanteNovo()
     {
@@ -1476,21 +1516,22 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Correcao_QueTrocaAsModalidades_EmiteComprovanteNovo));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
-        Result<ComprovanteInscricaoDto> primeiro = await EnviarAsync(
+        Result<ReciboDaInscricaoDto> primeiro = await EnviarAsync(
             db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: true, ppi: false, renda: false)),
             etag, "00000103");
         primeiro.IsSuccess.Should().BeTrue(primeiro.Error?.Message);
         (Inscricao enviada, _) = await RelerAsync(processoId);
 
-        Result<ComprovanteInscricaoDto> correcao = await EnviarAsync(
+        Result<ReciboDaInscricaoDto> correcao = await EnviarAsync(
             db, processoId, PedidoDeEnvio(processo, RespostasDaOrigemEDasCotas(OrigemEscolar.SomentePublica, ep: false, ppi: false, renda: false)),
             enviada.ETag, "00000103");
 
         correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message);
         (Inscricao corrigida, IReadOnlyList<ComprovanteInscricao> comprovantes) = await RelerAsync(processoId);
         comprovantes.Should().HaveCount(2);
-        ComprovanteInscricao anterior = comprovantes.Single(c => c.HashIntegridade == primeiro.Value!.HashIntegridade);
-        ComprovanteInscricao novo = comprovantes.Single(c => c.HashIntegridade == correcao.Value!.HashIntegridade);
+        (primeiro.Value!.NumeroDoComprovante, correcao.Value!.NumeroDoComprovante).Should().Be((1, 2), "o recibo diz a posição do comprovante emitido");
+        ComprovanteInscricao anterior = comprovantes[0];
+        ComprovanteInscricao novo = comprovantes[1];
         anterior.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC", "LI_EP");
         anterior.IntegridadeConfere().Should().BeTrue();
         novo.Modalidades!.Select(static m => m.Codigo).Should().Equal("AC");
@@ -1668,7 +1709,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         InscricaoRequest semNova = PedidoDeEnvio(v2, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true) });
         await using (SelecaoDbContext db = _fixture.CreateDbContext())
         {
-            Result<ComprovanteInscricaoDto> recusado = await EnviarAsync(db, processoId, semNova, lida.ETag, "00000201");
+            Result<ReciboDaInscricaoDto> recusado = await EnviarAsync(db, processoId, semNova, lida.ETag, "00000201");
             recusado.Errors.Should().ContainSingle().Which.Field.Should().Be("NOVA");
         }
 
@@ -1709,7 +1750,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         (Inscricao enviada, _) = await RelerAsync(processoId);
         await using (SelecaoDbContext db = _fixture.CreateDbContext())
         {
-            Result<ComprovanteInscricaoDto> correcao = await EnviarAsync(db, processoId, comNova, enviada.ETag, "00000203");
+            Result<ReciboDaInscricaoDto> correcao = await EnviarAsync(db, processoId, comNova, enviada.ETag, "00000203");
             correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message ?? string.Join("; ", correcao.Errors.Select(static e => $"{e.Field}: {e.Error.Message}")));
         }
 

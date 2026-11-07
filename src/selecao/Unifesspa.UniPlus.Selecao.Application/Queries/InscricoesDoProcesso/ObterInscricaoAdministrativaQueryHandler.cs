@@ -146,8 +146,8 @@ public static class ObterInscricaoAdministrativaQueryHandler
             submetidaEm,
             Fixo<DateTimeOffset>(decisoes, nameof(InscricaoAdministrativaDto.CanceladaEm), inscricao.CanceladaEm),
             Fixo(decisoes, nameof(InscricaoAdministrativaDto.MotivoDoCancelamento), inscricao.MotivoDoCancelamento),
-            ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao, fatos, podeRevelar), decisoes),
-            ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao, fatos), decisoes),
+            ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao.Respostas, inscricao.Grupos, fatos, podeRevelar), decisoes),
+            ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao.Derivados, fatos), decisoes),
             [.. arquivos.Where(decisoes.ItemSai)]));
     }
 

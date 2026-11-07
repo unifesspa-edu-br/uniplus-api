@@ -7,7 +7,9 @@ using System.Text.Json.Serialization;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
@@ -35,7 +37,7 @@ public sealed class InscricaoContratoProvisorioTests
             "ofertaCursoId": "0199e000-0000-7000-8000-000000000001",
             "ofertaCursoSegundaOpcaoId": "0199e000-0000-7000-8000-000000000003",
             "respostas": {
-                "NOME_SOCIAL": "Ana",
+                "NOME_SOCIAL": "Ariel Drumond",
                 "RG_NUMERO": "1234567"
             },
             "grupos": {
@@ -79,7 +81,7 @@ public sealed class InscricaoContratoProvisorioTests
             ],
             Respostas: new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
-                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
+                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeSocialFernandaDrumond),
                 ["RG_NUMERO"] = JsonSerializer.SerializeToElement("1234567"),
             },
             Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
@@ -102,41 +104,46 @@ public sealed class InscricaoContratoProvisorioTests
         json["ofertas"]!.AsArray().Should().HaveCount(2, "o portal escolhe a opção entre as ofertas da versão fixada, não do certame vivo");
     }
 
-    [Fact(DisplayName = "ComprovanteInscricaoDto: o exemplo não carrega nenhum número de documento")]
-    public void ComprovanteInscricaoDto_Exemplo_NaoCarregaDocumento()
+    [Fact(DisplayName = "ComprovanteDaInscricaoDto: o exemplo traz o cartão do candidato sem número de documento e o arquivo sem nome nem local")]
+    public void ComprovanteDaInscricaoDto_Exemplo_NaoCarregaDocumento()
     {
-        ComprovanteInscricaoDto dto = new(
-            CpfMascarado: "***.456.789-**",
-            NumeroInscricao: "000123",
-            Instante: new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero),
-            FusoHorario: FusoHorarioDto.Institucional,
-            HashIntegridade: "sha256-def",
-            OfertaCursoId: Guid.Parse("0199e000-0000-7000-8000-000000000001"),
-            OfertaCursoSegundaOpcaoId: null,
-            Respostas: new Dictionary<string, JsonElement>(StringComparer.Ordinal)
-            {
-                ["NOME_SOCIAL"] = JsonSerializer.SerializeToElement("Ana"),
-            },
-            Derivados: new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            Grupos: new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>>(StringComparer.Ordinal),
-            Aceites: [new AceiteDeTermoInput("TERMO_VERACIDADE", Guid.Parse("0199e000-0000-7000-8000-000000000002"), "sha256-abc")],
-            Documentos:
+        ComprovanteDaInscricaoDto dto = new()
+        {
+            InscricaoId = Guid.Parse("0199e000-0000-7000-8000-000000000012"),
+            Numero = 1,
+            Total = 2,
+            Vale = false,
+            NumeroSeguinte = 2,
+            ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
+            NomeDoProcesso = "PSS Medicina 2027",
+            Envio = new EnvioDoComprovanteDto("000123", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero), FusoHorarioDto.Institucional, "sha256-def"),
+            Candidato = new CandidatoDoComprovanteDto(PersonasDeTeste.NomeFernandaDrumond, PersonasDeTeste.NomeSocialFernandaDrumond, UsaNomeSocial: true, PersonasDeTeste.FernandaDrumond.Mascarado),
+            PrazoDaCorrecao = new PrazoDaCorrecaoDto(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero), FusoHorarioDto.Institucional, Aberto: true),
+            NumeroDeOpcoesDeCurso = 1,
+            OpcoesDeCurso = [],
+            Secoes = [],
+            Derivados = [],
+            TermosAceitos = [],
+            Documentos =
             [
                 new DocumentoDoComprovanteDto(
-                    Guid.Parse("0199e000-0000-7000-8000-000000000004"), "LAUDO_MEDICO", "Laudo médico", true, "SATISFEITA", null,
+                    "Laudo médico", "Você (candidato)", true, "Satisfeita",
                     "Sem o documento Laudo médico, a vantagem que você pleiteia não será concedida.",
                     [new ArquivoDoComprovanteDto(new string('a', 64), 2048, "PDF")]),
             ],
-            Modalidades: [new ModalidadeDaInscricaoDto("AC", "Ampla concorrência", 0)],
-            ModalidadesSegundaOpcao: null);
+        };
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 
-        json.AsObject().Should().NotContainKey("rgNumero").And.NotContainKey("documentoEstrangeiroNumero");
+        json.AsObject().Should().NotContainKey("rgNumero").And.NotContainKey("documentoEstrangeiroNumero").And.NotContainKey("cpf");
         JsonNode arquivo = json["documentos"]![0]!["arquivos"]![0]!;
         arquivo.AsObject().Select(static p => p.Key).Should().BeEquivalentTo(["hashSha256", "tamanhoBytes", "formato"],
             "o comprovante identifica o arquivo sem revelar nome nem local de armazenamento");
-        json["hashIntegridade"]!.GetValue<string>().Should().Be("sha256-def");
+        json["envio"]!["hashIntegridade"]!.GetValue<string>().Should().Be("sha256-def");
+        json["candidato"]!["cpfMascarado"]!.GetValue<string>().Should().Be(PersonasDeTeste.FernandaDrumond.Mascarado);
+        json["numeroAnterior"].Should().BeNull("o primeiro comprovante não tem anterior");
+        json["vale"]!.GetValue<bool>().Should().BeFalse();
+        json["prazoDaCorrecao"]!["aberto"]!.GetValue<bool>().Should().BeTrue();
     }
 
     [Fact(DisplayName = "MinhaInscricaoDto: o exemplo mostra os cursos escolhidos e não repete nome nem CPF do titular")]
@@ -152,7 +159,8 @@ public sealed class InscricaoContratoProvisorioTests
             CanceladaEm: null,
             MotivoDoCancelamento: null,
             Acoes: new AcoesDaInscricaoDto(PodeContinuar: false, PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
-            Comprovantes: [new ComprovanteEmitidoDto(1, new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero))]);
+            Comprovantes: [new ComprovanteEmitidoDto(1, new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero))],
+            NumeroDoUltimoComprovante: 1);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;
 

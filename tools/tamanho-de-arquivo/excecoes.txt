@@ -27,14 +27,14 @@
 590 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/DocumentoExigido.cs
 1052 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/EtapaProcesso.cs
 812 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs
-1383 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/Inscricao.cs
+1381 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/Inscricao.cs
 686 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/NoExigencia.cs
 739 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/ProcessoSeletivo.cs
 591 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliacaoDaInscricao.cs
 447 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/AvaliadorConformidadeLegal.cs
 636 src/selecao/Unifesspa.UniPlus.Selecao.Domain/Services/ResolvedorArvoreSatisfacao.cs
 507 src/selecao/Unifesspa.UniPlus.Selecao.Domain/ValueObjects/GrafoDependenciaConjunta.cs
-817 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Repositories/InscricaoRepository.cs
+787 src/selecao/Unifesspa.UniPlus.Selecao.Infrastructure/Persistence/Repositories/InscricaoRepository.cs
 425 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Errors/InvalidRequestProblemFactory.cs
 558 src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyFilter.cs
 525 src/shared/Unifesspa.UniPlus.Regras/Formularios/FormaDoFormulario.cs

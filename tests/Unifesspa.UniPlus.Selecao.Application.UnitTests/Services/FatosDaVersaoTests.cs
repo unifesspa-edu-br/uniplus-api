@@ -67,7 +67,7 @@ public sealed class FatosDaVersaoTests
         new Dictionary<string, string>());
 
     private static GrupoDoProcesso Grupo(string codigo, FatoDoProcesso membro) =>
-        new(codigo, codigo, null, 0, new Dictionary<string, FatoDoProcesso> { [membro.Codigo] = membro });
+        new(codigo, codigo, null, 0, new Dictionary<string, FatoDoProcesso> { [membro.Codigo] = membro }, IncluiCandidato: false);
 
     private static FatoDoProcesso Fato(string codigo, ClassificacaoDeProtecao classificacao) => new(
         codigo, codigo, codigo, TiposDeItem.Texto, ComponentesDeItem.Padrao, classificacao, null, null, 0,

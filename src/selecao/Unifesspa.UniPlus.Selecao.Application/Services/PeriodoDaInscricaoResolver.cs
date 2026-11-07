@@ -40,17 +40,9 @@ public static class PeriodoDaInscricaoResolver
         IResolvedorFusoInstitucional resolvedorFuso,
         DateTimeOffset instante)
     {
-        ArgumentNullException.ThrowIfNull(versaoDivulgada);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
 
-        Result<EnvelopeReidratado> reidratado = ContextoDaVersaoFixadaResolver.Reidratar(versaoDivulgada, registroCodecs);
-        if (reidratado.IsFailure)
-        {
-            return reidratado.Error;
-        }
-
-        Result<JanelaDaInscricao> janela = JanelaDaInscricao.Da(reidratado.Value!.Grafo, reidratado.Value!.Dados);
+        Result<JanelaDaInscricao> janela = JanelaDa(versaoDivulgada, registroCodecs);
         if (janela.IsFailure)
         {
             return janela.Error;
@@ -60,5 +52,18 @@ public static class PeriodoDaInscricaoResolver
         return fuso.IsFailure
             ? fuso.Error
             : janela.Value!.Conferir(instante, fuso.Value!);
+    }
+
+    /// <summary>A janela de inscrição que a versão divulgada publicou, com o fim que a retificação prorroga.</summary>
+    public static Result<JanelaDaInscricao> JanelaDa(VersaoConfiguracao versaoDivulgada, IRegistroCodecsEnvelope registroCodecs)
+    {
+        ArgumentNullException.ThrowIfNull(versaoDivulgada);
+        ArgumentNullException.ThrowIfNull(registroCodecs);
+
+        Result<EnvelopeReidratado> reidratado = ContextoDaVersaoFixadaResolver.Reidratar(versaoDivulgada, registroCodecs);
+
+        return reidratado.IsFailure
+            ? Result<JanelaDaInscricao>.Failure(reidratado.Error!)
+            : JanelaDaInscricao.Da(reidratado.Value!.Grafo, reidratado.Value!.Dados);
     }
 }
