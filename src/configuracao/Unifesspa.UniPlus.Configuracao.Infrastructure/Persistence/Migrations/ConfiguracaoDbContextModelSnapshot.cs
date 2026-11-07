@@ -18,7 +18,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("configuracao")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -1413,12 +1413,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             Codigo = "FAIXA_ETARIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Dependencias = new[] { "DATA_NASCIMENTO" },
-                            Descricao = "Faixa de idade em que o candidato se enquadra, calculada pelo sistema a partir da data de nascimento, para verificar os requisitos de participação.",
+                            Descricao = "Idade em anos completos do candidato na data de referência dos fatos do processo, calculada pelo sistema a partir da data de nascimento, para verificar os requisitos de participação.",
                             Dominio = "NUMERICO",
                             Escopo = "CANDIDATO",
                             FinalidadeTratamento = "Verificação dos requisitos de participação e das exigências documentais do processo seletivo.",
                             HipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
-                            Nome = "Faixa etária",
+                            Nome = "Idade",
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",

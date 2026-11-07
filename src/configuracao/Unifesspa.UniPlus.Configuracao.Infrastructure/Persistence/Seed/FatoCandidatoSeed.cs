@@ -129,7 +129,7 @@ public static class FatoCandidatoSeed
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:RENDA_PER_CAPITA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeReservaDeVagas, ComponenteExibicao: ComponenteDeExibicao.Moeda),
 
-        new(SeedId(6), "FAIXA_ETARIA", "Faixa etária", "Faixa de idade em que o candidato se enquadra, calculada pelo sistema a partir da data de nascimento, para verificar os requisitos de participação.",
+        new(SeedId(6), "FAIXA_ETARIA", "Idade", "Idade em anos completos do candidato na data de referência dos fatos do processo, calculada pelo sistema a partir da data de nascimento, para verificar os requisitos de participação.",
             DominioFato.Numerico, OrigemFato.Derivado, CardinalidadeFato.Escalar, null,
             PontoResolucaoInscricao, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA",
             ClassificacaoDeProtecao.Pessoal, FinalidadeRequisitos),

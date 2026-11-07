@@ -753,6 +753,7 @@ public sealed class FatoCandidatoPersistenceTests
         corRaca.ValoresDominioDeclarados!.Select(v => v.Codigo).Should().Contain("PRETA");
 
         FatoCandidatoView faixaEtaria = views.Single(v => v.Codigo == "FAIXA_ETARIA");
+        faixaEtaria.Nome.Should().Be("Idade", "o comprovante mostra a idade em anos, com o rótulo do catálogo");
         faixaEtaria.Origem.Should().Be("DERIVADO");
         faixaEtaria.Binding.Should().Be("ATRIBUTO_CANDIDATO:FAIXA_ETARIA");
         faixaEtaria.ValoresDominioDeclarados.Should().BeNull();
