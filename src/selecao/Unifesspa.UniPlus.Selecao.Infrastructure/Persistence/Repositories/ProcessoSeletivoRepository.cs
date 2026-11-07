@@ -317,6 +317,13 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
             .Select(p => p.UnidadeAdministradora.Sigla)
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<string?> ObterNomeDaUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
+        _context.ProcessosSeletivos
+            .AsNoTracking()
+            .Where(p => p.Id == processoSeletivoId)
+            .Select(p => p.UnidadeAdministradora.Nome)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public Task<Guid?> ObterUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
         _context.ProcessosSeletivos
             .AsNoTracking()

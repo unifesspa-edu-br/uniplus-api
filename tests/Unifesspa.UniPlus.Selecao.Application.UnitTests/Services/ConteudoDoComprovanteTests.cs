@@ -30,6 +30,17 @@ public sealed class ConteudoDoComprovanteTests
     private static Dictionary<string, FatoDerivadoCongelado> Derivados(params FatoDerivadoCongelado[] fatos) =>
         fatos.ToDictionary(static f => f.Codigo, StringComparer.Ordinal);
 
+    [Fact(DisplayName = "O identificador legível do processo vem da versão fixada da inscrição, e some quando a versão não o declara")]
+    public void Montar_IdentificadorDoProcesso_VemDaVersaoFixada()
+    {
+        Inscricao inscricao = UmaInscricao();
+        ComprovanteInscricao comprovante = Emitir(inscricao, Respostas());
+
+        Montar(inscricao, comprovante, Envelope(identificador: IdentificadorLegivel.Criar("pss-medicina-2027").Value)).IdentificadorDoProcesso
+            .Should().Be("pss-medicina-2027");
+        Montar(inscricao, comprovante, Envelope()).IdentificadorDoProcesso.Should().BeNull();
+    }
+
     [Fact(DisplayName = "O número de opções vem da versão, e as opções, do comprovante: versão de duas e comprovante de uma saem com uma só")]
     public void Montar_VersaoDeDuasOpcoes_ComprovanteComUma()
     {

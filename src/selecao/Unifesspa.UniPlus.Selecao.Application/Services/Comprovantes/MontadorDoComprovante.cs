@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Reúne o que o comprovante do titular precisa fora do próprio comprovante, a versão fixada da inscrição, o nome do processo
-/// e o prazo da correção, e o monta. A versão fixada é a que o primeiro envio congelou: o texto do documento não acompanha a
+/// e o da unidade administradora (cópias congeladas na criação) e o prazo da correção, e o monta. A versão fixada é a que o primeiro envio congelou: o texto do documento não acompanha a
 /// retificação do edital.
 /// </summary>
 public sealed class MontadorDoComprovante
@@ -45,10 +45,11 @@ public sealed class MontadorDoComprovante
         }
 
         string nome = await _processoSeletivoRepository.ObterNomeAsync(inscricao.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) ?? string.Empty;
+        string unidade = await _processoSeletivoRepository.ObterNomeDaUnidadeAdministradoraAsync(inscricao.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) ?? string.Empty;
         PrazoDaCorrecaoDto? prazo = await _prazoDaCorrecao.LerAsync(inscricao, posicao.Vale, cancellationToken).ConfigureAwait(false);
 
         return Result<ComprovanteDaInscricaoDto>.Success(
-            ComprovanteDoTitular.Montar(new InsumosDoComprovante(inscricao, posicao, envelope.Value!, nome, prazo)));
+            ComprovanteDoTitular.Montar(new InsumosDoComprovante(inscricao, posicao, envelope.Value!, nome, unidade, prazo)));
     }
 
     private async Task<Result<EnvelopeReidratado>> EnvelopeFixadoAsync(Inscricao inscricao, CancellationToken cancellationToken)

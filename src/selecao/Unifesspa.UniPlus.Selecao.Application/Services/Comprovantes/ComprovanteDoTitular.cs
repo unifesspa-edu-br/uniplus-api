@@ -24,6 +24,8 @@ internal static class ComprovanteDoTitular
             NumeroSeguinte = insumos.Posicao.NumeroSeguinte,
             ProcessoSeletivoId = insumos.Inscricao.ProcessoSeletivoId,
             NomeDoProcesso = insumos.NomeDoProcesso,
+            IdentificadorDoProcesso = insumos.Envelope.Grafo.IdentificadorLegivel?.Valor,
+            UnidadeAdministradora = insumos.NomeDaUnidadeAdministradora,
             Envio = EnvioDoComprovante.De(insumos),
             Candidato = CandidatoDoComprovante.De(insumos),
             PrazoDaCorrecao = insumos.Prazo,

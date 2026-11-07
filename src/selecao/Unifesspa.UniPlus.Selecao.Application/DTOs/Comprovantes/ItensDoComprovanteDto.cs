@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 
+using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -31,4 +32,9 @@ public sealed record ItemDoComprovanteDto(
     string Tipo,
     string Componente,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [property: Description(
+        "O valor respondido; a forma depende de `tipo`. `texto`, `data` (AAAA-MM-DD), `data-hora` (ISO 8601 com deslocamento), `hora` (HH:mm), " +
+        "`numero` (em texto, como foi respondido) e `booleano` (verdadeiro ou falso) trazem um valor simples. `opcao` traz `{ codigo, rotulo }`. `opcoes` traz uma lista de " +
+        "`{ codigo, rotulo }`. `endereco` traz `{ cep, logradouro, numero, complemento, bairro, municipio, municipioCodigoIbge, uf, ufNome }`, " +
+        "todos em texto. Ausente quando o item não foi respondido.")]
     JsonElement? Valor);

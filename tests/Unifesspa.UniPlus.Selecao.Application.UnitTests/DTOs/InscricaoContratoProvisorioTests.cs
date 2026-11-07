@@ -116,6 +116,8 @@ public sealed class InscricaoContratoProvisorioTests
             NumeroSeguinte = 2,
             ProcessoSeletivoId = Guid.Parse("0199e000-0000-7000-8000-000000000011"),
             NomeDoProcesso = "PSS Medicina 2027",
+            IdentificadorDoProcesso = "pss-medicina-2027",
+            UnidadeAdministradora = "Centro de Processos Seletivos",
             Envio = new EnvioDoComprovanteDto("000123", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero), FusoHorarioDto.Institucional, "sha256-def"),
             Candidato = new CandidatoDoComprovanteDto(PersonasDeTeste.NomeFernandaDrumond, PersonasDeTeste.NomeSocialFernandaDrumond, UsaNomeSocial: true, PersonasDeTeste.FernandaDrumond.Mascarado),
             PrazoDaCorrecao = new PrazoDaCorrecaoDto(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero), FusoHorarioDto.Institucional, Aberto: true),
@@ -159,7 +161,6 @@ public sealed class InscricaoContratoProvisorioTests
             CanceladaEm: null,
             MotivoDoCancelamento: null,
             Acoes: new AcoesDaInscricaoDto(PodeContinuar: false, PodeCorrigir: true, PodeCancelar: true, PodeDescartar: false),
-            Comprovantes: [new ComprovanteEmitidoDto(1, new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero))],
             NumeroDoUltimoComprovante: 1);
 
         JsonNode json = JsonSerializer.SerializeToNode(dto, Opcoes)!;

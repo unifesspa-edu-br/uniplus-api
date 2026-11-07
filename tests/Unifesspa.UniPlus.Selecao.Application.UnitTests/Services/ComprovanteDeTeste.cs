@@ -37,7 +37,8 @@ internal static class ComprovanteDeTeste
         IReadOnlyList<GrupoColetado>? grupos = null,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas>? ofertas = null,
         int numeroDeOpcoes = 1,
-        IReadOnlyDictionary<string, FatoDerivadoCongelado>? derivados = null)
+        IReadOnlyDictionary<string, FatoDerivadoCongelado>? derivados = null,
+        IdentificadorLegivel? identificador = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Comprovante");
         processo.DefinirItens([.. itens ?? []], PrecondicaoIfMatch.Ausente, grupos: grupos).IsSuccess.Should().BeTrue();
@@ -48,7 +49,8 @@ internal static class ComprovanteDeTeste
             fatosColetados: [.. processo.FatosColetados],
             formularios: [.. processo.Formularios],
             gruposColetados: [.. processo.GruposColetados],
-            numeroDeOpcoesDeCurso: numeroDeOpcoes);
+            numeroDeOpcoesDeCurso: numeroDeOpcoes,
+            identificadorLegivel: identificador);
 
         return new EnvelopeReidratado(
             grafo, DadosEdital.Criar("001/2026", DivulgacaoDeTeste.InicioDoPeriodo, DivulgacaoDeTeste.FimDoPeriodo, Guid.CreateVersion7()).Value!,
@@ -71,7 +73,7 @@ internal static class ComprovanteDeTeste
     public static ComprovanteDaInscricaoDto Montar(
         Inscricao inscricao, ComprovanteInscricao comprovante, EnvelopeReidratado envelope, int numero = 1, int total = 1) =>
         ComprovanteDoTitular.Montar(new InsumosDoComprovante(
-            inscricao, new ComprovanteNaPosicao(comprovante, numero, total), envelope, "PSS Medicina 2027", Prazo: null));
+            inscricao, new ComprovanteNaPosicao(comprovante, numero, total), envelope, "PSS Medicina 2027", "Centro de Processos Seletivos", Prazo: null));
 
     public static Inscricao UmaInscricao(Cpf? cpf = null) =>
         Inscricao.Iniciar(Guid.CreateVersion7(), cpf ?? PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;

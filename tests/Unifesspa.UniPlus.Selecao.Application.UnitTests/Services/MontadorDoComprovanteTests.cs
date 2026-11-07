@@ -36,6 +36,7 @@ public sealed class MontadorDoComprovanteTests
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
         processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([primeira, retificada]);
         processos.ObterNomeAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("PSS Medicina 2027");
+        processos.ObterNomeDaUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns("Centro de Processos Seletivos");
         IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
         registro.Capacidades.Returns([new CapacidadeCodec(primeira.SchemaVersion, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
         registro.Reidratar(primeira).Returns(Result<EnvelopeReidratado>.Success(Envelope([Texto("APELIDO", "Apelido")])));
@@ -45,6 +46,7 @@ public sealed class MontadorDoComprovanteTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         TodosOsItens(resultado.Value!).Should().ContainSingle().Which.Rotulo.Should().Be("Apelido");
+        resultado.Value!.UnidadeAdministradora.Should().Be("Centro de Processos Seletivos");
         registro.DidNotReceive().Reidratar(retificada);
     }
 

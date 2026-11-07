@@ -33,6 +33,12 @@ public sealed record ComprovanteDaInscricaoDto
     /// <summary>O nome do processo seletivo.</summary>
     public required string NomeDoProcesso { get; init; }
 
+    /// <summary>O identificador legível do processo (o do endereço público do certame), o congelado na versão em que a inscrição foi enviada; nulo se a versão não o declara.</summary>
+    public string? IdentificadorDoProcesso { get; init; }
+
+    /// <summary>O nome da unidade administradora do processo, o que ficou congelado na criação do processo.</summary>
+    public required string UnidadeAdministradora { get; init; }
+
     /// <summary>O envio que o comprovante registra.</summary>
     public required EnvioDoComprovanteDto Envio { get; init; }
 

@@ -117,7 +117,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
     }
 
     [Fact(DisplayName = "Cada inscrição vem com o nome divulgado do processo e os comprovantes numerados na ordem de emissão")]
-    public async Task Handle_TrazONomeDoProcessoEOsComprovantes()
+    public async Task Handle_TrazONomeDoProcessoEONumeroDoUltimoComprovante()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Guid processoId = Guid.CreateVersion7();
@@ -142,7 +142,6 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
         MinhaInscricaoDto item = resultado.Value!.Should().ContainSingle().Subject;
         item.NomeDoProcesso.Should().Be("PSS Medicina 2027");
-        item.Comprovantes.Should().Equal(new ComprovanteEmitidoDto(1, instante), new ComprovanteEmitidoDto(2, instante.AddHours(1)));
         item.NumeroDoUltimoComprovante.Should().Be(2);
     }
 
@@ -170,8 +169,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         daCancelada.Situacao.Should().Be(SituacaoInscricao.Cancelada);
         daCancelada.MotivoDoCancelamento.Should().Be("a pedido do candidato");
         daCancelada.CanceladaEm.Should().NotBeNull();
-        daCancelada.Comprovantes.Should().BeEmpty("a cancelada não tem comprovante para abrir");
-        daCancelada.NumeroDoUltimoComprovante.Should().BeNull();
+        daCancelada.NumeroDoUltimoComprovante.Should().BeNull("a cancelada tem comprovante emitido, mas a rota o recusa");
         daCancelada.Acoes.Should().Be(new AcoesDaInscricaoDto(false, false, false, false));
     }
 

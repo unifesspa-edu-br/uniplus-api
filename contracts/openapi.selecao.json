@@ -13280,6 +13280,7 @@
           "vale",
           "processoSeletivoId",
           "nomeDoProcesso",
+          "unidadeAdministradora",
           "envio",
           "candidato",
           "numeroDeOpcoesDeCurso",
@@ -13325,6 +13326,15 @@
             "format": "uuid"
           },
           "nomeDoProcesso": {
+            "type": "string"
+          },
+          "identificadorDoProcesso": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unidadeAdministradora": {
             "type": "string"
           },
           "envio": {
@@ -13376,23 +13386,6 @@
             "items": {
               "$ref": "#/components/schemas/DocumentoDoComprovanteDto"
             }
-          }
-        }
-      },
-      "ComprovanteEmitidoDto": {
-        "required": [
-          "numero",
-          "instante"
-        ],
-        "type": "object",
-        "properties": {
-          "numero": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "instante": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -18177,6 +18170,7 @@
                 "type": "null"
               },
               {
+                "description": "O valor respondido; a forma depende de \u0060tipo\u0060. \u0060texto\u0060, \u0060data\u0060 (AAAA-MM-DD), \u0060data-hora\u0060 (ISO 8601 com deslocamento), \u0060hora\u0060 (HH:mm), \u0060numero\u0060 (em texto, como foi respondido) e \u0060booleano\u0060 (verdadeiro ou falso) trazem um valor simples. \u0060opcao\u0060 traz \u0060{ codigo, rotulo }\u0060. \u0060opcoes\u0060 traz uma lista de \u0060{ codigo, rotulo }\u0060. \u0060endereco\u0060 traz \u0060{ cep, logradouro, numero, complemento, bairro, municipio, municipioCodigoIbge, uf, ufNome }\u0060, todos em texto. Ausente quando o item n\u00E3o foi respondido.",
                 "$ref": "#/components/schemas/JsonElement"
               }
             ]
@@ -18679,7 +18673,6 @@
           "canceladaEm",
           "motivoDoCancelamento",
           "acoes",
-          "comprovantes",
           "numeroDoUltimoComprovante"
         ],
         "type": "object",
@@ -18728,12 +18721,6 @@
           },
           "acoes": {
             "$ref": "#/components/schemas/AcoesDaInscricaoDto"
-          },
-          "comprovantes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ComprovanteEmitidoDto"
-            }
           },
           "numeroDoUltimoComprovante": {
             "type": [

@@ -121,8 +121,7 @@ public sealed record InscricaoDto(
 /// <param name="CanceladaEm">O instante do cancelamento, quando cancelada.</param>
 /// <param name="MotivoDoCancelamento">O motivo do cancelamento, quando cancelada.</param>
 /// <param name="Acoes">O que o candidato pode fazer agora com a inscrição, pelo período e pela situação.</param>
-/// <param name="Comprovantes">Os comprovantes emitidos, em ordem de emissão; vazio em rascunho e na inscrição cancelada, que não tem comprovante para exibir.</param>
-/// <param name="NumeroDoUltimoComprovante">O número do comprovante que vale, o último emitido, para abrir o comprovante da inscrição; nulo sem comprovantes.</param>
+/// <param name="NumeroDoUltimoComprovante">O número do comprovante que vale, o último emitido, para abrir o comprovante da inscrição; nulo sem comprovantes e na inscrição cancelada, cujo comprovante a rota recusa.</param>
 public sealed record MinhaInscricaoDto(
     Guid InscricaoId,
     Guid ProcessoSeletivoId,
@@ -133,7 +132,6 @@ public sealed record MinhaInscricaoDto(
     DateTimeOffset? CanceladaEm,
     string? MotivoDoCancelamento,
     AcoesDaInscricaoDto Acoes,
-    IReadOnlyList<ComprovanteEmitidoDto> Comprovantes,
     int? NumeroDoUltimoComprovante)
 {
     /// <param name="inscricoesAbertas">Se o processo está no período de inscrição neste instante.</param>
@@ -143,12 +141,12 @@ public sealed record MinhaInscricaoDto(
         Inscricao inscricao, string? nomeDoProcesso, bool inscricoesAbertas, IReadOnlyList<DateTimeOffset> emissoes, IReadOnlyList<OfertaDeCursoCertameDto> ofertasDaVersao)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
+        ArgumentNullException.ThrowIfNull(emissoes);
 
-        List<ComprovanteEmitidoDto> comprovantes = ComprovantesParaExibir(inscricao, emissoes);
         return new MinhaInscricaoDto(
             inscricao.Id, inscricao.ProcessoSeletivoId, nomeDoProcesso, inscricao.NumeroInscricao, inscricao.Situacao,
             OpcoesDe(inscricao, ofertasDaVersao), inscricao.CanceladaEm, inscricao.MotivoDoCancelamento,
-            AcoesDa(inscricao, inscricoesAbertas), comprovantes, comprovantes.Count > 0 ? comprovantes[^1].Numero : null);
+            AcoesDa(inscricao, inscricoesAbertas), UltimoComprovanteLegivel(inscricao, emissoes));
     }
 
     private static AcoesDaInscricaoDto AcoesDa(Inscricao inscricao, bool inscricoesAbertas)
@@ -158,10 +156,8 @@ public sealed record MinhaInscricaoDto(
         return new AcoesDaInscricaoDto(acoes.PodeContinuar, acoes.PodeCorrigir, acoes.PodeCancelar, acoes.PodeDescartar);
     }
 
-    private static List<ComprovanteEmitidoDto> ComprovantesParaExibir(Inscricao inscricao, IReadOnlyList<DateTimeOffset> emissoes) =>
-        inscricao.ConferirComprovanteEmitivel() is null
-            ? [.. emissoes.Select(static (instante, i) => new ComprovanteEmitidoDto(i + 1, instante))]
-            : [];
+    private static int? UltimoComprovanteLegivel(Inscricao inscricao, IReadOnlyList<DateTimeOffset> emissoes) =>
+        inscricao.ConferirComprovanteEmitivel() is null && emissoes.Count > 0 ? emissoes.Count : null;
 
     /// <summary>A 2ª opção só conta com a 1ª escolhida, como no agregado: sem a 1ª nomeada pela versão, não há opções a listar.</summary>
     private static List<OpcaoDeCursoDaInscricaoDto> OpcoesDe(Inscricao inscricao, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)
@@ -192,6 +188,3 @@ public sealed record AcoesDaInscricaoDto(bool PodeContinuar, bool PodeCorrigir, 
 
 /// <summary>O corpo do cancelamento da inscrição: o motivo é opcional.</summary>
 public sealed record CancelamentoDaInscricaoRequest(string? Motivo);
-
-/// <summary>Um comprovante emitido, pelo número com que se lê em <c>GET /inscricoes/{inscricaoId}/comprovantes/{numero}</c>.</summary>
-public sealed record ComprovanteEmitidoDto(int Numero, DateTimeOffset Instante);

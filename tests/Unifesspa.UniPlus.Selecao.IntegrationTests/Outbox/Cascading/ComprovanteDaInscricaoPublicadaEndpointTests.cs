@@ -65,6 +65,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         }
 
         raiz.GetProperty("numeroDeOpcoesDeCurso").GetInt32().Should().BeGreaterThan(0);
+        raiz.GetProperty("unidadeAdministradora").GetString().Should().Be(await NomeDaUnidadeCongeladaAsync(processoId));
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
     }
 
@@ -202,6 +203,14 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         await escopo.ServiceProvider.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
 
         return inscricao.Id;
+    }
+
+    private async Task<string> NomeDaUnidadeCongeladaAsync(Guid processoId)
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        ProcessoSeletivo processo = await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().ProcessosSeletivos
+            .AsNoTracking().SingleAsync(p => p.Id == processoId);
+        return processo.UnidadeAdministradora!.Nome;
     }
 
     private Task<HttpResponseMessage> ObterAsync(Guid inscricaoId, int numero) =>
