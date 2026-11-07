@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// recusa só chega no <c>SaveChanges</c>, como <c>DbUpdateException</c> do Postgres
 /// (<c>22001</c> <i>value too long</i>, <c>22003</c> <i>numeric field overflow</i>) — no
 /// meio do descarte, como <b>500 não tratado</b> em vez de recusa nomeada. O caminho de
-/// comando já barra isso no <c>FluentValidation</c>; o de reidratação não barrava.
+/// comando já barra isso no <c>FluentValidation</c>; o de reidratação barra aqui.
 /// </para>
 /// <para>
 /// Estes valores <b>espelham o schema</b>, e não podem divergir dele: o fitness
@@ -88,7 +88,7 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int NumeroDoAto = 60;
 
-    // Story #851 — cronograma de fases.
+    // Cronograma de fases.
     /// <summary>
     /// <c>FaseCronograma.Codigo</c> — snapshot-copy do código canônico de <c>FaseCanonica</c>.
     /// Governa também <c>EtapaProcesso.FaseCodigo</c>, o vínculo que a etapa declara com a
@@ -119,7 +119,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>CategoriaJulgada.Codigo</c> — snapshot-copy do código classificatório de <c>CategoriaDocumento</c>.</summary>
     public const int CategoriaDocumentoCodigo = 50;
 
-    // Story #554 (PR #903) — exigencias[] real.
+    // Exigências.
     /// <summary><c>DocumentoExigido.TipoDocumentoCodigo</c> — snapshot-copy do código classificatório de <c>TipoDocumento</c>.</summary>
     public const int TipoDocumentoCodigo = 60;
 
@@ -144,7 +144,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>DocumentoExigidoBaseLegal.Observacao</c>.</summary>
     public const int ObservacaoBaseLegal = 1000;
 
-    /// <summary><c>CondicaoGatilho.Fato</c> — nome do fato do gatilho DNF (PR #896, Story #847/#554).</summary>
+    /// <summary><c>CondicaoGatilho.Fato</c> — nome do fato do gatilho DNF.</summary>
     public const int Fato = 60;
 
     // Decimais — precisão total (o `p` de numeric(p,s)).
@@ -171,13 +171,13 @@ public static class LimitesDoEnvelope
     /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;
 
-    /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> (issue #1112) — <c>numeric(12,2)</c>, monetário.</summary>
+    /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> — <c>numeric(12,2)</c>, monetário.</summary>
     public const int PrecisaoTaxaInscricao = ConfiguracaoTaxaInscricao.ValorPrecisao;
 
     /// <summary>Precisão da escala da nota final da classificação — <c>numeric(9,4)</c>, a da <c>NotaFinal</c>.</summary>
     public const int PrecisaoEscalaNotaFinal = ConfiguracaoClassificacao.EscalaNotaFinalPrecisao;
 
-    // Issue #849 (CA-04 da Feature #40) — identidadesUnidade real.
+    // Unidade administradora.
     /// <summary><c>UnidadeAdministradoraSnapshot.Sigla</c> — espelha <c>UnidadeConfiguration.Sigla</c>.</summary>
     public const int UnidadeAdministradoraSigla = 50;
 
@@ -190,7 +190,7 @@ public static class LimitesDoEnvelope
     /// <summary><c>UnidadeAdministradoraSnapshot.Tipo</c> — espelha <c>UnidadeConfiguration.Tipo</c>.</summary>
     public const int UnidadeAdministradoraTipo = 30;
 
-    // Issue #1114 — cidade da Unidade administradora (identidadesUnidade.administradora).
+    // Cidade da unidade administradora.
     /// <summary><c>UnidadeAdministradoraSnapshot.CidadeCodigoIbge</c> — espelha <c>ProcessoSeletivoConfiguration</c> (owned).</summary>
     public const int UnidadeAdministradoraCidadeCodigoIbge = ReferenciaCidadeGeo.CodigoIbgeLength;
 
@@ -239,12 +239,12 @@ public static class LimitesDoEnvelope
     /// <summary>Hash SHA-256 em hexadecimal da versão do termo.</summary>
     public const int HashDaVersaoDoTermo = 64;
 
-    // Issue #563 — divulgação pública.
+    // Divulgação pública.
     /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — mesma grandeza de <c>RascunhoRetificacao.MotivoMaxLength</c>: texto de negócio livre, não um rótulo curto.</summary>
     public const int Justificativa = 1000;
 
-    // Story #1466 — bônus regional referencia Base Legal tipada (Configuração, Story #1465).
-    /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — snapshot-copy do código canônico de <c>TipoInstrumentoNormativo</c> (Story #1464).</summary>
+    // Bônus regional: referencia a base legal tipada.
+    /// <summary><c>ConfiguracaoBonusRegional.TipoInstrumento</c> — snapshot-copy do código canônico de <c>TipoInstrumentoNormativo</c>.</summary>
     public const int TipoInstrumentoNormativo = 30;
 
     /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>

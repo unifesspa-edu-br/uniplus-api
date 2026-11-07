@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Vista somente leitura da configuração de um <see cref="ProcessoSeletivo"/>: é o que as regras
 /// de configuração recebem no lugar da raiz. As coleções são as vivas do agregado, expostas sem
 /// possibilidade de escrita, de modo que quem precisa do estado depois de uma mutação deve
-/// materializá-lo antes. O candidato de uma escrita é <c>De(processo) with { Etapas = candidatas }</c>.
+/// materializá-lo antes.
 /// </summary>
 public sealed record EstadoDaConfiguracao
 {

@@ -261,7 +261,7 @@ public sealed class InscricoesController : ControllerBase
     }
 
     /// <summary>
-    /// O comprovante número <paramref name="numero"/> da inscrição do dono do token (issue #1860):
+    /// O comprovante número <paramref name="numero"/> da inscrição do dono do token:
     /// a primeira submissão é o comprovante 1, cada correção emite o próximo — append-only, o
     /// anterior nunca muda.
     /// </summary>
@@ -297,7 +297,7 @@ public sealed class InscricoesController : ControllerBase
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>As inscrições do dono do token em qualquer processo seletivo (issue #1860), com os cursos que escolheram.</summary>
+    /// <summary>As inscrições do dono do token em qualquer processo seletivo, com os cursos que escolheram.</summary>
     [HttpGet("minhas-inscricoes")]
     [VendorMediaType(Resource = "minhas-inscricoes", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<MinhaInscricaoDto>), StatusCodes.Status200OK)]

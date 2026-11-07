@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 
-/// <summary>Códigos de erro das opções que o processo declara para um fato (issue #1619).</summary>
+/// <summary>Códigos de erro das opções que o processo declara para um fato.</summary>
 public static class OpcaoDeclaradaFatoErrorCodes
 {
     public const string CodigoInvalido = "OpcaoDeclaradaFato.CodigoInvalido";

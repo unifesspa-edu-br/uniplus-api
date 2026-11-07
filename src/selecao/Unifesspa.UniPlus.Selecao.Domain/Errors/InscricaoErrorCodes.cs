@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 
-/// <summary>Códigos de erro da inscrição do candidato (issue #1858).</summary>
+/// <summary>Códigos de erro da inscrição do candidato.</summary>
 public static class InscricaoErrorCodes
 {
     public const string SubObrigatorio = "Inscricao.SubObrigatorio";
@@ -56,7 +56,7 @@ public static class InscricaoErrorCodes
     public const string ForaDoPeriodo = "Inscricao.ForaDoPeriodo";
     public const string ProcessoSemInscricao = "Inscricao.ProcessoSemInscricao";
 
-    // Veredito de submissão (issue #1859) — só avaliados no POST .../submissao, nunca no PUT do
+    // Veredito de submissão: só avaliados no POST .../submissao, nunca no PUT do
     // rascunho, que não exige obrigatórios.
     public const string ItemObrigatorioAusente = "Inscricao.ItemObrigatorioAusente";
     public const string Impedimento = "Inscricao.Impedimento";
@@ -83,6 +83,6 @@ public static class InscricaoErrorCodes
     /// <summary>A fase pedida na avaliação da inscrição não está no cronograma da versão que a inscrição fixou.</summary>
     public const string FaseNaoEncontrada = "Inscricao.FaseNaoEncontrada";
 
-    /// <summary>O número da URL não corresponde a nenhum comprovante emitido (issue #1860).</summary>
+    /// <summary>O número da URL não corresponde a nenhum comprovante emitido.</summary>
     public const string ComprovanteNaoEncontrado = "Inscricao.ComprovanteNaoEncontrado";
 }

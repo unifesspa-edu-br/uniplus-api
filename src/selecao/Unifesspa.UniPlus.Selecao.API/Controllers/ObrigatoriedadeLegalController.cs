@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Admin CRUD + leitura pública de <c>ObrigatoriedadeLegal</c>
-/// (Story #461, ADR-0058 Emenda 1). Paths path-based per ADR-0064:
+/// (ADR-0058 Emenda 1). Rotas por caminho, conforme a ADR-0064:
 /// público sob <c>/api/selecao/obrigatoriedades-legais</c>, admin sob
 /// <c>/api/selecao/admin/obrigatoriedades-legais</c>. A regra é cross-cutting
 /// por tipo de processo (sem proprietário nem áreas de interesse); os
@@ -76,15 +76,8 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarObrigatoriedadesLegaisResult resultado = await _queryBus.Send(
-            new ListarObrigatoriedadesLegaisQuery(
-                page.AfterId,
-                page.Limit,
-                page.Direction,
-                tipoProcesso,
-                categoria,
-                vigentes),
-            cancellationToken).ConfigureAwait(false);
+        ListarObrigatoriedadesLegaisQuery consulta = new(page.AfterId, page.Limit, page.Direction, tipoProcesso, categoria, vigentes);
+        ListarObrigatoriedadesLegaisResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
             resultado.Items,
