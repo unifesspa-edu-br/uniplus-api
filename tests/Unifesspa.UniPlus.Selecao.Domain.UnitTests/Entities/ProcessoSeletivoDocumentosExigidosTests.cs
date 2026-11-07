@@ -1113,4 +1113,29 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
+
+    [Fact(DisplayName = "Remover a fase poda em cascata os grupos da fase e preserva a árvore da fase que fica")]
+    public void DefinirCronogramaFases_RemoveFase_PodaGruposEmCascataEPreservaOutraFase()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma faseQueFica = Fase(1, "INSCRICAO");
+        FaseCronograma faseQueSai = Fase(2, "RECURSO");
+        processo.DefinirCronogramaFases([faseQueFica, faseQueSai], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        NoExigencia folhaQueFica = NoExigencia.CriarFolha(Exigencia(faseQueFica.Id), 0).Value!;
+        NoExigencia grupoInterno = NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, null, null, [],
+            [NoExigencia.CriarFolha(Exigencia(faseQueSai.Id), 0).Value!, NoExigencia.CriarFolha(Exigencia(faseQueSai.Id), 1).Value!]).Value!;
+        NoExigencia grupoDaFaseQueSai = NoExigencia.CriarGrupo(
+            TipoNo.GrupoE, 1, null, null, [],
+            [grupoInterno, NoExigencia.CriarFolha(Exigencia(faseQueSai.Id), 2).Value!]).Value!;
+        processo.DefinirDocumentosExigidos([folhaQueFica, grupoDaFaseQueSai], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [Fase(1, "INSCRICAO", faseQueFica.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        processo.DocumentosExigidos.Should().ContainSingle().Which.ExigidoNaFaseId.Should().Be(faseQueFica.Id);
+        processo.NosExigencia.Should().ContainSingle().Which.Should().BeSameAs(folhaQueFica);
+    }
 }
