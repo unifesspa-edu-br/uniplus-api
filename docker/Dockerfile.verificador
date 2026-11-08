@@ -20,7 +20,10 @@ RUN dotnet publish src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPl
 FROM mcr.microsoft.com/dotnet/runtime:10.0 AS runtime
 WORKDIR /app
 
-RUN groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
+# A base atrasa correções de segurança do Ubuntu: os pacotes são atualizados no build.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
 
 COPY --from=build /app/publish .
 

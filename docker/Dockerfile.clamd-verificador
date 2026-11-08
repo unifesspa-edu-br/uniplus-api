@@ -1,5 +1,5 @@
 # Sidecar do verificador (ADR-0146 e ADR-0147). A base de partida envelhece: reconstruir a cada release.
-FROM clamav/clamav:1.4.6
+FROM clamav/clamav:1.4.6 AS runtime
 
 USER root
 
@@ -10,7 +10,8 @@ COPY docker/clamd-verificador/iniciar.sh /usr/local/bin/iniciar-clamd.sh
 
 # A base de partida fica fora de /var/lib/clamav, que o pod monta como emptyDir. Se o freshclam
 # falhar no build, segue a base que a imagem de origem já traz.
-RUN mkdir -p /opt/clamav/base \
+RUN apk upgrade --no-cache \
+    && mkdir -p /opt/clamav/base \
     && cp /var/lib/clamav/*.cvd /opt/clamav/base/ \
     && chown -R clamav:clamav /opt/clamav \
     && printf 'DatabaseDirectory /opt/clamav/base\nDatabaseMirror database.clamav.net\n' > /tmp/freshclam-build.conf \
