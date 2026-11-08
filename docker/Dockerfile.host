@@ -37,8 +37,10 @@ RUN dotnet publish src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+# A base atrasa correções de segurança do Ubuntu: os pacotes são atualizados no build.
 # curl para health checks + usuário não-root.
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
 

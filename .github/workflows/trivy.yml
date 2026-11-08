@@ -144,6 +144,9 @@ jobs:
         # workflow de publish.
         uses: docker/build-push-action@v5
         with:
+          # O estágio runtime aplica as atualizações do sistema: refeito a cada build,
+          # para não herdar do cache pacotes de antes de uma correção de segurança.
+          no-cache-filters: runtime
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
           platforms: linux/amd64

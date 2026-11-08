@@ -201,6 +201,10 @@ jobs:
         id: build_local
         uses: docker/build-push-action@v5
         with:
+          # O estágio runtime aplica as atualizações do sistema: refeito aqui, para não
+          # herdar do cache pacotes de antes de uma correção de segurança. O push a
+          # seguir reaproveita esta camada pelo cache e publica a imagem do smoke.
+          no-cache-filters: runtime
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
           # O `load: true` do buildx só funciona com uma plataforma por vez
