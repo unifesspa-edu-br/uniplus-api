@@ -187,37 +187,32 @@ jobs:
             org.opencontainers.image.vendor=Universidade Federal do Sul e Sudeste do Pará (Unifesspa)
             org.opencontainers.image.licenses=AGPL-3.0-or-later
 
-      # Build em duas fases para validar ANTES de tornar a tag pública:
-      # 1. Build com push=false e load=true → imagem fica no daemon Docker local
-      # 2. Smoke test contra a imagem local (liveness probe)
-      # 3. Build com push=true → reusa cache, publica no GHCR após smoke verde
-      #
-      # O cache GHA torna o segundo build praticamente instantâneo (ele só
-      # exporta o manifest para o registry; layers já estão no GHA cache).
-      # Sem isso, uma imagem que falhe no smoke já estaria publicada como
-      # v<X>.<Y>.<Z> imutável no GHCR.
+      # A imagem é construída uma vez, sem push, e carregada no daemon Docker local;
+      # o smoke e o Trivy examinam essa imagem e só então ela é publicada, com as
+      # tags do metadata. Publicar a própria imagem examinada, e não um segundo
+      # build, garante que o GHCR recebe o que passou nos dois exames: sem isso, uma
+      # imagem reprovada já estaria publicada como v<X>.<Y>.<Z> imutável.
 
       - name: Build local (sem push) para smoke
         id: build_local
         uses: docker/build-push-action@v5
         with:
           # O estágio runtime aplica as atualizações do sistema: refeito aqui, para não
-          # herdar do cache pacotes de antes de uma correção de segurança. O push a
-          # seguir reaproveita esta camada pelo cache e publica a imagem do smoke.
+          # herdar do cache pacotes de antes de uma correção de segurança.
           no-cache-filters: runtime
           context: .
           file: docker/Dockerfile.${{ matrix.module }}
           # O `load: true` do buildx só funciona com uma plataforma por vez
-          # (carrega no daemon Docker local para `docker create`/`docker run`),
-          # e é a mesma que o push publica — o smoke exercita exatamente o
-          # que vai para o registry.
+          # (carrega no daemon Docker local para `docker create`/`docker run`).
+          # Uma plataforma só: o ArgoCD puxa a mesma imagem em qualquer cluster
+          # do projeto, todos amd64.
           platforms: linux/amd64
           push: false
           load: true
           tags: smoke/uniplus-api-${{ matrix.module }}:ci
+          labels: ${{ steps.meta.outputs.labels }}
           # Cache scoped por módulo: builds independentes não invalidam
-          # cache uns dos outros, e o cache deste smoke é reaproveitado
-          # integralmente pelo push a seguir.
+          # cache uns dos outros.
           cache-from: type=gha,scope=${{ matrix.module }}-amd64
           cache-to: type=gha,scope=${{ matrix.module }}-amd64,mode=max
 
@@ -278,24 +273,36 @@ jobs:
           docker run --rm --entrypoint /usr/bin/dotnet "$IMAGE_REF" --info >/dev/null
           echo "✓ Runtime .NET responde"
 
-      - name: Push para GHCR (após smoke verde)
-        id: build
-        uses: docker/build-push-action@v5
+      - name: Trivy — scan da imagem a publicar
+        # A imagem do smoke é a que o push publica: uma vulnerabilidade CRITICAL ou
+        # HIGH nela barra a publicação, mesmo que o scan do trivy.yml, feito sobre
+        # outro build, tenha passado. Pin imutável pelo mesmo motivo do trivy.yml.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0
         with:
-          context: .
-          file: docker/Dockerfile.${{ matrix.module }}
-          # Uma plataforma só: ArgoCD puxa o mesmo
-          # `ghcr.io/.../uniplus-api-<module>:vX.Y.Z` em qualquer cluster do
-          # projeto, todos amd64. O build reusa integralmente o cache do
-          # step de smoke, que roda na mesma arquitetura.
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Mesmo scope do smoke: sem segunda arquitetura, não há
-          # invalidação cruzada a evitar.
-          cache-from: type=gha,scope=${{ matrix.module }}-amd64
-          cache-to: type=gha,scope=${{ matrix.module }}-amd64,mode=max
+          image-ref: smoke/uniplus-api-${{ matrix.module }}:ci
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+
+      - name: Push para GHCR (após smoke e Trivy verdes)
+        id: build
+        env:
+          IMAGE_REF: smoke/uniplus-api-${{ matrix.module }}:ci
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          da_versao=""
+          while read -r tag; do
+            [ -n "$tag" ] || continue
+            docker tag "$IMAGE_REF" "$tag"
+            docker push "$tag"
+            [[ "$tag" != *":$GITHUB_REF_NAME" ]] || da_versao="$tag"
+          done <<<"$TAGS"
+          # O digest como o registry o guarda, lido da tag da versão: as outras
+          # (sha-, vX.Y, vX) podem ser regravadas por outra publicação ao mesmo tempo.
+          [ -n "$da_versao" ] || { echo "::error::Sem a tag $GITHUB_REF_NAME no metadata"; exit 1; }
+          digest=$(docker buildx imagetools inspect "$da_versao" --format '{{.Manifest.Digest}}')
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Resumo
         if: always()

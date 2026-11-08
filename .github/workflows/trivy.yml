@@ -6,10 +6,9 @@ name: Trivy
 #      (matriz derivada de docker/Dockerfile.* pelo job `discover`)
 #
 # Resultados em SARIF alimentam a aba Security do GitHub via upload-sarif
-# (mesmo padrão do codeql.yml). Initial mode: alerta (não-bloqueante) —
-# severidade CRITICAL/HIGH listada mas exit code zero, permitindo merge
-# enquanto a baseline é triada. Elevação para required check (`exit-code: 1`)
-# fica para fase futura quando triagem inicial estiver completa.
+# (mesmo padrão do codeql.yml). O scan de dependências só alerta (exit code
+# zero) enquanto a baseline é triada; o scan de imagem falha com CRITICAL ou HIGH,
+# para que uma vulnerabilidade nova não passe despercebida.
 
 on:
   push:
@@ -170,7 +169,7 @@ jobs:
           # Mesmo motivo do scan fs: sem este flag, severity é ignorado em
           # output SARIF.
           limit-severities-for-sarif: 'true'
-          exit-code: '0'
+          exit-code: '1'
           cache: 'true'
 
       - name: Upload SARIF (image)
