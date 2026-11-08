@@ -26,6 +26,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// <param name="Derivados">O que o sistema calculou das respostas.</param>
 /// <param name="Arquivos">Os arquivos enviados, só os metadados: abrir o arquivo é outra operação, com a permissão da classe dele.</param>
 /// <param name="PodeEmitirComprovante">Se a pessoa tem a permissão de emitir o comprovante desta inscrição; a mesma que a emissão exige, de modo que a tela não decide por conta própria. Vem da consulta de capacidade, que não grava registro.</param>
+/// <param name="NumeroDoUltimoComprovante">O número do último comprovante que a inscrição emitiu, inclusive na cancelada, cujo comprovante a unidade emite; nulo só quando não há nenhum. É metadado, sem dado pessoal, e sai em qualquer projeção.</param>
 public sealed record InscricaoAdministrativaDto(
     Guid Id,
     ProcessoDaInscricaoDto Processo,
@@ -50,7 +51,8 @@ public sealed record InscricaoAdministrativaDto(
     IReadOnlyList<SecaoDaInscricaoDto> Secoes,
     IReadOnlyList<ItemDeRespostaDto> Derivados,
     IReadOnlyList<ArquivoAdministrativoDto> Arquivos,
-    bool PodeEmitirComprovante);
+    bool PodeEmitirComprovante,
+    int? NumeroDoUltimoComprovante);
 
 /// <summary>Uma seção do formulário com as respostas dela e os grupos que se repetem nela.</summary>
 /// <param name="Codigo">O código da seção do formulário; vazio para o item que nenhuma seção abriga.</param>

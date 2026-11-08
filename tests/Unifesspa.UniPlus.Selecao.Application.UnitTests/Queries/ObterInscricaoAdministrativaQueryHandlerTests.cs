@@ -279,6 +279,28 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
             Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
     }
 
+    [Theory(DisplayName = "O número do último comprovante é a quantidade emitida, nulo sem nenhum, e vem na cancelada, sem decifrar comprovante e com só o acesso às inscrições")]
+    [InlineData(SituacaoInscricao.Submetida, 0, null)]
+    [InlineData(SituacaoInscricao.Submetida, 1, 1)]
+    [InlineData(SituacaoInscricao.Submetida, 3, 3)]
+    [InlineData(SituacaoInscricao.Cancelada, 2, 2)]
+    [InlineData(SituacaoInscricao.Cancelada, 0, null)]
+    public async Task NumeroDoUltimoComprovante_QuantidadeEmitida(SituacaoInscricao situacao, int emitidos, int? esperado)
+    {
+        InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond, situacao);
+        InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
+        IReadOnlyList<EmissaoDoComprovante> emissoes =
+            [.. Enumerable.Range(0, emitidos).Select(i => new EmissaoDoComprovante(cenario.InscricaoId, DateTimeOffset.UnixEpoch.AddDays(i)))];
+        mundo.Inscricoes.ObterEmissoesAsync(
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == cenario.InscricaoId), Arg.Any<CancellationToken>()).Returns(emissoes);
+        DecisoesDeAcessoDeTeste leandro = new("leandro.viana", PermissaoSelecao.InscricoesConsultar);
+
+        Result<InscricaoAdministrativaDto> resultado = await Executar(cenario, mundo, leandro, cenario.ProcessoId, cenario.InscricaoId);
+
+        resultado.Value!.NumeroDoUltimoComprovante.Should().Be(esperado);
+        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
+    }
+
     [Fact(DisplayName = "Sem dados públicos as ofertas são omitidas, mas o id e o processo saem")]
     public async Task SemDadosPublicos_OmiteAsOfertas()
     {

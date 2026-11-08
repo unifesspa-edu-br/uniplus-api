@@ -157,7 +157,7 @@ public sealed record MinhaInscricaoDto(
     }
 
     private static int? UltimoComprovanteLegivel(Inscricao inscricao, IReadOnlyList<DateTimeOffset> emissoes) =>
-        inscricao.ConferirComprovanteEmitivel() is null && emissoes.Count > 0 ? emissoes.Count : null;
+        inscricao.ConferirComprovanteEmitivel() is null ? ComprovanteNaPosicao.NumeroDoUltimo(emissoes.Count) : null;
 
     /// <summary>A 2ª opção só conta com a 1ª escolhida, como no agregado: sem a 1ª nomeada pela versão, não há opções a listar.</summary>
     private static List<OpcaoDeCursoDaInscricaoDto> OpcoesDe(Inscricao inscricao, IReadOnlyList<OfertaDeCursoCertameDto> ofertas)

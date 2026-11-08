@@ -148,13 +148,26 @@ public static class ObterInscricaoAdministrativaQueryHandler
             ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao.Respostas, inscricao.Grupos, fatos, podeRevelar), decisoes),
             ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao.Derivados, fatos), decisoes),
             [.. arquivos.Where(decisoes.ItemSai)],
-            await PodeEmitirComprovanteAsync(verificador, resource, cancellationToken).ConfigureAwait(false)));
+            await PodeEmitirComprovanteAsync(verificador, resource, cancellationToken).ConfigureAwait(false),
+            await NumeroDoUltimoComprovanteAsync(inscricao.Id, inscricaoRepository, cancellationToken).ConfigureAwait(false)));
     }
 
     private static async Task<bool> PodeEmitirComprovanteAsync(
         IVerificadorDeAcesso verificador, ResourceContext resource, CancellationToken cancellationToken) =>
         await verificador.PodeAsync(PermissaoSelecao.InscricoesEmitirComprovante.Requisito, resource, cancellationToken)
             .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
+
+    /// <summary>
+    /// O número do último comprovante, que é a quantidade emitida, lida só por projeção, sem decifrar nenhum; nulo sem comprovante.
+    /// </summary>
+    private static async Task<int?> NumeroDoUltimoComprovanteAsync(
+        Guid inscricaoId, IInscricaoRepository inscricaoRepository, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<EmissaoDoComprovante> emissoes = await inscricaoRepository
+            .ObterEmissoesAsync([inscricaoId], cancellationToken).ConfigureAwait(false);
+
+        return ComprovanteNaPosicao.NumeroDoUltimo(emissoes.Count);
+    }
 
     /// <summary>
     /// Como <c>Fixo</c>, para o valor que se lê do repositório: a leitura só acontece quando a propriedade é permitida.

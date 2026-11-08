@@ -18,6 +18,9 @@ public sealed record ComprovanteNaPosicao(ComprovanteInscricao Comprovante, int 
 
     /// <summary>O número do comprovante seguinte, ou nulo no último.</summary>
     public int? NumeroSeguinte => Vale ? null : Numero + 1;
+
+    /// <summary>O número do último comprovante de uma inscrição que emitiu <paramref name="emitidos"/>, ou nulo quando não emitiu nenhum.</summary>
+    public static int? NumeroDoUltimo(int emitidos) => emitidos > 0 ? emitidos : null;
 }
 
 /// <summary>Quando uma inscrição emitiu um comprovante: o que a lista de inscrições precisa, sem o conteúdo nem a decifra.</summary>

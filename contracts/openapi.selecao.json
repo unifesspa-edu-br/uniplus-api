@@ -17869,7 +17869,8 @@
           "secoes",
           "derivados",
           "arquivos",
-          "podeEmitirComprovante"
+          "podeEmitirComprovante",
+          "numeroDoUltimoComprovante"
         ],
         "type": "object",
         "properties": {
@@ -17945,6 +17946,13 @@
           },
           "podeEmitirComprovante": {
             "type": "boolean"
+          },
+          "numeroDoUltimoComprovante": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

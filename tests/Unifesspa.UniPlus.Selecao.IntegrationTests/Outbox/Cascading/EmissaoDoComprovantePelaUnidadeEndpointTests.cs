@@ -171,6 +171,24 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
         JsonDocument.Parse(corpo).RootElement.GetProperty("podeEmitirComprovante").GetBoolean().Should().Be(podeEmitir);
     }
 
+    [Theory(DisplayName = "A leitura administrativa traz o número do último comprovante, inclusive o da inscrição cancelada, sem depender de permissão de dado")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LeituraAdministrativa_TrazONumeroDoUltimoComprovante(bool cancelada)
+    {
+        Cenario cenario = await SemearAsync();
+        await ConcederAsync(QuemEmite, cenario.UnidadeId, PermissaoSelecao.InscricoesConsultar);
+
+        using HttpResponseMessage resposta = await Requisitar(
+            QuemEmite,
+            $"/api/selecao/processos-seletivos/{cenario.ProcessoId}/inscricoes/{(cancelada ? cenario.Cancelada : cenario.Enviada)}",
+            "inscricao-administrativa");
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        JsonDocument.Parse(corpo).RootElement.GetProperty("numeroDoUltimoComprovante").GetInt32().Should().Be(1);
+    }
+
     private Task<HttpResponseMessage> EmitirAsync(string sub, Guid processoId, Guid inscricaoId, int numero = 1) =>
         Requisitar(sub, $"/api/selecao/processos-seletivos/{processoId}/inscricoes/{inscricaoId}/comprovantes/{numero}", "comprovante-inscricao");
 
