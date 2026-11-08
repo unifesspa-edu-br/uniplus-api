@@ -85,6 +85,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<PrazoDaCorrecaoDoComprovante>();
+        services.AddScoped<CancelamentoDoComprovante>();
         services.AddScoped<MontadorDoComprovante>();
         services.AddScoped<ProcessosDasInscricoes>();
         services.AddScoped<IGeradorDeNumeroInscricao, GeradorDeNumeroInscricao>();

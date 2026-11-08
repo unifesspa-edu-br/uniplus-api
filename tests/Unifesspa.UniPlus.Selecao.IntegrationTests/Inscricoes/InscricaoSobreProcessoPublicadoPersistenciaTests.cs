@@ -1492,7 +1492,8 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ProcessoSeletivoRepository processos = new(leitura, TimeProvider.System);
         MontadorDoComprovante montador = new(
-            processos, RegistroCodecs, new PrazoDaCorrecaoDoComprovante(new CertameDivulgadoRepository(leitura), processos, RegistroCodecs, Fuso(), DentroDoPeriodo));
+            processos, RegistroCodecs, new PrazoDaCorrecaoDoComprovante(new CertameDivulgadoRepository(leitura), processos, RegistroCodecs, Fuso(), DentroDoPeriodo),
+            new CancelamentoDoComprovante(Fuso()));
         Inscricao inscricao = (await repositorio.ObterPorIdAsync(primeiro.Value!.InscricaoId))!;
 
         ComprovanteDaInscricaoDto antigo = (await montador.MontarAsync(inscricao, (await repositorio.ObterComprovanteAsync(inscricao.Id, 1))!, CancellationToken.None)).Value!;

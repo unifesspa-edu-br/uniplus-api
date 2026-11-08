@@ -79,6 +79,7 @@ Na Seleção:
 | Dado | Pessoal | `selecao:dados-pessoais:consultar` |
 | Dado | Identificador | `selecao:dados-identificadores:consultar` (o valor mascarado) |
 | — | revelar o valor completo | `selecao:dados-identificadores:revelar` (ação, natureza `Nenhuma`, decidida no endpoint com a do par (dado, identificador); a pedido; substitui `selecao:inscricoes:revelar-cpf`) |
+| — | emitir o comprovante de inscrição | `selecao:inscricoes:emitir-comprovante` (ação, natureza `Nenhuma`, classificação `Sensivel` porque o comprovante reúne dado sensível decifrado; decidida no endpoint junto com `inscricoes:consultar`, também para a inscrição cancelada) |
 | Dado | Sensível | `selecao:dados-sensiveis:consultar` |
 | Arquivo | Público | `selecao:documentos-publicos:consultar` |
 | Arquivo | Interno | `selecao:documentos-internos:consultar` |

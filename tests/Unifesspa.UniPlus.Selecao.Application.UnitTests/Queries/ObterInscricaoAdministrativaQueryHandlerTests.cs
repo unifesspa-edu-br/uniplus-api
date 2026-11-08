@@ -261,6 +261,24 @@ public sealed class ObterInscricaoAdministrativaQueryHandlerTests
         JsonSerializer.Serialize(dto).Should().NotContain(PersonasDeTeste.NomeKevinCarvalho).And.NotContain("***.");
     }
 
+    [Theory(DisplayName = "A leitura diz se quem consulta pode emitir o comprovante, pela mesma permissão que a emissão exige e sem depender das de dado")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PodeEmitirComprovante_PelaPermissaoDeEmitir(bool concedida)
+    {
+        PermissaoSelecao[] permissoes =
+            [PermissaoSelecao.InscricoesConsultar, .. concedida ? [PermissaoSelecao.InscricoesEmitirComprovante] : Array.Empty<PermissaoSelecao>()];
+        DecisoesDeAcessoDeTeste leandro = new("leandro.viana", permissoes);
+
+        Result<InscricaoAdministrativaDto> resultado = await Consultar(DeFernanda(), leandro);
+
+        string codigoDeEmitir = PermissaoSelecao.InscricoesEmitirComprovante.Codigo;
+        resultado.Value!.PodeEmitirComprovante.Should().Be(concedida);
+        await leandro.Verificador.DidNotReceive().ExigirAsync(
+            Arg.Is<PermissionRequirement>(r => r.Permissao == codigoDeEmitir),
+            Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Sem dados públicos as ofertas são omitidas, mas o id e o processo saem")]
     public async Task SemDadosPublicos_OmiteAsOfertas()
     {

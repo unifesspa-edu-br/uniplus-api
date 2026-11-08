@@ -35,6 +35,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     private readonly Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> _ocorrencias = new(StringComparer.Ordinal);
     private readonly List<(DocumentoExigido Exigencia, ArquivoDaApresentacao Arquivo, ApresentacaoDeDocumento Apresentacao)> _arquivos = [];
     private readonly List<DateTimeOffset> _envios = [];
+    private (DateTimeOffset Em, string? Motivo)? _cancelamento;
     private readonly Cpf _cpf;
     private readonly Guid _faseId = Guid.CreateVersion7();
 
@@ -126,6 +127,13 @@ internal sealed class InscricaoAdministrativaDeTeste
         return this;
     }
 
+    /// <summary>O instante e o motivo do cancelamento da inscrição cancelada; o motivo é opcional.</summary>
+    public InscricaoAdministrativaDeTeste CanceladaEm(DateTimeOffset instante, string? motivo = null)
+    {
+        _cancelamento = (instante, motivo);
+        return this;
+    }
+
     public Guid ArquivoDe(string codigoDoDocumento) => _arquivos.Single(a => a.Exigencia.TipoDocumentoCodigo == codigoDoDocumento).Arquivo.Id;
 
     /// <summary>Entrega os repositórios e o codec que respondem pelo cenário montado.</summary>
@@ -159,7 +167,7 @@ internal sealed class InscricaoAdministrativaDeTeste
 
         Inscricao inscricao = Inscricao.Reidratar(
             InscricaoId, ProcessoId, _cpf, "sub-candidato", "https://idp.test", Situacao, versao.Id, OfertaCursoId, null,
-            Situacao == SituacaoInscricao.Rascunho ? null : "000001", null, null, null,
+            Situacao == SituacaoInscricao.Rascunho ? null : "000001", _cancelamento?.Em, _cancelamento is null ? null : "sub-candidato", _cancelamento?.Motivo,
             _respostas, _derivadas, _ocorrencias, [], new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             revisao: 1, DateTimeOffset.UtcNow, null);
 

@@ -73,7 +73,7 @@ internal static class ComprovanteDeTeste
     public static ComprovanteDaInscricaoDto Montar(
         Inscricao inscricao, ComprovanteInscricao comprovante, EnvelopeReidratado envelope, int numero = 1, int total = 1) =>
         ComprovanteDoTitular.Montar(new InsumosDoComprovante(
-            inscricao, new ComprovanteNaPosicao(comprovante, numero, total), envelope, "PSS Medicina 2027", "Centro de Processos Seletivos", Prazo: null));
+            inscricao, new ComprovanteNaPosicao(comprovante, numero, total), envelope, "PSS Medicina 2027", "Centro de Processos Seletivos", Prazo: null, Cancelamento: null));
 
     public static Inscricao UmaInscricao(Cpf? cpf = null) =>
         Inscricao.Iniciar(Guid.CreateVersion7(), cpf ?? PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;

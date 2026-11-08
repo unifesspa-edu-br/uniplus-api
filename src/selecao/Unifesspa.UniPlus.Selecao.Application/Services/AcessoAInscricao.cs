@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -16,6 +17,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class AcessoAInscricao
 {
+    /// <summary>O erro com que as rotas do processo respondem a inscrição que não alcançam: a inexistente, a de outro processo, a em rascunho e a sem permissão.</summary>
+    public static DomainError NaoEncontradaNoProcesso { get; } = new(
+        InscricaoErrorCodes.NaoEncontrada,
+        "Inscrição não encontrada neste processo seletivo.");
+
     /// <summary>
     /// Confere o vínculo da inscrição com o processo, sem decidir nem decifrar nada: a inscrição inexistente, a de outro
     /// processo e a em rascunho são <see cref="NaoEncontrada"/>, porque não há resource sobre o qual decidir. A

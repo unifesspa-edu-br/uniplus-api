@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.API.Controllers;
 using System.Diagnostics.CodeAnalysis;
 
 using Application.DTOs;
+using Application.DTOs.Comprovantes;
 using Application.Permissoes;
 using Application.Queries.CampoDaInscricao;
 using Application.Queries.DocumentosDaInscricao;
@@ -154,6 +155,33 @@ public sealed class InscricoesDoProcessoController : ControllerBase
     {
         Result<AcessoArquivoDoCandidatoDto> resultado = await _queryBus
             .Send(new ObterAcessoAoDocumentoDaInscricaoQuery(id, inscricaoId, arquivoId), cancellationToken)
+            .ConfigureAwait(false);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// Emite, pela unidade que opera o processo, o comprovante número <paramref name="numero"/> de uma inscrição do processo,
+    /// enviada ou cancelada, no mesmo contrato que o titular lê. Exige consultar as inscrições e emitir o comprovante na
+    /// unidade dona do processo. A inscrição que não existe, a de outro processo, a em rascunho e a pessoa sem consultar as
+    /// inscrições recebem o mesmo 404, e o comprovante que a inscrição não tem, 404; quem consulta mas não pode emitir recebe
+    /// 403. O comprovante da inscrição cancelada traz <c>cancelamento</c>, com o aviso pronto para exibir. A resposta
+    /// vai com <c>no-store</c>, e o acesso fica no registro de acessos.
+    /// </summary>
+    /// <param name="id">O processo seletivo.</param>
+    /// <param name="inscricaoId">A inscrição.</param>
+    /// <param name="numero">A posição do comprovante, a partir de 1.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    [HttpGet("{inscricaoId:guid}/comprovantes/{numero:int}")]
+    [VendorMediaType(Resource = "comprovante-inscricao", Versions = [1])]
+    [ProducesResponseType(typeof(ComprovanteDaInscricaoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> EmitirComprovante(Guid id, Guid inscricaoId, int numero, CancellationToken cancellationToken)
+    {
+        Result<ComprovanteDaInscricaoDto> resultado = await _queryBus
+            .Send(new EmitirComprovanteDaInscricaoQuery(id, inscricaoId, numero), cancellationToken)
             .ConfigureAwait(false);
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }

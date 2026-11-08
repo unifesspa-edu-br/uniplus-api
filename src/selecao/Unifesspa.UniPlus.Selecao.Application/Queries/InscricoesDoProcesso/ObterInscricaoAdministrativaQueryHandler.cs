@@ -12,7 +12,6 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -87,7 +86,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
                 .RegistrarNegativaDoInexistenteAsync(
                     verificador, conferencia, query.ProcessoSeletivoId, [PermissaoSelecao.InscricoesConsultar.Requisito], cancellationToken)
                 .ConfigureAwait(false);
-            return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
+            return Result<InscricaoAdministrativaDto>.Failure(AcessoAInscricao.NaoEncontradaNoProcesso);
         }
 
         Guid unidade = conferido.UnidadeId;
@@ -97,7 +96,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
             .DecidirAsync(verificador, conferido, PermissaoSelecao.InscricoesConsultar.Requisito, resource, cancellationToken)
             .ConfigureAwait(false) is Recusada recusada)
         {
-            return Result<InscricaoAdministrativaDto>.Failure(AcessoAInscricao.Erro(recusada, InscricaoNaoEncontrada));
+            return Result<InscricaoAdministrativaDto>.Failure(AcessoAInscricao.Erro(recusada, AcessoAInscricao.NaoEncontradaNoProcesso));
         }
 
         Result<VersaoConfiguracao> versao = await VersaoFixadaDaInscricaoResolver
@@ -122,7 +121,7 @@ public static class ObterInscricaoAdministrativaQueryHandler
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(query.InscricaoId, cancellationToken).ConfigureAwait(false);
         if (inscricao is null)
         {
-            return Result<InscricaoAdministrativaDto>.Failure(InscricaoNaoEncontrada);
+            return Result<InscricaoAdministrativaDto>.Failure(AcessoAInscricao.NaoEncontradaNoProcesso);
         }
 
         FatosDaVersao fatos = FatosDaVersao.De(envelope.Value!);
@@ -148,8 +147,14 @@ public static class ObterInscricaoAdministrativaQueryHandler
             Fixo(decisoes, nameof(InscricaoAdministrativaDto.MotivoDoCancelamento), inscricao.MotivoDoCancelamento),
             ItensDaInscricao.Permitidas(ItensDaInscricao.Secoes(inscricao.Respostas, inscricao.Grupos, fatos, podeRevelar), decisoes),
             ItensDaInscricao.Visiveis(ItensDaInscricao.Derivados(inscricao.Derivados, fatos), decisoes),
-            [.. arquivos.Where(decisoes.ItemSai)]));
+            [.. arquivos.Where(decisoes.ItemSai)],
+            await PodeEmitirComprovanteAsync(verificador, resource, cancellationToken).ConfigureAwait(false)));
     }
+
+    private static async Task<bool> PodeEmitirComprovanteAsync(
+        IVerificadorDeAcesso verificador, ResourceContext resource, CancellationToken cancellationToken) =>
+        await verificador.PodeAsync(PermissaoSelecao.InscricoesEmitirComprovante.Requisito, resource, cancellationToken)
+            .ConfigureAwait(false) == ResultadoDoAcesso.Permitido;
 
     /// <summary>
     /// Como <c>Fixo</c>, para o valor que se lê do repositório: a leitura só acontece quando a propriedade é permitida.
@@ -212,8 +217,4 @@ public static class ObterInscricaoAdministrativaQueryHandler
                 }),
         ];
     }
-
-    private static DomainError InscricaoNaoEncontrada { get; } = new(
-        InscricaoErrorCodes.NaoEncontrada,
-        "Inscrição não encontrada neste processo seletivo.");
 }

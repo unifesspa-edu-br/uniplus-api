@@ -300,7 +300,7 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         corpo.Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor).And.NotContain(PersonasDeTeste.FernandaDrumond.Formatado);
     }
 
-    [Fact(DisplayName = "Só com o acesso às inscrições, a linha e o detalhe trazem o id e o processo, e nenhum outro campo")]
+    [Fact(DisplayName = "Só com o acesso às inscrições, a linha e o detalhe trazem o id e o processo, nenhum dado, e o detalhe diz que não pode emitir o comprovante")]
     public async Task SoComAcesso_TrazSoOId()
     {
         Cenario cenario = await SemearCenarioAsync(nameof(SoComAcesso_TrazSoOId));
@@ -314,7 +314,10 @@ public sealed class AcessoAosDadosDoProcessoEndpointTests : IAsyncLifetime
         using JsonDocument jsonDetalhe = JsonDocument.Parse(await detalhe.Content.ReadAsStringAsync());
         jsonLista.RootElement.EnumerateArray().Select(static i => string.Join(",", i.EnumerateObject().Select(static p => p.Name)))
             .Should().OnlyContain(static nomes => nomes == "id,processo");
-        jsonDetalhe.RootElement.EnumerateObject().Select(static p => p.Name).Should().BeEquivalentTo(["id", "processo", "secoes", "derivados", "arquivos"]);
+        // podeEmitirComprovante é a capacidade de quem consulta, e não dado da inscrição: sai ainda que nenhum dado seja permitido.
+        jsonDetalhe.RootElement.EnumerateObject().Select(static p => p.Name)
+            .Should().BeEquivalentTo(["id", "processo", "secoes", "derivados", "arquivos", "podeEmitirComprovante"]);
+        jsonDetalhe.RootElement.GetProperty("podeEmitirComprovante").GetBoolean().Should().BeFalse("consultar as inscrições não dá a permissão de emitir");
         jsonDetalhe.RootElement.GetProperty("processo").GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
     }
 

@@ -56,6 +56,20 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
         prazo.Should().BeNull();
     }
 
+    [Fact(DisplayName = "A inscrição cancelada não traz prazo da correção, ainda que o comprovante seja o que vale")]
+    public async Task Ler_InscricaoCancelada_Nulo()
+    {
+        Inscricao cancelada = Inscricao.Reidratar(
+            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
+            "000123", DivulgacaoDeTeste.DentroDoPeriodo, "sub-1", null,
+            new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
+            new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DateTimeOffset.UtcNow, null);
+
+        PrazoDaCorrecaoDto? prazo = await Prazo(DivulgacaoDeTeste.DentroDoPeriodo).LerAsync(cancelada, vale: true, CancellationToken.None);
+
+        prazo.Should().BeNull();
+    }
+
     [Fact(DisplayName = "Sem a versão divulgada legível, o prazo some e o comprovante segue")]
     public async Task Ler_SemVersaoDivulgada_Nulo()
     {

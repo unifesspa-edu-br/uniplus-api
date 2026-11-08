@@ -46,6 +46,9 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.Obter))] = typeof(ObterInscricaoAdministrativaQuery),
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.RevelarCampo))] = typeof(RevelarCampoDaInscricaoQuery),
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.AcessoAoDocumento))] = typeof(ObterAcessoAoDocumentoDaInscricaoQuery),
+        // A emissão do comprovante decide no handler, que confere o vínculo antes das duas permissões: consultar responde o 404 do que
+        // não existe, e emitir responde 403 a quem já alcança a inscrição.
+        [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.EmitirComprovante))] = typeof(EmitirComprovanteDaInscricaoQuery),
         // O pedido de concessão: a etapa que se decide vem da situação do pedido, a fila pedida vem da query, e quem
         // não é parte nem decide o pedido recebe o mesmo 404 do que não existe.
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Listar))] = typeof(ListarPedidosDeConcessaoQuery),

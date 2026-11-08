@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 
 /// <summary>
-/// O comprovante do titular montado a partir dos insumos: o texto vem da versão fixada da inscrição e os valores, do próprio
+/// O comprovante montado a partir dos insumos, o mesmo para o titular e para a unidade que o emite: o texto vem da versão fixada da inscrição e os valores, do próprio
 /// comprovante, de modo que o documento emitido não muda com a retificação do edital. Nada daqui lê o que o certame serve hoje.
 /// </summary>
 internal static class ComprovanteDoTitular
@@ -27,6 +27,7 @@ internal static class ComprovanteDoTitular
             IdentificadorDoProcesso = insumos.Envelope.Grafo.IdentificadorLegivel?.Valor,
             UnidadeAdministradora = insumos.NomeDaUnidadeAdministradora,
             Envio = EnvioDoComprovante.De(insumos),
+            Cancelamento = insumos.Cancelamento,
             Candidato = CandidatoDoComprovante.De(insumos),
             PrazoDaCorrecao = insumos.Prazo,
             NumeroDeOpcoesDeCurso = OpcoesDeCursoDoComprovante.NumeroDeOpcoes(insumos),

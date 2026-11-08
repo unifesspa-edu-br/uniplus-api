@@ -47,7 +47,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         PrazoDaCorrecaoDoComprovante prazo = new(
             Substitute.For<ICertameDivulgadoRepository>(), processos, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System);
 
-        return new Cenario(inscricoes, processos, registro, new MontadorDoComprovante(processos, registro, prazo));
+        return new Cenario(inscricoes, processos, registro, new MontadorDoComprovante(processos, registro, prazo, new CancelamentoDoComprovante(DivulgacaoDeTeste.Fuso())));
     }
 
     private static IUserContext Usuario(Cpf cpf, string sub = "sub-1")

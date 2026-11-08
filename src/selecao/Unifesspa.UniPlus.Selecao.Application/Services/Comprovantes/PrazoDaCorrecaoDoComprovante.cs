@@ -5,13 +5,14 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
 /// O prazo que o comprovante que vale mostra para a correção: o fim do período de inscrição da versão divulgada, lido ao vivo
 /// porque a prorrogação vale para quem já se inscreveu, e se a correção ainda cabe agora, pela mesma regra de
-/// <see cref="Inscricao.AcoesPermitidas"/>. O prazo é informação acessória: se não se lê, o comprovante sai sem ele.
+/// <see cref="Inscricao.AcoesPermitidas"/>. A inscrição cancelada não se corrige, e o prazo é informação acessória: se não se lê, o comprovante sai sem ele.
 /// </summary>
 public sealed class PrazoDaCorrecaoDoComprovante
 {
@@ -41,12 +42,12 @@ public sealed class PrazoDaCorrecaoDoComprovante
         _timeProvider = timeProvider;
     }
 
-    /// <summary>O prazo da correção da inscrição, ou nulo quando o comprovante não é o que vale ou a janela não se lê.</summary>
+    /// <summary>O prazo da correção da inscrição, ou nulo quando o comprovante não é o que vale, a inscrição está cancelada ou a janela não se lê.</summary>
     public async Task<PrazoDaCorrecaoDto?> LerAsync(Inscricao inscricao, bool vale, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
 
-        if (!vale)
+        if (!vale || inscricao.Situacao == SituacaoInscricao.Cancelada)
         {
             return null;
         }

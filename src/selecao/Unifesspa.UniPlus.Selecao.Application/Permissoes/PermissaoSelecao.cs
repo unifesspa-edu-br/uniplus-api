@@ -222,4 +222,14 @@ public enum PermissaoSelecao
         Natureza = NaturezaDoItem.Dado,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DadosIdentificadoresConsultar = 21,
+
+    /// <summary>Emitir o comprovante de inscrição de um candidato.</summary>
+    [Permissao(
+        "selecao:inscricoes:emitir-comprovante",
+        "Emitir comprovante de inscrição",
+        "Emite o comprovante de uma inscrição dos processos seletivos da unidade proprietária, inclusive o da inscrição cancelada, com os dados do candidato que o documento reúne. Exige também consultar as inscrições do processo.",
+        ClassificacaoDeProtecao.Sensivel,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 11, II, a",
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    InscricoesEmitirComprovante = 22,
 }

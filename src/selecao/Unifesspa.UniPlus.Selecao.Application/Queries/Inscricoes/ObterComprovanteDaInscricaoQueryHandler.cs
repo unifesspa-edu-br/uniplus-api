@@ -1,9 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 
 using Domain.Entities;
-using Domain.Errors;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs.Comprovantes;
 
@@ -48,11 +46,6 @@ public static class ObterComprovanteDaInscricaoQueryHandler
             return Result<ComprovanteDaInscricaoDto>.Failure(cancelada);
         }
 
-        ComprovanteNaPosicao? posicao = await inscricaoRepository.ObterComprovanteAsync(inscricao.Id, numero, cancellationToken).ConfigureAwait(false);
-
-        return posicao is null
-            ? Result<ComprovanteDaInscricaoDto>.Failure(new DomainError(
-                InscricaoErrorCodes.ComprovanteNaoEncontrado, $"A inscrição não tem o comprovante número {numero}."))
-            : await montador.MontarAsync(inscricao, posicao, cancellationToken).ConfigureAwait(false);
+        return await ComprovanteDoNumero.MontarAsync(inscricao, numero, inscricaoRepository, montador, cancellationToken).ConfigureAwait(false);
     }
 }

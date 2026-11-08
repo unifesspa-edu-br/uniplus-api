@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Reúne o que o comprovante do titular precisa fora do próprio comprovante, a versão fixada da inscrição, o nome do processo
-/// e o da unidade administradora (cópias congeladas na criação) e o prazo da correção, e o monta. A versão fixada é a que o primeiro envio congelou: o texto do documento não acompanha a
+/// Reúne o que o comprovante precisa fora do próprio comprovante, a versão fixada da inscrição, o nome do processo
+/// e o da unidade administradora (cópias congeladas na criação), o prazo da correção e o cancelamento, e o monta. A versão fixada é a que o primeiro envio congelou: o texto do documento não acompanha a
 /// retificação do edital.
 /// </summary>
 public sealed class MontadorDoComprovante
@@ -17,19 +17,23 @@ public sealed class MontadorDoComprovante
     private readonly IProcessoSeletivoRepository _processoSeletivoRepository;
     private readonly IRegistroCodecsEnvelope _registroCodecs;
     private readonly PrazoDaCorrecaoDoComprovante _prazoDaCorrecao;
+    private readonly CancelamentoDoComprovante _cancelamento;
 
     public MontadorDoComprovante(
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        PrazoDaCorrecaoDoComprovante prazoDaCorrecao)
+        PrazoDaCorrecaoDoComprovante prazoDaCorrecao,
+        CancelamentoDoComprovante cancelamento)
     {
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(prazoDaCorrecao);
+        ArgumentNullException.ThrowIfNull(cancelamento);
 
         _processoSeletivoRepository = processoSeletivoRepository;
         _registroCodecs = registroCodecs;
         _prazoDaCorrecao = prazoDaCorrecao;
+        _cancelamento = cancelamento;
     }
 
     public async Task<Result<ComprovanteDaInscricaoDto>> MontarAsync(
@@ -39,17 +43,24 @@ public sealed class MontadorDoComprovante
         ArgumentNullException.ThrowIfNull(posicao);
 
         Result<EnvelopeReidratado> envelope = await EnvelopeFixadoAsync(inscricao, cancellationToken).ConfigureAwait(false);
-        if (envelope.IsFailure)
+        Result<CancelamentoNoComprovanteDto?> cancelamento = _cancelamento.Ler(inscricao);
+        if (envelope.IsFailure || cancelamento.IsFailure)
         {
-            return Result<ComprovanteDaInscricaoDto>.Failure(envelope.Error!);
+            return Result<ComprovanteDaInscricaoDto>.Failure((envelope.Error ?? cancelamento.Error)!);
         }
 
+        return Result<ComprovanteDaInscricaoDto>.Success(ComprovanteDoTitular.Montar(
+            await InsumosAsync(inscricao, posicao, envelope.Value!, cancelamento.Value, cancellationToken).ConfigureAwait(false)));
+    }
+
+    private async Task<InsumosDoComprovante> InsumosAsync(
+        Inscricao inscricao, ComprovanteNaPosicao posicao, EnvelopeReidratado envelope, CancelamentoNoComprovanteDto? cancelamento, CancellationToken cancellationToken)
+    {
         string nome = await _processoSeletivoRepository.ObterNomeAsync(inscricao.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) ?? string.Empty;
         string unidade = await _processoSeletivoRepository.ObterNomeDaUnidadeAdministradoraAsync(inscricao.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) ?? string.Empty;
         PrazoDaCorrecaoDto? prazo = await _prazoDaCorrecao.LerAsync(inscricao, posicao.Vale, cancellationToken).ConfigureAwait(false);
 
-        return Result<ComprovanteDaInscricaoDto>.Success(
-            ComprovanteDoTitular.Montar(new InsumosDoComprovante(inscricao, posicao, envelope.Value!, nome, unidade, prazo)));
+        return new InsumosDoComprovante(inscricao, posicao, envelope, nome, unidade, prazo, cancelamento);
     }
 
     private async Task<Result<EnvelopeReidratado>> EnvelopeFixadoAsync(Inscricao inscricao, CancellationToken cancellationToken)

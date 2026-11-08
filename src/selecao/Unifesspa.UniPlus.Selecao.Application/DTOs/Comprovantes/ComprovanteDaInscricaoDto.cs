@@ -42,6 +42,9 @@ public sealed record ComprovanteDaInscricaoDto
     /// <summary>O envio que o comprovante registra.</summary>
     public required EnvioDoComprovanteDto Envio { get; init; }
 
+    /// <summary>O cancelamento da inscrição; nulo enquanto ela está enviada. Só a emissão pela unidade alcança a inscrição cancelada.</summary>
+    public CancelamentoNoComprovanteDto? Cancelamento { get; init; }
+
     /// <summary>O titular da inscrição.</summary>
     public required CandidatoDoComprovanteDto Candidato { get; init; }
 
@@ -73,6 +76,12 @@ public sealed record ComprovanteDaInscricaoDto
 /// <param name="FusoHorario">A zona em que <paramref name="EnviadoEm"/> se lê.</param>
 /// <param name="HashIntegridade">O código de verificação, o SHA-256 do que foi gravado no envio.</param>
 public sealed record EnvioDoComprovanteDto(string NumeroInscricao, DateTimeOffset EnviadoEm, FusoHorarioDto FusoHorario, string HashIntegridade);
+
+/// <summary>O cancelamento que o comprovante da inscrição cancelada informa.</summary>
+/// <param name="CanceladaEm">O instante do cancelamento.</param>
+/// <param name="Motivo">O motivo informado; nulo quando não há.</param>
+/// <param name="Aviso">O texto da tarja, pronto para exibir: diz que o documento não tem validade porque a inscrição foi cancelada e quando, com data e hora até o segundo na zona institucional, sem o motivo.</param>
+public sealed record CancelamentoNoComprovanteDto(DateTimeOffset CanceladaEm, string? Motivo, string Aviso);
 
 /// <summary>O titular no comprovante: o nome civil, o nome social quando o candidato optou por ele, e o CPF mascarado.</summary>
 /// <param name="NomeCivil">O nome civil informado no envio.</param>

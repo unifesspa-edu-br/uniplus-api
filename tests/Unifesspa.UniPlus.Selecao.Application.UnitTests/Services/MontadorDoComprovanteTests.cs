@@ -23,7 +23,8 @@ public sealed class MontadorDoComprovanteTests
 
     private static MontadorDoComprovante NovoMontador(IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope registro) =>
         new(processos, registro, new PrazoDaCorrecaoDoComprovante(
-            Substitute.For<ICertameDivulgadoRepository>(), processos, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System));
+            Substitute.For<ICertameDivulgadoRepository>(), processos, registro, Substitute.For<IResolvedorFusoInstitucional>(), TimeProvider.System),
+            new CancelamentoDoComprovante(DivulgacaoDeTeste.Fuso()));
 
     [Fact(DisplayName = "O comprovante usa o texto da versão em que a inscrição foi enviada, mesmo com uma versão posterior de rótulos diferentes")]
     public async Task MontarAsync_UsaOTextoDaVersaoFixada()

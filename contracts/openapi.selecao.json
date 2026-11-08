@@ -4004,6 +4004,99 @@
         ]
       }
     },
+    "/api/selecao/processos-seletivos/{id}/inscricoes/{inscricaoId}/comprovantes/{numero}": {
+      "get": {
+        "tags": [
+          "InscricoesDoProcesso"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "inscricaoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "numero",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.comprovante-inscricao.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComprovanteDaInscricaoDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/processos-seletivos/{processoSeletivoId}/modelos-de-documento": {
       "post": {
         "tags": [
@@ -12998,6 +13091,29 @@
           }
         }
       },
+      "CancelamentoNoComprovanteDto": {
+        "required": [
+          "canceladaEm",
+          "motivo",
+          "aviso"
+        ],
+        "type": "object",
+        "properties": {
+          "canceladaEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "motivo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aviso": {
+            "type": "string"
+          }
+        }
+      },
       "CandidatoDoComprovanteDto": {
         "required": [
           "nomeCivil",
@@ -13339,6 +13455,16 @@
           },
           "envio": {
             "$ref": "#/components/schemas/EnvioDoComprovanteDto"
+          },
+          "cancelamento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CancelamentoNoComprovanteDto"
+              }
+            ]
           },
           "candidato": {
             "$ref": "#/components/schemas/CandidatoDoComprovanteDto"
@@ -17742,7 +17868,8 @@
           "processo",
           "secoes",
           "derivados",
-          "arquivos"
+          "arquivos",
+          "podeEmitirComprovante"
         ],
         "type": "object",
         "properties": {
@@ -17815,6 +17942,9 @@
             "items": {
               "$ref": "#/components/schemas/ArquivoAdministrativoDto"
             }
+          },
+          "podeEmitirComprovante": {
+            "type": "boolean"
           }
         }
       },
