@@ -63,12 +63,15 @@ jobs:
       - name: Listar módulos a partir de docker/Dockerfile.*
         id: list
         # Fonte única de verdade: cada docker/Dockerfile.<módulo> vira um item
-        # da matriz `publish`, idêntico ao discover do trivy.yml. Nascer um
+        # da matriz `publish`, como no discover do trivy.yml. Nascer um
         # Dockerfile novo já o publica, sem editar este workflow nem manter
         # sincronia manual com o scan Trivy (CA-04 da issue #630).
+        # A ambiente-init fica de fora: é o contêiner de configuração do
+        # docker-compose local, roda como root e não é implantada em ambiente
+        # nenhum. O Trivy continua a examiná-la.
         run: |
           set -euo pipefail
-          modules=$(ls docker/Dockerfile.* | sed 's#.*Dockerfile\.##' | sort | jq -R . | jq -cs .)
+          modules=$(ls docker/Dockerfile.* | sed 's#.*Dockerfile\.##' | grep -vx 'ambiente-init' | sort | jq -R . | jq -cs .)
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           echo "Módulos descobertos: $modules"
 
