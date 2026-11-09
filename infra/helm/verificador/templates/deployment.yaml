@@ -32,7 +32,7 @@ spec:
       initContainers:
         - name: clamd
           restartPolicy: Always
-          image: "{{ .Values.clamd.image.repository }}:{{ default (printf "v%s" .Chart.AppVersion) .Values.clamd.image.tag }}"
+          image: {{ include "verificador.imagem" (dict "image" .Values.clamd.image "chave" "clamd.image" "ctx" $) | quote }}
           imagePullPolicy: {{ .Values.clamd.image.pullPolicy }}
           env:
             - name: CLAMAV_PRIVATE_MIRROR
@@ -73,7 +73,7 @@ spec:
               mountPath: /var/lib/clamav
       containers:
         - name: verificador
-          image: "{{ .Values.image.repository }}:{{ default (printf "v%s" .Chart.AppVersion) .Values.image.tag }}"
+          image: {{ include "verificador.imagem" (dict "image" .Values.image "chave" "image" "ctx" $) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - configMapRef:
