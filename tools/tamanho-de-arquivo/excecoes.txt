@@ -10,7 +10,6 @@
 #
 # Formato: <linhas> <caminho relativo à raiz>, ordenado por caminho.
 404 src/autorizacao/Unifesspa.UniPlus.Autorizacao.API/Controllers/PedidosDeConcessaoController.cs
-591 src/autorizacao/Unifesspa.UniPlus.Autorizacao.Domain/Entities/PedidoDeConcessao.cs
 417 src/configuracao/Unifesspa.UniPlus.Configuracao.API/Controllers/FatosCandidatoController.cs
 417 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/CalendarioDiasUteis.cs
 1500 src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/FatoCandidato.cs
