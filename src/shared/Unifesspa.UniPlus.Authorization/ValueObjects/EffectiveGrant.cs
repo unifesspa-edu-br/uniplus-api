@@ -34,6 +34,9 @@ public sealed record EffectiveGrant
     /// <summary>Perfil de acesso que reuniu a permissão, quando a concessão é de perfil. Opcional.</summary>
     public Guid? PerfilId { get; }
 
+    /// <summary>Versão do perfil a que a concessão está presa; nula quando a concessão não é de perfil comum.</summary>
+    public Guid? VersaoId { get; private init; }
+
     /// <summary>Escopo por processo seletivo. Opcional.</summary>
     public Guid? EscopoProcessoId { get; }
 
@@ -174,6 +177,28 @@ public sealed record EffectiveGrant
             concedidoPor,
             escopoInstitucional,
             perfilId));
+    }
+
+    /// <summary>
+    /// A concessão de perfil de uma permissão que a concessão gravada dá, com a versão do perfil a que está presa. Passa
+    /// pela mesma validação de <see cref="From"/>, de modo que a permissão inválida falha sem efeito sobre as demais.
+    /// </summary>
+    public static Result<EffectiveGrant> DaConcessao(string? permissao, ConcessaoAtiva concessao)
+    {
+        ArgumentNullException.ThrowIfNull(concessao);
+
+        Result<EffectiveGrant> grant = From(
+            permissao,
+            FonteGrant.Concessao,
+            grantId: concessao.ConcessaoId,
+            escopoUnidadeId: concessao.UnidadeId,
+            validoAte: concessao.ValidaAte,
+            escopoInstitucional: concessao.Institucional,
+            perfilId: concessao.PerfilId);
+
+        return grant.IsSuccess
+            ? Result<EffectiveGrant>.Success(grant.Value! with { VersaoId = concessao.VersaoId })
+            : grant;
     }
 
     // Um Guid opcional é "informado mas vazio" quando vem preenchido com

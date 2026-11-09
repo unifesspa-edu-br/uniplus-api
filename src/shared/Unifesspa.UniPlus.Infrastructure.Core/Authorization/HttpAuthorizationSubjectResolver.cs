@@ -93,14 +93,7 @@ public sealed class HttpAuthorizationSubjectResolver : IAuthorizationSubjectReso
         {
             foreach (string permissao in gravada.Permissoes)
             {
-                Result<EffectiveGrant> concessao = EffectiveGrant.From(
-                    permissao,
-                    FonteGrant.Concessao,
-                    grantId: gravada.ConcessaoId,
-                    escopoUnidadeId: gravada.UnidadeId,
-                    validoAte: gravada.ValidaAte,
-                    escopoInstitucional: gravada.Institucional,
-                    perfilId: gravada.PerfilId);
+                Result<EffectiveGrant> concessao = EffectiveGrant.DaConcessao(permissao, gravada);
 
                 // Uma permissão em branco no perfil não invalida as demais: a concessão que ela
                 // descreveria não existe, e as outras continuam legítimas.

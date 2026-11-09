@@ -1,58 +1,79 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
-using Microsoft.EntityFrameworkCore;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>
-/// A composição em vigor lida no banco, para as consultas que decidem acesso: no perfil de governança são as
-/// permissões próprias; no perfil comum são as da versão da vigência aberta, e o perfil sem vigência aberta não reúne
-/// permissão alguma. Espelha <c>Perfil.ComposicaoEmVigor</c>.
+/// O que cada concessão dá hoje, lido no banco: o ponto único das consultas que decidem acesso. No perfil de governança
+/// são as permissões próprias do perfil. No perfil comum é o código que está na versão da concessão e em toda versão de
+/// número maior que vigorou depois dela, até a vigente: a permissão removida numa versão não volta numa posterior. O perfil
+/// comum sem vigência aberta, ou a concessão comum sem versão, não dá permissão alguma. Espelha <c>Perfil.ComposicaoEmVigor</c>.
 /// </summary>
 internal static class ComposicaoEmVigorNoBanco
 {
-    /// <summary>Os perfis cuja composição em vigor reúne a permissão.</summary>
-    public static IQueryable<Guid> PerfisComPermissaoEmVigor(this AutorizacaoDbContext context, string codigo)
+    /// <summary>
+    /// Cada concessão informada com cada código que ela dá, em uma só instrução SQL; a concessão sem permissão
+    /// aparece uma vez, com o código nulo.
+    /// </summary>
+    public static IQueryable<LinhaDaConcessao> ComCodigosEmVigor(
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes)
     {
-        IQueryable<Guid> governanca = context.Perfis
-            .Where(p => p.Governanca != null && p.Permissoes.Any(x => x.Codigo == codigo))
-            .Select(p => p.Id);
+        IQueryable<CodigoDaConcessao> codigos = context.CodigosDasConcessoes(concessoes);
 
-        IQueryable<Guid> comuns =
-            from v in context.VigenciasDosPerfis
-            join ver in context.VersoesDosPerfis on v.VersaoId equals ver.Id
-            where v.Ate == null && ver.Permissoes.Any(x => x.Codigo == codigo)
-            select v.PerfilId;
-
-        return governanca.Concat(comuns);
+        return
+            from c in concessoes
+            join p in context.Perfis on c.PerfilId equals p.Id
+            join k in codigos on c.Id equals k.ConcessaoId into doCodigo
+            from k in doCodigo.DefaultIfEmpty()
+            orderby c.ConcedidaEm, c.Id
+            select new LinhaDaConcessao(
+                new ConcessaoLida(c.Id, c.PerfilId, p.Nome, c.UnidadeId, c.EscopoTipo, c.ValidaAte, c.VersaoId),
+                k == null ? null : k.Codigo);
     }
 
-    /// <summary>As permissões em vigor de cada perfil informado.</summary>
-    public static async Task<Dictionary<Guid, List<string>>> PermissoesEmVigorAsync(
-        this AutorizacaoDbContext context, Guid[] perfilIds, CancellationToken cancellationToken)
+    /// <summary>As concessões, entre todas, que dão o código.</summary>
+    public static IQueryable<Guid> ConcessoesComPermissaoEmVigor(this AutorizacaoDbContext context, string codigo) =>
+        context.CodigosDasConcessoes(context.Concessoes)
+            .Where(k => k.Codigo == codigo)
+            .Select(k => k.ConcessaoId);
+
+    private static IQueryable<CodigoDaConcessao> CodigosDasConcessoes(
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
+        context.CodigosDaGovernanca(concessoes).Concat(context.CodigosDasVersoes(concessoes));
+
+    private static IQueryable<CodigoDaConcessao> CodigosDaGovernanca(
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
+        from c in concessoes
+        join p in context.Perfis on c.PerfilId equals p.Id
+        where p.Governanca != null
+        from x in p.Permissoes
+        select new CodigoDaConcessao { ConcessaoId = c.Id, Codigo = x.Codigo };
+
+    // O código vale enquanto nenhuma vigência já aberta, de versão mais nova que a da concessão, deixou de reuni-lo:
+    // a permissão que saiu não volta pela versão antiga, mesmo que uma versão posterior a recoloque.
+    private static IQueryable<CodigoDaConcessao> CodigosDasVersoes(
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
+        from c in concessoes
+        join v in context.VersoesDosPerfis on c.VersaoId equals v.Id
+        from x in v.Permissoes
+        where context.VigenciasDosPerfis.Any(g => g.PerfilId == c.PerfilId && g.Ate == null)
+            && !(from g in context.VigenciasDosPerfis
+                 join w in context.VersoesDosPerfis on g.VersaoId equals w.Id
+                 where g.PerfilId == c.PerfilId && w.Numero > v.Numero && !w.Permissoes.Any(y => y.Codigo == x.Codigo)
+                 select g.Id).Any()
+        select new CodigoDaConcessao { ConcessaoId = c.Id, Codigo = x.Codigo };
+
+    private sealed class CodigoDaConcessao
     {
-        List<PermissaoDoPerfil> governanca = await context.PermissoesDeGovernancaAsync(perfilIds, cancellationToken).ConfigureAwait(false);
-        List<PermissaoDoPerfil> comuns = await context.PermissoesDasVersoesVigentesAsync(perfilIds, cancellationToken).ConfigureAwait(false);
+        public Guid ConcessaoId { get; init; }
 
-        return governanca.Concat(comuns)
-            .GroupBy(x => x.PerfilId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.Codigo).ToList());
+        public string Codigo { get; init; } = string.Empty;
     }
-
-    private static Task<List<PermissaoDoPerfil>> PermissoesDeGovernancaAsync(
-        this AutorizacaoDbContext context, Guid[] perfilIds, CancellationToken cancellationToken) =>
-        context.Perfis
-            .AsNoTracking()
-            .Where(p => perfilIds.Contains(p.Id) && p.Governanca != null)
-            .SelectMany(p => p.Permissoes.Select(x => new PermissaoDoPerfil(p.Id, x.Codigo)))
-            .ToListAsync(cancellationToken);
-
-    private static Task<List<PermissaoDoPerfil>> PermissoesDasVersoesVigentesAsync(
-        this AutorizacaoDbContext context, Guid[] perfilIds, CancellationToken cancellationToken) =>
-        (from v in context.VigenciasDosPerfis.AsNoTracking()
-         join ver in context.VersoesDosPerfis.AsNoTracking() on v.VersaoId equals ver.Id
-         from x in ver.Permissoes
-         where v.Ate == null && perfilIds.Contains(v.PerfilId)
-         select new PermissaoDoPerfil(v.PerfilId, x.Codigo))
-        .ToListAsync(cancellationToken);
-
-    private sealed record PermissaoDoPerfil(Guid PerfilId, string Codigo);
 }
+
+/// <summary>A concessão como a decisão de acesso a lê.</summary>
+internal sealed record ConcessaoLida(
+    Guid Id, Guid PerfilId, string PerfilNome, Guid? UnidadeId, TipoDeEscopo EscopoTipo, DateTimeOffset? ValidaAte, Guid? VersaoId);
+
+/// <summary>Uma linha da consulta da decisão: a concessão e um dos códigos que ela dá, ou nenhum.</summary>
+internal sealed record LinhaDaConcessao(ConcessaoLida Concessao, string? Codigo);

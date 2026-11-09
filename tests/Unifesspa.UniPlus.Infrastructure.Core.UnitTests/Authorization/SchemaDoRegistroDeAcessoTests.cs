@@ -50,6 +50,18 @@ public sealed class SchemaDoRegistroDeAcessoTests
         Schema.Evaluate(JsonSerializer.SerializeToElement(lote), Opcoes).IsValid.Should().BeFalse();
     }
 
+    [Fact(DisplayName = "O schema declara a versão do perfil da concessão como identificador, e recusa o que não é identificador")]
+    public void VersaoId_EDeclaradoComoIdentificador()
+    {
+        JsonArray lote = (JsonArray)JsonNode.Parse(RegistroDeAcessoKafka.ValorDoLote([Registro()]))!;
+        lote[0]!["registro"]!["versaoId"] = Guid.CreateVersion7().ToString();
+        JsonArray invalido = (JsonArray)JsonNode.Parse(lote.ToJsonString())!;
+        invalido[0]!["registro"]!["versaoId"] = "nao-e-identificador";
+
+        Schema.Evaluate(JsonSerializer.SerializeToElement(lote), Opcoes).IsValid.Should().BeTrue();
+        Schema.Evaluate(JsonSerializer.SerializeToElement(invalido), Opcoes).IsValid.Should().BeFalse();
+    }
+
     [Fact(DisplayName = "O schema admite propriedade adicional: campo opcional novo não quebra o leitor da versão 1")]
     public void PropriedadeAdicional_Valida()
     {

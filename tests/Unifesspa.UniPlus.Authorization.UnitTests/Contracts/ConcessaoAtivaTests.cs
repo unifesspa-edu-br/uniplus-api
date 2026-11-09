@@ -9,7 +9,7 @@ public sealed class ConcessaoAtivaTests
     private static readonly DateTimeOffset Agora = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
 
     private static ConcessaoAtiva Concessao(DateTimeOffset? validaAte) =>
-        new(Guid.CreateVersion7(), Guid.CreateVersion7(), "Perfil", null, true, validaAte, []);
+        new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Perfil", null, true, validaAte, []);
 
     [Fact]
     public void VigenteEm_SemPrazo_EstaVigente() =>
