@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -89,9 +92,25 @@ public sealed class PrazoDaVersaoTests
         cenario.Unidade.Descartes.Should().Be(0);
     }
 
+    [Fact(DisplayName = "A falha de um perfil na rotina de expiração não impede os demais")]
+    public async Task Rotina_FalhaDeUmPerfil_NaoImpedeOsDemais()
+    {
+        Perfil falha = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
+        Perfil expira = PerfisDeTeste.Pendente("Analista de apoio", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(new PerfisNaMemoria(falha, expira), Prazo.AddDays(1));
+
+        int expiradas = await cenario.Expiracao(falha.Id).ExecutarAsync(CancellationToken.None);
+
+        expiradas.Should().Be(1);
+        expira.VersaoPendente.Should().BeNull();
+        falha.VersaoPendente.Should().NotBeNull();
+    }
+
     private sealed class Cenario
     {
         private readonly PerfisNaMemoria _perfis;
+        private readonly OperacaoSobreOPerfil _operacao;
+        private readonly TimeProvider _relogio;
 
         public Cenario(Perfil perfil, DateTimeOffset agora)
             : this(new PerfisNaMemoria(perfil), agora)
@@ -101,14 +120,14 @@ public sealed class PrazoDaVersaoTests
         public Cenario(PerfisNaMemoria perfis, DateTimeOffset agora)
         {
             _perfis = perfis;
-            TimeProvider relogio = new CenarioDaGovernancaDaVersao.RelogioFixo(agora);
+            _relogio = new CenarioDaGovernancaDaVersao.RelogioFixo(agora);
             Unidade = new UnidadeDeTrabalho();
             Armazenamento = new Armazenamento();
-            OperacaoSobreOPerfil operacao = new(_perfis, Unidade, relogio);
-            AutoriaDaOperacao autoria = new(new Usuario(PerfisDeTeste.Autor), relogio, new ConcessoesNaMemoria());
-            EnvioDoDocumento envio = new(Armazenamento, relogio);
-            Documentos = new DocumentosDasVersoes(operacao, envio, autoria, _perfis, Armazenamento, Unidade);
-            Versoes = new VersoesDoPerfil(operacao, new LeitorDoContextoDaVersao(_perfis, new ConcessoesNaMemoria()), envio, autoria, Catalogo);
+            _operacao = new OperacaoSobreOPerfil(_perfis, Unidade, _relogio);
+            AutoriaDaOperacao autoria = new(new Usuario(PerfisDeTeste.Autor), _relogio, new ConcessoesNaMemoria());
+            EnvioDoDocumento envio = new(Armazenamento, _relogio);
+            Documentos = new DocumentosDasVersoes(_operacao, envio, autoria, _perfis, Armazenamento, Unidade);
+            Versoes = new VersoesDoPerfil(_operacao, new LeitorDoContextoDaVersao(_perfis, new ConcessoesNaMemoria()), envio, autoria, Catalogo);
         }
 
         public UnidadeDeTrabalho Unidade { get; }
@@ -118,5 +137,20 @@ public sealed class PrazoDaVersaoTests
         public DocumentosDasVersoes Documentos { get; }
 
         public VersoesDoPerfil Versoes { get; }
+
+        public ExpiracaoDasVersoesPendentes Expiracao(Guid perfilQueFalha) =>
+            new(_perfis, new BarramentoQueFalhaNoPerfil(_operacao, perfilQueFalha), _relogio, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
+    }
+
+    private sealed class BarramentoQueFalhaNoPerfil(OperacaoSobreOPerfil operacao, Guid perfilQueFalha) : ICommandBus
+    {
+        public async Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        {
+            ExpirarVersaoPendenteDoPerfilCommand expirar = (ExpirarVersaoPendenteDoPerfilCommand)(object)command;
+
+            return expirar.PerfilId == perfilQueFalha
+                ? throw new InvalidOperationException("Falha simulada.")
+                : (TResponse)(object)await ExpirarVersaoPendenteDoPerfilCommandHandler.Handle(expirar, operacao, ct);
+        }
     }
 }

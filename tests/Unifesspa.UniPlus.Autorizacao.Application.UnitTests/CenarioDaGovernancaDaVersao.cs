@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using Microsoft.Extensions.Logging.Abstractions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
@@ -47,7 +48,7 @@ internal sealed class CenarioDaGovernancaDaVersao
             operacao, new LeitorDoContextoDaVersao(Perfis, concessoes), efeitos, autoria, new CatalogoDeTeste());
         Cancelamento = new CancelamentoDaVersao(operacao, efeitos, autoria);
         Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria);
-        Expiracao = new ExpiracaoDasVersoesPendentes(Perfis, operacao, tempo, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
+        Expiracao = new ExpiracaoDasVersoesPendentes(Perfis, new BarramentoDeTeste(operacao), tempo, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
     }
 
     public PerfisNaMemoria Perfis { get; }
@@ -75,6 +76,14 @@ internal sealed class CenarioDaGovernancaDaVersao
         perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), PerfisDeTeste.Instante);
 
         return perfil;
+    }
+
+    private sealed class BarramentoDeTeste(OperacaoSobreOPerfil operacao) : ICommandBus
+    {
+        public async Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default) =>
+            command is ExpirarVersaoPendenteDoPerfilCommand expirar
+                ? (TResponse)(object)await ExpirarVersaoPendenteDoPerfilCommandHandler.Handle(expirar, operacao, ct)
+                : throw new NotSupportedException();
     }
 
     public sealed class RelogioFixo(DateTimeOffset agora) : TimeProvider
