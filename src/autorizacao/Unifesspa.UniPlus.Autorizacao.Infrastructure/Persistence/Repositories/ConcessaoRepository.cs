@@ -91,6 +91,23 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(
+        Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default)
+    {
+        // A trava vem antes da leitura rastreada, que então enxerga o que a transação anterior confirmou: a concessão
+        // revogada nesse intervalo não volta a ser lida. A ordem por id evita ciclo entre quem trava mais de uma.
+        await _context.Database.ExecuteSqlRawAsync(
+            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE perfil_id = {{0}} AND versao_id = {{1}} AND revogada_em IS NULL ORDER BY id FOR UPDATE",
+            [perfilId, versaoId],
+            cancellationToken).ConfigureAwait(false);
+
+        return await _context.Concessoes
+            .Where(c => c.PerfilId == perfilId && c.VersaoId == versaoId && c.RevogadaEm == null)
+            .OrderBy(c => c.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<bool> TemConcessaoAtivaDoPerfilAsync(
         Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default)
     {
@@ -206,10 +223,12 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         return [.. titulares.Select(t => new TitularComEmail(new Identidade(t.BeneficiarioEmissor, t.BeneficiarioSub), t.BeneficiarioEmail!))];
     }
 
-    // Uma só consulta traz a concessão e o nome do perfil: o perfil existe sempre, pela chave
-    // estrangeira, e o join não duplica linha.
+    // Uma só consulta traz a concessão, o nome do perfil e o número da versão da própria concessão, nunca o da vigente: o
+    // perfil existe sempre, pela chave estrangeira, e a versão é no máximo uma, então o join não duplica linha.
     private IQueryable<ConcessaoComPerfil> ComPerfil(IQueryable<Concessao> concessoes) =>
         from c in concessoes
         join p in _context.Perfis.AsNoTracking() on c.PerfilId equals p.Id
-        select new ConcessaoComPerfil(c, p.Nome) { Id = c.Id };
+        join v in _context.VersoesDosPerfis.AsNoTracking() on c.VersaoId equals v.Id into versoes
+        from v in versoes.DefaultIfEmpty()
+        select new ConcessaoComPerfil(c, p.Nome, v == null ? null : v.Numero) { Id = c.Id };
 }

@@ -44,14 +44,15 @@ public static class PerfisDeTeste
     }
 
     /// <summary>Cria uma versão nova do perfil, com o mesmo nome, e a leva à vigência.</summary>
-    public static void NovaVersaoVigente(
+    public static ResultadoDoDocumentoVerificado NovaVersaoVigente(
         Perfil perfil, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
         Garantir(perfil.CriarVersao(
             Conteudo(perfil.Nome, perfil.Descricao, permissoes, catalogo), SemContexto, Autor, Instante, catalogo));
-        EntrarEmVigor(perfil, catalogo);
+
+        return EntrarEmVigor(perfil, catalogo);
     }
 
     /// <summary>Leva a versão pendente do perfil, pelo envio e pela verificação do documento, à vigência.</summary>

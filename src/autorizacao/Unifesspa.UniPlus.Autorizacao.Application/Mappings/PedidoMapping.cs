@@ -20,6 +20,7 @@ public static class PedidoMapping
             new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteSub, p.SolicitanteNome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
+            NumeroDaVersao(p, perfil),
             Escopo(p),
             p.Justificativa,
             p.ValidaAteSugerida,
@@ -29,7 +30,8 @@ public static class PedidoMapping
             p.EncerradoEm,
             p.ConcessaoId,
             [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)],
-            [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.Id).Select(ToDto)]);
+            [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.Id).Select(ToDto)],
+            [.. p.TrocasDeVersao.OrderBy(t => t.Instante).ThenBy(t => t.Id).Select(ToDto)]);
     }
 
     public static PedidoResumoDto ToResumo(PedidoComPerfil item)
@@ -55,6 +57,13 @@ public static class PedidoMapping
 
         return new AnexoDoPedidoDto(a.Id, a.Situacao.ToCodigo(), a.TamanhoDeclarado, a.EnviadoEm);
     }
+
+    // O número é o da versão que o próprio pedido segue, nunca o da vigente: o pedido encerrado mantém a versão dele.
+    private static int? NumeroDaVersao(PedidoDeConcessao p, Perfil? perfil) =>
+        perfil?.Versoes.FirstOrDefault(v => v.Id == p.VersaoId)?.Numero;
+
+    private static TrocaDeVersaoDoPedidoDto ToDto(TrocaDeVersaoDoPedido t) =>
+        new(t.VersaoAnterior, t.VersaoNova, t.Desfecho.ToCodigo(), t.Instante);
 
     private static DecisaoDoPedidoDto ToDto(DecisaoDoPedido d) => new(
         d.Etapa.ToCodigo(),

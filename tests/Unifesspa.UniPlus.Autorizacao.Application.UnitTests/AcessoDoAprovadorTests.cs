@@ -151,6 +151,10 @@ public sealed class AcessoDoAprovadorTests
     {
         public Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PedidoDeConcessao?>(null);
 
+        public Task<Guid?> ObterPerfilIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+
+        public Task<IReadOnlyList<PedidoDeConcessao>> ListarAtivosDoPerfilParaAlterarAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+
         public Task<PedidoDeConcessao?> ObterParaLeituraAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PedidoDeConcessao?>(null);
 
         public Task<PedidoDeConcessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult<PedidoDeConcessao?>(null);

@@ -65,7 +65,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await using TransacaoRetidaDeTeste entrada = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         (await entrada.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
             .RegistrarAsync(ResultadoDe(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None))
-            .Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+            .Desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
 
         Task<Perfil> concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
         await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
@@ -108,7 +108,9 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await janela.ConfirmarAsync();
 
         ITrackedSession sessao = await fluxo;
-        sessao.AllRecordsInOrder().Count(r => r.MessageEventType == MessageEventType.ExecutionStarted).Should().Be(2);
+        sessao.AllRecordsInOrder()
+            .Count(r => r.MessageEventType == MessageEventType.ExecutionStarted && r.Envelope?.Message is ResultadoDaVerificacaoDeArquivo)
+            .Should().Be(2);
         (await ConsultarPerfilAsync(original.PerfilId)).Should().Be(("nome_indisponivel", 1));
         (await SituacaoNoBancoAsync(nova.DocumentoId)).Should().Be("verificado");
         (await SituacaoDaVersaoNoBancoAsync(nova.VersaoId)).Should().Be("recusada");
@@ -139,11 +141,11 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
     private async Task<DesfechoDoResultadoDaVersao> RegistrarEmTransacaoAsync(Guid documentoId)
     {
         await using TransacaoRetidaDeTeste transacao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        DesfechoDoResultadoDaVersao desfecho = await transacao.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
+        RegistroDoResultadoDaVersao registro = await transacao.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
             .RegistrarAsync(ResultadoDe(documentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None);
         await transacao.ConfirmarAsync();
 
-        return desfecho;
+        return registro.Desfecho;
     }
 
     private async Task<Perfil> ConcederEmTransacaoAsync(Guid perfilId, EscopoDaConcessao escopo)

@@ -30,8 +30,9 @@ public sealed record FiltroDeConcessoes(
 /// <summary>Titular de uma concessão ativa e o e-mail que a concessão guarda dele.</summary>
 public sealed record TitularComEmail(Identidade Pessoa, string Email);
 
-/// <summary>Concessão com o nome do perfil que ela concede, para a resposta.</summary>
-public sealed record ConcessaoComPerfil(Concessao Concessao, string PerfilNome) : IIdentificavel
+/// <summary>Concessão com o nome do perfil que ela concede e o número da versão a que está presa, para a resposta.</summary>
+/// <param name="Versao">Número da versão apontada pela própria concessão; nulo no perfil de governança, que não tem versão.</param>
+public sealed record ConcessaoComPerfil(Concessao Concessao, string PerfilNome, int? Versao) : IIdentificavel
 {
     /// <summary>Id da concessão, exposto para a paginação keyset operar sobre a projeção.</summary>
     public Guid Id { get; init; } = Concessao.Id;
@@ -94,6 +95,12 @@ public interface IConcessaoRepository : IRepository<Concessao>
     /// revogação concorrente que já foi confirmada.
     /// </summary>
     Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As concessões não revogadas do perfil presas à versão, rastreadas e travadas com <c>FOR UPDATE</c> em ordem de id até
+    /// o fim da transação: a revogação concorrente espera, e a concessão revogada antes da trava fica de fora da leitura.
+    /// </summary>
+    Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Conta os beneficiários distintos com concessão ativa, no escopo da instituição, do perfil

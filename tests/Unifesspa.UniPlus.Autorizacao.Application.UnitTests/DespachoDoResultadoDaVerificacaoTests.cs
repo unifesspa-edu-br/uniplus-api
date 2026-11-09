@@ -238,6 +238,10 @@ internal class PedidosComAnexo(AnexoDoPedido? anexo, PedidoDeConcessao? pedido =
     public void Remover(PedidoDeConcessao entity) => throw new InvalidOperationException();
     public Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(pedido is not null && pedido.Id == id ? pedido : null);
+
+    public Task<Guid?> ObterPerfilIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+
+    public Task<IReadOnlyList<PedidoDeConcessao>> ListarAtivosDoPerfilParaAlterarAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task<PedidoDeConcessao?> ObterParaLeituraAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task AdicionarLeituraAsync(LeituraDoAnexoDoPedido leitura, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     public Task<IReadOnlyList<LeituraDoAnexoDoPedido>> ListarLeiturasAsync(Guid pedidoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();

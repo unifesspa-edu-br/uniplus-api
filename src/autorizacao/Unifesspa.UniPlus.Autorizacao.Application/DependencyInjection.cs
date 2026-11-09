@@ -42,6 +42,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<OperacaoSobreOPerfil>();
         services.AddScoped<VersoesDoPerfil>();
         services.AddScoped<DocumentosDasVersoes>();
+        services.AddScoped<EfeitosDaTrocaDeVigencia>();
         services.AddScoped<ResultadoDoDocumentoDaVersao>();
     }
 

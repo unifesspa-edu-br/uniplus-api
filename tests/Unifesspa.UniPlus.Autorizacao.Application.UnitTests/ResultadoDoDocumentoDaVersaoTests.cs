@@ -23,7 +23,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
         Cenario cenario = new(perfil);
 
-        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
+        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None)).Desfecho;
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
         perfil.VersaoVigente.Should().NotBeNull();
@@ -37,7 +37,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
         Cenario cenario = new(perfil);
 
-        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Recusado(documento.Id), CancellationToken.None);
+        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Recusado(documento.Id), CancellationToken.None)).Desfecho;
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
         documento.Situacao.Should().Be(SituacaoDoAnexo.Recusado);
@@ -52,7 +52,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         Cenario cenario = new(perfil);
         await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
 
-        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
+        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None)).Desfecho;
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
         cenario.Unidade.Gravacoes.Should().Be(1);
@@ -66,7 +66,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         perfil.CancelarVersao(perfil.Versoes.Single().Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante);
         Cenario cenario = new(perfil);
 
-        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
+        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None)).Desfecho;
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
         documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
@@ -78,7 +78,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
     {
         Cenario cenario = new(PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo));
 
-        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(Guid.NewGuid()), CancellationToken.None);
+        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(Guid.NewGuid()), CancellationToken.None)).Desfecho;
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Desconhecido);
         cenario.Unidade.Gravacoes.Should().Be(0);
@@ -122,6 +122,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
             Resultado = new ResultadoDoDocumentoDaVersao(
                 repositorio,
                 new LeitorDoContextoDaVersao(repositorio, new ConcessoesNaMemoria()),
+                new EfeitosDaTrocaDeVigencia(new ConcessoesNaMemoria(), new PedidosAtivosNaMemoria(), DoublesDeAvisos.Avisos(), TimeProvider.System),
                 Unidade,
                 Catalogo,
                 TimeProvider.System);
