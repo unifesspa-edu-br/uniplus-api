@@ -9,9 +9,10 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
-
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// O prazo da janela de migração com o relógio controlável: a decisão de acesso o confere sem a rotina, a rotina
@@ -78,6 +79,28 @@ public sealed class JanelaDeMigracaoPrazoNoHostTests : JanelaDeMigracaoNoHostTes
         janela.GetProperty("situacao").GetString().Should().Be("encerrada");
         janela.GetProperty("forma").GetString().Should().Be("prazo");
         SituacaoDe(janela, cenario.Concessoes[Leandro]).Should().Be("nao_migrada");
+    }
+
+    [Fact(DisplayName = "A leitura da janela encerrada lista só as concessões que ela registrou, não as de uma versão posterior")]
+    public async Task Leitura_DaJanelaEncerrada_NaoListaConcessaoDeVersaoPosterior()
+    {
+        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        using HttpClient gestao = await GestaoAsync();
+        Relogio.Avancar(DepoisDoPrazo);
+        await ProcessarJanelasAsync();
+        await TrocarComposicaoAsync(cenario.PerfilId, Consultar);
+        Guid posterior = await ConcessoesDeTeste.ConcederAsync(
+            Fixture.Factory.Services,
+            Betina.Sub.ToString(),
+            cenario.PerfilId,
+            EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()),
+            email: Betina.Email);
+
+        JsonElement janela = await JanelaAsync(gestao, cenario.PerfilId);
+
+        janela.GetProperty("situacao").GetString().Should().Be("encerrada");
+        janela.GetProperty("itens").EnumerateArray().Select(i => i.GetProperty("concessaoId").GetGuid())
+            .Should().BeEquivalentTo([cenario.Concessoes[Leandro]]).And.NotContain(posterior);
     }
 
     [Fact(DisplayName = "O lote que chega depois do prazo grava o encerramento e é recusado, com a mesma resposta no replay")]
