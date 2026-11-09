@@ -100,9 +100,9 @@ public sealed class ProfileEndpointsTests : IClassFixture<SelecaoApiFactory>
     public async Task GetMe_ShouldReturnGrantedProfiles_WithScopeUnitAndExpiry()
     {
         Guid unidadeId = Guid.CreateVersion7();
-        ConcessaoAtiva institucional = new(Guid.CreateVersion7(), Guid.CreateVersion7(), "Consulta institucional", null, true, null, []);
+        ConcessaoAtiva institucional = new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Consulta institucional", null, true, null, []);
         ConcessaoAtiva daUnidade = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), []);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Gestor de processo seletivo", unidadeId, false, DateTimeOffset.UtcNow.AddDays(30), []);
         using WebApplicationFactory<Unifesspa.UniPlus.Host.HostAssemblyMarker> factory = ComConcessoes(
             [daUnidade, institucional],
             new UnidadeView(unidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "Centro", true, null));

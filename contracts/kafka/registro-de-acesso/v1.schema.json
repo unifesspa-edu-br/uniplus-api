@@ -152,6 +152,11 @@
           "type": ["string", "null"],
           "format": "uuid"
         },
+        "versaoId": {
+          "description": "Versão do perfil a que a concessão usada está presa; nula quando a concessão não é de perfil comum.",
+          "type": ["string", "null"],
+          "format": "uuid"
+        },
         "escopoUnidadeId": {
           "description": "Unidade do escopo da concessão usada; nulo quando o escopo é a instituição.",
           "type": ["string", "null"],

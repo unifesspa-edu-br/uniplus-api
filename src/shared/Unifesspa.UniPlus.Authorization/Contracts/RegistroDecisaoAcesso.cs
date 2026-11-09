@@ -116,6 +116,9 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Perfil de acesso da concessão usada, quando ela é de perfil.</summary>
     public Guid? PerfilId { get; }
 
+    /// <summary>Versão do perfil a que a concessão usada está presa; nula quando a concessão não é de perfil comum.</summary>
+    public Guid? VersaoId { get; private init; }
+
     /// <summary>Unidade do escopo da concessão usada; nula quando o escopo é a instituição.</summary>
     public Guid? EscopoUnidadeId { get; }
 
@@ -213,8 +216,10 @@ public sealed record RegistroDecisaoAcesso
             grant is not null ? ValoresCanonicos.De(grant.Fonte) : null,
             grant?.GrantId,
             grant?.PerfilId,
-            grant?.EscopoUnidadeId);
+            grant?.EscopoUnidadeId).ComVersaoDe(grant);
     }
+
+    private RegistroDecisaoAcesso ComVersaoDe(EffectiveGrant? grant) => this with { VersaoId = grant?.VersaoId };
 
     /// <summary>
     /// Um registro por id de resource, a partir do registro de uma decisão <b>permitida</b>: cada

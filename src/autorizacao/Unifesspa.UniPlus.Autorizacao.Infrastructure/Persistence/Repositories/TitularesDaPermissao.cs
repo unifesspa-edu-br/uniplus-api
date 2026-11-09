@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 /// <summary>
 /// Os titulares de uma permissão, lidos das concessões para quem precisa avisá-los. O perfil desativado
 /// continua concedendo as concessões que já existem, como na decisão de acesso, e por isso não é filtrado. A permissão
-/// é a da composição em vigor do perfil.
+/// é a que a concessão dá pela composição em vigor, na versão a que está presa.
 /// </summary>
 internal sealed class TitularesDaPermissao : ITitularesDaPermissao
 {
@@ -32,7 +32,7 @@ internal sealed class TitularesDaPermissao : ITitularesDaPermissao
         return await (
             from c in _context.Concessoes.AsNoTracking().VigentesDaInstituicao(agora)
             where c.BeneficiarioEmail != null
-                && _context.PerfisComPermissaoEmVigor(codigoDaPermissao).Contains(c.PerfilId)
+                && _context.ConcessoesComPermissaoEmVigor(codigoDaPermissao).Contains(c.Id)
             select c.BeneficiarioEmail!)
             .Distinct()
             .ToListAsync(cancellationToken)

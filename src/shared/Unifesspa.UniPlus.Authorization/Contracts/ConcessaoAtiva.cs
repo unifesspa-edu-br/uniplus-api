@@ -7,15 +7,17 @@ namespace Unifesspa.UniPlus.Authorization.Contracts;
 /// </summary>
 /// <param name="ConcessaoId">Identificador da concessão.</param>
 /// <param name="PerfilId">Perfil de acesso concedido.</param>
+/// <param name="VersaoId">Versão do perfil a que a concessão está presa; nula na governança, que não tem versão.</param>
 /// <param name="PerfilNome">Nome do perfil no instante da leitura.</param>
 /// <param name="UnidadeId">Unidade do escopo; nula quando o escopo é a instituição.</param>
 /// <param name="Institucional">O escopo é a instituição.</param>
 /// <param name="ValidaAte">Fim da vigência; nulo quando a concessão não expira. A concessão vencida
 /// continua listada, para a decisão recusá-la como expirada e orientar a renovação.</param>
-/// <param name="Permissoes">Códigos das permissões do perfil.</param>
+/// <param name="Permissoes">Códigos das permissões que a concessão dá no instante da leitura.</param>
 public sealed record ConcessaoAtiva(
     Guid ConcessaoId,
     Guid PerfilId,
+    Guid? VersaoId,
     string PerfilNome,
     Guid? UnidadeId,
     bool Institucional,

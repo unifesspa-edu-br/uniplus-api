@@ -165,7 +165,7 @@ public sealed class PerfisConcedidosDoUsuarioTests
         new(id, sigla, sigla.ToLowerInvariant(), nome, null, "Centro", true, null);
 
     private static ConcessaoAtiva Concessao(string perfil, Guid? unidadeId, DateTimeOffset? validaAte = null) =>
-        new(Guid.CreateVersion7(), Guid.CreateVersion7(), perfil, unidadeId, unidadeId is null, validaAte, []);
+        new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, perfil, unidadeId, unidadeId is null, validaAte, []);
 
     private void Dado(params ConcessaoAtiva[] concessoes) =>
         _concessoes.ListarAsync(Arg.Any<UsuarioRef>(), Arg.Any<CancellationToken>()).Returns(concessoes);

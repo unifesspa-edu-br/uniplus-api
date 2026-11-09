@@ -110,6 +110,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         registro.FonteGrant.Should().Be("concessao");
         registro.GrantId.Should().Be(concessao);
         registro.PerfilId.Should().Be(perfil);
+        registro.VersaoId.Should().Be(decisao.GrantUsed.VersaoId).And.NotBeNull();
         registro.EscopoUnidadeId.Should().BeNull();
     }
 
