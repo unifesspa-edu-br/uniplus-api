@@ -6,6 +6,11 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
@@ -35,6 +40,26 @@ public sealed class JanelaDeMigracaoPrazoNoHostTests : JanelaDeMigracaoNoHostTes
         Relogio.Avancar(DepoisDoPrazo);
 
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O lote que espera a trava de uma concessão e atravessa o prazo encontra a janela encerrada e não migra")]
+    public async Task Lote_AtravessaOPrazoNaEsperaDaConcessao_EhRecusado()
+    {
+        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        Guid concessao = cenario.Concessoes[Leandro];
+        using HttpClient gestao = await GestaoAsync();
+        await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM autorizacao.concessoes WHERE id = {0} FOR UPDATE", concessao);
+
+        Task<HttpResponseMessage> lote = EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(concessao, "migrar")]);
+        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        Relogio.Avancar(DepoisDoPrazo);
+        await trava.ConfirmarAsync();
+        using HttpResponseMessage resposta = await lote;
+
+        await ConferirRecusaDaMigracaoAsync(resposta, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
+        SituacaoDe(await JanelaAsync(gestao, cenario.PerfilId), concessao).Should().Be("nao_migrada");
     }
 
     [Fact(DisplayName = "A rotina depois do prazo encerra a janela e marca quem não migrou, uma só vez")]

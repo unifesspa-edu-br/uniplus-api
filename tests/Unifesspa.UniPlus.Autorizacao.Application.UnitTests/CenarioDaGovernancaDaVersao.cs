@@ -46,7 +46,7 @@ internal sealed class CenarioDaGovernancaDaVersao
                 concessoes,
                 new PedidosAtivosNaMemoria(),
                 new AvisosDoPedido(concessoes, new SemUnidade(), new LinkDeTeste(), tempo),
-                JanelaDaTroca(janelas, Registro, titulares),
+                JanelaDaTroca(janelas, Registro, tempo, titulares),
                 tempo),
             new AvisosDaVersao(
                 new EmissorDeAvisos(Registro, NullLogger<EmissorDeAvisos>.Instance),
@@ -75,10 +75,10 @@ internal sealed class CenarioDaGovernancaDaVersao
 
     /// <summary>Os efeitos da janela de migração sobre uma troca, sobre a janela em memória.</summary>
     public static EfeitosDaJanelaNaTroca JanelaDaTroca(
-        JanelasNaMemoria janelas, RegistroDeAvisosNaMemoria registro, TitularDaPermissao[]? titulares = null) =>
+        JanelasNaMemoria janelas, RegistroDeAvisosNaMemoria registro, TimeProvider relogio, TitularDaPermissao[]? titulares = null) =>
         new(
             janelas,
-            new LeitorDaMigracao(janelas, new CatalogoDeTeste()),
+            new LeitorDaMigracao(janelas, new CatalogoDeTeste(), relogio),
             new AvisosDaJanela(
                 new EmissorDeAvisos(registro, NullLogger<EmissorDeAvisos>.Instance),
                 new TitularesDeTeste(titulares ?? []),
