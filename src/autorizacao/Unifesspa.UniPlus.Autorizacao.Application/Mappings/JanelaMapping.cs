@@ -37,10 +37,12 @@ public static class JanelaMapping
             Itens(janela, perfil, contexto, leitor));
     }
 
+    // Encerrada a janela, a lista é a das linhas que ela registrou: a concessão que surge depois, de uma versão
+    // posterior, não pertence a ela, ainda que seja elegível pelo critério de uma janela aberta.
     private static List<ItemDaJanelaDto> Itens(JanelaDeMigracao janela, Perfil perfil, ContextoDaMigracao contexto, Identidade? leitor) =>
     [
         .. contexto.Concessoes
-            .Where(c => janela.LinhaDe(c.Id) is not null || janela.Elegivel(c, contexto.Agora))
+            .Where(c => janela.LinhaDe(c.Id) is not null || (!janela.Encerrada && janela.Elegivel(c, contexto.Agora)))
             .Select(c => Item(janela, perfil, contexto, c, leitor)),
     ];
 
