@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core do perfil de acesso e de suas permissões, com a carga dos dois
-/// perfis de governança.
+/// Configuração EF Core do perfil de acesso, das permissões próprias dos perfis de governança e do vínculo com as
+/// versões e vigências, com a carga dos dois perfis de governança.
 /// </summary>
 [SuppressMessage(
     "Performance",
@@ -77,7 +77,14 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         // da mesma versão não se misturam.
         builder.Property<uint>("Version").IsRowVersion();
 
+        // Só os perfis de governança têm permissões próprias; o perfil comum as tem na versão.
         builder.Navigation(p => p.Permissoes).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(p => p.Versoes).WithOne().HasForeignKey(v => v.PerfilId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(p => p.Versoes).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(p => p.Vigencias).WithOne().HasForeignKey(v => v.PerfilId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(p => p.Vigencias).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.OwnsMany(p => p.Permissoes, permissao =>
         {

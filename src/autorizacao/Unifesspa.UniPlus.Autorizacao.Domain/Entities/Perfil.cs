@@ -3,37 +3,40 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Perfil de acesso: um nome e um conjunto de permissões do catálogo que a concessão
-/// atribui de uma vez a quem exerce uma função.
+/// Perfil de acesso: um nome e um conjunto de permissões do catálogo que a concessão atribui de uma vez a quem exerce
+/// uma função.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A sensibilidade do perfil não é gravada.</b> Ela é a mais alta entre as permissões que
-/// o perfil reúne e se deriva do catálogo a cada leitura: gravá-la copiaria um dado de que o
-/// catálogo é dono e o deixaria envelhecer quando a sensibilidade de uma permissão mudar.
+/// <b>O perfil comum é versionado.</b> Nome, descrição e permissões vêm da versão vigente, e uma versão nova só entra
+/// em vigor quando o documento que a institui é verificado. Versão não se edita: mudar o perfil é criar outra versão.
+/// <see cref="Nome"/> e <see cref="Descricao"/> são a identificação corrente: os da versão vigente ou, enquanto não há
+/// vigente, os da última pendente.
 /// </para>
 /// <para>
-/// <b>Perfil não se exclui, se desativa.</b> Desativar não revoga concessão alguma; só impede
-/// pedidos novos, regra conferida por quem recebe o pedido.
+/// <b>A sensibilidade do perfil não é gravada.</b> Ela é a mais alta entre as permissões em vigor e se deriva do
+/// catálogo a cada leitura.
 /// </para>
 /// <para>
-/// <b>Perfis de governança</b> (<see cref="Governanca"/> preenchida) são de sistema: nascem da
-/// carga inicial, são os únicos que podem reunir permissões reservadas à governança e não se
-/// editam, reativam nem desativam por esta API.
+/// <b>Perfil não se exclui, se desativa.</b> Desativar não revoga concessão alguma nem cancela versão; só impede
+/// pedidos e versões novos.
+/// </para>
+/// <para>
+/// <b>Perfis de governança</b> (<see cref="Governanca"/> preenchida) são de sistema: nascem da carga inicial, têm as
+/// permissões próprias, sem versão, são os únicos que podem reunir permissões reservadas à governança e não se
+/// alteram, reativam nem desativam por esta API.
 /// </para>
 /// </remarks>
-public sealed class Perfil : EntityBase
+public sealed partial class Perfil : EntityBase
 {
-    private const int NomeMinLength = 3;
-    private const int NomeMaxLength = 120;
-    private const int DescricaoMinLength = 3;
-    private const int DescricaoMaxLength = 500;
-
     private readonly List<PermissaoDoPerfil> _permissoes = [];
+    private readonly List<VersaoDoPerfil> _versoes = [];
+    private readonly List<VigenciaDoPerfil> _vigencias = [];
 
     public string Nome { get; private set; } = string.Empty;
 
@@ -50,7 +53,37 @@ public sealed class Perfil : EntityBase
     /// </summary>
     public bool AdmitePrazo => AdmitePrazoCom(Governanca);
 
+    /// <summary>Permissões próprias do perfil de governança; o perfil comum as tem na versão.</summary>
     public IReadOnlyCollection<PermissaoDoPerfil> Permissoes => _permissoes;
+
+    public IReadOnlyList<VersaoDoPerfil> Versoes => _versoes;
+
+    public IReadOnlyList<VigenciaDoPerfil> Vigencias => _vigencias;
+
+    public VersaoDoPerfil? VersaoVigente => _versoes.Find(static v => v.Situacao == SituacaoDaVersao.Vigente);
+
+    public VersaoDoPerfil? VersaoPendente => _versoes.Find(static v => v.Pendente);
+
+    /// <summary>A versão mais recente do perfil, quando a verificação a recusou.</summary>
+    public VersaoDoPerfil? UltimaVersaoRecusada =>
+        _versoes.MaxBy(static v => v.Numero) is { Situacao: SituacaoDaVersao.Recusada } recusada ? recusada : null;
+
+    /// <summary>
+    /// A versão cujas permissões o perfil mostra: a vigente ou, enquanto o perfil ainda não tem vigente, a pendente.
+    /// </summary>
+    public VersaoDoPerfil? VersaoParaExibir => VersaoVigente ?? VersaoPendente;
+
+    /// <summary>O perfil de governança dispensa a versão; o comum só vale com uma vigente.</summary>
+    public bool TemComposicaoEmVigor => Governanca is not null || VersaoVigente is not null;
+
+    /// <summary>
+    /// Códigos das permissões em vigor, ordenados: as da versão vigente no perfil comum, as próprias no perfil de
+    /// governança, nenhuma no perfil comum sem vigente. É a única leitura das permissões que decide acesso.
+    /// </summary>
+    public IReadOnlyList<string> ComposicaoEmVigor =>
+        Governanca is not null
+            ? [.. _permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)]
+            : VersaoVigente?.Codigos() ?? [];
 
     /// <summary>A regra de <see cref="AdmitePrazo"/> a partir do papel de governança, para o retrato avaliado do perfil.</summary>
     public static bool AdmitePrazoCom(TipoDeGovernanca? governanca) => governanca is null;
@@ -61,210 +94,153 @@ public sealed class Perfil : EntityBase
     }
 
     /// <summary>
-    /// Cria um perfil comum, já ativo. Acumula toda violação independente (ADR-0125): nome,
-    /// descrição e permissões inválidos coexistem na mesma resposta. A unicidade do nome é do
-    /// handler, com proteção de corrida no índice único.
+    /// Cria um perfil comum, ativo e sem versão vigente, com a versão 1 pendente e o documento que a institui esperando
+    /// o envio. A unicidade do nome é do handler, com proteção de corrida no índice único.
     /// </summary>
-    public static Result<Perfil> Criar(
-        string? nome,
-        string? descricao,
-        IEnumerable<string>? permissoes,
-        ICatalogoDePermissoesConsultavel catalogo)
+    public static Result<Perfil> Criar(ConteudoDaVersao conteudo, Identidade autor, DateTimeOffset instante)
     {
-        ArgumentNullException.ThrowIfNull(catalogo);
-
-        Result<CamposValidados> campos = ValidarCampos(nome, descricao, permissoes, catalogo);
-        if (campos.IsFailure)
-        {
-            return Result<Perfil>.ValidationFailure(campos.Errors);
-        }
+        ArgumentNullException.ThrowIfNull(conteudo);
+        ArgumentNullException.ThrowIfNull(autor);
 
         Perfil perfil = new();
-        perfil.AplicarCampos(campos.Value!);
+        Result<VersaoDoPerfil> versao = VersaoDoPerfil.Criar(perfil.Id, 1, conteudo, autor, instante);
+        if (versao.IsFailure)
+        {
+            return Result<Perfil>.ValidationFailure(versao.Errors);
+        }
+
+        perfil.Acrescentar(versao.Value!);
 
         return Result<Perfil>.Success(perfil);
     }
 
-    /// <summary>Substitui nome, descrição e permissões do perfil comum.</summary>
-    public Result Atualizar(
-        string? nome,
-        string? descricao,
-        IEnumerable<string>? permissoes,
+    /// <summary>
+    /// Cria uma versão nova, pendente, com o documento esperando o envio. Sem versão vigente (a primeira foi cancelada
+    /// ou recusada) é uma nova primeira versão: não há o que comparar e o nome pode mudar.
+    /// </summary>
+    public Result<VersaoDoPerfil> CriarVersao(
+        ConteudoDaVersao conteudo,
+        ContextoDaVersao contexto,
+        Identidade autor,
+        DateTimeOffset instante,
         ICatalogoDePermissoesConsultavel catalogo)
     {
+        ArgumentNullException.ThrowIfNull(conteudo);
+        ArgumentNullException.ThrowIfNull(contexto);
+        ArgumentNullException.ThrowIfNull(autor);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        if (Governanca is not null)
-        {
-            return Result.Failure(GovernancaImutavel());
-        }
+        DomainError? recusa = RecusaDaCriacao(contexto);
 
-        Result<CamposValidados> campos = ValidarCampos(nome, descricao, permissoes, catalogo);
-        if (campos.IsFailure)
-        {
-            return Result.ValidationFailure(campos.Errors);
-        }
+        return recusa is null
+            ? CriarEAcrescentar(conteudo, contexto, autor, instante, catalogo)
+            : Result<VersaoDoPerfil>.Failure(recusa);
+    }
 
-        AplicarCampos(campos.Value!);
+    /// <summary>Cancela a versão pendente. A versão vigente só deixa de valer quando outra a substitui.</summary>
+    public Result CancelarVersao(Guid versaoId, Identidade autor, DateTimeOffset instante)
+    {
+        ArgumentNullException.ThrowIfNull(autor);
 
-        return Result.Success();
+        Result<VersaoDoPerfil> versao = ObterVersao(versaoId);
+
+        return versao.IsFailure ? Result.Failure(versao.Error!) : versao.Value!.Cancelar(autor, instante);
     }
 
     /// <summary>Reativa o perfil. Reativar o que já está ativo não muda nada.</summary>
-    public Result Reativar()
-    {
-        if (Governanca is not null)
-        {
-            return Result.Failure(GovernancaImutavel());
-        }
-
-        Ativo = true;
-
-        return Result.Success();
-    }
+    public Result Reativar() => AlterarAtivo(true);
 
     /// <summary>Desativa o perfil. Desativar o que já está inativo não muda nada.</summary>
-    public Result Desativar()
-    {
-        if (Governanca is not null)
-        {
-            return Result.Failure(GovernancaImutavel());
-        }
-
-        Ativo = false;
-
-        return Result.Success();
-    }
+    public Result Desativar() => AlterarAtivo(false);
 
     /// <summary>
-    /// O alcance em que o perfil se concede: unidade quando todas as permissões são de unidade,
-    /// instituição quando nenhuma é. Nulo quando mistura os dois, o que a criação e a edição recusam.
+    /// O alcance em que o perfil se concede: unidade quando todas as permissões em vigor são de unidade, instituição
+    /// quando nenhuma é. Nulo quando mistura os dois.
     /// </summary>
     public TipoDeEscopo? Alcance(ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        return AlcanceDe(_permissoes.Select(static p => p.Codigo), catalogo);
+        return AlcanceDasPermissoes.De(ComposicaoEmVigor, catalogo);
     }
 
-    private static TipoDeEscopo? AlcanceDe(IEnumerable<string> codigos, ICatalogoDePermissoesConsultavel catalogo)
+    private Result AlterarAtivo(bool ativo)
     {
-        // Permissão que saiu do catálogo não concede nada e não decide o alcance das demais.
-        bool[] deUnidade = [.. codigos.Where(catalogo.Existe).Select(catalogo.DeUnidade)];
-
-        if (deUnidade.Length == 0 || deUnidade.All(static u => !u))
+        if (Governanca is not null)
         {
-            return TipoDeEscopo.Instituicao;
+            return Result.Failure(PerfilErros.GovernancaImutavel());
         }
 
-        return deUnidade.All(static u => u) ? TipoDeEscopo.Unidade : null;
+        Ativo = ativo;
+
+        return Result.Success();
     }
 
-    private static Result<CamposValidados> ValidarCampos(
-        string? nome,
-        string? descricao,
-        IEnumerable<string>? permissoes,
+    private Result<VersaoDoPerfil> ObterVersao(Guid versaoId) =>
+        _versoes.Find(v => v.Id == versaoId) is { } versao
+            ? Result<VersaoDoPerfil>.Success(versao)
+            : Result<VersaoDoPerfil>.Failure(PerfilErros.VersaoNaoEncontrada());
+
+    private Result<VersaoDoPerfil> CriarEAcrescentar(
+        ConteudoDaVersao conteudo,
+        ContextoDaVersao contexto,
+        Identidade autor,
+        DateTimeOffset instante,
         ICatalogoDePermissoesConsultavel catalogo)
     {
-        List<FieldError> erros = [];
-
-        string? nomeNormalizado = Normalizar(nome, NomeMinLength, NomeMaxLength);
-        if (nomeNormalizado is null)
+        Result<VersaoDoPerfil> criada = VersaoDoPerfil.Criar(Id, _versoes.Max(static v => v.Numero) + 1, conteudo, autor, instante);
+        DomainError? recusa = criada.IsSuccess ? RecusaContraAVigente(criada.Value!, contexto, catalogo) : null;
+        if (recusa is not null)
         {
-            erros.Add(new("nome", new DomainError(
-                PerfilErrorCodes.NomeInvalido,
-                $"O nome do perfil é obrigatório e deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
+            return Result<VersaoDoPerfil>.Failure(recusa);
         }
 
-        string? descricaoNormalizada = Normalizar(descricao, DescricaoMinLength, DescricaoMaxLength);
-        if (descricaoNormalizada is null)
+        if (criada.IsSuccess)
         {
-            erros.Add(new("descricao", new DomainError(
-                PerfilErrorCodes.DescricaoInvalida,
-                $"A descrição do perfil é obrigatória e deve ter entre {DescricaoMinLength} e {DescricaoMaxLength} caracteres.")));
+            Acrescentar(criada.Value!);
         }
 
-        // Códigos repetidos na entrada se consolidam sem recusa.
-        string[] codigos = [.. (permissoes ?? []).Select(static c => c?.Trim() ?? string.Empty).Distinct(StringComparer.Ordinal)];
-        erros.AddRange(ValidarPermissoes(codigos, catalogo));
-
-        return erros.Count > 0
-            ? Result<CamposValidados>.ValidationFailure(erros)
-            : Result<CamposValidados>.Success(new CamposValidados(nomeNormalizado!, descricaoNormalizada!, codigos));
+        return criada;
     }
 
-    private static IEnumerable<FieldError> ValidarPermissoes(string[] codigos, ICatalogoDePermissoesConsultavel catalogo)
+    private DomainError? RecusaDaCriacao(ContextoDaVersao contexto)
     {
-        if (codigos.Length == 0)
+        if (Governanca is not null)
         {
-            yield return new("permissoes", new DomainError(
-                PerfilErrorCodes.SemPermissao,
-                "O perfil deve reunir ao menos uma permissão."));
-            yield break;
+            return PerfilErros.GovernancaImutavel();
         }
 
-        string[] inexistentes = [.. codigos.Where(c => !catalogo.Existe(c))];
-        if (inexistentes.Length > 0)
+        if (!Ativo)
         {
-            yield return new("permissoes", new DomainError(
-                PerfilErrorCodes.PermissaoInexistente,
-                $"Permissões fora do catálogo: {string.Join(", ", inexistentes)}."));
+            return PerfilErros.Inativo();
         }
 
-        // Permissão de unidade e permissão institucional não se concedem no mesmo escopo: o perfil
-        // misto não teria escopo que o conceda por inteiro.
-        if (AlcanceDe(codigos, catalogo) is null)
+        if (VersaoPendente is not null)
         {
-            yield return new("permissoes", new DomainError(
-                PerfilErrorCodes.AlcanceMisto,
-                "O perfil não pode misturar permissões de unidade e permissões institucionais."));
+            return PerfilErros.VersaoPendenteExistente();
         }
 
-        // O perfil comum nunca reúne permissão reservada à governança. Os perfis de
-        // governança nascem da carga inicial, não desta operação.
-        string[] reservadas = [.. codigos.Where(c => catalogo.Existe(c) && catalogo.ReservadaAGovernanca(c))];
-        if (reservadas.Length > 0)
-        {
-            yield return new("permissoes", new DomainError(
-                PerfilErrorCodes.PermissaoReservada,
-                $"Permissões reservadas aos perfis de governança: {string.Join(", ", reservadas)}."));
-        }
+        return contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null;
     }
 
-    // O caractere nulo não é espaço em branco e cabe no tamanho, mas a coluna textual do
-    // banco não o armazena: sem esta recusa o valor só falharia ao gravar, e o payload
-    // inválido responderia 500 em vez da validação de domínio.
-    private static string? Normalizar(string? texto, int min, int max)
+    private DomainError? RecusaContraAVigente(
+        VersaoDoPerfil versao, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo) =>
+        ConferenciasDaVersao.ContraAVigente(versao, VersaoVigente, contexto.TemConcessaoNaoRevogada, catalogo) switch
+        {
+            MotivoDaRecusaDaVersao.AlcanceAlterado => PerfilErros.AlcanceAlterado(),
+            MotivoDaRecusaDaVersao.AmpliacaoExigeProtecaoDeDados => PerfilErros.AmpliacaoExigeProtecaoDeDados(),
+            _ => null,
+        };
+
+    // Sem versão vigente o perfil se identifica pela última pendente.
+    private void Acrescentar(VersaoDoPerfil versao)
     {
-        if (string.IsNullOrWhiteSpace(texto))
+        _versoes.Add(versao);
+
+        if (VersaoVigente is null)
         {
-            return null;
-        }
-
-        string normalizado = texto.Trim();
-
-        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.Length < min || normalizado.Length > max
-            ? null
-            : normalizado;
-    }
-
-    private static DomainError GovernancaImutavel() => new(
-        PerfilErrorCodes.GovernancaImutavel,
-        "Perfil de governança é de sistema e não pode ser editado, reativado nem desativado.");
-
-    private void AplicarCampos(CamposValidados campos)
-    {
-        Nome = campos.Nome;
-        Descricao = campos.Descricao;
-
-        // Diferença em vez de limpar e reinserir: a chave da permissão é o próprio código,
-        // e remover e inserir a mesma chave numa só gravação colide no rastreamento do EF.
-        _permissoes.RemoveAll(p => !campos.Permissoes.Contains(p.Codigo, StringComparer.Ordinal));
-        foreach (string codigo in campos.Permissoes.Where(c => !_permissoes.Exists(p => p.Codigo == c)))
-        {
-            _permissoes.Add(new PermissaoDoPerfil(codigo));
+            Nome = versao.Nome;
+            Descricao = versao.Descricao;
         }
     }
-
-    private sealed record CamposValidados(string Nome, string Descricao, string[] Permissoes);
 }

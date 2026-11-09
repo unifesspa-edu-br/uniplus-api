@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class PedidoDeConcessaoTests
@@ -134,10 +135,20 @@ public sealed class PedidoDeConcessaoTests
             Betina, "isabellapriscilafigueiredo@uniplus-test.local", PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.EscopoInvalido);
 
+    [Fact(DisplayName = "Perfil sem versão em vigor não aceita pedido")]
+    public void Criar_PerfilSemVersaoEmVigor_Recusa()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], Catalogo);
+
+        Codigos(PedidoDeConcessao.Criar(
+            Betina, "leandro-viana84@uniplus-test.local", perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora))
+            .Should().Equal(PedidoErrorCodes.PerfilSemVersaoEmVigor);
+    }
+
     [Fact(DisplayName = "Perfil de permissões institucionais só se pede no escopo da instituição")]
     public void Criar_PerfilInstitucionalNaUnidade_Recusa()
     {
-        Perfil perfil = Perfil.Criar("Manutenção de motivos", "Mantém os motivos de isenção.", ["selecao:motivos:manter"], Catalogo).Value!;
+        Perfil perfil = PerfisDeTeste.Vigente("Manutenção de motivos", "Mantém os motivos de isenção.", ["selecao:motivos:manter"], Catalogo);
 
         Codigos(PedidoDeConcessao.Criar(
             Betina, "leandro-viana84@uniplus-test.local", perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Justificativa, Dominios, Catalogo, Agora))
@@ -680,13 +691,11 @@ public sealed class PedidoDeConcessaoTests
         new(new Identidade(Emissor, sub), nome, email, true);
 
     private static Perfil PerfilComum() =>
-        Perfil.Criar("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], Catalogo).Value!;
+        PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], Catalogo);
 
     private static Perfil PerfilDeGovernanca(TipoDeGovernanca governanca = TipoDeGovernanca.GestorDeAcessos)
     {
-        Perfil perfil = Perfil.Criar("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo).Value!;
-        typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, governanca);
-        return perfil;
+        return PerfisDeTeste.DeGovernanca("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo, governanca);
     }
 
     private static string[] Codigos(Result resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
@@ -700,6 +709,8 @@ public sealed class PedidoDeConcessaoTests
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:processos:", StringComparison.Ordinal);
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 
     private sealed class FakeDominios : IDominiosInstitucionais

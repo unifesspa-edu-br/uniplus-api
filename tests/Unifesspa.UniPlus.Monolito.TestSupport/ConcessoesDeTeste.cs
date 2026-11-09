@@ -18,8 +18,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// As permissões de governança só chegam por concessão dos perfis de governança da carga
-/// inicial (<see cref="ConcederGovernancaAsync"/>). O perfil comum de teste é criado pelo
-/// próprio domínio, contra o catálogo do host, e por isso nunca reúne permissão reservada.
+/// inicial (<see cref="ConcederGovernancaAsync"/>). O perfil comum de teste é criado e posto em
+/// vigor pelo próprio domínio, contra o catálogo do host, e por isso nunca reúne permissão reservada.
 /// </remarks>
 public static class ConcessoesDeTeste
 {
@@ -34,21 +34,17 @@ public static class ConcessoesDeTeste
         ArgumentNullException.ThrowIfNull(services);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
-        Result<Perfil> perfil = Perfil.Criar(
+        Perfil perfil = PerfisDeTeste.Vigente(
             $"Perfil de teste {Guid.NewGuid():N}",
             "Perfil criado pelo apoio dos testes de integração.",
             permissoes,
             scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
-        if (perfil.IsFailure)
-        {
-            throw new InvalidOperationException(string.Join("; ", perfil.Errors.Select(e => e.Error.Message)));
-        }
 
         AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
-        db.Perfis.Add(perfil.Value!);
+        db.Perfis.Add(perfil);
         await db.SaveChangesAsync();
 
-        return perfil.Value!.Id;
+        return perfil.Id;
     }
 
     /// <summary>

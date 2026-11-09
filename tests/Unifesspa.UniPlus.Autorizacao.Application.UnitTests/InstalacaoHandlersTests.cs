@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Verificador.Contratos;
@@ -52,7 +53,7 @@ public sealed class InstalacaoHandlersTests
         ResultadoDaVerificacaoDeArquivo resultado = new(Guid.NewGuid(), veredicto, MotivoDaRecusa.NaoSeAplica, hash, null, null);
 
         Func<Task> acao = () => RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
         await acao.Should().ThrowAsync<ResultadoDaVerificacaoInvalidoException>();
     }
@@ -64,7 +65,7 @@ public sealed class InstalacaoHandlersTests
             Guid.NewGuid(), VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
     }
 
     [Fact(DisplayName = "Resultado repetido de instalação que já saiu da verificação é ignorado sem gravar")]
@@ -78,7 +79,7 @@ public sealed class InstalacaoHandlersTests
             instalacao.Id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
         instalacao.Situacao.Should().Be(Domain.Enums.SituacaoDaInstalacao.AguardandoDocumento);
     }
@@ -278,6 +279,8 @@ public sealed class InstalacaoHandlersTests
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => false;
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 
     private sealed class ConcessoesSemGestor : IConcessaoRepository
@@ -350,7 +353,7 @@ public sealed class InstalacaoHandlersTests
             throw new InvalidOperationException();
 
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Perfil?>(Perfil.Criar("Gestor de acessos", "Governa as concessões de acesso.", ["selecao:processos:consultar"], new CatalogoInstitucional()).Value);
+            Task.FromResult<Perfil?>(PerfisDeTeste.Vigente("Gestor de acessos", "Governa as concessões de acesso.", ["selecao:processos:consultar"], new CatalogoInstitucional()));
 
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
 

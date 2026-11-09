@@ -195,8 +195,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        await ExecutarSqlAsync(
-            "INSERT INTO autorizacao.perfil_permissoes (perfil_id, codigo) VALUES ({0}, 'teste:inscricoes:operar')", perfil);
+        await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:inscricoes:operar");
 
         await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "perfil_alterado");
 
@@ -227,8 +226,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        await ExecutarSqlAsync(
-            "INSERT INTO autorizacao.perfil_permissoes (perfil_id, codigo) VALUES ({0}, 'teste:inscricoes:operar')", perfil);
+        await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:inscricoes:operar");
         string chave = Guid.NewGuid().ToString();
         await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", chave: chave), HttpStatusCode.Conflict, "perfil_alterado");
 

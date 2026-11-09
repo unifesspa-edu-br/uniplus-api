@@ -23,8 +23,17 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
         new(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados", "Acrescentar permissão pessoal ou sensível a perfil com concessões exige a aprovação da proteção de dados")),
         new(PerfilErrorCodes.GovernancaImutavel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.governanca_imutavel", "Perfil de governança não pode ser alterado")),
         new(PerfilErrorCodes.NomeDuplicado, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.perfil.nome_duplicado", "Já existe perfil com este nome")),
-        new(PerfilErrorCodes.IdDivergente, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.perfil.id_divergente", "O identificador da URL não corresponde ao do corpo da requisição")),
         new(PerfilErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.perfil.nao_encontrado", "Perfil de acesso não encontrado")),
+        new(PerfilErrorCodes.VersaoPendenteExistente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.versao_pendente_existente", "O perfil já tem uma versão pendente; cancele-a antes de criar outra")),
+        new(PerfilErrorCodes.VersaoNaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.perfil.versao_nao_encontrada", "Versão do perfil não encontrada")),
+        new(PerfilErrorCodes.VersaoNaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.versao_nao_pendente", "A versão não está pendente")),
+        new(PerfilErrorCodes.ProtocoloInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.protocolo_invalido", "Protocolo do documento inválido")),
+        new(PerfilErrorCodes.Inativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.inativo", "Perfil desativado não aceita versão nova")),
+        new(PerfilErrorCodes.DocumentoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.documento_invalido", "Documento da versão inválido")),
+        new(PerfilErrorCodes.DocumentoNaoAguardaEnvio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.documento_nao_aguarda_envio", "O documento da versão não aguarda envio")),
+        new(PerfilErrorCodes.DocumentoNaoRecusado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.documento_nao_recusado", "O documento da versão não foi recusado pela verificação")),
+        new(PerfilErrorCodes.DocumentoNaoVerificado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.documento_nao_verificado", "O documento da versão ainda não foi verificado")),
+        new(PerfilErrorCodes.AutorNaoIdentificado, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.autorizacao.perfil.autor_nao_identificado", "Autor da operação não identificado")),
 
         // Mesmo código do conflito que o GlobalExceptionMiddleware emite para endpoints sem
         // idempotência: a corrida é a mesma, só muda quem a traduz. Retentável, porque a
@@ -39,6 +48,7 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
         new(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.concessao.filtro_de_situacao_invalido", "Situação do filtro de concessões inválida")),
         new(ConcessaoErrorCodes.MotivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.motivo_invalido", "Motivo da revogação inválido")),
         new(ConcessaoErrorCodes.PerfilInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.perfil_inativo", "Perfil de acesso desativado não aceita concessão")),
+        new(ConcessaoErrorCodes.PerfilSemVersaoEmVigor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.perfil_sem_versao_em_vigor", "O perfil de acesso não tem versão em vigor")),
         new(ConcessaoErrorCodes.Duplicada, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.concessao.duplicada", "Já existe concessão igual não revogada, vigente ou vencida; revogue-a antes de conceder de novo")),
         new(ConcessaoErrorCodes.ValidadeInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.validade_invalida", "Fim da vigência inválido")),
         new(ConcessaoErrorCodes.EscopoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.escopo_invalido", "Escopo incoerente ou não admitido pelo perfil")),
@@ -59,6 +69,7 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
 
         new(PedidoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.pedido.nao_encontrado", "Pedido de concessão não encontrado")),
         new(PedidoErrorCodes.PerfilInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.perfil_inativo", "Perfil de acesso desativado não aceita pedido")),
+        new(PedidoErrorCodes.PerfilSemVersaoEmVigor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.perfil_sem_versao_em_vigor", "O perfil de acesso não tem versão em vigor")),
         new(PedidoErrorCodes.EscopoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.escopo_invalido", "Escopo incoerente ou não admitido pelo perfil")),
         new(PedidoErrorCodes.UnidadeInexistente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.unidade_inexistente", "A unidade do escopo não existe")),
         new(PedidoErrorCodes.JustificativaInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.justificativa_invalida", "Justificativa do pedido inválida")),

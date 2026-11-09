@@ -204,19 +204,28 @@ public abstract class PedidosDeConcessaoTestBase
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
     }
 
-    /// <summary>Semeia um perfil comum, conferido contra o catálogo do host.</summary>
+    /// <summary>Semeia um perfil comum com a versão em vigor, conferido contra o catálogo do host.</summary>
     private protected async Task<Guid> SemearPerfilAsync(string prefixo, params string[] permissoes)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        Perfil perfil = Perfil.Criar(
+        Perfil perfil = PerfisDeTeste.Vigente(
             $"{prefixo} {Guid.NewGuid():N}",
             "Perfil semeado pelo teste.",
             permissoes,
-            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()).Value!;
+            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
         AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
         db.Perfis.Add(perfil);
         await db.SaveChangesAsync();
         return perfil.Id;
+    }
+
+    /// <summary>Põe em vigor uma versão nova do perfil com as permissões informadas, como a produção a trocaria.</summary>
+    private protected async Task TrocarComposicaoAsync(Guid perfilId, params string[] permissoes)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        Perfil perfil = (await scope.ServiceProvider.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
+        PerfisDeTeste.NovaVersaoVigente(perfil, permissoes, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
+        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }
 
     private protected Task<Guid> SemearPerfilInternoAsync() =>

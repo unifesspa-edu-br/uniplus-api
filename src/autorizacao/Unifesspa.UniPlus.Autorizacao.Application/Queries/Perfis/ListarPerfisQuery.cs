@@ -12,6 +12,6 @@ public sealed record ListarPerfisQuery(
 
 /// <summary>Resultado paginado: as âncoras são os <c>Id</c> de fronteira da janela.</summary>
 public sealed record ListarPerfisResult(
-    IReadOnlyList<PerfilDto> Items,
+    IReadOnlyList<PerfilListadoDto> Items,
     Guid? AnteriorAfterId,
     Guid? ProximoAfterId);

@@ -20,16 +20,23 @@ public sealed class PerfilRepository : IPerfilRepository
     }
 
     public async Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await _context.Perfis.FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
+        await _context.Perfis.ComComposicao().FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarAtivosPaginadoAsync(
+    public async Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPediveisPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
+        // O filtro vem antes da paginação: o perfil comum sem versão em vigor não ocupa lugar na página.
+        IQueryable<Perfil> pediveis = _context.Perfis
+            .AsNoTracking()
+            .ComComposicao()
+            .Where(p => p.Ativo
+                && (p.Governanca != null || _context.VigenciasDosPerfis.Any(v => v.PerfilId == p.Id && v.Ate == null)));
+
         CursorKeysetPage<Perfil> page = await CursorKeyset
-            .ApplyAsync(_context.Perfis.AsNoTracking().Where(p => p.Ativo), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(pediveis, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
@@ -47,7 +54,21 @@ public sealed class PerfilRepository : IPerfilRepository
     }
 
     public async Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) =>
-        await _context.Perfis.AsNoTracking().ToListAsync(cancellationToken).ConfigureAwait(false);
+        await _context.Perfis.AsNoTracking().ComComposicao().ToListAsync(cancellationToken).ConfigureAwait(false);
+
+    public async Task<Guid?> ObterPerfilIdDoDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default) =>
+        await _context.DocumentosDasVersoes
+            .AsNoTracking()
+            .Where(d => d.Id == documentoId)
+            .Select(d => (Guid?)d.PerfilId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task AdicionarLeituraAsync(LeituraDoDocumentoDaVersao leitura, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(leitura);
+        await _context.LeiturasDosDocumentosDasVersoes.AddAsync(leitura, cancellationToken).ConfigureAwait(false);
+    }
 
     public async Task AdicionarAsync(Perfil entity, CancellationToken cancellationToken = default)
     {
@@ -78,7 +99,7 @@ public sealed class PerfilRepository : IPerfilRepository
     {
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
         CursorKeysetPage<Perfil> page = await CursorKeyset
-            .ApplyAsync(_context.Perfis.AsNoTracking(), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(_context.Perfis.AsNoTracking().ComComposicao(), afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);

@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// terminais não voltam.
 /// </para>
 /// </remarks>
-public sealed class PedidoDeConcessao : EntityBase
+public sealed partial class PedidoDeConcessao : EntityBase
 {
     public const int JustificativaMinLength = 10;
     public const int JustificativaMaxLength = 2000;
@@ -156,12 +156,7 @@ public sealed class PedidoDeConcessao : EntityBase
 
         List<FieldError> erros = [];
 
-        if (!perfil.Ativo)
-        {
-            erros.Add(new("perfilId", new DomainError(
-                PedidoErrorCodes.PerfilInativo,
-                "O perfil de acesso está desativado e não aceita pedido novo.")));
-        }
+        erros.AddRange(ErrosDoPerfil(perfil));
 
         string? incoerencia = Concessao.ConferirEscopo(perfil, escopo, catalogo);
         if (incoerencia is not null)
@@ -475,6 +470,23 @@ public sealed class PedidoDeConcessao : EntityBase
         ConcessaoId = concessaoId;
     }
 
+    private static IEnumerable<FieldError> ErrosDoPerfil(Perfil perfil)
+    {
+        if (!perfil.Ativo)
+        {
+            yield return new("perfilId", new DomainError(
+                PedidoErrorCodes.PerfilInativo,
+                "O perfil de acesso está desativado e não aceita pedido novo."));
+        }
+
+        if (!perfil.TemComposicaoEmVigor)
+        {
+            yield return new("perfilId", new DomainError(
+                PedidoErrorCodes.PerfilSemVersaoEmVigor,
+                "O perfil de acesso não tem versão em vigor e não aceita pedido."));
+        }
+    }
+
     private static void ConferirValidade(
         DateTimeOffset? data, bool admitePrazo, DateTimeOffset instante, string campo, List<FieldError> erros)
     {
@@ -544,85 +556,10 @@ public sealed class PedidoDeConcessao : EntityBase
         _ => null,
     };
 
-    private static DomainError SemNome() => new(
-        PedidoErrorCodes.BeneficiarioSemNome,
-        "A sessão do beneficiário não traz o nome completo, que o aprovador precisa para julgar o pedido.");
-
     private void Encerrar(SituacaoDoPedido situacao, DateTimeOffset instante)
     {
         Situacao = situacao;
         EncerradoEm = instante;
-    }
-
-    // O beneficiário é o próprio solicitante quando o e-mail vem em branco ou é o do token dele, verificado:
-    // quem usa o próprio e-mail já provou que é ele, e não há ninguém a quem esperar.
-    private static (string? Email, bool ParaSiMesmo) ResolverBeneficiario(
-        PessoaNoToken solicitante,
-        string? emailInformado,
-        IDominiosInstitucionais dominios,
-        List<FieldError> erros)
-    {
-        string? informado = EmailNormalizado(emailInformado);
-        string? doToken = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
-        bool paraSiMesmo = ParaSiMesmo(solicitante, emailInformado);
-
-        if (paraSiMesmo)
-        {
-            if (doToken is null || !DominioInstitucional(doToken, dominios))
-            {
-                erros.Add(new("beneficiarioEmail", new DomainError(
-                    PedidoErrorCodes.BeneficiarioInvalido,
-                    "Para pedir para si, o e-mail da sessão deve ser institucional e verificado; para outra pessoa, informe o e-mail institucional dela.")));
-            }
-
-            if (NomeDeExibicao.Normalizar(solicitante.Nome) is null)
-            {
-                erros.Add(new("beneficiario", SemNome()));
-            }
-
-            return (doToken, true);
-        }
-
-        if (informado is null || !DominioInstitucional(informado, dominios))
-        {
-            erros.Add(new("beneficiarioEmail", new DomainError(
-                PedidoErrorCodes.BeneficiarioInvalido,
-                "O beneficiário é identificado pelo e-mail institucional dele.")));
-        }
-
-        return (informado, false);
-    }
-
-    private static bool ParaSiMesmo(PessoaNoToken solicitante, string? emailInformado)
-    {
-        string? informado = EmailNormalizado(emailInformado);
-        string? doToken = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
-
-        return string.IsNullOrWhiteSpace(emailInformado) || (informado is not null && informado == doToken);
-    }
-
-    /// <summary>O e-mail da sessão é verificado e de domínio institucional: quem pede por outra pessoa responde por ela.</summary>
-    public static bool SolicitanteInstitucional(PessoaNoToken pessoa, IDominiosInstitucionais dominios)
-    {
-        ArgumentNullException.ThrowIfNull(pessoa);
-        ArgumentNullException.ThrowIfNull(dominios);
-
-        return pessoa.EmailVerificado
-            && EmailNormalizado(pessoa.Email) is { } email
-            && DominioInstitucional(email, dominios);
-    }
-
-    private static bool DominioInstitucional(string email, IDominiosInstitucionais dominios) =>
-        dominios.Contem(email[(email.LastIndexOf('@') + 1)..]);
-
-    /// <summary>O e-mail como o pedido o guarda e compara (minúsculas, formato válido); nulo se inválido.</summary>
-    public static string? EmailNormalizado(string? email)
-    {
-        Result<Email> resultado = Email.Criar(email);
-
-        return resultado.IsSuccess && resultado.Value!.Valor.Length <= EmailMaxLength && !resultado.Value.Valor.Contains('\0', StringComparison.Ordinal)
-            ? resultado.Value.Valor
-            : null;
     }
 
     // O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena.

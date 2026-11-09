@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-/// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/>.</summary>
+/// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/> e para o retrato que o aprovador avalia.</summary>
 public static class PerfilMapping
 {
     public static PerfilDto ToDto(Perfil perfil, CatalogoDaAplicacao catalogo)
@@ -16,60 +16,85 @@ public static class PerfilMapping
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        PermissaoDoPerfilDto[] permissoes =
-        [
-            .. perfil.Permissoes
-                .Select(p => Descrever(p.Codigo, catalogo))
-                .OrderBy(static p => p.Codigo, StringComparer.Ordinal),
-        ];
-
-        ClassificacaoDeProtecao sensibilidade = SensibilidadeDoPerfil(perfil, catalogo);
-
         return new PerfilDto(
             perfil.Id,
             perfil.Nome,
             perfil.Descricao,
             perfil.Ativo,
             perfil.Governanca?.ToCodigo(),
-            ValoresCanonicos.De(sensibilidade),
-            permissoes);
+            ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
+            ComposicaoDe(perfil, catalogo),
+            VersaoMapping.PendenteDe(perfil, catalogo),
+            VersaoMapping.UltimaRecusadaDe(perfil));
+    }
+
+    public static PerfilListadoDto ToListadoDto(Perfil perfil, CatalogoDaAplicacao catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        return new PerfilListadoDto(
+            perfil.Id,
+            perfil.Nome,
+            perfil.Descricao,
+            perfil.Ativo,
+            perfil.Governanca?.ToCodigo(),
+            ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
+            perfil.TemComposicaoEmVigor,
+            perfil.VersaoPendente is not null);
     }
 
     /// <summary>
-    /// O perfil como o aprovador o avalia agora: as permissões que reúne e a sensibilidade que o catálogo lhes atribui.
-    /// Pessoal ou sensível exige também a proteção de dados.
+    /// O perfil como o aprovador o avalia agora: as permissões da composição em vigor e a sensibilidade que o catálogo
+    /// lhes atribui. Pessoal ou sensível exige também a proteção de dados.
     /// </summary>
     public static PerfilAvaliado Avaliar(Perfil perfil, CatalogoDaAplicacao catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        ClassificacaoDeProtecao sensibilidade = SensibilidadeDoPerfil(perfil, catalogo);
+        ClassificacaoDeProtecao sensibilidade = MaiorSensibilidade(perfil.ComposicaoEmVigor, catalogo);
 
         return new PerfilAvaliado(
-            perfil.Permissoes.Select(p => p.Codigo),
+            perfil.ComposicaoEmVigor,
             ValoresCanonicos.De(sensibilidade),
             sensibilidade >= ClassificacaoDeProtecao.Pessoal,
             perfil.Governanca,
             perfil.Ativo);
     }
 
-    // A sensibilidade do perfil é a mais alta entre as permissões; a escala é crescente. Nunca se grava: deriva do catálogo.
-    internal static ClassificacaoDeProtecao SensibilidadeDoPerfil(Perfil perfil, CatalogoDaAplicacao catalogo) =>
-        perfil.Permissoes
-            .Select(p => SensibilidadeDe(p.Codigo, catalogo))
-            .DefaultIfEmpty(ClassificacaoDeProtecao.Publico)
-            .Max();
-
-    private static PermissaoDoPerfilDto Descrever(string codigo, CatalogoDaAplicacao catalogo) =>
-        catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
-            ? new PermissaoDoPerfilDto(codigo, definicao!.Nome, ValoresCanonicos.De(definicao.Requisito.Sensibilidade))
-            : new PermissaoDoPerfilDto(codigo, codigo, ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
-
-    // Código que o catálogo não conhece (permissão retirada do código) conta como a mais
-    // restrita: o perfil não pode parecer menos sensível por causa de uma lacuna.
+    // Código que o catálogo não conhece (permissão retirada do código) conta como a mais restrita: o perfil não pode
+    // parecer menos sensível por causa de uma lacuna.
     internal static ClassificacaoDeProtecao SensibilidadeDe(string codigo, CatalogoDaAplicacao catalogo) =>
         catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
             ? definicao!.Requisito.Sensibilidade
             : ClassificacaoDeProtecao.Sensivel;
+
+    internal static PermissaoDoPerfilDto Descrever(string codigo, CatalogoDaAplicacao catalogo) =>
+        catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
+            ? new PermissaoDoPerfilDto(codigo, definicao!.Nome, ValoresCanonicos.De(definicao.Requisito.Sensibilidade))
+            : new PermissaoDoPerfilDto(codigo, codigo, ValoresCanonicos.De(ClassificacaoDeProtecao.Sensivel));
+
+    // A sensibilidade nunca se grava: deriva do catálogo. É a das permissões em vigor ou, enquanto o perfil não tem
+    // vigente, a das permissões da versão pendente.
+    private static ClassificacaoDeProtecao SensibilidadeDoPerfil(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+        MaiorSensibilidade(CodigosParaExibir(perfil), catalogo);
+
+    private static IReadOnlyList<string> CodigosParaExibir(Perfil perfil) =>
+        perfil.TemComposicaoEmVigor ? perfil.ComposicaoEmVigor : perfil.VersaoPendente?.Codigos() ?? [];
+
+    // A sensibilidade do perfil é a mais alta entre as permissões; a escala é crescente.
+    private static ClassificacaoDeProtecao MaiorSensibilidade(IEnumerable<string> codigos, CatalogoDaAplicacao catalogo) =>
+        codigos
+            .Select(c => SensibilidadeDe(c, catalogo))
+            .DefaultIfEmpty(ClassificacaoDeProtecao.Publico)
+            .Max();
+
+    private static ComposicaoEmVigorDto? ComposicaoDe(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+        perfil.Governanca is not null
+            ? ComposicaoDaGovernanca(perfil, catalogo)
+            : perfil.VersaoVigente is { } vigente ? VersaoMapping.VigenteDe(perfil, vigente, catalogo) : null;
+
+    private static ComposicaoEmVigorDto ComposicaoDaGovernanca(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+        new(null, null, VersaoMapping.Descrever(perfil.ComposicaoEmVigor, catalogo), null, null, null);
 }

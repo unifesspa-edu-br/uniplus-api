@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Porta de consulta do catálogo para o domínio do perfil, apoiada no catálogo da aplicação
@@ -26,4 +27,9 @@ public sealed class CatalogoDePermissoesDaAplicacao : ICatalogoDePermissoesConsu
     public bool DeUnidade(string codigo) =>
         _catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
         && definicao!.Requisito.EscopoContextoObrigatorio.Contains(CamposDeContexto.UnidadeProprietariaId, StringComparer.Ordinal);
+
+    public ClassificacaoDeProtecao Sensibilidade(string codigo) =>
+        _catalogo.TentarObter(codigo, out DefinicaoDePermissao? definicao)
+            ? definicao!.Requisito.Sensibilidade
+            : ClassificacaoDeProtecao.Sensivel;
 }

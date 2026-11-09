@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class ConcessaoTests
@@ -61,10 +62,20 @@ public sealed class ConcessaoTests
             Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo)
             .IsSuccess.Should().BeTrue();
 
+    [Fact(DisplayName = "Perfil sem versão em vigor não se concede")]
+    public void Conceder_PerfilSemVersaoEmVigor_Recusa()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo);
+
+        CodigosDaRecusa(Concessao.Conceder(
+            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            .Should().Equal(ConcessaoErrorCodes.PerfilSemVersaoEmVigor);
+    }
+
     [Fact(DisplayName = "Perfil de permissões institucionais só se concede na instituição")]
     public void Conceder_PerfilInstitucional_SoNaInstituicao()
     {
-        Perfil perfil = Perfil.Criar("Motivos", "Descrição válida.", ["selecao:motivos:manter"], Catalogo).Value!;
+        Perfil perfil = PerfisDeTeste.Vigente("Motivos", "Descrição válida.", ["selecao:motivos:manter"], Catalogo);
 
         Concessao.Conceder(Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo)
             .IsSuccess.Should().BeTrue();
@@ -199,13 +210,11 @@ public sealed class ConcessaoTests
             Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo, validaAte, Email).Value!;
 
     private static Perfil PerfilComum() =>
-        Perfil.Criar("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo).Value!;
+        PerfisDeTeste.Vigente("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo);
 
     private static Perfil PerfilDeGovernanca()
     {
-        Perfil perfil = Perfil.Criar("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo).Value!;
-        typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, TipoDeGovernanca.GestorDeAcessos);
-        return perfil;
+        return PerfisDeTeste.DeGovernanca("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo, TipoDeGovernanca.GestorDeAcessos);
     }
 
     private static string[] CodigosDaRecusa(Result resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
@@ -219,5 +228,7 @@ public sealed class ConcessaoTests
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:processos:", StringComparison.Ordinal);
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 }

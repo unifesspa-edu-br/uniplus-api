@@ -148,6 +148,7 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
         DateTimeOffset agora, CancellationToken cancellationToken = default) =>
         await _context.Perfis
             .AsNoTracking()
+            .ComComposicao()
             .Where(p => _context.Concessoes.Any(c => c.PerfilId == p.Id
                 && c.RevogadaEm == null
                 && (c.ValidaAte == null || c.ValidaAte > agora)))

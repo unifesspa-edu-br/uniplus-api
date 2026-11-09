@@ -54,7 +54,7 @@ public sealed class PerfisController : ControllerBase
     [HttpGet("perfis")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
-    [ProducesResponseType(typeof(IEnumerable<PerfilDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<PerfilListadoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -98,61 +98,32 @@ public sealed class PerfisController : ControllerBase
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Cria um perfil de acesso. <c>Idempotency-Key</c> obrigatório (ADR-0027).</summary>
+    /// <summary>
+    /// Cria o perfil com a versão 1 pendente e devolve a URL de PUT do documento que a institui. O perfil só entra em
+    /// vigor quando esse documento é verificado. <c>Idempotency-Key</c> obrigatório (ADR-0027).
+    /// </summary>
     [HttpPost("perfis")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [RequiresIdempotencyKey(TtlSeconds = 15 * 60)]
+    [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Criar(
-        [FromBody] CriarPerfilCommand command,
+        [FromBody] DadosDaVersaoRequest dados,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(dados);
 
-        Result<Guid> resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
+        Result<EnvioDoDocumentoDto> resultado = await _commandBus
+            .Send(new CriarPerfilCommand(dados), cancellationToken)
+            .ConfigureAwait(false);
 
         return resultado.IsSuccess
-            ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value)
+            ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value!.PerfilId }, resultado.Value)
             : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>
-    /// Substitui nome, descrição e permissões do perfil comum. Perfil de governança não se
-    /// edita. <c>Idempotency-Key</c> obrigatório.
-    /// </summary>
-    [HttpPut("perfis/{id:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Atualizar(
-        Guid id,
-        [FromBody] AtualizarPerfilCommand command,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(command);
-
-        if (command.Id != id)
-        {
-            return Result.Failure(new DomainError(
-                PerfilErrorCodes.IdDivergente,
-                "O Id na URL não corresponde ao Id no corpo da requisição."))
-                .ToActionResult(_mapper);
-        }
-
-        Result resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
-
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Reativa um perfil comum. Perfil de governança não se ativa.</summary>

@@ -104,12 +104,7 @@ public sealed class Concessao : EntityBase
 
         List<FieldError> erros = [];
 
-        if (!perfil.Ativo)
-        {
-            erros.Add(new("perfil", new DomainError(
-                ConcessaoErrorCodes.PerfilInativo,
-                "O perfil de acesso está desativado e não aceita concessão nova.")));
-        }
+        erros.AddRange(ErrosDoPerfil(perfil));
 
         string? incoerencia = ConferirEscopo(perfil, escopo, catalogo);
         if (incoerencia is not null)
@@ -198,6 +193,23 @@ public sealed class Concessao : EntityBase
         return Result.Success();
     }
 
+    private static IEnumerable<FieldError> ErrosDoPerfil(Perfil perfil)
+    {
+        if (!perfil.Ativo)
+        {
+            yield return new("perfil", new DomainError(
+                ConcessaoErrorCodes.PerfilInativo,
+                "O perfil de acesso está desativado e não aceita concessão nova."));
+        }
+
+        if (!perfil.TemComposicaoEmVigor)
+        {
+            yield return new("perfil", new DomainError(
+                ConcessaoErrorCodes.PerfilSemVersaoEmVigor,
+                "O perfil de acesso não tem versão em vigor e não aceita concessão."));
+        }
+    }
+
     // Também confere o escopo do pedido, que não pode pedir o que a concessão recusaria. O escopo
     // admitido é o alcance do perfil, derivado do catálogo: o perfil de permissões institucionais só
     // vale na instituição, e o de permissões de unidade só numa unidade, sem herança entre as duas
@@ -216,14 +228,18 @@ public sealed class Concessao : EntityBase
             return "O escopo da unidade exige a unidade, e o escopo da instituição não admite unidade.";
         }
 
-        return perfil.Alcance(catalogo) switch
+        // Sem composição em vigor a recusa é a do perfil sem versão; o escopo não tem o que conferir.
+        return perfil.TemComposicaoEmVigor ? ConferirAlcance(perfil, escopo, catalogo) : null;
+    }
+
+    private static string? ConferirAlcance(Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo) =>
+        perfil.Alcance(catalogo) switch
         {
             null => "O perfil mistura permissões de unidade e institucionais e não tem escopo que o conceda.",
             TipoDeEscopo admitido when admitido == escopo.Tipo => null,
             TipoDeEscopo.Instituicao => "O perfil só pode ser concedido no escopo da instituição.",
             _ => "O perfil só pode ser concedido no escopo de uma unidade.",
         };
-    }
 
     // O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena: sem esta
     // recusa o valor só falharia ao gravar e responderia 500 em vez da validação de domínio.

@@ -35,16 +35,7 @@ public sealed class PerfilMappingTests
     }
 
     private static Perfil CriarPerfil(params string[] codigos) =>
-        Perfil.Criar("Operação de inscrições", "Opera as inscrições do processo.", codigos, new TodosExistem()).Value!;
-
-    private sealed class TodosExistem : ICatalogoDePermissoesConsultavel
-    {
-        public bool Existe(string codigo) => true;
-
-        public bool ReservadaAGovernanca(string codigo) => false;
-
-        public bool DeUnidade(string codigo) => false;
-    }
+        PerfisDeTeste.Vigente("Operação de inscrições", "Opera as inscrições do processo.", codigos, new DoublesDePerfis.CatalogoDeTeste());
 
     private sealed class Fonte : IFonteDeCatalogo
     {
