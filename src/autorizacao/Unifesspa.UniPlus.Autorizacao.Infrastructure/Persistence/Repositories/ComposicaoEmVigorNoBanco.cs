@@ -16,9 +16,9 @@ internal static class ComposicaoEmVigorNoBanco
     /// aparece uma vez, com o código nulo.
     /// </summary>
     public static IQueryable<LinhaDaConcessao> ComCodigosEmVigor(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes)
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora)
     {
-        IQueryable<CodigoDaConcessao> codigos = context.CodigosDasConcessoes(concessoes);
+        IQueryable<CodigoDaConcessao> codigos = context.CodigosDasConcessoes(concessoes, agora);
 
         return
             from c in concessoes
@@ -32,14 +32,20 @@ internal static class ComposicaoEmVigorNoBanco
     }
 
     /// <summary>As concessões, entre todas, que dão o código.</summary>
-    public static IQueryable<Guid> ConcessoesComPermissaoEmVigor(this AutorizacaoDbContext context, string codigo) =>
-        context.CodigosDasConcessoes(context.Concessoes)
+    public static IQueryable<Guid> ConcessoesComPermissaoEmVigor(
+        this AutorizacaoDbContext context, string codigo, DateTimeOffset agora) =>
+        context.CodigosDasConcessoes(context.Concessoes, agora)
             .Where(k => k.Codigo == codigo)
             .Select(k => k.ConcessaoId);
 
+    /// <summary>Os códigos que a concessão dá no instante, pela mesma regra da decisão de acesso.</summary>
+    public static IQueryable<string> CodigosEmVigorDaConcessao(
+        this AutorizacaoDbContext context, Guid concessaoId, DateTimeOffset agora) =>
+        context.CodigosDasConcessoes(context.Concessoes.Where(c => c.Id == concessaoId), agora).Select(k => k.Codigo);
+
     private static IQueryable<CodigoDaConcessao> CodigosDasConcessoes(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
-        context.CodigosDaGovernanca(concessoes).Concat(context.CodigosDasVersoes(concessoes));
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        context.CodigosDaGovernanca(concessoes).Concat(context.CodigosDasVersoes(concessoes, agora));
 
     private static IQueryable<CodigoDaConcessao> CodigosDaGovernanca(
         this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
@@ -50,13 +56,17 @@ internal static class ComposicaoEmVigorNoBanco
         select new CodigoDaConcessao { ConcessaoId = c.Id, Codigo = x.Codigo };
 
     // O código vale enquanto nenhuma vigência já aberta, de versão mais nova que a da concessão, deixou de reuni-lo:
-    // a permissão que saiu não volta pela versão antiga, mesmo que uma versão posterior a recoloque.
+    // a permissão que saiu não volta pela versão antiga, mesmo que uma versão posterior a recoloque. A concessão que
+    // a janela de migração do perfil deixou para trás, por prazo vencido ou encerramento, não dá código algum, sem
+    // depender de a rotina já ter revogado.
     private static IQueryable<CodigoDaConcessao> CodigosDasVersoes(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
+        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         from c in concessoes
         join v in context.VersoesDosPerfis on c.VersaoId equals v.Id
         from x in v.Permissoes
         where context.VigenciasDosPerfis.Any(g => g.PerfilId == c.PerfilId && g.Ate == null)
+            && !context.JanelasDeMigracao.Any(j => j.PerfilId == c.PerfilId
+                && (j.EncerradaEm != null || j.Prazo <= agora) && v.Numero < j.NumeroDaVersaoNova)
             && !(from g in context.VigenciasDosPerfis
                  join w in context.VersoesDosPerfis on g.VersaoId equals w.Id
                  where g.PerfilId == c.PerfilId && w.Numero > v.Numero && !w.Permissoes.Any(y => y.Codigo == x.Codigo)

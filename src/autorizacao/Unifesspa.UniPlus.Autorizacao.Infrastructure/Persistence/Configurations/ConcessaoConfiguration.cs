@@ -54,8 +54,9 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         {
             tabela.HasCheckConstraint(
                 "ck_concessoes_revogacao_completa",
-                "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL)"
-                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL)");
+                "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL)"
+                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL)"
+                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_escopo_unidade",
                 "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
@@ -82,6 +83,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(c => c.UnidadeId);
         builder.Property(c => c.OrigemId).IsRequired();
+        builder.Ignore(c => c.Beneficiario);
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<Concessao> builder)
@@ -92,6 +94,16 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
             .WithMany()
             .HasForeignKey(c => c.PerfilId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // A revogação pela janela de migração é do mesmo perfil da concessão.
+        builder.HasOne<JanelaDeMigracao>()
+            .WithMany()
+            .HasForeignKey(c => new { c.RevogadaPelaJanelaId, c.PerfilId })
+            .HasPrincipalKey(j => new { j.Id, j.PerfilId })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Alvo das chaves compostas das linhas e das decisões da migração.
+        builder.HasAlternateKey(c => new { c.PerfilId, c.Id });
 
         // A versão é a do mesmo perfil: o par (perfil, versão) impede a concessão de apontar para a versão de outro perfil.
         // O perfil de governança não tem versão, e a coluna nula não é conferida.

@@ -38,7 +38,15 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
 
     public DbSet<Concessao> Concessoes => Set<Concessao>();
 
-    public DbSet<Instalacao> Instalacoes => Set<Instalacao>();
+    public DbSet<JanelaDeMigracao> JanelasDeMigracao => Set<JanelaDeMigracao>();
+
+public DbSet<LoteDaMigracao> LotesDaMigracao => Set<LoteDaMigracao>();
+
+public DbSet<MigracaoDaConcessao> MigracoesDasConcessoes => Set<MigracaoDaConcessao>();
+
+public DbSet<DecisaoDaMigracao> DecisoesDaMigracao => Set<DecisaoDaMigracao>();
+
+public DbSet<Instalacao> Instalacoes => Set<Instalacao>();
 
     public DbSet<TentativaDeInstalacao> TentativasDeInstalacao => Set<TentativaDeInstalacao>();
 

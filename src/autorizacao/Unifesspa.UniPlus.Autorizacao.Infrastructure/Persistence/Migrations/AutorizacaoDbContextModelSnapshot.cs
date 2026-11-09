@@ -171,6 +171,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revogada_em");
 
+                    b.Property<Guid?>("RevogadaPelaJanelaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("revogada_pela_janela_id");
+
                     b.Property<string>("RevogadaPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -211,6 +215,9 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_concessoes");
 
+                    b.HasAlternateKey("PerfilId", "Id")
+                        .HasName("ak_concessoes_perfil_id_id");
+
                     b.HasIndex("PerfilId")
                         .HasDatabaseName("ix_concessoes_perfil_ativas")
                         .HasFilter("revogada_em IS NULL");
@@ -218,6 +225,9 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.HasIndex("PerfilId", "VersaoId")
                         .HasDatabaseName("ix_concessoes_perfil_versao")
                         .HasFilter("revogada_em IS NULL");
+
+                    b.HasIndex("RevogadaPelaJanelaId", "PerfilId")
+                        .HasDatabaseName("ix_concessoes_revogada_pela_janela_id_perfil_id");
 
                     b.HasIndex("OrigemTipo", "OrigemId", "BeneficiarioEmissor", "BeneficiarioSub")
                         .IsUnique()
@@ -234,9 +244,139 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_concessoes_escopo_unidade", "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL)");
+                            t.HasCheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_concessoes_validade_posterior", "valida_ate IS NULL OR valida_ate > concedida_em");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DecisaoDaMigracao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<string[]>("AcrescimoAvaliado")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("acrescimo_avaliado");
+
+                    b.Property<string>("Ator")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("ator");
+
+                    b.PrimitiveCollection<string[]>("ComposicaoAvaliada")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("composicao_avaliada");
+
+                    b.Property<Guid>("ConcessaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("concessao_id");
+
+                    b.Property<string>("DecisorEmissor")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_emissor");
+
+                    b.Property<string>("DecisorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_nome");
+
+                    b.Property<string>("DecisorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_sub");
+
+                    b.Property<bool?>("DecisorTemConcessao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("decisor_tem_concessao");
+
+                    b.Property<string>("Dispensa")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("dispensa");
+
+                    b.Property<string>("EnvioEtapa")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("envio_etapa");
+
+                    b.Property<Guid?>("EnvioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("envio_id");
+
+                    b.Property<string>("Etapa")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("etapa");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<Guid>("JanelaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("janela_id");
+
+                    b.Property<string>("LoteDeOrigemEtapa")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("lote_de_origem_etapa");
+
+                    b.Property<Guid?>("LoteDeOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lote_de_origem_id");
+
+                    b.Property<Guid>("PerfilId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("perfil_id");
+
+                    b.Property<DateTimeOffset>("Prazo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prazo");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("decisao");
+
+                    b.Property<Guid>("VersaoAvaliadaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_avaliada_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_decisoes_da_migracao");
+
+                    b.HasIndex("JanelaId", "PerfilId")
+                        .HasDatabaseName("ix_decisoes_da_migracao_janela_id_perfil_id");
+
+                    b.HasIndex("PerfilId", "ConcessaoId")
+                        .HasDatabaseName("ix_decisoes_da_migracao_perfil_id_concessao_id");
+
+                    b.HasIndex("PerfilId", "VersaoAvaliadaId")
+                        .HasDatabaseName("ix_decisoes_da_migracao_perfil_id_versao_avaliada_id");
+
+                    b.HasIndex("JanelaId", "EnvioId", "EnvioEtapa")
+                        .HasDatabaseName("ix_decisoes_da_migracao_janela_id_envio_id_envio_etapa");
+
+                    b.HasIndex("JanelaId", "LoteDeOrigemId", "LoteDeOrigemEtapa")
+                        .HasDatabaseName("ix_decisoes_da_migracao_janela_id_lote_de_origem_id_lote_de_or");
+
+                    b.ToTable("decisoes_da_migracao", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_decisoes_da_migracao_dispensa", "dispensa IS NULL OR dispensa = 'beneficiario_ja_tem_protecao_de_dados'");
+
+                            t.HasCheckConstraint("ck_decisoes_da_migracao_envio", "(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('gestao_de_acessos', 'protecao_de_dados'))");
+
+                            t.HasCheckConstraint("ck_decisoes_da_migracao_lote_de_origem", "(lote_de_origem_id IS NULL) = (lote_de_origem_etapa IS NULL) AND (lote_de_origem_etapa IS NULL OR lote_de_origem_etapa = 'gestao_de_acessos')");
+
+                            t.HasCheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'humano' AND etapa IN ('gestao_de_acessos', 'protecao_de_dados') AND decisao IN ('migrar', 'recusar') AND decisor_emissor IS NOT NULL AND decisor_sub IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND lote_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'protecao_de_dados' OR envio_id IS NOT NULL) AND (etapa <> 'gestao_de_acessos' OR envio_id IS NULL OR envio_id = lote_de_origem_id)) OR (ator = 'sistema' AND decisor_emissor IS NULL AND decisor_sub IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'gestao_de_acessos' AND decisao = 'reter' AND lote_de_origem_id IS NOT NULL) OR (etapa = 'sistema' AND decisao IN ('nao_migrada', 'fora_da_lista'))))");
                         });
                 });
 
@@ -667,6 +807,116 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbertaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aberta_em");
+
+                    b.Property<DateTimeOffset?>("Aviso24hEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aviso_24h_em");
+
+                    b.Property<DateTimeOffset?>("Aviso48hEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aviso_48h_em");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("EncerradaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("encerrada_em");
+
+                    b.Property<string>("EncerradaPorEmissor")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("encerrada_por_emissor");
+
+                    b.Property<string>("EncerradaPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("encerrada_por_nome");
+
+                    b.Property<string>("EncerradaPorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("encerrada_por_sub");
+
+                    b.Property<string>("Forma")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("forma_do_encerramento");
+
+                    b.Property<string>("MotivoDoEncerramento")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_do_encerramento");
+
+                    b.Property<int>("NumeroDaVersaoNova")
+                        .HasColumnType("integer")
+                        .HasColumnName("numero_da_versao_nova");
+
+                    b.Property<Guid>("PerfilId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("perfil_id");
+
+                    b.Property<DateTimeOffset>("Prazo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prazo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("VersaoAlvoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_alvo_id");
+
+                    b.Property<Guid>("VersaoNovaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_nova_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_janelas_de_migracao");
+
+                    b.HasAlternateKey("Id", "PerfilId")
+                        .HasName("ak_janelas_de_migracao_id_perfil_id");
+
+                    b.HasIndex("PerfilId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_janelas_de_migracao_aberta")
+                        .HasFilter("encerrada_em IS NULL");
+
+                    b.HasIndex("PerfilId", "VersaoAlvoId")
+                        .HasDatabaseName("ix_janelas_de_migracao_perfil_id_versao_alvo_id");
+
+                    b.HasIndex("PerfilId", "VersaoNovaId")
+                        .HasDatabaseName("ix_janelas_de_migracao_perfil_id_versao_nova_id");
+
+                    b.ToTable("janelas_de_migracao", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_janelas_de_migracao_encerramento", "(encerrada_em IS NULL) = (forma_do_encerramento IS NULL)");
+
+                            t.HasCheckConstraint("ck_janelas_de_migracao_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('concluida', 'prazo', 'manual')");
+
+                            t.HasCheckConstraint("ck_janelas_de_migracao_manual", "COALESCE(forma_do_encerramento = 'manual', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_sub IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_janelas_de_migracao_prazo", "prazo = aberta_em + interval '72 hours'");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LeituraDoAnexoDoPedido", b =>
                 {
                     b.Property<Guid>("Id")
@@ -752,6 +1002,152 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_leituras_do_documento_da_versao_documento");
 
                     b.ToTable("leituras_do_documento_da_versao", "autorizacao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("ConfirmouExclusao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("confirmou_exclusao");
+
+                    b.Property<string>("EnviadoPorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("enviado_por_emissor");
+
+                    b.Property<string>("EnviadoPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("enviado_por_nome");
+
+                    b.Property<string>("EnviadoPorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("enviado_por_sub");
+
+                    b.Property<bool>("EnviadoPorTemConcessao")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enviado_por_tem_concessao");
+
+                    b.Property<string>("Etapa")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("etapa");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<Guid>("JanelaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("janela_id");
+
+                    b.Property<Guid>("PerfilId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("perfil_id");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantidade");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lotes_da_migracao");
+
+                    b.HasAlternateKey("JanelaId", "Id", "Etapa")
+                        .HasName("ak_lotes_da_migracao_janela_id_id_etapa");
+
+                    b.HasIndex("JanelaId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_lotes_da_migracao_gestao")
+                        .HasFilter("etapa = 'gestao_de_acessos'");
+
+                    b.HasIndex("JanelaId", "PerfilId")
+                        .HasDatabaseName("ix_lotes_da_migracao_janela_id_perfil_id");
+
+                    b.ToTable("lotes_da_migracao", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_lotes_da_migracao_etapa", "etapa IN ('gestao_de_acessos', 'protecao_de_dados')");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.MigracaoDaConcessao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<Guid>("ConcessaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("concessao_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Dispensa")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("dispensa");
+
+                    b.Property<bool>("ExigeProtecaoDeDados")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exige_protecao_de_dados");
+
+                    b.Property<Guid>("JanelaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("janela_id");
+
+                    b.Property<Guid>("PerfilId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("perfil_id");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("situacao");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_migracoes_da_concessao");
+
+                    b.HasIndex("JanelaId", "ConcessaoId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_migracoes_da_concessao_janela_concessao");
+
+                    b.HasIndex("JanelaId", "PerfilId")
+                        .HasDatabaseName("ix_migracoes_da_concessao_janela_id_perfil_id");
+
+                    b.HasIndex("PerfilId", "ConcessaoId")
+                        .HasDatabaseName("ix_migracoes_da_concessao_perfil_id_concessao_id");
+
+                    b.ToTable("migracoes_da_concessao", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_migracoes_da_concessao_dispensa", "dispensa IS NULL OR dispensa = 'beneficiario_ja_tem_protecao_de_dados'");
+
+                            t.HasCheckConstraint("ck_migracoes_da_concessao_situacao", "situacao IN ('retida', 'aguardando_protecao_de_dados', 'migrada', 'recusada', 'nao_migrada', 'fora_da_lista')");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PedidoDeConcessao", b =>
@@ -1501,6 +1897,54 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_concessoes_versoes_dos_perfis_perfil_id_versao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", null)
+                        .WithMany()
+                        .HasForeignKey("RevogadaPelaJanelaId", "PerfilId")
+                        .HasPrincipalKey("Id", "PerfilId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_concessoes_janelas_de_migracao_revogada_pela_janela_id_perf");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DecisaoDaMigracao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", null)
+                        .WithMany("Decisoes")
+                        .HasForeignKey("JanelaId", "PerfilId")
+                        .HasPrincipalKey("Id", "PerfilId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_decisoes_da_migracao_janelas_de_migracao_janela_id_perfil_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "ConcessaoId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_decisoes_da_migracao_concessoes_perfil_id_concessao_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "VersaoAvaliadaId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_decisoes_da_migracao_versoes_dos_perfis_perfil_id_versao_av");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", null)
+                        .WithMany()
+                        .HasForeignKey("JanelaId", "EnvioId", "EnvioEtapa")
+                        .HasPrincipalKey("JanelaId", "Id", "Etapa")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_decisoes_da_migracao_lotes_da_migracao_janela_id_envio_id_e");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", null)
+                        .WithMany()
+                        .HasForeignKey("JanelaId", "LoteDeOrigemId", "LoteDeOrigemEtapa")
+                        .HasPrincipalKey("JanelaId", "Id", "Etapa")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_decisoes_da_migracao_lotes_da_migracao_janela_id_lote_de_or");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DecisaoDaVersao", b =>
@@ -1592,6 +2036,32 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_revisao_itens_revisoes_de_acessos_revisao_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_janelas_de_migracao_perfis_perfil_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "VersaoAlvoId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_janelas_de_migracao_versoes_dos_perfis_perfil_id_versao_alv");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "VersaoNovaId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_janelas_de_migracao_versoes_dos_perfis_perfil_id_versao_nov");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LeituraDoAnexoDoPedido", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.AnexoDoPedido", null)
@@ -1617,6 +2087,36 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_leituras_do_documento_da_versao_documentos_da_versao_docume");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", null)
+                        .WithMany("Lotes")
+                        .HasForeignKey("JanelaId", "PerfilId")
+                        .HasPrincipalKey("Id", "PerfilId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lotes_da_migracao_janelas_de_migracao_janela_id_perfil_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.MigracaoDaConcessao", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", null)
+                        .WithMany("Migracoes")
+                        .HasForeignKey("JanelaId", "PerfilId")
+                        .HasPrincipalKey("Id", "PerfilId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_migracoes_da_concessao_janelas_de_migracao_janela_id_perfil");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "ConcessaoId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_migracoes_da_concessao_concessoes_perfil_id_concessao_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PedidoDeConcessao", b =>
@@ -1814,6 +2314,15 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_vigencias_do_perfil_versoes_do_perfil_perfil_id_versao_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.JanelaDeMigracao", b =>
+                {
+                    b.Navigation("Decisoes");
+
+                    b.Navigation("Lotes");
+
+                    b.Navigation("Migracoes");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PedidoDeConcessao", b =>

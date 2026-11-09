@@ -80,6 +80,14 @@ public sealed class Concessao : EntityBase
 
     public string? MotivoRevogacao { get; private set; }
 
+    /// <summary>
+    /// A janela de migração que revogou a concessão, pelo sistema; nula quando a revogação foi de uma pessoa ou a
+    /// concessão está ativa. A pessoa que recusou a migração fica na trilha da janela.
+    /// </summary>
+    public Guid? RevogadaPelaJanelaId { get; private set; }
+
+    public Identidade Beneficiario => new(BeneficiarioEmissor, BeneficiarioSub, BeneficiarioNome);
+
     // Construtor de materialização do EF Core.
     private Concessao()
     {
@@ -145,6 +153,10 @@ public sealed class Concessao : EntityBase
     public bool EstaAtiva(DateTimeOffset agora) =>
         RevogadaEm is null && (ValidaAte is null || ValidaAte > agora);
 
+    /// <summary>Estava ativa no instante, mesmo que tenha sido revogada ou vencido depois dele.</summary>
+    public bool EstavaAtivaEm(DateTimeOffset instante) =>
+        ConcedidaEm <= instante && (RevogadaEm is null || RevogadaEm > instante) && (ValidaAte is null || ValidaAte > instante);
+
     /// <summary>
     /// Revoga a concessão, com efeito imediato. A recusa por concessão já revogada sai antes da
     /// do motivo: com a concessão encerrada, corrigir o motivo não leva a nada.
@@ -175,6 +187,24 @@ public sealed class Concessao : EntityBase
         MotivoRevogacao = motivoNormalizado;
 
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Revoga a concessão pelo sistema, em nome da janela de migração que a encerrou ou a recusou. Quem chama trava a
+    /// concessão e confere que não está revogada.
+    /// </summary>
+    public void RevogarPelaMigracao(Guid janelaId, string motivo, DateTimeOffset instante)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(motivo);
+
+        if (RevogadaEm is not null)
+        {
+            throw new InvalidOperationException($"A concessão {Id} já está revogada e não pode ser revogada pela migração.");
+        }
+
+        RevogadaEm = instante;
+        RevogadaPelaJanelaId = janelaId;
+        MotivoRevogacao = motivo;
     }
 
     private static Concessao Nova(
