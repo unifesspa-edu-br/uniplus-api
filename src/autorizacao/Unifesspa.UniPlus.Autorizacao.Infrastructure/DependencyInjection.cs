@@ -50,6 +50,7 @@ public static class AutorizacaoInfrastructureRegistration
     {
         services.AddScoped<IPerfilRepository, PerfilRepository>();
         services.AddScoped<IConcessaoRepository, ConcessaoRepository>();
+        services.AddScoped<IJanelaDeMigracaoRepository, JanelaDeMigracaoRepository>();
         services.AddScoped<IInstalacaoRepository, InstalacaoRepository>();
         services.AddScoped<IConcessoesAtivasDoSujeito, ConcessoesAtivasDoSujeito>();
         services.AddScoped<ITitularesDaPermissao, TitularesDaPermissao>();

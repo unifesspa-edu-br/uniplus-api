@@ -22,14 +22,17 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
 {
     private readonly AutorizacaoDbContext _context;
+    private readonly TimeProvider _relogio;
 
     private UsuarioRef? _pessoaLida;
     private IReadOnlyList<ConcessaoAtiva>? _concessoesLidas;
 
-    public ConcessoesAtivasDoSujeito(AutorizacaoDbContext context)
+    public ConcessoesAtivasDoSujeito(AutorizacaoDbContext context, TimeProvider relogio)
     {
         ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(relogio);
         _context = context;
+        _relogio = relogio;
     }
 
     public async Task<IReadOnlyList<ConcessaoAtiva>> ListarAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
@@ -57,7 +60,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
         IQueryable<Concessao> daPessoa = _context.Concessoes.AsNoTracking()
             .Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioSub == sub && c.RevogadaEm == null);
 
-        return _context.ComCodigosEmVigor(daPessoa).ToListAsync(cancellationToken);
+        return _context.ComCodigosEmVigor(daPessoa, _relogio.GetUtcNow()).ToListAsync(cancellationToken);
     }
 
     // A concessão sem permissão continua listada, com a lista vazia; só o código nulo é descartado.

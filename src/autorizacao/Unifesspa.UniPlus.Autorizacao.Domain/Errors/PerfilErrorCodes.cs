@@ -41,4 +41,5 @@ public static class PerfilErrorCodes
     public const string DecisorEAutor = "Perfil.DecisorEAutor";
     public const string MesmoDecisorNasDuasEtapas = "Perfil.MesmoDecisorNasDuasEtapas";
     public const string SemPermissaoNaEtapa = "Perfil.SemPermissaoNaEtapa";
+    public const string JanelaDeMigracaoAberta = "Perfil.JanelaDeMigracaoAberta";
 }
