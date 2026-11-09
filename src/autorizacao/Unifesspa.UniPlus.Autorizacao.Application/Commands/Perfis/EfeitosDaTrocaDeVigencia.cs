@@ -81,13 +81,24 @@ public sealed class EfeitosDaTrocaDeVigencia
 
         foreach (PedidoDeConcessao pedido in ativos)
         {
-            SituacaoDoPedido situacaoAnterior = pedido.Situacao;
-            DesfechoDaTrocaDeVersao desfecho = pedido.AoEntrarEmVigor(troca.Nova, anterior.Numero, troca.TemAcrescimo, instante);
-
-            mensagens.AddRange(await AvisarAsync(pedido, perfil.Nome, situacaoAnterior, desfecho, cancellationToken).ConfigureAwait(false));
+            mensagens.AddRange(await TransitarAsync(pedido, perfil.Nome, troca, anterior.Numero, instante, cancellationToken).ConfigureAwait(false));
         }
 
         return mensagens;
+    }
+
+    private async Task<IReadOnlyList<EnviarEmail>> TransitarAsync(
+        PedidoDeConcessao pedido,
+        string perfilNome,
+        TrocaDeVigencia troca,
+        int numeroAnterior,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken)
+    {
+        SituacaoDoPedido situacaoAnterior = pedido.Situacao;
+        DesfechoDaTrocaDeVersao desfecho = pedido.AoEntrarEmVigor(troca.Nova, numeroAnterior, troca.TemAcrescimo, instante);
+
+        return await AvisarAsync(pedido, perfilNome, situacaoAnterior, desfecho, cancellationToken).ConfigureAwait(false);
     }
 
     // Só o pedido devolvido e o que volta ao gestor mudam de mãos; o que apenas troca de versão segue sem aviso.
