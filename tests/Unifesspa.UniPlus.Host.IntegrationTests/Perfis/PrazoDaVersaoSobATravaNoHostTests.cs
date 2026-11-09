@@ -8,12 +8,14 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
 /// O instante de uma transição sobre o perfil é lido depois da trava: a requisição que espera a trava e atravessa o
-/// prazo encontra a pendente vencida.
+/// prazo encontra a pendente vencida, e a rotina de expiração e a decisão sobre o mesmo perfil se resolvem por quem
+/// trava primeiro.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 [SuppressMessage(
@@ -58,6 +60,48 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
     }
 
+    [Fact(DisplayName = "A decisão que trava primeiro expira a versão vencida e a rotina que vem depois não expira nada")]
+    public async Task DecisaoTravaPrimeiro_ExpiraUmaSoVez()
+    {
+        (Envio vigente, Envio versao) = await VigenteEPendenteVerificadaAsync();
+        using HttpClient gestao = await GestaoAsync();
+        await ExpirarEmAsync(versao, MargemDoPrazo);
+        await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
+
+        Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
+        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await EsperarOPrazoAsync();
+        Task<int> rotina = ExpirarAsync();
+        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.ConfirmarAsync();
+
+        using HttpResponseMessage resposta = await decisao;
+        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_expirada");
+        (await rotina).Should().Be(0);
+        await ConferirVersaoSoExpiradaAsync(vigente, versao);
+    }
+
+    [Fact(DisplayName = "A rotina que trava primeiro expira a versão vencida e a decisão que vem depois a encontra expirada")]
+    public async Task RotinaTravaPrimeiro_ADecisaoEncontraAVersaoExpirada()
+    {
+        (Envio vigente, Envio versao) = await VigenteEPendenteVerificadaAsync();
+        using HttpClient gestao = await GestaoAsync();
+        await ExpirarEmAsync(versao, MargemDoPrazo);
+        await EsperarOPrazoAsync();
+        await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
+
+        Task<int> rotina = ExpirarAsync();
+        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
+        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.ConfirmarAsync();
+
+        (await rotina).Should().Be(1);
+        using HttpResponseMessage resposta = await decisao;
+        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_nao_pendente");
+        await ConferirVersaoSoExpiradaAsync(vigente, versao);
+    }
+
     private async Task<(Envio Vigente, Envio Versao)> VigenteEPendenteVerificadaAsync()
     {
         await ResetarAsync();
@@ -91,5 +135,19 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
             "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
 
         return trava;
+    }
+
+    private async Task<int> ExpirarAsync()
+    {
+        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
+
+        return await escopo.ServiceProvider.GetRequiredService<ExpiracaoDasVersoesPendentes>().ExecutarAsync(CancellationToken.None);
+    }
+
+    private async Task ConferirVersaoSoExpiradaAsync(Envio vigente, Envio versao)
+    {
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await DecisoesAsync(versao.VersaoId)).Should().BeEmpty();
+        (await VigenciasAsync(vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == vigente.VersaoId);
     }
 }
