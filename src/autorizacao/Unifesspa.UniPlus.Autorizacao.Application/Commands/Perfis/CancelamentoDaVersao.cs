@@ -41,19 +41,27 @@ public sealed class CancelamentoDaVersao
 
         return await _operacao
             .ExecutarComAvisosAsync(
-                perfilId, perfil => CancelarNoPerfilAsync(perfil, versaoId, motivo, autoria.Pessoa, verificador, cancellationToken), cancellationToken)
+                perfilId,
+                (perfil, contexto) => CancelarNoPerfilAsync(perfil, versaoId, motivo, autoria.Pessoa, contexto.Agora, verificador, cancellationToken),
+                cancellationToken)
             .ConfigureAwait(false);
     }
 
     private async Task<DesfechoDaOperacao<PerfilDto>> CancelarNoPerfilAsync(
-        Perfil perfil, Guid versaoId, string? motivo, Identidade autor, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+        Perfil perfil,
+        Guid versaoId,
+        string? motivo,
+        Identidade autor,
+        DateTimeOffset agora,
+        IVerificadorDeAcesso verificador,
+        CancellationToken cancellationToken)
     {
         if (!await PodeCancelarAsync(perfil, versaoId, autor, verificador, cancellationToken).ConfigureAwait(false))
         {
             return new DesfechoDaOperacao<PerfilDto>(Result<PerfilDto>.Failure(PerfilErros.SemPermissaoNaEtapa()));
         }
 
-        DesfechoDaVersao desfecho = perfil.CancelarVersao(versaoId, autor, MotivosDaVersao.Normalizar(motivo), _autoria.Agora);
+        DesfechoDaVersao desfecho = perfil.CancelarVersao(versaoId, autor, MotivosDaVersao.Normalizar(motivo), agora);
 
         return await _efeitos.AplicarAsync(perfil, desfecho, autor, cancellationToken).ConfigureAwait(false);
     }

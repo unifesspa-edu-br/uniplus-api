@@ -16,6 +16,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <param name="Avisos">Os e-mails que entram no outbox junto da gravação; só saem se ela acontece.</param>
 public sealed record DesfechoDaOperacao<T>(Result<T> Resultado, bool GravarMesmoNaFalha = false, IReadOnlyList<EnviarEmail>? Avisos = null);
 
+/// <summary>O que a operação sabe do momento em que roda sob a trava: o instante, lido depois de obtê-la.</summary>
+public sealed record ContextoDaOperacao(DateTimeOffset Agora);
+
 /// <summary>O resultado da operação depois da gravação e os avisos que entram no outbox da mesma transação.</summary>
 public sealed record GravacaoDaOperacao<T>(Result<T> Resultado, IReadOnlyList<EnviarEmail> Avisos)
 {
@@ -24,30 +27,36 @@ public sealed record GravacaoDaOperacao<T>(Result<T> Resultado, IReadOnlyList<En
 
 /// <summary>
 /// Executa uma operação sobre o perfil na ordem de travas única: localiza e trava o perfil (<c>FOR UPDATE</c>),
-/// recarrega-o por inteiro, deixa a operação validar e fazer a transição e só então grava. Duas operações sobre o mesmo
-/// perfil, ou sobre um documento dele, nunca correm juntas: a segunda lê o que a primeira confirmou.
+/// recarrega-o por inteiro, deixa a operação validar e fazer a transição e só então grava. O instante da operação é
+/// lido depois da trava. Duas operações sobre o mesmo perfil, ou sobre um documento dele, nunca correm juntas: a segunda
+/// lê o que a primeira confirmou.
 /// </summary>
 public sealed class OperacaoSobreOPerfil
 {
     private readonly IPerfilRepository _perfis;
     private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly TimeProvider _clock;
 
-    public OperacaoSobreOPerfil(IPerfilRepository perfis, IAutorizacaoUnitOfWork unitOfWork)
+    public OperacaoSobreOPerfil(IPerfilRepository perfis, IAutorizacaoUnitOfWork unitOfWork, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(clock);
 
         _perfis = perfis;
         _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task<Result<T>> ExecutarAsync<T>(
-        Guid perfilId, Func<Perfil, Task<Result<T>>> operacao, CancellationToken cancellationToken)
+        Guid perfilId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
 
         GravacaoDaOperacao<T> gravacao = await ExecutarComAvisosAsync(
-            perfilId, async perfil => new DesfechoDaOperacao<T>(await operacao(perfil).ConfigureAwait(false)), cancellationToken)
+            perfilId,
+            async (perfil, contexto) => new DesfechoDaOperacao<T>(await operacao(perfil, contexto).ConfigureAwait(false)),
+            cancellationToken)
             .ConfigureAwait(false);
 
         return gravacao.Resultado;
@@ -60,7 +69,7 @@ public sealed class OperacaoSobreOPerfil
 
         Result<bool> resultado = await ExecutarAsync(
             perfilId,
-            perfil => Task.FromResult(Converter(operacao(perfil))),
+            (perfil, _) => Task.FromResult(Converter(operacao(perfil))),
             cancellationToken).ConfigureAwait(false);
 
         return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);
@@ -71,7 +80,7 @@ public sealed class OperacaoSobreOPerfil
     /// à mesma transação; a que não grava descarta tudo.
     /// </summary>
     public async Task<GravacaoDaOperacao<T>> ExecutarComAvisosAsync<T>(
-        Guid perfilId, Func<Perfil, Task<DesfechoDaOperacao<T>>> operacao, CancellationToken cancellationToken)
+        Guid perfilId, Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
 
@@ -81,7 +90,7 @@ public sealed class OperacaoSobreOPerfil
             return GravacaoDaOperacao<T>.Sem(Result<T>.Failure(PerfilHandlerErros.NaoEncontrado(perfilId)));
         }
 
-        DesfechoDaOperacao<T> desfecho = await operacao(perfil).ConfigureAwait(false);
+        DesfechoDaOperacao<T> desfecho = await operacao(perfil, new ContextoDaOperacao(_clock.GetUtcNow())).ConfigureAwait(false);
 
         return desfecho.Resultado.IsSuccess || desfecho.GravarMesmoNaFalha
             ? await SalvarAsync(desfecho, cancellationToken).ConfigureAwait(false)

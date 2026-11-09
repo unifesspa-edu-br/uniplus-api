@@ -53,14 +53,14 @@ public sealed class DocumentosDasVersoes
         Guid perfilId, Guid versaoId, long tamanhoDoDocumento, CancellationToken cancellationToken) =>
         _operacao.ExecutarAsync(
             perfilId,
-            perfil => EmitirAsync(perfil.NovoDocumento(versaoId, tamanhoDoDocumento), cancellationToken),
+            (perfil, _) => EmitirAsync(perfil.NovoDocumento(versaoId, tamanhoDoDocumento), cancellationToken),
             cancellationToken);
 
     /// <summary>URL de envio nova para o documento que ainda aguarda o PDF: a mesma chave no armazenamento.</summary>
     public Task<Result<EnvioDoDocumentoDto>> ReemitirEnvioAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken) =>
         _operacao.ExecutarAsync(
             perfilId,
-            perfil => EmitirAsync(perfil.DocumentoParaReemitirEnvio(versaoId), cancellationToken),
+            (perfil, _) => EmitirAsync(perfil.DocumentoParaReemitirEnvio(versaoId), cancellationToken),
             cancellationToken);
 
     /// <summary>Põe o documento em verificação. Devolve o documento para quem publica o pedido ao verificador.</summary>
@@ -68,7 +68,7 @@ public sealed class DocumentosDasVersoes
         Guid perfilId, Guid versaoId, string? etag, CancellationToken cancellationToken) =>
         _operacao.ExecutarAsync(
             perfilId,
-            perfil => Task.FromResult(perfil.ConfirmarDocumento(versaoId, etag, _autoria.Agora)),
+            (perfil, contexto) => Task.FromResult(perfil.ConfirmarDocumento(versaoId, etag, contexto.Agora)),
             cancellationToken);
 
     /// <summary>

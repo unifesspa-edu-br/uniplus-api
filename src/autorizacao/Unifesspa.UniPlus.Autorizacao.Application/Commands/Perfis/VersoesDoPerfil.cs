@@ -70,7 +70,10 @@ public sealed class VersoesDoPerfil
         return conteudo.IsFailure
             ? Result<EnvioDoDocumentoDto>.ValidationFailure(conteudo.Errors)
             : await _operacao
-                .ExecutarAsync(perfilId, perfil => NovaVersaoAsync(perfil, conteudo.Value!, autoria, cancellationToken), cancellationToken)
+                .ExecutarAsync(
+                    perfilId,
+                    (perfil, contexto) => NovaVersaoAsync(perfil, conteudo.Value!, autoria, contexto.Agora, cancellationToken),
+                    cancellationToken)
                 .ConfigureAwait(false);
     }
 
@@ -93,10 +96,10 @@ public sealed class VersoesDoPerfil
     }
 
     private async Task<Result<EnvioDoDocumentoDto>> NovaVersaoAsync(
-        Perfil perfil, ConteudoDaVersao conteudo, AutoriaDaVersao autoria, CancellationToken cancellationToken)
+        Perfil perfil, ConteudoDaVersao conteudo, AutoriaDaVersao autoria, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         ContextoDaVersao contexto = await _leitor.LerAsync(perfil.Id, conteudo.Nome, cancellationToken).ConfigureAwait(false);
-        Result<VersaoDoPerfil> criada = perfil.CriarVersao(conteudo, contexto, autoria, _autoria.Agora, _catalogo);
+        Result<VersaoDoPerfil> criada = perfil.CriarVersao(conteudo, contexto, autoria, agora, _catalogo);
         if (criada.IsFailure)
         {
             return Result<EnvioDoDocumentoDto>.ValidationFailure(criada.Errors);

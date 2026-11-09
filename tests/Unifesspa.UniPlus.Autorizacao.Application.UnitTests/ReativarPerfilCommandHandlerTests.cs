@@ -72,7 +72,7 @@ public sealed class ReativarPerfilCommandHandlerTests
 
         Result resultado = await DesativarPerfilCommandHandler.Handle(
             new DesativarPerfilCommand(perfil.Id),
-            new OperacaoSobreOPerfil(new PerfisNaMemoria(perfil), unidade),
+            new OperacaoSobreOPerfil(new PerfisNaMemoria(perfil), unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
             CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
@@ -84,7 +84,7 @@ public sealed class ReativarPerfilCommandHandlerTests
     private static Task<Result> Reativar(Perfil? perfil, UnidadeDeTrabalho unidade) =>
         ReativarPerfilCommandHandler.Handle(
             new ReativarPerfilCommand(perfil?.Id ?? Guid.NewGuid()),
-            new OperacaoSobreOPerfil(new PerfisNaMemoria(perfil is null ? [] : [perfil]), unidade),
+            new OperacaoSobreOPerfil(new PerfisNaMemoria(perfil is null ? [] : [perfil]), unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
             CancellationToken.None);
 
     private static Perfil PerfilComum() =>

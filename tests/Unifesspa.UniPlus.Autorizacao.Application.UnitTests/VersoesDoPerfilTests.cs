@@ -183,7 +183,7 @@ public sealed class VersoesDoPerfilTests
             Unidade = new UnidadeDeTrabalho { Falha = falha };
             Armazenamento = new Armazenamento();
             Versoes = new VersoesDoPerfil(
-                new OperacaoSobreOPerfil(Perfis, Unidade),
+                new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
                 new LeitorDoContextoDaVersao(Perfis, new ConcessoesNaMemoria(temConcessao)),
                 new EnvioDoDocumento(Armazenamento, TimeProvider.System),
                 new AutoriaDaOperacao(new Usuario(autor), TimeProvider.System, new ConcessoesNaMemoria(temConcessao)),

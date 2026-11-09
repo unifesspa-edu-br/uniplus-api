@@ -197,7 +197,7 @@ public sealed class DocumentosDasVersoesTests
             Armazenamento = new Armazenamento();
             Verificador = new VerificadorDeTeste(PerfisDeTeste.Autor.Sub, permitidas.Length == 0 ? [Manter] : permitidas);
             Documentos = new DocumentosDasVersoes(
-                new OperacaoSobreOPerfil(Perfis, Unidade),
+                new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
                 new EnvioDoDocumento(Armazenamento, TimeProvider.System),
                 new AutoriaDaOperacao(new Usuario(autorIdentificado ? PerfisDeTeste.Autor : null), TimeProvider.System, new ConcessoesNaMemoria()),
                 Perfis,

@@ -49,43 +49,46 @@ public sealed class AprovacoesDaVersao
         ArgumentNullException.ThrowIfNull(solicitada);
         ArgumentNullException.ThrowIfNull(verificador);
 
-        Result<PedidoDeDecisaoDaVersao> pedida = await PedirAsync(solicitada, verificador, cancellationToken).ConfigureAwait(false);
-        if (pedida.IsFailure)
+        Result<AutoriaDaVersao> autorizada = await AutorizarAsync(solicitada, verificador, cancellationToken).ConfigureAwait(false);
+        if (autorizada.IsFailure)
         {
-            return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(pedida.Error!));
+            return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(autorizada.Error!));
         }
 
         return await _operacao
-            .ExecutarComAvisosAsync(solicitada.PerfilId, perfil => DecidirNoPerfilAsync(perfil, pedida.Value!, cancellationToken), cancellationToken)
+            .ExecutarComAvisosAsync(
+                solicitada.PerfilId,
+                (perfil, contexto) => DecidirNoPerfilAsync(perfil, Pedido(solicitada, autorizada.Value!, contexto.Agora), cancellationToken),
+                cancellationToken)
             .ConfigureAwait(false);
     }
 
-    private async Task<Result<PedidoDeDecisaoDaVersao>> PedirAsync(
+    private async Task<Result<AutoriaDaVersao>> AutorizarAsync(
         DecisaoSolicitada solicitada, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
         AutoriaDaVersao? autoria = await _autoria.DaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
         if (acesso is null || autoria is null)
         {
-            return Result<PedidoDeDecisaoDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+            return Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
         }
 
         DomainError? recusa = await RecusaDoAcessoAsync(acesso, EtapaDaVersaoCodigo.TentarLer(solicitada.Etapa), verificador, cancellationToken)
             .ConfigureAwait(false);
 
         return recusa is not null
-            ? Result<PedidoDeDecisaoDaVersao>.Failure(recusa)
-            : Result<PedidoDeDecisaoDaVersao>.Success(Pedido(solicitada, autoria));
+            ? Result<AutoriaDaVersao>.Failure(recusa)
+            : Result<AutoriaDaVersao>.Success(autoria);
     }
 
-    private PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, AutoriaDaVersao autoria) =>
+    private static PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, AutoriaDaVersao autoria, DateTimeOffset agora) =>
         new(
             solicitada.VersaoId,
             EtapaDaVersaoCodigo.FromCodigo(solicitada.Etapa!),
             solicitada.Resultado,
             MotivosDaVersao.Normalizar(solicitada.Motivo),
             autoria,
-            _autoria.Agora);
+            agora);
 
     // Sem nenhuma das permissões é 403; com só a da outra etapa, a etapa pedida não é a da pessoa. A trilha recebe a
     // decisão que governou: a da etapa pedida quando ela existe, senão o desfecho das duas.

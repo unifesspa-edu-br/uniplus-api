@@ -29,7 +29,7 @@ internal sealed class CenarioDaGovernancaDaVersao
         Perfis = new PerfisNaMemoria(perfil);
         Unidade = new UnidadeDeTrabalho();
         Verificador = new VerificadorDeTeste(ator?.Sub ?? "sem-autor", permitidas);
-        OperacaoSobreOPerfil operacao = new(Perfis, Unidade);
+        OperacaoSobreOPerfil operacao = new(Perfis, Unidade, tempo);
         AutoriaDaOperacao autoria = new(new Usuario(ator), tempo, concessoes);
         EfeitosDoDesfechoDaVersao efeitos = new(
             new EfeitosDaTrocaDeVigencia(

@@ -35,36 +35,34 @@ public sealed class RemocaoDePermissoes
 
         if (await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is not { } autoria)
         {
-            return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado()));
+            return Recusada(PerfilHandlerErros.AutorNaoIdentificado());
         }
 
-        Result<PedidoDeRemocao> pedido = Pedir(dados, autoria);
-        if (pedido.IsFailure)
-        {
-            return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.ValidationFailure(pedido.Errors));
-        }
-
-        return await _operacao
-            .ExecutarComAvisosAsync(perfilId, perfil => RemoverDoPerfilAsync(perfil, pedido.Value!, cancellationToken), cancellationToken)
-            .ConfigureAwait(false);
+        return CategoriaInvalida(dados)
+            ? Recusada(PerfilErros.RemocaoInvalida())
+            : await RemoverSobATravaAsync(perfilId, dados, autoria, cancellationToken).ConfigureAwait(false);
     }
 
-    // A categoria é opcional, mas a informada tem de ser uma das conhecidas.
-    private Result<PedidoDeRemocao> Pedir(RemoverPermissoesRequest dados, AutoriaDaVersao autoria)
-    {
-        CategoriaDaRemocao? categoria = CategoriaDaRemocaoCodigo.TentarLer(dados.Categoria);
-        if (dados.Categoria is not null && categoria is null)
-        {
-            return Result<PedidoDeRemocao>.Failure(PerfilErros.RemocaoInvalida());
-        }
+    private static bool CategoriaInvalida(RemoverPermissoesRequest dados) =>
+        dados.Categoria is not null && CategoriaDaRemocaoCodigo.TentarLer(dados.Categoria) is null;
 
-        return Result<PedidoDeRemocao>.Success(new PedidoDeRemocao(
+    private static GravacaoDaOperacao<PerfilDto> Recusada(DomainError erro) =>
+        GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(erro));
+
+    private Task<GravacaoDaOperacao<PerfilDto>> RemoverSobATravaAsync(
+        Guid perfilId, RemoverPermissoesRequest dados, AutoriaDaVersao autoria, CancellationToken cancellationToken) =>
+        _operacao.ExecutarComAvisosAsync(
+            perfilId,
+            (perfil, contexto) => RemoverDoPerfilAsync(perfil, Pedido(dados, autoria, contexto.Agora), cancellationToken),
+            cancellationToken);
+
+    private static PedidoDeRemocao Pedido(RemoverPermissoesRequest dados, AutoriaDaVersao autoria, DateTimeOffset agora) =>
+        new(
             [.. (dados.Permissoes ?? []).Distinct(StringComparer.Ordinal)],
             MotivosDaVersao.Normalizar(dados.Motivo),
-            categoria,
+            CategoriaDaRemocaoCodigo.TentarLer(dados.Categoria),
             autoria,
-            _autoria.Agora));
-    }
+            agora);
 
     private async Task<DesfechoDaOperacao<PerfilDto>> RemoverDoPerfilAsync(
         Perfil perfil, PedidoDeRemocao pedido, CancellationToken cancellationToken) =>
