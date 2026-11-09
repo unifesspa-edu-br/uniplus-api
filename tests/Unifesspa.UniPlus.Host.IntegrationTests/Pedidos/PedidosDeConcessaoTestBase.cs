@@ -365,6 +365,50 @@ public abstract class PedidosDeConcessaoTestBase
             .Single(a => a.GetProperty("id").GetGuid() == anexoId).GetProperty("situacao").GetString()!;
     }
 
+    private protected async Task<JsonElement> AguardarAvisoAsync(Persona destinatario, Guid pedidoId, string assunto)
+    {
+        DateTime fim = DateTime.UtcNow.AddSeconds(45);
+        while (DateTime.UtcNow < fim)
+        {
+            JsonElement[] mensagens = await MensagensAsync(destinatario, pedidoId);
+            foreach (JsonElement mensagem in mensagens)
+            {
+                if (mensagem.GetProperty("Subject").GetString()!.Contains(assunto, StringComparison.OrdinalIgnoreCase)
+                    || mensagem.GetProperty("Text").GetString()!.Contains(assunto, StringComparison.OrdinalIgnoreCase))
+                {
+                    return mensagem;
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(250));
+        }
+
+        throw new TimeoutException($"O aviso \"{assunto}\" do pedido {pedidoId} não chegou a {destinatario.Username}.");
+    }
+
+    private protected async Task<JsonElement[]> MensagensAsync(Persona destinatario, Guid pedidoId)
+    {
+        using HttpClient mailpit = new() { BaseAddress = Fixture.ApiDoMailpit };
+        JsonElement lista = await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages?limit=500");
+        List<JsonElement> completas = [];
+        foreach (JsonElement resumo in lista.GetProperty("messages").EnumerateArray())
+        {
+            if (!resumo.GetProperty("To").EnumerateArray().Any(t => string.Equals(
+                t.GetProperty("Address").GetString(), destinatario.Email, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            JsonElement completa = await mailpit.GetFromJsonAsync<JsonElement>($"/api/v1/message/{resumo.GetProperty("ID").GetString()}");
+            if (completa.GetProperty("Text").GetString()!.Contains(pedidoId.ToString(), StringComparison.Ordinal))
+            {
+                completas.Add(completa);
+            }
+        }
+
+        return [.. completas];
+    }
+
     private protected string LerLog()
     {
         if (!File.Exists(Fixture.ArquivoDeLog))

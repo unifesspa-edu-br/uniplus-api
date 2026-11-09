@@ -8,6 +8,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -18,6 +19,9 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.Verificador.Contratos;
+
+using Wolverine;
+using Wolverine.Tracking;
 
 /// <summary>Chamadas, leituras e acessos ao banco comuns às suítes da versão do perfil pelo host real.</summary>
 public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
@@ -145,6 +149,20 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
             .RegistrarAsync(ResultadoDe(documentoId, veredicto), CancellationToken.None);
 
         return registro.Desfecho;
+    }
+
+    /// <summary>Entrega o veredicto pela fila do Wolverine, como o verificador faria, e espera o processamento terminar.</summary>
+    /// <param name="aceitarFalha">Quando verdadeiro, a falha do processamento não derruba a espera: o teste a confere pelo estado.</param>
+    private protected Task<ITrackedSession> EntregarPelaFilaAsync(
+        Guid documentoId, VeredictoDaVerificacao veredicto = VeredictoDaVerificacao.Verificado, bool aceitarFalha = false)
+    {
+        TrackedSessionConfiguration sessao = Fixture.Factory.Services.GetRequiredService<IHost>()
+            .TrackActivity()
+            .IncludeExternalTransports()
+            .Timeout(TimeSpan.FromSeconds(60));
+
+        return (aceitarFalha ? sessao.DoNotAssertOnExceptionsDetected() : sessao)
+            .ExecuteAndWaitAsync(bus => bus.EndpointFor(FilasDaVerificacao.ResultadosAutorizacao).SendAsync(ResultadoDe(documentoId, veredicto)));
     }
 
     private protected static ResultadoDaVerificacaoDeArquivo ResultadoDe(Guid documentoId, VeredictoDaVerificacao veredicto)
