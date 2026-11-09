@@ -72,6 +72,7 @@ public sealed class VersoesDoPerfil
             : await _operacao
                 .ExecutarAsync(
                     perfilId,
+                    null,
                     (perfil, contexto) => NovaVersaoAsync(perfil, conteudo.Value!, autoria, contexto.Agora, cancellationToken),
                     cancellationToken)
                 .ConfigureAwait(false);

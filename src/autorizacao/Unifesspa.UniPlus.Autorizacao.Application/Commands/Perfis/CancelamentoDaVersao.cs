@@ -42,6 +42,7 @@ public sealed class CancelamentoDaVersao
         return await _operacao
             .ExecutarComAvisosAsync(
                 perfilId,
+                versaoId,
                 (perfil, contexto) => CancelarNoPerfilAsync(perfil, versaoId, motivo, autoria.Pessoa, contexto.Agora, verificador, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
