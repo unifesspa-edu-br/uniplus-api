@@ -34,17 +34,17 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
         return new TransacaoRetidaDeTeste(escopo, transacao);
     }
 
-    /// <summary>Espera o banco registrar uma sessão parada numa trava: a operação concorrente chegou ao ponto da disputa.</summary>
-    public static Task AguardarBloqueioAsync(IServiceProvider servicos) =>
+    /// <summary>Espera o banco registrar o número de sessões paradas numa trava: a operação concorrente chegou ao ponto da disputa.</summary>
+    public static Task AguardarBloqueioAsync(IServiceProvider servicos, int sessoes = 1) =>
         PedidosDeConcessaoTestBase.AguardarAsync(async () =>
         {
             await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
 
             return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
                 .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE wait_event_type = 'Lock'")
-                .SingleAsync() > 0;
+                .SingleAsync() >= sessoes;
         },
-        "nenhuma sessão ficou à espera de uma trava");
+        "as sessões esperadas não ficaram à espera de uma trava");
 
     public Task ConfirmarAsync() => _transacao.CommitAsync();
 

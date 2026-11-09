@@ -7,8 +7,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-
-using Npgsql;
+using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -16,6 +15,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Verificador.Contratos;
+
+using Wolverine;
+using Wolverine.Tracking;
 
 /// <summary>
 /// As operações sobre o perfil seguem a mesma ordem de travas, então duas transações concorrentes se resolvem pela que
@@ -76,8 +78,8 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         (await ConsultarPerfilAsync(original.PerfilId)).Should().Be((null, 2));
     }
 
-    [Fact(DisplayName = "Nome tomado entre a conferência e a gravação desfaz a transação inteira, e a reentrega recusa por nome indisponível")]
-    public async Task NomeTomadoNoCommit_DesfazTudoEAReentregaRecusa()
+    [Fact(DisplayName = "Nome tomado entre a conferência e a gravação desfaz a transação, e a reentrega pela fila recusa por nome indisponível")]
+    public async Task NomeTomadoNoCommit_DesfazTudoEAFilaReentregaRecusando()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
@@ -90,25 +92,37 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await outra.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
             "INSERT INTO autorizacao.perfis (id, nome, descricao, ativo, created_at) VALUES ({0}, {1}, 'Perfil que toma o nome.', true, now())",
             Guid.CreateVersion7(), nomeNovo);
-        await using TransacaoRetidaDeTeste verificacao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
 
-        Task<DesfechoDoResultadoDaVersao> tentativa = verificacao.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
-            .RegistrarAsync(ResultadoDe(nova.DocumentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None);
+        Task<ITrackedSession> fluxo = EntregarPelaFilaAsync(nova.DocumentoId);
         await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await using TransacaoRetidaDeTeste janela = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        Task travar = janela.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", original.PerfilId);
+        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
         await outra.ConfirmarAsync();
+        await travar;
 
-        Func<Task> concluir = () => tentativa;
-        DbUpdateException falha = (await concluir.Should().ThrowAsync<DbUpdateException>()).Which;
-        falha.InnerException.Should().BeOfType<PostgresException>().Which.ConstraintName.Should().Be("ux_perfis_nome");
-        await verificacao.DisposeAsync();
         (await SituacaoNoBancoAsync(nova.DocumentoId)).Should().Be("em_verificacao");
         (await SituacaoDaVersaoNoBancoAsync(nova.VersaoId)).Should().Be("pendente");
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
+        await janela.ConfirmarAsync();
 
-        (await RegistrarDiretoAsync(nova.DocumentoId)).Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        ITrackedSession sessao = await fluxo;
+        sessao.AllRecordsInOrder().Count(r => r.MessageEventType == MessageEventType.ExecutionStarted).Should().Be(2);
         (await ConsultarPerfilAsync(original.PerfilId)).Should().Be(("nome_indisponivel", 1));
         (await SituacaoNoBancoAsync(nova.DocumentoId)).Should().Be("verificado");
+        (await SituacaoDaVersaoNoBancoAsync(nova.VersaoId)).Should().Be("recusada");
+        (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
     }
+
+    private Task<ITrackedSession> EntregarPelaFilaAsync(Guid documentoId) =>
+        Fixture.Factory.Services.GetRequiredService<IHost>()
+            .TrackActivity()
+            .IncludeExternalTransports()
+            .Timeout(TimeSpan.FromSeconds(60))
+            .ExecuteAndWaitAsync(bus => bus
+                .EndpointFor(FilasDaVerificacao.ResultadosAutorizacao)
+                .SendAsync(ResultadoDe(documentoId, VeredictoDaVerificacao.Verificado)));
 
     private async Task<(Envio Original, Envio Ampliada)> PerfilComVersaoAmpliadaEmVerificacaoAsync()
     {
