@@ -34,7 +34,7 @@ public sealed class CancelamentoDaVersao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        if (await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is not { } autoria)
+        if (_autoria.Autor is not { } autor)
         {
             return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado()));
         }
@@ -43,7 +43,7 @@ public sealed class CancelamentoDaVersao
             .ExecutarComAvisosAsync(
                 perfilId,
                 versaoId,
-                (perfil, contexto) => CancelarNoPerfilAsync(perfil, versaoId, motivo, autoria.Pessoa, contexto.Agora, verificador, cancellationToken),
+                (perfil, contexto) => CancelarNoPerfilAsync(perfil, versaoId, motivo, autor, contexto.Agora, verificador, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
 

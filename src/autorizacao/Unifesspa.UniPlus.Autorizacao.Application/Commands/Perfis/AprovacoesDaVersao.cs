@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A decisão de uma etapa da aprovação da versão: aprovar ou recusar. A permissão da etapa é conferida aqui, antes de
-/// qualquer leitura do perfil, e o desfecho que governou vai para a trilha de acesso. O resto roda na ordem de travas de
+/// qualquer leitura de concessão ou de perfil, e o desfecho que governou vai para a trilha de acesso. O resto roda na ordem de travas de
 /// <see cref="OperacaoSobreOPerfil"/>, e a regra de decisão vive no agregado.
 /// </summary>
 public sealed class AprovacoesDaVersao
@@ -68,18 +68,21 @@ public sealed class AprovacoesDaVersao
         DecisaoSolicitada solicitada, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
-        AutoriaDaVersao? autoria = await _autoria.DaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
-        if (acesso is null || autoria is null)
+        if (acesso is null)
         {
             return Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
         }
 
         DomainError? recusa = await RecusaDoAcessoAsync(acesso, EtapaDaVersaoCodigo.TentarLer(solicitada.Etapa), verificador, cancellationToken)
             .ConfigureAwait(false);
+        if (recusa is not null)
+        {
+            return Result<AutoriaDaVersao>.Failure(recusa);
+        }
 
-        return recusa is not null
-            ? Result<AutoriaDaVersao>.Failure(recusa)
-            : Result<AutoriaDaVersao>.Success(autoria);
+        return await _autoria.DaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false) is { } autoria
+            ? Result<AutoriaDaVersao>.Success(autoria)
+            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
     }
 
     private static PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, AutoriaDaVersao autoria, DateTimeOffset agora) =>

@@ -31,7 +31,8 @@ internal sealed class CenarioDaGovernancaDaVersao
         Perfil[]? outrosPerfis = null)
     {
         TimeProvider tempo = relogio ?? new RelogioFixo(PerfisDeTeste.Instante.AddHours(1));
-        ConcessoesNaMemoria concessoes = new(temConcessao, titulares: []);
+        Concessoes = new(temConcessao, titulares: []);
+        ConcessoesNaMemoria concessoes = Concessoes;
         Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
         Unidade = new UnidadeDeTrabalho();
         Verificador = new VerificadorDeTeste(ator?.Sub ?? "sem-autor", permitidas);
@@ -59,6 +60,8 @@ internal sealed class CenarioDaGovernancaDaVersao
     }
 
     public PerfisNaMemoria Perfis { get; }
+
+    public ConcessoesNaMemoria Concessoes { get; }
 
     public UnidadeDeTrabalho Unidade { get; }
 
