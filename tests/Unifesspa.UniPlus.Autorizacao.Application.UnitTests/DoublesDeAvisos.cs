@@ -30,7 +30,11 @@ internal static class DoublesDeAvisos
 
     /// <summary>O tratamento de versões do perfil sem perfil algum: nenhum arquivo dos testes é documento de versão.</summary>
     public static ResultadoDoDocumentoDaVersao Versoes() =>
-        new(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.UnidadeDeTrabalho(), TimeProvider.System);
+        Versoes(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.UnidadeDeTrabalho(), TimeProvider.System);
+
+    /// <summary>O tratamento de versões do perfil sobre os perfis dados, com a unidade de trabalho e o relógio dados.</summary>
+    public static ResultadoDoDocumentoDaVersao Versoes(DoublesDePerfis.PerfisNaMemoria perfis, IAutorizacaoUnitOfWork unidade, TimeProvider relogio) =>
+        new(perfis, new OperacaoSobreOPerfil(perfis, unidade, relogio));
 
     internal sealed class PerfilQualquer : IPerfilRepository
     {

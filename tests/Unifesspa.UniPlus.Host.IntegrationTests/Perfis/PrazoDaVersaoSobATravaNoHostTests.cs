@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
 /// O instante de uma transição sobre o perfil é lido depois da trava: a requisição que espera a trava e atravessa o
@@ -112,6 +113,54 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         using HttpResponseMessage resposta = await decisao;
         await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_expirada");
         await ConferirVersaoSoExpiradaAsync(vigente, versao);
+    }
+
+    [Fact(DisplayName = "O veredicto verificado que chega depois do prazo expira a versão, que não entra em vigor, e registra o documento")]
+    public async Task Veredicto_DepoisDoPrazo_ExpiraARegistraODocumento()
+    {
+        (Envio vigente, Envio versao) = await VigenteEPendenteEmVerificacaoAsync();
+
+        AtravessarOPrazo();
+        DesfechoDoResultadoDaVersao desfecho = await RegistrarNoRelogioAsync(versao.DocumentoId);
+
+        desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        (await SituacaoNoBancoAsync(versao.DocumentoId)).Should().Be("verificado");
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+        (await VigenciasAsync(vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == vigente.VersaoId);
+    }
+
+    [Fact(DisplayName = "O veredicto ignorado que chega depois do prazo grava a expiração")]
+    public async Task VeredictoIgnorado_DepoisDoPrazo_GravaAExpiracao()
+    {
+        (_, Envio versao) = await VigenteEPendenteEmVerificacaoAsync();
+        (await RegistrarNoRelogioAsync(versao.DocumentoId)).Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("pendente");
+
+        AtravessarOPrazo();
+        DesfechoDoResultadoDaVersao desfecho = await RegistrarNoRelogioAsync(versao.DocumentoId);
+
+        desfecho.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
+        (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("expirada");
+    }
+
+    private async Task<(Envio Vigente, Envio Versao)> VigenteEPendenteEmVerificacaoAsync()
+    {
+        await ResetarAsync();
+        using HttpClient gestor = await GestorAsync();
+        Envio vigente = await PerfilVigenteAsync(gestor, Consultar, Sensivel);
+        Envio versao = await CriarVersaoAsync(gestor, vigente.PerfilId, Nome(), Consultar, Sensivel);
+        await ConfirmarEnvioAsync(gestor, versao);
+        await ExpirarEmAsync(versao, MargemDoPrazo);
+
+        return (vigente, versao);
+    }
+
+    private async Task<DesfechoDoResultadoDaVersao> RegistrarNoRelogioAsync(Guid documentoId)
+    {
+        await using AsyncServiceScope escopo = _host.Services.CreateAsyncScope();
+
+        return await escopo.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
+            .RegistrarAsync(ResultadoDe(documentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None);
     }
 
     private async Task<(Envio Vigente, Envio Versao)> VigenteEPendenteVerificadaAsync()

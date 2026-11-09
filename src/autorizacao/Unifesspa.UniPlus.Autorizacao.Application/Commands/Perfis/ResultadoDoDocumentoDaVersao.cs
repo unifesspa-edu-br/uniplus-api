@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>O que o resultado da verificação de um arquivo fez ao documento de uma versão.</summary>
@@ -19,25 +19,23 @@ public enum DesfechoDoResultadoDaVersao
 }
 
 /// <summary>
-/// Grava o veredicto da verificação de um arquivo no documento de uma versão do perfil. Roda sob a trava do perfil,
-/// como as demais operações. O veredicto não decide a vigência: a versão só entra em vigor pela aprovação humana, que
-/// confere o documento verificado no momento da decisão.
+/// Grava o veredicto da verificação de um arquivo no documento de uma versão do perfil. Roda na ordem de travas única
+/// das demais operações, que materializa o prazo vencido da pendente e o grava mesmo quando o veredicto é ignorado. O
+/// veredicto não decide a vigência: a versão só entra em vigor pela aprovação humana, que confere o documento verificado
+/// no momento da decisão.
 /// </summary>
 public sealed class ResultadoDoDocumentoDaVersao
 {
     private readonly IPerfilRepository _perfis;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
-    private readonly TimeProvider _clock;
+    private readonly OperacaoSobreOPerfil _operacao;
 
-    public ResultadoDoDocumentoDaVersao(IPerfilRepository perfis, IAutorizacaoUnitOfWork unitOfWork, TimeProvider clock)
+    public ResultadoDoDocumentoDaVersao(IPerfilRepository perfis, OperacaoSobreOPerfil operacao)
     {
         ArgumentNullException.ThrowIfNull(perfis);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(operacao);
 
         _perfis = perfis;
-        _unitOfWork = unitOfWork;
-        _clock = clock;
+        _operacao = operacao;
     }
 
     public async Task<DesfechoDoResultadoDaVersao> RegistrarAsync(
@@ -51,20 +49,22 @@ public sealed class ResultadoDoDocumentoDaVersao
             return DesfechoDoResultadoDaVersao.Desconhecido;
         }
 
-        Perfil perfil = await _perfis.ObterParaEditarAsync(perfilId.Value, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"O perfil {perfilId} do documento {resultado.ArquivoId} não existe.");
-        if (!Aplicar(perfil, resultado))
-        {
-            return DesfechoDoResultadoDaVersao.Ignorado;
-        }
+        Result<DesfechoDoResultadoDaVersao> registrado = await _operacao.ExecutarSemChaveAsync(
+            perfilId.Value,
+            (perfil, contexto) => Task.FromResult(Result<DesfechoDoResultadoDaVersao>.Success(Aplicar(perfil, resultado, contexto.Agora))),
+            cancellationToken).ConfigureAwait(false);
 
-        await _unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return DesfechoDoResultadoDaVersao.Aplicado;
+        return registrado.IsSuccess
+            ? registrado.Value
+            : throw new InvalidOperationException($"O perfil {perfilId} do documento {resultado.ArquivoId} não existe.");
     }
 
-    private bool Aplicar(Perfil perfil, ResultadoDaVerificacaoDeArquivo resultado) =>
-        resultado.Veredicto == VeredictoDaVerificacao.Verificado
-            ? perfil.RegistrarDocumentoVerificado(resultado.ArquivoId, resultado.HashSha256!, _clock.GetUtcNow())
-            : perfil.RegistrarDocumentoRecusado(resultado.ArquivoId, _clock.GetUtcNow());
+    private static DesfechoDoResultadoDaVersao Aplicar(Perfil perfil, ResultadoDaVerificacaoDeArquivo resultado, DateTimeOffset agora)
+    {
+        bool aplicado = resultado.Veredicto == VeredictoDaVerificacao.Verificado
+            ? perfil.RegistrarDocumentoVerificado(resultado.ArquivoId, resultado.HashSha256!, agora)
+            : perfil.RegistrarDocumentoRecusado(resultado.ArquivoId, agora);
+
+        return aplicado ? DesfechoDoResultadoDaVersao.Aplicado : DesfechoDoResultadoDaVersao.Ignorado;
+    }
 }
