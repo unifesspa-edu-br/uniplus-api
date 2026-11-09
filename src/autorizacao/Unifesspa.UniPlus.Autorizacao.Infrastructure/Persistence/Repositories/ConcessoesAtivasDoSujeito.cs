@@ -39,32 +39,37 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
             return _concessoesLidas;
         }
 
+        IReadOnlyList<ConcessaoLida> lidas = await LerConcessoesAsync(pessoa, cancellationToken).ConfigureAwait(false);
+        _concessoesLidas = await ComporAsync(lidas, cancellationToken).ConfigureAwait(false);
+        _pessoaLida = pessoa;
+
+        return _concessoesLidas;
+    }
+
+    private async Task<IReadOnlyList<ConcessaoLida>> LerConcessoesAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
+    {
         string emissor = pessoa.Emissor;
         string sub = pessoa.Subject;
 
-        var lidas = await (
+        return await (
             from c in _context.Concessoes.AsNoTracking()
             join p in _context.Perfis.AsNoTracking() on c.PerfilId equals p.Id
             where c.BeneficiarioEmissor == emissor && c.BeneficiarioSub == sub && c.RevogadaEm == null
             orderby c.ConcedidaEm, c.Id
-            select new
-            {
-                c.Id,
-                c.PerfilId,
-                PerfilNome = p.Nome,
-                c.UnidadeId,
-                c.EscopoTipo,
-                c.ValidaAte,
-            })
+            select new ConcessaoLida(c.Id, c.PerfilId, p.Nome, c.UnidadeId, c.EscopoTipo, c.ValidaAte))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+    }
 
-        // A concessão vale pela composição em vigor do perfil: o perfil comum sem versão vigente não concede nada.
+    // A concessão vale pela composição em vigor do perfil: o perfil comum sem versão vigente não concede nada.
+    private async Task<IReadOnlyList<ConcessaoAtiva>> ComporAsync(
+        IReadOnlyList<ConcessaoLida> lidas, CancellationToken cancellationToken)
+    {
         Dictionary<Guid, List<string>> permissoes = await _context
             .PermissoesEmVigorAsync([.. lidas.Select(c => c.PerfilId).Distinct()], cancellationToken)
             .ConfigureAwait(false);
 
-        _concessoesLidas =
+        return
         [
             .. lidas.Select(c => new ConcessaoAtiva(
                 c.Id,
@@ -75,8 +80,8 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
                 c.ValidaAte,
                 permissoes.GetValueOrDefault(c.PerfilId) ?? [])),
         ];
-        _pessoaLida = pessoa;
-
-        return _concessoesLidas;
     }
+
+    private sealed record ConcessaoLida(
+        Guid Id, Guid PerfilId, string PerfilNome, Guid? UnidadeId, TipoDeEscopo EscopoTipo, DateTimeOffset? ValidaAte);
 }
