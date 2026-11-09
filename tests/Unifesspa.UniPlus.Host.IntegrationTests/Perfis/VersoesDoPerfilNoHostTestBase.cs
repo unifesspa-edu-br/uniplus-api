@@ -195,13 +195,30 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         return encerrada.ValueKind == JsonValueKind.Object ? encerrada.GetProperty("situacao").GetString() : null;
     }
 
+    /// <summary>Todos os perfis que se podem pedir, percorrendo as páginas pelo cursor do cabeçalho Link.</summary>
     private protected static async Task<Guid[]> ParaPedirAsync(HttpClient client)
     {
-        JsonElement pagina = await LerAsync(client, $"/api/autorizacao/perfis-para-pedido?limit=100");
-        JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
+        List<Guid> ids = [];
+        Uri? proxima = new("/api/autorizacao/perfis-para-pedido?limit=100", UriKind.Relative);
+        while (proxima is not null)
+        {
+            using HttpResponseMessage resposta = await client.GetAsync(proxima);
+            string corpo = await resposta.Content.ReadAsStringAsync();
+            resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+            JsonElement pagina = JsonDocument.Parse(corpo).RootElement;
+            JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
+            ids.AddRange(itens.EnumerateArray().Select(i => i.GetProperty("id").GetGuid()));
+            proxima = resposta.Headers.TryGetValues("Link", out IEnumerable<string>? links) ? LinkDaProxima(links) : null;
+        }
 
-        return [.. itens.EnumerateArray().Select(i => i.GetProperty("id").GetGuid())];
+        return [.. ids];
     }
+
+    private static Uri? LinkDaProxima(IEnumerable<string> links) =>
+        links.SelectMany(static l => l.Split(',')).Select(static l => l.Trim())
+            .Where(static l => l.EndsWith("rel=\"next\"", StringComparison.Ordinal))
+            .Select(static l => new Uri(l[(l.IndexOf('<', StringComparison.Ordinal) + 1)..l.IndexOf('>', StringComparison.Ordinal)], UriKind.RelativeOrAbsolute))
+            .FirstOrDefault();
 
     private protected async Task<string> SituacaoNoBancoAsync(Guid documentoId)
     {
