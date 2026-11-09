@@ -14,7 +14,7 @@ public static class ExpirarVersaoPendenteDoPerfilCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(operacao);
 
-        return operacao.ExecutarAsync(
+        return operacao.ExecutarSemChaveAsync(
             command.PerfilId,
             null,
             static (_, contexto) => Task.FromResult(Result<bool>.Success(contexto.VersaoExpirada is not null)),
