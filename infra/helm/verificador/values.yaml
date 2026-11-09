@@ -5,12 +5,15 @@ image:
   repository: ghcr.io/unifesspa-edu-br/uniplus-api-verificador
   # Vazio usa v<appVersion>, a convenção das tags publicadas. O ArgoCD fixa a tag da release.
   tag: ""
+  # sha256:...; preenchido, a imagem é puxada por tag@digest e não muda se a tag for movida.
+  digest: ""
   pullPolicy: IfNotPresent
 
 clamd:
   image:
     repository: ghcr.io/unifesspa-edu-br/uniplus-api-clamd-verificador
     tag: ""
+    digest: ""
     pullPolicy: IfNotPresent
   # Espelho interno da base de assinaturas (ADR-0147).
   privateMirror: http://clamav-espelho.uniplus.svc.cluster.local
