@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 
 /// <summary>
 /// Registra a camada Application do módulo Autorização. O CQRS roda sobre Wolverine, então
@@ -43,6 +44,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<OperacaoSobreOPerfil>();
         services.AddScoped<VersoesDoPerfil>();
         services.AddScoped<PropostasDeVersao>();
+        services.AddScoped<FilaDeVersoesDaEtapa>();
         services.AddScoped<DocumentosDasVersoes>();
         services.AddScoped<EfeitosDaTrocaDeVigencia>();
         services.AddScoped<ResultadoDoDocumentoDaVersao>();

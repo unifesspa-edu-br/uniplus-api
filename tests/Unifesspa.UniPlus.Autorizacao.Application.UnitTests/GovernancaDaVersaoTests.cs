@@ -291,10 +291,11 @@ public sealed class GovernancaDaVersaoTests
     private static Task<Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>> Fila(CenarioDaGovernancaDaVersao cenario, string? etapa) =>
         ListarFilaDeVersoesQueryHandler.Handle(
             new ListarFilaDeVersoesQuery(etapa),
-            cenario.Perfis,
             cenario.Verificador,
-            new Unifesspa.UniPlus.Authorization.Catalogo.CatalogoDaAplicacao([]),
-            new RelogioFixo(PerfisDeTeste.Instante.AddHours(1)),
+            new FilaDeVersoesDaEtapa(
+                cenario.Perfis,
+                new Unifesspa.UniPlus.Authorization.Catalogo.CatalogoDaAplicacao([]),
+                new RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
             CancellationToken.None);
 
     private static TitularDaPermissao Titular(Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.Identidade pessoa) =>
