@@ -44,12 +44,13 @@ public static class IdDoAviso
         using MemoryStream saida = new();
         Span<byte> comprimento = stackalloc byte[sizeof(int)];
 
-        foreach (string componente in new[]
-        {
+        string[] componentes =
+        [
             chave.Tipo.ToCodigo(), chave.FatoId.ToString("N"), chave.Marco, chave.Destinatario.Emissor, chave.Destinatario.Sub,
-        })
+        ];
+
+        foreach (byte[] texto in componentes.Select(Encoding.UTF8.GetBytes))
         {
-            byte[] texto = Encoding.UTF8.GetBytes(componente);
             BinaryPrimitives.WriteInt32BigEndian(comprimento, texto.Length);
             saida.Write(comprimento);
             saida.Write(texto);
