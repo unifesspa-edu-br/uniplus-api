@@ -41,12 +41,6 @@ internal static class ConferenciasDaVersao
 
     // Cada permissão pessoal ou sensível acrescentada amplia o acesso de quem já tem a concessão, ainda que o perfil já
     // fosse tão sensível quanto ela. Código fora do catálogo conta como sensível.
-    private static bool Amplia(VersaoDoPerfil versao, VersaoDoPerfil vigente, ICatalogoDePermissoesConsultavel catalogo)
-    {
-        IReadOnlyList<string> anteriores = vigente.Codigos();
-
-        return versao.Codigos()
-            .Where(codigo => !anteriores.Contains(codigo, StringComparer.Ordinal))
-            .Any(codigo => catalogo.Sensibilidade(codigo) >= ClassificacaoDeProtecao.Pessoal);
-    }
+    private static bool Amplia(VersaoDoPerfil versao, VersaoDoPerfil vigente, ICatalogoDePermissoesConsultavel catalogo) =>
+        versao.AcrescimosSobre(vigente).Any(codigo => catalogo.Sensibilidade(codigo) >= ClassificacaoDeProtecao.Pessoal);
 }

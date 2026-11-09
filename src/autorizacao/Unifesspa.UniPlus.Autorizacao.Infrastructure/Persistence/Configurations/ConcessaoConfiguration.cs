@@ -36,9 +36,20 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+        builder.HasKey(c => c.Id);
 
-        // O banco confere o que o agregado já garante, para que nenhuma gravação direta deixe a
-        // revogação pela metade, o escopo incoerente ou a vigência anterior à concessão.
+        ConfigurarRestricoes(builder);
+        ConfigurarColunas(builder);
+        ConfigurarRelacionamentos(builder);
+        ConfigurarIndices(builder);
+
+        // Concorrência otimista pela coluna de sistema xmin (ADR-0119).
+        builder.Property<uint>("Version").IsRowVersion();
+    }
+
+    // O banco confere o que o agregado já garante, para que nenhuma gravação direta deixe a
+    // revogação pela metade, o escopo incoerente ou a vigência anterior à concessão.
+    private static void ConfigurarRestricoes(EntityTypeBuilder<Concessao> builder) =>
         builder.ToTable("concessoes", tabela =>
         {
             tabela.HasCheckConstraint(
@@ -52,8 +63,9 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
                 "ck_concessoes_validade_posterior",
                 "valida_ate IS NULL OR valida_ate > concedida_em");
         });
-        builder.HasKey(c => c.Id);
 
+    private static void ConfigurarColunas(EntityTypeBuilder<Concessao> builder)
+    {
         builder.Property(c => c.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.BeneficiarioSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
@@ -65,14 +77,15 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         builder.Property(c => c.RevogadaPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(c => c.RevogadaPorSub).HasMaxLength(IdentidadeMaxLength);
         builder.Property(c => c.MotivoRevogacao).HasMaxLength(MotivoMaxLength);
-
         builder.Property(c => c.EscopoTipo).HasConversion(EscopoConverter).HasMaxLength(TipoMaxLength).IsRequired();
         builder.Property(c => c.OrigemTipo).HasConversion(OrigemConverter).HasMaxLength(TipoMaxLength).IsRequired();
-
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(c => c.UnidadeId);
         builder.Property(c => c.OrigemId).IsRequired();
+    }
 
+    private static void ConfigurarRelacionamentos(EntityTypeBuilder<Concessao> builder)
+    {
         // O perfil é do mesmo módulo. A chave estrangeira impede apagar o perfil e mantém a
         // concessão sempre apontando para um perfil que existe.
         builder.HasOne<Perfil>()
@@ -80,6 +93,17 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
             .HasForeignKey(c => c.PerfilId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // A versão é a do mesmo perfil: o par (perfil, versão) impede a concessão de apontar para a versão de outro perfil.
+        // O perfil de governança não tem versão, e a coluna nula não é conferida.
+        builder.HasOne<VersaoDoPerfil>()
+            .WithMany()
+            .HasForeignKey(c => new { c.PerfilId, c.VersaoId })
+            .HasPrincipalKey(v => new { v.PerfilId, v.Id })
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+
+    private static void ConfigurarIndices(EntityTypeBuilder<Concessao> builder)
+    {
         // Não existem duas concessões não revogadas iguais, vigentes ou vencidas: a revogação é o
         // único encerramento gravado, e quem concede de novo revoga a vencida antes. A unidade
         // nula (escopo da instituição) conta como igual a outra nula, o que o índice único não
@@ -103,7 +127,9 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
             .HasFilter("revogada_em IS NULL")
             .HasDatabaseName("ix_concessoes_perfil_ativas");
 
-        // Concorrência otimista pela coluna de sistema xmin (ADR-0119).
-        builder.Property<uint>("Version").IsRowVersion();
+        // A troca de vigência acha as concessões da versão que sai.
+        builder.HasIndex(c => new { c.PerfilId, c.VersaoId })
+            .HasFilter("revogada_em IS NULL")
+            .HasDatabaseName("ix_concessoes_perfil_versao");
     }
 }

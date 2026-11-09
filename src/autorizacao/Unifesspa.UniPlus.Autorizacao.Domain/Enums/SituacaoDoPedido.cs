@@ -26,6 +26,12 @@ public enum SituacaoDoPedido
     /// de decisão nem o aceite do beneficiário acontece antes dele.
     /// </summary>
     AguardandoDocumento = 7,
+
+    /// <summary>
+    /// Terminal: a versão do perfil que o pedido seguia foi substituída por outra que acrescenta permissão, e o
+    /// solicitante refaz o pedido depois que o perfil for atualizado.
+    /// </summary>
+    Devolvido = 8,
 }
 
 /// <summary>Código textual canônico de <see cref="SituacaoDoPedido"/>, o valor gravado e exposto.</summary>
@@ -38,6 +44,7 @@ public static class SituacaoDoPedidoCodigo
     public const string Recusado = "recusado";
     public const string Cancelado = "cancelado";
     public const string AguardandoDocumento = "aguardando_documento";
+    public const string Devolvido = "devolvido";
 
     public static string ToCodigo(this SituacaoDoPedido situacao) => situacao switch
     {
@@ -48,6 +55,7 @@ public static class SituacaoDoPedidoCodigo
         SituacaoDoPedido.Recusado => Recusado,
         SituacaoDoPedido.Cancelado => Cancelado,
         SituacaoDoPedido.AguardandoDocumento => AguardandoDocumento,
+        SituacaoDoPedido.Devolvido => Devolvido,
         _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, null),
     };
 
@@ -60,6 +68,7 @@ public static class SituacaoDoPedidoCodigo
         Recusado => SituacaoDoPedido.Recusado,
         Cancelado => SituacaoDoPedido.Cancelado,
         AguardandoDocumento => SituacaoDoPedido.AguardandoDocumento,
+        Devolvido => SituacaoDoPedido.Devolvido,
         _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
     };
 }

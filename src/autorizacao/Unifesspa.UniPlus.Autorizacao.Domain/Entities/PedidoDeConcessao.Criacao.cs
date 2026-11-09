@@ -68,6 +68,7 @@ public sealed partial class PedidoDeConcessao
         {
             BeneficiarioEmail = beneficiario.Email,
             PerfilId = perfil.Id,
+            VersaoId = perfil.VersaoVigente?.Id,
             UnidadeId = escopo.UnidadeId,
             Justificativa = justificativa,
             ValidaAteSugerida = validaAteSugerida?.ToUniversalTime(),

@@ -21,6 +21,7 @@ autorizacao.concessoes.revogada_por_sub: Pessoal
 autorizacao.concessoes.unidade_id: Pessoal
 autorizacao.concessoes.updated_at: Pessoal
 autorizacao.concessoes.valida_ate: Pessoal
+autorizacao.concessoes.versao_id: Pessoal
 autorizacao.concessoes.xmin: Pessoal
 autorizacao.documentos_da_versao.created_at: Interno
 autorizacao.documentos_da_versao.enviado_em: Interno
@@ -136,6 +137,7 @@ autorizacao.pedidos_de_concessao.unidade_id: Pessoal
 autorizacao.pedidos_de_concessao.updated_at: Pessoal
 autorizacao.pedidos_de_concessao.valida_ate: Pessoal
 autorizacao.pedidos_de_concessao.valida_ate_sugerida: Pessoal
+autorizacao.pedidos_de_concessao.versao_id: Pessoal
 autorizacao.pedidos_de_concessao.xmin: Pessoal
 autorizacao.perfil_permissoes.codigo: Interno
 autorizacao.perfil_permissoes.perfil_id: Interno
@@ -168,6 +170,12 @@ autorizacao.revisoes_de_acessos.created_at: Pessoal
 autorizacao.revisoes_de_acessos.id: Pessoal
 autorizacao.revisoes_de_acessos.updated_at: Pessoal
 autorizacao.revisoes_de_acessos.xmin: Pessoal
+autorizacao.trocas_de_versao_do_pedido.desfecho: Interno
+autorizacao.trocas_de_versao_do_pedido.id: Interno
+autorizacao.trocas_de_versao_do_pedido.instante: Interno
+autorizacao.trocas_de_versao_do_pedido.pedido_id: Interno
+autorizacao.trocas_de_versao_do_pedido.versao_anterior: Interno
+autorizacao.trocas_de_versao_do_pedido.versao_nova: Interno
 autorizacao.versao_do_perfil_permissoes.classificacao: Interno
 autorizacao.versao_do_perfil_permissoes.codigo: Interno
 autorizacao.versao_do_perfil_permissoes.de_unidade: Interno

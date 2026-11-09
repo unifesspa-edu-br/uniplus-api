@@ -81,6 +81,14 @@ public sealed class VersaoDoPerfil : EntityBase
     public IReadOnlyList<string> Codigos() =>
         [.. _permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
 
+    /// <summary>Códigos que a versão reúne e <paramref name="anterior"/> não reunia, ordenados.</summary>
+    public IReadOnlyList<string> AcrescimosSobre(VersaoDoPerfil anterior)
+    {
+        ArgumentNullException.ThrowIfNull(anterior);
+
+        return [.. Codigos().Except(anterior.Codigos(), StringComparer.Ordinal)];
+    }
+
     /// <summary>Novo documento instituidor; vale só enquanto o vivo foi recusado ou a versão ainda não tem documento.</summary>
     internal Result<DocumentoDaVersao> NovoDocumento(long tamanhoDeclarado)
     {

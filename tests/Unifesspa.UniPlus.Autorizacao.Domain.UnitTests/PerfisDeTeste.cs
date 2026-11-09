@@ -55,7 +55,7 @@ public static class PerfisDeTeste
     }
 
     /// <summary>Leva a versão pendente do perfil, pelo envio e pela verificação do documento, à vigência.</summary>
-    public static DesfechoDoDocumentoVerificado EntrarEmVigor(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
+    public static ResultadoDoDocumentoVerificado EntrarEmVigor(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
