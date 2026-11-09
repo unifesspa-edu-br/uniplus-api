@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.API;
 using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 
 using Wolverine;
 
@@ -38,5 +39,9 @@ public static class AutorizacaoCodegenRegistration
         // O armazenamento do PDF de designação é registrado por fábrica (credencial própria derivada das opções),
         // opaca ao codegen.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IArmazenamentoDosDocumentosDaAutorizacao>();
+
+        // A materialização prévia abre um escopo novo para enviar o comando em transação própria: depende da fábrica de
+        // escopos do contêiner, que o codegen não enxerga.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<MaterializacaoPrevia>();
     }
 }

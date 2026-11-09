@@ -10,15 +10,18 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 public sealed class LeitorDoContextoDaVersao
 {
     private readonly IPerfilRepository _perfis;
-    private readonly IConcessaoRepository _concessoes;
+    private readonly IJanelaDeMigracaoRepository _janelas;
+    private readonly TimeProvider _clock;
 
-    public LeitorDoContextoDaVersao(IPerfilRepository perfis, IConcessaoRepository concessoes)
+    public LeitorDoContextoDaVersao(IPerfilRepository perfis, IJanelaDeMigracaoRepository janelas, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(perfis);
-        ArgumentNullException.ThrowIfNull(concessoes);
+        ArgumentNullException.ThrowIfNull(janelas);
+        ArgumentNullException.ThrowIfNull(clock);
 
         _perfis = perfis;
-        _concessoes = concessoes;
+        _janelas = janelas;
+        _clock = clock;
     }
 
     /// <summary>Se o nome é de outro perfil, sem distinguir maiúsculas de minúsculas.</summary>
@@ -28,5 +31,5 @@ public sealed class LeitorDoContextoDaVersao
     public async Task<ContextoDaVersao> LerAsync(Guid perfilId, string nome, CancellationToken cancellationToken) =>
         new(
             await NomeEmUsoPorOutroAsync(nome, perfilId, cancellationToken).ConfigureAwait(false),
-            await _concessoes.ExisteNaoRevogadaDoPerfilAsync(perfilId, cancellationToken).ConfigureAwait(false));
+            await _janelas.TemJanelaAbertaAsync(perfilId, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false));
 }

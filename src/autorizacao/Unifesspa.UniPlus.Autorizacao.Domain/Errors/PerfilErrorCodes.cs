@@ -15,7 +15,6 @@ public static class PerfilErrorCodes
     public const string PermissaoReservada = "Perfil.PermissaoReservada";
     public const string AlcanceMisto = "Perfil.AlcanceMisto";
     public const string AlcanceAlterado = "Perfil.AlcanceAlterado";
-    public const string AmpliacaoExigeProtecaoDeDados = "Perfil.AmpliacaoExigeProtecaoDeDados";
     public const string GovernancaImutavel = "Perfil.GovernancaImutavel";
     public const string NomeDuplicado = "Perfil.NomeDuplicado";
     public const string NaoEncontrado = "Perfil.NaoEncontrado";
@@ -30,7 +29,6 @@ public static class PerfilErrorCodes
     public const string DocumentoNaoAguardaEnvio = "Perfil.DocumentoNaoAguardaEnvio";
     public const string DocumentoNaoRecusado = "Perfil.DocumentoNaoRecusado";
     public const string DocumentoNaoVerificado = "Perfil.DocumentoNaoVerificado";
-    public const string AcrescimoComConcessaoAtiva = "Perfil.AcrescimoComConcessaoAtiva";
     public const string SemVersaoEmVigor = "Perfil.SemVersaoEmVigor";
     public const string RemocaoInvalida = "Perfil.RemocaoInvalida";
     public const string MotivoInvalido = "Perfil.MotivoInvalido";

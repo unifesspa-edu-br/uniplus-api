@@ -122,9 +122,8 @@ public sealed class AvisosDaVersao
         return destinatarios;
     }
 
-    private async Task<List<DestinatarioDoAviso>> TitularesAsync(string codigoDaPermissao, CancellationToken cancellationToken) =>
-        [.. (await _titulares.ListarTitularesComEmailAsync(codigoDaPermissao, cancellationToken).ConfigureAwait(false))
-            .Select(static t => new DestinatarioDoAviso(new Identidade(t.Emissor, t.Sub), t.Email))];
+    private Task<List<DestinatarioDoAviso>> TitularesAsync(string codigoDaPermissao, CancellationToken cancellationToken) =>
+        TitularesDoAviso.ListarAsync(_titulares, codigoDaPermissao, cancellationToken);
 
     // O e-mail gravado no ato vale mesmo que a pessoa tenha perdido a permissão depois; sem ele, vale o da concessão
     // ativa que ainda lhe dá a permissão pertinente; sem nenhum, o aviso não sai.

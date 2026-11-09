@@ -7,9 +7,11 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos;
@@ -27,11 +29,12 @@ internal sealed class CenarioDaGovernancaDaVersao
         Identidade? ator, string[] permitidas,
         TitularDaPermissao[]? titulares = null,
         TimeProvider? relogio = null,
-        bool temConcessao = false,
+        bool janelaAberta = false,
         Perfil[]? outrosPerfis = null)
     {
         TimeProvider tempo = relogio ?? new RelogioFixo(PerfisDeTeste.Instante.AddHours(1));
-        Concessoes = new(temConcessao, titulares: []);
+        Concessoes = new(titulares: []);
+        JanelasNaMemoria janelas = new(janelaAberta);
         ConcessoesNaMemoria concessoes = Concessoes;
         Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
         Unidade = new UnidadeDeTrabalho();
@@ -43,6 +46,7 @@ internal sealed class CenarioDaGovernancaDaVersao
                 concessoes,
                 new PedidosAtivosNaMemoria(),
                 new AvisosDoPedido(concessoes, new SemUnidade(), new LinkDeTeste(), tempo),
+                JanelaDaTroca(janelas, Registro, titulares),
                 tempo),
             new AvisosDaVersao(
                 new EmissorDeAvisos(Registro, NullLogger<EmissorDeAvisos>.Instance),
@@ -51,11 +55,11 @@ internal sealed class CenarioDaGovernancaDaVersao
                 new CatalogoDaAplicacao([])),
             new CatalogoDaAplicacao([]));
         Aprovacoes = new AprovacoesDaVersao(
-            operacao, new LeitorDoContextoDaVersao(Perfis, concessoes), efeitos, autoria, new CatalogoDeTeste());
+            operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, autoria, new CatalogoDeTeste());
         Cancelamento = new CancelamentoDaVersao(operacao, efeitos, autoria);
         Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria);
         Propostas = new PropostasDeVersao(
-            operacao, new LeitorDoContextoDaVersao(Perfis, concessoes), efeitos, new EnvioDoDocumento(Armazenamento, tempo), autoria, new CatalogoDeTeste());
+            operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, new EnvioDoDocumento(Armazenamento, tempo), autoria, new CatalogoDeTeste());
         Expiracao = new ExpiracaoDasVersoesPendentes(Perfis, new BarramentoDeTeste(operacao), tempo, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
     }
 
@@ -68,6 +72,18 @@ internal sealed class CenarioDaGovernancaDaVersao
     public VerificadorDeTeste Verificador { get; }
 
     public RegistroDeAvisosNaMemoria Registro { get; } = new();
+
+    /// <summary>Os efeitos da janela de migração sobre uma troca, sobre a janela em memória.</summary>
+    public static EfeitosDaJanelaNaTroca JanelaDaTroca(
+        JanelasNaMemoria janelas, RegistroDeAvisosNaMemoria registro, TitularDaPermissao[]? titulares = null) =>
+        new(
+            janelas,
+            new LeitorDaMigracao(janelas, new CatalogoDeTeste()),
+            new AvisosDaJanela(
+                new EmissorDeAvisos(registro, NullLogger<EmissorDeAvisos>.Instance),
+                new TitularesDeTeste(titulares ?? []),
+                new LinkDaGovernancaDeTeste(),
+                new CatalogoDaAplicacao([])));
 
     public AprovacoesDaVersao Aprovacoes { get; }
 

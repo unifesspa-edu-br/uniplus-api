@@ -12,22 +12,24 @@ public static class ConcessaoMapping
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        Concessao c = item.Concessao;
+        return ToDto(item.Concessao, item.PerfilNome, item.Versao, agora);
+    }
 
-        return new ConcessaoDto(
+    private static ConcessaoDto ToDto(Concessao c, string perfilNome, int? versao, DateTimeOffset agora) =>
+        new(
             c.Id,
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioNome),
-            new PerfilResumoDto(c.PerfilId, item.PerfilNome),
-            item.Versao,
+            new PerfilResumoDto(c.PerfilId, perfilNome),
+            versao,
             new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
             new OrigemDto(c.OrigemTipo.ToCodigo(), c.OrigemId),
             c.ConcedidaEm,
             c.ValidaAte,
             c.RevogadaEm,
-            c.RevogadaEm is null ? null : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!, c.RevogadaPorNome),
+            RevogadaPorPessoa(c),
+            c.RevogadaPelaJanelaId,
             c.MotivoRevogacao,
             c.EstaAtiva(agora));
-    }
 
     /// <summary>Eventos que a própria concessão sabe contar: a concessão e a revogação.</summary>
     public static IEnumerable<EventoDaTrilhaDto> EventosDaConcessao(Concessao c)
@@ -42,11 +44,15 @@ public static class ConcessaoMapping
 
         if (c.RevogadaEm is { } revogadaEm)
         {
-            yield return new EventoDaTrilhaDto(
-                "revogada",
-                revogadaEm,
-                new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!, c.RevogadaPorNome),
-                c.MotivoRevogacao);
+            yield return c.RevogadaPelaJanelaId is null
+                ? new EventoDaTrilhaDto("revogada", revogadaEm, RevogadaPorPessoa(c), c.MotivoRevogacao)
+                : new EventoDaTrilhaDto("revogada_pela_migracao", revogadaEm, null, c.MotivoRevogacao, "sistema");
         }
     }
+
+    // A revogação pela janela de migração é do sistema: não há pessoa a expor, e quem recusou fica na trilha da janela.
+    private static IdentidadeDto? RevogadaPorPessoa(Concessao c) =>
+        c.RevogadaEm is null || c.RevogadaPelaJanelaId is not null
+            ? null
+            : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!, c.RevogadaPorNome);
 }

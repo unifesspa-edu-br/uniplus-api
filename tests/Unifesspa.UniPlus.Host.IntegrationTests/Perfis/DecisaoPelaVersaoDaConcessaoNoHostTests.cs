@@ -59,8 +59,8 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao2);
     }
 
-    [Fact(DisplayName = "O acréscimo a perfil com concessão é recusado e a concessão fica como estava")]
-    public async Task Acrescimo_ERecusadoEAConcessaoFicaComoEstava()
+    [Fact(DisplayName = "O acréscimo a perfil com concessão cria a versão pendente e a concessão fica como estava até migrar")]
+    public async Task Acrescimo_CriaAPendenteEAConcessaoFicaComoEstava()
     {
         using HttpClient gestor = await GestorAsync();
         Guid perfil = await PerfilComConcessaoAsync(gestor, Catalogo);
@@ -70,7 +70,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         using HttpResponseMessage recusa = await EnviarAsync(
             gestor, HttpMethod.Post, $"{RotaPerfis}/{perfil}/versoes", Dados(Nome(), Catalogo, Motivos));
 
-        recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await recusa.Content.ReadAsStringAsync());
+        recusa.StatusCode.Should().Be(HttpStatusCode.Created, await recusa.Content.ReadAsStringAsync());
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.Forbidden);
         (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao1);
@@ -94,7 +94,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         (await ConcessoesAsync(Betina, perfil)).Single().VersaoId.Should().Be(versao2.VersaoId);
     }
 
-    [Fact(DisplayName = "A permissão removida não volta à concessão com a proposta que a devolve, nem na decisão nem nos titulares")]
+    [Fact(DisplayName = "A permissão removida não volta à concessão enquanto a proposta que a devolve não entra em vigor, nem na decisão nem nos titulares")]
     public async Task RemocaoSeguidaDeRetorno_NaoVolta()
     {
         using HttpClient gestor = await GestorAsync();
@@ -105,7 +105,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         using HttpResponseMessage devolucao = await EnviarAsync(
             gestor, HttpMethod.Post, $"{RotaPerfis}/{perfil}/versoes", Dados(Nome(), Catalogo, Motivos));
 
-        devolucao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await devolucao.Content.ReadAsStringAsync());
+        devolucao.StatusCode.Should().Be(HttpStatusCode.Created, await devolucao.Content.ReadAsStringAsync());
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.Forbidden);
         (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao2);

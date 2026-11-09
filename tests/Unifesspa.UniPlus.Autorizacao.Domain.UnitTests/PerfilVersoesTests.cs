@@ -20,8 +20,8 @@ public sealed class PerfilVersoesTests
     private const string Motivo = "Versão proposta por engano.";
 
     private static readonly CatalogoDeTeste Catalogo = new();
-    private static readonly ContextoDaVersao ComConcessao = new(NomeEmUsoPorOutroPerfil: false, TemConcessaoNaoRevogada: true);
-    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, TemConcessaoNaoRevogada: false);
+    private static readonly ContextoDaVersao ComJanelaAberta = new(NomeEmUsoPorOutroPerfil: false, JanelaDeMigracaoAberta: true);
+    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, JanelaDeMigracaoAberta: false);
 
     [Fact(DisplayName = "Versão em vigor troca a vigência: a anterior se encerra, a nova abre e o nome acompanha")]
     public void EntrarEmVigor_SegundaVersao_TrocaAVigencia()
@@ -99,27 +99,20 @@ public sealed class PerfilVersoesTests
         perfil.Versoes.Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "Acrescentar permissão pessoal a perfil com concessão exige a proteção de dados")]
-    public void CriarVersao_AmpliaComConcessao_Recusa()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-
-        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Dados], ComConcessao))
-            .Should().Equal(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados);
-    }
-
-    [Fact(DisplayName = "Acrescentar permissão pessoal sem concessão não exige a proteção de dados")]
-    public void CriarVersao_AmpliaSemConcessao_Aceita() =>
-        TentarCriar(PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo), "Analista", [Consultar, Dados])
+    [Fact(DisplayName = "Acrescentar permissão a perfil com concessão não exige condição extra: a janela de migração cuida das concessões")]
+    public void CriarVersao_AcrescimoComConcessao_Aceita() =>
+        TentarCriar(PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo), "Analista", [Consultar, Dados, Publicar])
             .IsSuccess.Should().BeTrue();
 
-    [Fact(DisplayName = "Acréscimo público ou interno a perfil com concessão é recusado até a janela de migração")]
-    public void CriarVersao_AcrescimoInternoComConcessao_Recusa()
+    [Fact(DisplayName = "Com a janela de migração aberta a versão nova é recusada, com ou sem acréscimo")]
+    public void CriarVersao_ComJanelaAberta_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar], ComConcessao))
-            .Should().Equal(PerfilErrorCodes.AcrescimoComConcessaoAtiva);
+        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar], ComJanelaAberta))
+            .Should().Equal(PerfilErrorCodes.JanelaDeMigracaoAberta);
+        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar], ComJanelaAberta))
+            .Should().Equal(PerfilErrorCodes.JanelaDeMigracaoAberta);
     }
 
     [Fact(DisplayName = "Sem versão vigente a versão nova é uma nova primeira versão: o alcance e o nome podem mudar")]
@@ -128,7 +121,7 @@ public sealed class PerfilVersoesTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Cancelar(perfil, perfil.VersaoPendente!.Id).Concluida.Should().BeTrue();
 
-        PerfisDeTeste.Garantir(TentarCriar(perfil, "Operador de unidade", [Unidade], ComConcessao));
+        PerfisDeTeste.Garantir(TentarCriar(perfil, "Operador de unidade", [Unidade]));
 
         perfil.VersaoPendente!.Numero.Should().Be(2);
         perfil.Nome.Should().Be("Operador de unidade");

@@ -48,10 +48,20 @@ public sealed partial class Perfil
             || !string.Equals(conteudo.Protocolo, vigente.Protocolo, StringComparison.Ordinal);
     }
 
+    private static DomainError? RecusaDaPendente(ContextoDaVersao contexto)
+    {
+        if (contexto.JanelaDeMigracaoAberta)
+        {
+            return PerfilErros.JanelaDeMigracaoAberta();
+        }
+
+        return contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null;
+    }
+
     private DesfechoDaVersao RemoverEPropor(
         PropostaDeVersao proposta, PedidoDeRemocao pedido, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo)
     {
-        DomainError? recusa = RecusaDaRemocao(pedido) ?? (contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null);
+        DomainError? recusa = RecusaDaRemocao(pedido) ?? RecusaDaPendente(contexto);
         if (recusa is not null)
         {
             return DesfechoDaVersao.Recusa(recusa);

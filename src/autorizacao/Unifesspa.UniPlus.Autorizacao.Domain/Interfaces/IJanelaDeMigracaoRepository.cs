@@ -33,10 +33,16 @@ public interface IJanelaDeMigracaoRepository
     Task<IReadOnlyList<Concessao>> ObterConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Trava o perfil de governança da proteção de dados e todas as concessões ativas dele, em ordem de id, e devolve
-    /// quem as tem: a dispensa da segunda etapa se lê delas, e a criação e a revogação concorrentes esperam a trava.
+    /// Trava o perfil de governança da proteção de dados e todas as concessões ativas dele, em ordem de id, até o fim da
+    /// transação: a dispensa da segunda etapa se lê delas, e a criação e a revogação concorrentes esperam a trava.
     /// </summary>
-    Task<IReadOnlyCollection<Identidade>> TravarTitularesDaProtecaoDeDadosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
+    Task TravarProtecaoDeDadosAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Quem tem concessão ativa do perfil da proteção de dados no instante.</summary>
+    Task<IReadOnlyCollection<Identidade>> ListarTitularesDaProtecaoDeDadosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
+
+    /// <summary>As concessões do perfil que a janela alcança, sem rastrear nem travar: a leitura da tela.</summary>
+    Task<IReadOnlyList<Concessao>> ListarConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default);
 
     /// <summary>Os códigos que cada concessão dá no instante, pela regra única da decisão de acesso; a sem permissão volta vazia.</summary>
     Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterComposicoesAsync(

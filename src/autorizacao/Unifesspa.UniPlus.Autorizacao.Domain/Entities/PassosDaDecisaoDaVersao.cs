@@ -98,7 +98,7 @@ internal sealed class PassosDaDecisaoDaVersao
 
     private DomainError? Conferencias() =>
         _pedida.Resultado == ResultadoDaDecisao.Aprovado
-            ? ConferenciasDaVersao.DaAprovacao(_versao, _vigente, _contexto, _catalogo, Diferenca())
+            ? ConferenciasDaVersao.DaAprovacao(_versao, _vigente, _contexto, _catalogo)
             : _pedida.Motivo is null ? PerfilErros.MotivoInvalido(MotivosDaVersao.MaxLength) : null;
 
     private DesfechoDaVersao Registrar()

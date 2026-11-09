@@ -140,9 +140,6 @@ internal static class DoublesDePerfis
         IReadOnlyList<Concessao>? paraMigrar = null,
         IReadOnlyList<TitularComEmail>? titulares = null) : IConcessaoRepository
     {
-        public Task<bool> ExisteNaoRevogadaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(temConcessaoNaoRevogada);
-
         public Task<Concessao?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Concessao>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
@@ -172,5 +169,50 @@ internal static class DoublesDePerfis
         public Task<TipoDeGovernanca?> ObterGovernancaDoPerfilAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task TravarGovernancaParaEscritaAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+    }
+
+    internal sealed class JanelasNaMemoria(bool aberta = false) : IJanelaDeMigracaoRepository
+    {
+        public List<JanelaDeMigracao> Adicionadas { get; } = [];
+
+        public Task AdicionarAsync(JanelaDeMigracao janela, CancellationToken cancellationToken = default)
+        {
+            Adicionadas.Add(janela);
+
+            return Task.CompletedTask;
+        }
+
+        public Task<JanelaDeMigracao?> ObterNaoEncerradaParaAlterarAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<JanelaDeMigracao?>(null);
+
+        public Task<JanelaDeMigracao?> ObterUltimaParaLeituraAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<JanelaDeMigracao?>(null);
+
+        public Task<bool> TemJanelaAbertaAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult(aberta);
+
+        public Task<bool> TemJanelaPorMaterializarAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<Concessao>> ObterConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Concessao>>([]);
+
+        public Task TravarProtecaoDeDadosAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyCollection<Identidade>> ListarTitularesDaProtecaoDeDadosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyCollection<Identidade>>([]);
+
+        public Task<IReadOnlyList<Concessao>> ListarConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Concessao>>([]);
+
+        public Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterComposicoesAsync(
+            IReadOnlyCollection<Guid> concessaoIds, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<string>>>(new Dictionary<Guid, IReadOnlyList<string>>());
+
+        public Task<IReadOnlyList<Guid>> ListarPerfisComJanelaNaoEncerradaAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Guid>>([]);
+
+        public Task<IReadOnlyList<DecisaoDaMigracao>> ListarDecisoesDaConcessaoAsync(Guid concessaoId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<DecisaoDaMigracao>>([]);
     }
 }

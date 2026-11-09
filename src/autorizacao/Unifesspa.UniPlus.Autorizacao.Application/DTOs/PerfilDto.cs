@@ -16,7 +16,8 @@ public sealed record PerfilDto(
     string Sensibilidade,
     ComposicaoEmVigorDto? ComposicaoEmVigor,
     VersaoPendenteDto? VersaoPendente,
-    UltimaVersaoEncerradaSemVigorDto? UltimaVersaoEncerradaSemVigor);
+    UltimaVersaoEncerradaSemVigorDto? UltimaVersaoEncerradaSemVigor,
+    JanelaDoPerfilDto? Janela = null);
 
 /// <summary>Perfil de acesso como a listagem o resume.</summary>
 /// <param name="TemVersaoVigente">O perfil comum tem composição em vigor; o de governança dispensa a versão e a tem sempre.</param>

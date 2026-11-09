@@ -89,8 +89,8 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         outroAlcance.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    [Fact(DisplayName = "Perfil com concessão recusa versão que acrescenta permissão sensível")]
-    public async Task CriarVersao_ComConcessao_AmpliarASensibilidade_Recusa()
+    [Fact(DisplayName = "Perfil com concessão aceita versão que acrescenta permissão sensível: as concessões migram na janela da vigência")]
+    public async Task CriarVersao_ComConcessao_AmpliarASensibilidade_Aceita()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await SemearPerfilVigenteAsync(OperarInscricoes);
@@ -99,13 +99,12 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [OperarInscricoes, AnalisarAtendimento]));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados");
-        (await LerAsync(diogo, id)).RootElement.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+        (await LerAsync(diogo, id)).RootElement.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Object);
     }
 
-    [Fact(DisplayName = "Perfil já sensível, com concessão, recusa acrescentar outra permissão sensível")]
-    public async Task CriarVersao_ComConcessao_OutraSensivelNoPerfilJaSensivel_Recusa()
+    [Fact(DisplayName = "Perfil já sensível, com concessão, aceita acrescentar outra permissão sensível")]
+    public async Task CriarVersao_ComConcessao_OutraSensivelNoPerfilJaSensivel_Aceita()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await SemearPerfilVigenteAsync(AnalisarAtendimento);
@@ -114,8 +113,7 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         using HttpResponseMessage resposta = await EnviarAsync(
             diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [AnalisarAtendimento, "teste:laudos:consultar"]));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados");
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
     }
 
     [Fact(DisplayName = "Perfil com concessão recusa versão que muda de alcance")]

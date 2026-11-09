@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
@@ -279,7 +282,7 @@ public sealed class GovernancaDaVersaoTests
         (Result<PerfilDto> Resposta, IEnumerable<object> Mensagens) aprovacao = await GovernarVersaoDoPerfilCommandHandler.Handle(
             new AprovarVersaoDoPerfilCommand(perfil.Id, versaoId, EtapaGestao), cenario.Aprovacoes, cenario.Verificador, CancellationToken.None);
         (Result<PerfilDto> Resposta, IEnumerable<object> Mensagens) remocao = await GovernarVersaoDoPerfilCommandHandler.Handle(
-            new RemoverPermissoesDoPerfilCommand(perfil.Id, new RemoverPermissoesRequest([A], "Motivo.", null)), cenario.Remocao, CancellationToken.None);
+            new RemoverPermissoesDoPerfilCommand(perfil.Id, new RemoverPermissoesRequest([A], "Motivo.", null)), cenario.Remocao, SemJanelaPorMaterializar(), CancellationToken.None);
 
         recusa.Resposta.IsSuccess.Should().BeTrue();
         cancelamento.Resposta.IsFailure.Should().BeTrue();
@@ -300,4 +303,11 @@ public sealed class GovernancaDaVersaoTests
 
     private static TitularDaPermissao Titular(Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.Identidade pessoa) =>
         new(pessoa.Emissor, pessoa.Sub, $"{pessoa.Sub}@uniplus-test.local");
+
+    private static MaterializacaoPrevia SemJanelaPorMaterializar()
+    {
+        using ServiceProvider provedor = new ServiceCollection().BuildServiceProvider();
+
+        return new MaterializacaoPrevia(new JanelasNaMemoria(), provedor.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+    }
 }

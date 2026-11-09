@@ -65,7 +65,7 @@ public static class MigracaoErros
         MigracaoErrorCodes.SemPermissaoNaEtapa,
         "Acesso negado: a operação exige a permissão da etapa.");
 
-    public static DomainError ConflitoDeConcorrencia() => new(
-        MigracaoErrorCodes.ConflitoDeConcorrencia,
-        "A janela de migração foi alterada por outra operação. Consulte o estado atual antes de repetir.");
+    public static DomainError PedidoEmPerfilEmMigracao() => new(
+        PedidoErrorCodes.PerfilEmJanelaDeMigracao,
+        "O perfil está em janela de migração e não recebe pedido novo até o fim dela.");
 }

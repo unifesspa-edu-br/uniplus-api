@@ -80,8 +80,8 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         perfil.GetProperty("versaoPendente").GetProperty("versaoId").GetGuid().Should().Be(versao.VersaoId);
     }
 
-    [Fact(DisplayName = "Concessão surgida antes da aprovação recusa a versão que amplia a sensibilidade e a pendente segue")]
-    public async Task ConcessaoAntesDaAprovacao_RecusaAAmpliacao()
+    [Fact(DisplayName = "Concessão surgida antes da aprovação não impede a vigência da versão que amplia: abre a janela de migração")]
+    public async Task ConcessaoAntesDaAprovacao_EntraEmVigorEAbreAJanela()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
@@ -93,17 +93,15 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
         await SemearConcessaoAsync(Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
 
-        using HttpClient gestao = await GestaoAsync();
-        using HttpResponseMessage recusa = await AprovarBrutoAsync(gestao, ampliada, EtapaGestao);
+        await AprovarAteAVigenciaAsync(gestor, ampliada);
 
-        await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.UnprocessableEntity, "ampliacao_exige_protecao_de_dados");
         JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}");
-        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
-        perfil.GetProperty("versaoPendente").GetProperty("versaoId").GetGuid().Should().Be(ampliada.VersaoId);
+        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
+        perfil.GetProperty("janela").GetProperty("situacao").GetString().Should().Be("aberta");
     }
 
-    [Fact(DisplayName = "Concessão posterior à entrada em vigor recusa a próxima ampliação já na criação")]
-    public async Task ConcessaoDepoisDaVigencia_RecusaANovaAmpliacao()
+    [Fact(DisplayName = "Concessão posterior à entrada em vigor não impede a próxima ampliação: a versão é criada pendente")]
+    public async Task ConcessaoDepoisDaVigencia_AceitaANovaAmpliacao()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
@@ -114,8 +112,7 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         using HttpResponseMessage resposta = await EnviarAsync(
             gestor, HttpMethod.Post, $"{RotaPerfis}/{original.PerfilId}/versoes", Dados(Nome(), Consultar, Sensivel));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("ampliacao_exige_protecao_de_dados");
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
     }
 
     [Fact(DisplayName = "A entrada em vigor sem acréscimo leva a concessão e o pedido ativo para a versão nova")]

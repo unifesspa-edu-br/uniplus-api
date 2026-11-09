@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -57,10 +58,16 @@ public static class GovernarVersaoDoPerfilCommandHandler
     }
 
     public static async Task<(Result<PerfilDto> Resposta, IEnumerable<object> Mensagens)> Handle(
-        RemoverPermissoesDoPerfilCommand command, RemocaoDePermissoes remocao, CancellationToken cancellationToken)
+        RemoverPermissoesDoPerfilCommand command,
+        RemocaoDePermissoes remocao,
+        MaterializacaoPrevia previa,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(remocao);
+        ArgumentNullException.ThrowIfNull(previa);
+
+        await previa.GarantirAsync(command.PerfilId, cancellationToken).ConfigureAwait(false);
 
         return Cascata(await remocao.RemoverAsync(command.PerfilId, command.Dados, cancellationToken).ConfigureAwait(false));
     }

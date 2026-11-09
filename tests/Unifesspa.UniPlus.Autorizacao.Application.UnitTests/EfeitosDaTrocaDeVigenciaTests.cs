@@ -144,6 +144,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
             new ConcessoesNaMemoria(paraMigrar: concessoes ?? [], titulares: titulares ?? []),
             new PedidosAtivosNaMemoria(pedidos ?? []),
             new AvisosDoPedido(new ConcessoesNaMemoria(titulares: titulares ?? []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
+            CenarioDaGovernancaDaVersao.JanelaDaTroca(new JanelasNaMemoria(), new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
             TimeProvider.System);
 
     private static Perfil PerfilNaVersao1(params string[] permissoes) =>

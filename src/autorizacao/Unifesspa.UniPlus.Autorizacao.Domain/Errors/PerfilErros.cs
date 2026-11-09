@@ -45,14 +45,6 @@ public static class PerfilErros
         PerfilErrorCodes.AlcanceAlterado,
         "O alcance de um perfil não muda entre versões: crie outro perfil e conceda-o por pedido.");
 
-    public static DomainError AmpliacaoExigeProtecaoDeDados() => new(
-        PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados,
-        "Acrescentar permissão pessoal ou sensível a um perfil com concessões exige a aprovação da proteção de dados: crie outro perfil e conceda-o por pedido.");
-
-    public static DomainError AcrescimoComConcessaoAtiva() => new(
-        PerfilErrorCodes.AcrescimoComConcessaoAtiva,
-        "Acrescentar permissão a um perfil com concessões ainda não é possível: crie outro perfil e conceda-o por pedido.");
-
     public static DomainError SemVersaoEmVigor() => new(
         PerfilErrorCodes.SemVersaoEmVigor,
         "O perfil não tem versão em vigor: não há permissão a remover.");

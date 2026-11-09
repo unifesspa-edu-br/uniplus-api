@@ -39,9 +39,7 @@ internal sealed class EfeitosDaDecisaoDaMigracao
     public void DaGestao(Concessao concessao, ResultadoDaMigracao resultado, LoteDaMigracao? envio)
     {
         ComposicaoDoLote composicao = _contexto.ComposicaoDe(concessao);
-        string? dispensa = composicao.ExigeProtecaoDeDados && _contexto.TemProtecaoDeDados(concessao.Beneficiario)
-            ? MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados
-            : null;
+        string? dispensa = DispensaDe(concessao, composicao);
 
         if (resultado == ResultadoDaMigracao.Recusar)
         {
@@ -56,6 +54,12 @@ internal sealed class EfeitosDaDecisaoDaMigracao
             Migrar(concessao, composicao, new DecisaoHumana(EtapaDaMigracao.GestaoDeAcessos, resultado, _autoria, envio, dispensa));
         }
     }
+
+    // Quem já tem o perfil da proteção de dados dispensa a segunda etapa do acréscimo protegido.
+    private string? DispensaDe(Concessao concessao, ComposicaoDoLote composicao) =>
+        composicao.ExigeProtecaoDeDados && _contexto.TemProtecaoDeDados(concessao.Beneficiario)
+            ? MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados
+            : null;
 
     /// <summary>A decisão da proteção de dados: migrar leva à versão-alvo de agora; recusar revoga na hora.</summary>
     public void DaProtecao(Concessao concessao, ResultadoDaMigracao resultado, LoteDaMigracao envio)
