@@ -1,8 +1,11 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -15,6 +18,15 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 internal static class DoublesDeAvisos
 {
     public static AvisosDoPedido Avisos() => new(new SemTitulares(), new SemUnidade(), new LinkDeTeste(), TimeProvider.System);
+
+    /// <summary>Os receptores do resultado da verificação, na ordem de consulta, com perfis e versões neutros.</summary>
+    public static IReadOnlyList<IReceptorDoResultadoDaVerificacao> Receptores(
+        IInstalacaoRepository instalacoes, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
+    [
+        new ReceptorDoDocumentoDaInstalacao(instalacoes, unidade, TimeProvider.System, NullLogger<ReceptorDoDocumentoDaInstalacao>.Instance),
+        new ReceptorDoAnexoDoPedido(pedidos, new PerfilQualquer(), Avisos(), unidade, TimeProvider.System, NullLogger<ReceptorDoAnexoDoPedido>.Instance),
+        new ReceptorDoDocumentoDaVersao(Versoes(), NullLogger<ReceptorDoDocumentoDaVersao>.Instance),
+    ];
 
     /// <summary>O tratamento de versões do perfil sem perfil algum: nenhum arquivo dos testes é documento de versão.</summary>
     public static ResultadoDoDocumentoDaVersao Versoes() =>

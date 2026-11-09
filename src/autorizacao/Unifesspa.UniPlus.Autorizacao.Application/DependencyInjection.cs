@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
 /// <summary>
@@ -27,6 +28,14 @@ public static class AutorizacaoApplicationServiceRegistration
 
         services.AddScoped<AvisosDoPedido>();
 
+        AdicionarVersoesDoPerfil(services);
+        AdicionarReceptoresDoResultado(services);
+
+        return services;
+    }
+
+    private static void AdicionarVersoesDoPerfil(IServiceCollection services)
+    {
         services.AddScoped<AutoriaDaOperacao>();
         services.AddScoped<EnvioDoDocumento>();
         services.AddScoped<LeitorDoContextoDaVersao>();
@@ -34,7 +43,13 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<VersoesDoPerfil>();
         services.AddScoped<DocumentosDasVersoes>();
         services.AddScoped<ResultadoDoDocumentoDaVersao>();
+    }
 
-        return services;
+    private static void AdicionarReceptoresDoResultado(IServiceCollection services)
+    {
+        // A ordem é a da consulta do resultado: instalação, anexo de pedido e documento de versão.
+        services.AddScoped<IReceptorDoResultadoDaVerificacao, ReceptorDoDocumentoDaInstalacao>();
+        services.AddScoped<IReceptorDoResultadoDaVerificacao, ReceptorDoAnexoDoPedido>();
+        services.AddScoped<IReceptorDoResultadoDaVerificacao, ReceptorDoDocumentoDaVersao>();
     }
 }

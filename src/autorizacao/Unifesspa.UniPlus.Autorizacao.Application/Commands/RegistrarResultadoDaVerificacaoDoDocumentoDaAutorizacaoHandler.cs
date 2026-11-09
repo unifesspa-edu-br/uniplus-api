@@ -5,154 +5,64 @@ using Microsoft.Extensions.Logging;
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
-using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
 /// Registra o resultado da fila de resultados da Autorização (ADR-0146). A fila é uma só para os PDFs do módulo e o
-/// resultado traz só o id do arquivo, então o handler despacha por consulta: procura a instalação por esse id e, não a
-/// achando, o anexo de pedido e, depois, o documento de versão de perfil; nenhum dos três, log e descarte. Os ids são UUID v7
-/// de tabelas distintas, e não colidem.
+/// resultado traz só o id do arquivo, então o handler percorre os receptores, na ordem de registro, até um reconhecer o
+/// arquivo (instalação, anexo de pedido e documento de versão de perfil); nenhum, log e descarte. Os ids são UUID v7 de
+/// tabelas distintas, e não colidem.
 /// </summary>
 /// <remarks>
-/// A fila entrega ao menos uma vez, então o resultado de quem já saiu de "em verificação" — repetido, ou depois do fim
-/// da instalação — é ignorado com log. Todo veredicto tem transição: verificado grava o SHA-256; recusado e reenvio
-/// necessário encerram o documento, e quem enviou recomeça. O veredicto indefinido é defeito do contrato.
-/// O pedido que o documento libera avisa a próxima pessoa pelo outbox, na mesma gravação.
+/// A fila entrega ao menos uma vez, então o resultado de quem já saiu de "em verificação" é ignorado com log pelo
+/// receptor. Todo veredicto tem transição: verificado grava o SHA-256; recusado e reenvio necessário encerram o
+/// documento, e quem enviou recomeça. O veredicto indefinido é defeito do contrato.
 /// </remarks>
 public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler
 {
     public static async Task<IEnumerable<EnviarEmail>> Handle(
         ResultadoDaVerificacaoDeArquivo resultado,
-        IInstalacaoRepository instalacoes,
-        IPedidoDeConcessaoRepository pedidos,
-        IPerfilRepository perfis,
-        ResultadoDoDocumentoDaVersao versoes,
-        AvisosDoPedido avisos,
-        IAutorizacaoUnitOfWork unitOfWork,
-        TimeProvider clock,
+        IEnumerable<IReceptorDoResultadoDaVerificacao> receptores,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(resultado);
-        ArgumentNullException.ThrowIfNull(instalacoes);
-        ArgumentNullException.ThrowIfNull(pedidos);
-        ArgumentNullException.ThrowIfNull(perfis);
-        ArgumentNullException.ThrowIfNull(versoes);
-        ArgumentNullException.ThrowIfNull(avisos);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(receptores);
         ArgumentNullException.ThrowIfNull(logger);
 
         Validar(resultado);
 
-        bool alterou;
-        IReadOnlyList<EnviarEmail> mensagens = [];
-        Instalacao? instalacao = await instalacoes.ObterPorIdAsync(resultado.ArquivoId, cancellationToken).ConfigureAwait(false);
-        if (instalacao is not null)
+        foreach (IReceptorDoResultadoDaVerificacao receptor in receptores)
         {
-            SituacaoDaInstalacao situacao = instalacao.Situacao;
-            alterou = resultado.Veredicto == VeredictoDaVerificacao.Verificado
-                ? instalacao.RegistrarDocumentoVerificado(resultado.HashSha256!, clock.GetUtcNow())
-                : instalacao.RegistrarDocumentoRecusado(clock.GetUtcNow());
-            if (!alterou)
+            DesfechoDoRecebimento desfecho = await receptor.ReceberAsync(resultado, cancellationToken).ConfigureAwait(false);
+            if (desfecho.Reconhecido)
             {
-                LogResultadoIgnorado(logger, resultado.ArquivoId, situacao);
-                return [];
-            }
-        }
-        else
-        {
-            AnexoDoPedido? anexo = await pedidos.ObterAnexoAsync(resultado.ArquivoId, cancellationToken).ConfigureAwait(false);
-            if (anexo is null)
-            {
-                return await RegistrarDocumentoDaVersaoAsync(resultado, versoes, logger, cancellationToken).ConfigureAwait(false);
-            }
-
-            SituacaoDoAnexo situacao = anexo.Situacao;
-            alterou = resultado.Veredicto == VeredictoDaVerificacao.Verificado
-                ? anexo.RegistrarVerificado(resultado.HashSha256!, clock.GetUtcNow())
-                : anexo.RegistrarRecusado(clock.GetUtcNow());
-            if (!alterou)
-            {
-                LogAnexoIgnorado(logger, resultado.ArquivoId, situacao);
-                return [];
-            }
-
-            // O documento verificado libera o pedido que o esperava; o anexo e o pedido saem na mesma gravação.
-            if (resultado.Veredicto == VeredictoDaVerificacao.Verificado
-                && await pedidos.ObterParaAlterarAsync(anexo.PedidoId, cancellationToken).ConfigureAwait(false) is { } pedido
-                && pedido.LiberarAoVerificarDocumento())
-            {
-                pedidos.Atualizar(pedido);
-                Perfil? perfil = await perfis.ObterPorIdAsync(pedido.PerfilId, cancellationToken).ConfigureAwait(false);
-                mensagens = await avisos
-                    .AvisarAsync(pedido, perfil?.Nome ?? string.Empty, SituacaoDoPedido.AguardandoDocumento, cancellationToken)
-                    .ConfigureAwait(false);
+                return desfecho.Mensagens;
             }
         }
 
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return mensagens;
-    }
-
-    // O documento de versão do perfil grava por conta própria, sob a trava do perfil; aqui só se registra o desfecho.
-    private static async Task<IEnumerable<EnviarEmail>> RegistrarDocumentoDaVersaoAsync(
-        ResultadoDaVerificacaoDeArquivo resultado,
-        ResultadoDoDocumentoDaVersao versoes,
-        ILogger logger,
-        CancellationToken cancellationToken)
-    {
-        switch (await versoes.RegistrarAsync(resultado, cancellationToken).ConfigureAwait(false))
-        {
-            case DesfechoDoResultadoDaVersao.Desconhecido:
-                LogArquivoInexistente(logger, resultado.ArquivoId);
-                break;
-            case DesfechoDoResultadoDaVersao.Ignorado:
-                LogDocumentoDaVersaoIgnorado(logger, resultado.ArquivoId);
-                break;
-            default:
-                break;
-        }
+        LogArquivoInexistente(logger, resultado.ArquivoId);
 
         return [];
     }
 
     private static void Validar(ResultadoDaVerificacaoDeArquivo resultado)
     {
-        switch (resultado.Veredicto)
+        string? defeito = resultado.Veredicto switch
         {
-            case VeredictoDaVerificacao.Verificado:
-                if (string.IsNullOrWhiteSpace(resultado.HashSha256))
-                {
-                    throw new ResultadoDaVerificacaoInvalidoException(
-                        $"O resultado \"verificado\" do documento {resultado.ArquivoId} não traz o SHA-256.");
-                }
+            VeredictoDaVerificacao.Verificado when string.IsNullOrWhiteSpace(resultado.HashSha256) =>
+                $"O resultado \"verificado\" do documento {resultado.ArquivoId} não traz o SHA-256.",
+            VeredictoDaVerificacao.Verificado or VeredictoDaVerificacao.Recusado or VeredictoDaVerificacao.ReenvioNecessario => null,
+            _ => $"O resultado do documento {resultado.ArquivoId} traz o veredicto {resultado.Veredicto}, que não é um veredicto.",
+        };
 
-                break;
-            case VeredictoDaVerificacao.Recusado:
-            case VeredictoDaVerificacao.ReenvioNecessario:
-                break;
-            default:
-                throw new ResultadoDaVerificacaoInvalidoException(
-                    $"O resultado do documento {resultado.ArquivoId} traz o veredicto {resultado.Veredicto}, que não é um veredicto.");
+        if (defeito is not null)
+        {
+            throw new ResultadoDaVerificacaoInvalidoException(defeito);
         }
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Resultado da verificação do documento {ArquivoId} da Autorização descartado: nem a instalação, nem o anexo de pedido, nem o documento de versão de perfil existem")]
     private static partial void LogArquivoInexistente(ILogger logger, Guid arquivoId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do documento da instalação {InstalacaoId} ignorado: a instalação está {Situacao}")]
-    private static partial void LogResultadoIgnorado(ILogger logger, Guid instalacaoId, SituacaoDaInstalacao situacao);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do documento da versão {DocumentoId} ignorado: o documento não esperava veredicto")]
-    private static partial void LogDocumentoDaVersaoIgnorado(ILogger logger, Guid documentoId);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do anexo do pedido {AnexoId} ignorado: o anexo está {Situacao}")]
-    private static partial void LogAnexoIgnorado(ILogger logger, Guid anexoId, SituacaoDoAnexo situacao);
 }
