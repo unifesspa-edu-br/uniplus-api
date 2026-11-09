@@ -142,6 +142,26 @@ public sealed class PerfilAprovacaoTests
         perfil.UltimaVersaoEncerradaSemVigor.Should().BeSameAs(versao);
     }
 
+    [Fact(DisplayName = "Toda operação sobre a versão já expirada responde versão expirada, em qualquer tentativa")]
+    public void VersaoExpirada_TodaOperacaoRecusaPeloPrazo()
+    {
+        Perfil perfil = PendenteVerificada([Consultar]);
+        Guid versaoId = perfil.VersaoPendente!.Id;
+        perfil.MaterializarExpiracao(Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias)).Should().BeTrue();
+
+        for (int tentativa = 0; tentativa < 2; tentativa++)
+        {
+            Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, versaoId: versaoId)
+                .Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, ResultadoDaDecisao.Recusado, "Fora do escopo.", versaoId: versaoId)
+                .Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, "Motivo.", Agora).Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            perfil.NovoDocumento(versaoId, 1024).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            perfil.DocumentoParaReemitirEnvio(versaoId).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            perfil.ConfirmarDocumento(versaoId, "etag", Agora).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+        }
+    }
+
     [Fact(DisplayName = "O prazo conta da criação e não reinicia na troca de etapa")]
     public void Aprovar_TrocaDeEtapa_NaoReiniciaOPrazo()
     {

@@ -42,7 +42,6 @@ public sealed class CancelamentoDaVersao
         GravacaoDaOperacao<PerfilDto> gravacao = await _operacao
             .ExecutarComAvisosAsync(
                 perfilId,
-                versaoId,
                 (perfil, contexto) => CancelarNoPerfilAsync(perfil, versaoId, motivo, autor, contexto.Agora, verificador, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);

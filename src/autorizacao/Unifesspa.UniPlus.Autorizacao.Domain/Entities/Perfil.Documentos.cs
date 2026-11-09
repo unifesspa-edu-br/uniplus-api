@@ -91,7 +91,7 @@ public sealed partial class Perfil
         DocumentoPorId(documentoId)?.RegistrarVerificado(sha256, instante) ?? false;
 
     private static DomainError RecusaDaConfirmacao(VersaoDoPerfil versao) =>
-        versao.Pendente ? PerfilErros.DocumentoNaoAguardaEnvio() : PerfilErros.VersaoNaoPendente();
+        versao.Pendente ? PerfilErros.DocumentoNaoAguardaEnvio() : versao.RecusaPorNaoPendente();
 
     private DocumentoDaVersao? DocumentoPorId(Guid documentoId) =>
         _versoes.SelectMany(static v => v.Documentos).FirstOrDefault(d => d.Id == documentoId);
@@ -109,6 +109,6 @@ public sealed partial class Perfil
             return Result<VersaoDoPerfil>.Failure(PerfilErros.Inativo());
         }
 
-        return versao.Value!.Pendente ? versao : Result<VersaoDoPerfil>.Failure(PerfilErros.VersaoNaoPendente());
+        return versao.Value!.Pendente ? versao : Result<VersaoDoPerfil>.Failure(versao.Value.RecusaPorNaoPendente());
     }
 }

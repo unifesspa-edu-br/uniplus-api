@@ -110,7 +110,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
 
         (await rotina).Should().Be(1);
         using HttpResponseMessage resposta = await decisao;
-        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_nao_pendente");
+        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_expirada");
         await ConferirVersaoSoExpiradaAsync(vigente, versao);
     }
 

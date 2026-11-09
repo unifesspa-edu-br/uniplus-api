@@ -78,7 +78,8 @@ internal sealed class PassosDaDecisaoDaVersao
     }
 
     private DomainError? Precedencia() =>
-        _versao.DecisaoDaEtapa(_pedida.Etapa) is not null ? PerfilErros.EtapaJaDecidida()
+        _versao.Situacao == SituacaoDaVersao.Expirada ? PerfilErros.VersaoExpirada()
+        : _versao.DecisaoDaEtapa(_pedida.Etapa) is not null ? PerfilErros.EtapaJaDecidida()
         : _versao.Pendente ? null
         : PerfilErros.VersaoNaoPendente();
 

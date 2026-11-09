@@ -16,7 +16,6 @@ public static class ExpirarVersaoPendenteDoPerfilCommandHandler
 
         return operacao.ExecutarSemChaveAsync(
             command.PerfilId,
-            null,
             static (_, contexto) => Task.FromResult(Result<bool>.Success(contexto.VersaoExpirada is not null)),
             cancellationToken);
     }

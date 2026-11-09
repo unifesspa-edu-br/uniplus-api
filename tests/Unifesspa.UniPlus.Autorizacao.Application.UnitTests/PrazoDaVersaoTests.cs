@@ -68,7 +68,7 @@ public sealed class PrazoDaVersaoTests
         Result<EnvioDoDocumentoDto> novo = await cenario.Documentos.NovoAsync(perfil.Id, versaoId, 4096, CancellationToken.None);
 
         reemissao.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-        novo.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoNaoPendente);
+        novo.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
         perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Expirada);
         cenario.Armazenamento.ChavesDeEnvio.Should().BeEmpty();
         cenario.Unidade.Gravacoes.Should().Be(1);
@@ -91,6 +91,39 @@ public sealed class PrazoDaVersaoTests
         perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Expirada);
         cenario.Unidade.Gravacoes.Should().Be(1);
         cenario.Unidade.Descartes.Should().Be(0);
+    }
+
+    [Theory(DisplayName = "Cancelar por quem não pode, no instante do vencimento, nega igual para a versão existente e para a inexistente")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Cancelar_SemPermissaoNoVencimento_NegaSemRevelarAVersao(bool versaoExistente)
+    {
+        Perfil perfil = CenarioDaGovernancaDaVersao.PendenteVerificada([Consultar]);
+        Guid versaoId = versaoExistente ? perfil.VersaoPendente!.Id : Guid.NewGuid();
+        CenarioDaGovernancaDaVersao cenario = new(
+            perfil, PerfisDeTeste.Gestora, [], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo));
+
+        GravacaoDaOperacao<PerfilDto> gravacao = await cenario.Cancelamento.CancelarAsync(
+            perfil.Id, versaoId, "Motivo qualquer.", cenario.Verificador, CancellationToken.None);
+
+        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
+        perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Expirada);
+    }
+
+    [Fact(DisplayName = "A decisão sobre a versão expirada responde versão expirada na primeira e na segunda tentativa")]
+    public async Task Decidir_VersaoExpirada_RespondeVersaoExpiradaSempre()
+    {
+        Perfil perfil = CenarioDaGovernancaDaVersao.PendenteVerificada([Consultar]);
+        CenarioDaGovernancaDaVersao cenario = new(
+            perfil, PerfisDeTeste.Gestora, [CenarioDaGovernancaDaVersao.Gestao], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo));
+        DecisaoSolicitada decisao = new(perfil.Id, perfil.VersaoPendente!.Id, "gestao_de_acessos", ResultadoDaDecisao.Aprovado, null);
+
+        GravacaoDaOperacao<PerfilDto> primeira = await cenario.Aprovacoes.DecidirAsync(decisao, cenario.Verificador, CancellationToken.None);
+        GravacaoDaOperacao<PerfilDto> segunda = await cenario.Aprovacoes.DecidirAsync(decisao, cenario.Verificador, CancellationToken.None);
+
+        primeira.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+        segunda.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+        perfil.VersaoVigente.Should().BeNull();
     }
 
     [Fact(DisplayName = "A falha de um perfil na rotina de expiração não impede os demais")]

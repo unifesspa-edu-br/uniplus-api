@@ -102,7 +102,7 @@ public sealed partial class Perfil
     {
         if (!versao.Pendente)
         {
-            return PerfilErros.VersaoNaoPendente();
+            return versao.RecusaPorNaoPendente();
         }
 
         return MotivosDaVersao.Normalizar(motivo) is null ? PerfilErros.MotivoInvalido(MotivosDaVersao.MaxLength) : null;

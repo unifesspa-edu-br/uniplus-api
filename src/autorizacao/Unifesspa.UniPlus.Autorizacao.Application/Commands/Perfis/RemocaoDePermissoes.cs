@@ -53,7 +53,6 @@ public sealed class RemocaoDePermissoes
         Guid perfilId, RemoverPermissoesRequest dados, AutoriaDaVersao autoria, CancellationToken cancellationToken) =>
         _operacao.ExecutarComAvisosAsync(
             perfilId,
-            null,
             (perfil, contexto) => RemoverDoPerfilAsync(perfil, Pedido(dados, autoria, contexto.Agora), cancellationToken),
             cancellationToken);
 
