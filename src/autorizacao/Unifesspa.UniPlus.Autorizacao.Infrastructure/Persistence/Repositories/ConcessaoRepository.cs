@@ -69,6 +69,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
 
         return await _context.Perfis
             .AsNoTracking()
+            .ComComposicao()
             .FirstOrDefaultAsync(p => p.Id == perfilId, cancellationToken)
             .ConfigureAwait(false);
     }

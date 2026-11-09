@@ -60,12 +60,12 @@ public static class ListarPerfisParaPedirQueryHandler
             }
         }
 
-        (IReadOnlyList<Perfil> ativos, Guid? anterior, Guid? proximo) = await perfis
-            .ListarAtivosPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
+        (IReadOnlyList<Perfil> pediveis, Guid? anterior, Guid? proximo) = await perfis
+            .ListarPediveisPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         List<PerfilParaPedidoDto> lista = [];
-        foreach (Perfil perfil in ativos)
+        foreach (Perfil perfil in pediveis)
         {
             // O perfil que mistura unidade e instituição não se concede: não é oferecido.
             if (perfil.Alcance(catalogo) is not { } alcance)

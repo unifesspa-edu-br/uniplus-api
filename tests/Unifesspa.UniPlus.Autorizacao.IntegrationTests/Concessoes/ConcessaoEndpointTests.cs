@@ -275,7 +275,7 @@ public sealed class ConcessaoEndpointTests
         foreach (Guid id in new[] { GestorDeAcessosId, ProtecaoDeDadosId })
         {
             using JsonDocument perfil = await LerAsync(diogo, $"{RotaPerfis}/{id}");
-            perfil.RootElement.GetProperty("permissoes").EnumerateArray()
+            perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("permissoes").EnumerateArray()
                 .Select(p => p.GetProperty("codigo").GetString()).Should().Contain(Administrar);
         }
     }
@@ -491,17 +491,8 @@ public sealed class ConcessaoEndpointTests
         return [.. itens.EnumerateArray().Select(i => i.GetProperty("id").GetGuid())];
     }
 
-    private async Task<Guid> CriarPerfilComumAsync()
-    {
-        using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
-        using HttpResponseMessage resposta = await EnviarAsync(
-            diogo,
-            HttpMethod.Post,
-            RotaPerfis,
-            new { nome = $"Perfil {Guid.NewGuid():N}", descricao = "Perfil de teste das concessões.", permissoes = new[] { "teste:inscricoes:operar" } });
-        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-        return Guid.Parse(resposta.Headers.Location!.Segments[^1]);
-    }
+    private Task<Guid> CriarPerfilComumAsync() =>
+        ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, "teste:inscricoes:operar");
 
     // A vigência só vence com o tempo: o teste a recua no banco em vez de esperar.
     private async Task EnvelhecerAsync(Guid id)

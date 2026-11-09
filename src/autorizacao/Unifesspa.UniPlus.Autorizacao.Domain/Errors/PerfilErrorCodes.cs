@@ -19,6 +19,15 @@ public static class PerfilErrorCodes
     public const string GovernancaImutavel = "Perfil.GovernancaImutavel";
     public const string NomeDuplicado = "Perfil.NomeDuplicado";
     public const string NaoEncontrado = "Perfil.NaoEncontrado";
-    public const string IdDivergente = "Perfil.IdDivergente";
     public const string ConflitoDeConcorrencia = "Perfil.ConflitoDeConcorrencia";
+    public const string VersaoPendenteExistente = "Perfil.VersaoPendenteExistente";
+    public const string VersaoNaoEncontrada = "Perfil.VersaoNaoEncontrada";
+    public const string VersaoNaoPendente = "Perfil.VersaoNaoPendente";
+    public const string ProtocoloInvalido = "Perfil.ProtocoloInvalido";
+    public const string Inativo = "Perfil.Inativo";
+    public const string AutorNaoIdentificado = "Perfil.AutorNaoIdentificado";
+    public const string DocumentoInvalido = "Perfil.DocumentoInvalido";
+    public const string DocumentoNaoAguardaEnvio = "Perfil.DocumentoNaoAguardaEnvio";
+    public const string DocumentoNaoRecusado = "Perfil.DocumentoNaoRecusado";
+    public const string DocumentoNaoVerificado = "Perfil.DocumentoNaoVerificado";
 }

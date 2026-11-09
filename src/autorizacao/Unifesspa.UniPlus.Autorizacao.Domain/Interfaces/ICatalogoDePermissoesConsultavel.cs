@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+
 /// <summary>
 /// Porta pela qual o perfil confere as permissões que reúne contra o catálogo da aplicação.
 /// O domínio não conhece o projeto de autorização que mantém o catálogo; a infraestrutura
@@ -18,4 +20,10 @@ public interface ICatalogoDePermissoesConsultavel
     /// decisão. As demais permissões são institucionais.
     /// </summary>
     bool DeUnidade(string codigo);
+
+    /// <summary>
+    /// A sensibilidade que o catálogo atribui à permissão. Código que o catálogo não conhece conta como a mais
+    /// restrita: o perfil não pode parecer menos sensível por causa de uma lacuna.
+    /// </summary>
+    ClassificacaoDeProtecao Sensibilidade(string codigo);
 }

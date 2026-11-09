@@ -23,7 +23,7 @@ public static class ListarPerfisQueryHandler
             .ListarPaginadoAsync(query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
-        PerfilDto[] dtos = [.. itens.Select(p => PerfilMapping.ToDto(p, catalogo))];
+        PerfilListadoDto[] dtos = [.. itens.Select(p => PerfilMapping.ToListadoDto(p, catalogo))];
 
         return new ListarPerfisResult(dtos, anterior, proximo);
     }

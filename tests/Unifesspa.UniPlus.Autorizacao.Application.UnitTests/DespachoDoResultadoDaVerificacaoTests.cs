@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -129,6 +130,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
             new InstalacaoNaMemoria(instalacao),
             new PedidosQueNaoDevemSerConsultados(),
             new DoublesDeAvisos.PerfilQualquer(),
+            DoublesDeAvisos.Versoes(),
             DoublesDeAvisos.Avisos(),
             new UnidadeDeTrabalhoQueConta(),
             TimeProvider.System,
@@ -140,22 +142,19 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
 
     private static Task<IEnumerable<EnviarEmail>> Despachar(ResultadoDaVerificacaoDeArquivo resultado, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
         RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new InstalacaoNaMemoria(null), pedidos, new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), unidade, TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, new InstalacaoNaMemoria(null), pedidos, new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), unidade, TimeProvider.System, NullLogger.Instance, CancellationToken.None);
 
     private static ResultadoDaVerificacaoDeArquivo ResultadoVerificado(Guid id) =>
         new(id, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, Sha, 1024, FormatoDoArquivo.Pdf);
 
-    private static Perfil PerfilDeGovernanca()
-    {
-        Perfil perfil = Perfil.Criar("Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], new Catalogo()).Value!;
-        typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, TipoDeGovernanca.GestorDeAcessos);
-        return perfil;
-    }
+    private static Perfil PerfilDeGovernanca() =>
+        PerfisDeTeste.DeGovernanca(
+            "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], new Catalogo());
 
     // Com o perfil de governança o pedido é para outra pessoa, e o desfecho do documento verificado é o aceite dela.
     private static PedidoDeConcessao PedidoComAnexoEmVerificacao(Perfil? perfilPedido = null)
     {
-        Perfil perfil = perfilPedido ?? Perfil.Criar("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new Catalogo()).Value!;
+        Perfil perfil = perfilPedido ?? PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new Catalogo());
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
             new PessoaNoToken(new Identidade(Emissor, "betina.neves"), "Betina Marina Valentina das Neves", "betina-dasneves81@uniplus-test.local", true),
             perfilPedido is null ? null : "leandro-viana84@uniplus-test.local",
@@ -177,6 +176,8 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:", StringComparison.Ordinal);
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 
     private sealed class Dominios : IDominiosInstitucionais

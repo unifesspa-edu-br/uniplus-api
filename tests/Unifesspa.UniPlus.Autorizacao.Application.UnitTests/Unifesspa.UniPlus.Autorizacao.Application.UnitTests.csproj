@@ -18,7 +18,9 @@
 
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\PerfisDeTeste.cs" Link="Apoio\PerfisDeTeste.cs" />
     <Using Include="Xunit" />
+    <Using Include="Unifesspa.UniPlus.Autorizacao.Apoio" />
   </ItemGroup>
 
 </Project>

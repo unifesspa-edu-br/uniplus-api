@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Unifesspa.UniPlus.Autorizacao.Apoio" />
   </ItemGroup>
 
 </Project>

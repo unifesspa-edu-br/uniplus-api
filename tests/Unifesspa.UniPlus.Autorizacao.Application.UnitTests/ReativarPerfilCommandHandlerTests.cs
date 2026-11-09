@@ -2,13 +2,12 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+
+using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis;
 
 public sealed class ReativarPerfilCommandHandlerTests
 {
@@ -42,9 +41,7 @@ public sealed class ReativarPerfilCommandHandlerTests
     [Fact(DisplayName = "Perfil de governança recusa a reativação, descarta o rastreamento e não grava")]
     public async Task Handle_PerfilDeGovernanca_RecusaEDescarta()
     {
-        Perfil perfil = PerfilComum();
-        typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!
-            .SetValue(perfil, Domain.Enums.TipoDeGovernanca.GestorDeAcessos);
+        Perfil perfil = PerfisDeTeste.DeGovernanca("Gestor de acessos", "Governa os acessos.", [Consultar], new CatalogoDeTeste());
         UnidadeDeTrabalho unidade = new();
 
         Result resultado = await Reativar(perfil, unidade);
@@ -67,64 +64,29 @@ public sealed class ReativarPerfilCommandHandlerTests
         unidade.Descartes.Should().Be(1);
     }
 
+    [Fact(DisplayName = "Desativar o perfil não cancela a versão pendente")]
+    public async Task Desativar_PerfilComPendente_MantemAPendente()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        UnidadeDeTrabalho unidade = new();
+
+        Result resultado = await DesativarPerfilCommandHandler.Handle(
+            new DesativarPerfilCommand(perfil.Id),
+            new OperacaoSobreOPerfil(new PerfisNaMemoria(perfil), unidade),
+            CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        perfil.Ativo.Should().BeFalse();
+        perfil.VersaoPendente.Should().NotBeNull();
+        unidade.Gravacoes.Should().Be(1);
+    }
+
     private static Task<Result> Reativar(Perfil? perfil, UnidadeDeTrabalho unidade) =>
         ReativarPerfilCommandHandler.Handle(
             new ReativarPerfilCommand(perfil?.Id ?? Guid.NewGuid()),
-            new PerfilNaMemoria(perfil),
-            unidade,
+            new OperacaoSobreOPerfil(new PerfisNaMemoria(perfil is null ? [] : [perfil]), unidade),
             CancellationToken.None);
 
     private static Perfil PerfilComum() =>
-        Perfil.Criar("Analista", "Descrição válida.", [Consultar], new CatalogoLivre()).Value!;
-
-    private sealed class CatalogoLivre : ICatalogoDePermissoesConsultavel
-    {
-        public bool Existe(string codigo) => true;
-
-        public bool ReservadaAGovernanca(string codigo) => false;
-
-        public bool DeUnidade(string codigo) => false;
-    }
-
-    private sealed class UnidadeDeTrabalho : IAutorizacaoUnitOfWork
-    {
-        public int Gravacoes { get; private set; }
-
-        public int Descartes { get; private set; }
-
-        public Exception? Falha { get; init; }
-
-        public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
-        {
-            if (Falha is not null)
-            {
-                throw Falha;
-            }
-
-            Gravacoes++;
-            return Task.FromResult(1);
-        }
-
-        public void DescartarAlteracoesNaoSalvas() => Descartes++;
-    }
-
-    private sealed class PerfilNaMemoria(Perfil? perfil) : IPerfilRepository
-    {
-        public Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult(perfil is not null && perfil.Id == id ? perfil : null);
-
-        public Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-        public Task AdicionarAsync(Perfil entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-        public void Atualizar(Perfil entity) => throw new InvalidOperationException();
-        public void Remover(Perfil entity) => throw new InvalidOperationException();
-
-        public Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-            Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-
-        public Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarAtivosPaginadoAsync(
-            Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-
-        public Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-        public Task<bool> NomeExisteAsync(string nome, Guid? exceto, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-    }
+        PerfisDeTeste.Vigente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
 }

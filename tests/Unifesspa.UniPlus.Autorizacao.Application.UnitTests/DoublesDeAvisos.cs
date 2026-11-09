@@ -2,11 +2,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Dependências neutras do <see cref="AvisosDoPedido"/> para os testes dos handlers que só precisam delas montadas.</summary>
@@ -14,10 +16,19 @@ internal static class DoublesDeAvisos
 {
     public static AvisosDoPedido Avisos() => new(new SemTitulares(), new SemUnidade(), new LinkDeTeste(), TimeProvider.System);
 
+    /// <summary>O tratamento de versões do perfil sem perfil algum: nenhum arquivo dos testes é documento de versão.</summary>
+    public static ResultadoDoDocumentoDaVersao Versoes() =>
+        new(
+            new DoublesDePerfis.PerfisNaMemoria(),
+            new LeitorDoContextoDaVersao(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.ConcessoesNaMemoria()),
+            new DoublesDePerfis.UnidadeDeTrabalho(),
+            new CatalogoLivre(),
+            TimeProvider.System);
+
     internal sealed class PerfilQualquer : IPerfilRepository
     {
         public Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Perfil?>(Perfil.Criar("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new CatalogoLivre()).Value);
+            Task.FromResult<Perfil?>(PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new CatalogoLivre()));
 
         public Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarAsync(Perfil entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
@@ -27,11 +38,13 @@ internal static class DoublesDeAvisos
         public Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
             Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 
-        public Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarAtivosPaginadoAsync(
+        public Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPediveisPaginadoAsync(
             Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 
         public Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<bool> NomeExisteAsync(string nome, Guid? exceto, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<Guid?> ObterPerfilIdDoDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task AdicionarLeituraAsync(LeituraDoDocumentoDaVersao leitura, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     internal sealed class SemUnidade : ILeitorDeUnidade
@@ -78,5 +91,7 @@ internal static class DoublesDeAvisos
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => false;
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 }

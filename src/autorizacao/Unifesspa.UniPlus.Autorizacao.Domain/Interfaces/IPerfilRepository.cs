@@ -18,19 +18,26 @@ public interface IPerfilRepository : IRepository<Perfil>
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Lista os perfis ativos, o que se pode pedir, paginados por cursor keyset bidirecional (ADR-0026 + ADR-0089),
-    /// sem rastreamento.
+    /// Lista os perfis que se podem pedir, paginados por cursor keyset bidirecional (ADR-0026 + ADR-0089), sem
+    /// rastreamento: os ativos que são de governança ou têm uma versão em vigor. O filtro vem antes da paginação.
     /// </summary>
-    Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarAtivosPaginadoAsync(
+    Task<(IReadOnlyList<Perfil> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPediveisPaginadoAsync(
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default);
 
+    /// <summary>O perfil dono do documento da versão, sem rastrear nada; nulo quando o documento não existe.</summary>
+    Task<Guid?> ObterPerfilIdDoDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default);
+
+    /// <summary>Acrescenta o registro de acesso ao documento da versão, só acrescentado.</summary>
+    Task AdicionarLeituraAsync(LeituraDoDocumentoDaVersao leitura, CancellationToken cancellationToken = default);
+
     /// <summary>
-    /// Lê o perfil a editar travando-o com <c>FOR UPDATE</c> até o fim da transação: a concessão
-    /// simultânea, que o lê com <c>FOR SHARE</c>, espera a edição ou a precede, e a conferência de
-    /// que o perfil já tem concessões enxerga todas as que foram confirmadas.
+    /// Lê o perfil, com versões, documentos e vigências, travando-o com <c>FOR UPDATE</c> até o fim da transação: a
+    /// concessão simultânea, que o lê com <c>FOR SHARE</c>, espera a operação ou a precede, e a conferência de que o
+    /// perfil já tem concessões enxerga todas as que foram confirmadas. Toda operação sobre versão ou documento começa
+    /// por aqui.
     /// </summary>
     Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default);
 

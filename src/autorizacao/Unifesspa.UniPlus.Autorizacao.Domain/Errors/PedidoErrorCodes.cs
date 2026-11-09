@@ -34,4 +34,5 @@ public static class PedidoErrorCodes
     public const string FilaInvalida = "Pedido.FilaInvalida";
     public const string CursorInvalido = "Pedido.CursorInvalido";
     public const string FiltroDeSituacaoInvalido = "Pedido.FiltroDeSituacaoInvalido";
+    public const string PerfilSemVersaoEmVigor = "Pedido.PerfilSemVersaoEmVigor";
 }

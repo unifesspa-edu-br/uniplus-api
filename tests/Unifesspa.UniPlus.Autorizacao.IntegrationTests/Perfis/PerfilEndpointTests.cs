@@ -47,24 +47,46 @@ public sealed class PerfilEndpointTests
 
     public PerfilEndpointTests(AutorizacaoEndpointFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "Criar perfil devolve 201 e a leitura traz sensibilidade e permissões do catálogo")]
-    public async Task Criar_Valido_LeComSensibilidadeDoCatalogo()
+    [Fact(DisplayName = "Criar perfil devolve 201 com a URL de envio e o perfil nasce sem composição em vigor")]
+    public async Task Criar_Valido_NasceComVersaoPendente()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
 
         using HttpResponseMessage criada = await EnviarAsync(
             diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo, ManterMotivos]));
         criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
+        using JsonDocument envio = JsonDocument.Parse(await criada.Content.ReadAsStringAsync());
+        envio.RootElement.GetProperty("situacao").GetString().Should().Be("aguardando_envio");
+        envio.RootElement.GetProperty("tipoDeMidia").GetString().Should().Be("application/pdf");
+        envio.RootElement.GetProperty("urlDeEnvio").GetString().Should().StartWith("http");
 
-        using HttpResponseMessage lida = await diogo.GetAsync(criada.Headers.Location);
-        lida.StatusCode.Should().Be(HttpStatusCode.OK);
-        using JsonDocument perfil = JsonDocument.Parse(await lida.Content.ReadAsStringAsync());
+        using JsonDocument perfil = await LerAsync(diogo, envio.RootElement.GetProperty("perfilId").GetGuid());
         perfil.RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
         perfil.RootElement.GetProperty("governanca").ValueKind.Should().Be(JsonValueKind.Null);
+        perfil.RootElement.GetProperty("composicaoEmVigor").ValueKind.Should().Be(JsonValueKind.Null);
         perfil.RootElement.GetProperty("sensibilidade").GetString().Should().Be("interno");
-        perfil.RootElement.GetProperty("permissoes").EnumerateArray()
+        JsonElement pendente = perfil.RootElement.GetProperty("versaoPendente");
+        pendente.GetProperty("numero").GetInt32().Should().Be(1);
+        pendente.GetProperty("situacaoDoDocumento").GetString().Should().Be("aguardando_envio");
+        pendente.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
             .Should().Equal(ConsultarCatalogo, ManterMotivos);
+    }
+
+    [Fact(DisplayName = "Repetir a criação com a mesma Idempotency-Key reproduz a resposta e não cria outro perfil")]
+    public async Task Criar_MesmaChave_ReproduzARespostaSemDuplicar()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        string chave = Guid.NewGuid().ToString();
+        object corpo = Corpo(Nome(), [ConsultarCatalogo]);
+
+        using HttpResponseMessage primeira = await EnviarAsync(diogo, HttpMethod.Post, Rota, corpo, chave);
+        using HttpResponseMessage repeticao = await EnviarAsync(diogo, HttpMethod.Post, Rota, corpo, chave);
+
+        primeira.StatusCode.Should().Be(HttpStatusCode.Created);
+        repeticao.StatusCode.Should().Be(HttpStatusCode.Created);
+        repeticao.Headers.Contains("Idempotency-Replayed").Should().BeTrue();
+        (await repeticao.Content.ReadAsStringAsync()).Should().Be(await primeira.Content.ReadAsStringAsync());
     }
 
     [Fact(DisplayName = "Código fora do catálogo devolve 422 com o código de erro e lista o que não existe")]
@@ -92,6 +114,18 @@ public sealed class PerfilEndpointTests
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.permissao_reservada");
     }
 
+    [Fact(DisplayName = "Protocolo ausente devolve 422 com o código do protocolo")]
+    public async Task Criar_SemProtocolo_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, Rota, new { nome = Nome(), descricao = Descricao, permissoes = new[] { ConsultarCatalogo }, protocolo = " ", tamanhoDoDocumento = 1024 });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.protocolo_invalido");
+    }
+
     [Fact(DisplayName = "Nome repetido, mesmo com outra caixa, devolve 409")]
     public async Task Criar_NomeRepetidoComOutraCaixa_Devolve409()
     {
@@ -108,36 +142,6 @@ public sealed class PerfilEndpointTests
         (await segunda.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.nome_duplicado");
     }
 
-    [Fact(DisplayName = "PUT com id do caminho diferente do corpo devolve 400")]
-    public async Task Atualizar_IdDivergente_Devolve400()
-    {
-        using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo);
-
-        using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(Guid.NewGuid(), Nome(), [ConsultarCatalogo]));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.id_divergente");
-    }
-
-    [Fact(DisplayName = "Atualizar troca nome e permissões do perfil comum")]
-    public async Task Atualizar_Valido_TrocaOConjunto()
-    {
-        using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo);
-        string novoNome = Nome();
-
-        using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, novoNome, [ManterMotivos]));
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
-
-        using JsonDocument perfil = await LerAsync(diogo, id);
-        perfil.RootElement.GetProperty("nome").GetString().Should().Be(novoNome);
-        perfil.RootElement.GetProperty("permissoes").EnumerateArray()
-            .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(ManterMotivos);
-    }
-
     [Fact(DisplayName = "Perfil que mistura permissão de unidade e institucional devolve 422")]
     public async Task Criar_AlcanceMisto_Devolve422()
     {
@@ -150,77 +154,234 @@ public sealed class PerfilEndpointTests
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_misto");
     }
 
-    [Fact(DisplayName = "Perfil sem concessões aceita ampliar a sensibilidade e mudar o alcance")]
-    public async Task Atualizar_SemConcessoes_AceitaAmpliarEMudarOAlcance()
+    [Fact(DisplayName = "Não há rota para editar o perfil: a mudança é uma versão nova")]
+    public async Task Atualizar_NaoHaRota()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
 
-        using HttpResponseMessage ampliada = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes, AnalisarAtendimento]));
-        using HttpResponseMessage outroAlcance = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [ManterMotivos]));
+        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Put, $"{Rota}/{id}", Corpo(Nome(), [ConsultarCatalogo]));
 
-        ampliada.StatusCode.Should().Be(HttpStatusCode.NoContent, await ampliada.Content.ReadAsStringAsync());
-        outroAlcance.StatusCode.Should().Be(HttpStatusCode.NoContent, await outroAlcance.Content.ReadAsStringAsync());
+        resposta.StatusCode.Should().Be(HttpStatusCode.MethodNotAllowed);
     }
 
-    [Fact(DisplayName = "Perfil com concessão recusa acrescentar permissão sensível e a edição não é gravada")]
-    public async Task Atualizar_ComConcessao_AmpliarASensibilidade_Recusa()
+    [Fact(DisplayName = "Perfil em vigor aceita uma versão pendente e mantém a composição em vigor até a verificação")]
+    public async Task CriarVersao_PerfilVigente_MantemAVigente()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+
+        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo, ManterMotivos]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+        using JsonDocument perfil = await LerAsync(diogo, id);
+        perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
+        perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().Be(1);
+        perfil.RootElement.GetProperty("versaoPendente").GetProperty("numero").GetInt32().Should().Be(2);
+    }
+
+    [Fact(DisplayName = "Com versão pendente, outra versão é recusada com 422 até a pendente ser cancelada")]
+    public async Task CriarVersao_ComPendente_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        using HttpResponseMessage primeira = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
+        Guid versaoId = LerEnvio(await primeira.Content.ReadAsStringAsync()).VersaoId;
+
+        using HttpResponseMessage segunda = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
+        using HttpResponseMessage cancelada = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{versaoId}");
+        using HttpResponseMessage terceira = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
+
+        segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await segunda.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.versao_pendente_existente");
+        cancelada.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        terceira.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact(DisplayName = "Cancelar versão que não está pendente ou que não existe devolve 422 e 404")]
+    public async Task CancelarVersao_NaoPendenteOuInexistente_Recusa()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid vigente = await VersaoVigenteAsync(id);
+
+        using HttpResponseMessage naoPendente = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{vigente}");
+        using HttpResponseMessage inexistente = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{Guid.NewGuid()}");
+
+        naoPendente.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await naoPendente.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.versao_nao_pendente");
+        inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await inexistente.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.versao_nao_encontrada");
+    }
+
+    [Fact(DisplayName = "Perfil sem concessões aceita versão que amplia a sensibilidade e muda o alcance")]
+    public async Task CriarVersao_SemConcessoes_AceitaAmpliarEMudarOAlcance()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(OperarInscricoes);
+
+        using HttpResponseMessage ampliada = await EnviarAsync(
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [OperarInscricoes, AnalisarAtendimento]));
+        Guid pendente = LerEnvio(await ampliada.Content.ReadAsStringAsync()).VersaoId;
+        await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{pendente}");
+        using HttpResponseMessage outroAlcance = await EnviarAsync(
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ManterMotivos]));
+
+        ampliada.StatusCode.Should().Be(HttpStatusCode.Created, await ampliada.Content.ReadAsStringAsync());
+        outroAlcance.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact(DisplayName = "Perfil com concessão recusa versão que acrescenta permissão sensível")]
+    public async Task CriarVersao_ComConcessao_AmpliarASensibilidade_Recusa()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(OperarInscricoes);
         await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes, AnalisarAtendimento]));
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [OperarInscricoes, AnalisarAtendimento]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados");
-        using JsonDocument perfil = await LerAsync(diogo, id);
-        perfil.RootElement.GetProperty("permissoes").EnumerateArray()
-            .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(OperarInscricoes);
+        (await LerAsync(diogo, id)).RootElement.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [Fact(DisplayName = "Perfil já sensível, com concessão, recusa acrescentar outra permissão sensível")]
-    public async Task Atualizar_ComConcessao_OutraSensivelNoPerfilJaSensivel_Recusa()
+    public async Task CriarVersao_ComConcessao_OutraSensivelNoPerfilJaSensivel_Recusa()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo, [AnalisarAtendimento]);
+        Guid id = await SemearPerfilVigenteAsync(AnalisarAtendimento);
         await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [AnalisarAtendimento, "teste:laudos:consultar"]));
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [AnalisarAtendimento, "teste:laudos:consultar"]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados");
     }
 
-    [Fact(DisplayName = "Perfil com concessão recusa mudar de alcance")]
-    public async Task Atualizar_ComConcessao_MudarOAlcance_Recusa()
+    [Fact(DisplayName = "Perfil com concessão recusa versão que muda de alcance")]
+    public async Task CriarVersao_ComConcessao_MudarOAlcance_Recusa()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        Guid id = await SemearPerfilVigenteAsync(OperarInscricoes);
         await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [ManterMotivos]));
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ManterMotivos]));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_alterado");
     }
 
-    [Fact(DisplayName = "Perfil com concessão aceita renomear e manter a sensibilidade")]
-    public async Task Atualizar_ComConcessao_SemAmpliar_Aceita()
+    [Fact(DisplayName = "Perfil com concessão aceita versão que renomeia e mantém a sensibilidade")]
+    public async Task CriarVersao_ComConcessao_SemAmpliar_Aceita()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = await CriarAsync(diogo, [OperarInscricoes]);
+        Guid id = await SemearPerfilVigenteAsync(OperarInscricoes);
         await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [OperarInscricoes]));
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [OperarInscricoes]));
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
+    }
+
+    [Fact(DisplayName = "Perfil desativado recusa versão nova, e a desativação preserva a pendente")]
+    public async Task CriarVersao_PerfilInativo_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
+        await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
+
+        using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await LerAsync(diogo, id)).RootElement.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    [Fact(DisplayName = "A URL de envio se reemite para o mesmo documento e a confirmação o põe em verificação")]
+    public async Task Documento_ReemiteEConfirma()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        using HttpResponseMessage criada = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
+        Envio envio = LerEnvio(await criada.Content.ReadAsStringAsync());
+        string rota = $"{Rota}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento";
+
+        using HttpResponseMessage reemitida = await EnviarAsync(diogo, HttpMethod.Post, $"{rota}/envio");
+        using HttpResponseMessage confirmada = await EnviarAsync(diogo, HttpMethod.Post, $"{rota}/confirmacao", new { etag = "\"etag-de-teste\"" });
+        using HttpResponseMessage reemitidaDepois = await EnviarAsync(diogo, HttpMethod.Post, $"{rota}/envio");
+
+        reemitida.StatusCode.Should().Be(HttpStatusCode.Created);
+        LerEnvio(await reemitida.Content.ReadAsStringAsync()).DocumentoId.Should().Be(envio.DocumentoId);
+        confirmada.StatusCode.Should().Be(HttpStatusCode.OK, await confirmada.Content.ReadAsStringAsync());
+        (await confirmada.Content.ReadAsStringAsync()).Should().Contain("em_verificacao");
+        reemitidaDepois.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await reemitidaDepois.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_aguarda_envio");
+    }
+
+    [Fact(DisplayName = "Confirmar sem ETag devolve 422 e o documento segue aguardando o envio")]
+    public async Task Documento_ConfirmarSemEtag_Devolve422()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        using HttpResponseMessage criada = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
+        Envio envio = LerEnvio(await criada.Content.ReadAsStringAsync());
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            diogo, HttpMethod.Post, $"{Rota}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento/confirmacao", new { etag = " " });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_invalido");
+    }
+
+    [Fact(DisplayName = "Outro documento sem recusa anterior e leitura de documento não verificado devolvem 422 sem URL")]
+    public async Task Documento_NovoSemRecusaELeituraSemVerificacao_Recusam()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        using HttpResponseMessage criada = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
+        Envio envio = LerEnvio(await criada.Content.ReadAsStringAsync());
+        string rota = $"{Rota}/{envio.PerfilId}/versoes/{envio.VersaoId}/documento";
+
+        using HttpResponseMessage novo = await EnviarAsync(diogo, HttpMethod.Post, rota, new { tamanhoDoDocumento = 2048 });
+        using HttpResponseMessage leitura = await diogo.GetAsync(new Uri(rota, UriKind.Relative));
+
+        novo.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await novo.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_recusado");
+        leitura.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await leitura.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.documento_nao_verificado");
+    }
+
+    [Fact(DisplayName = "Ler o documento verificado devolve a URL sem cache e grava o acesso na trilha")]
+    public async Task Documento_LerVerificado_GravaATrilha()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid versao = await VersaoVigenteAsync(id);
+
+        using HttpResponseMessage resposta = await diogo.GetAsync(new Uri($"{Rota}/{id}/versoes/{versao}/documento", UriKind.Relative));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        resposta.Headers.CacheControl!.NoStore.Should().BeTrue();
+        (await ContarLeiturasAsync(id)).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Perfil de governança recusa versão e desativação com 422")]
+    public async Task Governanca_RecusaVersaoEDesativacao()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        Guid id = Guid.Parse(GestorDeAcessosId);
+
+        using HttpResponseMessage versao = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
+        using HttpResponseMessage desativacao = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
+
+        versao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        desativacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await desativacao.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.governanca_imutavel");
+        using JsonDocument perfil = await LerAsync(diogo, id);
+        perfil.RootElement.GetProperty("governanca").GetString().Should().Be("gestor-de-acessos");
+        perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("versaoId").ValueKind.Should().Be(JsonValueKind.Null);
+        perfil.RootElement.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().BePositive();
     }
 
     [Fact(DisplayName = "Desativar e reativar alternam o estado do perfil")]
@@ -238,20 +399,21 @@ public sealed class PerfilEndpointTests
         (await LerAsync(diogo, id)).RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Perfil de governança recusa edição e desativação com 422")]
-    public async Task Governanca_RecusaEdicaoEDesativacao()
+    [Fact(DisplayName = "A listagem resume o perfil com a presença de versão vigente e pendente")]
+    public async Task Listar_ResumeAsVersoes()
     {
         using HttpClient diogo = await ClienteDoGestorAsync();
-        Guid id = Guid.Parse(GestorDeAcessosId);
+        Guid comVigente = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid semVigente = await CriarAsync(diogo);
 
-        using HttpResponseMessage edicao = await EnviarAsync(
-            diogo, HttpMethod.Put, $"{Rota}/{id}", CorpoComId(id, Nome(), [ConsultarCatalogo]));
-        using HttpResponseMessage desativacao = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
+        JsonElement[] itens = await ListarTudoAsync(diogo);
 
-        edicao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        desativacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await desativacao.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.governanca_imutavel");
-        (await LerAsync(diogo, id)).RootElement.GetProperty("governanca").GetString().Should().Be("gestor-de-acessos");
+        JsonElement vigente = itens.Single(i => i.GetProperty("id").GetGuid() == comVigente);
+        vigente.GetProperty("temVersaoVigente").GetBoolean().Should().BeTrue();
+        vigente.GetProperty("temVersaoPendente").GetBoolean().Should().BeFalse();
+        JsonElement pendente = itens.Single(i => i.GetProperty("id").GetGuid() == semVigente);
+        pendente.GetProperty("temVersaoVigente").GetBoolean().Should().BeFalse();
+        pendente.GetProperty("temVersaoPendente").GetBoolean().Should().BeTrue();
     }
 
     [Fact(DisplayName = "Perfil inexistente devolve 404 com o código de erro")]
@@ -269,6 +431,9 @@ public sealed class PerfilEndpointTests
     [InlineData("GET", "")]
     [InlineData("POST", "")]
     [InlineData("DELETE", "/019a0000-0000-7000-8000-000000000001/ativacao")]
+    [InlineData("POST", "/019a0000-0000-7000-8000-000000000001/versoes")]
+    [InlineData("DELETE", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa")]
+    [InlineData("GET", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa/documento")]
     public async Task SemPermissao_Devolve403(string metodo, string sufixo)
     {
         using HttpClient isabella = await ClienteComPermissoesAsync("leandro.viana", ConsultarCatalogo);
@@ -306,20 +471,131 @@ public sealed class PerfilEndpointTests
             """).SingleAsync();
         int tabelas = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.tables
-            WHERE table_schema = 'autorizacao' AND table_name IN ('perfis', 'perfil_permissoes')
+            WHERE table_schema = 'autorizacao'
+              AND table_name IN ('perfis', 'perfil_permissoes', 'versoes_do_perfil', 'vigencias_do_perfil',
+                                 'documentos_da_versao', 'leituras_do_documento_da_versao', 'versao_do_perfil_permissoes')
             """).SingleAsync();
 
-        tabelas.Should().Be(2);
+        tabelas.Should().Be(7);
         fkParaFora.Should().Be(0);
     }
+
+    [Fact(DisplayName = "O banco barra duas versões vigentes, duas pendentes e duas vigências abertas do mesmo perfil")]
+    public async Task Banco_BarraDuplicidadeDeVigenciaEPendencia()
+    {
+        Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid vigente = await VersaoVigenteAsync(id);
+
+        Func<Task> outraVigente = () => InserirVersaoAsync(id, 2, "vigente");
+        Func<Task> vigenciaAberta = () => InserirVigenciaAsync(id, vigente);
+        await InserirVersaoAsync(id, 3, "pendente");
+        Func<Task> outraPendente = () => InserirVersaoAsync(id, 4, "pendente");
+
+        await outraVigente.Should().ThrowAsync<Npgsql.PostgresException>();
+        await vigenciaAberta.Should().ThrowAsync<Npgsql.PostgresException>();
+        await outraPendente.Should().ThrowAsync<Npgsql.PostgresException>();
+    }
+
+    [Fact(DisplayName = "O banco barra vigência que aponta para versão de outro perfil")]
+    public async Task Banco_BarraVigenciaDeVersaoDeOutroPerfil()
+    {
+        Guid um = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid outro = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid versaoDoOutro = await VersaoVigenteAsync(outro);
+        await EncerrarVigenciasAsync(um);
+
+        Func<Task> acao = () => InserirVigenciaAsync(um, versaoDoOutro);
+
+        await acao.Should().ThrowAsync<Npgsql.PostgresException>();
+    }
+
+    [Fact(DisplayName = "O banco barra dois documentos vivos na mesma versão e admite outro depois da recusa")]
+    public async Task Banco_BarraDoisDocumentosVivos()
+    {
+        using HttpClient diogo = await ClienteDoGestorAsync();
+        using HttpResponseMessage criada = await EnviarAsync(diogo, HttpMethod.Post, Rota, Corpo(Nome(), [ConsultarCatalogo]));
+        Envio envio = LerEnvio(await criada.Content.ReadAsStringAsync());
+
+        Func<Task> segundoVivo = () => InserirDocumentoAsync(envio, "aguardando_envio");
+        await ExecutarAsync("UPDATE autorizacao.documentos_da_versao SET situacao = 'recusado' WHERE id = {0}", envio.DocumentoId);
+
+        await InserirDocumentoAsync(envio, "aguardando_envio");
+        await segundoVivo.Should().ThrowAsync<Npgsql.PostgresException>();
+    }
+
+    private const string Descricao = "Perfil de teste do cadastro de acesso.";
 
     private static string Nome() => $"Perfil {Guid.NewGuid():N}";
 
     private static object Corpo(string nome, string[] permissoes) =>
-        new { nome, descricao = "Perfil de teste do cadastro de acesso.", permissoes };
+        new { nome, descricao = Descricao, permissoes, protocolo = "23479.000123/2026-11", tamanhoDoDocumento = 2048 };
 
-    private static object CorpoComId(Guid id, string nome, string[] permissoes) =>
-        new { id, nome, descricao = "Perfil de teste do cadastro de acesso.", permissoes };
+    private static Envio LerEnvio(string json)
+    {
+        using JsonDocument documento = JsonDocument.Parse(json);
+        JsonElement raiz = documento.RootElement;
+
+        return new Envio(raiz.GetProperty("perfilId").GetGuid(), raiz.GetProperty("versaoId").GetGuid(), raiz.GetProperty("documentoId").GetGuid());
+    }
+
+    private sealed record Envio(Guid PerfilId, Guid VersaoId, Guid DocumentoId);
+
+    private Task<Guid> SemearPerfilVigenteAsync(params string[] permissoes) =>
+        ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, permissoes);
+
+    private async Task<Guid> VersaoVigenteAsync(Guid perfilId)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+
+        return await db.VersoesDosPerfis.Where(v => v.PerfilId == perfilId && v.Situacao == SituacaoDaVersao.Vigente).Select(v => v.Id).SingleAsync();
+    }
+
+    private async Task<int> ContarLeiturasAsync(Guid perfilId)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+
+        return await db.LeiturasDosDocumentosDasVersoes.CountAsync(l => db.DocumentosDasVersoes.Any(d => d.Id == l.DocumentoId && d.PerfilId == perfilId));
+    }
+
+    private async Task ExecutarAsync(string sql, params object[] parametros)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
+    }
+
+    private Task InserirVersaoAsync(Guid perfilId, int numero, string situacao) =>
+        ExecutarAsync(
+            """
+            INSERT INTO autorizacao.versoes_do_perfil
+                (id, perfil_id, numero, nome, descricao, protocolo, situacao, criada_por_emissor, criada_por_sub, criada_em, created_at)
+            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'emissor', 'diogo.souza', now(), now())
+            """,
+            Guid.CreateVersion7(), perfilId, numero, Nome(), situacao);
+
+    private Task InserirVigenciaAsync(Guid perfilId, Guid versaoId) =>
+        ExecutarAsync(
+            "INSERT INTO autorizacao.vigencias_do_perfil (id, perfil_id, versao_id, desde, created_at) VALUES ({0}, {1}, {2}, now(), now())",
+            Guid.CreateVersion7(), perfilId, versaoId);
+
+    private Task EncerrarVigenciasAsync(Guid perfilId) =>
+        ExecutarAsync("UPDATE autorizacao.vigencias_do_perfil SET ate = now() WHERE perfil_id = {0}", perfilId);
+
+    private Task InserirDocumentoAsync(Envio envio, string situacao) =>
+        ExecutarAsync(
+            "INSERT INTO autorizacao.documentos_da_versao (id, versao_id, perfil_id, situacao, tamanho_declarado, created_at) VALUES ({0}, {1}, {2}, {3}, 10, now())",
+            Guid.CreateVersion7(), envio.VersaoId, envio.PerfilId, situacao);
+
+    private static async Task<JsonElement[]> ListarTudoAsync(HttpClient client)
+    {
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri($"{Rota}?limit=100", UriKind.Relative));
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        using JsonDocument pagina = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        JsonElement itens = pagina.RootElement.ValueKind == JsonValueKind.Array ? pagina.RootElement : pagina.RootElement.GetProperty("items");
+
+        return [.. itens.EnumerateArray().Select(i => i.Clone())];
+    }
 
     private async Task SemearConcessaoAsync(Guid perfilId, EscopoDaConcessao escopo)
     {
@@ -345,7 +621,7 @@ public sealed class PerfilEndpointTests
         using HttpResponseMessage resposta = await EnviarAsync(
             client, HttpMethod.Post, Rota, Corpo(Nome(), permissoes ?? [ConsultarCatalogo]));
         resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-        return Guid.Parse(resposta.Headers.Location!.Segments[^1]);
+        return LerEnvio(await resposta.Content.ReadAsStringAsync()).PerfilId;
     }
 
     private static async Task<JsonDocument> LerAsync(HttpClient client, Guid id)
@@ -356,7 +632,7 @@ public sealed class PerfilEndpointTests
     }
 
     private static async Task<HttpResponseMessage> EnviarAsync(
-        HttpClient client, HttpMethod metodo, string url, object? corpo = null)
+        HttpClient client, HttpMethod metodo, string url, object? corpo = null, string? chave = null)
     {
         using HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
         if (corpo is not null)
@@ -366,7 +642,7 @@ public sealed class PerfilEndpointTests
 
         if (metodo != HttpMethod.Get)
         {
-            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+            request.Headers.Add("Idempotency-Key", chave ?? Guid.NewGuid().ToString());
         }
 
         return await client.SendAsync(request);

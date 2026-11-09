@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -14,7 +15,8 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 /// <summary>
 /// Registra o resultado da fila de resultados da Autorização (ADR-0146). A fila é uma só para os PDFs do módulo e o
 /// resultado traz só o id do arquivo, então o handler despacha por consulta: procura a instalação por esse id e, não a
-/// achando, o anexo de pedido; nenhum dos dois, log e descarte. Os ids são UUID v7 de tabelas distintas, e não colidem.
+/// achando, o anexo de pedido e, depois, o documento de versão de perfil; nenhum dos três, log e descarte. Os ids são UUID v7
+/// de tabelas distintas, e não colidem.
 /// </summary>
 /// <remarks>
 /// A fila entrega ao menos uma vez, então o resultado de quem já saiu de "em verificação" — repetido, ou depois do fim
@@ -29,6 +31,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
         IInstalacaoRepository instalacoes,
         IPedidoDeConcessaoRepository pedidos,
         IPerfilRepository perfis,
+        ResultadoDoDocumentoDaVersao versoes,
         AvisosDoPedido avisos,
         IAutorizacaoUnitOfWork unitOfWork,
         TimeProvider clock,
@@ -39,6 +42,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
         ArgumentNullException.ThrowIfNull(instalacoes);
         ArgumentNullException.ThrowIfNull(pedidos);
         ArgumentNullException.ThrowIfNull(perfis);
+        ArgumentNullException.ThrowIfNull(versoes);
         ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(clock);
@@ -66,8 +70,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
             AnexoDoPedido? anexo = await pedidos.ObterAnexoAsync(resultado.ArquivoId, cancellationToken).ConfigureAwait(false);
             if (anexo is null)
             {
-                LogArquivoInexistente(logger, resultado.ArquivoId);
-                return [];
+                return await RegistrarDocumentoDaVersaoAsync(resultado, versoes, logger, cancellationToken).ConfigureAwait(false);
             }
 
             SituacaoDoAnexo situacao = anexo.Situacao;
@@ -98,6 +101,28 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
         return mensagens;
     }
 
+    // O documento de versão do perfil grava por conta própria, sob a trava do perfil; aqui só se registra o desfecho.
+    private static async Task<IEnumerable<EnviarEmail>> RegistrarDocumentoDaVersaoAsync(
+        ResultadoDaVerificacaoDeArquivo resultado,
+        ResultadoDoDocumentoDaVersao versoes,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        switch (await versoes.RegistrarAsync(resultado, cancellationToken).ConfigureAwait(false))
+        {
+            case DesfechoDoResultadoDaVersao.Desconhecido:
+                LogArquivoInexistente(logger, resultado.ArquivoId);
+                break;
+            case DesfechoDoResultadoDaVersao.Ignorado:
+                LogDocumentoDaVersaoIgnorado(logger, resultado.ArquivoId);
+                break;
+            default:
+                break;
+        }
+
+        return [];
+    }
+
     private static void Validar(ResultadoDaVerificacaoDeArquivo resultado)
     {
         switch (resultado.Veredicto)
@@ -119,11 +144,14 @@ public static partial class RegistrarResultadoDaVerificacaoDoDocumentoDaAutoriza
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Resultado da verificação do documento {ArquivoId} da Autorização descartado: nem a instalação nem o anexo de pedido existem")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Resultado da verificação do documento {ArquivoId} da Autorização descartado: nem a instalação, nem o anexo de pedido, nem o documento de versão de perfil existem")]
     private static partial void LogArquivoInexistente(ILogger logger, Guid arquivoId);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do documento da instalação {InstalacaoId} ignorado: a instalação está {Situacao}")]
     private static partial void LogResultadoIgnorado(ILogger logger, Guid instalacaoId, SituacaoDaInstalacao situacao);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do documento da versão {DocumentoId} ignorado: o documento não esperava veredicto")]
+    private static partial void LogDocumentoDaVersaoIgnorado(ILogger logger, Guid documentoId);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do anexo do pedido {AnexoId} ignorado: o anexo está {Situacao}")]
     private static partial void LogAnexoIgnorado(ILogger logger, Guid anexoId, SituacaoDoAnexo situacao);

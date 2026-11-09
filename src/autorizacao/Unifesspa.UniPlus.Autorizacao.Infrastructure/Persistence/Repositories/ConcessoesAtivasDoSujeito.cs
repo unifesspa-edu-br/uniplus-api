@@ -55,9 +55,13 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
                 c.UnidadeId,
                 c.EscopoTipo,
                 c.ValidaAte,
-                Permissoes = p.Permissoes.Select(x => x.Codigo).ToList(),
             })
             .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // A concessão vale pela composição em vigor do perfil: o perfil comum sem versão vigente não concede nada.
+        Dictionary<Guid, List<string>> permissoes = await _context
+            .PermissoesEmVigorAsync([.. lidas.Select(c => c.PerfilId).Distinct()], cancellationToken)
             .ConfigureAwait(false);
 
         _concessoesLidas =
@@ -69,7 +73,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
                 c.UnidadeId,
                 c.EscopoTipo == TipoDeEscopo.Instituicao,
                 c.ValidaAte,
-                c.Permissoes)),
+                permissoes.GetValueOrDefault(c.PerfilId) ?? [])),
         ];
         _pessoaLida = pessoa;
 

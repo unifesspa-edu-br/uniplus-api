@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -246,18 +247,11 @@ public sealed class AvisosDoPedidoTests
         new(["selecao:processos:consultar"], sensivel ? "sensivel" : "interno", sensivel, null);
 
     private static Perfil PerfilComum(bool deUnidade = false) =>
-        Perfil.Criar(
-            "Análise de atendimento",
-            "Analisa os pedidos de atendimento.",
-            [deUnidade ? "selecao:processos:consultar" : "geral:pedidos:consultar"],
-            new Catalogo()).Value!;
+        PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", [deUnidade ? "selecao:processos:consultar" : "geral:pedidos:consultar"], new Catalogo());
 
-    private static Perfil PerfilDeGovernanca()
-    {
-        Perfil perfil = PerfilComum();
-        typeof(Perfil).GetProperty(nameof(Perfil.Governanca))!.SetValue(perfil, TipoDeGovernanca.GestorDeAcessos);
-        return perfil;
-    }
+    private static Perfil PerfilDeGovernanca() =>
+        PerfisDeTeste.DeGovernanca(
+            "Análise de atendimento", "Analisa os pedidos de atendimento.", ["geral:pedidos:consultar"], new Catalogo());
 
     private sealed class Link : ILinkDoPedido
     {
@@ -282,6 +276,8 @@ public sealed class AvisosDoPedidoTests
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:", StringComparison.Ordinal);
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 
     private sealed class ConcessoesComTitulares(Guid perfilEsperado, params TitularComEmail[] titulares) : IConcessaoRepository

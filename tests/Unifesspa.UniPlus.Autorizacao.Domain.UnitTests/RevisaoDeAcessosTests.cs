@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class RevisaoDeAcessosTests
@@ -140,7 +141,7 @@ public sealed class RevisaoDeAcessosTests
     private static Concessao Concedida() =>
         Concessao.Conceder(
             Leandro,
-            Perfil.Criar("Análise de atendimento", "Descrição válida.", ["selecao:processos:consultar"], Catalogo).Value!,
+            PerfisDeTeste.Vigente("Análise de atendimento", "Descrição válida.", ["selecao:processos:consultar"], Catalogo),
             EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
             new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
             Diogo,
@@ -156,5 +157,7 @@ public sealed class RevisaoDeAcessosTests
         public bool ReservadaAGovernanca(string codigo) => false;
 
         public bool DeUnidade(string codigo) => codigo.StartsWith("selecao:processos:", StringComparison.Ordinal);
+
+        public ClassificacaoDeProtecao Sensibilidade(string codigo) => ClassificacaoDeProtecao.Interno;
     }
 }

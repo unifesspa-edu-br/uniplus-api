@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 
 /// <summary>
@@ -25,6 +26,14 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
 
         services.AddScoped<AvisosDoPedido>();
+
+        services.AddScoped<AutoriaDaOperacao>();
+        services.AddScoped<EnvioDoDocumento>();
+        services.AddScoped<LeitorDoContextoDaVersao>();
+        services.AddScoped<OperacaoSobreOPerfil>();
+        services.AddScoped<VersoesDoPerfil>();
+        services.AddScoped<DocumentosDasVersoes>();
+        services.AddScoped<ResultadoDoDocumentoDaVersao>();
 
         return services;
     }

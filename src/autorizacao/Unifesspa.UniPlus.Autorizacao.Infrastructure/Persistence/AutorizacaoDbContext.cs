@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// <see cref="DbContext"/> do módulo Autorização, no schema <c>autorizacao</c> do banco único,
-/// naming snake_case (ADR-0054). Hospeda os perfis de acesso, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões e anexos, as revisões periódicas dos acessos e o cache de Idempotency-Key
+/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões e anexos, as revisões periódicas dos acessos e o cache de Idempotency-Key
 /// (ADR-0027) adjacente, que permite gravação atômica com o outbox.
 /// </summary>
 public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
@@ -23,6 +23,14 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
     }
 
     public DbSet<Perfil> Perfis => Set<Perfil>();
+
+    public DbSet<VersaoDoPerfil> VersoesDosPerfis => Set<VersaoDoPerfil>();
+
+    public DbSet<VigenciaDoPerfil> VigenciasDosPerfis => Set<VigenciaDoPerfil>();
+
+    public DbSet<DocumentoDaVersao> DocumentosDasVersoes => Set<DocumentoDaVersao>();
+
+    public DbSet<LeituraDoDocumentoDaVersao> LeiturasDosDocumentosDasVersoes => Set<LeituraDoDocumentoDaVersao>();
 
     public DbSet<Concessao> Concessoes => Set<Concessao>();
 
