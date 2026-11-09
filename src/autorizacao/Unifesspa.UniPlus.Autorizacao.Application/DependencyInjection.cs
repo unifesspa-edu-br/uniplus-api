@@ -44,10 +44,16 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<OperacaoSobreOPerfil>();
         services.AddScoped<VersoesDoPerfil>();
         services.AddScoped<PropostasDeVersao>();
-        services.AddScoped<FilaDeVersoesDaEtapa>();
         services.AddScoped<DocumentosDasVersoes>();
         services.AddScoped<EfeitosDaTrocaDeVigencia>();
         services.AddScoped<ResultadoDoDocumentoDaVersao>();
+
+        AdicionarGovernancaDaVersao(services);
+    }
+
+    private static void AdicionarGovernancaDaVersao(IServiceCollection services)
+    {
+        services.AddScoped<FilaDeVersoesDaEtapa>();
         services.AddScoped<AprovacoesDaVersao>();
         services.AddScoped<CancelamentoDaVersao>();
         services.AddScoped<RemocaoDePermissoes>();
