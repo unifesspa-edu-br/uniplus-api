@@ -162,6 +162,21 @@ public sealed class PerfilAprovacaoTests
         }
     }
 
+    [Fact(DisplayName = "No perfil desativado, a versão expirada responde versão expirada ao novo documento e à reemissão")]
+    public void VersaoExpirada_PerfilDesativado_RecusaPeloPrazo()
+    {
+        Perfil perfil = PendenteVerificada([Consultar]);
+        Guid versaoId = perfil.VersaoPendente!.Id;
+        perfil.Desativar();
+        perfil.MaterializarExpiracao(Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias)).Should().BeTrue();
+
+        for (int tentativa = 0; tentativa < 2; tentativa++)
+        {
+            perfil.NovoDocumento(versaoId, 1024).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            perfil.DocumentoParaReemitirEnvio(versaoId).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+        }
+    }
+
     [Fact(DisplayName = "O prazo conta da criação e não reinicia na troca de etapa")]
     public void Aprovar_TrocaDeEtapa_NaoReiniciaOPrazo()
     {

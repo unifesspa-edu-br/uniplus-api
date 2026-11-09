@@ -96,6 +96,10 @@ public sealed partial class Perfil
     private DocumentoDaVersao? DocumentoPorId(Guid documentoId) =>
         _versoes.SelectMany(static v => v.Documentos).FirstOrDefault(d => d.Id == documentoId);
 
+    /// <summary>
+    /// A versão expirada responde pelo prazo mesmo em perfil desativado; nas demais, o perfil desativado recusa antes
+    /// da situação da versão.
+    /// </summary>
     private Result<VersaoDoPerfil> VersaoPendenteComPerfilAtivo(Guid versaoId)
     {
         Result<VersaoDoPerfil> versao = ObterVersao(versaoId);
@@ -104,11 +108,12 @@ public sealed partial class Perfil
             return versao;
         }
 
-        if (!Ativo)
-        {
-            return Result<VersaoDoPerfil>.Failure(PerfilErros.Inativo());
-        }
+        VersaoDoPerfil alvo = versao.Value!;
+        DomainError? recusa = alvo.Expirada ? PerfilErros.VersaoExpirada()
+            : !Ativo ? PerfilErros.Inativo()
+            : alvo.Pendente ? null
+            : alvo.RecusaPorNaoPendente();
 
-        return versao.Value!.Pendente ? versao : Result<VersaoDoPerfil>.Failure(versao.Value.RecusaPorNaoPendente());
+        return recusa is null ? versao : Result<VersaoDoPerfil>.Failure(recusa);
     }
 }

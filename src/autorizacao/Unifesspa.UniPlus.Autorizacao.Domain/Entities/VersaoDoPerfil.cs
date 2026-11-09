@@ -87,6 +87,8 @@ public sealed partial class VersaoDoPerfil : EntityBase
 
     public bool Pendente => Situacao == SituacaoDaVersao.Pendente;
 
+    public bool Expirada => Situacao == SituacaoDaVersao.Expirada;
+
     // Construtor de materialização do EF Core.
     private VersaoDoPerfil()
     {

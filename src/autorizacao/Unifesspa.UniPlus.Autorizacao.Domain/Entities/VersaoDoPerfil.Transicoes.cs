@@ -38,7 +38,7 @@ public sealed partial class VersaoDoPerfil
 
     /// <summary>A recusa de operar uma versão que não está pendente: o prazo, se ela expirou; senão, a situação dela.</summary>
     internal DomainError RecusaPorNaoPendente() =>
-        Situacao == SituacaoDaVersao.Expirada ? PerfilErros.VersaoExpirada() : PerfilErros.VersaoNaoPendente();
+        Expirada ? PerfilErros.VersaoExpirada() : PerfilErros.VersaoNaoPendente();
 
     internal void RegistrarDecisao(DecisaoDaVersao decisao) => _decisoes.Add(decisao);
 
