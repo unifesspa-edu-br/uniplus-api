@@ -117,15 +117,6 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
     }
 
-    private Task<ITrackedSession> EntregarPelaFilaAsync(Guid documentoId) =>
-        Fixture.Factory.Services.GetRequiredService<IHost>()
-            .TrackActivity()
-            .IncludeExternalTransports()
-            .Timeout(TimeSpan.FromSeconds(60))
-            .ExecuteAndWaitAsync(bus => bus
-                .EndpointFor(FilasDaVerificacao.ResultadosAutorizacao)
-                .SendAsync(ResultadoDe(documentoId, VeredictoDaVerificacao.Verificado)));
-
     private async Task<(Envio Original, Envio Ampliada)> PerfilComVersaoAmpliadaEmVerificacaoAsync()
     {
         await ResetarAsync();
