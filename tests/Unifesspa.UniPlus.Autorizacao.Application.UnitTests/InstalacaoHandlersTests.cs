@@ -53,7 +53,7 @@ public sealed class InstalacaoHandlersTests
         ResultadoDaVerificacaoDeArquivo resultado = new(Guid.NewGuid(), veredicto, MotivoDaRecusa.NaoSeAplica, hash, null, null);
 
         Func<Task> acao = () => RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, DoublesDeAvisos.Receptores(new RepositorioSemInstalacao(), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel()), NullLogger.Instance, CancellationToken.None);
 
         await acao.Should().ThrowAsync<ResultadoDaVerificacaoInvalidoException>();
     }
@@ -65,7 +65,7 @@ public sealed class InstalacaoHandlersTests
             Guid.NewGuid(), VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioSemInstalacao(), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, DoublesDeAvisos.Receptores(new RepositorioSemInstalacao(), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel()), NullLogger.Instance, CancellationToken.None);
     }
 
     [Fact(DisplayName = "Resultado repetido de instalação que já saiu da verificação é ignorado sem gravar")]
@@ -79,7 +79,7 @@ public sealed class InstalacaoHandlersTests
             instalacao.Id, VeredictoDaVerificacao.Recusado, MotivoDaRecusa.PdfComSenha, null, null, null);
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), new UnidadeDeTrabalhoIntocavel(), TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, DoublesDeAvisos.Receptores(new RepositorioComInstalacao(instalacao), new PedidosComAnexo(null), new UnidadeDeTrabalhoIntocavel()), NullLogger.Instance, CancellationToken.None);
 
         instalacao.Situacao.Should().Be(Domain.Enums.SituacaoDaInstalacao.AguardandoDocumento);
     }

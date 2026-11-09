@@ -126,23 +126,14 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         instalacao.ConfirmarDocumento("\"etag\"");
 
         await RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            ResultadoVerificado(instalacao.Id),
-            new InstalacaoNaMemoria(instalacao),
-            new PedidosQueNaoDevemSerConsultados(),
-            new DoublesDeAvisos.PerfilQualquer(),
-            DoublesDeAvisos.Versoes(),
-            DoublesDeAvisos.Avisos(),
-            new UnidadeDeTrabalhoQueConta(),
-            TimeProvider.System,
-            NullLogger.Instance,
-            CancellationToken.None);
+            ResultadoVerificado(instalacao.Id), DoublesDeAvisos.Receptores(new InstalacaoNaMemoria(instalacao), new PedidosQueNaoDevemSerConsultados(), new UnidadeDeTrabalhoQueConta()), NullLogger.Instance, CancellationToken.None);
 
         instalacao.Situacao.Should().Be(SituacaoDaInstalacao.DocumentoVerificado);
     }
 
     private static Task<IEnumerable<EnviarEmail>> Despachar(ResultadoDaVerificacaoDeArquivo resultado, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
         RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
-            resultado, new InstalacaoNaMemoria(null), pedidos, new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Versoes(), DoublesDeAvisos.Avisos(), unidade, TimeProvider.System, NullLogger.Instance, CancellationToken.None);
+            resultado, DoublesDeAvisos.Receptores(new InstalacaoNaMemoria(null), pedidos, unidade), NullLogger.Instance, CancellationToken.None);
 
     private static ResultadoDaVerificacaoDeArquivo ResultadoVerificado(Guid id) =>
         new(id, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, Sha, 1024, FormatoDoArquivo.Pdf);
