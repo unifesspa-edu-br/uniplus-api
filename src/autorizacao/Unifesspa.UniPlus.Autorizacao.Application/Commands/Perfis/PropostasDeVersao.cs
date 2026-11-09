@@ -56,22 +56,27 @@ public sealed class PropostasDeVersao
         }
 
         Result<ConteudoDaVersao> conteudo = Validar(dados);
+        if (Recusa(conteudo, dados.CategoriaDaRemocao) is { } recusa)
+        {
+            return Recusada(recusa);
+        }
+
+        return await _operacao.ExecutarComAvisosAsync(
+            perfilId,
+            (perfil, contexto) => ProporNoPerfilAsync(perfil, Proposta(conteudo.Value!, dados, autoria, contexto.Agora), cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Result<ResultadoDaPropostaDto>? Recusa(Result<ConteudoDaVersao> conteudo, string? categoriaDaRemocao)
+    {
         if (conteudo.IsFailure)
         {
-            return Recusada(Result<ResultadoDaPropostaDto>.ValidationFailure(conteudo.Errors));
+            return Result<ResultadoDaPropostaDto>.ValidationFailure(conteudo.Errors);
         }
 
-        if (dados.CategoriaDaRemocao is not null && CategoriaDaRemocaoCodigo.TentarLer(dados.CategoriaDaRemocao) is null)
-        {
-            return Recusada(Result<ResultadoDaPropostaDto>.Failure(PerfilErros.RemocaoInvalida()));
-        }
-
-        return await _operacao
-            .ExecutarComAvisosAsync(
-                perfilId,
-                (perfil, contexto) => ProporNoPerfilAsync(perfil, Proposta(conteudo.Value!, dados, autoria, contexto.Agora), cancellationToken),
-                cancellationToken)
-            .ConfigureAwait(false);
+        return categoriaDaRemocao is not null && CategoriaDaRemocaoCodigo.TentarLer(categoriaDaRemocao) is null
+            ? Result<ResultadoDaPropostaDto>.Failure(PerfilErros.RemocaoInvalida())
+            : null;
     }
 
     private static GravacaoDaOperacao<ResultadoDaPropostaDto> Recusada(Result<ResultadoDaPropostaDto> resultado) =>
