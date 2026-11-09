@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
+using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis;
 
 public sealed class ResultadoDoDocumentoDaVersaoTests
@@ -16,6 +17,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
     private const string Sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     private static readonly CatalogoDeTeste Catalogo = new();
+    private static readonly DateTimeOffset Prazo = PerfisDeTeste.Instante.AddDays(15);
 
     [Fact(DisplayName = "Veredicto verificado só grava o documento e o hash: a versão segue pendente até a aprovação")]
     public async Task Verificado_SoGravaODocumento()
@@ -47,7 +49,36 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         perfil.VersaoVigente.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Resultado repetido é ignorado e não grava de novo")]
+    [Fact(DisplayName = "Veredicto verificado depois do prazo expira a versão, que não entra em vigor, e registra o documento")]
+    public async Task Verificado_DepoisDoPrazo_ExpiraARegistraODocumento()
+    {
+        (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
+        Cenario cenario = new(perfil, Prazo.AddDays(1));
+
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
+
+        desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
+        perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Expirada);
+        perfil.VersaoVigente.Should().BeNull();
+        cenario.Unidade.Gravacoes.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Veredicto ignorado depois do prazo grava a expiração")]
+    public async Task Ignorado_DepoisDoPrazo_GravaAExpiracao()
+    {
+        (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
+        documento.RegistrarVerificado(Sha, PerfisDeTeste.Instante);
+        Cenario cenario = new(perfil, Prazo);
+
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
+
+        desfecho.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
+        perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Expirada);
+        cenario.Unidade.Gravacoes.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Resultado repetido é ignorado e não altera o documento")]
     public async Task Repetido_Ignora()
     {
         (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
@@ -57,7 +88,8 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
-        cenario.Unidade.Gravacoes.Should().Be(1);
+        documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
+        perfil.VersaoPendente.Should().NotBeNull();
     }
 
     [Fact(DisplayName = "Veredicto tardio de versão cancelada só grava o documento")]
@@ -103,11 +135,15 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
 
     private sealed class Cenario
     {
-        public Cenario(params Perfil[] perfis)
+        public Cenario(Perfil perfil)
+            : this(perfil, PerfisDeTeste.Instante.AddHours(1))
+        {
+        }
+
+        public Cenario(Perfil perfil, DateTimeOffset agora)
         {
             Unidade = new UnidadeDeTrabalho();
-            PerfisNaMemoria repositorio = new(perfis);
-            Resultado = new ResultadoDoDocumentoDaVersao(repositorio, Unidade, TimeProvider.System);
+            Resultado = DoublesDeAvisos.Versoes(new PerfisNaMemoria(perfil), Unidade, new RelogioFixo(agora));
         }
 
         public UnidadeDeTrabalho Unidade { get; }
