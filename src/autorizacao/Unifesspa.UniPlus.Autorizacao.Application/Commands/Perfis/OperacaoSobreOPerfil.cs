@@ -111,6 +111,16 @@ public sealed class OperacaoSobreOPerfil
         CancellationToken cancellationToken) =>
         ExecutarNaTravaAsync(perfilId, operacao, SalvarComChaveAsync, cancellationToken);
 
+    /// <summary>
+    /// A mesma operação com avisos, sem chave de idempotência, como a rotina da janela e a materialização que antecede
+    /// uma operação: o conflito de concorrência não é capturado e propaga.
+    /// </summary>
+    public Task<GravacaoDaOperacao<T>> ExecutarComAvisosSemChaveAsync<T>(
+        Guid perfilId,
+        Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
+        CancellationToken cancellationToken) =>
+        ExecutarNaTravaAsync(perfilId, operacao, SalvarAsync, cancellationToken);
+
     private async Task<GravacaoDaOperacao<T>> ExecutarNaTravaAsync<T>(
         Guid perfilId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,

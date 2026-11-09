@@ -26,6 +26,19 @@ public sealed class OperacaoSobreOPerfilTests
         unidade.Descartes.Should().Be(0);
     }
 
+    [Fact(DisplayName = "A operação com avisos e sem chave, como a rotina da janela, deixa o conflito de concorrência propagar")]
+    public async Task ComAvisosSemChave_ConflitoDeConcorrencia_Propaga()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
+        OperacaoSobreOPerfil operacao = Operacao(perfil, out UnidadeDeTrabalho unidade);
+
+        Func<Task> chamada = () => operacao.ExecutarComAvisosSemChaveAsync(
+            perfil.Id, (_, _) => Task.FromResult(new DesfechoDaOperacao<bool>(Result<bool>.Success(true))), CancellationToken.None);
+
+        await chamada.Should().ThrowAsync<Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException>();
+        unidade.Descartes.Should().Be(0);
+    }
+
     [Fact(DisplayName = "Com chave de idempotência o conflito de concorrência vira recusa e descarta o rastreamento")]
     public async Task ComChave_ConflitoDeConcorrencia_DevolveRecusa()
     {
