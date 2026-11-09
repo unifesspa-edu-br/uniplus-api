@@ -42,6 +42,7 @@ public static class AutorizacaoModuleRegistration
         services.AddAutorizacaoApplication();
         services.AddAutorizacaoInfrastructure();
         services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
+        services.AddHostedService<JanelasDeMigracaoHostedService>();
 
         // Migrations aplicadas no StartAsync, ANTES do runtime Wolverine (invariante de ordem).
         services.AddDbContextMigrationsOnStartup<AutorizacaoDbContext>();

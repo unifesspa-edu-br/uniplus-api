@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.ArchTests.Fixtures;
 using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.API.Controllers;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
@@ -67,6 +68,13 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Cancelar))] = typeof(CancelarVersaoDoPerfilCommand),
         [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Fila))] = typeof(ListarFilaDeVersoesQuery),
         [Acao(typeof(VersoesDoPerfilController), nameof(VersoesDoPerfilController.Ler))] = typeof(LerDocumentoDaVersaoCommand),
+        // A janela de migração: o lote, a retida e o encerramento são da gestão de acessos, a etapa da proteção de dados é
+        // da proteção de dados, e a leitura é de quem mantém perfis ou aprova por qualquer das duas etapas.
+        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Obter))] = typeof(ObterJanelaDoPerfilQuery),
+        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.EnviarLote))] = typeof(EnviarLoteDaJanelaCommand),
+        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirRetida))] = typeof(DecidirRetidaDaJanelaCommand),
+        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirProtecaoDeDados))] = typeof(DecidirEtapaDaProtecaoDaJanelaCommand),
+        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Encerrar))] = typeof(EncerrarJanelaDoPerfilCommand),
         // A revisão dos acessos: a permissão que vale depende da governança que decide o item, e a leitura é de quem
         // conduz a revisão ou de quem revê os acessos da proteção de dados.
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Abrir))] = typeof(AbrirRevisaoDeAcessosCommand),

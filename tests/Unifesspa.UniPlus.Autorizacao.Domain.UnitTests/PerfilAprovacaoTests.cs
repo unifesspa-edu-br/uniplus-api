@@ -78,7 +78,7 @@ public sealed class PerfilAprovacaoTests
     }
 
     [Fact(DisplayName = "Ter concessão do perfil não impede decidir e a trilha registra o fato")]
-    public void Aprovar_DecisorComConcessao_RegistraNaTrilha()
+    public void Aprovar_DecisorComJanelaAberta_RegistraNaTrilha()
     {
         Perfil perfil = PendenteVerificada([Consultar]);
 
@@ -269,18 +269,12 @@ public sealed class PerfilAprovacaoTests
             .Erro!.Code.Should().Be(PerfilErrorCodes.NomeDuplicado);
     }
 
-    [Fact(DisplayName = "Acréscimo a perfil com concessão é recusado na aprovação, protegido ou não")]
-    public void Aprovar_AcrescimoComConcessao_RecusaTransitoria()
+    [Fact(DisplayName = "Acréscimo a perfil com concessão entra em vigor na aprovação, protegido ou não")]
+    public void Aprovar_AcrescimoComConcessao_EntraEmVigor()
     {
         Perfil interno = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], _catalogo);
         Verificada(interno, [Consultar, Publicar]);
-        Perfil protegido = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], _catalogo);
-        Verificada(protegido, [Consultar, Dados]);
 
-        Decidir(interno, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, contexto: ComConcessao)
-            .Erro!.Code.Should().Be(PerfilErrorCodes.AcrescimoComConcessaoAtiva);
-        Decidir(protegido, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, contexto: ComConcessao)
-            .Erro!.Code.Should().Be(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados);
         Decidir(interno, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora).Troca.Should().NotBeNull();
     }
 
@@ -333,8 +327,7 @@ public sealed class PerfilAprovacaoTests
         perfil.UltimaVersaoEncerradaSemVigor!.Situacao.Should().Be(SituacaoDaVersao.Expirada);
     }
 
-    private static readonly ContextoDaVersao ComConcessao = new(NomeEmUsoPorOutroPerfil: false, TemConcessaoNaoRevogada: true);
-    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, TemConcessaoNaoRevogada: false);
+    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, JanelaDeMigracaoAberta: false);
 
     private Perfil PendenteVerificada(string[] permissoes)
     {

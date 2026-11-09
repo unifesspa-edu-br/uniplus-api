@@ -72,6 +72,7 @@ public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBas
         Guid perfil = await PerfilComConcessaoAsync([A, B]);
 
         await TrocarComposicaoAsync(perfil, A, B, C);
+        await DescartarJanelasAsync();
         await TrocarComposicaoAsync(perfil, A, C);
         await TrocarComposicaoAsync(perfil, A, B, C);
 

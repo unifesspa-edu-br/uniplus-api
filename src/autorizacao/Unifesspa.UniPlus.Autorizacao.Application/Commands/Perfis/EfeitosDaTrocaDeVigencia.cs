@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -13,28 +14,36 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// chama, de modo que não há instante em que um pedido possa ser aprovado contra uma versão já encerrada.
 /// </summary>
 /// <remarks>
-/// A versão que acrescenta permissão deixa as concessões onde estão: quem já tem o perfil não recebe o acréscimo sem
-/// aprovação, e a regra de decisão de acesso já impede que ele chegue por outro caminho. Só a versão que sai migra; a
-/// concessão presa a uma versão ainda mais antiga continua nela.
+/// A versão que acrescenta permissão deixa as concessões onde estão e abre a janela de migração: quem já tem o perfil
+/// não recebe o acréscimo sem decisão, e a regra de decisão de acesso já impede que ele chegue por outro caminho. Só a
+/// versão que sai migra; a concessão presa a uma versão ainda mais antiga continua nela. A remoção dentro da janela
+/// leva o destino das migrações para a versão reduzida.
 /// </remarks>
 public sealed class EfeitosDaTrocaDeVigencia
 {
     private readonly IConcessaoRepository _concessoes;
     private readonly IPedidoDeConcessaoRepository _pedidos;
     private readonly AvisosDoPedido _avisos;
+    private readonly EfeitosDaJanelaNaTroca _janela;
     private readonly TimeProvider _clock;
 
     public EfeitosDaTrocaDeVigencia(
-        IConcessaoRepository concessoes, IPedidoDeConcessaoRepository pedidos, AvisosDoPedido avisos, TimeProvider clock)
+        IConcessaoRepository concessoes,
+        IPedidoDeConcessaoRepository pedidos,
+        AvisosDoPedido avisos,
+        EfeitosDaJanelaNaTroca janela,
+        TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(pedidos);
         ArgumentNullException.ThrowIfNull(avisos);
+        ArgumentNullException.ThrowIfNull(janela);
         ArgumentNullException.ThrowIfNull(clock);
 
         _concessoes = concessoes;
         _pedidos = pedidos;
         _avisos = avisos;
+        _janela = janela;
         _clock = clock;
     }
 
@@ -49,12 +58,27 @@ public sealed class EfeitosDaTrocaDeVigencia
         VersaoDoPerfil anterior = troca.Anterior
             ?? throw new ArgumentException("A primeira vigência do perfil não tem efeitos a aplicar.", nameof(troca));
 
-        if (!troca.TemAcrescimo)
+        DateTimeOffset agora = _clock.GetUtcNow();
+        JanelaDeMigracao? aberta = await _janela.MaterializarSeVencidaAsync(perfil, agora, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> daAbertura = await ConcessoesDaTrocaAsync(perfil, troca, aberta, agora, cancellationToken).ConfigureAwait(false);
+
+        return [.. daAbertura, .. await ReavaliarPedidosAsync(perfil, troca, anterior, cancellationToken).ConfigureAwait(false)];
+    }
+
+    // A versão com acréscimo abre a janela; a que não acrescenta leva as concessões da que saiu para a nova e, dentro de
+    // uma janela, faz da nova o destino das migrações.
+    private async Task<IReadOnlyList<EnviarEmail>> ConcessoesDaTrocaAsync(
+        Perfil perfil, TrocaDeVigencia troca, JanelaDeMigracao? aberta, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        if (troca.TemAcrescimo)
         {
-            await MigrarConcessoesAsync(perfil.Id, anterior, troca.Nova, cancellationToken).ConfigureAwait(false);
+            return await _janela.AbrirAsync(perfil, troca, agora, cancellationToken).ConfigureAwait(false);
         }
 
-        return await ReavaliarPedidosAsync(perfil, troca, anterior, cancellationToken).ConfigureAwait(false);
+        await MigrarConcessoesAsync(perfil.Id, troca.Anterior!, troca.Nova, cancellationToken).ConfigureAwait(false);
+        aberta?.RedirecionarAlvo(troca.Nova.Id);
+
+        return [];
     }
 
     private async Task MigrarConcessoesAsync(

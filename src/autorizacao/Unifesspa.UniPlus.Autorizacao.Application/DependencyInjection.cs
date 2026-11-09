@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
@@ -61,6 +62,23 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<ExpiracaoDasVersoesPendentes>();
         services.AddScoped<AvisosDaVersao>();
         services.AddScoped<EmissorDeAvisos>();
+
+        AdicionarJanelaDeMigracao(services);
+    }
+
+    private static void AdicionarJanelaDeMigracao(IServiceCollection services)
+    {
+        services.AddScoped<LeitorDaMigracao>();
+        services.AddScoped<MigracaoSobreOPerfil>();
+        services.AddScoped<AutorizacaoDaMigracao>();
+        services.AddScoped<DecisoesDaJanela>();
+        services.AddScoped<EfeitosDaJanelaNaTroca>();
+        services.AddScoped<AvisosDaJanela>();
+        services.AddScoped<ProcessamentoDaJanela>();
+        services.AddScoped<ProcessamentoDasJanelas>();
+        services.AddScoped<MaterializacaoPrevia>();
+        services.AddScoped<PerfilParaPedir>();
+        services.AddScoped<LeituraDaJanela>();
     }
 
     private static void AdicionarReceptoresDoResultado(IServiceCollection services)

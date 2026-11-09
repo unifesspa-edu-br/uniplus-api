@@ -9,9 +9,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 /// <param name="VersaoNumero">O número da versão a que o aviso se refere, quando há.</param>
 /// <param name="Permissoes">Os nomes das permissões a que o aviso se refere, como o catálogo os dá.</param>
 /// <param name="Link">O endereço da tela autenticada em que a pessoa age.</param>
+/// <param name="Quantidade">A quantidade de concessões a que o aviso se refere, quando há.</param>
+/// <param name="Prazo">O fim da janela de migração, quando o aviso é dela.</param>
 public sealed record ModeloDeAviso(
     TipoDeAviso Tipo,
     string PerfilNome,
     int? VersaoNumero,
     IReadOnlyList<string> Permissoes,
-    string Link);
+    string Link,
+    int? Quantidade = null,
+    DateTimeOffset? Prazo = null);

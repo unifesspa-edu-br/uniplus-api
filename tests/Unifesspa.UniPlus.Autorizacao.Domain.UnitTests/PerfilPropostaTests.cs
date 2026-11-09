@@ -17,8 +17,8 @@ public sealed class PerfilPropostaTests
     private const string Motivo = "Permissão concedida por engano.";
 
     private static readonly DateTimeOffset Agora = PerfisDeTeste.Instante;
-    private static readonly ContextoDaVersao ComConcessao = new(NomeEmUsoPorOutroPerfil: false, TemConcessaoNaoRevogada: true);
-    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, TemConcessaoNaoRevogada: false);
+    private static readonly ContextoDaVersao ComJanelaAberta = new(NomeEmUsoPorOutroPerfil: false, JanelaDeMigracaoAberta: true);
+    private static readonly ContextoDaVersao NomeEmUso = new(NomeEmUsoPorOutroPerfil: true, JanelaDeMigracaoAberta: false);
 
     private readonly CatalogoMutavelDeTeste _catalogo = new();
 
@@ -119,14 +119,14 @@ public sealed class PerfilPropostaTests
         NadaMudou(perfil);
     }
 
-    [Fact(DisplayName = "A pendente recusada desfaz a remoção: o acréscimo a perfil com concessão não entra e a vigente fica como estava")]
+    [Fact(DisplayName = "A pendente recusada desfaz a remoção: a janela de migração aberta recusa a proposta e a vigente fica como estava")]
     public void Propor_PendenteRecusada_NaoAplicaARemocao()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
 
-        DesfechoDaVersao desfecho = Propor(perfil, "Analista", [Consultar, Publicar], contexto: ComConcessao);
+        DesfechoDaVersao desfecho = Propor(perfil, "Analista", [Consultar, Publicar], contexto: ComJanelaAberta);
 
-        desfecho.Erro!.Code.Should().Be(PerfilErrorCodes.AcrescimoComConcessaoAtiva);
+        desfecho.Erro!.Code.Should().Be(PerfilErrorCodes.JanelaDeMigracaoAberta);
         NadaMudou(perfil);
     }
 

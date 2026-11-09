@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -16,10 +17,28 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Handler da aprovação. A concessão nasce na última aprovação exigida, na mesma transação: a concessão igual vencida e
 /// não revogada é revogada antes, porque o índice único a trata como existente. A concessão ativa igual recusa o pedido.
-/// Os avisos da situação em que o pedido ficou saem como mensagens de saída, no outbox da mesma transação.
+/// Os avisos da situação em que o pedido ficou saem como mensagens de saída, no outbox da mesma transação. A janela de
+/// migração vencida e ainda não materializada é materializada antes das travas: sem isso, a concessão antiga continuaria
+/// não revogada e a nova esbarraria nela.
 /// </summary>
 public static class AprovarPedidoDeConcessaoCommandHandler
 {
+    public static async Task Before(
+        AprovarPedidoDeConcessaoCommand command,
+        IPedidoDeConcessaoRepository pedidos,
+        MaterializacaoPrevia previa,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(pedidos);
+        ArgumentNullException.ThrowIfNull(previa);
+
+        if (await pedidos.ObterPerfilIdAsync(command.Id, cancellationToken).ConfigureAwait(false) is { } perfilId)
+        {
+            await previa.GarantirAsync(perfilId, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     public static async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> Handle(
         AprovarPedidoDeConcessaoCommand command,
         IPedidoDeConcessaoRepository pedidos,

@@ -10,6 +10,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
@@ -191,6 +192,7 @@ public abstract class PedidosDeConcessaoTestBase
     private protected async Task ResetarAsync()
     {
         await Fixture.ProvisionarBucketsAsync();
+        await DescartarJanelasAsync();
         await ExecutarSqlAsync("DELETE FROM autorizacao.revisao_itens");
         await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_de_acessos");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexo_leituras");
@@ -201,6 +203,16 @@ public abstract class PedidosDeConcessaoTestBase
             "DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id IN ({0}, {1})",
             PerfisDeSistema.GestorDeAcessosId,
             PerfisDeSistema.ProtecaoDeDadosId);
+    }
+
+    /// <summary>Apaga as janelas de migração, com as linhas, as decisões e as concessões que elas revogaram.</summary>
+    private protected async Task DescartarJanelasAsync()
+    {
+        await ExecutarSqlAsync("DELETE FROM autorizacao.decisoes_da_migracao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.migracoes_da_concessao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE revogada_pela_janela_id IS NOT NULL");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.lotes_da_migracao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.janelas_de_migracao");
     }
 
     private protected async Task ExecutarSqlAsync(string sql, params object[] parametros)
@@ -231,8 +243,12 @@ public abstract class PedidosDeConcessaoTestBase
     private protected async Task<IReadOnlyList<EnviarEmail>> TrocarComposicaoAsync(Guid perfilId, params string[] permissoes)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await using IDbContextTransaction transacao = await scope.ServiceProvider
+            .GetRequiredService<AutorizacaoDbContext>().Database.BeginTransactionAsync();
+        IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoNoEscopoAsync(scope.ServiceProvider, perfilId, permissoes);
+        await transacao.CommitAsync();
 
-        return await TrocarComposicaoNoEscopoAsync(scope.ServiceProvider, perfilId, permissoes);
+        return avisos;
     }
 
     /// <summary>A mesma troca, nos serviços do escopo informado, para quem a executa dentro de uma transação que ele controla.</summary>

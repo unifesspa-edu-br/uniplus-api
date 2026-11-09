@@ -21,5 +21,4 @@ public static class MigracaoErrorCodes
     public const string ExclusaoNaoConfirmada = "Migracao.ExclusaoNaoConfirmada";
     public const string MotivoInvalido = "Migracao.MotivoInvalido";
     public const string SemPermissaoNaEtapa = "Migracao.SemPermissaoNaEtapa";
-    public const string ConflitoDeConcorrencia = "Migracao.ConflitoDeConcorrencia";
 }

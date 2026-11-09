@@ -37,8 +37,8 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
     {
     }
 
-    [Fact(DisplayName = "A concessão que vence a trava faz a aprovação da versão que amplia encontrá-la e recusar a ampliação")]
-    public async Task ConcessaoVenceATrava_AprovacaoRecusaAAmpliacao()
+    [Fact(DisplayName = "A concessão que vence a trava não impede a aprovação da etapa da gestão: a versão segue pendente da proteção de dados")]
+    public async Task ConcessaoVenceATrava_AprovacaoDaGestaoSegue()
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
         Guid unidade = await SemearUnidadeAsync();
@@ -52,7 +52,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await concessao.ConfirmarAsync();
 
         using HttpResponseMessage recusa = await aprovacao;
-        await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.UnprocessableEntity, "ampliacao_exige_protecao_de_dados");
+        recusa.StatusCode.Should().Be(HttpStatusCode.OK, await recusa.Content.ReadAsStringAsync());
         (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle();
         (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("pendente");
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);

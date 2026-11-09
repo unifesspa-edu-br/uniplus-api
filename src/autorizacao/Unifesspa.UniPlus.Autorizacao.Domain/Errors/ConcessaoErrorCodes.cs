@@ -20,5 +20,4 @@ public static class ConcessaoErrorCodes
     public const string FiltroDePessoaInvalido = "Concessao.FiltroDePessoaInvalido";
     public const string FiltroDeSituacaoInvalido = "Concessao.FiltroDeSituacaoInvalido";
     public const string PerfilSemVersaoEmVigor = "Concessao.PerfilSemVersaoEmVigor";
-    public const string PerfilEmJanelaDeMigracao = "Concessao.PerfilEmJanelaDeMigracao";
 }

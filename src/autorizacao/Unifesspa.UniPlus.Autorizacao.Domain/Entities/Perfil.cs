@@ -220,7 +220,10 @@ public sealed partial class Perfil : EntityBase
 
     private int ProximoNumero() => _versoes.Max(static v => v.Numero) + 1;
 
-    private DomainError? RecusaDaCriacao(ContextoDaVersao contexto)
+    private DomainError? RecusaDaCriacao(ContextoDaVersao contexto) =>
+        RecusaDoEstado() ?? RecusaDoContexto(contexto);
+
+    private DomainError? RecusaDoEstado()
     {
         if (Governanca is not null)
         {
@@ -232,9 +235,14 @@ public sealed partial class Perfil : EntityBase
             return PerfilErros.Inativo();
         }
 
-        if (VersaoPendente is not null)
+        return VersaoPendente is not null ? PerfilErros.VersaoPendenteExistente() : null;
+    }
+
+    private static DomainError? RecusaDoContexto(ContextoDaVersao contexto)
+    {
+        if (contexto.JanelaDeMigracaoAberta)
         {
-            return PerfilErros.VersaoPendenteExistente();
+            return PerfilErros.JanelaDeMigracaoAberta();
         }
 
         return contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null;
@@ -242,8 +250,7 @@ public sealed partial class Perfil : EntityBase
 
     private static DomainError? RecusaContra(
         VersaoDoPerfil? sobre, VersaoDoPerfil versao, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo) =>
-        ConferenciasDaVersao.DaCriacao(
-            versao, sobre, contexto, DiferencaDaVersao.Calcular(versao.Codigos(), sobre?.Codigos(), catalogo));
+        ConferenciasDaVersao.DaCriacao(versao, sobre);
 
     // Sem versão vigente o perfil se identifica pela última pendente.
     private void Acrescentar(VersaoDoPerfil versao)

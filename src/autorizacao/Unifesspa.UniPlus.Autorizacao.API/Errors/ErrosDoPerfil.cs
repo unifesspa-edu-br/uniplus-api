@@ -20,7 +20,6 @@ internal static class ErrosDoPerfil
         new(PerfilErrorCodes.PermissaoReservada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.permissao_reservada", "Permissão reservada aos perfis de governança")),
         new(PerfilErrorCodes.AlcanceMisto, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.alcance_misto", "O perfil não pode misturar permissões de unidade e institucionais")),
         new(PerfilErrorCodes.AlcanceAlterado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.alcance_alterado", "O alcance de um perfil com concessões não pode mudar")),
-        new(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.ampliacao_exige_protecao_de_dados", "Acrescentar permissão pessoal ou sensível a perfil com concessões exige a aprovação da proteção de dados")),
         new(PerfilErrorCodes.GovernancaImutavel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.governanca_imutavel", "Perfil de governança não pode ser alterado")),
         new(PerfilErrorCodes.NomeDuplicado, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.perfil.nome_duplicado", "Já existe perfil com este nome")),
         new(PerfilErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.perfil.nao_encontrado", "Perfil de acesso não encontrado")),
@@ -32,6 +31,7 @@ internal static class ErrosDoPerfil
         new(PerfilErrorCodes.VersaoNaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.perfil.versao_nao_encontrada", "Versão do perfil não encontrada")),
         new(PerfilErrorCodes.VersaoNaoPendente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.versao_nao_pendente", "A versão não está pendente")),
         new(PerfilErrorCodes.ProtocoloInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.protocolo_invalido", "Protocolo do documento inválido")),
+        new(PerfilErrorCodes.JanelaDeMigracaoAberta, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.janela_de_migracao_aberta", "O perfil tem janela de migração aberta: nova versão só depois que ela terminar")),
         new(PerfilErrorCodes.Inativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.inativo", "Perfil desativado não aceita versão nova")),
     ];
 
@@ -47,7 +47,6 @@ internal static class ErrosDoPerfil
 
     private static KeyValuePair<string, DomainErrorMapping>[] Aprovacao() =>
     [
-        new(PerfilErrorCodes.AcrescimoComConcessaoAtiva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.acrescimo_com_concessao_ativa", "Acrescentar permissão a perfil com concessões ainda não é possível")),
         new(PerfilErrorCodes.SemVersaoEmVigor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.sem_versao_em_vigor", "O perfil não tem versão em vigor")),
         new(PerfilErrorCodes.RemocaoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.remocao_invalida", "Permissões a remover inválidas")),
         new(PerfilErrorCodes.MotivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.motivo_invalido", "Motivo ausente ou longo demais")),

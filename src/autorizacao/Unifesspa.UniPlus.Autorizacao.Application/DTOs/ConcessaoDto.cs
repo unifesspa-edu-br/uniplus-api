@@ -2,7 +2,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
 /// <summary>Concessão de acesso como a API a expõe. Traz o nome de exibição de quem age, nunca o CPF.</summary>
 /// <param name="Versao">Número da versão do perfil a que a concessão está presa, e não o da em vigor; nulo no perfil de governança.</param>
-/// <param name="RevogadaPor">Quem revogou; nulo enquanto a concessão não foi revogada.</param>
+/// <param name="RevogadaPor">Quem revogou; nulo enquanto a concessão não foi revogada e na revogação pela janela de migração, que é do sistema.</param>
+/// <param name="RevogadaPelaJanelaId">A janela de migração que revogou a concessão; nula quando a revogação foi de uma pessoa.</param>
 /// <param name="ValidaAte">Fim da vigência, quando a concessão é por prazo.</param>
 /// <param name="Ativa">Derivada da revogação e da vigência no momento da leitura.</param>
 public sealed record ConcessaoDto(
@@ -16,6 +17,7 @@ public sealed record ConcessaoDto(
     DateTimeOffset? ValidaAte,
     DateTimeOffset? RevogadaEm,
     IdentidadeDto? RevogadaPor,
+    Guid? RevogadaPelaJanelaId,
     string? MotivoRevogacao,
     bool Ativa);
 
@@ -30,8 +32,10 @@ public sealed record EscopoDto(string Tipo, Guid? UnidadeId);
 public sealed record OrigemDto(string Tipo, Guid Id);
 
 /// <summary>Evento da trilha de uma concessão, em ordem cronológica.</summary>
-/// <param name="Tipo"><c>concedida</c>, <c>revogada</c>, <c>revisao_confirmada</c> ou <c>revisao_revogada</c>; as origens acrescentam os seus.</param>
-public sealed record EventoDaTrilhaDto(string Tipo, DateTimeOffset Instante, IdentidadeDto Autor, string? Detalhe);
+/// <param name="Tipo"><c>concedida</c>, <c>revogada</c>, <c>revogada_pela_migracao</c>, <c>revisao_confirmada</c>, <c>revisao_revogada</c> ou <c>migracao_*</c>; as origens acrescentam os seus.</param>
+/// <param name="Autor">Quem praticou o ato; nulo quando o ator é o sistema.</param>
+/// <param name="Ator"><c>humano</c> ou <c>sistema</c>.</param>
+public sealed record EventoDaTrilhaDto(string Tipo, DateTimeOffset Instante, IdentidadeDto? Autor, string? Detalhe, string Ator = "humano");
 
 /// <summary>Corpo do <c>POST /api/autorizacao/concessoes/{id}/revogacao</c>.</summary>
 /// <param name="Motivo">Obrigatório; fica na trilha.</param>

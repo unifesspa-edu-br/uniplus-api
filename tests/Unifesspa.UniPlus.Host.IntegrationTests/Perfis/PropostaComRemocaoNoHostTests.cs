@@ -75,8 +75,8 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
         (await PerfilAsync(diogo, vigente.PerfilId)).GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
     }
 
-    [Fact(DisplayName = "Se a pendente é recusada a remoção também não acontece")]
-    public async Task PendenteRecusada_DesfazARemocao()
+    [Fact(DisplayName = "Com concessão no perfil, a proposta que remove e acrescenta aplica a remoção na hora e deixa o acréscimo pendente")]
+    public async Task ComConcessao_RemoveNaHoraEDeixaOAcrescimoPendente()
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
@@ -85,11 +85,11 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
 
         using HttpResponseMessage resposta = await ProporAsync(diogo, vigente.PerfilId, Motivo, Consultar, Acrescimo);
 
-        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "ampliacao_exige_protecao_de_dados");
+        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
         JsonElement perfil = await PerfilAsync(diogo, vigente.PerfilId);
-        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
-        perfil.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().Be(2);
-        (await ConcessoesAsync(Leandro, vigente.PerfilId)).Should().ContainSingle().Which.VersaoId.Should().Be(vigente.VersaoId);
+        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
+        perfil.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().Be(1);
+        perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Object);
     }
 
     private static Task<HttpResponseMessage> ProporAsync(HttpClient cliente, Guid perfilId, string? motivo, params string[] permissoes) =>

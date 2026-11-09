@@ -100,16 +100,16 @@ public sealed class PropostasDeVersaoTests
         cenario.Unidade.Descartes.Should().Be(1);
     }
 
-    [Fact(DisplayName = "Acrescentar permissão pessoal a perfil com concessão é recusado")]
-    public async Task Propor_AmpliacaoComConcessao_Recusa()
+    [Fact(DisplayName = "Propor versão com janela de migração aberta é recusado")]
+    public async Task Propor_ComJanelaAberta_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], temConcessao: true);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], janelaAberta: true);
 
         GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
             perfil.Id, Dados("Analista", Consultar, Pessoal), CancellationToken.None);
 
-        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados);
+        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.JanelaDeMigracaoAberta);
     }
 
     [Fact(DisplayName = "A proposta que remove e acrescenta grava a remoção na hora e devolve o envio da pendente só com o acréscimo")]
@@ -163,12 +163,12 @@ public sealed class PropostasDeVersaoTests
     public async Task Propor_PendenteRecusada_DesfazARemocao()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Pessoal], Catalogo);
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], temConcessao: true);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], janelaAberta: true);
 
         GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
             perfil.Id, Dados("Analista", [Consultar, Publicar], Motivo, null), CancellationToken.None);
 
-        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AcrescimoComConcessaoAtiva);
+        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.JanelaDeMigracaoAberta);
         cenario.Unidade.Gravacoes.Should().Be(0);
         cenario.Unidade.Descartes.Should().Be(1);
         perfil.VersaoVigente!.Numero.Should().Be(1);

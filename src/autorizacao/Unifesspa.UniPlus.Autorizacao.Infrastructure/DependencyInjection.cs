@@ -35,6 +35,8 @@ public static class AutorizacaoInfrastructureRegistration
             options.UseUniPlusNpgsqlConventions<AutorizacaoDbContext>(serviceProvider, ConnectionStringName, schema: AutorizacaoDbContext.Schema));
 
         // A Application consome a abstração do próprio módulo, roteada para o DbContext (ADR-0042).
+        services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
+
         services.AddScoped<IAutorizacaoUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<AutorizacaoDbContext>());
 

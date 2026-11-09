@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler da trilha: monta, na leitura, os eventos da concessão, os que a origem dela
-/// acrescenta pela porta <see cref="IEventosDaOrigem"/> e as decisões das revisões periódicas.
+/// acrescenta pela porta <see cref="IEventosDaOrigem"/>, as decisões das revisões periódicas e as da janela de migração.
 /// </summary>
 public static class ObterTrilhaDaConcessaoQueryHandler
 {
@@ -18,12 +18,14 @@ public static class ObterTrilhaDaConcessaoQueryHandler
         ObterTrilhaDaConcessaoQuery query,
         IConcessaoRepository repository,
         IRevisaoDeAcessosRepository revisoes,
+        IJanelaDeMigracaoRepository janelas,
         IEnumerable<IEventosDaOrigem> origens,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(revisoes);
+        ArgumentNullException.ThrowIfNull(janelas);
         ArgumentNullException.ThrowIfNull(origens);
 
         ConcessaoComPerfil? item = await repository.ObterComPerfilAsync(query.Id, cancellationToken).ConfigureAwait(false);
@@ -32,7 +34,19 @@ public static class ObterTrilhaDaConcessaoQueryHandler
             return Result<IReadOnlyList<EventoDaTrilhaDto>>.Failure(ConcessaoHandlerErros.NaoEncontrada(query.Id));
         }
 
-        Concessao concessao = item.Concessao;
+        List<EventoDaTrilhaDto> eventos = await EventosAsync(item.Concessao, revisoes, janelas, origens, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EventoDaTrilhaDto> ordenados = [.. eventos.OrderBy(e => e.Instante)];
+
+        return Result<IReadOnlyList<EventoDaTrilhaDto>>.Success(ordenados);
+    }
+
+    private static async Task<List<EventoDaTrilhaDto>> EventosAsync(
+        Concessao concessao,
+        IRevisaoDeAcessosRepository revisoes,
+        IJanelaDeMigracaoRepository janelas,
+        IEnumerable<IEventosDaOrigem> origens,
+        CancellationToken cancellationToken)
+    {
         List<EventoDaTrilhaDto> eventos = [.. ConcessaoMapping.EventosDaConcessao(concessao)];
 
         IEventosDaOrigem? origem = origens.FirstOrDefault(o => o.Tipo == concessao.OrigemTipo);
@@ -45,8 +59,10 @@ public static class ObterTrilhaDaConcessaoQueryHandler
         eventos.AddRange((await revisoes.ListarDecisoesDaConcessaoAsync(concessao.Id, cancellationToken).ConfigureAwait(false))
             .Select(RevisaoMapping.ToEvento));
 
-        IReadOnlyList<EventoDaTrilhaDto> ordenados = [.. eventos.OrderBy(e => e.Instante)];
+        // As decisões da janela de migração: o decisor humano da recusa aparece com sua identidade, e o sistema como ator.
+        eventos.AddRange((await janelas.ListarDecisoesDaConcessaoAsync(concessao.Id, cancellationToken).ConfigureAwait(false))
+            .Select(MigracaoMapping.ToEvento));
 
-        return Result<IReadOnlyList<EventoDaTrilhaDto>>.Success(ordenados);
+        return eventos;
     }
 }

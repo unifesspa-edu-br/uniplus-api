@@ -33,6 +33,7 @@ internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguratio
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
         builder.ToTable("migracoes_da_concessao", ConfigurarRestricoes);
         builder.HasKey(m => m.Id);
+        builder.Property(m => m.Id).ValueGeneratedNever();
 
         builder.Property(m => m.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(m => m.ExigeProtecaoDeDados).IsRequired();

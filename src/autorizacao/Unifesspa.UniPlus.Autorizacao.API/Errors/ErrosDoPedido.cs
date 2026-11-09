@@ -14,6 +14,7 @@ internal static class ErrosDoPedido
     private static KeyValuePair<string, DomainErrorMapping>[] Cadastro() =>
     [
         new(PedidoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.pedido.nao_encontrado", "Pedido de concessão não encontrado")),
+        new(PedidoErrorCodes.PerfilEmJanelaDeMigracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.perfil_em_janela_de_migracao", "O perfil está em janela de migração: o pedido só pode ser feito depois que ela terminar")),
         new(PedidoErrorCodes.PerfilInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.perfil_inativo", "Perfil de acesso desativado não aceita pedido")),
         new(PedidoErrorCodes.PerfilSemVersaoEmVigor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.perfil_sem_versao_em_vigor", "O perfil de acesso não tem versão em vigor")),
         new(PedidoErrorCodes.EscopoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.escopo_invalido", "Escopo incoerente ou não admitido pelo perfil")),

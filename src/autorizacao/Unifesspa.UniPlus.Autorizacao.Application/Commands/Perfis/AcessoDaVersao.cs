@@ -76,6 +76,22 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
     }
 
     /// <summary>
+    /// Se a pessoa lê a janela de migração: quem mantém perfis ou aprova por qualquer das etapas. Registra o desfecho de
+    /// uma só vez, as permissões que habilitaram ou, se nenhuma habilitou, as negativas.
+    /// </summary>
+    public static async Task<bool> PodeLerAJanelaAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        DecisaoDeAcesso manter = await AvaliarAsync(verificador, PermissaoDeManter, perfilId, cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso gestao = await AvaliarAsync(verificador, PermissaoDaGestao, perfilId, cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso protecao = await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, perfilId, cancellationToken).ConfigureAwait(false);
+        await verificador.RegistrarDesfechoAsync([manter, gestao, protecao], IntencaoDoRegistro.Aprovador, cancellationToken).ConfigureAwait(false);
+
+        return manter is DecisaoPermitida || gestao is DecisaoPermitida || protecao is DecisaoPermitida;
+    }
+
+    /// <summary>
     /// Se a pessoa lista a fila da etapa: a permissão da etapa governa, e a decisão dela vai para a trilha. Nulo quando
     /// o token não identifica a pessoa.
     /// </summary>

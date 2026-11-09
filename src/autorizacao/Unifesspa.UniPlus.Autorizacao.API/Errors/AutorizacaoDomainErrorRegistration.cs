@@ -15,5 +15,6 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
         .. ErrosDaInstalacao.Mapeamentos(),
         .. ErrosDoPedido.Mapeamentos(),
         .. ErrosDaRevisao.Mapeamentos(),
+        .. ErrosDaMigracao.Mapeamentos(),
     ];
 }
