@@ -53,6 +53,7 @@ public sealed class DocumentosDasVersoes
         Guid perfilId, Guid versaoId, long tamanhoDoDocumento, CancellationToken cancellationToken) =>
         _operacao.ExecutarAsync(
             perfilId,
+            versaoId,
             (perfil, _) => EmitirAsync(perfil.NovoDocumento(versaoId, tamanhoDoDocumento), cancellationToken),
             cancellationToken);
 
@@ -60,6 +61,7 @@ public sealed class DocumentosDasVersoes
     public Task<Result<EnvioDoDocumentoDto>> ReemitirEnvioAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken) =>
         _operacao.ExecutarAsync(
             perfilId,
+            versaoId,
             (perfil, _) => EmitirAsync(perfil.DocumentoParaReemitirEnvio(versaoId), cancellationToken),
             cancellationToken);
 
@@ -68,6 +70,7 @@ public sealed class DocumentosDasVersoes
         Guid perfilId, Guid versaoId, string? etag, CancellationToken cancellationToken) =>
         _operacao.ExecutarAsync(
             perfilId,
+            versaoId,
             (perfil, contexto) => Task.FromResult(perfil.ConfirmarDocumento(versaoId, etag, contexto.Agora)),
             cancellationToken);
 

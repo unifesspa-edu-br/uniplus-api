@@ -47,22 +47,16 @@ public sealed partial class ExpiracaoDasVersoesPendentes
 
     private async Task<int> ExpirarAsync(Guid perfilId, CancellationToken cancellationToken)
     {
-        bool expirou = false;
-        Result resultado = await _operacao
-            .ExecutarAsync(perfilId, perfil => { expirou = perfil.MaterializarExpiracao(_clock.GetUtcNow()); return Result.Success(); }, cancellationToken)
+        Result<bool> resultado = await _operacao
+            .ExecutarAsync(perfilId, null, static (_, contexto) => Task.FromResult(Result<bool>.Success(contexto.VersaoExpirada is not null)), cancellationToken)
             .ConfigureAwait(false);
 
-        return Contar(perfilId, expirou, resultado);
-    }
-
-    private int Contar(Guid perfilId, bool expirou, Result resultado)
-    {
         if (resultado.IsFailure)
         {
             LogFalhaAoExpirar(_logger, perfilId);
         }
 
-        return expirou && resultado.IsSuccess ? 1 : 0;
+        return resultado.IsSuccess && resultado.Value ? 1 : 0;
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Não foi possível expirar a versão pendente do perfil {PerfilId}")]

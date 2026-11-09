@@ -58,6 +58,7 @@ public sealed class AprovacoesDaVersao
         return await _operacao
             .ExecutarComAvisosAsync(
                 solicitada.PerfilId,
+                solicitada.VersaoId,
                 (perfil, contexto) => DecidirNoPerfilAsync(perfil, Pedido(solicitada, autorizada.Value!, contexto.Agora), cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
