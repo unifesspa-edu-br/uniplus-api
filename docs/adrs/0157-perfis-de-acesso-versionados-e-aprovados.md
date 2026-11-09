@@ -92,7 +92,7 @@ Quem cria a versão, quem a aprova pela gestão de acessos e quem a aprova pela 
 - **Reclassificar uma permissão para cima**, ou mudar o escopo dela, a suspende nas versões em uso. A suspensão é aplicada numa etapa de migration, antes de servir tráfego.
   - A liberação é perfil por perfil, lendo todas as permissões do perfil e o documento instituidor: a proteção de dados libera quando a classificação sobe, e a gestão de acessos, quando o escopo muda. Se os dois mudam, são duas decisões, de pessoas diferentes.
   - Dentro do perfil, a proteção de dados revisa as concessões individualmente ou em lote. Quem não for liberado continua sem a permissão reclassificada, e a concessão cujo escopo não comporta o novo alcance só volta por pedido novo.
-- Os perfis de governança ficam fora da suspensão por reclassificação, que neles só gera aviso. Também não se suspendem pela API, como já não se desativam: suspender a gestão de acessos travaria a própria retomada, e a contenção neles é a revogação individual, com o mínimo de duas pessoas. Também não têm versão, lote nem janela, e a composição deles só muda por PR com migration.
+- Os perfis de governança ficam fora da suspensão por reclassificação, que neles só gera aviso. Também não se suspendem pela API, como já não se desativam: suspender a gestão de acessos travaria a própria retomada, e a contenção neles é a revogação individual, com o mínimo de duas pessoas. Também não têm versão, lote nem janela, e a composição deles só muda por PR com migration. Por isso só reúnem permissões do módulo de autorização, e toda permissão reservada à governança é desse módulo: uma permissão de outro módulo chegaria a todos os gestores e à proteção de dados sem a aprovação que os perfis comuns exigem.
 
 **Avisos e trilha.**
 
