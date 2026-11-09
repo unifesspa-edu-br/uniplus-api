@@ -1379,7 +1379,7 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.Infrastructure": "[1.0.0, )",
@@ -1411,6 +1411,7 @@
       "unifesspa.uniplus.autorizacao.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Design": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.14, )",
@@ -1423,7 +1424,7 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Configuracao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Configuracao.Infrastructure": "[1.0.0, )",
@@ -1531,7 +1532,7 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Autorizacao.API": "[1.0.0, )",
           "Unifesspa.UniPlus.Configuracao.API": "[1.0.0, )",
@@ -1555,7 +1556,7 @@
           "MR.EntityFrameworkCore.KeysetPagination": "[1.6.0, )",
           "MailKit": "[4.18.2, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.12, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Design": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.14, )",
@@ -1589,7 +1590,7 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Ingresso.Infrastructure": "[1.0.0, )"
         }
@@ -1642,7 +1643,7 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure": "[1.0.0, )",
@@ -1681,7 +1682,7 @@
       "unifesspa.uniplus.publicacoes.api": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Publicacoes.Infrastructure": "[1.0.0, )",
@@ -1737,7 +1738,7 @@
         "type": "Project",
         "dependencies": {
           "FluentValidation": "[12.1.1, )",
-          "Microsoft.AspNetCore.OpenApi": "[10.0.12, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.14, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Unifesspa.UniPlus.Selecao.Application": "[1.0.0, )",
           "Unifesspa.UniPlus.Selecao.Infrastructure": "[1.0.0, )",
@@ -1891,11 +1892,11 @@
       },
       "Microsoft.AspNetCore.OpenApi": {
         "type": "CentralTransitive",
-        "requested": "[10.0.12, )",
-        "resolved": "10.0.12",
-        "contentHash": "7RnQ/UKn+kK3JDLmTpW+vVqNErWthGPAVAy1aIiBzv4ucQ6g9NFvOJUuT0PHcpvcJxGVxctMxj6t+NESWMrgHQ==",
+        "requested": "[10.0.14, )",
+        "resolved": "10.0.14",
+        "contentHash": "3M6yO4nv8fmvM/1X7DqQcMxw/ptNLBcUzZt19SBEyfZF32gqZuwoPNnYd1xlDnFvQOGOkZDncf7p9E24blcTkQ==",
         "dependencies": {
-          "Microsoft.OpenApi": "[2.12.0, 3.0.0)"
+          "Microsoft.OpenApi": "[2.12.2, 3.0.0)"
         }
       },
       "Microsoft.EntityFrameworkCore.Design": {
