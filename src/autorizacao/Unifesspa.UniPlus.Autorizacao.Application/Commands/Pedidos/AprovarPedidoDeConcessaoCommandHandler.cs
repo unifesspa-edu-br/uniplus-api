@@ -19,7 +19,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// não revogada é revogada antes, porque o índice único a trata como existente. A concessão ativa igual recusa o pedido.
 /// Os avisos da situação em que o pedido ficou saem como mensagens de saída, no outbox da mesma transação. A janela de
 /// migração vencida e ainda não materializada é materializada antes das travas: sem isso, a concessão antiga continuaria
-/// não revogada e a nova esbarraria nela.
+/// não revogada e a nova esbarraria nela; só quem decide alguma etapa provoca essa gravação, e quem não decide segue
+/// para a recusa de acesso do <c>Handle</c>.
 /// </summary>
 public static class AprovarPedidoDeConcessaoCommandHandler
 {
@@ -27,13 +28,15 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         AprovarPedidoDeConcessaoCommand command,
         IPedidoDeConcessaoRepository pedidos,
         MaterializacaoPrevia previa,
+        IVerificadorDeAcesso verificador,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(pedidos);
         ArgumentNullException.ThrowIfNull(previa);
 
-        if (await pedidos.ObterPerfilIdAsync(command.Id, cancellationToken).ConfigureAwait(false) is { } perfilId)
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, false, command.Id, cancellationToken).ConfigureAwait(false);
+        if (acesso is { Aprova: true } && await pedidos.ObterPerfilIdAsync(command.Id, cancellationToken).ConfigureAwait(false) is { } perfilId)
         {
             await previa.GarantirAsync(perfilId, cancellationToken).ConfigureAwait(false);
         }
