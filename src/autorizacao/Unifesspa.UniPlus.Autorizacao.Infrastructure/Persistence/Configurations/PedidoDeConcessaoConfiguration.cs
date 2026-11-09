@@ -31,9 +31,22 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+        builder.HasKey(p => p.Id);
+        builder.Property(p => p.Id).ValueGeneratedNever();
 
-        // O banco confere o que o agregado já garante: nenhuma decisão sem a identidade do beneficiário, o
-        // par emissor e sub inteiro, e o encerramento só nos estados terminais.
+        ConfigurarRestricoes(builder);
+        ConfigurarColunas(builder);
+        ConfigurarRelacionamentos(builder);
+        ConfigurarIndices(builder);
+
+        // Concorrência otimista pela coluna de sistema xmin (ADR-0119).
+        builder.Property<uint>("Version").IsRowVersion();
+    }
+
+    // O banco confere o que o agregado já garante: nenhuma decisão sem a identidade do beneficiário, o
+    // par emissor e sub inteiro, e o encerramento só nos estados terminais. O pedido devolvido, como o cancelado, pode
+    // encerrar antes de o beneficiário aceitar.
+    private static void ConfigurarRestricoes(EntityTypeBuilder<PedidoDeConcessao> builder) =>
         builder.ToTable("pedidos_de_concessao", tabela =>
         {
             tabela.HasCheckConstraint(
@@ -41,17 +54,17 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
                 "(beneficiario_emissor IS NULL) = (beneficiario_sub IS NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_decisao_com_beneficiario",
-                "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado') OR beneficiario_sub IS NOT NULL");
+                "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_sub IS NOT NULL");
             tabela.HasCheckConstraint(
                 "ck_pedidos_encerramento",
-                "(situacao IN ('aprovado', 'recusado', 'cancelado')) = (encerrado_em IS NOT NULL)");
+                "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_concessao_so_aprovado",
                 "concessao_id IS NULL OR situacao = 'aprovado'");
         });
-        builder.HasKey(p => p.Id);
-        builder.Property(p => p.Id).ValueGeneratedNever();
 
+    private static void ConfigurarColunas(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
         builder.Property(p => p.SolicitanteEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitanteSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitanteNome).HasMaxLength(NomeDeExibicao.MaxLength);
@@ -62,10 +75,8 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(p => p.Justificativa).HasMaxLength(PedidoDeConcessao.JustificativaMaxLength).IsRequired();
         builder.Property(p => p.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
-
         builder.Property(p => p.ValidaAteSugerida);
         builder.Property(p => p.ValidaAte);
-
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(p => p.UnidadeId);
 
@@ -76,11 +87,21 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Ignore(p => p.Ativo);
         builder.Ignore(p => p.EtapaAtual);
         builder.Ignore(p => p.TemAnexoVerificado);
+    }
 
+    private static void ConfigurarRelacionamentos(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
         // O perfil é do mesmo módulo. A chave estrangeira impede apagar o perfil pedido.
         builder.HasOne<Perfil>()
             .WithMany()
             .HasForeignKey(p => p.PerfilId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // O par (perfil, versão) impede o pedido de seguir a versão de outro perfil; o perfil de governança não tem versão.
+        builder.HasOne<VersaoDoPerfil>()
+            .WithMany()
+            .HasForeignKey(p => new { p.PerfilId, p.VersaoId })
+            .HasPrincipalKey(v => new { v.PerfilId, v.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Navigation(p => p.Decisoes).UsePropertyAccessMode(PropertyAccessMode.Field);
@@ -95,6 +116,15 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(a => a.PedidoId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Navigation(p => p.TrocasDeVersao).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasMany(p => p.TrocasDeVersao)
+            .WithOne()
+            .HasForeignKey(t => t.PedidoId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    private static void ConfigurarIndices(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
         // Um pedido ativo por beneficiário (pelo e-mail), perfil e escopo. A unidade nula (escopo da instituição)
         // conta como igual a outra nula, o que o índice único não faria por padrão.
         builder.HasIndex(p => new { p.BeneficiarioEmail, p.PerfilId, p.UnidadeId })
@@ -109,8 +139,5 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         // As filas dos aprovadores e a lista de quem pediu.
         builder.HasIndex(p => p.Situacao).HasDatabaseName("ix_pedidos_situacao");
         builder.HasIndex(p => new { p.SolicitanteEmissor, p.SolicitanteSub }).HasDatabaseName("ix_pedidos_solicitante");
-
-        // Concorrência otimista pela coluna de sistema xmin (ADR-0119).
-        builder.Property<uint>("Version").IsRowVersion();
     }
 }

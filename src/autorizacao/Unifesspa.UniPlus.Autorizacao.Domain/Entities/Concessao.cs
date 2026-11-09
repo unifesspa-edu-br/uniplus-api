@@ -44,6 +44,12 @@ public sealed class Concessao : EntityBase
 
     public Guid PerfilId { get; private set; }
 
+    /// <summary>
+    /// A versão do perfil que a concessão alcança: a em vigor quando foi concedida, ou a que a substituiu sem acrescentar
+    /// permissão. Nula se, e somente se, o perfil é de governança, que não tem versão.
+    /// </summary>
+    public Guid? VersaoId { get; private set; }
+
     public TipoDeEscopo EscopoTipo { get; private set; }
 
     /// <summary>Unidade do escopo; nula quando o escopo é a instituição.</summary>
@@ -102,51 +108,29 @@ public sealed class Concessao : EntityBase
         ArgumentNullException.ThrowIfNull(concedidaPor);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        List<FieldError> erros = [];
+        List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo), .. ErrosDaValidade(perfil, validaAte, instante)];
 
-        erros.AddRange(ErrosDoPerfil(perfil));
+        return erros.Count > 0
+            ? Result<Concessao>.ValidationFailure(erros)
+            : Result<Concessao>.Success(Nova(beneficiario, beneficiarioEmail, perfil, escopo, origem).ConcedidaPor(concedidaPor, instante, validaAte));
+    }
 
-        string? incoerencia = ConferirEscopo(perfil, escopo, catalogo);
-        if (incoerencia is not null)
+    /// <summary>
+    /// Passa a concessão para a versão que substituiu a que ela alcançava, sem acréscimo de permissão: troca só a versão e
+    /// mantém pessoa, escopo, validade e origem. Quem chama trava o perfil e as concessões da versão que sai, então a
+    /// que está revogada, é de governança ou segue outra versão é defeito de quem chama.
+    /// </summary>
+    /// <param name="versaoNova">A versão em vigor que a concessão passa a alcançar.</param>
+    /// <param name="versaoEsperada">A versão que a concessão deve estar alcançando agora.</param>
+    public void MigrarParaVersao(Guid versaoNova, Guid versaoEsperada)
+    {
+        if (RevogadaEm is not null || VersaoId != versaoEsperada)
         {
-            erros.Add(new("escopo", new DomainError(ConcessaoErrorCodes.EscopoInvalido, incoerencia)));
+            throw new InvalidOperationException(
+                $"A concessão {Id} não pode migrar da versão {versaoEsperada}: está revogada, é de governança ou alcança a versão {VersaoId}.");
         }
 
-        if (validaAte is not null && !perfil.AdmitePrazo)
-        {
-            erros.Add(new("validaAte", new DomainError(
-                ConcessaoErrorCodes.ValidadeInvalida,
-                "Perfil de governança não admite concessão com prazo: gestor de acessos e proteção de dados não têm vigência limitada.")));
-        }
-        else if (validaAte is { } fim && fim <= instante)
-        {
-            erros.Add(new("validaAte", new DomainError(
-                ConcessaoErrorCodes.ValidadeInvalida,
-                "O fim da vigência deve ser posterior ao instante da concessão.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<Concessao>.ValidationFailure(erros);
-        }
-
-        return Result<Concessao>.Success(new Concessao
-        {
-            BeneficiarioEmissor = beneficiario.Emissor,
-            BeneficiarioSub = beneficiario.Sub,
-            BeneficiarioNome = beneficiario.Nome,
-            BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(beneficiarioEmail),
-            PerfilId = perfil.Id,
-            EscopoTipo = escopo.Tipo,
-            UnidadeId = escopo.UnidadeId,
-            OrigemTipo = origem.Tipo,
-            OrigemId = origem.Id,
-            ConcedidaEm = instante,
-            ConcedidaPorEmissor = concedidaPor.Emissor,
-            ConcedidaPorSub = concedidaPor.Sub,
-            ConcedidaPorNome = concedidaPor.Nome,
-            ValidaAte = validaAte,
-        });
+        VersaoId = versaoNova;
     }
 
     /// <summary>
@@ -191,6 +175,58 @@ public sealed class Concessao : EntityBase
         MotivoRevogacao = motivoNormalizado;
 
         return Result.Success();
+    }
+
+    private static Concessao Nova(
+        Identidade beneficiario, string? beneficiarioEmail, Perfil perfil, EscopoDaConcessao escopo, OrigemDaConcessao origem) =>
+        new()
+        {
+            BeneficiarioEmissor = beneficiario.Emissor,
+            BeneficiarioSub = beneficiario.Sub,
+            BeneficiarioNome = beneficiario.Nome,
+            BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(beneficiarioEmail),
+            PerfilId = perfil.Id,
+            VersaoId = perfil.VersaoVigente?.Id,
+            EscopoTipo = escopo.Tipo,
+            UnidadeId = escopo.UnidadeId,
+            OrigemTipo = origem.Tipo,
+            OrigemId = origem.Id,
+        };
+
+    private Concessao ConcedidaPor(Identidade concedidaPor, DateTimeOffset instante, DateTimeOffset? validaAte)
+    {
+        ConcedidaEm = instante;
+        ConcedidaPorEmissor = concedidaPor.Emissor;
+        ConcedidaPorSub = concedidaPor.Sub;
+        ConcedidaPorNome = concedidaPor.Nome;
+        ValidaAte = validaAte;
+
+        return this;
+    }
+
+    private static IEnumerable<FieldError> ErrosDoEscopo(Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        string? incoerencia = ConferirEscopo(perfil, escopo, catalogo);
+        if (incoerencia is not null)
+        {
+            yield return new("escopo", new DomainError(ConcessaoErrorCodes.EscopoInvalido, incoerencia));
+        }
+    }
+
+    private static IEnumerable<FieldError> ErrosDaValidade(Perfil perfil, DateTimeOffset? validaAte, DateTimeOffset instante)
+    {
+        if (validaAte is not null && !perfil.AdmitePrazo)
+        {
+            yield return new("validaAte", new DomainError(
+                ConcessaoErrorCodes.ValidadeInvalida,
+                "Perfil de governança não admite concessão com prazo: gestor de acessos e proteção de dados não têm vigência limitada."));
+        }
+        else if (validaAte is { } fim && fim <= instante)
+        {
+            yield return new("validaAte", new DomainError(
+                ConcessaoErrorCodes.ValidadeInvalida,
+                "O fim da vigência deve ser posterior ao instante da concessão."));
+        }
     }
 
     private static IEnumerable<FieldError> ErrosDoPerfil(Perfil perfil)

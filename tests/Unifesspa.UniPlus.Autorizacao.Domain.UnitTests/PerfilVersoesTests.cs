@@ -29,7 +29,7 @@ public sealed class PerfilVersoesTests
         VersaoDoPerfil primeira = perfil.VersaoVigente!;
         Criar(perfil, "Analista de processos", [Consultar, Publicar]);
 
-        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
 
         primeira.Situacao.Should().Be(SituacaoDaVersao.Encerrada);
         perfil.VersaoVigente!.Numero.Should().Be(2);
@@ -119,7 +119,7 @@ public sealed class PerfilVersoesTests
 
         perfil.VersaoPendente!.Numero.Should().Be(2);
         perfil.Nome.Should().Be("Operador de unidade");
-        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
         perfil.Alcance(Catalogo).Should().Be(TipoDeEscopo.Unidade);
     }
 
@@ -163,7 +163,7 @@ public sealed class PerfilVersoesTests
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag", PerfisDeTeste.Instante));
         perfil.CancelarVersao(versao.Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante);
 
-        DesfechoDoDocumentoVerificado desfecho = Verificar(perfil, documento);
+        DesfechoDoDocumentoVerificado desfecho = Verificar(perfil, documento).Desfecho;
 
         desfecho.Should().Be(DesfechoDoDocumentoVerificado.Gravado);
         documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
@@ -179,11 +179,11 @@ public sealed class PerfilVersoesTests
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
             perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
-        Verificar(perfil, documento).Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
-        Verificar(perfil, documento).Should().Be(DesfechoDoDocumentoVerificado.Ignorado);
+        Verificar(perfil, documento).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        Verificar(perfil, documento).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.Ignorado);
         perfil.Vigencias.Should().ContainSingle();
         perfil.RegistrarDocumentoVerificado(Guid.NewGuid(), "a", PerfisDeTeste.Instante, PerfisDeTeste.SemContexto, Catalogo)
-            .Should().Be(DesfechoDoDocumentoVerificado.Ignorado);
+            .Desfecho.Should().Be(DesfechoDoDocumentoVerificado.Ignorado);
     }
 
     [Fact(DisplayName = "Concessão que surge enquanto o documento esperava recusa a versão que amplia")]
@@ -194,7 +194,7 @@ public sealed class PerfilVersoesTests
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
             perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
-        Verificar(perfil, documento, ComConcessao).Should().Be(DesfechoDoDocumentoVerificado.VersaoRecusada);
+        Verificar(perfil, documento, ComConcessao).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.VersaoRecusada);
 
         perfil.UltimaVersaoRecusada!.MotivoDaRecusa.Should().Be(MotivoDaRecusaDaVersao.AmpliacaoExigeProtecaoDeDados);
         perfil.UltimaVersaoRecusada.Documento!.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
@@ -209,7 +209,7 @@ public sealed class PerfilVersoesTests
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
             perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
-        Verificar(perfil, documento, NomeEmUso).Should().Be(DesfechoDoDocumentoVerificado.VersaoRecusada);
+        Verificar(perfil, documento, NomeEmUso).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.VersaoRecusada);
 
         perfil.UltimaVersaoRecusada!.MotivoDaRecusa.Should().Be(MotivoDaRecusaDaVersao.NomeIndisponivel);
         perfil.TemComposicaoEmVigor.Should().BeFalse();
@@ -338,7 +338,7 @@ public sealed class PerfilVersoesTests
             perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
         perfil.Desativar();
 
-        Verificar(perfil, documento).Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        Verificar(perfil, documento).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
 
         perfil.Ativo.Should().BeFalse();
         perfil.TemComposicaoEmVigor.Should().BeTrue();
@@ -369,7 +369,7 @@ public sealed class PerfilVersoesTests
             PerfisDeTeste.Instante,
             Catalogo);
 
-    private static DesfechoDoDocumentoVerificado Verificar(Perfil perfil, DocumentoDaVersao documento, ContextoDaVersao? contexto = null) =>
+    private static ResultadoDoDocumentoVerificado Verificar(Perfil perfil, DocumentoDaVersao documento, ContextoDaVersao? contexto = null) =>
         perfil.RegistrarDocumentoVerificado(
             documento.Id, new string('b', 64), PerfisDeTeste.Instante, contexto ?? PerfisDeTeste.SemContexto, Catalogo);
 

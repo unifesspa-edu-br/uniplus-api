@@ -198,6 +198,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("valida_ate");
 
+                    b.Property<Guid?>("VersaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_id");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -209,6 +213,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PerfilId")
                         .HasDatabaseName("ix_concessoes_perfil_ativas")
+                        .HasFilter("revogada_em IS NULL");
+
+                    b.HasIndex("PerfilId", "VersaoId")
+                        .HasDatabaseName("ix_concessoes_perfil_versao")
                         .HasFilter("revogada_em IS NULL");
 
                     b.HasIndex("OrigemTipo", "OrigemId", "BeneficiarioEmissor", "BeneficiarioSub")
@@ -760,6 +768,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("valida_ate_sugerida");
 
+                    b.Property<Guid?>("VersaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("versao_id");
+
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -769,11 +781,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pedidos_de_concessao");
 
-                    b.HasIndex("PerfilId")
-                        .HasDatabaseName("ix_pedidos_de_concessao_perfil_id");
-
                     b.HasIndex("Situacao")
                         .HasDatabaseName("ix_pedidos_situacao");
+
+                    b.HasIndex("PerfilId", "VersaoId")
+                        .HasDatabaseName("ix_pedidos_de_concessao_perfil_id_versao_id");
 
                     b.HasIndex("SolicitanteEmissor", "SolicitanteSub")
                         .HasDatabaseName("ix_pedidos_solicitante");
@@ -791,9 +803,9 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'aprovado'");
 
-                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado') OR beneficiario_sub IS NOT NULL");
+                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_sub IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_pedidos_encerramento", "(situacao IN ('aprovado', 'recusado', 'cancelado')) = (encerrado_em IS NOT NULL)");
+                            t.HasCheckConstraint("ck_pedidos_encerramento", "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
                         });
                 });
 
@@ -967,6 +979,43 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_instalacao_tentativas_instalacao");
 
                     b.ToTable("instalacao_tentativas", "autorizacao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.TrocaDeVersaoDoPedido", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Desfecho")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("desfecho");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<Guid>("PedidoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pedido_id");
+
+                    b.Property<int>("VersaoAnterior")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_anterior");
+
+                    b.Property<int>("VersaoNova")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_nova");
+
+                    b.HasKey("Id")
+                        .HasName("pk_trocas_de_versao_do_pedido");
+
+                    b.HasIndex("PedidoId")
+                        .HasDatabaseName("ix_trocas_de_versao_do_pedido_pedido");
+
+                    b.ToTable("trocas_de_versao_do_pedido", "autorizacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", b =>
@@ -1230,6 +1279,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_concessoes_perfis_perfil_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "VersaoId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_concessoes_versoes_dos_perfis_perfil_id_versao_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DecisaoDoPedido", b =>
@@ -1346,6 +1402,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_pedidos_de_concessao_perfis_perfil_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
+                        .WithMany()
+                        .HasForeignKey("PerfilId", "VersaoId")
+                        .HasPrincipalKey("PerfilId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_pedidos_de_concessao_versoes_dos_perfis_perfil_id_versao_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>
@@ -1430,6 +1493,16 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_instalacao_tentativas_instalacoes_instalacao_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.TrocaDeVersaoDoPedido", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PedidoDeConcessao", null)
+                        .WithMany("TrocasDeVersao")
+                        .HasForeignKey("PedidoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_trocas_de_versao_do_pedido_pedidos_de_concessao_pedido_id");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", null)
@@ -1496,6 +1569,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.Navigation("Anexos");
 
                     b.Navigation("Decisoes");
+
+                    b.Navigation("TrocasDeVersao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>

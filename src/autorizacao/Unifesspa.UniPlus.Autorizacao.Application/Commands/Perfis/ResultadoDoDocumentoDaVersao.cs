@@ -92,6 +92,6 @@ public sealed class ResultadoDoDocumentoDaVersao
         ContextoDaVersao contexto = await _leitor.LerAsync(perfil.Id, nomeDaVersao, cancellationToken).ConfigureAwait(false);
 
         return perfil.RegistrarDocumentoVerificado(
-            resultado.ArquivoId, resultado.HashSha256!, _clock.GetUtcNow(), contexto, _catalogo) != DesfechoDoDocumentoVerificado.Ignorado;
+            resultado.ArquivoId, resultado.HashSha256!, _clock.GetUtcNow(), contexto, _catalogo).Desfecho != DesfechoDoDocumentoVerificado.Ignorado;
     }
 }
