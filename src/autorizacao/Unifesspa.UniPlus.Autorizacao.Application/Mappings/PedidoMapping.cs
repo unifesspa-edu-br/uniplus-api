@@ -40,6 +40,7 @@ public static class PedidoMapping
             p.EtapaAtual?.ToCodigo(),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, item.PerfilNome),
+            item.Versao,
             Escopo(p),
             p.Justificativa,
             p.CriadoEm);
