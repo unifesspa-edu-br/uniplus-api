@@ -63,6 +63,7 @@ public sealed record PedidoResumoDto(
     string? EtapaAtual,
     BeneficiarioDoPedidoDto Beneficiario,
     PerfilResumoDto Perfil,
+    int? Versao,
     EscopoDto Escopo,
     string Justificativa,
     DateTimeOffset CriadoEm);

@@ -111,6 +111,29 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
         lida.GetProperty("perfil").GetProperty("id").GetGuid().Should().Be(PerfisDeSistema.ProtecaoDeDadosId);
     }
 
+    [Fact(DisplayName = "A lista de pedidos diz a versão que cada pedido segue: a antiga do devolvido, a vigente do novo e nenhuma na governança")]
+    public async Task ListaDePedidos_DizAVersaoDeCada()
+    {
+        await ResetarAsync();
+        Guid perfil = await SemearPerfilAsync("Operação de inscrições", Operar);
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        Guid devolvido = await CriarAsync(betina, perfil, unidade, null);
+        await TrocarComposicaoAsync(perfil, Operar, Laudos);
+        Guid novo = await CriarAsync(betina, perfil, unidade, null);
+        Guid governanca = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
+
+        JsonElement lista = await LerAsync(betina, $"{Rota}?fila=meus");
+
+        JsonElement itens = lista.ValueKind == JsonValueKind.Array ? lista : lista.GetProperty("items");
+        Dictionary<Guid, int?> versoes = itens.EnumerateArray().ToDictionary(
+            i => i.GetProperty("id").GetGuid(),
+            i => i.GetProperty("versao").ValueKind == JsonValueKind.Null ? (int?)null : i.GetProperty("versao").GetInt32());
+        versoes[devolvido].Should().Be(1);
+        versoes[novo].Should().Be(2);
+        versoes[governanca].Should().BeNull();
+    }
+
     private async Task CriarVersaoPendenteAsync(Guid perfilId, params string[] permissoes)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();

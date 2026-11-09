@@ -151,16 +151,27 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
                 cancellationToken)
             .ConfigureAwait(false);
 
-        Guid[] perfilIds = [.. page.Items.Select(p => p.PerfilId).Distinct()];
+        return (await ComPerfilAsync(page.Items, cancellationToken).ConfigureAwait(false), page.Previous, page.Next);
+    }
+
+    private async Task<IReadOnlyList<PedidoComPerfil>> ComPerfilAsync(
+        IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
+    {
+        Guid[] perfilIds = [.. pedidos.Select(p => p.PerfilId).Distinct()];
+        Guid[] versaoIds = [.. pedidos.Select(p => p.VersaoId).OfType<Guid>().Distinct()];
         Dictionary<Guid, string> nomes = await _context.Perfis.AsNoTracking()
             .Where(perfil => perfilIds.Contains(perfil.Id))
             .ToDictionaryAsync(perfil => perfil.Id, perfil => perfil.Nome, cancellationToken)
             .ConfigureAwait(false);
+        Dictionary<Guid, int> numeros = await _context.VersoesDosPerfis.AsNoTracking()
+            .Where(versao => versaoIds.Contains(versao.Id))
+            .ToDictionaryAsync(versao => versao.Id, versao => versao.Numero, cancellationToken)
+            .ConfigureAwait(false);
 
-        IReadOnlyList<PedidoComPerfil> itens =
-            [.. page.Items.Select(p => new PedidoComPerfil(p, nomes[p.PerfilId]) { Id = p.Id })];
-
-        return (itens, page.Previous, page.Next);
+        return
+        [
+            .. pedidos.Select(p => new PedidoComPerfil(p, nomes[p.PerfilId], p.VersaoId is { } v ? numeros[v] : null) { Id = p.Id }),
+        ];
     }
 
     // A sort key é o instante em ISO-8601 de ida e volta: ordem lexicográfica e cronológica coincidem e ele é estável entre

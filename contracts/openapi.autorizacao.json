@@ -5639,6 +5639,7 @@
           "etapaAtual",
           "beneficiario",
           "perfil",
+          "versao",
           "escopo",
           "justificativa",
           "criadoEm"
@@ -5663,6 +5664,13 @@
           },
           "perfil": {
             "$ref": "#/components/schemas/PerfilResumoDto"
+          },
+          "versao": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "escopo": {
             "$ref": "#/components/schemas/EscopoDto"
