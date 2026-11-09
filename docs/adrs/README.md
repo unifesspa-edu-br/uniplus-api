@@ -185,8 +185,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0154](0154-classificacao-da-modalidade-e-dos-opt-ins.md) | A modalidade e os opt-ins de concorrência passam a `Interno`, como reclassificação de fato de sistema pela aprovação da proteção de dados | proposed | 2026-10-31 |
 | [0155](0155-analisadores-de-qualidade-na-build.md) | Sonar, Meziantou e Roslynator rodam na build, com um dono por regra; as métricas de qualidade avisam até as ocorrências acabarem e depois passam a erro; emenda a 0117 nesse ponto | accepted | 2026-11-06 |
 | [0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md) | Limites de 400 linhas por arquivo, 15 por método, complexidade e parâmetros; o que o código atual ainda não cumpre é dívida registrada, e as métricas seguem como aviso até acabar | accepted | 2026-11-06 |
+| [0157](0157-perfis-de-acesso-versionados-e-aprovados.md) | Perfis de acesso versionados: a concessão fica presa à versão aprovada, e a ampliação chega a quem já tem o perfil por migração em lote em 72 horas, com segregação; emenda a 0152 | accepted | 2026-11-09 |
 
-> **Nota de numeração:** a sequência de `0001` a `0156` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0157+`.
+> **Nota de numeração:** a sequência de `0001` a `0157` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0158+`.
 
 ## Como adicionar um novo ADR
 
