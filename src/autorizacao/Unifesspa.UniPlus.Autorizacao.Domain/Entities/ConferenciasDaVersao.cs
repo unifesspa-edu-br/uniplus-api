@@ -13,13 +13,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 internal static class ConferenciasDaVersao
 {
     /// <summary>
-    /// Alcance diferente do da vigente, proposta que retira permissão e acréscimo a perfil que tem concessão não
-    /// revogada. Sem versão vigente não há com que comparar: é uma nova primeira versão.
+    /// Alcance diferente do da vigente e acréscimo a perfil que tem concessão não revogada. Sem versão vigente não há
+    /// com que comparar: é uma nova primeira versão.
     /// </summary>
     public static DomainError? DaCriacao(
         VersaoDoPerfil versao, VersaoDoPerfil? vigente, ContextoDaVersao contexto, DiferencaDaVersao diferenca) =>
         AlcanceDaVigente(versao, vigente)
-        ?? (diferenca.TemRemocao ? PerfilErros.RemocaoPorContencao() : null)
         ?? AcrescimoComConcessao(vigente, contexto, diferenca);
 
     /// <summary>

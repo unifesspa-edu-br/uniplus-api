@@ -85,7 +85,18 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Unidade])).Should().Equal(PerfilErrorCodes.AlcanceAlterado);
+        DesfechoDaVersao desfecho = perfil.Propor(
+            new PropostaDeVersao(
+                PerfisDeTeste.Conteudo("Analista", Descricao, [Unidade], Catalogo),
+                Motivo,
+                null,
+                PerfisDeTeste.AutoriaDoAutor,
+                PerfisDeTeste.Instante),
+            PerfisDeTeste.SemContexto,
+            Catalogo);
+
+        desfecho.Erro!.Code.Should().Be(PerfilErrorCodes.AlcanceAlterado);
+        perfil.Versoes.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Acrescentar permissão pessoal a perfil com concessão exige a proteção de dados")]
@@ -101,15 +112,6 @@ public sealed class PerfilVersoesTests
     public void CriarVersao_AmpliaSemConcessao_Aceita() =>
         TentarCriar(PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo), "Analista", [Consultar, Dados])
             .IsSuccess.Should().BeTrue();
-
-    [Fact(DisplayName = "Proposta que retira permissão é recusada: a retirada é a remoção")]
-    public void CriarVersao_ComRemocao_Recusa()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], Catalogo);
-
-        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar]))
-            .Should().Equal(PerfilErrorCodes.RemocaoPorContencao);
-    }
 
     [Fact(DisplayName = "Acréscimo público ou interno a perfil com concessão é recusado até a janela de migração")]
     public void CriarVersao_AcrescimoInternoComConcessao_Recusa()
@@ -352,7 +354,7 @@ public sealed class PerfilVersoesTests
 
     private static Result<VersaoDoPerfil> TentarCriar(
         Perfil perfil, string nome, string[] permissoes, ContextoDaVersao? contexto = null) =>
-        perfil.CriarVersao(
+        PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo(nome, Descricao, permissoes, Catalogo),
             contexto ?? PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,

@@ -53,10 +53,6 @@ public static class PerfilErros
         PerfilErrorCodes.AcrescimoComConcessaoAtiva,
         "Acrescentar permissão a um perfil com concessões ainda não é possível: crie outro perfil e conceda-o por pedido.");
 
-    public static DomainError RemocaoPorContencao() => new(
-        PerfilErrorCodes.RemocaoPorContencao,
-        "A versão proposta não pode retirar permissões: retire-as pela remoção, que vale na hora, e proponha o acréscimo depois.");
-
     public static DomainError SemVersaoEmVigor() => new(
         PerfilErrorCodes.SemVersaoEmVigor,
         "O perfil não tem versão em vigor: não há permissão a remover.");

@@ -23,11 +23,16 @@ internal sealed class CenarioDaGovernancaDaVersao
     public const string Manter = "autorizacao:perfis:manter";
 
     public CenarioDaGovernancaDaVersao(
-        Perfil perfil, Identidade? ator, string[] permitidas, TitularDaPermissao[]? titulares = null, TimeProvider? relogio = null)
+        Perfil perfil,
+        Identidade? ator, string[] permitidas,
+        TitularDaPermissao[]? titulares = null,
+        TimeProvider? relogio = null,
+        bool temConcessao = false,
+        Perfil[]? outrosPerfis = null)
     {
         TimeProvider tempo = relogio ?? new RelogioFixo(PerfisDeTeste.Instante.AddHours(1));
-        ConcessoesNaMemoria concessoes = new(titulares: []);
-        Perfis = new PerfisNaMemoria(perfil);
+        ConcessoesNaMemoria concessoes = new(temConcessao, titulares: []);
+        Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
         Unidade = new UnidadeDeTrabalho();
         Verificador = new VerificadorDeTeste(ator?.Sub ?? "sem-autor", permitidas);
         OperacaoSobreOPerfil operacao = new(Perfis, Unidade, tempo);
@@ -48,6 +53,8 @@ internal sealed class CenarioDaGovernancaDaVersao
             operacao, new LeitorDoContextoDaVersao(Perfis, concessoes), efeitos, autoria, new CatalogoDeTeste());
         Cancelamento = new CancelamentoDaVersao(operacao, efeitos, autoria);
         Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria);
+        Propostas = new PropostasDeVersao(
+            operacao, new LeitorDoContextoDaVersao(Perfis, concessoes), efeitos, new EnvioDoDocumento(Armazenamento, tempo), autoria, new CatalogoDeTeste());
         Expiracao = new ExpiracaoDasVersoesPendentes(Perfis, new BarramentoDeTeste(operacao), tempo, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
     }
 
@@ -64,6 +71,10 @@ internal sealed class CenarioDaGovernancaDaVersao
     public CancelamentoDaVersao Cancelamento { get; }
 
     public RemocaoDePermissoes Remocao { get; }
+
+    public PropostasDeVersao Propostas { get; }
+
+    public Armazenamento Armazenamento { get; } = new();
 
     public ExpiracaoDasVersoesPendentes Expiracao { get; }
 

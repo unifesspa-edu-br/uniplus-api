@@ -30,6 +30,9 @@ public sealed record DesfechoDaVersao
     /// <summary>A versão pendente que a remoção cancelou por contenção; nula quando não havia.</summary>
     public VersaoDoPerfil? Cancelada { get; private init; }
 
+    /// <summary>A versão pendente que a operação criou; nula quando ela não criou nenhuma.</summary>
+    public VersaoDoPerfil? Criada { get; private init; }
+
     public bool Concluida => Erro is null;
 
     /// <summary>Recusada sem alterar nada.</summary>
@@ -44,6 +47,10 @@ public sealed record DesfechoDaVersao
 
     public static DesfechoDaVersao Concluido(TrocaDeVigencia? troca = null) => new() { Gravar = true, Troca = troca };
 
-    public static DesfechoDaVersao ConcluidoPelaRemocao(TrocaDeVigencia troca, VersaoDoPerfil? cancelada) =>
-        new() { Gravar = true, Troca = troca, Cancelada = cancelada };
+    /// <summary>Concluída com a versão pendente que a proposta criou, sem troca de vigência.</summary>
+    public static DesfechoDaVersao ConcluidoComProposta(VersaoDoPerfil criada) => new() { Gravar = true, Criada = criada };
+
+    /// <summary>Concluída pela remoção que vale na hora e, quando a proposta mudava mais, pela pendente que ela criou.</summary>
+    public static DesfechoDaVersao ConcluidoPelaRemocao(TrocaDeVigencia troca, VersaoDoPerfil? cancelada, VersaoDoPerfil? criada = null) =>
+        new() { Gravar = true, Troca = troca, Cancelada = cancelada, Criada = criada };
 }

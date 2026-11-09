@@ -146,19 +146,6 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         nova.StatusCode.Should().Be(HttpStatusCode.Created, await nova.Content.ReadAsStringAsync());
     }
 
-    [Fact(DisplayName = "A proposta que retira permissão é recusada e manda usar a remoção")]
-    public async Task PropostaQueRetira_Recusada()
-    {
-        await ResetarAsync();
-        using HttpClient diogo = await GestorAsync();
-        Envio vigente = await PerfilVigenteAsync(diogo, Consultar, Sensivel);
-
-        using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Post, $"{RotaPerfis}/{vigente.PerfilId}/versoes", Dados(Nome(), Consultar));
-
-        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "remocao_por_contencao");
-    }
-
     [Fact(DisplayName = "A remoção em perfil desativado é recusada")]
     public async Task PerfilInativo_Recusa()
     {

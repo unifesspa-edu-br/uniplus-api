@@ -42,27 +42,37 @@ public sealed class VersoesDoPerfilController : ControllerBase
         _mapper = mapper;
     }
 
-    /// <summary>Cria uma versão pendente do perfil e devolve a URL de PUT do documento que a institui.</summary>
+    /// <summary>
+    /// Propõe uma versão do perfil. A permissão que ela retira vale na hora, com motivo, e o resto vira a versão
+    /// pendente: a resposta 201 traz a URL de PUT do documento que a institui. Quando só retira permissões não há
+    /// versão pendente, e a resposta 200 traz o perfil.
+    /// </summary>
     [HttpPost("perfis/{id:guid}/versoes")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]
     [ProducesResponseType(typeof(EnvioDoDocumentoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Criar(Guid id, [FromBody] DadosDaVersaoRequest dados, CancellationToken cancellationToken)
+    public async Task<IActionResult> Criar(Guid id, [FromBody] ProporVersaoRequest dados, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(dados);
 
-        Result<EnvioDoDocumentoDto> resultado = await _commandBus
+        Result<ResultadoDaPropostaDto> resultado = await _commandBus
             .Send(new CriarVersaoDoPerfilCommand(id, dados), cancellationToken)
             .ConfigureAwait(false);
 
-        return resultado.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, resultado.Value)
-            : resultado.ToActionResult(_mapper);
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        return resultado.Value!.Envio is { } envio
+            ? StatusCode(StatusCodes.Status201Created, envio)
+            : Ok(resultado.Value.Perfil);
     }
 
     /// <summary>Pede a URL de PUT de outro documento, depois que a verificação recusou o anterior.</summary>

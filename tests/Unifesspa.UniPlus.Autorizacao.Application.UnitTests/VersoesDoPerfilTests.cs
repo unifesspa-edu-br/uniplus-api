@@ -77,69 +77,6 @@ public sealed class VersoesDoPerfilTests
         cenario.Unidade.Descartes.Should().Be(1);
     }
 
-    [Fact(DisplayName = "Sem autor identificado nada é gravado")]
-    public async Task CriarVersao_SemAutor_Recusa()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(autor: null, perfil);
-
-        Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(perfil.Id, Dados("Analista"), CancellationToken.None);
-
-        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
-        cenario.Unidade.Gravacoes.Should().Be(0);
-    }
-
-    [Fact(DisplayName = "Criar versão do perfil vigente grava a pendente sem mexer na vigente")]
-    public async Task CriarVersao_PerfilVigente_GravaAPendente()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(perfil);
-
-        Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(
-            perfil.Id, Dados("Analista", Consultar, Publicar), CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        perfil.VersaoPendente!.Id.Should().Be(resultado.Value!.VersaoId);
-        perfil.ComposicaoEmVigor.Should().Equal(Consultar);
-        cenario.Unidade.Gravacoes.Should().Be(1);
-    }
-
-    [Fact(DisplayName = "Perfil inexistente devolve não encontrado")]
-    public async Task CriarVersao_PerfilInexistente_NaoEncontrado()
-    {
-        Cenario cenario = new();
-
-        Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(Guid.NewGuid(), Dados("Analista"), CancellationToken.None);
-
-        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.NaoEncontrado);
-    }
-
-    [Fact(DisplayName = "Nome de versão que outro perfil usa é recusado e nada é gravado")]
-    public async Task CriarVersao_NomeDeOutroPerfil_Recusa()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        Perfil outro = PerfisDeTeste.Vigente("Publicador", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(perfil, outro);
-
-        Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(perfil.Id, Dados("Publicador"), CancellationToken.None);
-
-        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.NomeDuplicado);
-        cenario.Unidade.Gravacoes.Should().Be(0);
-        cenario.Unidade.Descartes.Should().Be(1);
-    }
-
-    [Fact(DisplayName = "Acrescentar permissão pessoal a perfil com concessão é recusado")]
-    public async Task CriarVersao_AmpliacaoComConcessao_Recusa()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(temConcessao: true, perfil);
-
-        Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(
-            perfil.Id, Dados("Analista", Consultar, "selecao:inscricoes:ler-dados-pessoais"), CancellationToken.None);
-
-        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados);
-    }
-
     private static DadosDaVersaoRequest Dados(string nome, params string[] permissoes) =>
         new(nome, Descricao, permissoes.Length == 0 ? [Consultar] : permissoes, PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento);
 

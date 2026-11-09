@@ -149,7 +149,7 @@ public sealed class PerfilTests
     {
         Perfil perfil = PerfisDeTeste.DeGovernanca("Gestor de acessos", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(perfil.CriarVersao(
+        CodigosDaRecusa(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo("Outro", Descricao, [Consultar], Catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,

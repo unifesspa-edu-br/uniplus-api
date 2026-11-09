@@ -253,7 +253,7 @@ public sealed class PerfilAprovacaoTests
     public void Aprovar_SemAcrescimo_UmaEtapa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
-        PerfisDeTeste.Garantir(perfil.CriarVersao(
+        PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo("Analista sênior", Descricao, [Consultar, Dados], _catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,
@@ -311,7 +311,7 @@ public sealed class PerfilAprovacaoTests
 
     private void Verificada(Perfil perfil, string[] permissoes)
     {
-        PerfisDeTeste.Garantir(perfil.CriarVersao(
+        PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo("Analista", Descricao, permissoes, _catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,

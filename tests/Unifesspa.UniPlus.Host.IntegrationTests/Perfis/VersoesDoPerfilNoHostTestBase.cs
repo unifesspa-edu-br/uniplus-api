@@ -41,6 +41,18 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected static object Dados(string nome, params string[] permissoes) =>
         new { nome, descricao = "Perfil de teste do ciclo da versão.", permissoes, protocolo = Protocolo, tamanhoDoDocumento = Pdf.Length };
 
+    private protected static object DadosComRemocao(string nome, string? motivo, params string[] permissoes) =>
+        new
+        {
+            nome,
+            descricao = "Perfil de teste do ciclo da versão.",
+            permissoes,
+            protocolo = Protocolo,
+            tamanhoDoDocumento = Pdf.Length,
+            motivoDaRemocao = motivo,
+            categoriaDaRemocao = "incidente",
+        };
+
     private protected static string Nome() => $"Perfil {Guid.NewGuid():N}";
 
     private protected static Envio LerEnvio(JsonElement corpo) => new(
