@@ -152,7 +152,7 @@ public sealed class PerfilTests
         CodigosDaRecusa(perfil.CriarVersao(
             PerfisDeTeste.Conteudo("Outro", Descricao, [Consultar], Catalogo),
             PerfisDeTeste.SemContexto,
-            PerfisDeTeste.Autor,
+            PerfisDeTeste.AutoriaDoAutor,
             PerfisDeTeste.Instante,
             Catalogo)).Should().Equal(PerfilErrorCodes.GovernancaImutavel);
         perfil.Desativar().Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);

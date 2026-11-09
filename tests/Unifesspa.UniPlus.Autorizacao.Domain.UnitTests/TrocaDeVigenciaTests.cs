@@ -18,16 +18,26 @@ public sealed class TrocaDeVigenciaTests
     private static readonly FakeCatalogo Catalogo = new();
 
     [Fact(DisplayName = "A versão que só remove permissão não tem acréscimo")]
-    public void TemAcrescimo_SoRemocao_Falso() =>
-        TrocaPara([Consultar, Analisar], [Consultar]).TemAcrescimo.Should().BeFalse();
+    public void TemAcrescimo_SoRemocao_Falso()
+    {
+        TrocaDeVigencia troca = EntreVersoes([Consultar, Analisar], [Consultar]);
+
+        troca.TemAcrescimo.Should().BeFalse();
+        troca.Removidas.Should().Equal(Analisar);
+    }
 
     [Fact(DisplayName = "A versão que só muda o nome não tem acréscimo")]
     public void TemAcrescimo_SoNome_Falso() =>
         TrocaPara([Consultar, Analisar], [Consultar, Analisar], "Acompanhamento ampliado").TemAcrescimo.Should().BeFalse();
 
     [Fact(DisplayName = "A versão que remove e acrescenta tem acréscimo")]
-    public void TemAcrescimo_RemoveEAcrescenta_Verdadeiro() =>
-        TrocaPara([Consultar, Analisar], [Consultar, Exportar]).TemAcrescimo.Should().BeTrue();
+    public void TemAcrescimo_RemoveEAcrescenta_Verdadeiro()
+    {
+        TrocaDeVigencia troca = EntreVersoes([Consultar, Analisar], [Consultar, Exportar]);
+
+        troca.TemAcrescimo.Should().BeTrue();
+        troca.Removidas.Should().Equal(Analisar);
+    }
 
     [Fact(DisplayName = "A versão que só acrescenta tem acréscimo")]
     public void TemAcrescimo_SoAcrescimo_Verdadeiro() =>
@@ -59,6 +69,12 @@ public sealed class TrocaDeVigenciaTests
         primeira.Situacao.Should().Be(SituacaoDaVersao.Encerrada);
     }
 
+    // A proposta não retira permissão, mas a troca compara quaisquer duas versões: a de remoção também passa por aqui.
+    private static TrocaDeVigencia EntreVersoes(string[] antes, string[] depois) =>
+        new(
+            PerfisDeTeste.Vigente("Antes", "Acompanha os atendimentos.", antes, Catalogo).VersaoVigente,
+            PerfisDeTeste.Vigente("Depois", "Acompanha os atendimentos.", depois, Catalogo).VersaoVigente!);
+
     private static TrocaDeVigencia TrocaPara(string[] antes, string[] depois, string? nome = null)
     {
         Perfil perfil = PerfisDeTeste.Vigente("Acompanhamento", "Acompanha os atendimentos.", antes, Catalogo);
@@ -71,7 +87,7 @@ public sealed class TrocaDeVigenciaTests
         perfil.CriarVersao(
             PerfisDeTeste.Conteudo(nome ?? perfil.Nome, perfil.Descricao, permissoes, Catalogo),
             PerfisDeTeste.SemContexto,
-            PerfisDeTeste.Autor,
+            PerfisDeTeste.AutoriaDoAutor,
             PerfisDeTeste.Instante,
             Catalogo).IsSuccess.Should().BeTrue();
 

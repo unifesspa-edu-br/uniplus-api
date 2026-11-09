@@ -237,10 +237,14 @@ public abstract class PedidosDeConcessaoTestBase
         IServiceProvider servicos, Guid perfilId, string[] permissoes)
     {
         Perfil perfil = (await servicos.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
-        ResultadoDoDocumentoVerificado trocada = PerfisDeTeste.NovaVersaoVigente(
-            perfil, permissoes, servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>());
-        IReadOnlyList<EnviarEmail> avisos = await servicos.GetRequiredService<EfeitosDaTrocaDeVigencia>()
-            .AplicarAsync(perfil, trocada.Troca!, CancellationToken.None);
+        EfeitosDaTrocaDeVigencia efeitos = servicos.GetRequiredService<EfeitosDaTrocaDeVigencia>();
+        List<EnviarEmail> avisos = [];
+        foreach (TrocaDeVigencia troca in PerfisDeTeste.Trocar(
+            perfil, permissoes, servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>()))
+        {
+            avisos.AddRange(await efeitos.AplicarAsync(perfil, troca, CancellationToken.None));
+        }
+
         await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
 
         return avisos;

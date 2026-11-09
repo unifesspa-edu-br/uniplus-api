@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
@@ -44,6 +45,13 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<DocumentosDasVersoes>();
         services.AddScoped<EfeitosDaTrocaDeVigencia>();
         services.AddScoped<ResultadoDoDocumentoDaVersao>();
+        services.AddScoped<AprovacoesDaVersao>();
+        services.AddScoped<CancelamentoDaVersao>();
+        services.AddScoped<RemocaoDePermissoes>();
+        services.AddScoped<EfeitosDoDesfechoDaVersao>();
+        services.AddScoped<ExpiracaoDasVersoesPendentes>();
+        services.AddScoped<AvisosDaVersao>();
+        services.AddScoped<EmissorDeAvisos>();
     }
 
     private static void AdicionarReceptoresDoResultado(IServiceCollection services)

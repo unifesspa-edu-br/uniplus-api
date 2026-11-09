@@ -17,17 +17,19 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
 
     private static readonly CatalogoDeTeste Catalogo = new();
 
-    [Fact(DisplayName = "Veredicto verificado da primeira versão põe o perfil em vigor e grava")]
-    public async Task Verificado_PrimeiraVersao_EntraEmVigor()
+    [Fact(DisplayName = "Veredicto verificado só grava o documento e o hash: a versão segue pendente até a aprovação")]
+    public async Task Verificado_SoGravaODocumento()
     {
         (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
         Cenario cenario = new(perfil);
 
-        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None)).Desfecho;
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
-        perfil.VersaoVigente.Should().NotBeNull();
-        perfil.Vigencias.Should().ContainSingle(v => v.Aberta);
+        documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
+        documento.Sha256.Should().Be(Sha);
+        perfil.VersaoPendente.Should().NotBeNull();
+        perfil.VersaoVigente.Should().BeNull();
         cenario.Unidade.Gravacoes.Should().Be(1);
     }
 
@@ -37,7 +39,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
         Cenario cenario = new(perfil);
 
-        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Recusado(documento.Id), CancellationToken.None)).Desfecho;
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Recusado(documento.Id), CancellationToken.None);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
         documento.Situacao.Should().Be(SituacaoDoAnexo.Recusado);
@@ -52,24 +54,24 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         Cenario cenario = new(perfil);
         await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
 
-        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None)).Desfecho;
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Ignorado);
         cenario.Unidade.Gravacoes.Should().Be(1);
-        perfil.Vigencias.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Veredicto tardio de versão cancelada só grava o documento")]
     public async Task Tardio_VersaoCancelada_SoGravaODocumento()
     {
         (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
-        perfil.CancelarVersao(perfil.Versoes.Single().Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante);
+        perfil.CancelarVersao(perfil.Versoes.Single().Id, PerfisDeTeste.Autor, "Versão proposta por engano.", PerfisDeTeste.Instante);
         Cenario cenario = new(perfil);
 
-        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None)).Desfecho;
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
         documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
+        perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Cancelada);
         perfil.TemComposicaoEmVigor.Should().BeFalse();
     }
 
@@ -78,24 +80,10 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
     {
         Cenario cenario = new(PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo));
 
-        DesfechoDoResultadoDaVersao desfecho = (await cenario.Resultado.RegistrarAsync(Verificado(Guid.NewGuid()), CancellationToken.None)).Desfecho;
+        DesfechoDoResultadoDaVersao desfecho = await cenario.Resultado.RegistrarAsync(Verificado(Guid.NewGuid()), CancellationToken.None);
 
         desfecho.Should().Be(DesfechoDoResultadoDaVersao.Desconhecido);
         cenario.Unidade.Gravacoes.Should().Be(0);
-    }
-
-    [Fact(DisplayName = "Nome tomado por outro perfil enquanto o documento esperava recusa a versão no veredicto")]
-    public async Task Verificado_NomeTomado_RecusaAVersao()
-    {
-        (Perfil perfil, DocumentoDaVersao documento) = EmVerificacao();
-        Perfil outro = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(perfil, outro);
-
-        await cenario.Resultado.RegistrarAsync(Verificado(documento.Id), CancellationToken.None);
-
-        perfil.UltimaVersaoRecusada!.MotivoDaRecusa.Should().Be(MotivoDaRecusaDaVersao.NomeIndisponivel);
-        perfil.TemComposicaoEmVigor.Should().BeFalse();
-        cenario.Unidade.Gravacoes.Should().Be(1);
     }
 
     private static (Perfil Perfil, DocumentoDaVersao Documento) EmVerificacao()
@@ -119,13 +107,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
         {
             Unidade = new UnidadeDeTrabalho();
             PerfisNaMemoria repositorio = new(perfis);
-            Resultado = new ResultadoDoDocumentoDaVersao(
-                repositorio,
-                new LeitorDoContextoDaVersao(repositorio, new ConcessoesNaMemoria()),
-                new EfeitosDaTrocaDeVigencia(new ConcessoesNaMemoria(), new PedidosAtivosNaMemoria(), DoublesDeAvisos.Avisos(), TimeProvider.System),
-                Unidade,
-                Catalogo,
-                TimeProvider.System);
+            Resultado = new ResultadoDoDocumentoDaVersao(repositorio, Unidade, TimeProvider.System);
         }
 
         public UnidadeDeTrabalho Unidade { get; }

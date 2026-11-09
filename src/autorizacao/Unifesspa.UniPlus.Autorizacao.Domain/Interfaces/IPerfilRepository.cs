@@ -27,6 +27,18 @@ public interface IPerfilRepository : IRepository<Perfil>
         PaginationDirection direction,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Os perfis com versão pendente que ainda vale em <paramref name="agora"/>, com versões e vigências, sem rastrear
+    /// nada: a leitura das filas de aprovação, que calculam a classe e a etapa pelo catálogo atual.
+    /// </summary>
+    Task<IReadOnlyList<Perfil>> ListarComPendenteNoPrazoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Os identificadores dos perfis cuja versão pendente já passou do prazo em <paramref name="agora"/>, lidos sem
+    /// trava: quem os materializa trava e confere cada perfil de novo.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
+
     /// <summary>O perfil dono do documento da versão, sem rastrear nada; nulo quando o documento não existe.</summary>
     Task<Guid?> ObterPerfilIdDoDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default);
 

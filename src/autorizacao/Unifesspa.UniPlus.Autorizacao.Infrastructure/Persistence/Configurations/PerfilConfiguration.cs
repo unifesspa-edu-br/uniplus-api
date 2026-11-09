@@ -80,7 +80,8 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         // Só os perfis de governança têm permissões próprias; o perfil comum as tem na versão.
         builder.Navigation(p => p.Permissoes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasMany(p => p.Versoes).WithOne().HasForeignKey(v => v.PerfilId).OnDelete(DeleteBehavior.Cascade);
+        // A versão é evidência da composição: o perfil não se exclui e nenhuma versão some em cascata.
+        builder.HasMany(p => p.Versoes).WithOne().HasForeignKey(v => v.PerfilId).OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(p => p.Versoes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(p => p.Vigencias).WithOne().HasForeignKey(v => v.PerfilId).OnDelete(DeleteBehavior.Cascade);
@@ -98,11 +99,13 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             permissao.HasData(
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:concessoes:administrar" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:pedidos:aprovar-funcional" },
+                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:aprovar-funcional" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:manter" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
                 new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:revisoes:rever-protecao-de-dados" },
                 new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:concessoes:administrar" },
                 new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:pedidos:aprovar-protecao-de-dados" },
+                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:perfis:aprovar-protecao-de-dados" },
                 new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
                 new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:revisoes:conduzir" });
         });

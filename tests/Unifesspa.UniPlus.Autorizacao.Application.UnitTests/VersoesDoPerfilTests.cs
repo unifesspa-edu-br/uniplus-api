@@ -5,7 +5,6 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -87,8 +86,6 @@ public sealed class VersoesDoPerfilTests
         Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(perfil.Id, Dados("Analista"), CancellationToken.None);
 
         resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
-        (await cenario.Versoes.CancelarVersaoAsync(perfil.Id, Guid.NewGuid(), CancellationToken.None))
-            .Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
         cenario.Unidade.Gravacoes.Should().Be(0);
     }
 
@@ -143,32 +140,6 @@ public sealed class VersoesDoPerfilTests
         resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados);
     }
 
-    [Fact(DisplayName = "Cancelar a versão pendente grava o cancelamento com a autoria")]
-    public async Task CancelarVersao_Pendente_Grava()
-    {
-        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(perfil);
-
-        Result resultado = await cenario.Versoes.CancelarVersaoAsync(perfil.Id, perfil.VersaoPendente!.Id, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Cancelada);
-        perfil.Versoes.Single().CanceladaPorSub.Should().Be(PerfisDeTeste.Autor.Sub);
-        cenario.Unidade.Gravacoes.Should().Be(1);
-    }
-
-    [Fact(DisplayName = "Conflito de concorrência na gravação devolve o conflito e descarta o rastreamento")]
-    public async Task CancelarVersao_Conflito_DevolveConflito()
-    {
-        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        Cenario cenario = new(perfil, falha: new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException());
-
-        Result resultado = await cenario.Versoes.CancelarVersaoAsync(perfil.Id, perfil.VersaoPendente!.Id, CancellationToken.None);
-
-        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.ConflitoDeConcorrencia);
-        cenario.Unidade.Descartes.Should().Be(1);
-    }
-
     private static DadosDaVersaoRequest Dados(string nome, params string[] permissoes) =>
         new(nome, Descricao, permissoes.Length == 0 ? [Consultar] : permissoes, PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento);
 
@@ -215,7 +186,7 @@ public sealed class VersoesDoPerfilTests
                 new OperacaoSobreOPerfil(Perfis, Unidade),
                 new LeitorDoContextoDaVersao(Perfis, new ConcessoesNaMemoria(temConcessao)),
                 new EnvioDoDocumento(Armazenamento, TimeProvider.System),
-                new AutoriaDaOperacao(new Usuario(autor), TimeProvider.System),
+                new AutoriaDaOperacao(new Usuario(autor), TimeProvider.System, new ConcessoesNaMemoria(temConcessao)),
                 Catalogo);
         }
 

@@ -19,7 +19,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Versões do perfil e o documento que institui cada uma, sob <c>/api/autorizacao/perfis/{id}/versoes</c>.
 /// </summary>
 /// <remarks>
-/// Todas as operações exigem <c>autorizacao:perfis:manter</c>. Versão não se edita: mudar o perfil é criar outra.
+/// Criar versão e mexer no documento exigem <c>autorizacao:perfis:manter</c>; a leitura do documento, essa ou a de aprovar
+/// pela proteção de dados, conferidas no handler. Versão não se edita: mudar o perfil é criar outra. A aprovação, a recusa,
+/// o cancelamento e a remoção vivem em <see cref="AprovacaoDeVersoesController"/>.
 /// </remarks>
 [ApiController]
 [Authorize]
@@ -61,24 +63,6 @@ public sealed class VersoesDoPerfilController : ControllerBase
         return resultado.IsSuccess
             ? StatusCode(StatusCodes.Status201Created, resultado.Value)
             : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>Cancela a versão pendente do perfil.</summary>
-    [HttpDelete("perfis/{id:guid}/versoes/{versaoId:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Cancelar(Guid id, Guid versaoId, CancellationToken cancellationToken)
-    {
-        Result resultado = await _commandBus
-            .Send(new CancelarVersaoDoPerfilCommand(id, versaoId), cancellationToken)
-            .ConfigureAwait(false);
-
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Pede a URL de PUT de outro documento, depois que a verificação recusou o anterior.</summary>
@@ -147,9 +131,11 @@ public sealed class VersoesDoPerfilController : ControllerBase
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Devolve a URL assinada de leitura do documento verificado; o acesso entra na trilha.</summary>
+    /// <summary>
+    /// Devolve a URL assinada de leitura do documento verificado a quem mantém perfis ou aprova pela proteção de dados; o
+    /// acesso entra na trilha.
+    /// </summary>
     [HttpGet("perfis/{id:guid}/versoes/{versaoId:guid}/documento")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [ProducesResponseType(typeof(LeituraDoDocumentoDaVersaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

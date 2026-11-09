@@ -57,13 +57,11 @@ public sealed class VeredictosTardiosNoHostTests : VersoesDoPerfilNoHostTestBase
     {
         if (situacao == "cancelada")
         {
-            (await EnviarAsync(gestor, HttpMethod.Delete, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}"))
-                .StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
+            (await CancelarBrutoAsync(gestor, envio)).StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             return;
         }
 
-        await ExecutarSqlAsync(
-            "UPDATE autorizacao.versoes_do_perfil SET situacao = 'recusada', motivo_da_recusa = 'nome_indisponivel', recusada_em = now() WHERE id = {0}",
-            envio.VersaoId);
+        using HttpClient gestao = await GestaoAsync();
+        (await RecusarBrutoAsync(gestao, envio, EtapaGestao)).StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
     }
 }

@@ -25,7 +25,10 @@ public sealed class PermissaoDoPerfilEndpointTests : PerfilEndpointTestBase
     [InlineData("POST", "")]
     [InlineData("DELETE", "/019a0000-0000-7000-8000-000000000001/ativacao")]
     [InlineData("POST", "/019a0000-0000-7000-8000-000000000001/versoes")]
-    [InlineData("DELETE", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa")]
+    [InlineData("POST", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa/cancelamento")]
+    [InlineData("POST", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa/aprovacao")]
+    [InlineData("POST", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa/recusa")]
+    [InlineData("POST", "/019a0000-0000-7000-8000-000000000001/remocoes")]
     [InlineData("GET", "/019a0000-0000-7000-8000-000000000001/versoes/019a0000-0000-7000-8000-0000000000aa/documento")]
     public async Task SemPermissao_Devolve403(string metodo, string sufixo)
     {

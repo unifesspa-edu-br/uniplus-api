@@ -14,4 +14,15 @@ public interface ITitularesDaPermissao
     /// <param name="codigoDaPermissao">Código <c>{módulo}:{resource}:{ação}</c> da permissão no catálogo.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     Task<IReadOnlyList<string>> ListarEmailsAsync(string codigoDaPermissao, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// As pessoas, com a identidade e o e-mail, com concessão vigente, no escopo da instituição, de um perfil que reúne
+    /// a permissão: a mesma consulta de <see cref="ListarEmailsAsync"/>, para quem avisa excluir alguém pela identidade.
+    /// </summary>
+    /// <param name="codigoDaPermissao">Código <c>{módulo}:{resource}:{ação}</c> da permissão no catálogo.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    Task<IReadOnlyList<TitularDaPermissao>> ListarTitularesComEmailAsync(string codigoDaPermissao, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Quem tem uma permissão por concessão vigente: a identidade que o token traz (emissor e <c>sub</c>) e o e-mail da concessão.</summary>
+public sealed record TitularDaPermissao(string Emissor, string Sub, string Email);

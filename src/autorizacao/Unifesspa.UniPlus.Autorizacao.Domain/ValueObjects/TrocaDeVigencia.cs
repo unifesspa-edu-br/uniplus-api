@@ -12,4 +12,8 @@ public sealed record TrocaDeVigencia(VersaoDoPerfil? Anterior, VersaoDoPerfil No
 {
     /// <summary>A versão nova reúne alguma permissão que a anterior não reunia.</summary>
     public bool TemAcrescimo => Anterior is { } anterior && Nova.AcrescimosSobre(anterior).Count > 0;
+
+    /// <summary>Os códigos que a anterior reunia e a nova deixou de reunir, ordenados.</summary>
+    public IReadOnlyList<string> Removidas =>
+        Anterior is { } anterior ? [.. anterior.Codigos().Except(Nova.Codigos(), StringComparer.Ordinal)] : [];
 }

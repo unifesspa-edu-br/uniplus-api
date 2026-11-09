@@ -149,8 +149,9 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
     private static Perfil PerfilNaVersao1(params string[] permissoes) =>
         PerfisDeTeste.Vigente($"Perfil {Guid.NewGuid():N}", "Perfil de teste.", permissoes, Catalogo);
 
+    // A proposta não retira permissão: a troca que só reduz o conjunto passa pela remoção, que vale na hora.
     private static TrocaDeVigencia Trocar(Perfil perfil, params string[] permissoes) =>
-        PerfisDeTeste.NovaVersaoVigente(perfil, permissoes, Catalogo).Troca!;
+        PerfisDeTeste.Trocar(perfil, permissoes, Catalogo)[^1];
 
     private static Concessao Conceder(Perfil perfil) =>
         Concessao.Conceder(

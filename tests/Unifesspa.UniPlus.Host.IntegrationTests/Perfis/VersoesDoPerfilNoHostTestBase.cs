@@ -29,6 +29,8 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected const string RotaPerfis = "/api/autorizacao/perfis";
     private protected const string Consultar = "teste:inscricoes:operar";
     private protected const string Sensivel = "teste:atendimento:analisar";
+    private protected const string EtapaGestao = "gestao_de_acessos";
+    private protected const string EtapaProtecao = "protecao_de_dados";
     private protected const string Protocolo = "23479.000123/2026-11";
 
     private protected VersoesDoPerfilNoHostTestBase(MonolitoDaInstalacaoFixture fixture)
@@ -78,14 +80,87 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         (await CorpoAsync(confirmacao, HttpStatusCode.OK)).GetProperty("situacao").GetString().Should().Be("em_verificacao");
     }
 
-    private protected async Task EnviarEVerificarAsync(HttpClient gestor, Envio envio)
+    /// <summary>
+    /// Leva a versão à vigência pelo caminho real: quem criou confirma o envio, o veredicto chega pela fila, a gestão
+    /// aprova e, quando a versão acrescenta permissão protegida, a proteção de dados aprova em seguida.
+    /// </summary>
+    private protected async Task EnviarEVerificarAsync(HttpClient criador, Envio envio)
     {
-        await ConfirmarEnvioAsync(gestor, envio);
+        await ConfirmarEnvioAsync(criador, envio);
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(
-            async () => await TemVigenteComVersaoAsync(gestor, envio.PerfilId, envio.VersaoId),
-            $"a versão {envio.VersaoId} não entrou em vigor");
+            async () => await SituacaoDoDocumentoAsync(criador, envio.PerfilId) == "verificado",
+            $"o documento da versão {envio.VersaoId} não foi verificado");
+        await AprovarAteAVigenciaAsync(criador, envio);
     }
+
+    /// <summary>Aprova a gestão e, se a versão ainda espera a proteção de dados, essa também; confere a vigência.</summary>
+    private protected async Task AprovarAteAVigenciaAsync(HttpClient criador, Envio envio)
+    {
+        using HttpClient gestao = await GestaoAsync();
+        JsonElement aposAGestao = await AprovarAsync(gestao, envio, EtapaGestao);
+        if (aposAGestao.GetProperty("versaoPendente").ValueKind == JsonValueKind.Object)
+        {
+            using HttpClient protecao = await ProtecaoAsync();
+            await AprovarAsync(protecao, envio, EtapaProtecao);
+        }
+
+        (await TemVigenteComVersaoAsync(criador, envio.PerfilId, envio.VersaoId)).Should().BeTrue();
+    }
+
+    private protected Task<HttpClient> GestaoAsync() => ClienteComPermissoesAsync(Isabella, AprovarFuncional);
+
+    private protected Task<HttpClient> ProtecaoAsync() => ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
+
+    /// <summary>Confere a recusa do perfil pelo status e pelo código público do catálogo de erros.</summary>
+    private protected static async Task ConferirRecusaDoPerfilAsync(HttpResponseMessage resposta, HttpStatusCode status, string codigo)
+    {
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(status, corpo);
+        corpo.Should().Contain($"uniplus.autorizacao.perfil.{codigo}");
+    }
+
+    /// <summary>
+    /// Dispara as chamadas na ordem dada contra o mesmo perfil travado pelo teste: cada uma só entra depois de a anterior
+    /// ficar à espera da trava, então a fila do banco é a ordem declarada. Solta a trava e devolve as respostas na ordem.
+    /// </summary>
+    private protected async Task<HttpResponseMessage[]> EmFilaSobATravaAsync(Guid perfilId, params Func<Task<HttpResponseMessage>>[] chamadas)
+    {
+        await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
+
+        List<Task<HttpResponseMessage>> disparadas = [];
+        foreach (Func<Task<HttpResponseMessage>> chamada in chamadas)
+        {
+            disparadas.Add(chamada());
+            await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, disparadas.Count);
+        }
+
+        await trava.ConfirmarAsync();
+
+        return await Task.WhenAll(disparadas);
+    }
+
+    private protected static async Task<JsonElement> AprovarAsync(HttpClient cliente, Envio envio, string etapa)
+    {
+        using HttpResponseMessage resposta = await AprovarBrutoAsync(cliente, envio, etapa);
+
+        return await CorpoAsync(resposta, HttpStatusCode.OK);
+    }
+
+    private protected static Task<HttpResponseMessage> AprovarBrutoAsync(HttpClient cliente, Envio envio, string etapa, string? chave = null) =>
+        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/aprovacao", new { etapa }, chave);
+
+    private protected static Task<HttpResponseMessage> RecusarBrutoAsync(HttpClient cliente, Envio envio, string etapa, string? motivo = "Documento instituidor sem a designação.") =>
+        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/recusa", new { etapa, motivo });
+
+    private protected static Task<HttpResponseMessage> CancelarBrutoAsync(HttpClient cliente, Envio envio, string? motivo = "Submetida por engano.", string? chave = null) =>
+        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/versoes/{envio.VersaoId}/cancelamento", new { motivo }, chave);
+
+    private protected static Task<HttpResponseMessage> RemoverBrutoAsync(
+        HttpClient cliente, Guid perfilId, string[] permissoes, string? motivo = "Permissão concedida por engano.", string? categoria = null, string? chave = null) =>
+        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{perfilId}/remocoes", new { permissoes, motivo, categoria }, chave);
 
     private protected static async Task<bool> TemVigenteAsync(HttpClient gestor, Guid perfilId) =>
         (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("composicaoEmVigor").ValueKind == JsonValueKind.Object;
@@ -100,11 +175,12 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected static async Task<string?> SituacaoDoDocumentoAsync(HttpClient gestor, Guid perfilId) =>
         (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("versaoPendente").GetProperty("situacaoDoDocumento").GetString();
 
-    private protected static async Task<string?> RecusaDaUltimaVersaoAsync(HttpClient gestor, Guid perfilId)
+    /// <summary>A situação da última versão que terminou sem entrar em vigor, ou nulo quando não há.</summary>
+    private protected static async Task<string?> SituacaoDaUltimaEncerradaAsync(HttpClient gestor, Guid perfilId)
     {
-        JsonElement recusada = (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("ultimaVersaoRecusada");
+        JsonElement encerrada = (await LerAsync(gestor, $"{RotaPerfis}/{perfilId}")).GetProperty("ultimaVersaoEncerradaSemVigor");
 
-        return recusada.ValueKind == JsonValueKind.Object ? recusada.GetProperty("motivo").GetString() : null;
+        return encerrada.ValueKind == JsonValueKind.Object ? encerrada.GetProperty("situacao").GetString() : null;
     }
 
     private protected static async Task<Guid[]> ParaPedirAsync(HttpClient client)
@@ -145,10 +221,8 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        RegistroDoResultadoDaVersao registro = await scope.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
+        return await scope.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
             .RegistrarAsync(ResultadoDe(documentoId, veredicto), CancellationToken.None);
-
-        return registro.Desfecho;
     }
 
     /// <summary>Entrega o veredicto pela fila do Wolverine, como o verificador faria, e espera o processamento terminar.</summary>

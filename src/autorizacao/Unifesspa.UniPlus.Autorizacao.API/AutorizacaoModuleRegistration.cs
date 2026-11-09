@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.API.Errors;
+using Unifesspa.UniPlus.Autorizacao.API.Rotinas;
 using Unifesspa.UniPlus.Autorizacao.Application;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
@@ -40,6 +41,7 @@ public static class AutorizacaoModuleRegistration
 
         services.AddAutorizacaoApplication();
         services.AddAutorizacaoInfrastructure();
+        services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
 
         // Migrations aplicadas no StartAsync, ANTES do runtime Wolverine (invariante de ordem).
         services.AddDbContextMigrationsOnStartup<AutorizacaoDbContext>();

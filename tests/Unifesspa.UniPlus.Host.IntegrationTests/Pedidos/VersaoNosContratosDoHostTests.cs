@@ -142,7 +142,7 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
         PerfisDeTeste.Garantir(perfil.CriarVersao(
             PerfisDeTeste.Conteudo(perfil.Nome, perfil.Descricao, permissoes, catalogo),
             PerfisDeTeste.SemContexto,
-            PerfisDeTeste.Autor,
+            PerfisDeTeste.AutoriaDoAutor,
             PerfisDeTeste.Instante,
             catalogo));
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();

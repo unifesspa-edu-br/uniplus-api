@@ -33,6 +33,19 @@ public sealed record EnviarEmail(
         string assunto,
         string corpoTexto,
         string corpoHtml,
+        string finalidade) =>
+        Para(Guid.CreateVersion7(), destinatario, assunto, corpoTexto, corpoHtml, finalidade);
+
+    /// <summary>
+    /// A mesma mensagem com o identificador que quem a monta já derivou do fato: o mesmo fato avisado duas vezes tem o
+    /// mesmo identificador e, portanto, o mesmo <c>Message-ID</c> no SMTP.
+    /// </summary>
+    public static EnviarEmail Para(
+        Guid mensagemId,
+        Email destinatario,
+        string assunto,
+        string corpoTexto,
+        string corpoHtml,
         string finalidade)
     {
         ArgumentNullException.ThrowIfNull(destinatario);
@@ -41,6 +54,6 @@ public sealed record EnviarEmail(
         ArgumentException.ThrowIfNullOrWhiteSpace(corpoHtml);
         ArgumentException.ThrowIfNullOrWhiteSpace(finalidade);
 
-        return new EnviarEmail(Guid.CreateVersion7(), destinatario.Valor, assunto, corpoTexto, corpoHtml, finalidade);
+        return new EnviarEmail(mensagemId, destinatario.Valor, assunto, corpoTexto, corpoHtml, finalidade);
     }
 }

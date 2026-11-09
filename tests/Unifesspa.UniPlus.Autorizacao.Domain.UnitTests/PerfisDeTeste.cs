@@ -18,11 +18,28 @@ public static class PerfisDeTeste
 
     public const long TamanhoDoDocumento = 2048;
 
-    public static readonly Identidade Autor = new("https://idp.test/realms/unifesspa", "diogo.souza");
+    public static readonly Identidade Autor = new("https://idp.test/realms/unifesspa", "diogo.souza", "Diogo Souza");
+
+    public static readonly Identidade Gestora = new("https://idp.test/realms/unifesspa", "betina.neves", "Betina Neves");
+
+    public static readonly Identidade ProtecaoDeDados = new("https://idp.test/realms/unifesspa", "marlene.campos", "Marlene Campos");
+
+    public static readonly AutoriaDaVersao AutoriaDoAutor = Autoria(Autor);
+
+    public static readonly AutoriaDaVersao AutoriaDaGestora = Autoria(Gestora);
+
+    public static readonly AutoriaDaVersao AutoriaDaProtecaoDeDados = Autoria(ProtecaoDeDados);
 
     public static readonly DateTimeOffset Instante = new(2026, 11, 9, 12, 0, 0, TimeSpan.Zero);
 
     public static readonly ContextoDaVersao SemContexto = new(NomeEmUsoPorOutroPerfil: false, TemConcessaoNaoRevogada: false);
+
+    public static AutoriaDaVersao Autoria(Identidade pessoa, bool temConcessao = false)
+    {
+        ArgumentNullException.ThrowIfNull(pessoa);
+
+        return new AutoriaDaVersao(pessoa, $"{pessoa.Sub}@unifesspa.edu.br", temConcessao);
+    }
 
     public static ConteudoDaVersao Conteudo(
         string nome, string descricao, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo) =>
@@ -31,7 +48,7 @@ public static class PerfisDeTeste
     /// <summary>Perfil comum com a versão 1 pendente, esperando o envio do documento.</summary>
     public static Perfil Pendente(
         string nome, string descricao, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo) =>
-        Garantir(Perfil.Criar(Conteudo(nome, descricao, permissoes, catalogo), Autor, Instante));
+        Garantir(Perfil.Criar(Conteudo(nome, descricao, permissoes, catalogo), AutoriaDoAutor, Instante, catalogo));
 
     /// <summary>Perfil comum com a versão 1 em vigor: o documento foi enviado e verificado.</summary>
     public static Perfil Vigente(
@@ -44,26 +61,72 @@ public static class PerfisDeTeste
     }
 
     /// <summary>Cria uma versão nova do perfil, com o mesmo nome, e a leva à vigência.</summary>
-    public static ResultadoDoDocumentoVerificado NovaVersaoVigente(
+    public static DesfechoDaVersao NovaVersaoVigente(
         Perfil perfil, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
         Garantir(perfil.CriarVersao(
-            Conteudo(perfil.Nome, perfil.Descricao, permissoes, catalogo), SemContexto, Autor, Instante, catalogo));
+            Conteudo(perfil.Nome, perfil.Descricao, permissoes, catalogo), SemContexto, AutoriaDoAutor, Instante, catalogo));
 
         return EntrarEmVigor(perfil, catalogo);
     }
 
-    /// <summary>Leva a versão pendente do perfil, pelo envio e pela verificação do documento, à vigência.</summary>
-    public static ResultadoDoDocumentoVerificado EntrarEmVigor(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
+    /// <summary>
+    /// Leva o perfil à composição pedida pelos caminhos do domínio: retirar permissão é remoção, que vale na hora, e
+    /// acrescentar é versão proposta, aprovada. A troca que retira e acrescenta se faz em duas, a remoção primeiro, e
+    /// devolve cada troca na ordem em que aconteceu.
+    /// </summary>
+    public static IReadOnlyList<TrocaDeVigencia> Trocar(
+        Perfil perfil, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+        ArgumentNullException.ThrowIfNull(permissoes);
+
+        string[] desejadas = [.. permissoes];
+        string[] retiradas = [.. perfil.ComposicaoEmVigor.Except(desejadas)];
+        List<TrocaDeVigencia> trocas = [];
+        if (retiradas.Length > 0)
+        {
+            trocas.Add(perfil.Remover(new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDaGestora, Instante)).Troca!);
+        }
+
+        if (desejadas.Except(perfil.ComposicaoEmVigor).Any())
+        {
+            trocas.Add(NovaVersaoVigente(perfil, desejadas, catalogo).Troca!);
+        }
+
+        return trocas;
+    }
+
+    /// <summary>
+    /// Leva a versão pendente do perfil à vigência pelo caminho real: o envio e a verificação do documento, a aprovação
+    /// da gestão e, quando a versão exige, a da proteção de dados. Devolve o desfecho da última decisão.
+    /// </summary>
+    public static DesfechoDaVersao EntrarEmVigor(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
         VersaoDoPerfil versao = perfil.VersaoPendente!;
         DocumentoDaVersao documento = Garantir(perfil.ConfirmarDocumento(versao.Id, "etag-de-teste", Instante));
+        perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), Instante);
 
-        return perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), Instante, SemContexto, catalogo);
+        DesfechoDaVersao desfecho = Decidir(perfil, versao, EtapaDaVersao.GestaoDeAcessos, AutoriaDaGestora, catalogo);
+
+        return versao.Pendente
+            ? Decidir(perfil, versao, EtapaDaVersao.ProtecaoDeDados, AutoriaDaProtecaoDeDados, catalogo)
+            : desfecho;
+    }
+
+    /// <summary>Aprova a etapa da versão em nome de <paramref name="autoria"/>, sem contexto de concessão.</summary>
+    public static DesfechoDaVersao Decidir(
+        Perfil perfil, VersaoDoPerfil versao, EtapaDaVersao etapa, AutoriaDaVersao autoria, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+        ArgumentNullException.ThrowIfNull(versao);
+
+        return perfil.Decidir(
+            new PedidoDeDecisaoDaVersao(versao.Id, etapa, ResultadoDaDecisao.Aprovado, null, autoria, Instante), SemContexto, catalogo);
     }
 
     /// <summary>

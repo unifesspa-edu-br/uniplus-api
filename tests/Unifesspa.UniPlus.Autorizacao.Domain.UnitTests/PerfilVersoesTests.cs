@@ -17,6 +17,7 @@ public sealed class PerfilVersoesTests
     private const string Dados = "selecao:inscricoes:ler-dados-pessoais";
     private const string Unidade = "unidade:inscricoes:operar";
     private const string Descricao = "Descrição válida.";
+    private const string Motivo = "Versão proposta por engano.";
 
     private static readonly CatalogoDeTeste Catalogo = new();
     private static readonly ContextoDaVersao ComConcessao = new(NomeEmUsoPorOutroPerfil: false, TemConcessaoNaoRevogada: true);
@@ -29,7 +30,7 @@ public sealed class PerfilVersoesTests
         VersaoDoPerfil primeira = perfil.VersaoVigente!;
         Criar(perfil, "Analista de processos", [Consultar, Publicar]);
 
-        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Troca.Should().NotBeNull();
 
         primeira.Situacao.Should().Be(SituacaoDaVersao.Encerrada);
         perfil.VersaoVigente!.Numero.Should().Be(2);
@@ -101,25 +102,35 @@ public sealed class PerfilVersoesTests
         TentarCriar(PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo), "Analista", [Consultar, Dados])
             .IsSuccess.Should().BeTrue();
 
-    [Fact(DisplayName = "Trocar e retirar permissão com concessão é admitido quando nada pessoal se acrescenta")]
-    public void CriarVersao_ReduzOuTrocaInternaComConcessao_Aceita()
+    [Fact(DisplayName = "Proposta que retira permissão é recusada: a retirada é a remoção")]
+    public void CriarVersao_ComRemocao_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], Catalogo);
 
-        TentarCriar(perfil, "Analista", [Consultar, Publicar], ComConcessao).IsSuccess.Should().BeTrue();
+        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar]))
+            .Should().Equal(PerfilErrorCodes.RemocaoPorContencao);
+    }
+
+    [Fact(DisplayName = "Acréscimo público ou interno a perfil com concessão é recusado até a janela de migração")]
+    public void CriarVersao_AcrescimoInternoComConcessao_Recusa()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+
+        CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar, Publicar], ComConcessao))
+            .Should().Equal(PerfilErrorCodes.AcrescimoComConcessaoAtiva);
     }
 
     [Fact(DisplayName = "Sem versão vigente a versão nova é uma nova primeira versão: o alcance e o nome podem mudar")]
     public void CriarVersao_AposCancelarAPrimeira_NaoCompara()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        perfil.CancelarVersao(perfil.VersaoPendente!.Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante).IsSuccess.Should().BeTrue();
+        Cancelar(perfil, perfil.VersaoPendente!.Id).Concluida.Should().BeTrue();
 
         PerfisDeTeste.Garantir(TentarCriar(perfil, "Operador de unidade", [Unidade], ComConcessao));
 
         perfil.VersaoPendente!.Numero.Should().Be(2);
         perfil.Nome.Should().Be("Operador de unidade");
-        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Troca.Should().NotBeNull();
         perfil.Alcance(Catalogo).Should().Be(TipoDeEscopo.Unidade);
     }
 
@@ -129,10 +140,12 @@ public sealed class PerfilVersoesTests
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
         VersaoDoPerfil pendente = Criar(perfil, "Analista", [Consultar, Publicar]);
 
-        perfil.CancelarVersao(pendente.Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante).IsSuccess.Should().BeTrue();
+        Cancelar(perfil, pendente.Id).Concluida.Should().BeTrue();
 
         pendente.Situacao.Should().Be(SituacaoDaVersao.Cancelada);
         pendente.CanceladaPorSub.Should().Be(PerfisDeTeste.Autor.Sub);
+        pendente.FormaDoCancelamento.Should().Be(FormaDoCancelamento.Pessoa);
+        pendente.MotivoDoCancelamento.Should().Be(Motivo);
         pendente.CanceladaEm.Should().Be(PerfisDeTeste.Instante);
         perfil.VersaoVigente!.Numero.Should().Be(1);
     }
@@ -142,8 +155,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(perfil.CancelarVersao(perfil.VersaoVigente!.Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante))
-            .Should().Equal(PerfilErrorCodes.VersaoNaoPendente);
+        Cancelar(perfil, perfil.VersaoVigente!.Id).Erro!.Code.Should().Be(PerfilErrorCodes.VersaoNaoPendente);
     }
 
     [Fact(DisplayName = "Versão de outro perfil ou inexistente não é encontrada")]
@@ -151,8 +163,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(perfil.CancelarVersao(Guid.NewGuid(), PerfisDeTeste.Autor, PerfisDeTeste.Instante))
-            .Should().Equal(PerfilErrorCodes.VersaoNaoEncontrada);
+        Cancelar(perfil, Guid.NewGuid()).Erro!.Code.Should().Be(PerfilErrorCodes.VersaoNaoEncontrada);
     }
 
     [Fact(DisplayName = "Veredicto verificado de versão cancelada só grava o documento")]
@@ -161,15 +172,28 @@ public sealed class PerfilVersoesTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         VersaoDoPerfil versao = perfil.VersaoPendente!;
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag", PerfisDeTeste.Instante));
-        perfil.CancelarVersao(versao.Id, PerfisDeTeste.Autor, PerfisDeTeste.Instante);
+        Cancelar(perfil, versao.Id);
 
-        DesfechoDoDocumentoVerificado desfecho = Verificar(perfil, documento).Desfecho;
+        Verificar(perfil, documento).Should().BeTrue();
 
-        desfecho.Should().Be(DesfechoDoDocumentoVerificado.Gravado);
         documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
         versao.Situacao.Should().Be(SituacaoDaVersao.Cancelada);
         perfil.Vigencias.Should().BeEmpty();
         perfil.TemComposicaoEmVigor.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "O veredicto verificado só grava o documento: a versão segue pendente até a aprovação")]
+    public void RegistrarVerificado_NaoColocaAVersaoEmVigor()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(
+            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
+
+        Verificar(perfil, documento).Should().BeTrue();
+
+        documento.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
+        perfil.VersaoPendente.Should().NotBeNull();
+        perfil.Vigencias.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Veredicto repetido ou sem documento em verificação é ignorado")]
@@ -179,41 +203,9 @@ public sealed class PerfilVersoesTests
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
             perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
-        Verificar(perfil, documento).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
-        Verificar(perfil, documento).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.Ignorado);
-        perfil.Vigencias.Should().ContainSingle();
-        perfil.RegistrarDocumentoVerificado(Guid.NewGuid(), "a", PerfisDeTeste.Instante, PerfisDeTeste.SemContexto, Catalogo)
-            .Desfecho.Should().Be(DesfechoDoDocumentoVerificado.Ignorado);
-    }
-
-    [Fact(DisplayName = "Concessão que surge enquanto o documento esperava recusa a versão que amplia")]
-    public void RegistrarVerificado_ConcessaoNova_RecusaAAmpliacao()
-    {
-        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        Criar(perfil, "Analista", [Consultar, Dados]);
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
-
-        Verificar(perfil, documento, ComConcessao).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.VersaoRecusada);
-
-        perfil.UltimaVersaoRecusada!.MotivoDaRecusa.Should().Be(MotivoDaRecusaDaVersao.AmpliacaoExigeProtecaoDeDados);
-        perfil.UltimaVersaoRecusada.Documento!.Situacao.Should().Be(SituacaoDoAnexo.Verificado);
-        perfil.VersaoVigente!.Numero.Should().Be(1);
-        perfil.ComposicaoEmVigor.Should().Equal(Consultar);
-    }
-
-    [Fact(DisplayName = "Nome que outro perfil tomou enquanto o documento esperava recusa a versão")]
-    public void RegistrarVerificado_NomeTomado_RecusaAVersao()
-    {
-        Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
-
-        Verificar(perfil, documento, NomeEmUso).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.VersaoRecusada);
-
-        perfil.UltimaVersaoRecusada!.MotivoDaRecusa.Should().Be(MotivoDaRecusaDaVersao.NomeIndisponivel);
-        perfil.TemComposicaoEmVigor.Should().BeFalse();
-        perfil.VersaoPendente.Should().BeNull();
+        Verificar(perfil, documento).Should().BeTrue();
+        Verificar(perfil, documento).Should().BeFalse();
+        perfil.RegistrarDocumentoVerificado(Guid.NewGuid(), "a", PerfisDeTeste.Instante).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Recusa do verificador libera outro documento para a mesma versão")]
@@ -301,7 +293,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Guid versaoId = perfil.VersaoPendente!.Id;
-        perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, PerfisDeTeste.Instante);
+        Cancelar(perfil, versaoId);
 
         CodigosDaRecusa(perfil.ConfirmarDocumento(versaoId, "etag", PerfisDeTeste.Instante))
             .Should().Equal(PerfilErrorCodes.VersaoNaoPendente);
@@ -330,15 +322,13 @@ public sealed class PerfilVersoesTests
         documento.ChaveDefinitiva.Should().Be($"{prefixo}/definitivo");
     }
 
-    [Fact(DisplayName = "Perfil desativado: a pendente entra em vigor mesmo assim e o perfil segue desativado")]
-    public void RegistrarVerificado_PerfilInativo_EntraEmVigor()
+    [Fact(DisplayName = "Perfil desativado: a pendente entra em vigor pela aprovação e o perfil segue desativado")]
+    public void Aprovar_PerfilInativo_EntraEmVigor()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
         perfil.Desativar();
 
-        Verificar(perfil, documento).Desfecho.Should().Be(DesfechoDoDocumentoVerificado.EntrouEmVigor);
+        PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Troca.Should().NotBeNull();
 
         perfil.Ativo.Should().BeFalse();
         perfil.TemComposicaoEmVigor.Should().BeTrue();
@@ -365,13 +355,15 @@ public sealed class PerfilVersoesTests
         perfil.CriarVersao(
             PerfisDeTeste.Conteudo(nome, Descricao, permissoes, Catalogo),
             contexto ?? PerfisDeTeste.SemContexto,
-            PerfisDeTeste.Autor,
+            PerfisDeTeste.AutoriaDoAutor,
             PerfisDeTeste.Instante,
             Catalogo);
 
-    private static ResultadoDoDocumentoVerificado Verificar(Perfil perfil, DocumentoDaVersao documento, ContextoDaVersao? contexto = null) =>
-        perfil.RegistrarDocumentoVerificado(
-            documento.Id, new string('b', 64), PerfisDeTeste.Instante, contexto ?? PerfisDeTeste.SemContexto, Catalogo);
+    private static DesfechoDaVersao Cancelar(Perfil perfil, Guid versaoId) =>
+        perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, Motivo, PerfisDeTeste.Instante);
+
+    private static bool Verificar(Perfil perfil, DocumentoDaVersao documento) =>
+        perfil.RegistrarDocumentoVerificado(documento.Id, new string('b', 64), PerfisDeTeste.Instante);
 
     private static string[] CodigosDaRecusa(Result resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
 

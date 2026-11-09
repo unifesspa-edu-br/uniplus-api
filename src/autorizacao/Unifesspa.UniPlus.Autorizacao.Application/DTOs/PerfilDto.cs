@@ -5,8 +5,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 /// <param name="Governanca">Papel de governança do perfil de sistema; nulo nos perfis comuns.</param>
 /// <param name="Sensibilidade">A mais alta entre as permissões da composição em vigor (sem vigente, da pendente), derivada do catálogo.</param>
 /// <param name="ComposicaoEmVigor">O que decide acesso hoje; nulo no perfil comum sem versão vigente.</param>
-/// <param name="VersaoPendente">A versão que espera o documento ser verificado; nula quando não há.</param>
-/// <param name="UltimaVersaoRecusada">Preenchida quando a versão mais recente do perfil foi recusada na entrada em vigor.</param>
+/// <param name="VersaoPendente">A versão que espera a aprovação; nula quando não há.</param>
+/// <param name="UltimaVersaoEncerradaSemVigor">Preenchida quando a versão mais recente do perfil terminou sem entrar em vigor.</param>
 public sealed record PerfilDto(
     Guid Id,
     string Nome,
@@ -16,11 +16,11 @@ public sealed record PerfilDto(
     string Sensibilidade,
     ComposicaoEmVigorDto? ComposicaoEmVigor,
     VersaoPendenteDto? VersaoPendente,
-    UltimaVersaoRecusadaDto? UltimaVersaoRecusada);
+    UltimaVersaoEncerradaSemVigorDto? UltimaVersaoEncerradaSemVigor);
 
 /// <summary>Perfil de acesso como a listagem o resume.</summary>
 /// <param name="TemVersaoVigente">O perfil comum tem composição em vigor; o de governança dispensa a versão e a tem sempre.</param>
-/// <param name="TemVersaoPendente">Há versão esperando o documento ser verificado.</param>
+/// <param name="TemVersaoPendente">Há versão esperando a aprovação.</param>
 public sealed record PerfilListadoDto(
     Guid Id,
     string Nome,
@@ -40,7 +40,14 @@ public sealed record ComposicaoEmVigorDto(
     DateTimeOffset? DocumentoVerificadoEm,
     DateTimeOffset? Desde);
 
-/// <summary>Versão pendente: o que ela passará a valer e a situação do documento que a institui.</summary>
+/// <summary>Versão pendente: o que ela passará a valer, o que a aprovação ainda espera e quem já decidiu.</summary>
+/// <param name="ExpiraEm">O fim do prazo de 15 dias; a partir dele a versão não aprova mais.</param>
+/// <param name="EtapaAtual">A etapa que falta decidir, pelo catálogo atual: <c>gestao_de_acessos</c> ou <c>protecao_de_dados</c>.</param>
+/// <param name="ExigeProtecaoDeDados">O acréscimo é pessoal, identificador ou sensível, pelo catálogo atual.</param>
+/// <param name="Acrescimo">As permissões que a versão acrescenta à em vigor.</param>
+/// <param name="Remocao">As permissões que a versão retira da em vigor.</param>
+/// <param name="Decisoes">As decisões do ciclo atual da aprovação.</param>
+/// <param name="CriadorTemConcessao">Quem criou a versão tinha concessão do perfil.</param>
 public sealed record VersaoPendenteDto(
     Guid VersaoId,
     int Numero,
@@ -50,10 +57,26 @@ public sealed record VersaoPendenteDto(
     string Protocolo,
     Guid DocumentoId,
     string SituacaoDoDocumento,
-    DateTimeOffset CriadaEm);
+    DateTimeOffset CriadaEm,
+    DateTimeOffset ExpiraEm,
+    string EtapaAtual,
+    bool ExigeProtecaoDeDados,
+    IReadOnlyList<PermissaoDoPerfilDto> Acrescimo,
+    IReadOnlyList<PermissaoDoPerfilDto> Remocao,
+    IReadOnlyList<DecisaoDaVersaoDto> Decisoes,
+    bool CriadorTemConcessao);
 
-/// <summary>A versão mais recente do perfil, quando foi recusada, e por quê.</summary>
-public sealed record UltimaVersaoRecusadaDto(int Numero, string Motivo, DateTimeOffset RecusadaEm);
+/// <summary>Uma decisão dada a uma etapa da aprovação. O motivo da recusa não sai daqui.</summary>
+public sealed record DecisaoDaVersaoDto(string Etapa, string Resultado, string? Nome, bool TemConcessao, DateTimeOffset Instante);
+
+/// <summary>A versão mais recente do perfil, quando terminou sem entrar em vigor: recusada, cancelada ou expirada.</summary>
+/// <param name="Situacao">A situação em que a versão terminou.</param>
+/// <param name="Etapa">A etapa em que a aprovação parou.</param>
+/// <param name="Instante">Quando a versão terminou.</param>
+public sealed record UltimaVersaoEncerradaSemVigorDto(int Numero, string Situacao, string Etapa, DateTimeOffset Instante);
 
 /// <summary>Permissão reunida por um perfil, com nome e sensibilidade lidos do catálogo.</summary>
 public sealed record PermissaoDoPerfilDto(string Codigo, string Nome, string Sensibilidade);
+
+/// <summary>Uma versão pendente na fila de aprovação de uma etapa, com o perfil a que pertence.</summary>
+public sealed record ItemDaFilaDeVersoesDto(Guid PerfilId, string PerfilNome, VersaoPendenteDto Versao);

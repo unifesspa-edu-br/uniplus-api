@@ -47,12 +47,12 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         Guid versaoId = LerEnvio(await primeira.Content.ReadAsStringAsync()).VersaoId;
 
         using HttpResponseMessage segunda = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
-        using HttpResponseMessage cancelada = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{versaoId}");
+        using HttpResponseMessage cancelada = await CancelarAsync(diogo, id, versaoId);
         using HttpResponseMessage terceira = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
 
         segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await segunda.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.versao_pendente_existente");
-        cancelada.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        cancelada.StatusCode.Should().Be(HttpStatusCode.OK);
         terceira.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
@@ -63,8 +63,8 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         Guid vigente = await VersaoVigenteAsync(id);
 
-        using HttpResponseMessage naoPendente = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{vigente}");
-        using HttpResponseMessage inexistente = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{Guid.NewGuid()}");
+        using HttpResponseMessage naoPendente = await CancelarAsync(diogo, id, vigente);
+        using HttpResponseMessage inexistente = await CancelarAsync(diogo, id, Guid.NewGuid());
 
         naoPendente.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await naoPendente.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.versao_nao_pendente");
@@ -81,7 +81,7 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         using HttpResponseMessage ampliada = await EnviarAsync(
             diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [OperarInscricoes, AnalisarAtendimento]));
         Guid pendente = LerEnvio(await ampliada.Content.ReadAsStringAsync()).VersaoId;
-        await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/versoes/{pendente}");
+        (await CancelarAsync(diogo, id, pendente)).Dispose();
         using HttpResponseMessage outroAlcance = await EnviarAsync(
             diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ManterMotivos]));
 
@@ -158,4 +158,7 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await LerAsync(diogo, id)).RootElement.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Object);
     }
+
+    private static Task<HttpResponseMessage> CancelarAsync(HttpClient cliente, Guid perfilId, Guid versaoId) =>
+        EnviarAsync(cliente, HttpMethod.Post, $"{Rota}/{perfilId}/versoes/{versaoId}/cancelamento", new { motivo = "Submetida por engano." });
 }
