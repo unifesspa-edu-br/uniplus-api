@@ -5,11 +5,15 @@ using System.Net;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
@@ -22,13 +26,21 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit exige tipo de teste público.")]
-public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostTestBase
+public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostTestBase, IDisposable
 {
-    private static readonly TimeSpan MargemDoPrazo = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan MargemDoPrazo = TimeSpan.FromMinutes(1);
+
+    private readonly RelogioAvancavelDeTeste _relogio = new();
+    private readonly WebApplicationFactory<HostAssemblyMarker> _host;
 
     public PrazoDaVersaoSobATravaNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
+        _host = Fixture.Factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(servicos =>
+        {
+            servicos.RemoveAll<TimeProvider>();
+            servicos.AddSingleton<TimeProvider>(_relogio);
+        }));
     }
 
     [Fact(DisplayName = "A decisão que espera a trava e atravessa o prazo encontra a versão expirada e não a põe em vigor")]
@@ -70,7 +82,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
 
         Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
         await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
-        await EsperarOPrazoAsync();
+        AtravessarOPrazo();
         Task<int> rotina = ExpirarAsync();
         await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
         await trava.ConfirmarAsync();
@@ -87,7 +99,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         (Envio vigente, Envio versao) = await VigenteEPendenteVerificadaAsync();
         using HttpClient gestao = await GestaoAsync();
         await ExpirarEmAsync(versao, MargemDoPrazo);
-        await EsperarOPrazoAsync();
+        AtravessarOPrazo();
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
 
         Task<int> rotina = ExpirarAsync();
@@ -113,20 +125,20 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
 
     private Task ExpirarEmAsync(Envio versao, TimeSpan prazo) =>
         ExecutarSqlAsync(
-            "UPDATE autorizacao.versoes_do_perfil SET expira_em = now() + {0} WHERE id = {1}", prazo, versao.VersaoId);
+            "UPDATE autorizacao.versoes_do_perfil SET expira_em = {0} WHERE id = {1}", _relogio.GetUtcNow() + prazo, versao.VersaoId);
 
     private async Task<HttpResponseMessage> ChamarAtravessandoOPrazoAsync(Guid perfilId, Func<Task<HttpResponseMessage>> chamada)
     {
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(perfilId);
         Task<HttpResponseMessage> disparada = chamada();
         await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
-        await EsperarOPrazoAsync();
+        AtravessarOPrazo();
         await trava.ConfirmarAsync();
 
         return await disparada;
     }
 
-    private static Task EsperarOPrazoAsync() => Task.Delay(MargemDoPrazo + TimeSpan.FromMilliseconds(500));
+    private void AtravessarOPrazo() => _relogio.Avancar(MargemDoPrazo + TimeSpan.FromSeconds(30));
 
     private async Task<TransacaoRetidaDeTeste> TravarOPerfilAsync(Guid perfilId)
     {
@@ -139,7 +151,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
 
     private async Task<int> ExpirarAsync()
     {
-        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope escopo = _host.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<ExpiracaoDasVersoesPendentes>().ExecutarAsync(CancellationToken.None);
     }
@@ -150,4 +162,8 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         (await DecisoesAsync(versao.VersaoId)).Should().BeEmpty();
         (await VigenciasAsync(vigente.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == vigente.VersaoId);
     }
+
+    public void Dispose() => _host.Dispose();
+
+    private protected override HttpClient NovoCliente() => _host.CreateClient();
 }
