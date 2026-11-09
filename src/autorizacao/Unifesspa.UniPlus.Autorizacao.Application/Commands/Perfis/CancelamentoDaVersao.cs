@@ -39,13 +39,29 @@ public sealed class CancelamentoDaVersao
             return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado()));
         }
 
-        return await _operacao
+        GravacaoDaOperacao<PerfilDto> gravacao = await _operacao
             .ExecutarComAvisosAsync(
                 perfilId,
                 versaoId,
                 (perfil, contexto) => CancelarNoPerfilAsync(perfil, versaoId, motivo, autoria.Pessoa, contexto.Agora, verificador, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
+
+        return gravacao.Resultado.Error?.Code == PerfilErrorCodes.NaoEncontrado
+            ? await RecusarSemPermissaoAsync(gravacao, perfilId, verificador, cancellationToken).ConfigureAwait(false)
+            : gravacao;
+    }
+
+    // O perfil que não existe não tem autor de versão: quem não mantém perfis recebe a mesma recusa do perfil que existe.
+    private static async Task<GravacaoDaOperacao<PerfilDto>> RecusarSemPermissaoAsync(
+        GravacaoDaOperacao<PerfilDto> naoEncontrado, Guid perfilId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        DecisaoDeAcesso decisao = await AcessoDaVersao.AvaliarManterAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        await AcessoDaVersao.RegistrarAsync(verificador, decisao, cancellationToken).ConfigureAwait(false);
+
+        return decisao is DecisaoPermitida
+            ? naoEncontrado
+            : GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(PerfilErros.SemPermissaoNaEtapa()));
     }
 
     private async Task<DesfechoDaOperacao<PerfilDto>> CancelarNoPerfilAsync(

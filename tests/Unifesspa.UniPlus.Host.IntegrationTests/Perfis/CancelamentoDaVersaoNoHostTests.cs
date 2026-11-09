@@ -58,6 +58,35 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         (await SituacaoDaVersaoNoBancoAsync(versao.VersaoId)).Should().Be("pendente");
     }
 
+    [Fact(DisplayName = "Sem a permissão de manter perfis a recusa é a mesma para o perfil que existe e o que não existe")]
+    public async Task SemPermissao_RecusaIgualParaPerfilExistenteEInexistente()
+    {
+        await ResetarAsync();
+        using HttpClient diogo = await GestorAsync();
+        Envio vigente = await PerfilVigenteAsync(diogo, Consultar);
+        Envio existente = await CriarVersaoAsync(diogo, vigente.PerfilId, Nome(), Consultar);
+        Envio inexistente = new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), string.Empty);
+        using HttpClient leandro = Cliente(Leandro);
+
+        using HttpResponseMessage doExistente = await CancelarBrutoAsync(leandro, existente);
+        using HttpResponseMessage doInexistente = await CancelarBrutoAsync(leandro, inexistente);
+
+        await ConferirRecusaDoPerfilAsync(doExistente, HttpStatusCode.Forbidden, "sem_permissao_na_etapa");
+        await ConferirRecusaDoPerfilAsync(doInexistente, HttpStatusCode.Forbidden, "sem_permissao_na_etapa");
+    }
+
+    [Fact(DisplayName = "Quem tem a permissão de manter perfis recebe não encontrado para o perfil que não existe")]
+    public async Task ComPermissao_PerfilInexistente_Recebe404()
+    {
+        await ResetarAsync();
+        using HttpClient diogo = await GestorAsync();
+        Envio inexistente = new(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), string.Empty);
+
+        using HttpResponseMessage resposta = await CancelarBrutoAsync(diogo, inexistente);
+
+        await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.NotFound, "nao_encontrado");
+    }
+
     [Fact(DisplayName = "Quem tem a permissão de manter perfis cancela a versão de outra pessoa")]
     public async Task QuemTemManter_Cancela()
     {
