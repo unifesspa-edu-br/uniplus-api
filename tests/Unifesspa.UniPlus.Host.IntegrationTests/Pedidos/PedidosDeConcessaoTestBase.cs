@@ -60,9 +60,12 @@ public abstract class PedidosDeConcessaoTestBase
 
     internal static Identidade IdentidadeDe(Persona p) => new(TestAuthHandler.DefaultIssuer, p.Sub.ToString());
 
+    /// <summary>O cliente HTTP do host sob teste; as suítes que sobem uma variação do host o redefinem.</summary>
+    private protected virtual HttpClient NovoCliente() => Fixture.Factory.CreateClient();
+
     private protected HttpClient Cliente(Persona persona, string? email = null, string emailVerificado = "true", bool semJti = false)
     {
-        HttpClient client = Fixture.Factory.CreateClient();
+        HttpClient client = NovoCliente();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, persona.Sub.ToString());

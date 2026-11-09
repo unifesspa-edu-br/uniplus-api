@@ -68,7 +68,7 @@ public sealed class DocumentosDasVersoes
     /// <summary>Põe o documento em verificação. Devolve o documento para quem publica o pedido ao verificador.</summary>
     public Task<Result<DocumentoDaVersao>> ConfirmarAsync(
         Guid perfilId, Guid versaoId, string? etag, CancellationToken cancellationToken) =>
-        _operacao.ExecutarAsync(
+        _operacao.ExecutarSemChaveAsync(
             perfilId,
             versaoId,
             (perfil, contexto) => Task.FromResult(perfil.ConfirmarDocumento(versaoId, etag, contexto.Agora)),

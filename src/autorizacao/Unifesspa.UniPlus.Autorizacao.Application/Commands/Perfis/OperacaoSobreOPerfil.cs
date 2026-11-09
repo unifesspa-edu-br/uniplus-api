@@ -33,7 +33,9 @@ public sealed record GravacaoDaOperacao<T>(Result<T> Resultado, IReadOnlyList<En
 /// recarrega-o por inteiro, materializa o prazo vencido da pendente, deixa a operação validar e fazer a transição e só
 /// então grava. O instante da operação é lido depois da trava, e a expiração materializada grava mesmo que a operação
 /// seguinte recuse. Duas operações sobre o mesmo perfil, ou sobre um documento dele, nunca correm juntas: a segunda lê o
-/// que a primeira confirmou.
+/// que a primeira confirmou. O conflito de concorrência na gravação segue a ADR-0119: as operações de endpoint com chave
+/// de idempotência o capturam e devolvem como recusa, para não corromper o cache da chave; as que não têm chave o deixam
+/// propagar até o middleware de exceções, que responde 409.
 /// </summary>
 public sealed class OperacaoSobreOPerfil
 {
@@ -53,8 +55,9 @@ public sealed class OperacaoSobreOPerfil
     }
 
     /// <summary>
-    /// A operação sobre o perfil, ou sobre uma versão dele quando <paramref name="versaoId"/> a informa: toda recusa
-    /// sobre a versão que acabou de vencer é a do prazo.
+    /// A operação de endpoint com chave de idempotência sobre o perfil, ou sobre uma versão dele quando
+    /// <paramref name="versaoId"/> a informa: toda recusa sobre a versão que acabou de vencer é a do prazo. O conflito de
+    /// concorrência volta como recusa.
     /// </summary>
     public async Task<Result<T>> ExecutarAsync<T>(
         Guid perfilId, Guid? versaoId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
@@ -71,7 +74,27 @@ public sealed class OperacaoSobreOPerfil
         return gravacao.Resultado;
     }
 
-    /// <summary>A mesma operação, para as que só mudam o estado e não devolvem nada.</summary>
+    /// <summary>
+    /// A operação sem chave de idempotência, como a confirmação do documento e a rotina de expiração: o conflito de
+    /// concorrência não é capturado e propaga.
+    /// </summary>
+    public async Task<Result<T>> ExecutarSemChaveAsync<T>(
+        Guid perfilId, Guid? versaoId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(operacao);
+
+        GravacaoDaOperacao<T> gravacao = await ExecutarNaTravaAsync(
+            perfilId,
+            versaoId,
+            async (perfil, contexto) => new DesfechoDaOperacao<T>(await operacao(perfil, contexto).ConfigureAwait(false)),
+            SalvarAsync,
+            cancellationToken)
+            .ConfigureAwait(false);
+
+        return gravacao.Resultado;
+    }
+
+    /// <summary>A mesma operação com chave de idempotência, para as que só mudam o estado e não devolvem nada.</summary>
     public async Task<Result> ExecutarAsync(Guid perfilId, Func<Perfil, Result> operacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
@@ -89,10 +112,18 @@ public sealed class OperacaoSobreOPerfil
     /// A operação que pode gravar mesmo recusando e que devolve avisos. A recusa que grava leva o perfil e os avisos dela
     /// à mesma transação; a que não grava descarta tudo.
     /// </summary>
-    public async Task<GravacaoDaOperacao<T>> ExecutarComAvisosAsync<T>(
+    public Task<GravacaoDaOperacao<T>> ExecutarComAvisosAsync<T>(
         Guid perfilId,
         Guid? versaoId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
+        CancellationToken cancellationToken) =>
+        ExecutarNaTravaAsync(perfilId, versaoId, operacao, SalvarComChaveAsync, cancellationToken);
+
+    private async Task<GravacaoDaOperacao<T>> ExecutarNaTravaAsync<T>(
+        Guid perfilId,
+        Guid? versaoId,
+        Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
+        Func<DesfechoDaOperacao<T>, CancellationToken, Task<GravacaoDaOperacao<T>>> salvar,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
@@ -108,7 +139,7 @@ public sealed class OperacaoSobreOPerfil
             await operacao(perfil, contexto).ConfigureAwait(false), contexto, versaoId);
 
         return desfecho.Resultado.IsSuccess || desfecho.GravarMesmoNaFalha
-            ? await SalvarAsync(desfecho, cancellationToken).ConfigureAwait(false)
+            ? await salvar(desfecho, cancellationToken).ConfigureAwait(false)
             : Descartar(desfecho.Resultado);
     }
 
@@ -120,7 +151,7 @@ public sealed class OperacaoSobreOPerfil
 
         await _perfis.AdicionarAsync(perfil, cancellationToken).ConfigureAwait(false);
 
-        return (await SalvarAsync(new DesfechoDaOperacao<T>(resultado), cancellationToken).ConfigureAwait(false)).Resultado;
+        return (await SalvarComChaveAsync(new DesfechoDaOperacao<T>(resultado), cancellationToken).ConfigureAwait(false)).Resultado;
     }
 
     private ContextoDaOperacao MaterializarOPrazo(Perfil perfil)
@@ -158,10 +189,18 @@ public sealed class OperacaoSobreOPerfil
         {
             return Descartar(Result<T>.Failure(PerfilErros.NomeDuplicado()));
         }
+    }
+
+    // Com Idempotency-Key o conflito é capturado e o rastreamento descartado (ADR-0119): a segunda operação recebe o
+    // conflito em vez de sobrescrever a primeira, e a resposta cacheada pela chave é a recusa.
+    private async Task<GravacaoDaOperacao<T>> SalvarComChaveAsync<T>(DesfechoDaOperacao<T> desfecho, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await SalvarAsync(desfecho, cancellationToken).ConfigureAwait(false);
+        }
         catch (Exception ex) when (PerfilViolacoes.EhConflitoDeConcorrencia(ex))
         {
-            // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119): a segunda operação recebe o
-            // conflito em vez de sobrescrever a primeira.
             return Descartar(Result<T>.Failure(PerfilHandlerErros.ConflitoDeConcorrencia()));
         }
     }
