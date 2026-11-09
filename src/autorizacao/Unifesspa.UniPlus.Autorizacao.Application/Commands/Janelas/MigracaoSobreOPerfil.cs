@@ -33,14 +33,31 @@ public sealed class MigracaoSobreOPerfil
         _leitor = leitor;
     }
 
+    /// <summary>A operação de endpoint com chave de idempotência: o conflito de concorrência volta como recusa.</summary>
     /// <param name="perfilId">O perfil em migração.</param>
     /// <param name="travaProtecaoDeDados">A operação lê a dispensa e trava antes o perfil de governança da proteção de dados.</param>
     /// <param name="operacao">A transição, sobre a janela e o contexto já conferidos.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    public async Task<GravacaoDaOperacao<T>> ExecutarAsync<T>(
+    public Task<GravacaoDaOperacao<T>> ExecutarAsync<T>(
         Guid perfilId,
         bool travaProtecaoDeDados,
         Func<JanelaDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
+        CancellationToken cancellationToken) =>
+        ExecutarAsync(perfilId, travaProtecaoDeDados, operacao, _operacao.ExecutarComAvisosAsync, cancellationToken);
+
+    /// <summary>A operação sem chave de idempotência, como a rotina: o conflito de concorrência propaga.</summary>
+    /// <param name="perfilId">O perfil em migração.</param>
+    /// <param name="operacao">A transição, sobre a janela e o contexto já conferidos.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    public Task<GravacaoDaOperacao<T>> ExecutarSemChaveAsync<T>(
+        Guid perfilId, Func<JanelaDaOperacao, Task<DesfechoDaOperacao<T>>> operacao, CancellationToken cancellationToken) =>
+        ExecutarAsync(perfilId, false, operacao, _operacao.ExecutarComAvisosSemChaveAsync, cancellationToken);
+
+    private async Task<GravacaoDaOperacao<T>> ExecutarAsync<T>(
+        Guid perfilId,
+        bool travaProtecaoDeDados,
+        Func<JanelaDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
+        Func<Guid, Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>>, CancellationToken, Task<GravacaoDaOperacao<T>>> executar,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
@@ -50,10 +67,7 @@ public sealed class MigracaoSobreOPerfil
             await _janelas.TravarProtecaoDeDadosAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return await _operacao
-            .ExecutarComAvisosAsync(
-                perfilId, (perfil, _) => NaTravaAsync(perfil, operacao, cancellationToken), cancellationToken)
-            .ConfigureAwait(false);
+        return await executar(perfilId, (perfil, _) => NaTravaAsync(perfil, operacao, cancellationToken), cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<DesfechoDaOperacao<T>> NaTravaAsync<T>(

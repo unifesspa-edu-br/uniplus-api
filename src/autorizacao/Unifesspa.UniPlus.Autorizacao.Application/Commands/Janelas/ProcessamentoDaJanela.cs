@@ -9,7 +9,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// O trabalho da rotina sobre a janela de um perfil, sob a trava dele: o prazo vencido e a falta de pendência
 /// materializam o fim, e a janela que segue aberta recebe o lembrete de 24 ou de 48 horas, uma vez cada. Com os dois
-/// marcos já passados sai só o de 24 horas, que grava os dois marcadores. O marcador e a mensagem vão no mesmo commit.
+/// marcos já passados sai só o de 24 horas, que grava os dois marcadores. O marcador e a mensagem vão no mesmo
+/// commit. Roda sem chave de idempotência, na rotina e na materialização prévia: o conflito de concorrência propaga
+/// (ADR-0119).
 /// </summary>
 public sealed class ProcessamentoDaJanela
 {
@@ -31,7 +33,7 @@ public sealed class ProcessamentoDaJanela
     public async Task<GravacaoDaOperacao<bool>> ProcessarAsync(Guid perfilId, CancellationToken cancellationToken)
     {
         GravacaoDaOperacao<bool> gravacao = await _migracao
-            .ExecutarAsync(perfilId, false, j => LembrarAsync(j, cancellationToken), cancellationToken)
+            .ExecutarSemChaveAsync(perfilId, j => LembrarAsync(j, cancellationToken), cancellationToken)
             .ConfigureAwait(false);
 
         return gravacao.Resultado.IsFailure ? ComoTrabalhoDaRotina(gravacao) : gravacao;
