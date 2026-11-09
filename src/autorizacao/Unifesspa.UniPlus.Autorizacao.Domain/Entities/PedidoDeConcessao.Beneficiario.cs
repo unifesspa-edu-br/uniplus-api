@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -9,6 +10,66 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>Quem é o beneficiário do pedido e o e-mail institucional que o identifica.</summary>
 public sealed partial class PedidoDeConcessao
 {
+    /// <summary>
+    /// O beneficiário aceita o pedido que o nomeou: o e-mail verificado do token tem de ser o do pedido, e o
+    /// aceite grava a identidade e o nome do token dele.
+    /// </summary>
+    public Result Aceitar(PessoaNoToken pessoa, DateTimeOffset instante)
+    {
+        ArgumentNullException.ThrowIfNull(pessoa);
+
+        DomainError? recusa = RecusaDoAceite(pessoa);
+        if (recusa is not null)
+        {
+            return Result.Failure(recusa);
+        }
+
+        DefinirBeneficiario(pessoa.Identidade, NomeDeExibicao.Normalizar(pessoa.Nome));
+        BeneficiarioAceitouEm = instante;
+        Situacao = SituacaoDoPedido.AguardandoGestor;
+
+        return Result.Success();
+    }
+
+    /// <summary>A pessoa é uma das partes do pedido: o solicitante ou o beneficiário.</summary>
+    public bool EhParte(PessoaNoToken pessoa)
+    {
+        ArgumentNullException.ThrowIfNull(pessoa);
+
+        return pessoa.Identidade == Solicitante
+            || (Beneficiario is { } beneficiario && pessoa.Identidade == beneficiario)
+            || (Beneficiario is null && EhOBeneficiarioPeloEmail(pessoa));
+    }
+
+    private DomainError? RecusaDoAceite(PessoaNoToken pessoa)
+    {
+        if (Situacao != SituacaoDoPedido.AguardandoBeneficiario)
+        {
+            return SituacaoInvalida("O pedido não aguarda o aceite do beneficiário.");
+        }
+
+        if (!EhOBeneficiarioPeloEmail(pessoa))
+        {
+            return new DomainError(
+                PedidoErrorCodes.NaoEOBeneficiario,
+                "Só a pessoa a quem o pedido se destina, com o e-mail institucional verificado, o aceita.");
+        }
+
+        // O aprovador julga a pessoa pelo nome: sem ele no token, o pedido não avança à aprovação.
+        return NomeDeExibicao.Normalizar(pessoa.Nome) is null ? SemNome() : null;
+    }
+
+    private bool EhOBeneficiarioPeloEmail(PessoaNoToken pessoa) =>
+        pessoa.EmailVerificado
+        && EmailNormalizado(pessoa.Email) is { } email
+        && string.Equals(email, BeneficiarioEmail, StringComparison.Ordinal);
+
+    private void DefinirBeneficiario(Identidade identidade, string? nome)
+    {
+        BeneficiarioEmissor = identidade.Emissor;
+        BeneficiarioSub = identidade.Sub;
+        BeneficiarioNome = nome;
+    }
     private static DomainError SemNome() => new(
         PedidoErrorCodes.BeneficiarioSemNome,
         "A sessão do beneficiário não traz o nome completo, que o aprovador precisa para julgar o pedido.");
