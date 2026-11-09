@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -42,7 +43,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    [Fact(DisplayName = "A remoção numa versão nova vale na hora na decisão HTTP e leva a concessão para a versão nova")]
+    [Fact(DisplayName = "A remoção vale na hora na decisão HTTP e leva a concessão para a versão nova")]
     public async Task Remocao_ValeNaHora()
     {
         using HttpClient gestor = await GestorAsync();
@@ -51,23 +52,25 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.NotFound, "a permissão vale e o motivo sorteado não existe");
 
-        Envio versao2 = await NovaVersaoAsync(gestor, perfil, Catalogo);
+        Guid versao2 = await RemoverAsync(gestor, perfil, Motivos);
 
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.Forbidden);
-        (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao2.VersaoId);
+        (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao2);
     }
 
-    [Fact(DisplayName = "O acréscimo numa versão nova não chega à concessão da versão antiga na decisão HTTP")]
-    public async Task Acrescimo_NaoChegaAConcessaoAntiga()
+    [Fact(DisplayName = "O acréscimo a perfil com concessão é recusado e a concessão fica como estava")]
+    public async Task Acrescimo_ERecusadoEAConcessaoFicaComoEstava()
     {
         using HttpClient gestor = await GestorAsync();
         Guid perfil = await PerfilComConcessaoAsync(gestor, Catalogo);
         using HttpClient leandro = Cliente(Leandro);
         Guid versao1 = (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId!.Value;
 
-        await NovaVersaoAsync(gestor, perfil, Catalogo, Motivos);
+        using HttpResponseMessage recusa = await EnviarAsync(
+            gestor, HttpMethod.Post, $"{RotaPerfis}/{perfil}/versoes", Dados(Nome(), Catalogo, Motivos));
 
+        recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await recusa.Content.ReadAsStringAsync());
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.Forbidden);
         (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao1);
@@ -82,7 +85,8 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
             Fixture.Factory.Services, Betina.Sub.ToString(), perfil, EscopoDaConcessao.DaInstituicao(), email: Betina.Email);
         using HttpClient leandro = Cliente(Leandro);
 
-        Envio versao2 = await NovaVersaoAsync(gestor, perfil, Catalogo, Motivos);
+        Envio versao2 = await CriarVersaoAsync(gestor, perfil, Nome(), Catalogo, Motivos);
+        await EnviarEVerificarPelaFilaAsync(gestor, versao2);
 
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.NotFound);
@@ -90,21 +94,21 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         (await ConcessoesAsync(Betina, perfil)).Single().VersaoId.Should().Be(versao2.VersaoId);
     }
 
-    [Fact(DisplayName = "A permissão removida e devolvida em versão posterior não volta à concessão antiga, nem na decisão nem nos titulares")]
+    [Fact(DisplayName = "A permissão removida não volta à concessão com a proposta que a devolve, nem na decisão nem nos titulares")]
     public async Task RemocaoSeguidaDeRetorno_NaoVolta()
     {
         using HttpClient gestor = await GestorAsync();
         Guid perfil = await PerfilComConcessaoAsync(gestor, Catalogo, Motivos);
         using HttpClient leandro = Cliente(Leandro);
-        Guid versao1 = (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId!.Value;
+        Guid versao2 = await RemoverAsync(gestor, perfil, Motivos);
 
-        await NovaVersaoAsync(gestor, perfil, Catalogo, Motivos, Campi);
-        await NovaVersaoAsync(gestor, perfil, Catalogo, Campi);
-        await NovaVersaoAsync(gestor, perfil, Catalogo, Motivos, Campi);
+        using HttpResponseMessage devolucao = await EnviarAsync(
+            gestor, HttpMethod.Post, $"{RotaPerfis}/{perfil}/versoes", Dados(Nome(), Catalogo, Motivos));
 
+        devolucao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await devolucao.Content.ReadAsStringAsync());
         (await ConsultarCatalogoAsync(leandro)).Should().Be(HttpStatusCode.OK);
         (await ManterMotivosAsync(leandro)).Should().Be(HttpStatusCode.Forbidden);
-        (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao1);
+        (await ConcessoesAsync(Leandro, perfil)).Single().VersaoId.Should().Be(versao2);
         (await TitularesAsync(Motivos)).Should().NotContain(Leandro.Email);
         (await TitularesAsync(Catalogo)).Should().Contain(Leandro.Email);
     }
@@ -119,19 +123,19 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         return envio.PerfilId;
     }
 
-    private async Task<Envio> NovaVersaoAsync(HttpClient gestor, Guid perfil, params string[] permissoes)
+    private static async Task<Guid> RemoverAsync(HttpClient gestor, Guid perfil, params string[] permissoes)
     {
-        Envio envio = await CriarVersaoAsync(gestor, perfil, Nome(), permissoes);
-        await EnviarEVerificarPelaFilaAsync(gestor, envio);
+        using HttpResponseMessage resposta = await RemoverBrutoAsync(gestor, perfil, permissoes);
+        JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.OK);
 
-        return envio;
+        return corpo.GetProperty("composicaoEmVigor").GetProperty("versaoId").GetGuid();
     }
 
     private async Task EnviarEVerificarPelaFilaAsync(HttpClient gestor, Envio envio)
     {
         await ConfirmarEnvioAsync(gestor, envio);
         await EntregarPelaFilaAsync(envio.DocumentoId);
-        (await TemVigenteComVersaoAsync(gestor, envio.PerfilId, envio.VersaoId)).Should().BeTrue("o veredicto verificado põe a versão em vigor");
+        await AprovarAteAVigenciaAsync(gestor, envio);
     }
 
     private static async Task<HttpStatusCode> ConsultarCatalogoAsync(HttpClient cliente)

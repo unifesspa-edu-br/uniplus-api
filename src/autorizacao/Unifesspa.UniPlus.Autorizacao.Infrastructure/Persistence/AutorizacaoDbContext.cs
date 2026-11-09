@@ -28,6 +28,10 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
 
     public DbSet<VigenciaDoPerfil> VigenciasDosPerfis => Set<VigenciaDoPerfil>();
 
+    public DbSet<DecisaoDaVersao> DecisoesDasVersoes => Set<DecisaoDaVersao>();
+
+    public DbSet<RecalculoDaAprovacao> RecalculosDasAprovacoes => Set<RecalculoDaAprovacao>();
+
     public DbSet<DocumentoDaVersao> DocumentosDasVersoes => Set<DocumentoDaVersao>();
 
     public DbSet<LeituraDoDocumentoDaVersao> LeiturasDosDocumentosDasVersoes => Set<LeituraDoDocumentoDaVersao>();

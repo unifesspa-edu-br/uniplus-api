@@ -11,8 +11,10 @@ using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.API.Controllers;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
 using Unifesspa.UniPlus.Configuracao.API.Controllers;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
@@ -58,6 +60,13 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.LerAnexo))] = typeof(LerAnexoDoPedidoCommand),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Aprovar))] = typeof(AprovarPedidoDeConcessaoCommand),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Recusar))] = typeof(RecusarPedidoDeConcessaoCommand),
+        // A governança das versões do perfil: a permissão que vale é a da etapa pedida, o cancelamento é de quem criou a
+        // versão ou de quem mantém perfis, e a leitura do documento é de quem mantém perfis ou aprova pela proteção de dados.
+        [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Aprovar))] = typeof(AprovarVersaoDoPerfilCommand),
+        [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Recusar))] = typeof(RecusarVersaoDoPerfilCommand),
+        [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Cancelar))] = typeof(CancelarVersaoDoPerfilCommand),
+        [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Fila))] = typeof(ListarFilaDeVersoesQuery),
+        [Acao(typeof(VersoesDoPerfilController), nameof(VersoesDoPerfilController.Ler))] = typeof(LerDocumentoDaVersaoCommand),
         // A revisão dos acessos: a permissão que vale depende da governança que decide o item, e a leitura é de quem
         // conduz a revisão ou de quem revê os acessos da proteção de dados.
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Abrir))] = typeof(AbrirRevisaoDeAcessosCommand),

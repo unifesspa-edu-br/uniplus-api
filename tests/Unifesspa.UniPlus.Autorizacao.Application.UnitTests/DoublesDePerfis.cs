@@ -118,6 +118,12 @@ internal static class DoublesDePerfis
             return Task.CompletedTask;
         }
 
+        public Task<IReadOnlyList<Perfil>> ListarComPendenteNoPrazoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Perfil>>([.. _perfis.Where(p => p.VersaoPendente is { } v && !v.Expirou(agora))]);
+
+        public Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Guid>>([.. _perfis.Where(p => p.VersaoPendente is { } v && v.Expirou(agora)).Select(p => p.Id)]);
+
         public Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Perfil entity) => throw new InvalidOperationException();
         public void Remover(Perfil entity) => throw new InvalidOperationException();
@@ -148,7 +154,8 @@ internal static class DoublesDePerfis
             Task.FromResult(paraMigrar ?? []);
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult(temConcessaoNaoRevogada);
         public Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(titulares ?? throw new InvalidOperationException());
 

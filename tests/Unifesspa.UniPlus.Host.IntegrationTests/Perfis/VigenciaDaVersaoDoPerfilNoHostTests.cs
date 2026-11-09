@@ -57,8 +57,8 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         vigencias.Single(v => v.Aberta).VersaoId.Should().Be(segunda.VersaoId);
     }
 
-    [Fact(DisplayName = "Nome tomado por outro perfil enquanto o documento esperava recusa a versão e a vigente segue")]
-    public async Task CorridaDeNome_RecusaAVersao()
+    [Fact(DisplayName = "Nome tomado por outro perfil enquanto a versão esperava a aprovação recusa a decisão e a pendente segue")]
+    public async Task CorridaDeNome_RecusaAAprovacaoEMantemAPendente()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
@@ -68,19 +68,20 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         Envio versao = await CriarVersaoAsync(gestor, original.PerfilId, nomeNovo, Consultar);
         await ConfirmarEnvioAsync(gestor, versao);
         (await EnviarAsync(gestor, HttpMethod.Post, RotaPerfis, Dados(nomeNovo, Consultar))).StatusCode.Should().Be(HttpStatusCode.Created);
-
         await InjetarResultadoAsync(versao.DocumentoId, VeredictoDaVerificacao.Verificado);
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
 
-        await AguardarAsync(async () => await RecusaDaUltimaVersaoAsync(gestor, original.PerfilId) == "nome_indisponivel", "a versão não foi recusada");
+        using HttpClient gestao = await GestaoAsync();
+        using HttpResponseMessage recusa = await AprovarBrutoAsync(gestao, versao, EtapaGestao);
+
+        await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.Conflict, "nome_duplicado");
         JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}");
         perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
-        perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Null);
-        Envio nova = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar);
-        nova.VersaoId.Should().NotBe(versao.VersaoId);
+        perfil.GetProperty("versaoPendente").GetProperty("versaoId").GetGuid().Should().Be(versao.VersaoId);
     }
 
-    [Fact(DisplayName = "Concessão surgida antes da entrada em vigor recusa a versão que amplia a sensibilidade")]
-    public async Task ConcessaoAntesDaVigencia_RecusaAAmpliacao()
+    [Fact(DisplayName = "Concessão surgida antes da aprovação recusa a versão que amplia a sensibilidade e a pendente segue")]
+    public async Task ConcessaoAntesDaAprovacao_RecusaAAmpliacao()
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
@@ -88,14 +89,17 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         await EnviarEVerificarAsync(gestor, original);
         Envio ampliada = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar, Sensivel);
         await ConfirmarEnvioAsync(gestor, ampliada);
+        await InjetarResultadoAsync(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado);
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
         await SemearConcessaoAsync(Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
 
-        await InjetarResultadoAsync(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado);
+        using HttpClient gestao = await GestaoAsync();
+        using HttpResponseMessage recusa = await AprovarBrutoAsync(gestao, ampliada, EtapaGestao);
 
-        await AguardarAsync(
-            async () => await RecusaDaUltimaVersaoAsync(gestor, original.PerfilId) == "ampliacao_exige_protecao_de_dados",
-            "a ampliação não foi recusada");
-        (await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}")).GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
+        await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.UnprocessableEntity, "ampliacao_exige_protecao_de_dados");
+        JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{original.PerfilId}");
+        perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(1);
+        perfil.GetProperty("versaoPendente").GetProperty("versaoId").GetGuid().Should().Be(ampliada.VersaoId);
     }
 
     [Fact(DisplayName = "Concessão posterior à entrada em vigor recusa a próxima ampliação já na criação")]
@@ -125,11 +129,12 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         await SemearConcessaoAsync(Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
         using HttpClient betina = Cliente(Betina);
         Guid pedido = await CriarAsync(betina, original.PerfilId, unidade, null);
-        Envio reduzida = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar);
 
-        await EnviarEVerificarAsync(gestor, reduzida);
+        using HttpResponseMessage remocao = await RemoverBrutoAsync(gestor, original.PerfilId, [Sensivel]);
+        JsonElement reduzida = await CorpoAsync(remocao, HttpStatusCode.OK);
 
-        (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle().Which.VersaoId.Should().Be(reduzida.VersaoId);
+        (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle().Which.VersaoId
+            .Should().Be(reduzida.GetProperty("composicaoEmVigor").GetProperty("versaoId").GetGuid());
         JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
         lido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
         lido.GetProperty("versao").GetInt32().Should().Be(2);

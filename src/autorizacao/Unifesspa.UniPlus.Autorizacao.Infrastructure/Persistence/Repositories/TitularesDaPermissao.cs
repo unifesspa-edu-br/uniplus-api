@@ -23,7 +23,11 @@ internal sealed class TitularesDaPermissao : ITitularesDaPermissao
         _timeProvider = timeProvider;
     }
 
-    public async Task<IReadOnlyList<string>> ListarEmailsAsync(string codigoDaPermissao, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<string>> ListarEmailsAsync(string codigoDaPermissao, CancellationToken cancellationToken = default) =>
+        [.. (await ListarTitularesComEmailAsync(codigoDaPermissao, cancellationToken).ConfigureAwait(false)).Select(static t => t.Email).Distinct()];
+
+    public async Task<IReadOnlyList<TitularDaPermissao>> ListarTitularesComEmailAsync(
+        string codigoDaPermissao, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigoDaPermissao);
 
@@ -33,7 +37,7 @@ internal sealed class TitularesDaPermissao : ITitularesDaPermissao
             from c in _context.Concessoes.AsNoTracking().VigentesDaInstituicao(agora)
             where c.BeneficiarioEmail != null
                 && _context.ConcessoesComPermissaoEmVigor(codigoDaPermissao).Contains(c.Id)
-            select c.BeneficiarioEmail!)
+            select new TitularDaPermissao(c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioEmail!))
             .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

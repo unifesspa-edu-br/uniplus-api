@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -7,11 +8,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 public static class LerDocumentoDaVersaoCommandHandler
 {
     public static Task<Result<LeituraDoDocumentoDaVersaoDto>> Handle(
-        LerDocumentoDaVersaoCommand command, DocumentosDasVersoes documentos, CancellationToken cancellationToken)
+        LerDocumentoDaVersaoCommand command,
+        DocumentosDasVersoes documentos,
+        IVerificadorDeAcesso verificador,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(documentos);
 
-        return documentos.LerAsync(command.PerfilId, command.VersaoId, cancellationToken);
+        return documentos.LerAsync(command.PerfilId, command.VersaoId, verificador, cancellationToken);
     }
 }

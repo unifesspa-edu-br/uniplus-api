@@ -30,13 +30,7 @@ internal static class DoublesDeAvisos
 
     /// <summary>O tratamento de versões do perfil sem perfil algum: nenhum arquivo dos testes é documento de versão.</summary>
     public static ResultadoDoDocumentoDaVersao Versoes() =>
-        new(
-            new DoublesDePerfis.PerfisNaMemoria(),
-            new LeitorDoContextoDaVersao(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.ConcessoesNaMemoria()),
-            new EfeitosDaTrocaDeVigencia(new DoublesDePerfis.ConcessoesNaMemoria(), new PedidosAtivosNaMemoria(), Avisos(), TimeProvider.System),
-            new DoublesDePerfis.UnidadeDeTrabalho(),
-            new CatalogoLivre(),
-            TimeProvider.System);
+        new(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.UnidadeDeTrabalho(), TimeProvider.System);
 
     internal sealed class PerfilQualquer : IPerfilRepository
     {
@@ -58,6 +52,8 @@ internal static class DoublesDeAvisos
         public Task<bool> NomeExisteAsync(string nome, Guid? exceto, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Guid?> ObterPerfilIdDoDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarLeituraAsync(LeituraDoDocumentoDaVersao leitura, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Perfil>> ListarComPendenteNoPrazoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     internal sealed class SemUnidade : ILeitorDeUnidade

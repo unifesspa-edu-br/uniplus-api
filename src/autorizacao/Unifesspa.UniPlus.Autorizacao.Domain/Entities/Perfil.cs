@@ -13,8 +13,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>O perfil comum é versionado.</b> Nome, descrição e permissões vêm da versão vigente, e uma versão nova só entra
-/// em vigor quando o documento que a institui é verificado. Versão não se edita: mudar o perfil é criar outra versão.
+/// <b>O perfil comum é versionado.</b> Nome, descrição e permissões vêm da versão vigente, e uma versão proposta só
+/// entra em vigor com a aprovação da gestão de acessos e, quando o acréscimo é protegido, da proteção de dados; a
+/// remoção de permissões vale na hora. Versão não se edita: mudar o perfil é criar outra versão.
 /// <see cref="Nome"/> e <see cref="Descricao"/> são a identificação corrente: os da versão vigente ou, enquanto não há
 /// vigente, os da última pendente.
 /// </para>
@@ -64,9 +65,11 @@ public sealed partial class Perfil : EntityBase
 
     public VersaoDoPerfil? VersaoPendente => _versoes.Find(static v => v.Pendente);
 
-    /// <summary>A versão mais recente do perfil, quando a verificação a recusou.</summary>
-    public VersaoDoPerfil? UltimaVersaoRecusada =>
-        _versoes.MaxBy(static v => v.Numero) is { Situacao: SituacaoDaVersao.Recusada } recusada ? recusada : null;
+    /// <summary>A versão mais recente do perfil, quando terminou sem entrar em vigor: recusada, cancelada ou expirada.</summary>
+    public VersaoDoPerfil? UltimaVersaoEncerradaSemVigor =>
+        _versoes.MaxBy(static v => v.Numero) is { Situacao: SituacaoDaVersao.Recusada or SituacaoDaVersao.Cancelada or SituacaoDaVersao.Expirada } sem
+            ? sem
+            : null;
 
     /// <summary>
     /// A versão cujas permissões o perfil mostra: a vigente ou, enquanto o perfil ainda não tem vigente, a pendente.
@@ -97,13 +100,15 @@ public sealed partial class Perfil : EntityBase
     /// Cria um perfil comum, ativo e sem versão vigente, com a versão 1 pendente e o documento que a institui esperando
     /// o envio. A unicidade do nome é do handler, com proteção de corrida no índice único.
     /// </summary>
-    public static Result<Perfil> Criar(ConteudoDaVersao conteudo, Identidade autor, DateTimeOffset instante)
+    public static Result<Perfil> Criar(
+        ConteudoDaVersao conteudo, AutoriaDaVersao autoria, DateTimeOffset instante, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
-        ArgumentNullException.ThrowIfNull(autor);
+        ArgumentNullException.ThrowIfNull(autoria);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
         Perfil perfil = new();
-        Result<VersaoDoPerfil> versao = VersaoDoPerfil.Criar(perfil.Id, 1, conteudo, autor, instante);
+        Result<VersaoDoPerfil> versao = VersaoDoPerfil.Criar(perfil.Id, 1, conteudo, autoria, ClasseDe(conteudo, null, catalogo), instante);
         if (versao.IsFailure)
         {
             return Result<Perfil>.ValidationFailure(versao.Errors);
@@ -115,36 +120,28 @@ public sealed partial class Perfil : EntityBase
     }
 
     /// <summary>
-    /// Cria uma versão nova, pendente, com o documento esperando o envio. Sem versão vigente (a primeira foi cancelada
-    /// ou recusada) é uma nova primeira versão: não há o que comparar e o nome pode mudar.
+    /// Cria uma versão nova, pendente, com o documento esperando o envio. Sem versão vigente (a primeira foi cancelada,
+    /// recusada ou expirou) é uma nova primeira versão: não há o que comparar e o nome pode mudar. A pendente que já
+    /// passou do prazo expira antes e não bloqueia.
     /// </summary>
     public Result<VersaoDoPerfil> CriarVersao(
         ConteudoDaVersao conteudo,
         ContextoDaVersao contexto,
-        Identidade autor,
+        AutoriaDaVersao autoria,
         DateTimeOffset instante,
         ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
         ArgumentNullException.ThrowIfNull(contexto);
-        ArgumentNullException.ThrowIfNull(autor);
+        ArgumentNullException.ThrowIfNull(autoria);
         ArgumentNullException.ThrowIfNull(catalogo);
 
+        MaterializarExpiracao(instante);
         DomainError? recusa = RecusaDaCriacao(contexto);
 
         return recusa is null
-            ? CriarEAcrescentar(conteudo, contexto, autor, instante, catalogo)
+            ? CriarEAcrescentar(conteudo, contexto, autoria, instante, catalogo)
             : Result<VersaoDoPerfil>.Failure(recusa);
-    }
-
-    /// <summary>Cancela a versão pendente. A versão vigente só deixa de valer quando outra a substitui.</summary>
-    public Result CancelarVersao(Guid versaoId, Identidade autor, DateTimeOffset instante)
-    {
-        ArgumentNullException.ThrowIfNull(autor);
-
-        Result<VersaoDoPerfil> versao = ObterVersao(versaoId);
-
-        return versao.IsFailure ? Result.Failure(versao.Error!) : versao.Value!.Cancelar(autor, instante);
     }
 
     /// <summary>Reativa o perfil. Reativar o que já está ativo não muda nada.</summary>
@@ -184,11 +181,12 @@ public sealed partial class Perfil : EntityBase
     private Result<VersaoDoPerfil> CriarEAcrescentar(
         ConteudoDaVersao conteudo,
         ContextoDaVersao contexto,
-        Identidade autor,
+        AutoriaDaVersao autoria,
         DateTimeOffset instante,
         ICatalogoDePermissoesConsultavel catalogo)
     {
-        Result<VersaoDoPerfil> criada = VersaoDoPerfil.Criar(Id, _versoes.Max(static v => v.Numero) + 1, conteudo, autor, instante);
+        ClasseDaVersao classe = ClasseDe(conteudo, VersaoVigente, catalogo);
+        Result<VersaoDoPerfil> criada = VersaoDoPerfil.Criar(Id, ProximoNumero(), conteudo, autoria, classe, instante);
         DomainError? recusa = criada.IsSuccess ? RecusaContraAVigente(criada.Value!, contexto, catalogo) : null;
         if (recusa is not null)
         {
@@ -202,6 +200,17 @@ public sealed partial class Perfil : EntityBase
 
         return criada;
     }
+
+    private static ClasseDaVersao ClasseDe(
+        ConteudoDaVersao conteudo, VersaoDoPerfil? vigente, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        string[] codigos = [.. conteudo.Permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
+        DiferencaDaVersao diferenca = DiferencaDaVersao.Calcular(codigos, vigente?.Codigos(), catalogo);
+
+        return new ClasseDaVersao(AlcanceDasPermissoes.De(codigos, catalogo) ?? TipoDeEscopo.Instituicao, diferenca.ExigeProtecaoDeDados);
+    }
+
+    private int ProximoNumero() => _versoes.Max(static v => v.Numero) + 1;
 
     private DomainError? RecusaDaCriacao(ContextoDaVersao contexto)
     {
@@ -225,12 +234,8 @@ public sealed partial class Perfil : EntityBase
 
     private DomainError? RecusaContraAVigente(
         VersaoDoPerfil versao, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo) =>
-        ConferenciasDaVersao.ContraAVigente(versao, VersaoVigente, contexto.TemConcessaoNaoRevogada, catalogo) switch
-        {
-            MotivoDaRecusaDaVersao.AlcanceAlterado => PerfilErros.AlcanceAlterado(),
-            MotivoDaRecusaDaVersao.AmpliacaoExigeProtecaoDeDados => PerfilErros.AmpliacaoExigeProtecaoDeDados(),
-            _ => null,
-        };
+        ConferenciasDaVersao.DaCriacao(
+            versao, VersaoVigente, contexto, DiferencaDaVersao.Calcular(versao.Codigos(), VersaoVigente?.Codigos(), catalogo));
 
     // Sem versão vigente o perfil se identifica pela última pendente.
     private void Acrescentar(VersaoDoPerfil versao)

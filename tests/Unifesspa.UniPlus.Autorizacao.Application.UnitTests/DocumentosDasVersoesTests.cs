@@ -17,6 +17,8 @@ public sealed class DocumentosDasVersoesTests
 {
     private const string Consultar = "selecao:processos:consultar";
     private const string Descricao = "Descrição válida.";
+    private const string Manter = "autorizacao:perfis:manter";
+    private const string AprovarProtecaoDeDados = "autorizacao:perfis:aprovar-protecao-de-dados";
 
     private static readonly CatalogoDeTeste Catalogo = new();
 
@@ -122,7 +124,7 @@ public sealed class DocumentosDasVersoesTests
         Cenario cenario = new(perfil);
         DocumentoDaVersao documento = perfil.VersaoVigente!.Documento!;
 
-        Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente.Id, CancellationToken.None);
+        Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente.Id, cenario.Verificador, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Url.AbsoluteUri.Should().Contain(documento.ChaveDefinitiva);
@@ -139,7 +141,7 @@ public sealed class DocumentosDasVersoesTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Cenario cenario = new(perfil);
 
-        Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoPendente!.Id, CancellationToken.None);
+        Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoPendente!.Id, cenario.Verificador, CancellationToken.None);
 
         resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.DocumentoNaoVerificado);
         cenario.Perfis.Leituras.Should().BeEmpty();
@@ -147,32 +149,63 @@ public sealed class DocumentosDasVersoesTests
         cenario.Unidade.Gravacoes.Should().Be(0);
     }
 
+    [Fact(DisplayName = "Quem aprova pela proteção de dados lê o documento e a trilha registra o acesso")]
+    public async Task Ler_ProtecaoDeDados_Permite()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(perfil, true, AprovarProtecaoDeDados);
+
+        (await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, cenario.Verificador, CancellationToken.None)).IsSuccess.Should().BeTrue();
+
+        cenario.Verificador.Gravados.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "Sem nenhuma das duas permissões a leitura do documento é recusada, sem URL nem acesso gravado")]
+    public async Task Ler_SemPermissao_Recusa()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(perfil, true, "autorizacao:perfis:aprovar-funcional");
+
+        Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, cenario.Verificador, CancellationToken.None);
+
+        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
+        cenario.Verificador.Gravados.Should().ContainSingle();
+        cenario.Armazenamento.ChavesDeLeitura.Should().BeEmpty();
+        cenario.Perfis.Leituras.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Ler sem autor identificado ou de perfil inexistente é recusado")]
     public async Task Ler_SemAutorOuPerfilInexistente_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
 
-        (await new Cenario(perfil).Documentos.LerAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None))
+        Cenario comAutor = new(perfil);
+        Cenario semAutor = new(perfil, autorIdentificado: false);
+
+        (await comAutor.Documentos.LerAsync(Guid.NewGuid(), Guid.NewGuid(), comAutor.Verificador, CancellationToken.None))
             .Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.NaoEncontrado);
-        (await new Cenario(perfil, autorIdentificado: false).Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, CancellationToken.None))
+        (await semAutor.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, semAutor.Verificador, CancellationToken.None))
             .Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
     }
 
     private sealed class Cenario
     {
-        public Cenario(Perfil perfil, bool autorIdentificado = true)
+        public Cenario(Perfil perfil, bool autorIdentificado = true, params string[] permitidas)
         {
             Perfis = new PerfisNaMemoria(perfil);
             Unidade = new UnidadeDeTrabalho();
             Armazenamento = new Armazenamento();
+            Verificador = new VerificadorDeTeste(PerfisDeTeste.Autor.Sub, permitidas.Length == 0 ? [Manter] : permitidas);
             Documentos = new DocumentosDasVersoes(
                 new OperacaoSobreOPerfil(Perfis, Unidade),
                 new EnvioDoDocumento(Armazenamento, TimeProvider.System),
-                new AutoriaDaOperacao(new Usuario(autorIdentificado ? PerfisDeTeste.Autor : null), TimeProvider.System),
+                new AutoriaDaOperacao(new Usuario(autorIdentificado ? PerfisDeTeste.Autor : null), TimeProvider.System, new ConcessoesNaMemoria()),
                 Perfis,
                 Armazenamento,
                 Unidade);
         }
+
+        public VerificadorDeTeste Verificador { get; }
 
         public PerfisNaMemoria Perfis { get; }
 

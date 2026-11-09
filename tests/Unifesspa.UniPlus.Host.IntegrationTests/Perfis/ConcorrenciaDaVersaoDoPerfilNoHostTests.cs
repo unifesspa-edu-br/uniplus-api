@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -36,107 +37,163 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
     {
     }
 
-    [Fact(DisplayName = "A concessão que vence a trava faz a entrada em vigor da versão que amplia encontrá-la e recusar a ampliação")]
-    public async Task ConcessaoVenceATrava_EntradaEmVigorRecusaAAmpliacao()
+    [Fact(DisplayName = "A concessão que vence a trava faz a aprovação da versão que amplia encontrá-la e recusar a ampliação")]
+    public async Task ConcessaoVenceATrava_AprovacaoRecusaAAmpliacao()
     {
-        (Envio original, Envio ampliada) = await PerfilComVersaoAmpliadaEmVerificacaoAsync();
+        (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
         Guid unidade = await SemearUnidadeAsync();
+        using HttpClient gestao = await GestaoAsync();
         await using TransacaoRetidaDeTeste concessao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         await ConcederAsync(concessao.Servicos, Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
 
-        Task<DesfechoDoResultadoDaVersao> entrada = RegistrarEmTransacaoAsync(ampliada.DocumentoId);
+        Task<HttpResponseMessage> aprovacao = AprovarBrutoAsync(gestao, ampliada, EtapaGestao);
         await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
-        entrada.IsCompleted.Should().BeFalse();
+        aprovacao.IsCompleted.Should().BeFalse();
         await concessao.ConfirmarAsync();
 
-        (await entrada).Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        using HttpResponseMessage recusa = await aprovacao;
+        await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.UnprocessableEntity, "ampliacao_exige_protecao_de_dados");
         (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle();
-        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("recusada");
-        (await SituacaoNoBancoAsync(ampliada.DocumentoId)).Should().Be("verificado");
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("pendente");
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
-        (await ConsultarPerfilAsync(original.PerfilId)).Should().Be(("ampliacao_exige_protecao_de_dados", 1));
     }
 
-    [Fact(DisplayName = "A entrada em vigor que vence a trava faz a concessão ser avaliada contra a composição nova")]
-    public async Task EntradaEmVigorVenceATrava_ConcessaoLeAComposicaoNova()
+    [Fact(DisplayName = "A aprovação final que vence a trava faz a concessão ser avaliada contra a composição nova")]
+    public async Task AprovacaoVenceATrava_ConcessaoLeAComposicaoNova()
     {
-        (Envio original, Envio ampliada) = await PerfilComVersaoAmpliadaEmVerificacaoAsync();
+        (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
         Guid unidade = await SemearUnidadeAsync();
-        await using TransacaoRetidaDeTeste entrada = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        (await entrada.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
-            .RegistrarAsync(ResultadoDe(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None))
-            .Desfecho.Should().Be(DesfechoDoResultadoDaVersao.Aplicado);
+        using HttpClient gestao = await GestaoAsync();
+        using HttpClient protecao = await ProtecaoAsync();
+        await AprovarAsync(gestao, ampliada, EtapaGestao);
+        Task<Perfil>? concessao = null;
 
-        Task<Perfil> concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
-        concessao.IsCompleted.Should().BeFalse();
-        await entrada.ConfirmarAsync();
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            original.PerfilId,
+            () => AprovarBrutoAsync(protecao, ampliada, EtapaProtecao),
+            async () =>
+            {
+                concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
+                await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            });
 
-        (await concessao).ComposicaoEmVigor.Should().BeEquivalentTo(Consultar, Sensivel);
+        respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
+        (await concessao!).ComposicaoEmVigor.Should().BeEquivalentTo(Consultar, Sensivel);
         (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle();
         (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("vigente");
-        (await ConsultarPerfilAsync(original.PerfilId)).Should().Be((null, 2));
+        DescartarTodas(respostas);
     }
 
-    [Fact(DisplayName = "Nome tomado entre a conferência e a gravação desfaz a transação, e a reentrega pela fila recusa por nome indisponível")]
-    public async Task NomeTomadoNoCommit_DesfazTudoEAFilaReentregaRecusando()
+    [Fact(DisplayName = "Duas aprovações simultâneas da mesma etapa: uma grava e a outra recebe conflito")]
+    public async Task AprovacoesSimultaneas_UmaGravaEAOutraRecebeConflito()
+    {
+        (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
+        using HttpClient primeira = await GestaoAsync();
+        using HttpClient segunda = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
+
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            original.PerfilId,
+            () => AprovarBrutoAsync(primeira, ampliada, EtapaGestao),
+            () => AprovarBrutoAsync(segunda, ampliada, EtapaGestao));
+
+        respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
+        await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.Conflict, "etapa_ja_decidida");
+        (await DecisoesNoBancoAsync(ampliada.VersaoId)).Should().Be(1);
+        DescartarTodas(respostas);
+    }
+
+    [Fact(DisplayName = "Recusa e aprovação simultâneas: vence a primeira e a segunda encontra a versão como ficou")]
+    public async Task RecusaEAprovacaoSimultaneas_VenceAPrimeira()
+    {
+        (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
+        using HttpClient recusadora = await GestaoAsync();
+        using HttpClient aprovadora = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
+
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            original.PerfilId,
+            () => RecusarBrutoAsync(recusadora, ampliada, EtapaGestao),
+            () => AprovarBrutoAsync(aprovadora, ampliada, EtapaGestao));
+
+        respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
+        await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.Conflict, "etapa_ja_decidida");
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("recusada");
+        (await DecisoesNoBancoAsync(ampliada.VersaoId)).Should().Be(1);
+        DescartarTodas(respostas);
+    }
+
+    [Fact(DisplayName = "Remoção e aprovação simultâneas: a remoção cancela a pendente e a aprovação que perde não entra em vigor")]
+    public async Task RemocaoEAprovacaoSimultaneas_ARemocaoPrevalece()
+    {
+        (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync(Consultar, Sensivel);
+        using HttpClient gestor = await GestorAsync();
+        using HttpClient gestao = await GestaoAsync();
+
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            original.PerfilId,
+            () => RemoverBrutoAsync(gestor, original.PerfilId, [Consultar]),
+            () => AprovarBrutoAsync(gestao, ampliada, EtapaGestao));
+
+        respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
+        await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "versao_nao_pendente");
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("cancelada");
+        (await DecisoesNoBancoAsync(ampliada.VersaoId)).Should().Be(0);
+        DescartarTodas(respostas);
+    }
+
+    [Fact(DisplayName = "Aprovação e expiração simultâneas: a versão vencida expira e nunca entra em vigor")]
+    public async Task AprovacaoEExpiracaoSimultaneas_ExpiraSemEntrarEmVigor()
+    {
+        (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
+        await ExecutarSqlAsync("UPDATE autorizacao.versoes_do_perfil SET expira_em = now() - interval '1 minute' WHERE id = {0}", ampliada.VersaoId);
+        using HttpClient gestao = await GestaoAsync();
+        Task<int>? expiracao = null;
+
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            original.PerfilId,
+            () => AprovarBrutoAsync(gestao, ampliada, EtapaGestao),
+            async () =>
+            {
+                expiracao = ExpirarPendentesAsync();
+                await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+                return new HttpResponseMessage(HttpStatusCode.OK);
+            });
+
+        await ConferirRecusaDoPerfilAsync(respostas[0], HttpStatusCode.UnprocessableEntity, "versao_expirada");
+        await expiracao!;
+        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("expirada");
+        (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
+        DescartarTodas(respostas);
+    }
+
+    private async Task<(Envio Original, Envio Ampliada)> PerfilComAmpliadaVerificadaAsync(params string[] doOriginal)
     {
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
-        Envio original = await CriarPerfilAsync(gestor, Consultar);
-        await EnviarEVerificarAsync(gestor, original);
-        string nomeNovo = Nome();
-        Envio nova = await CriarVersaoAsync(gestor, original.PerfilId, nomeNovo, Consultar);
-        await ConfirmarEnvioAsync(gestor, nova);
-        await using TransacaoRetidaDeTeste outra = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await outra.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
-            "INSERT INTO autorizacao.perfis (id, nome, descricao, ativo, created_at) VALUES ({0}, {1}, 'Perfil que toma o nome.', true, now())",
-            Guid.CreateVersion7(), nomeNovo);
-
-        Task<ITrackedSession> fluxo = EntregarPelaFilaAsync(nova.DocumentoId);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
-        await using TransacaoRetidaDeTeste janela = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        Task travar = janela.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
-            "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", original.PerfilId);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
-        await outra.ConfirmarAsync();
-        await travar;
-
-        (await SituacaoNoBancoAsync(nova.DocumentoId)).Should().Be("em_verificacao");
-        (await SituacaoDaVersaoNoBancoAsync(nova.VersaoId)).Should().Be("pendente");
-        (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
-        await janela.ConfirmarAsync();
-
-        ITrackedSession sessao = await fluxo;
-        sessao.AllRecordsInOrder()
-            .Count(r => r.MessageEventType == MessageEventType.ExecutionStarted && r.Envelope?.Message is ResultadoDaVerificacaoDeArquivo)
-            .Should().Be(2);
-        (await ConsultarPerfilAsync(original.PerfilId)).Should().Be(("nome_indisponivel", 1));
-        (await SituacaoNoBancoAsync(nova.DocumentoId)).Should().Be("verificado");
-        (await SituacaoDaVersaoNoBancoAsync(nova.VersaoId)).Should().Be("recusada");
-        (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
-    }
-
-    private async Task<(Envio Original, Envio Ampliada)> PerfilComVersaoAmpliadaEmVerificacaoAsync()
-    {
-        await ResetarAsync();
-        using HttpClient gestor = await GestorAsync();
-        Envio original = await CriarPerfilAsync(gestor, Consultar);
+        Envio original = await CriarPerfilAsync(gestor, doOriginal.Length > 0 ? doOriginal : [Consultar]);
         await EnviarEVerificarAsync(gestor, original);
         Envio ampliada = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar, Sensivel);
         await ConfirmarEnvioAsync(gestor, ampliada);
+        await InjetarResultadoAsync(ampliada.DocumentoId, VeredictoDaVerificacao.Verificado);
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, original.PerfilId) == "verificado", "o documento não foi verificado");
 
         return (original, ampliada);
     }
 
-    private async Task<DesfechoDoResultadoDaVersao> RegistrarEmTransacaoAsync(Guid documentoId)
+    private async Task<int> ExpirarPendentesAsync()
     {
-        await using TransacaoRetidaDeTeste transacao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        RegistroDoResultadoDaVersao registro = await transacao.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
-            .RegistrarAsync(ResultadoDe(documentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None);
-        await transacao.ConfirmarAsync();
+        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return registro.Desfecho;
+        return await escopo.ServiceProvider.GetRequiredService<ExpiracaoDasVersoesPendentes>().ExecutarAsync(CancellationToken.None);
+    }
+
+    private async Task<int> DecisoesNoBancoAsync(Guid versaoId)
+    {
+        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
+
+        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.decisoes_da_versao WHERE versao_id = {versaoId}")
+            .SingleAsync();
     }
 
     private async Task<Perfil> ConcederEmTransacaoAsync(Guid perfilId, EscopoDaConcessao escopo)
@@ -148,11 +205,11 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         return perfil;
     }
 
-    private async Task<(string? Recusa, int Numero)> ConsultarPerfilAsync(Guid perfilId)
+    private static void DescartarTodas(HttpResponseMessage[] respostas)
     {
-        using HttpClient gestor = await GestorAsync();
-        JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{perfilId}");
-
-        return (await RecusaDaUltimaVersaoAsync(gestor, perfilId), perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32());
+        foreach (HttpResponseMessage resposta in respostas)
+        {
+            resposta.Dispose();
+        }
     }
 }

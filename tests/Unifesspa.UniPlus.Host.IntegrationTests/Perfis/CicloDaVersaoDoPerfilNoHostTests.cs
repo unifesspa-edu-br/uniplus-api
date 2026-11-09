@@ -53,8 +53,8 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         await ResetarAsync();
         using HttpClient gestor = await GestorAsync();
         Envio primeira = await CriarPerfilAsync(gestor, Consultar);
-        (await EnviarAsync(gestor, HttpMethod.Delete, $"{RotaPerfis}/{primeira.PerfilId}/versoes/{primeira.VersaoId}"))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using HttpResponseMessage cancelamento = await CancelarBrutoAsync(gestor, primeira);
+        cancelamento.StatusCode.Should().Be(HttpStatusCode.OK, await cancelamento.Content.ReadAsStringAsync());
 
         Envio segunda = await CriarVersaoAsync(gestor, primeira.PerfilId, Nome(), "selecao:motivos-decisao-isencao:manter");
         await EnviarEVerificarAsync(gestor, segunda);
@@ -125,6 +125,9 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         (await EnviarAsync(gestor, HttpMethod.Delete, $"{RotaPerfis}/{envio.PerfilId}/ativacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "verificado", "o documento não foi verificado");
+
+        await AprovarAteAVigenciaAsync(gestor, envio);
 
         await AguardarAsync(async () => await TemVigenteAsync(gestor, envio.PerfilId), "a pendente não entrou em vigor");
         JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{envio.PerfilId}");

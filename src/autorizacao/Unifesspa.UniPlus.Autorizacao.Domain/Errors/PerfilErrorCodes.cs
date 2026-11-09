@@ -30,4 +30,16 @@ public static class PerfilErrorCodes
     public const string DocumentoNaoAguardaEnvio = "Perfil.DocumentoNaoAguardaEnvio";
     public const string DocumentoNaoRecusado = "Perfil.DocumentoNaoRecusado";
     public const string DocumentoNaoVerificado = "Perfil.DocumentoNaoVerificado";
+    public const string AcrescimoComConcessaoAtiva = "Perfil.AcrescimoComConcessaoAtiva";
+    public const string RemocaoPorContencao = "Perfil.RemocaoPorContencao";
+    public const string SemVersaoEmVigor = "Perfil.SemVersaoEmVigor";
+    public const string RemocaoInvalida = "Perfil.RemocaoInvalida";
+    public const string MotivoInvalido = "Perfil.MotivoInvalido";
+    public const string VersaoExpirada = "Perfil.VersaoExpirada";
+    public const string EtapaInvalida = "Perfil.EtapaInvalida";
+    public const string EtapaJaDecidida = "Perfil.EtapaJaDecidida";
+    public const string AprovacoesDescartadas = "Perfil.AprovacoesDescartadas";
+    public const string DecisorEAutor = "Perfil.DecisorEAutor";
+    public const string MesmoDecisorNasDuasEtapas = "Perfil.MesmoDecisorNasDuasEtapas";
+    public const string SemPermissaoNaEtapa = "Perfil.SemPermissaoNaEtapa";
 }

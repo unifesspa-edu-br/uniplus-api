@@ -38,6 +38,16 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddScoped<IAutorizacaoUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<AutorizacaoDbContext>());
 
+        AddRepositorios(services);
+        AddInstalacao(services);
+        AddAvisos(services);
+        AddArmazenamento(services);
+
+        return services;
+    }
+
+    private static void AddRepositorios(IServiceCollection services)
+    {
         services.AddScoped<IPerfilRepository, PerfilRepository>();
         services.AddScoped<IConcessaoRepository, ConcessaoRepository>();
         services.AddScoped<IInstalacaoRepository, InstalacaoRepository>();
@@ -46,13 +56,19 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddScoped<IPedidoDeConcessaoRepository, PedidoDeConcessaoRepository>();
         services.AddScoped<IRevisaoDeAcessosRepository, RevisaoDeAcessosRepository>();
         services.AddSingleton<ICatalogoDePermissoesConsultavel, CatalogoDePermissoesDaAplicacao>();
+    }
 
+    private static void AddInstalacao(IServiceCollection services)
+    {
         services.AddScoped<IResumoDeCodigoDeConfirmacao, ResumoDeCodigoDeConfirmacao>();
 
         // Lida pelas opções, e não no registro: o valor final da configuração só existe quando o host está de pé.
         services.AddOptions<InstalacaoOptions>().BindConfiguration(InstalacaoOptions.SectionName);
         services.AddSingleton<IDominiosInstitucionais, DominiosInstitucionais>();
+    }
 
+    private static void AddAvisos(IServiceCollection services)
+    {
         // Sem o endereço da Configuração o aviso sairia sem link: o pod falha no startup, e não no primeiro e-mail.
         services.AddOptions<AvisosDoPedidoOptions>()
             .BindConfiguration(AvisosDoPedidoOptions.SectionName)
@@ -61,11 +77,16 @@ public static class AutorizacaoInfrastructureRegistration
                 "Autorizacao:EnderecoDaConfiguracao é obrigatório e deve ser uma URL absoluta http ou https.")
             .ValidateOnStart();
         services.AddSingleton<ILinkDoPedido, LinkDoPedido>();
+        services.AddSingleton<ILinkDaGovernanca, LinkDaGovernanca>();
+        services.AddScoped<IRegistroDeAvisos, RegistroDeAvisos>();
 
         // O leitor de unidades usa o DbContext da Organização Institucional; a fábrica o esconde do detector de
         // transação do Wolverine, para que o pedido e os avisos entrem no outbox do DbContext da Autorização.
         services.AddScoped<ILeitorDeUnidade>(static sp => new LeitorDeUnidade(sp.GetRequiredService<IUnidadeReader>()));
+    }
 
+    private static void AddArmazenamento(IServiceCollection services)
+    {
         // Os nomes dos buckets e a credencial são obrigatórios: sem eles o pod falha no startup, e não no primeiro envio.
         services.AddOptions<ArquivosDaAutorizacaoOptions>()
             .BindConfiguration(ArquivosDaAutorizacaoOptions.SectionName)
@@ -82,7 +103,5 @@ public static class AutorizacaoInfrastructureRegistration
                     sp, instalacao.Value.AccessKey, instalacao.Value.SecretKey),
                 instalacao);
         });
-
-        return services;
     }
 }

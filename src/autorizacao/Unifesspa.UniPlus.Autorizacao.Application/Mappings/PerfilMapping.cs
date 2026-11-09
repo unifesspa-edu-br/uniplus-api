@@ -25,7 +25,7 @@ public static class PerfilMapping
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
             ComposicaoDe(perfil, catalogo),
             VersaoMapping.PendenteDe(perfil, catalogo),
-            VersaoMapping.UltimaRecusadaDe(perfil));
+            VersaoMapping.UltimaEncerradaSemVigorDe(perfil));
     }
 
     public static PerfilListadoDto ToListadoDto(Perfil perfil, CatalogoDaAplicacao catalogo)

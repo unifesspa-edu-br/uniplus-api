@@ -12,11 +12,14 @@ public enum SituacaoDaVersao
     /// <summary>Foi a vigente e deu lugar a uma versão posterior.</summary>
     Encerrada = 3,
 
-    /// <summary>Terminal: retirada por quem a criou antes de entrar em vigor.</summary>
+    /// <summary>Terminal: retirada antes de entrar em vigor, por quem a criou, por quem mantém perfis ou pela contenção.</summary>
     Cancelada = 4,
 
-    /// <summary>Terminal: o documento foi verificado, mas as conferências da entrada em vigor falharam.</summary>
+    /// <summary>Terminal: uma etapa da aprovação a recusou.</summary>
     Recusada = 5,
+
+    /// <summary>Terminal: o prazo de 15 dias passou sem a aprovação.</summary>
+    Expirada = 6,
 }
 
 /// <summary>Código textual canônico de <see cref="SituacaoDaVersao"/>, o valor gravado e exposto.</summary>
@@ -27,6 +30,7 @@ public static class SituacaoDaVersaoCodigo
     public const string Encerrada = "encerrada";
     public const string Cancelada = "cancelada";
     public const string Recusada = "recusada";
+    public const string Expirada = "expirada";
 
     public static string ToCodigo(this SituacaoDaVersao situacao) => situacao switch
     {
@@ -35,6 +39,7 @@ public static class SituacaoDaVersaoCodigo
         SituacaoDaVersao.Encerrada => Encerrada,
         SituacaoDaVersao.Cancelada => Cancelada,
         SituacaoDaVersao.Recusada => Recusada,
+        SituacaoDaVersao.Expirada => Expirada,
         _ => throw new ArgumentOutOfRangeException(nameof(situacao), situacao, null),
     };
 
@@ -45,6 +50,7 @@ public static class SituacaoDaVersaoCodigo
         Encerrada => SituacaoDaVersao.Encerrada,
         Cancelada => SituacaoDaVersao.Cancelada,
         Recusada => SituacaoDaVersao.Recusada,
+        Expirada => SituacaoDaVersao.Expirada,
         _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
     };
 }

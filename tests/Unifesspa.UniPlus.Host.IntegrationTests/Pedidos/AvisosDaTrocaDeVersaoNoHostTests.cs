@@ -26,7 +26,7 @@ using Wolverine.Tracking;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit exige tipo de teste público.")]
-public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTestBase
+public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     private const string Catalogo = "autorizacao:permissoes:consultar-catalogo";
     private const string Motivos = "selecao:motivos-decisao-isencao:manter";
@@ -46,7 +46,8 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
         (Guid perfil, Guid pedido) = await PedidoAguardandoOBeneficiarioAsync(gestor, Catalogo);
         Envio versao2 = await PrepararVersaoAsync(gestor, perfil, Catalogo, Motivos);
 
-        ITrackedSession sessao = await EntregarPelaFilaAsync(versao2.DocumentoId);
+        await EntregarPelaFilaAsync(versao2.DocumentoId);
+        ITrackedSession sessao = await RastrearAsync(() => AprovarAteAVigenciaAsync(gestor, versao2));
 
         sessao.Sent.MessagesOf<EnviarEmail>().Should().HaveCount(2, "o solicitante e o beneficiário");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
@@ -65,7 +66,8 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
         int avisosAntes = (await MensagensAsync(Diogo, pedido)).Count(EhDaFilaDoGestor);
         Envio versao2 = await PrepararVersaoAsync(gestor, perfil, Sensivel);
 
-        ITrackedSession sessao = await EntregarPelaFilaAsync(versao2.DocumentoId);
+        await EntregarPelaFilaAsync(versao2.DocumentoId);
+        ITrackedSession sessao = await RastrearAsync(() => AprovarAteAVigenciaAsync(gestor, versao2));
 
         sessao.Sent.MessagesOf<EnviarEmail>().Should().NotBeEmpty("o retorno ao gestor avisa a fila dele");
         await AguardarAsync(
@@ -86,10 +88,16 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
         await ExecutarSqlAsync(
             "ALTER TABLE autorizacao.trocas_de_versao_do_pedido ADD CONSTRAINT ck_teste_sem_troca CHECK (false) NOT VALID");
 
+        await EntregarPelaFilaAsync(versao2.DocumentoId);
+
         try
         {
-            ITrackedSession falha = await EntregarPelaFilaAsync(versao2.DocumentoId, aceitarFalha: true);
-            falha.AllExceptions().Should().Contain(e => e.ToString().Contains("ck_teste_sem_troca", StringComparison.Ordinal));
+            await RastrearAsync(async () =>
+            {
+                using HttpResponseMessage resposta = await AprovarUltimaEtapaBrutoAsync(gestor, versao2);
+                resposta.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+            },
+            aceitarFalha: true);
             await ConferirNadaGravadoAsync(gestor, perfil, versao2, pedido);
         }
         finally
@@ -97,7 +105,8 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
             await ExecutarSqlAsync("ALTER TABLE autorizacao.trocas_de_versao_do_pedido DROP CONSTRAINT IF EXISTS ck_teste_sem_troca");
         }
 
-        await EntregarPelaFilaAsync(versao2.DocumentoId);
+        using HttpResponseMessage reentrega = await AprovarUltimaEtapaBrutoAsync(gestor, versao2);
+        reentrega.StatusCode.Should().Be(HttpStatusCode.OK, await reentrega.Content.ReadAsStringAsync());
 
         (await TemVigenteComVersaoAsync(gestor, perfil, versao2.VersaoId)).Should().BeTrue();
         (await SituacaoAsync(gestor, pedido)).Should().Be("devolvido");
@@ -106,7 +115,8 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
 
     private async Task ConferirNadaGravadoAsync(HttpClient gestor, Guid perfil, Envio versao2, Guid pedido)
     {
-        (await SituacaoDoDocumentoAsync(gestor, perfil)).Should().Be("em_verificacao");
+        (await SituacaoDoDocumentoAsync(gestor, perfil)).Should().Be("verificado");
+        (await DecisoesAsync(versao2.VersaoId)).Should().NotContain(d => d.Etapa == "ProtecaoDeDados");
         (await SituacaoDaVersaoNoBancoAsync(versao2.VersaoId)).Should().Be("pendente");
         (await VigenciasAsync(perfil)).Should().ContainSingle(v => v.Aberta && v.VersaoId != versao2.VersaoId);
         (await SituacaoAsync(gestor, pedido)).Should().Be("aguardando_beneficiario");
@@ -132,17 +142,9 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
         return envio;
     }
 
-    private async Task<Guid> PerfilVigenteAsync(HttpClient gestor, params string[] permissoes)
-    {
-        Envio envio = await CriarPerfilAsync(gestor, permissoes);
-        await EnviarEVerificarAsync(gestor, envio);
-
-        return envio.PerfilId;
-    }
-
     private async Task<(Guid Perfil, Guid Pedido)> PedidoAguardandoOBeneficiarioAsync(HttpClient gestor, params string[] permissoes)
     {
-        Guid perfil = await PerfilVigenteAsync(gestor, permissoes);
+        Guid perfil = (await PerfilVigenteAsync(gestor, permissoes)).PerfilId;
         using HttpClient betina = Cliente(Betina);
 
         return (perfil, await CriarAsync(betina, perfil, null, Leandro));
@@ -150,7 +152,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : VersoesDoPerfilNoHostTest
 
     private async Task<(Guid Perfil, Guid Pedido)> PedidoAguardandoAProtecaoAsync(HttpClient gestor)
     {
-        Guid perfil = await PerfilVigenteAsync(gestor, Sensivel);
+        Guid perfil = (await PerfilVigenteAsync(gestor, Sensivel)).PerfilId;
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);

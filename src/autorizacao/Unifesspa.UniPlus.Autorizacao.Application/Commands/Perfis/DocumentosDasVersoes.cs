@@ -1,9 +1,11 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -69,22 +71,26 @@ public sealed class DocumentosDasVersoes
             perfil => Task.FromResult(perfil.ConfirmarDocumento(versaoId, etag, _autoria.Agora)),
             cancellationToken);
 
-    /// <summary>Só o documento verificado tem URL de leitura, e cada acesso fica registrado com quem o pediu.</summary>
-    public async Task<Result<LeituraDoDocumentoDaVersaoDto>> LerAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken)
+    /// <summary>
+    /// Só o documento verificado tem URL de leitura, e só para quem mantém perfis ou aprova pela proteção de dados. Cada
+    /// acesso fica registrado com quem o pediu.
+    /// </summary>
+    public async Task<Result<LeituraDoDocumentoDaVersaoDto>> LerAsync(
+        Guid perfilId, Guid versaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
-        if (_autoria.Autor is not { } leitor)
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        DomainError? negado = await NegadoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        if (negado is not null)
         {
-            return Result<LeituraDoDocumentoDaVersaoDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+            return Result<LeituraDoDocumentoDaVersaoDto>.Failure(negado);
         }
 
-        Perfil? perfil = await _perfis.ObterPorIdAsync(perfilId, cancellationToken).ConfigureAwait(false);
-        Result<DocumentoDaVersao> documento = perfil is null
-            ? Result<DocumentoDaVersao>.Failure(PerfilHandlerErros.NaoEncontrado(perfilId))
-            : perfil.DocumentoParaLeitura(versaoId);
+        Result<DocumentoDaVersao> documento = await DocumentoParaLeituraAsync(perfilId, versaoId, cancellationToken).ConfigureAwait(false);
 
         return documento.IsFailure
             ? Result<LeituraDoDocumentoDaVersaoDto>.ValidationFailure(documento.Errors)
-            : await LerVerificadoAsync(documento.Value!, leitor, cancellationToken).ConfigureAwait(false);
+            : await LerVerificadoAsync(documento.Value!, _autoria.Autor!, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<EnvioDoDocumentoDto>> EmitirAsync(Result<DocumentoDaVersao> documento, CancellationToken cancellationToken) =>
@@ -107,5 +113,26 @@ public sealed class DocumentosDasVersoes
 
         return Result<LeituraDoDocumentoDaVersaoDto>.Success(
             new LeituraDoDocumentoDaVersaoDto(new Uri(url, UriKind.Absolute), agora + LerAnexoDoPedidoCommandHandler.PrazoDaLeitura));
+    }
+
+    private async Task<DomainError?> NegadoAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
+    {
+        if (_autoria.Autor is null)
+        {
+            return PerfilHandlerErros.AutorNaoIdentificado();
+        }
+
+        bool pode = await AcessoDaVersao.PodeLerODocumentoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+
+        return pode ? null : PerfilErros.SemPermissaoNaEtapa();
+    }
+
+    private async Task<Result<DocumentoDaVersao>> DocumentoParaLeituraAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken)
+    {
+        Perfil? perfil = await _perfis.ObterPorIdAsync(perfilId, cancellationToken).ConfigureAwait(false);
+
+        return perfil is null
+            ? Result<DocumentoDaVersao>.Failure(PerfilHandlerErros.NaoEncontrado(perfilId))
+            : perfil.DocumentoParaLeitura(versaoId);
     }
 }

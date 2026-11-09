@@ -83,10 +83,19 @@ public abstract class PerfilEndpointTestBase
         ExecutarAsync(
             """
             INSERT INTO autorizacao.versoes_do_perfil
-                (id, perfil_id, numero, nome, descricao, protocolo, situacao, criada_por_emissor, criada_por_sub, criada_em, created_at)
-            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'emissor', 'diogo.souza', now(), now())
+                (id, perfil_id, numero, nome, descricao, protocolo, situacao, origem, expira_em, criada_por_emissor, criada_por_sub, criada_em, created_at)
+            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'proposta', now() + interval '15 days', 'emissor', 'diogo.souza', now(), now())
             """,
             Guid.CreateVersion7(), perfilId, numero, Nome(), situacao);
+
+    /// <summary>Apaga as versões pendentes inseridas direto no banco, que não têm documento e quebrariam as leituras das outras suítes.</summary>
+    internal async Task LimparPendentesInseridasAsync(Guid perfilId)
+    {
+        await ExecutarAsync(
+            "DELETE FROM autorizacao.decisoes_da_versao WHERE versao_id IN (SELECT id FROM autorizacao.versoes_do_perfil WHERE perfil_id = {0} AND situacao = 'pendente')",
+            perfilId);
+        await ExecutarAsync("DELETE FROM autorizacao.versoes_do_perfil WHERE perfil_id = {0} AND situacao = 'pendente'", perfilId);
+    }
 
     internal Task InserirVigenciaAsync(Guid perfilId, Guid versaoId) =>
         ExecutarAsync(

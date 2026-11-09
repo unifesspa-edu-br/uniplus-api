@@ -73,4 +73,24 @@ public enum PermissaoAutorizacao
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
         ReservadaAGovernanca = true)]
     RevisoesReverProtecaoDeDados = 7,
+
+    /// <summary>Aprovar, como gestão de acessos, a versão proposta de um perfil de acesso.</summary>
+    [Permissao(
+        "autorizacao:perfis:aprovar-funcional",
+        "Aprovar as versões de perfil pela gestão de acessos",
+        "Consulta a fila da primeira etapa das versões propostas dos perfis, com quem as criou e as permissões que acrescentam, e aprova ou recusa a versão.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    PerfisAprovarFuncional = 8,
+
+    /// <summary>Aprovar, na etapa de proteção de dados, a versão proposta de um perfil de acesso que acrescenta permissão protegida.</summary>
+    [Permissao(
+        "autorizacao:perfis:aprovar-protecao-de-dados",
+        "Aprovar as versões de perfil pela proteção de dados",
+        "Consulta a fila da segunda etapa das versões propostas dos perfis, as que acrescentam permissão pessoal, identificadora ou sensível, lê o documento instituidor e aprova ou recusa a versão.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        ReservadaAGovernanca = true)]
+    PerfisAprovarProtecaoDeDados = 9,
 }

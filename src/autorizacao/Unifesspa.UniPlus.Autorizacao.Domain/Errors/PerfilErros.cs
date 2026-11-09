@@ -48,4 +48,60 @@ public static class PerfilErros
     public static DomainError AmpliacaoExigeProtecaoDeDados() => new(
         PerfilErrorCodes.AmpliacaoExigeProtecaoDeDados,
         "Acrescentar permissão pessoal ou sensível a um perfil com concessões exige a aprovação da proteção de dados: crie outro perfil e conceda-o por pedido.");
+
+    public static DomainError AcrescimoComConcessaoAtiva() => new(
+        PerfilErrorCodes.AcrescimoComConcessaoAtiva,
+        "Acrescentar permissão a um perfil com concessões ainda não é possível: crie outro perfil e conceda-o por pedido.");
+
+    public static DomainError RemocaoPorContencao() => new(
+        PerfilErrorCodes.RemocaoPorContencao,
+        "A versão proposta não pode retirar permissões: retire-as pela remoção, que vale na hora, e proponha o acréscimo depois.");
+
+    public static DomainError SemVersaoEmVigor() => new(
+        PerfilErrorCodes.SemVersaoEmVigor,
+        "O perfil não tem versão em vigor: não há permissão a remover.");
+
+    public static DomainError RemocaoInvalida() => new(
+        PerfilErrorCodes.RemocaoInvalida,
+        "Informe ao menos uma permissão da versão em vigor para remover e, se informar a categoria, uma das previstas.");
+
+    public static DomainError MotivoInvalido(int maximo) => new(
+        PerfilErrorCodes.MotivoInvalido,
+        $"O motivo é obrigatório e deve ter até {maximo} caracteres.");
+
+    public static DomainError VersaoExpirada() => new(
+        PerfilErrorCodes.VersaoExpirada,
+        "A versão pendente passou do prazo de 15 dias e expirou sem entrar em vigor: crie outra.");
+
+    public static DomainError EtapaInvalida() => new(
+        PerfilErrorCodes.EtapaInvalida,
+        "A etapa informada não é a que a versão aguarda agora.");
+
+    public static DomainError EtapaJaDecidida() => new(
+        PerfilErrorCodes.EtapaJaDecidida,
+        "A etapa já foi decidida para esta versão.");
+
+    public static DomainError AprovacoesDescartadas() => new(
+        PerfilErrorCodes.AprovacoesDescartadas,
+        "As aprovações exigidas pela versão mudaram e as já dadas foram descartadas: consulte a versão e decida de novo.");
+
+    public static DomainError DecisorEAutor() => new(
+        PerfilErrorCodes.DecisorEAutor,
+        "Quem criou a versão não a decide.");
+
+    public static DomainError MesmoDecisorNasDuasEtapas() => new(
+        PerfilErrorCodes.MesmoDecisorNasDuasEtapas,
+        "A mesma pessoa não decide as duas etapas da versão.");
+
+    public static DomainError SemPermissaoNaEtapa() => new(
+        PerfilErrorCodes.SemPermissaoNaEtapa,
+        "Acesso negado: a operação exige a permissão da etapa.");
+
+    public static DomainError PermissaoInexistente() => new(
+        PerfilErrorCodes.PermissaoInexistente,
+        "A versão reúne permissão que não consta mais do catálogo.");
+
+    public static DomainError PermissaoReservada() => new(
+        PerfilErrorCodes.PermissaoReservada,
+        "A versão reúne permissão reservada aos perfis de governança.");
 }

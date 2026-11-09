@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -41,6 +42,24 @@ public sealed class PerfilRepository : IPerfilRepository
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
+
+    public async Task<IReadOnlyList<Perfil>> ListarComPendenteNoPrazoAsync(
+        DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+        await _context.Perfis
+            .AsNoTracking()
+            .ComComposicao()
+            .Where(p => p.Versoes.Any(v => v.Situacao == SituacaoDaVersao.Pendente && v.ExpiraEm > agora))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(
+        DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+        await _context.Perfis
+            .AsNoTracking()
+            .Where(p => p.Versoes.Any(v => v.Situacao == SituacaoDaVersao.Pendente && v.ExpiraEm <= agora))
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
     public async Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default)
     {

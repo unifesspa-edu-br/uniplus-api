@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento das versões do perfil e dos documentos que as instituem para os DTOs.</summary>
 public static class VersaoMapping
@@ -22,27 +23,59 @@ public static class VersaoMapping
             vigente.Numero,
             Descrever(vigente.Codigos(), catalogo),
             vigente.Protocolo,
-            vigente.Documento?.VerificadoEm,
+            perfil.DocumentoDe(vigente)?.VerificadoEm,
             perfil.Vigencias.FirstOrDefault(v => v.VersaoId == vigente.Id && v.Aberta)?.Desde);
 
     internal static VersaoPendenteDto? PendenteDe(Perfil perfil, CatalogoDaAplicacao catalogo) =>
-        perfil.VersaoPendente is { Documento: { } documento } pendente
-            ? new VersaoPendenteDto(
-                pendente.Id,
-                pendente.Numero,
-                pendente.Nome,
-                pendente.Descricao,
-                Descrever(pendente.Codigos(), catalogo),
-                pendente.Protocolo,
-                documento.Id,
-                documento.Situacao.ToCodigo(),
-                pendente.CriadaEm)
+        perfil.VersaoPendente is { } pendente && perfil.DocumentoDe(pendente) is { } documento
+            ? Pendente(perfil, pendente, documento, catalogo)
             : null;
 
-    internal static UltimaVersaoRecusadaDto? UltimaRecusadaDe(Perfil perfil) =>
-        perfil.UltimaVersaoRecusada is { MotivoDaRecusa: { } motivo, RecusadaEm: { } recusadaEm } recusada
-            ? new UltimaVersaoRecusadaDto(recusada.Numero, motivo.ToCodigo(), recusadaEm)
+    internal static UltimaVersaoEncerradaSemVigorDto? UltimaEncerradaSemVigorDe(Perfil perfil) =>
+        perfil.UltimaVersaoEncerradaSemVigor is { } versao
+            ? new UltimaVersaoEncerradaSemVigorDto(
+                versao.Numero, versao.Situacao.ToCodigo(), EtapaDeParada(versao).ToCodigo(), InstanteDoFim(versao))
             : null;
+
+    private static VersaoPendenteDto Pendente(
+        Perfil perfil, VersaoDoPerfil pendente, DocumentoDaVersao documento, CatalogoDaAplicacao catalogo)
+    {
+        (IReadOnlyList<string> acrescimo, bool exige) = DiferencaDe(perfil, pendente, catalogo);
+
+        return new VersaoPendenteDto(
+            pendente.Id, pendente.Numero, pendente.Nome, pendente.Descricao, Descrever(pendente.Codigos(), catalogo), pendente.Protocolo,
+            documento.Id, documento.Situacao.ToCodigo(), pendente.CriadaEm, pendente.ExpiraEm!.Value,
+            EtapaAtual(pendente, exige).ToCodigo(), exige, Descrever(acrescimo, catalogo),
+            Descrever((perfil.VersaoVigente?.Codigos() ?? []).Except(pendente.Codigos(), StringComparer.Ordinal), catalogo),
+            [.. pendente.DecisoesDoCiclo().Select(DecisaoDe)],
+            pendente.CriadorTemConcessao);
+    }
+
+    private static (IReadOnlyList<string> Acrescimo, bool Exige) DiferencaDe(
+        Perfil perfil, VersaoDoPerfil pendente, CatalogoDaAplicacao catalogo)
+    {
+        IReadOnlyList<string> acrescimo = perfil.VersaoVigente is { } vigente ? pendente.AcrescimosSobre(vigente) : pendente.Codigos();
+
+        return (acrescimo, acrescimo.Any(c => PerfilMapping.SensibilidadeDe(c, catalogo) >= ClassificacaoDeProtecao.Pessoal));
+    }
+
+    private static DecisaoDaVersaoDto DecisaoDe(DecisaoDaVersao decisao) =>
+        new(decisao.Etapa.ToCodigo(), decisao.Resultado.ToCodigo(), decisao.DecisorNome, decisao.DecisorTemConcessao, decisao.Instante);
+
+    private static EtapaDaVersao EtapaAtual(VersaoDoPerfil versao, bool exigeProtecaoDeDados) =>
+        versao.AprovadaPelaGestao && exigeProtecaoDeDados ? EtapaDaVersao.ProtecaoDeDados : EtapaDaVersao.GestaoDeAcessos;
+
+    // A recusa para na etapa que a recusou; o cancelamento e a expiração, na que faltava decidir.
+    private static EtapaDaVersao EtapaDeParada(VersaoDoPerfil versao) =>
+        versao.DecisoesDoCiclo().LastOrDefault(static d => d.Resultado == ResultadoDaDecisao.Recusado)?.Etapa
+            ?? EtapaAtual(versao, versao.ExigeProtecaoDeDados);
+
+    private static DateTimeOffset InstanteDoFim(VersaoDoPerfil versao) => versao.Situacao switch
+    {
+        SituacaoDaVersao.Cancelada => versao.CanceladaEm!.Value,
+        SituacaoDaVersao.Expirada => versao.ExpiradaEm!.Value,
+        _ => versao.DecisoesDoCiclo().Max(static d => d.Instante),
+    };
 
     internal static PermissaoDoPerfilDto[] Descrever(IEnumerable<string> codigos, CatalogoDaAplicacao catalogo) =>
         [.. codigos.Select(c => PerfilMapping.Descrever(c, catalogo)).OrderBy(static p => p.Codigo, StringComparer.Ordinal)];
