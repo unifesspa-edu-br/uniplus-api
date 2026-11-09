@@ -107,6 +107,21 @@ public sealed class PrazoDaVersaoTests
         falha.VersaoPendente.Should().NotBeNull();
     }
 
+    [Fact(DisplayName = "O comando que devolve falha para um perfil na rotina de expiração não impede os demais")]
+    public async Task Rotina_ComandoDevolveFalha_NaoImpedeOsDemais()
+    {
+        Perfil recusado = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
+        Perfil expira = PerfisDeTeste.Pendente("Analista de apoio", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(new PerfisNaMemoria(recusado, expira), Prazo.AddDays(1));
+
+        int expiradas = await cenario.Expiracao(new BarramentoQueRecusaOPerfil(cenario.Operacao, recusado.Id))
+            .ExecutarAsync(CancellationToken.None);
+
+        expiradas.Should().Be(1);
+        expira.VersaoPendente.Should().BeNull();
+        recusado.VersaoPendente.Should().NotBeNull();
+    }
+
     private sealed class Cenario
     {
         private readonly PerfisNaMemoria _perfis;
@@ -137,8 +152,13 @@ public sealed class PrazoDaVersaoTests
         public DocumentosDasVersoes Documentos { get; }
 
 
+        public OperacaoSobreOPerfil Operacao => _operacao;
+
         public ExpiracaoDasVersoesPendentes Expiracao(Guid perfilQueFalha) =>
-            new(_perfis, new BarramentoQueFalhaNoPerfil(_operacao, perfilQueFalha), _relogio, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
+            Expiracao(new BarramentoQueFalhaNoPerfil(_operacao, perfilQueFalha));
+
+        public ExpiracaoDasVersoesPendentes Expiracao(ICommandBus bus) =>
+            new(_perfis, bus, _relogio, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
     }
 
     private sealed class BarramentoQueFalhaNoPerfil(OperacaoSobreOPerfil operacao, Guid perfilQueFalha) : ICommandBus
@@ -149,6 +169,18 @@ public sealed class PrazoDaVersaoTests
 
             return expirar.PerfilId == perfilQueFalha
                 ? throw new InvalidOperationException("Falha simulada.")
+                : (TResponse)(object)await ExpirarVersaoPendenteDoPerfilCommandHandler.Handle(expirar, operacao, ct);
+        }
+    }
+
+    private sealed class BarramentoQueRecusaOPerfil(OperacaoSobreOPerfil operacao, Guid perfilRecusado) : ICommandBus
+    {
+        public async Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        {
+            ExpirarVersaoPendenteDoPerfilCommand expirar = (ExpirarVersaoPendenteDoPerfilCommand)(object)command;
+
+            return expirar.PerfilId == perfilRecusado
+                ? (TResponse)(object)Result<bool>.Failure(PerfilErros.Inativo())
                 : (TResponse)(object)await ExpirarVersaoPendenteDoPerfilCommandHandler.Handle(expirar, operacao, ct);
         }
     }
