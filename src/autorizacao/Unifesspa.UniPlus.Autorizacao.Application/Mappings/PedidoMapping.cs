@@ -14,21 +14,15 @@ public static class PedidoMapping
         ArgumentNullException.ThrowIfNull(p);
 
         return new PedidoDeConcessaoDto(
-            p.Id,
-            p.Situacao.ToCodigo(),
-            p.EtapaAtual?.ToCodigo(),
+            p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
             new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteSub, p.SolicitanteNome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
             NumeroDaVersao(p, perfil),
             Escopo(p),
             p.Justificativa,
-            p.ValidaAteSugerida,
-            p.ValidaAte,
-            perfil?.AdmitePrazo ?? false,
-            p.CriadoEm,
-            p.EncerradoEm,
-            p.ConcessaoId,
+            p.ValidaAteSugerida, p.ValidaAte, perfil?.AdmitePrazo ?? false,
+            p.CriadoEm, p.EncerradoEm, p.ConcessaoId,
             [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)],
             [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.Id).Select(ToDto)],
             [.. p.TrocasDeVersao.OrderBy(t => t.Instante).ThenBy(t => t.Id).Select(ToDto)]);
