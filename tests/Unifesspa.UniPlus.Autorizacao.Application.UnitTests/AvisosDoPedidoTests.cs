@@ -298,6 +298,7 @@ public sealed class AvisosDoPedidoTests
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();
         public void Remover(Concessao entity) => throw new InvalidOperationException();
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();

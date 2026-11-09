@@ -18,6 +18,7 @@ public static class ConcessaoMapping
             c.Id,
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, item.PerfilNome),
+            item.Versao,
             new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
             new OrigemDto(c.OrigemTipo.ToCodigo(), c.OrigemId),
             c.ConcedidaEm,

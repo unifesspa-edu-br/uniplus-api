@@ -37,14 +37,15 @@ public sealed partial class PedidoDeConcessao
     }
 
     /// <summary>
-    /// Confere que o pedido segue a versão em vigor do perfil. A troca de vigência atualiza ou devolve todo pedido ativo
-    /// sob a trava do perfil, então o pedido que chega à concessão em outra versão é defeito, não situação de negócio.
+    /// Confere que o pedido ativo segue a versão em vigor do perfil. A troca de vigência atualiza ou devolve todo pedido
+    /// ativo sob a trava do perfil, então o pedido ativo que chega à decisão em outra versão é defeito, não situação de
+    /// negócio. O pedido encerrado, como o devolvido, mantém a versão que seguia e não é conferido.
     /// </summary>
     public void ExigirVersaoEmVigorDe(Perfil perfil)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
-        if (VersaoId != perfil.VersaoVigente?.Id)
+        if (Ativo && VersaoId != perfil.VersaoVigente?.Id)
         {
             throw new InvalidOperationException(
                 $"O pedido {Id} segue a versão {VersaoId} e o perfil {perfil.Id} tem outra em vigor.");

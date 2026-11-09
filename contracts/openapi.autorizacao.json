@@ -4819,6 +4819,7 @@
           "id",
           "beneficiario",
           "perfil",
+          "versao",
           "escopo",
           "origem",
           "concedidaEm",
@@ -4839,6 +4840,13 @@
           },
           "perfil": {
             "$ref": "#/components/schemas/PerfilResumoDto"
+          },
+          "versao": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "escopo": {
             "$ref": "#/components/schemas/EscopoDto"
@@ -5519,6 +5527,7 @@
           "solicitante",
           "beneficiario",
           "perfil",
+          "versao",
           "escopo",
           "justificativa",
           "validaAteSugerida",
@@ -5528,7 +5537,8 @@
           "encerradoEm",
           "concessaoId",
           "anexos",
-          "decisoes"
+          "decisoes",
+          "trocasDeVersao"
         ],
         "type": "object",
         "properties": {
@@ -5553,6 +5563,13 @@
           },
           "perfil": {
             "$ref": "#/components/schemas/PerfilResumoDto"
+          },
+          "versao": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "escopo": {
             "$ref": "#/components/schemas/EscopoDto"
@@ -5605,6 +5622,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DecisaoDoPedidoDto"
+            }
+          },
+          "trocasDeVersao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrocaDeVersaoDoPedidoDto"
             }
           }
         }
@@ -6141,6 +6164,32 @@
           },
           "resultado": {
             "type": "string"
+          }
+        }
+      },
+      "TrocaDeVersaoDoPedidoDto": {
+        "required": [
+          "versaoAnterior",
+          "versaoNova",
+          "desfecho",
+          "instante"
+        ],
+        "type": "object",
+        "properties": {
+          "versaoAnterior": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versaoNova": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desfecho": {
+            "type": "string"
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

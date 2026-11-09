@@ -27,18 +27,18 @@ public sealed partial class ReceptorDoDocumentoDaVersao : IReceptorDoResultadoDa
     {
         ArgumentNullException.ThrowIfNull(resultado);
 
-        DesfechoDoResultadoDaVersao desfecho = await _versoes.RegistrarAsync(resultado, cancellationToken).ConfigureAwait(false);
-        if (desfecho == DesfechoDoResultadoDaVersao.Desconhecido)
+        RegistroDoResultadoDaVersao registro = await _versoes.RegistrarAsync(resultado, cancellationToken).ConfigureAwait(false);
+        if (registro.Desfecho == DesfechoDoResultadoDaVersao.Desconhecido)
         {
             return DesfechoDoRecebimento.NaoReconhecido;
         }
 
-        if (desfecho == DesfechoDoResultadoDaVersao.Ignorado)
+        if (registro.Desfecho == DesfechoDoResultadoDaVersao.Ignorado)
         {
             LogDocumentoIgnorado(_logger, resultado.ArquivoId);
         }
 
-        return DesfechoDoRecebimento.Tratado();
+        return DesfechoDoRecebimento.Tratado(registro.Mensagens);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Resultado da verificação do documento da versão {DocumentoId} ignorado: o documento não esperava veredicto")]

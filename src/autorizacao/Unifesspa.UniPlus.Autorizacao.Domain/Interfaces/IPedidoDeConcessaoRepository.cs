@@ -42,10 +42,20 @@ public sealed record PedidoComPerfil(PedidoDeConcessao Pedido, string PerfilNome
 /// <summary>Repositório dos pedidos de concessão, de seus anexos e dos acessos a eles.</summary>
 public interface IPedidoDeConcessaoRepository : IRepository<PedidoDeConcessao>
 {
-    /// <summary>O pedido com decisões e anexos, rastreado, para quem o altera.</summary>
+    /// <summary>O pedido com decisões, anexos e trocas de versão, rastreado, para quem o altera.</summary>
     Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default);
 
-    /// <summary>O pedido com decisões e anexos, sem rastreamento.</summary>
+    /// <summary>
+    /// O perfil que o pedido pede, lido sem rastrear: quem decide trava o perfil antes de carregar o pedido, e para travá-lo
+    /// precisa saber qual é. Nulo quando o pedido não existe.
+    /// </summary>
+    Task<Guid?> ObterPerfilIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Os pedidos ativos do perfil, ordenados por id, com decisões e trocas de versão, rastreados.</summary>
+    Task<IReadOnlyList<PedidoDeConcessao>> ListarAtivosDoPerfilParaAlterarAsync(
+        Guid perfilId, CancellationToken cancellationToken = default);
+
+    /// <summary>O pedido com decisões, anexos e trocas de versão, sem rastreamento.</summary>
     Task<PedidoDeConcessao?> ObterParaLeituraAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>O anexo, rastreado, para registrar o resultado do verificador.</summary>

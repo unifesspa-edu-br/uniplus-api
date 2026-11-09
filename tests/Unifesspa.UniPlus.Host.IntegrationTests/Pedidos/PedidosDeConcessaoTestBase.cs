@@ -12,6 +12,8 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -219,13 +221,29 @@ public abstract class PedidosDeConcessaoTestBase
         return perfil.Id;
     }
 
-    /// <summary>Põe em vigor uma versão nova do perfil com as permissões informadas, como a produção a trocaria.</summary>
-    private protected async Task TrocarComposicaoAsync(Guid perfilId, params string[] permissoes)
+    /// <summary>
+    /// Põe em vigor uma versão nova do perfil com as permissões informadas, como a produção a trocaria: sob a trava do
+    /// perfil, com os efeitos da troca sobre concessões e pedidos na mesma gravação. Devolve os avisos que a troca gerou.
+    /// </summary>
+    private protected async Task<IReadOnlyList<EnviarEmail>> TrocarComposicaoAsync(Guid perfilId, params string[] permissoes)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        Perfil perfil = (await scope.ServiceProvider.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
-        PerfisDeTeste.NovaVersaoVigente(perfil, permissoes, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+
+        return await TrocarComposicaoNoEscopoAsync(scope.ServiceProvider, perfilId, permissoes);
+    }
+
+    /// <summary>A mesma troca, nos serviços do escopo informado, para quem a executa dentro de uma transação que ele controla.</summary>
+    internal static async Task<IReadOnlyList<EnviarEmail>> TrocarComposicaoNoEscopoAsync(
+        IServiceProvider servicos, Guid perfilId, string[] permissoes)
+    {
+        Perfil perfil = (await servicos.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
+        ResultadoDoDocumentoVerificado trocada = PerfisDeTeste.NovaVersaoVigente(
+            perfil, permissoes, servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>());
+        IReadOnlyList<EnviarEmail> avisos = await servicos.GetRequiredService<EfeitosDaTrocaDeVigencia>()
+            .AplicarAsync(perfil, trocada.Troca!, CancellationToken.None);
+        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+
+        return avisos;
     }
 
     private protected Task<Guid> SemearPerfilInternoAsync() =>

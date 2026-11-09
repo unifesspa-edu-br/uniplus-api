@@ -113,4 +113,46 @@ public sealed class VigenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostT
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("ampliacao_exige_protecao_de_dados");
     }
+
+    [Fact(DisplayName = "A entrada em vigor sem acréscimo leva a concessão e o pedido ativo para a versão nova")]
+    public async Task EntradaEmVigorSemAcrescimo_MigraConcessaoEPedido()
+    {
+        await ResetarAsync();
+        using HttpClient gestor = await GestorAsync();
+        Envio original = await CriarPerfilAsync(gestor, Consultar, Sensivel);
+        await EnviarEVerificarAsync(gestor, original);
+        Guid unidade = await SemearUnidadeAsync();
+        await SemearConcessaoAsync(Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
+        using HttpClient betina = Cliente(Betina);
+        Guid pedido = await CriarAsync(betina, original.PerfilId, unidade, null);
+        Envio reduzida = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar);
+
+        await EnviarEVerificarAsync(gestor, reduzida);
+
+        (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle().Which.VersaoId.Should().Be(reduzida.VersaoId);
+        JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
+        lido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        lido.GetProperty("versao").GetInt32().Should().Be(2);
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("versao_atualizada");
+    }
+
+    [Fact(DisplayName = "A entrada em vigor com acréscimo devolve o pedido ativo e avisa o solicitante")]
+    public async Task EntradaEmVigorComAcrescimo_DevolveOPedido()
+    {
+        await ResetarAsync();
+        using HttpClient gestor = await GestorAsync();
+        Envio original = await CriarPerfilAsync(gestor, Consultar);
+        await EnviarEVerificarAsync(gestor, original);
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient betina = Cliente(Betina);
+        Guid pedido = await CriarAsync(betina, original.PerfilId, unidade, null);
+        Envio ampliada = await CriarVersaoAsync(gestor, original.PerfilId, Nome(), Consultar, Sensivel);
+
+        await EnviarEVerificarAsync(gestor, ampliada);
+
+        JsonElement lido = await LerAsync(betina, $"{Rota}/{pedido}");
+        lido.GetProperty("situacao").GetString().Should().Be("devolvido");
+        lido.GetProperty("versao").GetInt32().Should().Be(1);
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("devolvido");
+    }
 }

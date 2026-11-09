@@ -141,8 +141,10 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
+        RegistroDoResultadoDaVersao registro = await scope.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
             .RegistrarAsync(ResultadoDe(documentoId, veredicto), CancellationToken.None);
+
+        return registro.Desfecho;
     }
 
     private protected static ResultadoDaVerificacaoDeArquivo ResultadoDe(Guid documentoId, VeredictoDaVerificacao veredicto)

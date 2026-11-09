@@ -38,52 +38,10 @@ internal sealed record DecisaoDaEtapa(PedidoDeConcessao Pedido, Perfil Perfil, P
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.AutorNaoIdentificado());
         }
 
-        if (!acesso.Aprova)
-        {
-            // O id da rota só entra na trilha se o pedido existe; o inexistente registra a negativa sem o id.
-            if (await pedidos.ObterParaLeituraAsync(pedidoId, cancellationToken).ConfigureAwait(false) is not null)
-            {
-                await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: false, cancellationToken)
-                    .ConfigureAwait(false);
-            }
+        PreparoDaDecisao preparo = new(pedidos, concessoes, verificador, catalogo, acesso, decisor);
 
-            return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.SemPermissao());
-        }
-
-        PedidoDeConcessao? pedido = await pedidos.ObterParaAlterarAsync(pedidoId, cancellationToken).ConfigureAwait(false);
-
-        // Pedido que não existe não foi acessado: nada se registra.
-        if (pedido is null)
-        {
-            return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.NaoEncontrado());
-        }
-
-        // A permissão que governa é a da etapa que o pedido aguarda, permitida ou negada.
-        if (pedido.EtapaAtual is { } etapa)
-        {
-            await AcessoDoAprovador.RegistrarAsync(verificador, acesso.DecisaoDaEtapa(etapa), cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (pedido.EtapaAtual is { } etapaAtual && !acesso.Decide(etapaAtual))
-        {
-            return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.EtapaInvalida());
-        }
-
-        // A leitura trava o perfil até o fim da transação: a desativação simultânea espera ou conflita.
-        Perfil? perfil = await concessoes.ObterParaConcederAsync(pedido.PerfilId, cancellationToken).ConfigureAwait(false);
-        if (perfil is null)
-        {
-            return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.NaoEncontrado());
-        }
-
-        return Result<DecisaoDaEtapa>.Success(new DecisaoDaEtapa(pedido, perfil, PerfilMapping.Avaliar(perfil, catalogo), decisor));
+        return acesso.Aprova
+            ? await preparo.CarregarAsync(pedidoId, cancellationToken).ConfigureAwait(false)
+            : await preparo.NegarAsync(pedidoId, cancellationToken).ConfigureAwait(false);
     }
 }

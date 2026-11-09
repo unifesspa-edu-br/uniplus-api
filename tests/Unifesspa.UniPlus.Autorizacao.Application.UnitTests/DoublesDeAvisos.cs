@@ -33,6 +33,7 @@ internal static class DoublesDeAvisos
         new(
             new DoublesDePerfis.PerfisNaMemoria(),
             new LeitorDoContextoDaVersao(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.ConcessoesNaMemoria()),
+            new EfeitosDaTrocaDeVigencia(new DoublesDePerfis.ConcessoesNaMemoria(), new PedidosAtivosNaMemoria(), Avisos(), TimeProvider.System),
             new DoublesDePerfis.UnidadeDeTrabalho(),
             new CatalogoLivre(),
             TimeProvider.System);
@@ -82,6 +83,7 @@ internal static class DoublesDeAvisos
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();
         public void Remover(Concessao entity) => throw new InvalidOperationException();
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();

@@ -22,7 +22,15 @@ public sealed record DecisaoDoPedidoDto(
 
 public sealed record AnexoDoPedidoDto(Guid Id, string Situacao, long TamanhoDeclarado, DateTimeOffset? EnviadoEm);
 
+/// <summary>
+/// Registro de que uma versão nova do perfil entrou em vigor enquanto o pedido estava ativo, e do que isso fez a ele. Os
+/// números são os das versões; o pedido não guarda cópia do perfil.
+/// </summary>
+/// <param name="Desfecho"><c>versao_atualizada</c>, <c>voltou_ao_gestor</c> ou <c>devolvido</c>.</param>
+public sealed record TrocaDeVersaoDoPedidoDto(int VersaoAnterior, int VersaoNova, string Desfecho, DateTimeOffset Instante);
+
 /// <summary>Pedido de concessão como a API o expõe a quem pode vê-lo.</summary>
+/// <param name="Versao">Número da versão do perfil que o pedido segue; nulo no perfil de governança, que não tem versão.</param>
 /// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>protecao_de_dados</c>); nula se não aguarda nenhum.</param>
 /// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugeriu; nulo, sem sugestão.</param>
 /// <param name="ValidaAte">Fim de vigência que o gestor definiu ao aprovar; nulo, sem prazo.</param>
@@ -35,6 +43,7 @@ public sealed record PedidoDeConcessaoDto(
     IdentidadeDto Solicitante,
     BeneficiarioDoPedidoDto Beneficiario,
     PerfilResumoDto Perfil,
+    int? Versao,
     EscopoDto Escopo,
     string Justificativa,
     DateTimeOffset? ValidaAteSugerida,
@@ -44,7 +53,8 @@ public sealed record PedidoDeConcessaoDto(
     DateTimeOffset? EncerradoEm,
     Guid? ConcessaoId,
     IReadOnlyList<AnexoDoPedidoDto> Anexos,
-    IReadOnlyList<DecisaoDoPedidoDto> Decisoes);
+    IReadOnlyList<DecisaoDoPedidoDto> Decisoes,
+    IReadOnlyList<TrocaDeVersaoDoPedidoDto> TrocasDeVersao);
 
 /// <summary>Pedido como aparece nas listas e nas filas dos aprovadores.</summary>
 public sealed record PedidoResumoDto(

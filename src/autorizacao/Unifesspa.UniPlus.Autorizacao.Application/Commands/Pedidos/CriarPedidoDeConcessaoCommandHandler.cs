@@ -20,7 +20,7 @@ public static class CriarPedidoDeConcessaoCommandHandler
     public static async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> Handle(
         CriarPedidoDeConcessaoCommand command,
         IPedidoDeConcessaoRepository repository,
-        IPerfilRepository perfis,
+        IConcessaoRepository concessoes,
         ILeitorDeUnidade unidades,
         IDominiosInstitucionais dominios,
         ICatalogoDePermissoesConsultavel catalogo,
@@ -32,7 +32,7 @@ public static class CriarPedidoDeConcessaoCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(perfis);
+        ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(unidades);
         ArgumentNullException.ThrowIfNull(dominios);
         ArgumentNullException.ThrowIfNull(catalogo);
@@ -46,7 +46,9 @@ public static class CriarPedidoDeConcessaoCommandHandler
             return Recusa(PedidoHandlerErros.AutorNaoIdentificado());
         }
 
-        Perfil? perfil = await perfis.ObterPorIdAsync(command.PerfilId, cancellationToken).ConfigureAwait(false);
+        // A leitura trava o perfil com FOR SHARE até o fim da transação: a troca de vigência, que o trava para escrita,
+        // espera ou conflita, e o pedido nasce sempre na versão que de fato está em vigor.
+        Perfil? perfil = await concessoes.ObterParaConcederAsync(command.PerfilId, cancellationToken).ConfigureAwait(false);
         if (perfil is null)
         {
             return Recusa(new DomainError(

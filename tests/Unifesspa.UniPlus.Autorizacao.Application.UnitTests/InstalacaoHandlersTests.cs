@@ -300,6 +300,7 @@ public sealed class InstalacaoHandlersTests
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();
         public void Remover(Concessao entity) => throw new InvalidOperationException();
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
@@ -354,6 +355,9 @@ public sealed class InstalacaoHandlersTests
 
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
             Task.FromResult<Perfil?>(PerfisDeTeste.Vigente("Gestor de acessos", "Governa as concessões de acesso.", ["selecao:processos:consultar"], new CatalogoInstitucional()));
+
+        public Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
 
         public Task AdicionarAsync(Concessao entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
@@ -414,6 +418,7 @@ public sealed class InstalacaoHandlersTests
         public void Atualizar(Concessao entity) => throw new InvalidOperationException();
         public void Remover(Concessao entity) => throw new InvalidOperationException();
         public Task<Perfil?> ObterParaConcederAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Concessao>> ObterParaMigrarAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();

@@ -9,6 +9,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -181,11 +182,11 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             .GetProperty("detalhe").GetString().Should().Contain("beneficiario_ja_tem_protecao_de_dados");
     }
 
-    [Fact(DisplayName = "Perfil alterado entre as etapas devolve o pedido ao gestor, responde perfil_alterado e nada é concedido")]
-    public async Task PerfilAlterado_VoltaAoGestor()
+    [Fact(DisplayName = "Troca de versão sem acréscimo entre as etapas devolve o pedido ao gestor na própria troca, e a aprovação final vale na versão nova")]
+    public async Task TrocaSemAcrescimo_VoltaAoGestorENaVersaoNova()
     {
         await ResetarAsync();
-        Guid perfil = await SemearPerfilSensivelAsync();
+        Guid perfil = await SemearPerfilAsync("Análise de atendimento", "teste:atendimento:analisar", "teste:laudos:consultar");
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
@@ -195,26 +196,23 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:inscricoes:operar");
 
-        await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.Conflict, "perfil_alterado");
+        IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar");
 
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
-        (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
-        JsonElement trilhaDaTentativa = await LerAsync(diogo, $"{Rota}/{id}/trilha");
-        JsonElement devolucao = trilhaDaTentativa.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "perfil_alterado_entre_etapas");
-        devolucao.GetProperty("autor").GetProperty("sub").GetString().Should().Be(Marlene.Sub.ToString());
-        devolucao.GetProperty("detalhe").GetString().Should().Contain("protecao_de_dados");
+        avisos.Should().OnlyContain(a => a.Finalidade == "pedido.fila_do_gestor");
+        JsonElement voltado = await LerAsync(betina, $"{Rota}/{id}");
+        voltado.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
+        voltado.GetProperty("versao").GetInt32().Should().Be(2);
+        JsonElement troca = voltado.GetProperty("trocasDeVersao").EnumerateArray().Single();
+        (troca.GetProperty("versaoAnterior").GetInt32(), troca.GetProperty("versaoNova").GetInt32(), troca.GetProperty("desfecho").GetString())
+            .Should().Be((1, 2, "voltou_ao_gestor"));
         (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        JsonElement final = await LerAsync(betina, $"{Rota}/{id}");
-        final.GetProperty("decisoes").EnumerateArray().First().GetProperty("permissoesAvaliadas").EnumerateArray().Should().HaveCount(1);
-        final.GetProperty("decisoes").EnumerateArray().Last().GetProperty("permissoesAvaliadas").EnumerateArray().Should().HaveCount(2);
-        (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle();
+        (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.VersaoId.Should().NotBeNull();
     }
 
-    [Fact(DisplayName = "Retry com a mesma chave depois de perfil_alterado reproduz a recusa guardada e não decide de novo")]
-    public async Task PerfilAlterado_RetryComAMesmaChave_ReproduzARecusa()
+    [Fact(DisplayName = "Troca de versão com acréscimo entre as etapas devolve o pedido, avisa as duas partes e nada é concedido")]
+    public async Task TrocaComAcrescimo_DevolveOPedido()
     {
         await ResetarAsync();
         Guid perfil = await SemearPerfilSensivelAsync();
@@ -222,21 +220,23 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarFuncional, AprovarProtecaoDeDados);
+        using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
         await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite");
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
-        await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:inscricoes:operar");
-        string chave = Guid.NewGuid().ToString();
-        await ConferirRecusaAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", chave: chave), HttpStatusCode.Conflict, "perfil_alterado");
 
-        using HttpResponseMessage repeticao = await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes", chave: chave);
+        IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:laudos:consultar");
 
-        await ConferirRecusaAsync(repeticao, HttpStatusCode.Conflict, "perfil_alterado");
-        repeticao.Headers.Contains("Idempotency-Replayed").Should().BeTrue();
-        (await SituacaoAsync(betina, id)).Should().Be("aguardando_gestor");
+        avisos.Select(a => a.Finalidade).Should().OnlyContain(f => f == "pedido.devolvido").And.HaveCount(2);
+        avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
+        JsonElement devolvido = await LerAsync(betina, $"{Rota}/{id}");
+        devolvido.GetProperty("situacao").GetString().Should().Be("devolvido");
+        devolvido.GetProperty("versao").GetInt32().Should().Be(1);
+        devolvido.GetProperty("encerradoEm").ValueKind.Should().NotBe(JsonValueKind.Null);
+        devolvido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("devolvido");
+        await ConferirRecusaAsync(
+            await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
-        (await TiposDaTrilhaAsync(diogo, id)).Count(t => t == "perfil_alterado_entre_etapas").Should().Be(1);
     }
 
     [Fact(DisplayName = "Prazo do gestor vencido antes da proteção de dados devolve o pedido ao gestor com 409 e deixa o evento na trilha")]

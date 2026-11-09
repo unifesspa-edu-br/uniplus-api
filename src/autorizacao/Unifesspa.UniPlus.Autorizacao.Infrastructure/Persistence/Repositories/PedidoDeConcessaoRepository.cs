@@ -55,8 +55,28 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
         await _context.Pedidos
             .Include(p => p.Decisoes)
             .Include(p => p.Anexos)
+            .Include(p => p.TrocasDeVersao)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<Guid?> ObterPerfilIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await _context.Pedidos
+            .AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => (Guid?)p.PerfilId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<PedidoDeConcessao>> ListarAtivosDoPerfilParaAlterarAsync(
+        Guid perfilId, CancellationToken cancellationToken = default) =>
+        await _context.Pedidos
+            .Include(p => p.Decisoes)
+            .Include(p => p.TrocasDeVersao)
+            .AsSplitQuery()
+            .Where(p => p.PerfilId == perfilId && PedidoDeConcessao.SituacoesAtivas.Contains(p.Situacao))
+            .OrderBy(p => p.Id)
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
     public async Task<PedidoDeConcessao?> ObterParaLeituraAsync(Guid id, CancellationToken cancellationToken = default) =>
@@ -64,6 +84,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
             .AsNoTracking()
             .Include(p => p.Decisoes)
             .Include(p => p.Anexos)
+            .Include(p => p.TrocasDeVersao)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             .ConfigureAwait(false);
