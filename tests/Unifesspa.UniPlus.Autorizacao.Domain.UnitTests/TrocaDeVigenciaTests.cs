@@ -84,7 +84,7 @@ public sealed class TrocaDeVigenciaTests
 
     private static TrocaDeVigencia TrocaPara(Perfil perfil, string[] permissoes, string? nome = null)
     {
-        perfil.CriarVersao(
+        PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo(nome ?? perfil.Nome, perfil.Descricao, permissoes, Catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,

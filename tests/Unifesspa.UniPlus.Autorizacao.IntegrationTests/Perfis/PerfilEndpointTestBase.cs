@@ -44,6 +44,13 @@ public abstract class PerfilEndpointTestBase
     internal static object Corpo(string nome, string[] permissoes) =>
         new { nome, descricao = Descricao, permissoes, protocolo = "23479.000123/2026-11", tamanhoDoDocumento = 2048 };
 
+    internal static object ComMotivoDaRemocao(object corpo) =>
+        new Dictionary<string, object?>(
+            corpo.GetType().GetProperties().ToDictionary(p => p.Name, p => p.GetValue(corpo)))
+        {
+            ["motivoDaRemocao"] = "Retirada de permissão que o perfil não usa mais.",
+        };
+
     internal static Envio LerEnvio(string json)
     {
         using JsonDocument documento = JsonDocument.Parse(json);

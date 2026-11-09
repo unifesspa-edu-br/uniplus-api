@@ -79,14 +79,15 @@ public sealed class PrazoDaVersaoTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         perfil.Desativar();
-        Cenario cenario = new(perfil, Prazo.AddDays(1));
+        CenarioDaGovernancaDaVersao cenario = new(
+            perfil, PerfisDeTeste.Autor, [], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo.AddDays(1)));
 
-        Result<EnvioDoDocumentoDto> resultado = await cenario.Versoes.CriarVersaoAsync(
+        GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
             perfil.Id,
-            new DadosDaVersaoRequest("Analista de apoio", Descricao, [Consultar], PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento),
+            new ProporVersaoRequest("Analista de apoio", Descricao, [Consultar], PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento, null, null),
             CancellationToken.None);
 
-        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.Inativo);
+        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.Inativo);
         perfil.Versoes.Single().Situacao.Should().Be(SituacaoDaVersao.Expirada);
         cenario.Unidade.Gravacoes.Should().Be(1);
         cenario.Unidade.Descartes.Should().Be(0);
@@ -127,7 +128,6 @@ public sealed class PrazoDaVersaoTests
             AutoriaDaOperacao autoria = new(new Usuario(PerfisDeTeste.Autor), _relogio, new ConcessoesNaMemoria());
             EnvioDoDocumento envio = new(Armazenamento, _relogio);
             Documentos = new DocumentosDasVersoes(_operacao, envio, autoria, _perfis, Armazenamento, Unidade);
-            Versoes = new VersoesDoPerfil(_operacao, new LeitorDoContextoDaVersao(_perfis, new ConcessoesNaMemoria()), envio, autoria, Catalogo);
         }
 
         public UnidadeDeTrabalho Unidade { get; }
@@ -136,7 +136,6 @@ public sealed class PrazoDaVersaoTests
 
         public DocumentosDasVersoes Documentos { get; }
 
-        public VersoesDoPerfil Versoes { get; }
 
         public ExpiracaoDasVersoesPendentes Expiracao(Guid perfilQueFalha) =>
             new(_perfis, new BarramentoQueFalhaNoPerfil(_operacao, perfilQueFalha), _relogio, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);

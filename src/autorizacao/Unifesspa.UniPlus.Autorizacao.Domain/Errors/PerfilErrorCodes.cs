@@ -31,7 +31,6 @@ public static class PerfilErrorCodes
     public const string DocumentoNaoRecusado = "Perfil.DocumentoNaoRecusado";
     public const string DocumentoNaoVerificado = "Perfil.DocumentoNaoVerificado";
     public const string AcrescimoComConcessaoAtiva = "Perfil.AcrescimoComConcessaoAtiva";
-    public const string RemocaoPorContencao = "Perfil.RemocaoPorContencao";
     public const string SemVersaoEmVigor = "Perfil.SemVersaoEmVigor";
     public const string RemocaoInvalida = "Perfil.RemocaoInvalida";
     public const string MotivoInvalido = "Perfil.MotivoInvalido";

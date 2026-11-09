@@ -45,6 +45,24 @@ public static class PerfisDeTeste
         string nome, string descricao, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo) =>
         Garantir(ConteudoDaVersao.Validar(nome, descricao, permissoes, Protocolo, TamanhoDoDocumento, catalogo));
 
+    /// <summary>A versão pendente que a proposta sem remoção cria, ou a recusa dela.</summary>
+    public static Result<VersaoDoPerfil> CriarVersao(
+        Perfil perfil,
+        ConteudoDaVersao conteudo,
+        ContextoDaVersao contexto,
+        AutoriaDaVersao autoria,
+        DateTimeOffset instante,
+        ICatalogoDePermissoesConsultavel catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+
+        DesfechoDaVersao desfecho = perfil.Propor(new PropostaDeVersao(conteudo, null, null, autoria, instante), contexto, catalogo);
+
+        return desfecho.Concluida && desfecho.Criada is { } criada
+            ? Result<VersaoDoPerfil>.Success(criada)
+            : Result<VersaoDoPerfil>.Failure(desfecho.Erro ?? throw new InvalidOperationException("A proposta não criou versão pendente."));
+    }
+
     /// <summary>Perfil comum com a versão 1 pendente, esperando o envio do documento.</summary>
     public static Perfil Pendente(
         string nome, string descricao, IEnumerable<string> permissoes, ICatalogoDePermissoesConsultavel catalogo) =>
@@ -66,7 +84,7 @@ public static class PerfisDeTeste
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
-        Garantir(perfil.CriarVersao(
+        Garantir(CriarVersao(perfil,
             Conteudo(perfil.Nome, perfil.Descricao, permissoes, catalogo), SemContexto, AutoriaDoAutor, Instante, catalogo));
 
         return EntrarEmVigor(perfil, catalogo);

@@ -126,7 +126,7 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         await SemearConcessaoAsync(id, EscopoDaConcessao.DaUnidade(Guid.NewGuid()));
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ManterMotivos]));
+            diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", ComMotivoDaRemocao(Corpo(Nome(), [ManterMotivos])));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.perfil.alcance_alterado");

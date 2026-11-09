@@ -4639,17 +4639,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DadosDaVersaoRequest"
+                "$ref": "#/components/schemas/ProporVersaoRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/DadosDaVersaoRequest"
+                "$ref": "#/components/schemas/ProporVersaoRequest"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/DadosDaVersaoRequest"
+                "$ref": "#/components/schemas/ProporVersaoRequest"
               }
             }
           },
@@ -4672,6 +4672,26 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EnvioDoDocumentoDto"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilDto"
                 }
               }
             }
@@ -6660,6 +6680,63 @@
           "retryable": {
             "type": "boolean",
             "description": "Presente e \u0060true\u0060 quando o conflito descreve uma corrida que j\u00E1 passou: a mesma requisi\u00E7\u00E3o, repetida sem altera\u00E7\u00E3o, pode agora ser aceita. A aus\u00EAncia \u00E9 o default conservador do servidor \u2014 diz que o conflito n\u00E3o foi declarado retent\u00E1vel, n\u00E3o que repetir esteja descartado; nesse caso vale a descri\u00E7\u00E3o da pr\u00F3pria resposta."
+          }
+        }
+      },
+      "ProporVersaoRequest": {
+        "required": [
+          "nome",
+          "descricao",
+          "permissoes",
+          "protocolo",
+          "tamanhoDoDocumento",
+          "motivoDaRemocao",
+          "categoriaDaRemocao"
+        ],
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "descricao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "permissoes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "protocolo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tamanhoDoDocumento": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "motivoDaRemocao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoriaDaRemocao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

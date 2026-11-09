@@ -191,7 +191,7 @@ public sealed class GovernancaDaVersaoTests
     public async Task Remover_ComPendente_CancelaEAvisaOCriador()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", [A, B], new CatalogoDeTeste());
-        PerfisDeTeste.Garantir(perfil.CriarVersao(
+        PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo(perfil.Nome, perfil.Descricao, [A, B, Pessoal], new CatalogoDeTeste()),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,

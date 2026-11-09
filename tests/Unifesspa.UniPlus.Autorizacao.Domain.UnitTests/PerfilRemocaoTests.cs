@@ -76,7 +76,7 @@ public sealed class PerfilRemocaoTests
     public void Remover_ComPendente_CancelaPorContencao()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
-        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(perfil.CriarVersao(
+        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,
@@ -96,7 +96,7 @@ public sealed class PerfilRemocaoTests
     public void Remover_PendenteNoPrazoExato_Expira()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
-        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(perfil.CriarVersao(
+        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,

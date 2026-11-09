@@ -8,8 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O ciclo da versão do perfil: criar o perfil com a versão 1, criar versões novas. Toda operação
-/// sobre perfil existente roda na ordem de travas de <see cref="OperacaoSobreOPerfil"/>.
+/// A criação do perfil com a versão 1. A proposta de versão do perfil existente é de <see cref="PropostasDeVersao"/>.
 /// </summary>
 public sealed class VersoesDoPerfil
 {
@@ -57,27 +56,6 @@ public sealed class VersoesDoPerfil
             .ConfigureAwait(false);
     }
 
-    public async Task<Result<EnvioDoDocumentoDto>> CriarVersaoAsync(
-        Guid perfilId, DadosDaVersaoRequest dados, CancellationToken cancellationToken)
-    {
-        if (await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is not { } autoria)
-        {
-            return Result<EnvioDoDocumentoDto>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
-        }
-
-        Result<ConteudoDaVersao> conteudo = Validar(dados);
-
-        return conteudo.IsFailure
-            ? Result<EnvioDoDocumentoDto>.ValidationFailure(conteudo.Errors)
-            : await _operacao
-                .ExecutarAsync(
-                    perfilId,
-                    null,
-                    (perfil, contexto) => NovaVersaoAsync(perfil, conteudo.Value!, autoria, contexto.Agora, cancellationToken),
-                    cancellationToken)
-                .ConfigureAwait(false);
-    }
-
     private async Task<Result<Perfil>> NovoPerfilAsync(DadosDaVersaoRequest dados, CancellationToken cancellationToken)
     {
         if (await _autoria.DaVersaoAsync(null, cancellationToken).ConfigureAwait(false) is not { } autoria)
@@ -94,21 +72,6 @@ public sealed class VersoesDoPerfil
         return await _leitor.NomeEmUsoPorOutroAsync(conteudo.Value!.Nome, null, cancellationToken).ConfigureAwait(false)
             ? Result<Perfil>.Failure(PerfilErros.NomeDuplicado())
             : Perfil.Criar(conteudo.Value, autoria, _autoria.Agora, _catalogo);
-    }
-
-    private async Task<Result<EnvioDoDocumentoDto>> NovaVersaoAsync(
-        Perfil perfil, ConteudoDaVersao conteudo, AutoriaDaVersao autoria, DateTimeOffset agora, CancellationToken cancellationToken)
-    {
-        ContextoDaVersao contexto = await _leitor.LerAsync(perfil.Id, conteudo.Nome, cancellationToken).ConfigureAwait(false);
-        Result<VersaoDoPerfil> criada = perfil.CriarVersao(conteudo, contexto, autoria, agora, _catalogo);
-        if (criada.IsFailure)
-        {
-            return Result<EnvioDoDocumentoDto>.ValidationFailure(criada.Errors);
-        }
-
-        EnvioDoDocumentoDto envio = await _envio.EmitirAsync(criada.Value!.Documento!, cancellationToken).ConfigureAwait(false);
-
-        return Result<EnvioDoDocumentoDto>.Success(envio);
     }
 
     private Result<ConteudoDaVersao> Validar(DadosDaVersaoRequest dados)

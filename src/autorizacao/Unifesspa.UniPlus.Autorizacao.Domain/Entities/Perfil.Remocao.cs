@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>A remoção de permissões, que não espera aprovação: a contenção vale na hora.</summary>
+/// <summary>A remoção de permissões, que não espera aprovação: a contenção vale na hora, sozinha ou com a proposta que a traz.</summary>
 public sealed partial class Perfil
 {
     /// <summary>
@@ -37,13 +37,23 @@ public sealed partial class Perfil
     private bool CodigosValidos(IReadOnlyList<string> codigos) =>
         codigos.Count > 0 && codigos.All(c => VersaoVigente!.Codigos().Contains(c, StringComparer.Ordinal));
 
-    private DesfechoDaVersao RemoverDaVigente(PedidoDeRemocao pedido)
+    private DesfechoDaVersao RemoverDaVigente(PedidoDeRemocao pedido) =>
+        EfetivarARemocao(pedido, VersaoDoPerfil.DaRemocao(VersaoVigente!, ProximoNumero(), pedido), null);
+
+    // A remoção entra em vigor e a pendente que ainda valia é cancelada; a versão que a proposta criou além da remoção
+    // passa a ser a única pendente.
+    private DesfechoDaVersao EfetivarARemocao(PedidoDeRemocao pedido, VersaoDoPerfil remocao, VersaoDoPerfil? proposta)
     {
         VersaoDoPerfil? cancelada = EncerrarPendenteParaARemocao(pedido);
-        VersaoDoPerfil remocao = VersaoDoPerfil.DaRemocao(VersaoVigente!, ProximoNumero(), pedido);
         _versoes.Add(remocao);
+        TrocaDeVigencia troca = TrocarVigencia(remocao, pedido.Instante);
 
-        return DesfechoDaVersao.ConcluidoPelaRemocao(TrocarVigencia(remocao, pedido.Instante), cancelada);
+        if (proposta is not null)
+        {
+            _versoes.Add(proposta);
+        }
+
+        return DesfechoDaVersao.ConcluidoPelaRemocao(troca, cancelada, proposta);
     }
 
     // A vencida expira sem aviso; a que ainda vale é cancelada pela contenção, e quem a criou é avisado.

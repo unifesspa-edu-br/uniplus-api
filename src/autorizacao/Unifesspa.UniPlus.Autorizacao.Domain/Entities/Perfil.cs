@@ -119,12 +119,10 @@ public sealed partial class Perfil : EntityBase
         return Result<Perfil>.Success(perfil);
     }
 
-    /// <summary>
-    /// Cria uma versão nova, pendente, com o documento esperando o envio. Sem versão vigente (a primeira foi cancelada,
-    /// recusada ou expirou) é uma nova primeira versão: não há o que comparar e o nome pode mudar. A pendente que já
-    /// passou do prazo expira antes e não bloqueia.
-    /// </summary>
-    public Result<VersaoDoPerfil> CriarVersao(
+    // Cria uma versão nova, pendente, com o documento esperando o envio, para a proposta que não retira permissão. Sem
+    // versão vigente (a primeira foi cancelada, recusada ou expirou) é uma nova primeira versão: não há o que comparar e
+    // o nome pode mudar. A pendente que já passou do prazo expira antes e não bloqueia.
+    private Result<VersaoDoPerfil> CriarVersao(
         ConteudoDaVersao conteudo,
         ContextoDaVersao contexto,
         AutoriaDaVersao autoria,
@@ -185,14 +183,7 @@ public sealed partial class Perfil : EntityBase
         DateTimeOffset instante,
         ICatalogoDePermissoesConsultavel catalogo)
     {
-        ClasseDaVersao classe = ClasseDe(conteudo, VersaoVigente, catalogo);
-        Result<VersaoDoPerfil> criada = VersaoDoPerfil.Criar(Id, ProximoNumero(), conteudo, autoria, classe, instante);
-        DomainError? recusa = criada.IsSuccess ? RecusaContraAVigente(criada.Value!, contexto, catalogo) : null;
-        if (recusa is not null)
-        {
-            return Result<VersaoDoPerfil>.Failure(recusa);
-        }
-
+        Result<VersaoDoPerfil> criada = CriarSobre(VersaoVigente, ProximoNumero(), conteudo, contexto, autoria, instante, catalogo);
         if (criada.IsSuccess)
         {
             Acrescentar(criada.Value!);
@@ -201,10 +192,27 @@ public sealed partial class Perfil : EntityBase
         return criada;
     }
 
+    // A versão proposta, conferida contra aquela sobre a qual vai valer: a vigente, ou a que a remoção da mesma proposta
+    // deixa em vigor.
+    private Result<VersaoDoPerfil> CriarSobre(
+        VersaoDoPerfil? sobre,
+        int numero,
+        ConteudoDaVersao conteudo,
+        ContextoDaVersao contexto,
+        AutoriaDaVersao autoria,
+        DateTimeOffset instante,
+        ICatalogoDePermissoesConsultavel catalogo)
+    {
+        Result<VersaoDoPerfil> criada = VersaoDoPerfil.Criar(Id, numero, conteudo, autoria, ClasseDe(conteudo, sobre, catalogo), instante);
+        DomainError? recusa = criada.IsSuccess ? RecusaContra(sobre, criada.Value!, contexto, catalogo) : null;
+
+        return recusa is null ? criada : Result<VersaoDoPerfil>.Failure(recusa);
+    }
+
     private static ClasseDaVersao ClasseDe(
         ConteudoDaVersao conteudo, VersaoDoPerfil? vigente, ICatalogoDePermissoesConsultavel catalogo)
     {
-        string[] codigos = [.. conteudo.Permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
+        IReadOnlyList<string> codigos = conteudo.Codigos();
         DiferencaDaVersao diferenca = DiferencaDaVersao.Calcular(codigos, vigente?.Codigos(), catalogo);
 
         return new ClasseDaVersao(AlcanceDasPermissoes.De(codigos, catalogo) ?? TipoDeEscopo.Instituicao, diferenca.ExigeProtecaoDeDados);
@@ -232,10 +240,10 @@ public sealed partial class Perfil : EntityBase
         return contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null;
     }
 
-    private DomainError? RecusaContraAVigente(
-        VersaoDoPerfil versao, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo) =>
+    private static DomainError? RecusaContra(
+        VersaoDoPerfil? sobre, VersaoDoPerfil versao, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo) =>
         ConferenciasDaVersao.DaCriacao(
-            versao, VersaoVigente, contexto, DiferencaDaVersao.Calcular(versao.Codigos(), VersaoVigente?.Codigos(), catalogo));
+            versao, sobre, contexto, DiferencaDaVersao.Calcular(versao.Codigos(), sobre?.Codigos(), catalogo));
 
     // Sem versão vigente o perfil se identifica pela última pendente.
     private void Acrescentar(VersaoDoPerfil versao)

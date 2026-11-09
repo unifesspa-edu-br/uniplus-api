@@ -39,6 +39,9 @@ public sealed record ConteudoDaVersao
         TamanhoDoDocumento = tamanhoDoDocumento;
     }
 
+    /// <summary>Códigos das permissões da versão, ordenados.</summary>
+    public IReadOnlyList<string> Codigos() => [.. Permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
+
     public static Result<ConteudoDaVersao> Validar(
         string? nome,
         string? descricao,

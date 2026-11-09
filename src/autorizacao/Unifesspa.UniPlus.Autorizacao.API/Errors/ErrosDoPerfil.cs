@@ -48,7 +48,6 @@ internal static class ErrosDoPerfil
     private static KeyValuePair<string, DomainErrorMapping>[] Aprovacao() =>
     [
         new(PerfilErrorCodes.AcrescimoComConcessaoAtiva, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.acrescimo_com_concessao_ativa", "Acrescentar permissão a perfil com concessões ainda não é possível")),
-        new(PerfilErrorCodes.RemocaoPorContencao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.remocao_por_contencao", "A versão proposta não pode retirar permissão; use a remoção")),
         new(PerfilErrorCodes.SemVersaoEmVigor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.sem_versao_em_vigor", "O perfil não tem versão em vigor")),
         new(PerfilErrorCodes.RemocaoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.remocao_invalida", "Permissões a remover inválidas")),
         new(PerfilErrorCodes.MotivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.motivo_invalido", "Motivo ausente ou longo demais")),

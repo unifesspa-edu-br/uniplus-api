@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
 /// <summary>
-/// Corpo do <c>POST /api/autorizacao/perfis</c> e do <c>POST /api/autorizacao/perfis/{id}/versoes</c>: o que a versão
+/// Corpo do <c>POST /api/autorizacao/perfis</c>: o que a versão
 /// declara e o tamanho previsto do documento que a institui.
 /// </summary>
 /// <param name="Protocolo">Número do processo ou protocolo do documento instituidor.</param>
@@ -12,6 +12,31 @@ public sealed record DadosDaVersaoRequest(
     IReadOnlyList<string>? Permissoes,
     string? Protocolo,
     long TamanhoDoDocumento);
+
+/// <summary>
+/// Corpo do <c>POST /api/autorizacao/perfis/{id}/versoes</c>: o que a versão declara, o tamanho previsto do documento que
+/// a institui e, quando ela retira permissões da versão em vigor, o motivo obrigatório e a categoria opcional da remoção.
+/// </summary>
+/// <param name="Protocolo">Número do processo ou protocolo do documento instituidor.</param>
+/// <param name="TamanhoDoDocumento">Tamanho do PDF, em bytes: de 1 byte a 10 MB.</param>
+/// <param name="MotivoDaRemocao">Motivo da remoção, de até 500 caracteres; obrigatório quando a proposta retira permissão.</param>
+/// <param name="CategoriaDaRemocao">Categoria da remoção, entre as previstas.</param>
+public sealed record ProporVersaoRequest(
+    string? Nome,
+    string? Descricao,
+    IReadOnlyList<string>? Permissoes,
+    string? Protocolo,
+    long TamanhoDoDocumento,
+    string? MotivoDaRemocao,
+    string? CategoriaDaRemocao);
+
+/// <summary>
+/// O que a proposta de versão produziu: o envio do documento quando ela criou uma versão pendente ou, quando só retirou
+/// permissões, o perfil com a remoção já em vigor.
+/// </summary>
+/// <param name="Envio">A URL de PUT do documento da versão pendente; nula quando a proposta só retirou permissões.</param>
+/// <param name="Perfil">O perfil depois da remoção; nulo quando a proposta criou uma versão pendente.</param>
+public sealed record ResultadoDaPropostaDto(EnvioDoDocumentoDto? Envio, PerfilDto? Perfil);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/perfis/{id}/versoes/{versaoId}/documento</c>.</summary>
 public sealed record EnviarDocumentoDaVersaoRequest(long TamanhoDoDocumento);

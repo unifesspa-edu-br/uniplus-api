@@ -139,7 +139,7 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         ICatalogoDePermissoesConsultavel catalogo = scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>();
         Perfil perfil = (await scope.ServiceProvider.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
-        PerfisDeTeste.Garantir(perfil.CriarVersao(
+        PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
             PerfisDeTeste.Conteudo(perfil.Nome, perfil.Descricao, permissoes, catalogo),
             PerfisDeTeste.SemContexto,
             PerfisDeTeste.AutoriaDoAutor,
