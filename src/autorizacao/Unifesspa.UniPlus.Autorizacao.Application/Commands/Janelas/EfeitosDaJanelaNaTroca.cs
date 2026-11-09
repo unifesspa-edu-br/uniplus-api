@@ -31,7 +31,7 @@ public sealed class EfeitosDaJanelaNaTroca
     /// Materializa a janela que já não está efetivamente aberta, para que nenhuma concessão vencida pelo prazo continue
     /// não revogada, e devolve a janela que segue aberta, se houver.
     /// </summary>
-    public async Task<JanelaDeMigracao?> MaterializarSeVencidaAsync(Perfil perfil, DateTimeOffset agora, CancellationToken cancellationToken)
+    public async Task<JanelaDeMigracao?> MaterializarSeVencidaAsync(Perfil perfil, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
@@ -41,8 +41,8 @@ public sealed class EfeitosDaJanelaNaTroca
             return null;
         }
 
-        ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, agora, cancellationToken).ConfigureAwait(false);
-        if (janela.EstaAberta(agora, janela.Pendencias(contexto.Concessoes, agora)))
+        ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, cancellationToken).ConfigureAwait(false);
+        if (janela.EstaAberta(contexto.Agora, janela.Pendencias(contexto.Concessoes, contexto.Agora)))
         {
             return janela;
         }

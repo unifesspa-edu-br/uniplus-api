@@ -13,7 +13,7 @@ public sealed record JanelaDaOperacao(Perfil Perfil, JanelaDeMigracao Janela, Co
 /// <summary>
 /// Executa uma operação sobre a janela de migração na ordem de travas única: o perfil de governança da proteção de dados
 /// e as concessões ativas dele, quando a dispensa pode valer, depois o perfil em migração, a recarga e as concessões
-/// elegíveis. O instante é lido depois das travas. Antes de qualquer outra coisa roda a conferência do estado da janela:
+/// elegíveis. O instante é lido depois da última trava, na leitura das concessões. Antes de qualquer outra coisa roda a conferência do estado da janela:
 /// o prazo vencido e a falta de pendência materializam o fim e a operação responde a recusa, que se grava mesmo assim.
 /// </summary>
 public sealed class MigracaoSobreOPerfil
@@ -52,12 +52,12 @@ public sealed class MigracaoSobreOPerfil
 
         return await _operacao
             .ExecutarComAvisosAsync(
-                perfilId, (perfil, contexto) => NaTravaAsync(perfil, contexto.Agora, operacao, cancellationToken), cancellationToken)
+                perfilId, (perfil, _) => NaTravaAsync(perfil, operacao, cancellationToken), cancellationToken)
             .ConfigureAwait(false);
     }
 
     private async Task<DesfechoDaOperacao<T>> NaTravaAsync<T>(
-        Perfil perfil, DateTimeOffset agora, Func<JanelaDaOperacao, Task<DesfechoDaOperacao<T>>> operacao, CancellationToken cancellationToken)
+        Perfil perfil, Func<JanelaDaOperacao, Task<DesfechoDaOperacao<T>>> operacao, CancellationToken cancellationToken)
     {
         JanelaDeMigracao? janela = await _janelas.ObterNaoEncerradaParaAlterarAsync(perfil.Id, cancellationToken).ConfigureAwait(false);
         if (janela is null)
@@ -65,7 +65,7 @@ public sealed class MigracaoSobreOPerfil
             return new DesfechoDaOperacao<T>(Result<T>.Failure(MigracaoErros.JanelaNaoEncontrada()));
         }
 
-        ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, agora, cancellationToken).ConfigureAwait(false);
+        ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, cancellationToken).ConfigureAwait(false);
 
         return janela.ConferirEstado(contexto) is { } recusa
             ? new DesfechoDaOperacao<T>(Result<T>.Failure(recusa), GravarMesmoNaFalha: true)

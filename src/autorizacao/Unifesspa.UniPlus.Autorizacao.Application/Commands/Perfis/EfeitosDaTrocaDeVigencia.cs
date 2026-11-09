@@ -59,7 +59,7 @@ public sealed class EfeitosDaTrocaDeVigencia
             ?? throw new ArgumentException("A primeira vigência do perfil não tem efeitos a aplicar.", nameof(troca));
 
         DateTimeOffset agora = _clock.GetUtcNow();
-        JanelaDeMigracao? aberta = await _janela.MaterializarSeVencidaAsync(perfil, agora, cancellationToken).ConfigureAwait(false);
+        JanelaDeMigracao? aberta = await _janela.MaterializarSeVencidaAsync(perfil, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<EnviarEmail> daAbertura = await ConcessoesDaTrocaAsync(perfil, troca, aberta, agora, cancellationToken).ConfigureAwait(false);
 
         return [.. daAbertura, .. await ReavaliarPedidosAsync(perfil, troca, anterior, cancellationToken).ConfigureAwait(false)];

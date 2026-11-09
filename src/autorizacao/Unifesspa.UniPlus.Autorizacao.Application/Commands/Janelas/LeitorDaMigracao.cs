@@ -7,24 +7,27 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// <summary>
 /// Lê do banco o que a janela não vê sozinha e monta o contexto da migração: as concessões do perfil que ela alcança,
 /// o que cada uma dá hoje, a composição da versão-alvo e quem tem o perfil da proteção de dados. Quem chama já tem o
-/// perfil travado, e as concessões são travadas aqui, em ordem de id.
+/// perfil e a janela travados, e as concessões são travadas aqui, em ordem de id. O instante do contexto é lido
+/// depois da última trava, o único ponto em que a operação o lê.
 /// </summary>
 public sealed class LeitorDaMigracao
 {
     private readonly IJanelaDeMigracaoRepository _janelas;
     private readonly ICatalogoDePermissoesConsultavel _catalogo;
+    private readonly TimeProvider _clock;
 
-    public LeitorDaMigracao(IJanelaDeMigracaoRepository janelas, ICatalogoDePermissoesConsultavel catalogo)
+    public LeitorDaMigracao(IJanelaDeMigracaoRepository janelas, ICatalogoDePermissoesConsultavel catalogo, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(janelas);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(clock);
 
         _janelas = janelas;
         _catalogo = catalogo;
+        _clock = clock;
     }
 
-    public async Task<ContextoDaMigracao> LerAsync(
-        Perfil perfil, JanelaDeMigracao janela, DateTimeOffset agora, CancellationToken cancellationToken)
+    public async Task<ContextoDaMigracao> LerAsync(Perfil perfil, JanelaDeMigracao janela, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(janela);
@@ -33,7 +36,7 @@ public sealed class LeitorDaMigracao
             .ObterConcessoesDaJanelaAsync(perfil.Id, janela.AbertaEm, cancellationToken)
             .ConfigureAwait(false);
 
-        return await MontarAsync(perfil, janela, agora, concessoes, cancellationToken).ConfigureAwait(false);
+        return await MontarAsync(perfil, janela, _clock.GetUtcNow(), concessoes, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>O mesmo contexto sobre concessões lidas sem rastrear nem travar, para a leitura da tela.</summary>
