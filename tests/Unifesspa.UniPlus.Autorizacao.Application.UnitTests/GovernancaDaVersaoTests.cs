@@ -52,6 +52,7 @@ public sealed class GovernancaDaVersaoTests
         gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
         cenario.Unidade.Gravacoes.Should().Be(0);
         cenario.Verificador.Gravados.Should().ContainSingle();
+        cenario.Concessoes.ConsultasDeConcessaoAtiva.Should().Be(0, "a recusa de acesso vem antes de qualquer leitura de concessão");
     }
 
     [Theory(DisplayName = "A etapa ausente ou que a pessoa não decide é recusada como etapa inválida")]
@@ -130,6 +131,7 @@ public sealed class GovernancaDaVersaoTests
         gravacao.Resultado.IsSuccess.Should().BeTrue();
         perfil.VersaoPendente.Should().BeNull();
         gravacao.Resultado.Value!.UltimaVersaoEncerradaSemVigor.Should().NotBeNull();
+        cenario.Concessoes.ConsultasDeConcessaoAtiva.Should().Be(0, "o cancelamento só precisa de quem é a pessoa");
     }
 
     [Fact(DisplayName = "Quem mantém perfis cancela a pendente de outra pessoa")]

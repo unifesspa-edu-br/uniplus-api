@@ -154,8 +154,14 @@ internal static class DoublesDePerfis
             Task.FromResult(paraMigrar ?? []);
         public Task<ConcessaoComPerfil?> ObterComPerfilAsync(Guid id, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<Concessao?> ObterNaoRevogadaIgualAsync(Identidade beneficiario, Guid perfilId, EscopoDaConcessao escopo, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
-        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
-            Task.FromResult(temConcessaoNaoRevogada);
+        public int ConsultasDeConcessaoAtiva { get; private set; }
+
+        public Task<bool> TemConcessaoAtivaDoPerfilAsync(Identidade pessoa, Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default)
+        {
+            ConsultasDeConcessaoAtiva++;
+
+            return Task.FromResult(temConcessaoNaoRevogada);
+        }
         public Task<IReadOnlyList<TitularComEmail>> ListarTitularesAtivosComEmailAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(titulares ?? throw new InvalidOperationException());
 
