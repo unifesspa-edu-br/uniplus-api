@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>As transições de situação da versão e o que o cancelamento, a expiração e a aprovação deixam gravado nela.</summary>
 public sealed partial class VersaoDoPerfil
@@ -33,6 +35,10 @@ public sealed partial class VersaoDoPerfil
 
     /// <summary>A pendente que passou do prazo: de <see cref="ExpiraEm"/> em diante a versão não aprova mais.</summary>
     public bool Expirou(DateTimeOffset agora) => Pendente && ExpiraEm <= agora;
+
+    /// <summary>A recusa de operar uma versão que não está pendente: o prazo, se ela expirou; senão, a situação dela.</summary>
+    internal DomainError RecusaPorNaoPendente() =>
+        Situacao == SituacaoDaVersao.Expirada ? PerfilErros.VersaoExpirada() : PerfilErros.VersaoNaoPendente();
 
     internal void RegistrarDecisao(DecisaoDaVersao decisao) => _decisoes.Add(decisao);
 

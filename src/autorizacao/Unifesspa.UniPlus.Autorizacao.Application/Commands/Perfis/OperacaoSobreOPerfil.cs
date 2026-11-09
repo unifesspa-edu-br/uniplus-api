@@ -54,19 +54,14 @@ public sealed class OperacaoSobreOPerfil
         _clock = clock;
     }
 
-    /// <summary>
-    /// A operação de endpoint com chave de idempotência sobre o perfil, ou sobre uma versão dele quando
-    /// <paramref name="versaoId"/> a informa: toda recusa sobre a versão que acabou de vencer é a do prazo. O conflito de
-    /// concorrência volta como recusa.
-    /// </summary>
+    /// <summary>A operação de endpoint com chave de idempotência sobre o perfil: o conflito de concorrência volta como recusa.</summary>
     public async Task<Result<T>> ExecutarAsync<T>(
-        Guid perfilId, Guid? versaoId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
+        Guid perfilId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
 
         GravacaoDaOperacao<T> gravacao = await ExecutarComAvisosAsync(
             perfilId,
-            versaoId,
             async (perfil, contexto) => new DesfechoDaOperacao<T>(await operacao(perfil, contexto).ConfigureAwait(false)),
             cancellationToken)
             .ConfigureAwait(false);
@@ -79,13 +74,12 @@ public sealed class OperacaoSobreOPerfil
     /// concorrência não é capturado e propaga.
     /// </summary>
     public async Task<Result<T>> ExecutarSemChaveAsync<T>(
-        Guid perfilId, Guid? versaoId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
+        Guid perfilId, Func<Perfil, ContextoDaOperacao, Task<Result<T>>> operacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
 
         GravacaoDaOperacao<T> gravacao = await ExecutarNaTravaAsync(
             perfilId,
-            versaoId,
             async (perfil, contexto) => new DesfechoDaOperacao<T>(await operacao(perfil, contexto).ConfigureAwait(false)),
             SalvarAsync,
             cancellationToken)
@@ -101,7 +95,6 @@ public sealed class OperacaoSobreOPerfil
 
         Result<bool> resultado = await ExecutarAsync(
             perfilId,
-            null,
             (perfil, _) => Task.FromResult(Converter(operacao(perfil))),
             cancellationToken).ConfigureAwait(false);
 
@@ -114,14 +107,12 @@ public sealed class OperacaoSobreOPerfil
     /// </summary>
     public Task<GravacaoDaOperacao<T>> ExecutarComAvisosAsync<T>(
         Guid perfilId,
-        Guid? versaoId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
         CancellationToken cancellationToken) =>
-        ExecutarNaTravaAsync(perfilId, versaoId, operacao, SalvarComChaveAsync, cancellationToken);
+        ExecutarNaTravaAsync(perfilId, operacao, SalvarComChaveAsync, cancellationToken);
 
     private async Task<GravacaoDaOperacao<T>> ExecutarNaTravaAsync<T>(
         Guid perfilId,
-        Guid? versaoId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
         Func<DesfechoDaOperacao<T>, CancellationToken, Task<GravacaoDaOperacao<T>>> salvar,
         CancellationToken cancellationToken)
@@ -135,8 +126,8 @@ public sealed class OperacaoSobreOPerfil
         }
 
         ContextoDaOperacao contexto = MaterializarOPrazo(perfil);
-        DesfechoDaOperacao<T> desfecho = ConsiderarOPrazo(
-            await operacao(perfil, contexto).ConfigureAwait(false), contexto, versaoId);
+        DesfechoDaOperacao<T> desfecho = await operacao(perfil, contexto).ConfigureAwait(false);
+        desfecho = desfecho with { GravarMesmoNaFalha = desfecho.GravarMesmoNaFalha || contexto.VersaoExpirada is not null };
 
         return desfecho.Resultado.IsSuccess || desfecho.GravarMesmoNaFalha
             ? await salvar(desfecho, cancellationToken).ConfigureAwait(false)
@@ -160,22 +151,6 @@ public sealed class OperacaoSobreOPerfil
         Guid? pendente = perfil.VersaoPendente?.Id;
 
         return new ContextoDaOperacao(agora, perfil.MaterializarExpiracao(agora) ? pendente : null);
-    }
-
-    private static DesfechoDaOperacao<T> ConsiderarOPrazo<T>(DesfechoDaOperacao<T> desfecho, ContextoDaOperacao contexto, Guid? versaoId)
-    {
-        if (contexto.VersaoExpirada is null)
-        {
-            return desfecho;
-        }
-
-        bool recusaDoPrazo = desfecho.Resultado.IsFailure && contexto.VersaoExpirada == versaoId;
-
-        return desfecho with
-        {
-            Resultado = recusaDoPrazo ? Result<T>.Failure(PerfilErros.VersaoExpirada()) : desfecho.Resultado,
-            GravarMesmoNaFalha = true,
-        };
     }
 
     private async Task<GravacaoDaOperacao<T>> SalvarAsync<T>(DesfechoDaOperacao<T> desfecho, CancellationToken cancellationToken)

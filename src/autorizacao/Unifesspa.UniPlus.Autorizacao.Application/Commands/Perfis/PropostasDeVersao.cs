@@ -69,7 +69,6 @@ public sealed class PropostasDeVersao
         return await _operacao
             .ExecutarComAvisosAsync(
                 perfilId,
-                null,
                 (perfil, contexto) => ProporNoPerfilAsync(perfil, Proposta(conteudo.Value!, dados, autoria, contexto.Agora), cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);

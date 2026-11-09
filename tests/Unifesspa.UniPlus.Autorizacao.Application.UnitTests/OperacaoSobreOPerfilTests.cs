@@ -20,7 +20,7 @@ public sealed class OperacaoSobreOPerfilTests
         OperacaoSobreOPerfil operacao = Operacao(perfil, out UnidadeDeTrabalho unidade);
 
         Func<Task> chamada = () => operacao.ExecutarSemChaveAsync(
-            perfil.Id, null, (_, _) => Task.FromResult(Result<bool>.Success(true)), CancellationToken.None);
+            perfil.Id, (_, _) => Task.FromResult(Result<bool>.Success(true)), CancellationToken.None);
 
         await chamada.Should().ThrowAsync<Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException>();
         unidade.Descartes.Should().Be(0);
@@ -33,7 +33,7 @@ public sealed class OperacaoSobreOPerfilTests
         OperacaoSobreOPerfil operacao = Operacao(perfil, out UnidadeDeTrabalho unidade);
 
         Result<bool> resultado = await operacao.ExecutarAsync(
-            perfil.Id, null, (_, _) => Task.FromResult(Result<bool>.Success(true)), CancellationToken.None);
+            perfil.Id, (_, _) => Task.FromResult(Result<bool>.Success(true)), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(PerfilErrorCodes.ConflitoDeConcorrencia);
         unidade.Descartes.Should().Be(1);
