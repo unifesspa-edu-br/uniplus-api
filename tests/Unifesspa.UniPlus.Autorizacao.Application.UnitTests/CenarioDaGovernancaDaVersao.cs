@@ -29,13 +29,13 @@ internal sealed class CenarioDaGovernancaDaVersao
         Identidade? ator, string[] permitidas,
         TitularDaPermissao[]? titulares = null,
         TimeProvider? relogio = null,
-        bool janelaAberta = false,
-        bool temConcessao = false,
+        EstadoDasConcessoes? estado = null,
         Perfil[]? outrosPerfis = null)
     {
         TimeProvider tempo = relogio ?? new RelogioFixo(PerfisDeTeste.Instante.AddHours(1));
-        Concessoes = new(temConcessao, titulares: []);
-        JanelasNaMemoria janelas = new(janelaAberta);
+        EstadoDasConcessoes situacao = estado ?? new EstadoDasConcessoes();
+        Concessoes = new(situacao.TemConcessao, titulares: []);
+        JanelasNaMemoria janelas = new(situacao.JanelaAberta);
         ConcessoesNaMemoria concessoes = Concessoes;
         Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
         Unidade = new UnidadeDeTrabalho();
@@ -161,3 +161,6 @@ internal sealed class CenarioDaGovernancaDaVersao
         public string DaVersao(Guid perfilId, Guid versaoId) => $"https://uniplus.test/configuracao/perfis/{perfilId}/versoes/{versaoId}";
     }
 }
+
+/// <summary>O que o cenário simula das concessões: a janela de migração aberta e se quem decide tem concessão do perfil.</summary>
+internal sealed record EstadoDasConcessoes(bool JanelaAberta = false, bool TemConcessao = false);

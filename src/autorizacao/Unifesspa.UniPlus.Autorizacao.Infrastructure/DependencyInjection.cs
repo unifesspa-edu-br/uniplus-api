@@ -29,15 +29,7 @@ public static class AutorizacaoInfrastructureRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddUniPlusEfInterceptors();
-
-        services.AddScoped<OrdemDaTrilhaDeContencaoInterceptor>();
-
-        services.AddDbContext<AutorizacaoDbContext>((serviceProvider, options) =>
-        {
-            options.UseUniPlusNpgsqlConventions<AutorizacaoDbContext>(serviceProvider, ConnectionStringName, schema: AutorizacaoDbContext.Schema);
-            options.AddInterceptors(serviceProvider.GetRequiredService<OrdemDaTrilhaDeContencaoInterceptor>());
-        });
+        AddContexto(services);
 
         // A Application consome a abstração do próprio módulo, roteada para o DbContext (ADR-0042).
         services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
@@ -51,6 +43,17 @@ public static class AutorizacaoInfrastructureRegistration
         AddArmazenamento(services);
 
         return services;
+    }
+
+    private static void AddContexto(IServiceCollection services)
+    {
+        services.AddUniPlusEfInterceptors();
+        services.AddScoped<OrdemDaTrilhaDeContencaoInterceptor>();
+        services.AddDbContext<AutorizacaoDbContext>((serviceProvider, options) =>
+        {
+            options.UseUniPlusNpgsqlConventions<AutorizacaoDbContext>(serviceProvider, ConnectionStringName, schema: AutorizacaoDbContext.Schema);
+            options.AddInterceptors(serviceProvider.GetRequiredService<OrdemDaTrilhaDeContencaoInterceptor>());
+        });
     }
 
     private static void AddRepositorios(IServiceCollection services)

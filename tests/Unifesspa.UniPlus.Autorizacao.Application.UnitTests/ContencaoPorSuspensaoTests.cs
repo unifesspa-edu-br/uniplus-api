@@ -176,7 +176,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task Retomar_GuardaSeODecisorTinhaConcessao()
     {
         Perfil perfil = SuspensoPor(Comum());
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.ProtecaoDeDados, [Manter], temConcessao: true);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.ProtecaoDeDados, [Manter], estado: new EstadoDasConcessoes(TemConcessao: true));
 
         await Retomar(cenario, perfil, EtapaGestao);
 
