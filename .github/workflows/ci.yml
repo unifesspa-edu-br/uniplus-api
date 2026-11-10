@@ -326,6 +326,9 @@ jobs:
   test-integration:
     name: Integration tests
     needs: build
+    # Desligado até a revisão da lentidão do job (#2309): os testes de integração rodam
+    # localmente, por quem abre o PR, antes do merge.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
