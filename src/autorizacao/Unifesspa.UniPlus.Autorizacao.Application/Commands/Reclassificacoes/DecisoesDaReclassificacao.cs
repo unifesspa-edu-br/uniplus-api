@@ -66,23 +66,28 @@ public sealed class DecisoesDaReclassificacao
         Guid reclassificacaoId, DecidirReclassificacaoRequest dados, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         Result<PedidoLido> lido = Ler(dados);
-        if (lido.IsFailure)
-        {
-            return Result<Autorizada>.Failure(lido.Error!);
-        }
+        Result permitida = lido.IsFailure
+            ? Result.Failure(lido.Error!)
+            : await AutorizacaoDaReclassificacao.ConferirEtapaAsync(lido.Value!.Etapa, verificador, cancellationToken).ConfigureAwait(false);
 
+        return permitida.IsFailure
+            ? Result<Autorizada>.Failure(permitida.Error!)
+            : await ComAAutoriaAsync(reclassificacaoId, lido.Value!, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<Autorizada>> ComAAutoriaAsync(Guid reclassificacaoId, PedidoLido pedido, CancellationToken cancellationToken)
+    {
         Guid? perfilId = await _reclassificacoes.ObterPerfilIdAsync(reclassificacaoId, cancellationToken).ConfigureAwait(false);
         if (perfilId is null)
         {
             return Result<Autorizada>.Failure(ReclassificacaoErros.NaoEncontrada());
         }
 
-        Result<AutoriaDaVersao> autoria = await _autorizacao
-            .AutorizarAsync(perfilId.Value, lido.Value!.Etapa, verificador, cancellationToken).ConfigureAwait(false);
+        Result<AutoriaDaVersao> autoria = await _autorizacao.AutoriaAsync(perfilId.Value, cancellationToken).ConfigureAwait(false);
 
         return autoria.IsFailure
             ? Result<Autorizada>.Failure(autoria.Error!)
-            : Result<Autorizada>.Success(new Autorizada(perfilId.Value, lido.Value!, autoria.Value!));
+            : Result<Autorizada>.Success(new Autorizada(perfilId.Value, pedido, autoria.Value!));
     }
 
     private static GravacaoDaOperacao<DecisaoDaReclassificacaoDto> Recusa(DomainError erro) =>

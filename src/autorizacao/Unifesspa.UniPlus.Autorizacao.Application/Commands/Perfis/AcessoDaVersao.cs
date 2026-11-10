@@ -36,7 +36,7 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
         etapa == EtapaDaVersao.GestaoDeAcessos ? DecisaoDaGestao : DecisaoDaProtecaoDeDados;
 
     /// <summary>Consulta as duas etapas, sem registrar. Nulo quando o token não identifica o solicitante por completo.</summary>
-    public static async Task<AcessoDaVersao?> ConsultarAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
+    public static async Task<AcessoDaVersao?> ConsultarAsync(IVerificadorDeAcesso verificador, Guid? perfilId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
