@@ -27,7 +27,8 @@ using Wolverine.Runtime.Handlers;
 /// nem corpo, que podem carregar código de confirmação. Falha LANÇA: um retorno de erro seria lido
 /// pelo Wolverine como sucesso e a mensagem sairia da fila sem ter sido enviada.
 /// </remarks>
-public sealed partial class EntregaDeEmail(ITransporteDeEmail transporte, ILogger<EntregaDeEmail> logger)
+public sealed partial class EntregaDeEmail(
+    ITransporteDeEmail transporte, MetricasDaFilaDeEmail metricas, TimeProvider relogio, ILogger<EntregaDeEmail> logger)
 {
     /// <summary>
     /// Política de falha DESTA mensagem, escopada à chain: uma política global atrasaria toda
@@ -57,7 +58,17 @@ public sealed partial class EntregaDeEmail(ITransporteDeEmail transporte, ILogge
         ArgumentNullException.ThrowIfNull(mensagem);
         ArgumentNullException.ThrowIfNull(envelope);
 
-        // Mesmo parser do transporte: o que passa aqui é o que o MailboxAddress aceita lá.
+        string mascarado = DestinatarioValido(mensagem).Mascarado;
+
+        await EnviarAsync(mensagem, mascarado, envelope.Attempts, cancellationToken).ConfigureAwait(false);
+
+        metricas.RegistrarEnvio(relogio.GetUtcNow());
+        LogEnviado(logger, mensagem.Finalidade, mensagem.MensagemId, envelope.Attempts, mascarado);
+    }
+
+    // Mesmo parser do transporte: o que passa aqui é o que o MailboxAddress aceita lá.
+    private Email DestinatarioValido(EnviarEmail mensagem)
+    {
         if (!EnderecoSmtp.EhAddrSpecComDominio(mensagem.Destinatario)
             || Email.Criar(mensagem.Destinatario) is not { IsSuccess: true } destinatario)
         {
@@ -65,30 +76,36 @@ public sealed partial class EntregaDeEmail(ITransporteDeEmail transporte, ILogge
             throw new DestinatarioInvalidoException(mensagem.MensagemId);
         }
 
-        string mascarado = destinatario.Value!.Mascarado;
-        int tentativa = envelope.Attempts;
+        return destinatario.Value!;
+    }
 
+    private async Task EnviarAsync(EnviarEmail mensagem, string mascarado, int tentativa, CancellationToken cancellationToken)
+    {
         try
         {
             await transporte.EnviarAsync(mensagem, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            string tipoDoErro = ex.GetType().Name;
+            throw FalhaDoEnvio(ex, mensagem, mascarado, tentativa);
+        }
+    }
 
-            // A exceção original some de propósito: a mensagem do SMTP costuma repetir o endereço, e
-            // o Wolverine a grava no log e na tabela de mensagens mortas.
-            if (EhPermanente(ex))
-            {
-                LogEnvioRecusado(logger, mensagem.Finalidade, mensagem.MensagemId, tipoDoErro);
-                throw new EnvioDeEmailRecusadoException(mensagem.MensagemId, tipoDoErro);
-            }
-
-            LogFalhaNoEnvio(logger, mensagem.Finalidade, mensagem.MensagemId, tentativa, mascarado, tipoDoErro);
-            throw new FalhaNoEnvioDeEmailException(mensagem.MensagemId, tipoDoErro);
+    // A exceção original some de propósito: a mensagem do SMTP costuma repetir o endereço, e o Wolverine a grava no log
+    // e na tabela de mensagens mortas.
+    private Exception FalhaDoEnvio(Exception ex, EnviarEmail mensagem, string mascarado, int tentativa)
+    {
+        string tipoDoErro = ex.GetType().Name;
+        bool permanente = EhPermanente(ex);
+        metricas.RegistrarFalha(permanente, relogio.GetUtcNow());
+        if (permanente)
+        {
+            LogEnvioRecusado(logger, mensagem.Finalidade, mensagem.MensagemId, tipoDoErro);
+            return new EnvioDeEmailRecusadoException(mensagem.MensagemId, tipoDoErro);
         }
 
-        LogEnviado(logger, mensagem.Finalidade, mensagem.MensagemId, tentativa, mascarado);
+        LogFalhaNoEnvio(logger, mensagem.Finalidade, mensagem.MensagemId, tentativa, mascarado, tipoDoErro);
+        return new FalhaNoEnvioDeEmailException(mensagem.MensagemId, tipoDoErro);
     }
 
     // Falha de autenticação fica com as novas tentativas: o MailKit não expõe se o relay
