@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -24,13 +25,14 @@ public sealed class AutorizacaoDaReclassificacao
 
     /// <summary>
     /// Confere a permissão da etapa antes de qualquer leitura da reclassificação: a recusa de acesso é a mesma para o id que
-    /// existe e para o que não existe. A decisão que governou vai para a trilha, permitida ou negada.
+    /// existe e para o que não existe, e a trilha registra o id recebido como recurso. A decisão que governou vai para a trilha, permitida ou negada.
     /// </summary>
-    public static async Task<Result> ConferirEtapaAsync(EtapaDaVersao etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    public static async Task<Result> ConferirEtapaAsync(
+        Guid reclassificacaoId, EtapaDaVersao etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, null, cancellationToken).ConfigureAwait(false);
+        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, reclassificacaoId, cancellationToken, ResourceTiposAutorizacao.Reclassificacao).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result.Failure(PerfilHandlerErros.AutorNaoIdentificado());
@@ -48,11 +50,12 @@ public sealed class AutorizacaoDaReclassificacao
             : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
 
     /// <summary>Quem lê o detalhe: quem decide alguma das duas etapas. Devolve a identidade, ou a recusa.</summary>
-    public async Task<Result<Identidade?>> AutorizarLeituraAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    public async Task<Result<Identidade?>> AutorizarLeituraAsync(
+        Guid reclassificacaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, null, cancellationToken).ConfigureAwait(false);
+        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, reclassificacaoId, cancellationToken, ResourceTiposAutorizacao.Reclassificacao).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<Identidade?>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
