@@ -159,7 +159,7 @@ public sealed class ReclassificacaoDaPermissaoTests
         Recusa(Subida(false), Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Mantida, [Concessao(Paulo)], motivo: "  "))
             .Should().Be(ReclassificacaoErrorCodes.MotivoInvalido);
 
-    [Fact(DisplayName = "Na decisão em lote, a concessão do decisor, a que ele já decidiu e a que o escopo não comporta ficam de fora")]
+    [Fact(DisplayName = "Na decisão em lote, a concessão do decisor e a que o escopo não comporta ficam de fora")]
     public void Decidir_Todas_SeparaAsQueFicamParaOutraPessoa()
     {
         ReclassificacaoDaPermissao reclassificacao = Mudanca(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Interno, false, true);
@@ -173,6 +173,20 @@ public sealed class ReclassificacaoDaPermissaoTests
         desfecho.Liberacoes.Select(l => l.ConcessaoId).Should().Equal(decidivel.Id);
         desfecho.ParaOutraPessoa.Should().Equal(propria.Id);
         desfecho.PuladasPorEscopo.Should().Equal(semEscopo.Id);
+    }
+
+    [Fact(DisplayName = "Na decisão em lote, a concessão cuja outra etapa o decisor decidiu recusa o lote inteiro")]
+    public void Decidir_Todas_ConcessaoDecididaEmOutraEtapaPeloDecisor_RecusaOLote()
+    {
+        ReclassificacaoDaPermissao reclassificacao = Mudanca(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, true);
+        ConcessaoNaReclassificacao decididaAntes = Concessao(
+            Paulo, escopo: TipoDeEscopo.Unidade, decisoes: [new DecisaoNaConcessao(EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.Gestora, ResultadoDaLiberacao.Liberada)]);
+        ConcessaoNaReclassificacao livre = Concessao(Isabella, escopo: TipoDeEscopo.Unidade);
+
+        Result<DesfechoDaDecisaoDaReclassificacao> resultado = reclassificacao.Decidir(Pedido(
+            EtapaDaVersao.GestaoDeAcessos, ResultadoDaLiberacao.Liberada, [decididaAntes, livre], decisor: PerfisDeTeste.Gestora, modo: new ModoDoPedido(Todas: true)));
+
+        resultado.Error!.Code.Should().Be(ReclassificacaoErrorCodes.MesmoDecisorNasDuasEtapas);
     }
 
     [Fact(DisplayName = "Toda liberação do lote leva o mesmo lote e registra se o decisor tem concessão do perfil")]
