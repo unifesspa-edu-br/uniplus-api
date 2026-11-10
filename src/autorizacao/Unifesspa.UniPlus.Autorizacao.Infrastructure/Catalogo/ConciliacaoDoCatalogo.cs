@@ -74,9 +74,11 @@ public sealed partial class ConciliacaoDoCatalogo
 
     private async Task ConciliarAsync(ImplantacaoDasPermissoes? atual, CancellationToken cancellationToken)
     {
+        await TravarPerfisComunsAsync(cancellationToken).ConfigureAwait(false);
+
+        // O instante vale o de depois das travas: a espera por elas pode atravessar o prazo de uma janela.
         DateTimeOffset agora = _relogio.GetUtcNow();
         ImplantacaoDasPermissoes novo = await GravarAImplantacaoAsync(agora, cancellationToken).ConfigureAwait(false);
-        await TravarPerfisComunsAsync(cancellationToken).ConfigureAwait(false);
 
         ComparacaoDeCatalogos comparacao = new(novo.Id, atual is null ? null : Linhas(atual.Permissoes), Linhas(novo.Permissoes), agora);
         await new PerfisAfetadosPeloCatalogo(_db, _consultavel, _logger).ConciliarAsync(comparacao, cancellationToken).ConfigureAwait(false);
