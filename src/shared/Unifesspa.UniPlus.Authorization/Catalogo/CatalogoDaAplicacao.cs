@@ -48,21 +48,25 @@ public sealed class CatalogoDaAplicacao
         }
 
         _porCodigo = porCodigo.ToFrozenDictionary(StringComparer.Ordinal);
-        Definicoes =
-        [
-            .. porCodigo.Values
-                .OrderBy(static d => d.Modulo, StringComparer.Ordinal)
-                .ThenBy(static d => d.Resource, StringComparer.Ordinal)
-                .ThenBy(static d => d.Acao, StringComparer.Ordinal),
-        ];
-        Linhas =
-        [
-            .. porCodigo.Values
-                .Select(static d => new LinhaDoCatalogo(d.Codigo, d.Modulo, d.Requisito.Sensibilidade, d.DeUnidade, d.ReservadaAGovernanca))
-                .OrderBy(static l => l.Codigo, StringComparer.Ordinal),
-        ];
+        Definicoes = EmOrdemDeModuloResourceEAcao(porCodigo.Values);
+        Linhas = LinhasEmOrdemDeCodigo(porCodigo.Values);
         Impressao = LinhaDoCatalogo.ImpressaoDe(Linhas);
     }
+
+    private static DefinicaoDePermissao[] EmOrdemDeModuloResourceEAcao(IEnumerable<DefinicaoDePermissao> definicoes) =>
+    [
+        .. definicoes
+            .OrderBy(static d => d.Modulo, StringComparer.Ordinal)
+            .ThenBy(static d => d.Resource, StringComparer.Ordinal)
+            .ThenBy(static d => d.Acao, StringComparer.Ordinal),
+    ];
+
+    private static LinhaDoCatalogo[] LinhasEmOrdemDeCodigo(IEnumerable<DefinicaoDePermissao> definicoes) =>
+    [
+        .. definicoes
+            .Select(static d => new LinhaDoCatalogo(d.Codigo, d.Modulo, d.Requisito.Sensibilidade, d.DeUnidade, d.ReservadaAGovernanca))
+            .OrderBy(static l => l.Codigo, StringComparer.Ordinal),
+    ];
 
     /// <summary>Todas as permissões, ordenadas por módulo, resource e ação.</summary>
     public IReadOnlyList<DefinicaoDePermissao> Definicoes { get; }
