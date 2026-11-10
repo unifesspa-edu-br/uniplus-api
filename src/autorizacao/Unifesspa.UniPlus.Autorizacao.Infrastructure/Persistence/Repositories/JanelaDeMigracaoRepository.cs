@@ -147,12 +147,8 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    // Não encerrada, com o prazo por vencer e ao menos uma concessão elegível: ainda não revogada, não vencida e fora da versão-alvo.
     private IQueryable<JanelaDeMigracao> JanelasEfetivamenteAbertas(Guid perfilId, DateTimeOffset agora) =>
-        _context.JanelasDeMigracao.AsNoTracking()
-            .Where(j => j.PerfilId == perfilId && j.EncerradaEm == null && j.Prazo > agora
-                && _context.Concessoes.Any(c => c.PerfilId == j.PerfilId && c.RevogadaEm == null
-                    && (c.ValidaAte == null || c.ValidaAte > agora) && c.VersaoId != j.VersaoAlvoId));
+        _context.EfetivamenteAbertas(agora).Where(j => j.PerfilId == perfilId);
 
     private static IQueryable<JanelaDeMigracao> ComFilhas(IQueryable<JanelaDeMigracao> janelas) =>
         janelas.Include(j => j.Lotes).Include(j => j.Migracoes).Include(j => j.Decisoes).AsSplitQuery();

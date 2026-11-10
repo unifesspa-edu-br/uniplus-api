@@ -91,6 +91,17 @@ internal static class ComposicaoEmVigorNoBanco
             context.Concessoes.Where(c => c.PerfilId == perfilId && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)),
             agora);
 
+    /// <summary>Os códigos que o catálogo atual suspendeu nas concessões não revogadas: a reclassificação ainda sem a liberação das etapas.</summary>
+    public static IQueryable<CodigoDaConcessao> CodigosSuspensosPorReclassificacao(
+        this AutorizacaoDbContext context, DateTimeOffset agora)
+    {
+        IQueryable<CodigoDaConcessao> codigos = context.CodigosDasConcessoes(context.Concessoes.Where(c => c.RevogadaEm == null), agora);
+
+        IQueryable<CodigoDaConcessao> emAcesso = context.SemSuspensasPorReclassificacao(codigos);
+
+        return codigos.Where(k => !emAcesso.Any(s => s.ConcessaoId == k.ConcessaoId && s.Codigo == k.Codigo));
+    }
+
     /// <summary>Os códigos que a concessão dá no instante pela composição, sem olhar a suspensão do perfil.</summary>
     public static IQueryable<string> CodigosEmVigorDaConcessao(
         this AutorizacaoDbContext context, Guid concessaoId, DateTimeOffset agora) =>
