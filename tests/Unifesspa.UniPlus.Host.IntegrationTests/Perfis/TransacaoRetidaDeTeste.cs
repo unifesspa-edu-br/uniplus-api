@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
+using System.Data.Common;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,12 +19,14 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
     private readonly AsyncServiceScope _escopo;
     private readonly IDbContextTransaction _transacao;
     private readonly int _pid;
+    private readonly string _inicioDaSessao;
 
-    private TransacaoRetidaDeTeste(AsyncServiceScope escopo, IDbContextTransaction transacao, int pid)
+    private TransacaoRetidaDeTeste(AsyncServiceScope escopo, IDbContextTransaction transacao, int pid, string inicioDaSessao)
     {
         _escopo = escopo;
         _transacao = transacao;
         _pid = pid;
+        _inicioDaSessao = inicioDaSessao;
     }
 
     public IServiceProvider Servicos => _escopo.ServiceProvider;
@@ -33,8 +37,11 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
         AutorizacaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
         IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
         int pid = await contexto.Database.SqlQuery<int>($"SELECT pg_backend_pid() AS \"Value\"").SingleAsync();
+        string inicio = await contexto.Database
+            .SqlQuery<string>($"SELECT backend_start::text AS \"Value\" FROM pg_stat_activity WHERE pid = pg_backend_pid()")
+            .SingleAsync();
 
-        return new TransacaoRetidaDeTeste(escopo, transacao, pid);
+        return new TransacaoRetidaDeTeste(escopo, transacao, pid, inicio);
     }
 
     /// <summary>
@@ -74,7 +81,10 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
             .SingleAsync();
     }
 
-    private async Task<string> DiagnosticarAsync()
+    private async Task<string> DiagnosticarAsync() =>
+        $"{await DiagnosticarOBancoAsync()} {await DiagnosticarAConexaoRetidaAsync()}";
+
+    private async Task<string> DiagnosticarOBancoAsync()
     {
         await using AsyncServiceScope escopo = _escopo.ServiceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
 
@@ -83,6 +93,9 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
                 SELECT 'Transação retida (pid ' || {_pid} || '): '
                     || coalesce((SELECT 'estado=' || state || ', xact_start=' || coalesce(xact_start::text, 'nenhuma')
                                  FROM pg_stat_activity WHERE pid = {_pid}), 'sessão encerrada')
+                    || '. Início da sessão: guardado=' || {_inicioDaSessao} || ', atual='
+                    || coalesce((SELECT backend_start::text FROM pg_stat_activity WHERE pid = {_pid}), 'nenhuma')
+                    || ', postmaster=' || pg_postmaster_start_time()::text
                     || '. Sessões do banco em espera: '
                     || coalesce((SELECT string_agg(pid || ' ' || wait_event_type || '/' || wait_event
                                     || ' bloqueada_por=' || pg_blocking_pids(pid)::text, '; ')
@@ -93,6 +106,21 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
                     AS "Value"
                 """)
             .SingleAsync();
+    }
+
+    private async Task<string> DiagnosticarAConexaoRetidaAsync()
+    {
+        string estado = _transacao.GetDbTransaction().Connection?.State.ToString() ?? "sem conexão";
+        try
+        {
+            await _escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync("SELECT 1");
+
+            return $"Conexão da transação retida: estado={estado}, SELECT 1 respondeu.";
+        }
+        catch (Exception ex) when (ex is DbException or InvalidOperationException)
+        {
+            return $"Conexão da transação retida: estado={estado}, SELECT 1 falhou: {ex.GetType().Name}: {ex.Message}";
+        }
     }
 
     public Task ConfirmarAsync() => _transacao.CommitAsync();
