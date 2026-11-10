@@ -119,7 +119,7 @@ public sealed class AvisosDaJanelaTests
         JanelaDeMigracao janela = JanelaDeMigracao.Abrir(perfil.Id, perfil.Versoes[^1], Instante);
         AvisosDaJanela avisos = new(
             new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-            new TitularesPorPermissao(titulares),
+            new GruposDaGovernanca(new TitularesPorPermissao(titulares)),
             new LinkDeTeste(),
             new CatalogoDaAplicacao([]));
 

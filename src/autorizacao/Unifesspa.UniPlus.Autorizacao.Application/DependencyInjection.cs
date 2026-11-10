@@ -75,6 +75,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<ExpiracaoDasVersoesPendentes>();
         services.AddScoped<AvisosDaVersao>();
         services.AddScoped<EmissorDeAvisos>();
+        services.AddScoped<GruposDaGovernanca>();
 
         AdicionarJanelaDeMigracao(services);
         AdicionarReclassificacoes(services);

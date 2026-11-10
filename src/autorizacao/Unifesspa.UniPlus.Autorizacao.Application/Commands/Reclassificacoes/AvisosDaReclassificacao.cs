@@ -20,32 +20,29 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class AvisosDaReclassificacao
 {
-    private static readonly string CodigoDaProtecaoDeDados = CodigoDe(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados);
-    private static readonly string CodigoDaManutencao = CodigoDe(PermissaoAutorizacao.PerfisManter);
-
-    private static readonly string[] DosDoisGrupos = [CodigoDaProtecaoDeDados, CodigoDaManutencao];
+    private static readonly GrupoDaGovernanca[] DosDoisGrupos = [GrupoDaGovernanca.ProtecaoDeDados, GrupoDaGovernanca.Manutencao];
 
     private readonly EmissorDeAvisos _emissor;
-    private readonly ITitularesDaPermissao _titulares;
+    private readonly GruposDaGovernanca _grupos;
     private readonly ILinkDaGovernanca _link;
     private readonly CatalogoDaAplicacao _catalogo;
     private readonly IReclassificacaoRepository _reclassificacoes;
 
     public AvisosDaReclassificacao(
         EmissorDeAvisos emissor,
-        ITitularesDaPermissao titulares,
+        GruposDaGovernanca grupos,
         ILinkDaGovernanca link,
         CatalogoDaAplicacao catalogo,
         IReclassificacaoRepository reclassificacoes)
     {
         ArgumentNullException.ThrowIfNull(emissor);
-        ArgumentNullException.ThrowIfNull(titulares);
+        ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(link);
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(reclassificacoes);
 
         _emissor = emissor;
-        _titulares = titulares;
+        _grupos = grupos;
         _link = link;
         _catalogo = catalogo;
         _reclassificacoes = reclassificacoes;
@@ -88,7 +85,7 @@ public sealed class AvisosDaReclassificacao
             [PerfilMapping.Descrever(descrito.Codigo, _catalogo).Nome],
             _link.DoPerfil(descrito.PerfilId),
             Mudanca: descrito.Mudanca);
-        List<DestinatarioDoAviso> destinatarios = await DestinatariosAsync(descrito.Grupos, cancellationToken).ConfigureAwait(false);
+        List<DestinatarioDoAviso> destinatarios = await _grupos.ListarAsync(descrito.Grupos, cancellationToken).ConfigureAwait(false);
 
         return await _emissor.EmitirAsync(new PedidoDeAviso(modelo, fatoId, string.Empty, destinatarios, []), cancellationToken).ConfigureAwait(false);
     }
@@ -103,7 +100,7 @@ public sealed class AvisosDaReclassificacao
 
         TipoDeAviso tipo = r.MudouEscopo ? TipoDeAviso.EscopoDaPermissaoAlterado : TipoDeAviso.PermissaoReclassificada;
 
-        return new FatoDoAviso(r.PerfilId, r.Codigo, tipo, MudancaDe(r), r.MudouEscopo ? DosDoisGrupos : [CodigoDaProtecaoDeDados]);
+        return new FatoDoAviso(r.PerfilId, r.Codigo, tipo, MudancaDe(r), r.MudouEscopo ? DosDoisGrupos : [GrupoDaGovernanca.ProtecaoDeDados]);
     }
 
     private async Task<FatoDoAviso?> DaDivergenciaAsync(Guid id, CancellationToken cancellationToken)
@@ -113,17 +110,6 @@ public sealed class AvisosDaReclassificacao
         return d is null
             ? null
             : new FatoDoAviso(d.PerfilId, d.Codigo, TipoDeAviso.DivergenciaDaGovernanca, $"divergência de {d.Tipo.ToCodigo()}", DosDoisGrupos);
-    }
-
-    private async Task<List<DestinatarioDoAviso>> DestinatariosAsync(IReadOnlyList<string> grupos, CancellationToken cancellationToken)
-    {
-        List<DestinatarioDoAviso> destinatarios = [];
-        foreach (string codigo in grupos)
-        {
-            destinatarios.AddRange(await TitularesDoAviso.ListarAsync(_titulares, codigo, cancellationToken).ConfigureAwait(false));
-        }
-
-        return destinatarios;
     }
 
     private static string MudancaDe(ReclassificacaoDaPermissao r)
@@ -150,7 +136,5 @@ public sealed class AvisosDaReclassificacao
 
     private static string Escopo(bool deUnidade) => deUnidade ? "de unidade" : "institucional";
 
-    private static string CodigoDe(PermissaoAutorizacao permissao) => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Codigo;
-
-    private sealed record FatoDoAviso(Guid PerfilId, string Codigo, TipoDeAviso Tipo, string Mudanca, IReadOnlyList<string> Grupos);
+    private sealed record FatoDoAviso(Guid PerfilId, string Codigo, TipoDeAviso Tipo, string Mudanca, IReadOnlyList<GrupoDaGovernanca> Grupos);
 }

@@ -53,7 +53,7 @@ internal sealed class CenarioDaGovernancaDaVersao
                 tempo),
             new AvisosDaVersao(
                 new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-                new TitularesDeTeste(titulares ?? []),
+                new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
                 new LinkDeTeste(),
                 new CatalogoDaAplicacao([])),
             new CatalogoDaAplicacao([]),
@@ -68,7 +68,7 @@ internal sealed class CenarioDaGovernancaDaVersao
             autoria,
             new AvisosDaContencao(
                 new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-                new TitularesDeTeste(titulares ?? []),
+                new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
                 new LinkDeTeste()),
             new CatalogoDeTeste());
         Propostas = new PropostasDeVersao(
@@ -94,7 +94,7 @@ internal sealed class CenarioDaGovernancaDaVersao
             new LeitorDaMigracao(janelas, new CatalogoDeTeste(), relogio),
             new AvisosDaJanela(
                 new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-                new TitularesDeTeste(titulares ?? []),
+                new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
                 new LinkDeTeste(),
                 new CatalogoDaAplicacao([])));
 
