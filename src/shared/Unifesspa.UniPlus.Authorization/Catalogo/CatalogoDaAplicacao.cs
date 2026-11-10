@@ -55,10 +55,26 @@ public sealed class CatalogoDaAplicacao
                 .ThenBy(static d => d.Resource, StringComparer.Ordinal)
                 .ThenBy(static d => d.Acao, StringComparer.Ordinal),
         ];
+        Linhas =
+        [
+            .. porCodigo.Values
+                .Select(static d => new LinhaDoCatalogo(d.Codigo, d.Modulo, d.Requisito.Sensibilidade, d.DeUnidade, d.ReservadaAGovernanca))
+                .OrderBy(static l => l.Codigo, StringComparer.Ordinal),
+        ];
+        Impressao = LinhaDoCatalogo.ImpressaoDe(Linhas);
     }
 
     /// <summary>Todas as permissões, ordenadas por módulo, resource e ação.</summary>
     public IReadOnlyList<DefinicaoDePermissao> Definicoes { get; }
+
+    /// <summary>O que o catálogo registra de cada permissão, em ordem ordinal de código.</summary>
+    public IReadOnlyList<LinhaDoCatalogo> Linhas { get; }
+
+    /// <summary>
+    /// A impressão do catálogo desta instância, calculada uma vez na construção: duas instâncias com o mesmo conteúdo têm
+    /// a mesma impressão, qualquer que seja a ordem em que registraram os módulos.
+    /// </summary>
+    public string Impressao { get; }
 
     /// <summary>Busca a definição pelo código.</summary>
     public bool TentarObter(string codigo, out DefinicaoDePermissao? definicao)

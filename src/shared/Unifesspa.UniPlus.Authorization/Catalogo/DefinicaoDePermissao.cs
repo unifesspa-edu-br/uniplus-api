@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Projecao;
 
 /// <summary>Definição de uma permissão lida do atributo de um membro de enum.</summary>
@@ -22,4 +23,11 @@ public sealed record DefinicaoDePermissao(
     string Acao,
     PermissionRequirement Requisito,
     bool ReservadaAGovernanca = false,
-    NaturezaDoItem Natureza = NaturezaDoItem.Nenhuma);
+    NaturezaDoItem Natureza = NaturezaDoItem.Nenhuma)
+{
+    /// <summary>
+    /// A permissão é de unidade: o ponto de decisão exige a unidade proprietária do resource no contexto. As demais
+    /// permissões são institucionais.
+    /// </summary>
+    public bool DeUnidade => Requisito.EscopoContextoObrigatorio.Contains(CamposDeContexto.UnidadeProprietariaId, StringComparer.Ordinal);
+}
