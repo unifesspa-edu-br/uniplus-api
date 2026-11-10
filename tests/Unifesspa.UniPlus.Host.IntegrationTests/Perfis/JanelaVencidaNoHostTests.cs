@@ -7,6 +7,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -25,6 +26,18 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
 {
+    private const string FuncaoQueFalhaDepoisDosAvisos =
+        """
+        CREATE OR REPLACE FUNCTION autorizacao.falha_depois_dos_avisos_da_janela() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM autorizacao.avisos_emitidos a JOIN autorizacao.janelas_de_migracao j ON j.id = a.fato_id
+                       WHERE a.tipo = 'versao_encerrada' AND j.perfil_id = NEW.perfil_id) THEN
+                RAISE EXCEPTION 'falha forçada depois dos avisos da materialização';
+            END IF;
+            RETURN NEW;
+        END $$
+        """;
+
     private static readonly TimeSpan DepoisDoPrazo = TimeSpan.FromHours(73);
 
     public JanelaVencidaNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
@@ -164,6 +177,69 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
             (await JanelaAsync(await GestaoAsync(), cenario.PerfilId)).GetProperty("prazo").GetDateTimeOffset());
     }
 
+    [Fact(DisplayName = "A falha da troca depois dos avisos da materialização desfaz o fim, as revogações, os registros e os envelopes juntos")]
+    public async Task MaterializacaoDentroDaTroca_FalhaDepoisDosAvisos_DesfazTudo()
+    {
+        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        using HttpClient gestor = await GestorAsync();
+        HttpStatusCode? status = null;
+        await ExecutarSqlAsync(FuncaoQueFalhaDepoisDosAvisos);
+        await ExecutarSqlAsync("CREATE TRIGGER tg_teste_falha BEFORE INSERT OR UPDATE ON autorizacao.vigencias_do_perfil FOR EACH ROW EXECUTE FUNCTION autorizacao.falha_depois_dos_avisos_da_janela()");
+
+        try
+        {
+            string[] envelopes = await EnvelopesDeixadosPorAsync(async () =>
+            {
+                using HttpResponseMessage resposta = await RemoverVencendoAJanelaNaEsperaAsync(gestor, cenario.PerfilId);
+                status = resposta.StatusCode;
+            });
+
+            envelopes.Should().BeEmpty("os envelopes preparados na troca voltaram com ela");
+        }
+        finally
+        {
+            await ExecutarSqlAsync("DROP TRIGGER IF EXISTS tg_teste_falha ON autorizacao.vigencias_do_perfil");
+            await ExecutarSqlAsync("DROP FUNCTION IF EXISTS autorizacao.falha_depois_dos_avisos_da_janela()");
+        }
+
+        status.Should().Be(HttpStatusCode.InternalServerError, "a falha só dispara depois de o aviso da versão encerrada estar registrado");
+        (await EncerradaEmAsync(cenario.PerfilId)).Should().BeNull("o fim da janela voltou com a troca");
+        (await RevogadasPelaJanelaAsync(cenario.PerfilId)).Should().Be(0);
+        AvisosDaMaterializacao avisos = await AvisosDaMaterializacaoAsync(cenario.PerfilId);
+        avisos.Revogadas.Should().BeEmpty();
+        avisos.Encerradas.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A janela que vence enquanto a remoção espera a trava é materializada na própria remoção, com os registros e os envelopes dos avisos de revogação e de encerramento")]
+    public async Task MaterializacaoDentroDaTroca_ConcluiNaMesmaOperacao()
+    {
+        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        using HttpClient gestor = await GestorAsync();
+        HttpStatusCode? status = null;
+
+        string[] envelopes = await EnvelopesDeixadosPorAsync(async () =>
+        {
+            using HttpResponseMessage resposta = await RemoverVencendoAJanelaNaEsperaAsync(gestor, cenario.PerfilId);
+            status = resposta.StatusCode;
+        });
+
+        status.Should().Be(HttpStatusCode.OK);
+        await ConferirAMaterializacaoAsync(cenario.PerfilId, envelopes);
+    }
+
+    [Fact(DisplayName = "O command de materialização prévia, enviado antes da operação, grava o fim, a revogação, os registros e os envelopes dos avisos")]
+    public async Task MaterializacaoPrevia_GravaOFimEOsAvisos()
+    {
+        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        using HttpClient betina = Cliente(Betina);
+        Guid unidade = await SemearUnidadeAsync();
+        Relogio.Avancar(DepoisDoPrazo);
+
+        string[] envelopes = await EnvelopesDeixadosPorAsync(async () => (await CriarAsync(betina, cenario.PerfilId, unidade, null)).Should().NotBeEmpty());
+
+        await ConferirAMaterializacaoAsync(cenario.PerfilId, envelopes);
+    }
+
     // O pedido nasce antes da janela, que a janela aberta o impediria; a troca de composição abre a janela como a produção.
     private async Task<(Guid PerfilId, Guid Pedido)> PedidoEmPerfilComJanelaAsync()
     {
@@ -178,6 +254,20 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
         return (perfilId, pedido);
     }
 
+    // A janela ainda vale quando a remoção sai; vence enquanto ela espera a trava do perfil, de modo que o fim é materializado dentro da troca.
+    private async Task<HttpResponseMessage> RemoverVencendoAJanelaNaEsperaAsync(HttpClient gestor, Guid perfilId)
+    {
+        await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
+        Task<HttpResponseMessage> remocao = RemoverBrutoAsync(gestor, perfilId, [Sensivel]);
+        await trava.AguardarBloqueioAsync();
+        Relogio.Avancar(DepoisDoPrazo);
+        await trava.ConfirmarAsync();
+
+        return await remocao;
+    }
+
     private static async Task<string> TextoAsync(HttpResponseMessage resposta)
     {
         using (resposta)
@@ -185,6 +275,46 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
             return $"{(int)resposta.StatusCode} {await resposta.Content.ReadAsStringAsync()}";
         }
     }
+
+    private async Task ConferirAMaterializacaoAsync(Guid perfilId, string[] envelopes)
+    {
+        (await EncerradaEmAsync(perfilId)).Should().NotBeNull();
+        (await RevogadasPelaJanelaAsync(perfilId)).Should().Be(1);
+        AvisosDaMaterializacao avisos = await AvisosDaMaterializacaoAsync(perfilId);
+        avisos.Revogadas.Should().ContainSingle("uma concessão revogada pelo fim, a de Leandro");
+        avisos.Encerradas.Should().NotBeEmpty("a gestão e a proteção de dados são avisadas do encerramento");
+        foreach (Guid mensagem in avisos.Revogadas.Concat(avisos.Encerradas))
+        {
+            envelopes.Count(e => e.Contains(mensagem.ToString(), StringComparison.OrdinalIgnoreCase)).Should().Be(1, $"um envelope para o aviso {mensagem}");
+        }
+    }
+
+    // Os registros dos avisos do fim da janela: a revogação de cada concessão tem por fato a linha da migração, e o encerramento tem a janela.
+    private async Task<AvisosDaMaterializacao> AvisosDaMaterializacaoAsync(Guid perfilId)
+    {
+        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
+        DatabaseFacade banco = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database;
+        List<Guid> revogadas = await banco.SqlQuery<Guid>(
+            $"""
+            SELECT a.mensagem_id AS "Value" FROM autorizacao.avisos_emitidos a
+            JOIN autorizacao.migracoes_da_concessao m ON m.id = a.fato_id
+            JOIN autorizacao.janelas_de_migracao j ON j.id = m.janela_id
+            WHERE a.tipo = 'concessao_revogada' AND j.perfil_id = {perfilId}
+            """).ToListAsync();
+        List<Guid> encerradas = await banco.SqlQuery<Guid>(
+            $"""
+            SELECT a.mensagem_id AS "Value" FROM autorizacao.avisos_emitidos a
+            JOIN autorizacao.janelas_de_migracao j ON j.id = a.fato_id
+            WHERE a.tipo = 'versao_encerrada' AND j.perfil_id = {perfilId}
+            """).ToListAsync();
+
+        return new AvisosDaMaterializacao(revogadas, encerradas);
+    }
+
+    private sealed record AvisosDaMaterializacao(IReadOnlyList<Guid> Revogadas, IReadOnlyList<Guid> Encerradas);
+
+    private Task<int> RevogadasPelaJanelaAsync(Guid perfilId) =>
+        ContarAsync($"SELECT count(*)::int AS \"Value\" FROM autorizacao.concessoes WHERE perfil_id = '{perfilId}' AND revogada_pela_janela_id IS NOT NULL");
 
     private async Task<int> ContarAsync(string sql)
     {
