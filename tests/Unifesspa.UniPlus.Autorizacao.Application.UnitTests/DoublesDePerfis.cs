@@ -129,6 +129,9 @@ internal static class DoublesDePerfis
                 ? new TrilhaDaContencao(perfil.Eventos, [.. perfil.Suspensoes.SelectMany(static s => s.Decisoes)])
                 : null);
 
+        public Task<IReadOnlyList<Perfil>> ListarPorIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Perfil>>([.. _perfis.Where(p => ids.Contains(p.Id))]);
+
         public Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Perfil entity) => throw new InvalidOperationException();
         public void Remover(Perfil entity) => throw new InvalidOperationException();
@@ -213,6 +216,12 @@ internal static class DoublesDePerfis
         public Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterComposicoesAsync(
             IReadOnlyCollection<Guid> concessaoIds, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, IReadOnlyList<string>>>(new Dictionary<Guid, IReadOnlyList<string>>());
+
+        public Task<IReadOnlyList<JanelaDeMigracao>> ListarAbertasParaLeituraAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<JanelaDeMigracao>>([]);
+
+        public Task<IReadOnlyList<Concessao>> ListarConcessoesAtivasDosPerfisAsync(IReadOnlyCollection<Guid> perfilIds, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<Concessao>>([]);
 
         public Task<IReadOnlyList<Guid>> ListarPerfisComJanelaNaoEncerradaAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Guid>>([]);

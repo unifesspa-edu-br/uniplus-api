@@ -110,13 +110,16 @@ internal static class ConferenciasDaMigracao
     // A pessoa que decidiu a etapa da gestão não decide a da proteção de dados da mesma concessão.
     private static DomainError? DecidiuAGestao(JanelaDeMigracao janela, IReadOnlyList<ItemDoLote> itens, Identidade quem)
     {
-        HashSet<Guid> concessoes = [.. itens.Select(static i => i.ConcessaoId)];
-        bool mesma = janela.Decisoes.Any(d =>
-            concessoes.Contains(d.ConcessaoId)
-            && d.Ator == AtorDaMigracao.Humano
-            && d.Etapa == EtapaDaMigracao.GestaoDeAcessos
-            && d.Decisor == quem);
+        HashSet<Guid> decididas = ConcessoesDecididasNaGestaoPor(janela, quem);
 
-        return mesma ? MigracaoErros.MesmaPessoaNasDuasEtapas() : null;
+        return itens.Any(i => decididas.Contains(i.ConcessaoId)) ? MigracaoErros.MesmaPessoaNasDuasEtapas() : null;
     }
+
+    /// <summary>As concessões cuja etapa da gestão de acessos a pessoa decidiu, e que ela não pode decidir na proteção de dados.</summary>
+    public static HashSet<Guid> ConcessoesDecididasNaGestaoPor(JanelaDeMigracao janela, Identidade quem) =>
+    [
+        .. janela.Decisoes
+            .Where(d => d.Ator == AtorDaMigracao.Humano && d.Etapa == EtapaDaMigracao.GestaoDeAcessos && d.Decisor == quem)
+            .Select(static d => d.ConcessaoId),
+    ];
 }

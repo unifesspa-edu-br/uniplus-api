@@ -59,6 +59,7 @@ internal static class DoublesDeAvisos
         public Task AdicionarLeituraAsync(LeituraDoDocumentoDaVersao leitura, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Perfil>> ListarComPendenteNoPrazoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+        public Task<IReadOnlyList<Perfil>> ListarPorIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     internal sealed class SemUnidade : ILeitorDeUnidade

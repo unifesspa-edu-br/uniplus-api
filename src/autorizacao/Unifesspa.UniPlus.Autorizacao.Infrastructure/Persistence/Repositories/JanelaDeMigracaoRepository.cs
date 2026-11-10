@@ -113,6 +113,24 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
             .ToDictionary(static g => g.Key, static g => (IReadOnlyList<string>)[.. g.Select(static p => p.Codigo).OfType<string>().Order(StringComparer.Ordinal)]);
     }
 
+    public async Task<IReadOnlyList<JanelaDeMigracao>> ListarAbertasParaLeituraAsync(
+        DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+        await ComFilhas(_context.JanelasDeMigracao.AsNoTracking())
+            .Where(j => j.EncerradaEm == null && j.Prazo > agora)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<Concessao>> ListarConcessoesAtivasDosPerfisAsync(
+        IReadOnlyCollection<Guid> perfilIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(perfilIds);
+
+        return await _context.Concessoes.AsNoTracking()
+            .Where(c => perfilIds.Contains(c.PerfilId) && c.RevogadaEm == null)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Guid>> ListarPerfisComJanelaNaoEncerradaAsync(CancellationToken cancellationToken = default) =>
         await _context.JanelasDeMigracao.AsNoTracking()
             .Where(j => j.EncerradaEm == null)

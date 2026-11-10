@@ -55,6 +55,7 @@ public static class AutorizacaoApplicationServiceRegistration
     private static void AdicionarGovernancaDaVersao(IServiceCollection services)
     {
         services.AddScoped<FilaDeVersoesDaEtapa>();
+        services.AddScoped<FilaDeJanelasDaEtapa>();
         services.AddScoped<AprovacoesDaVersao>();
         services.AddScoped<CancelamentoDaVersao>();
         services.AddScoped<RemocaoDePermissoes>();

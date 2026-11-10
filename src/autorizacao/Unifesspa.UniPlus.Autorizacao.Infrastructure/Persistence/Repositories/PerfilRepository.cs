@@ -53,6 +53,14 @@ public sealed class PerfilRepository : IPerfilRepository
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<IReadOnlyList<Perfil>> ListarPorIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        return await _context.Perfis.AsNoTracking().ComComposicao().Where(p => ids.Contains(p.Id)).ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(
         DateTimeOffset agora, CancellationToken cancellationToken = default) =>
         await _context.Perfis

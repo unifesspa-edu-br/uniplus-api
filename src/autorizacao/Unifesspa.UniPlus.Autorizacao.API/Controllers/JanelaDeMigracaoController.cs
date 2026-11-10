@@ -49,6 +49,21 @@ public sealed class JanelaDeMigracaoController : ControllerBase
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken) =>
         Resposta(await _queryBus.Send(new ObterJanelaDoPerfilQuery(id), cancellationToken).ConfigureAwait(false));
 
+    /// <summary>Lista as janelas abertas em que quem lê tem concessão a decidir na etapa; a permissão é a da etapa.</summary>
+    [HttpGet("janelas-de-migracao")]
+    [ProducesResponseType(typeof(IReadOnlyList<ItemDaFilaDeJanelasDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Fila([FromQuery] string? etapa, CancellationToken cancellationToken)
+    {
+        Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> resultado = await _queryBus
+            .Send(new ListarFilaDeJanelasQuery(etapa), cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
+
     /// <summary>Envia o lote da gestão de acessos: uma decisão por concessão elegível, menos as do próprio gestor.</summary>
     [HttpPost("perfis/{id:guid}/janela/lote")]
     [RequiresIdempotencyKey(TtlSeconds = TtlDaIdempotenciaEmSegundos)]

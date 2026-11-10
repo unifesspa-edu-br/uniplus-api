@@ -39,6 +39,19 @@ public sealed record ItemDaJanelaDto(
     string? Dispensa,
     bool EhDoLeitor);
 
+/// <summary>Uma janela de migração na fila de uma etapa, com o perfil a que pertence. Não traz nome de beneficiário.</summary>
+/// <param name="VersaoAlvo">O número da versão para a qual as concessões migram.</param>
+/// <param name="Prazo">O fim do prazo da janela.</param>
+/// <param name="LoteEnviado">O lote da gestão de acessos já foi enviado.</param>
+/// <param name="QuantidadeADecidir">Quantas concessões quem lê pode decidir naquela etapa.</param>
+public sealed record ItemDaFilaDeJanelasDto(
+    Guid PerfilId,
+    string PerfilNome,
+    int VersaoAlvo,
+    DateTimeOffset Prazo,
+    bool LoteEnviado,
+    int QuantidadeADecidir);
+
 /// <summary>A janela como o perfil a resume.</summary>
 public sealed record JanelaDoPerfilDto(Guid Id, DateTimeOffset Prazo, string Situacao);
 
