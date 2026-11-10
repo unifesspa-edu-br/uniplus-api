@@ -90,7 +90,7 @@ public sealed class EfeitosDaTrocaDeVigencia
 
         foreach (Concessao concessao in concessoes)
         {
-            concessao.MigrarParaVersao(nova.Id, anterior.Id);
+            concessao.MigrarParaVersao(anterior, nova);
         }
     }
 

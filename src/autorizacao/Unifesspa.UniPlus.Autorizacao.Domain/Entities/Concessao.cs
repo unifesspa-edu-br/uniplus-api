@@ -29,6 +29,11 @@ public sealed class Concessao : EntityBase
 {
     private const int MotivoMaxLength = 500;
 
+    private readonly List<BaseDaPermissaoNaConcessao> _bases = [];
+
+    /// <summary>As bases das permissões na concessão, quando o chamador as trouxe; só se acrescenta.</summary>
+    public IReadOnlyList<BaseDaPermissaoNaConcessao> Bases => _bases;
+
     public string BeneficiarioEmissor { get; private set; } = string.Empty;
 
     public string BeneficiarioSub { get; private set; } = string.Empty;
@@ -125,21 +130,57 @@ public sealed class Concessao : EntityBase
 
     /// <summary>
     /// Passa a concessão para a versão que substituiu a que ela alcançava, sem acréscimo de permissão: troca só a versão e
-    /// mantém pessoa, escopo, validade e origem. Quem chama trava o perfil e as concessões da versão que sai, então a
-    /// que está revogada, é de governança ou segue outra versão é defeito de quem chama.
+    /// mantém pessoa, escopo, validade e origem. É o caminho único da troca de versão da concessão. Antes da troca, grava a
+    /// base de cada código mantido que ainda não tem base (o retrato da versão que sai) e encerra a de cada código que sai,
+    /// para que "sem base" signifique sempre que a versão atual é aquela em que o código chegou por último. Quem chama trava
+    /// o perfil e as concessões da versão que sai e traz as bases da concessão, então a que está revogada, é de governança
+    /// ou segue outra versão é defeito de quem chama.
     /// </summary>
-    /// <param name="versaoNova">A versão em vigor que a concessão passa a alcançar.</param>
-    /// <param name="versaoEsperada">A versão que a concessão deve estar alcançando agora.</param>
-    public void MigrarParaVersao(Guid versaoNova, Guid versaoEsperada)
+    /// <param name="sai">A versão que a concessão deve estar alcançando agora.</param>
+    /// <param name="entra">A versão em vigor que a concessão passa a alcançar.</param>
+    public void MigrarParaVersao(VersaoDoPerfil sai, VersaoDoPerfil entra)
     {
-        if (RevogadaEm is not null || VersaoId != versaoEsperada)
+        ArgumentNullException.ThrowIfNull(sai);
+        ArgumentNullException.ThrowIfNull(entra);
+
+        if (RevogadaEm is not null || VersaoId != sai.Id)
         {
             throw new InvalidOperationException(
-                $"A concessão {Id} não pode migrar da versão {versaoEsperada}: está revogada, é de governança ou alcança a versão {VersaoId}.");
+                $"A concessão {Id} não pode migrar da versão {sai.Id}: está revogada, é de governança ou alcança a versão {VersaoId}.");
         }
 
-        VersaoId = versaoNova;
+        _bases.AddRange(BasesDaTroca(sai, entra));
+        VersaoId = entra.Id;
     }
+
+    private List<BaseDaPermissaoNaConcessao> BasesDaTroca(VersaoDoPerfil sai, VersaoDoPerfil entra)
+    {
+        HashSet<string> mantidos = [.. entra.Codigos()];
+        List<BaseDaPermissaoNaConcessao> bases = [];
+
+        foreach (PermissaoDaVersao permissao in sai.Permissoes.OrderBy(static p => p.Codigo, StringComparer.Ordinal))
+        {
+            BaseDaPermissaoNaConcessao? nova = mantidos.Contains(permissao.Codigo)
+                ? BaseDoCodigoMantido(permissao, entra.Id, bases.Count)
+                : BaseDaPermissaoNaConcessao.DaSaida(PerfilId, Id, permissao.Codigo, entra.Id, bases.Count);
+            if (nova is not null)
+            {
+                bases.Add(nova);
+            }
+        }
+
+        return bases;
+    }
+
+    private BaseDaPermissaoNaConcessao? BaseDoCodigoMantido(PermissaoDaVersao permissao, Guid versaoAlvoId, int ordinal) =>
+        TemBaseAtiva(permissao.Codigo)
+            ? null
+            : BaseDaPermissaoNaConcessao.Registrar(
+                PerfilId, Id, permissao.Codigo, new BaseDaConcessao(permissao.Classificacao, permissao.DeUnidade),
+                OrigemDaBase.Migracao, versaoAlvoId, ordinal);
+
+    private bool TemBaseAtiva(string codigo) =>
+        _bases.Where(b => b.Codigo == codigo).MaxBy(static b => b.OrdemNaTrilha) is { Origem: not OrigemDaBase.Saida };
 
     /// <summary>
     /// O e-mail digitado para confirmar a revogação é o do beneficiário: compara sem diferenciar maiúsculas nem espaços nas

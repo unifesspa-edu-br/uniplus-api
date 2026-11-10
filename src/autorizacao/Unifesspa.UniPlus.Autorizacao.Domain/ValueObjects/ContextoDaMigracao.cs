@@ -14,6 +14,7 @@ public sealed class ContextoDaMigracao
     private readonly IReadOnlyList<string> _composicaoDoAlvo;
     private readonly IReadOnlyCollection<Identidade> _comProtecaoDeDados;
     private readonly ICatalogoDePermissoesConsultavel _catalogo;
+    private readonly IReadOnlyList<VersaoDoPerfil> _versoes;
 
     /// <param name="agora">O instante lido depois das travas.</param>
     /// <param name="concessoes">As concessões do perfil que a janela alcança, travadas e rastreadas.</param>
@@ -21,19 +22,22 @@ public sealed class ContextoDaMigracao
     /// <param name="composicaoDoAlvo">Os códigos da versão-alvo, ordenados.</param>
     /// <param name="comProtecaoDeDados">Quem tem concessão ativa do perfil da proteção de dados.</param>
     /// <param name="catalogo">O catálogo de permissões.</param>
+    /// <param name="versoes">As versões do perfil, de onde a migração tira o retrato da que sai e o da que entra.</param>
     public ContextoDaMigracao(
         DateTimeOffset agora,
         IReadOnlyList<Concessao> concessoes,
         IReadOnlyDictionary<Guid, IReadOnlyList<string>> composicoes,
         IReadOnlyList<string> composicaoDoAlvo,
         IReadOnlyCollection<Identidade> comProtecaoDeDados,
-        ICatalogoDePermissoesConsultavel catalogo)
+        ICatalogoDePermissoesConsultavel catalogo,
+        IReadOnlyList<VersaoDoPerfil> versoes)
     {
         ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(composicoes);
         ArgumentNullException.ThrowIfNull(composicaoDoAlvo);
         ArgumentNullException.ThrowIfNull(comProtecaoDeDados);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(versoes);
 
         Agora = agora;
         Concessoes = concessoes;
@@ -42,11 +46,15 @@ public sealed class ContextoDaMigracao
         _composicaoDoAlvo = composicaoDoAlvo;
         _comProtecaoDeDados = comProtecaoDeDados;
         _catalogo = catalogo;
+        _versoes = versoes;
     }
 
     public DateTimeOffset Agora { get; }
 
     public IReadOnlyList<Concessao> Concessoes { get; }
+
+    /// <summary>A versão do perfil com o id.</summary>
+    public VersaoDoPerfil Versao(Guid versaoId) => _versoes.First(v => v.Id == versaoId);
 
     public Concessao? Concessao(Guid concessaoId) => _porId.GetValueOrDefault(concessaoId);
 
