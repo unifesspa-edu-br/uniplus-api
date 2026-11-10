@@ -203,6 +203,18 @@ public abstract class PedidosDeConcessaoTestBase
             "DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id IN ({0}, {1})",
             PerfisDeSistema.GestorDeAcessosId,
             PerfisDeSistema.ProtecaoDeDadosId);
+        await ExpirarVersoesVencidasDeTestesAnterioresAsync();
+    }
+
+    /// <summary>
+    /// Leva ao fim do prazo, pela rotina real, as versões pendentes vencidas que um teste anterior deixou. Sem isso, a
+    /// rotina de um teste que a dispara percorre também esses perfis antes do dele, e a espera dele pela trava passa a
+    /// depender da ordem em que o banco os devolve.
+    /// </summary>
+    private async Task ExpirarVersoesVencidasDeTestesAnterioresAsync()
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<ExpiracaoDasVersoesPendentes>().ExecutarAsync(CancellationToken.None);
     }
 
     /// <summary>Apaga as janelas de migração, com as linhas, as decisões e as concessões que elas revogaram.</summary>
