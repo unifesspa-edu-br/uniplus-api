@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <param name="Todas">A decisão vale para todas as concessões que aguardam a etapa, e não para uma lista.</param>
 /// <param name="LoteId">Agrupa as concessões decididas na mesma requisição.</param>
 /// <param name="Instante">O instante da decisão, lido sob a trava.</param>
-/// <param name="MaisRecente">A reclassificação é a mais recente do par (perfil, permissão).</param>
+/// <param name="Vigente">A reclassificação é a mais recente do par (perfil, permissão) e a permissão continua no catálogo implantado.</param>
 /// <param name="Alvos">As concessões alvo da decisão.</param>
 public sealed record PedidoDeDecisaoDaReclassificacao(
     EtapaDaVersao Etapa,
@@ -25,5 +25,5 @@ public sealed record PedidoDeDecisaoDaReclassificacao(
     bool Todas,
     Guid LoteId,
     DateTimeOffset Instante,
-    bool MaisRecente,
+    bool Vigente,
     IReadOnlyList<ConcessaoNaReclassificacao> Alvos);

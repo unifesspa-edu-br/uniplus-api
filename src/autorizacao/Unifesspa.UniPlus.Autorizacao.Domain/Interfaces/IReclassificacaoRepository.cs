@@ -35,11 +35,14 @@ public interface IReclassificacaoRepository
     /// <summary>A reclassificação, sem rastreamento.</summary>
     Task<ReclassificacaoDaPermissao?> ObterAsync(Guid id, CancellationToken cancellationToken = default);
 
-    /// <summary>As reclassificações mais recentes de cada par (perfil, permissão) que sobem a classe ou mudam o escopo.</summary>
-    Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarMaisRecentesQueSuspendemAsync(CancellationToken cancellationToken = default);
+    /// <summary>As reclassificações vigentes de cada par (perfil, permissão) que sobem a classe ou mudam o escopo.</summary>
+    Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarVigentesQueSuspendemAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>É a mais recente do par (perfil, permissão).</summary>
-    Task<bool> EhMaisRecenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Ainda vale: é a mais recente do par (perfil, permissão) e a permissão continua no catálogo implantado. A permissão
+    /// que saiu do catálogo não é mais suspensa por ela, então a reclassificação não tem o que decidir.
+    /// </summary>
+    Task<bool> EstaVigenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default);
 
     /// <summary>As liberações já decididas na reclassificação.</summary>
     Task<IReadOnlyList<LiberacaoDaReclassificacao>> ListarLiberacoesAsync(Guid reclassificacaoId, CancellationToken cancellationToken = default);

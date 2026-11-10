@@ -78,23 +78,23 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
     public async Task<ReclassificacaoDaPermissao?> ObterAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.Reclassificacoes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken).ConfigureAwait(false);
 
-    public async Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarMaisRecentesQueSuspendemAsync(CancellationToken cancellationToken = default) =>
-        await _context.Reclassificacoes.AsNoTracking()
-            .Where(r => !_context.Reclassificacoes.Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha))
+    public async Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarVigentesQueSuspendemAsync(CancellationToken cancellationToken = default) =>
+        await Vigentes()
             .OrderBy(r => r.OrdemNaTrilha)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<bool> EhMaisRecenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default)
+    public async Task<bool> EstaVigenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(reclassificacao);
 
-        return !await _context.Reclassificacoes.AsNoTracking()
-            .AnyAsync(
-                o => o.PerfilId == reclassificacao.PerfilId && o.Codigo == reclassificacao.Codigo && o.OrdemNaTrilha > reclassificacao.OrdemNaTrilha,
-                cancellationToken)
-            .ConfigureAwait(false);
+        return await Vigentes().AnyAsync(r => r.Id == reclassificacao.Id, cancellationToken).ConfigureAwait(false);
     }
+
+    private IQueryable<ReclassificacaoDaPermissao> Vigentes() =>
+        _context.Reclassificacoes.AsNoTracking()
+            .Where(r => !_context.Reclassificacoes.Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha)
+                && _context.ImplantacaoAtual().Any(p => p.Codigo == r.Codigo));
 
     public async Task<IReadOnlyList<LiberacaoDaReclassificacao>> ListarLiberacoesAsync(
         Guid reclassificacaoId, CancellationToken cancellationToken = default) =>

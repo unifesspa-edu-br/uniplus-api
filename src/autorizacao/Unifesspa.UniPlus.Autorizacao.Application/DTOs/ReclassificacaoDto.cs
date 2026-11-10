@@ -39,7 +39,7 @@ public sealed record ReclassificacaoDto(
     string Codigo,
     MudancaDaPermissaoDto Mudanca,
     DateTimeOffset Instante,
-    bool MaisRecente,
+    bool Vigente,
     IReadOnlyList<VersaoEmUsoDto> Versoes,
     IReadOnlyList<ConcessaoSuspensaDto> Concessoes);
 

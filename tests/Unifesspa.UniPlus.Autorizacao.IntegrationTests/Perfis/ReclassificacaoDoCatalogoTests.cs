@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
@@ -205,6 +206,21 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact(DisplayName = "A reclassificação da permissão que saiu do catálogo deixa de valer: sai da fila e não aceita decisão")]
+    public async Task PermissaoRemovidaDoCatalogo_DeixaDeValer()
+    {
+        (Guid perfil, _) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
+        await ConciliarAsync();
+        Guid id = await ReclassificacaoDoPerfilAsync(perfil);
+
+        await GravarCatalogoSemAPermissaoAsync(Codigo, new string('b', 64));
+
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
+        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().NotContain(r => r.Id == id);
+        (await reclassificacoes.EstaVigenteAsync((await reclassificacoes.ObterAsync(id))!)).Should().BeFalse();
+    }
+
     private async Task<Guid> ConcessaoDoPerfilAsync(Guid perfil)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
@@ -261,6 +277,18 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
             """,
             id, impressao, codigo, classificacao.ToString().ToLowerInvariant(), deUnidade);
     }
+
+    private Task GravarCatalogoSemAPermissaoAsync(string codigo, string impressao) =>
+        ExecutarAsync(
+            """
+            WITH atual AS (SELECT id FROM autorizacao.implantacoes_das_permissoes ORDER BY sequencia DESC LIMIT 1),
+            novo AS (INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now()) RETURNING id)
+            INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, modulo, classificacao, de_unidade, reservada)
+            SELECT novo.id, p.codigo, p.modulo, p.classificacao, p.de_unidade, p.reservada
+            FROM autorizacao.permissoes_implantadas p, atual, novo
+            WHERE p.implantacao_id = atual.id AND p.codigo <> {2}
+            """,
+            Guid.CreateVersion7(), impressao, codigo);
 
     private async Task ConciliarAsync()
     {
