@@ -6,7 +6,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// A suspensão do perfil com a janela de migração aberta, pelo host real e com o relógio controlável: bloqueia as
@@ -19,6 +21,8 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class JanelaComSuspensaoNoHostTests : JanelaDeMigracaoNoHostTestBase
 {
+    private const string Laudos = "teste:laudos:consultar";
+
     private static readonly TimeSpan DepoisDoPrazo = TimeSpan.FromHours(73);
 
     public JanelaComSuspensaoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
@@ -87,6 +91,47 @@ public sealed class JanelaComSuspensaoNoHostTests : JanelaDeMigracaoNoHostTestBa
         JsonElement janela = await JanelaAsync(gestao, cenario.PerfilId);
         janela.GetProperty("situacao").GetString().Should().Be("encerrada");
         (await PerfilAsync(gestao, cenario.PerfilId)).GetProperty("ativo").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O lote com o perfil suspenso, numa concessão que já tem permissão protegida, calcula o mesmo acréscimo e as mesmas etapas que sem suspensão")]
+    public async Task LoteSuspenso_CalculaOMesmoAcrescimoQueSemSuspensao()
+    {
+        JanelaAberta semSuspensao = await AbrirJanelaComProtegidaAsync(Leandro);
+        JanelaAberta suspenso = await AbrirJanelaComProtegidaAsync(Betina);
+        await SuspenderComSucessoAsync(suspenso.PerfilId);
+        using HttpClient gestao = await GestaoAsync();
+
+        JsonElement itemSemSuspensao = await ItemAposOLoteAsync(gestao, semSuspensao, Leandro);
+        JsonElement itemSuspenso = await ItemAposOLoteAsync(gestao, suspenso, Betina);
+
+        itemSuspenso.GetProperty("acrescimo").EnumerateArray().Select(c => c.GetString()).Should().Equal(Laudos);
+        itemSuspenso.GetProperty("acrescimo").GetRawText().Should().Be(itemSemSuspensao.GetProperty("acrescimo").GetRawText());
+        itemSuspenso.GetProperty("exigeProtecaoDeDados").GetBoolean().Should().Be(itemSemSuspensao.GetProperty("exigeProtecaoDeDados").GetBoolean());
+        itemSuspenso.GetProperty("situacao").GetString().Should().Be(itemSemSuspensao.GetProperty("situacao").GetString());
+    }
+
+    private async Task<JanelaAberta> AbrirJanelaComProtegidaAsync(Persona beneficiario)
+    {
+        using HttpClient gestor = await GestorAsync();
+        Envio vigente = await PerfilVigenteAsync(gestor, Consultar, Sensivel);
+        Guid concessao = await ConcessoesDeTeste.ConcederAsync(
+            Fixture.Factory.Services,
+            beneficiario.Sub.ToString(),
+            vigente.PerfilId,
+            EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()),
+            email: beneficiario.Email);
+        Envio nova = await CriarVersaoAsync(gestor, vigente.PerfilId, Nome(), Consultar, Sensivel, Laudos);
+        await EnviarEVerificarAsync(gestor, nova);
+
+        return new JanelaAberta(vigente.PerfilId, nova.VersaoId, new Dictionary<Persona, Guid> { [beneficiario] = concessao });
+    }
+
+    private static async Task<JsonElement> ItemAposOLoteAsync(HttpClient gestao, JanelaAberta cenario, Persona beneficiario)
+    {
+        Guid concessao = cenario.Concessoes[beneficiario];
+        using HttpResponseMessage lote = await EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(concessao, "migrar")]);
+
+        return ItemDe(await CorpoAsync(lote, HttpStatusCode.OK), concessao).Clone();
     }
 
     private async Task SuspenderComSucessoAsync(Guid perfilId)
