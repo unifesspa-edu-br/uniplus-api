@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// <see cref="DbContext"/> do módulo Autorização, no schema <c>autorizacao</c> do banco único,
-/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões, anexos e trocas de versão, as revisões periódicas dos acessos, a contenção dos perfis (suspensões, desativações e a trilha) e o cache de Idempotency-Key
+/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões, anexos e trocas de versão, as revisões periódicas dos acessos, a contenção dos perfis (suspensões, desativações e a trilha), os catálogos aplicados com as bases, as reclassificações e as liberações das permissões e o cache de Idempotency-Key
 /// (ADR-0027) adjacente, que permite gravação atômica com o outbox.
 /// </summary>
 public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
@@ -75,6 +75,20 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
 
     public DbSet<ItemDaRevisao> ItensDasRevisoes => Set<ItemDaRevisao>();
 
+    public DbSet<ImplantacaoDasPermissoes> ImplantacoesDasPermissoes => Set<ImplantacaoDasPermissoes>();
+
+    public DbSet<PermissaoImplantada> PermissoesImplantadas => Set<PermissaoImplantada>();
+
+    public DbSet<BaseDaPermissaoNaConcessao> BasesDasPermissoes => Set<BaseDaPermissaoNaConcessao>();
+
+    public DbSet<ReclassificacaoDaPermissao> Reclassificacoes => Set<ReclassificacaoDaPermissao>();
+
+    public DbSet<LiberacaoDaReclassificacao> LiberacoesDasReclassificacoes => Set<LiberacaoDaReclassificacao>();
+
+    public DbSet<DivergenciaDaGovernanca> DivergenciasDaGovernanca => Set<DivergenciaDaGovernanca>();
+
+    public DbSet<AvisoDaReclassificacao> AvisosDasReclassificacoes => Set<AvisoDaReclassificacao>();
+
     /// <summary>Cache de Idempotency-Key (ADR-0027), cifrado at-rest.</summary>
     public DbSet<IdempotencyEntry> IdempotencyEntries => Set<IdempotencyEntry>();
 
@@ -86,6 +100,7 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AutorizacaoDbContext).Assembly);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
         modelBuilder.AplicarFiltroGlobalSoftDelete();
+        modelBuilder.HasDbFunction(FuncoesDoBanco.MetodoDaOrdemDaClassificacao);
         modelBuilder.HasSequence<long>(SequenciaDaOrdemDaTrilha, Schema).StartsAt(1).IncrementsBy(1);
 
         base.OnModelCreating(modelBuilder);

@@ -56,6 +56,7 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
             cancellationToken).ConfigureAwait(false);
 
         return await _context.Concessoes
+            .Include(c => c.Bases)
             .Where(c => c.PerfilId == perfilId && (c.RevogadaEm == null || c.RevogadaEm >= desde))
             .OrderBy(c => c.Id)
             .ToListAsync(cancellationToken)

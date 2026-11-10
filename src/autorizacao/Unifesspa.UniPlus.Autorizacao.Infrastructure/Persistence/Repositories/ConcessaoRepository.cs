@@ -102,6 +102,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             cancellationToken).ConfigureAwait(false);
 
         return await _context.Concessoes
+            .Include(c => c.Bases)
             .Where(c => c.PerfilId == perfilId && c.VersaoId == versaoId && c.RevogadaEm == null)
             .OrderBy(c => c.Id)
             .ToListAsync(cancellationToken)

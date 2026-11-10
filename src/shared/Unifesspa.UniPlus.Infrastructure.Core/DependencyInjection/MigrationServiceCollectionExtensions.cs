@@ -90,6 +90,50 @@ public static partial class MigrationServiceCollectionExtensions
         where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(services);
+        return AdicionarMigrations<TContext>(services);
+    }
+
+    /// <summary>
+    /// Igual a <see cref="AddDbContextMigrationsOnStartup{TContext}(IServiceCollection)"/>, com uma etapa que roda
+    /// depois das migrations, no mesmo lugar em que elas rodam: na subida padrão e no Job <c>ApplyAndExit</c>, nunca no
+    /// modo <c>Skip</c>. A etapa roda também quando não há migration pendente; a falha dela é a falha da migration.
+    /// </summary>
+    /// <typeparam name="TContext">DbContext do módulo.</typeparam>
+    /// <param name="services">A coleção de serviços do host.</param>
+    /// <param name="etapaPosterior">A etapa, que recebe o provider raiz e cria o próprio escopo.</param>
+    /// <returns>A própria <paramref name="services"/> para encadeamento fluente.</returns>
+    public static IServiceCollection AddDbContextMigrationsOnStartup<TContext>(
+        this IServiceCollection services,
+        Func<IServiceProvider, CancellationToken, Task> etapaPosterior)
+        where TContext : DbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(etapaPosterior);
+
+        services.AddSingleton(new EtapaPosteriorDaMigration<TContext>(etapaPosterior));
+        return AdicionarMigrations<TContext>(services);
+    }
+
+    /// <summary>
+    /// Aplica as migrations do contexto e, em seguida, a etapa posterior registrada para ele, se houver.
+    /// </summary>
+    internal static async Task MigrarEExecutarEtapaAsync<TContext>(
+        this IServiceProvider services,
+        CancellationToken cancellationToken)
+        where TContext : DbContext
+    {
+        await services.ApplyMigrationsAsync<TContext>(cancellationToken).ConfigureAwait(false);
+
+        EtapaPosteriorDaMigration<TContext>? etapa = services.GetService<EtapaPosteriorDaMigration<TContext>>();
+        if (etapa is not null)
+        {
+            await etapa.Executar(services, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static IServiceCollection AdicionarMigrations<TContext>(IServiceCollection services)
+        where TContext : DbContext
+    {
 
         // Singleton com TryAddEnumerable previne dupla-registração se Program.cs chamar duas
         // vezes com o mesmo TContext (defesa em profundidade — Program.cs deve chamar uma só).
@@ -100,7 +144,7 @@ public static partial class MigrationServiceCollectionExtensions
         // coleção de hosted services — que traria junto warmup de criptografia, mensageria e
         // schema registry, e faria o Job falhar por configuração alheia ao schema.
         ObterRegistroDeContextos(services)
-            .Registrar(typeof(TContext), (provider, token) => provider.ApplyMigrationsAsync<TContext>(token));
+            .Registrar(typeof(TContext), (provider, token) => provider.MigrarEExecutarEtapaAsync<TContext>(token));
 
         return services;
     }
