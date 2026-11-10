@@ -37,6 +37,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
         using HttpClient diogo = await GestorAsync();
         (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao", "decisao_da_retomada");
+        (await PermissoesDaConcessaoAsync(perfilId)).Should().BeEmpty();
         DescartarTodas(respostas);
     }
 
@@ -53,6 +54,7 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         respostas.Select(r => r.StatusCode).Should().AllBeEquivalentTo(HttpStatusCode.OK);
         using HttpClient diogo = await GestorAsync();
         (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao", "decisao_da_retomada", "retomada");
+        (await PermissoesDaConcessaoAsync(perfilId)).Should().Equal(Consultar);
         DescartarTodas(respostas);
     }
 
@@ -91,12 +93,11 @@ public sealed class CorridasDaTrocaDeVigenciaComARetomadaNoHostTests : Contencao
         DescartarTodas(respostas);
     }
 
-    // Perfil com concessão não aceita acréscimo protegido por versão, então o perfil desta corrida não tem concessões.
     private async Task<(Guid PerfilId, Envio Acrescimo)> SuspensoComAcrescimoSensivelEsperandoAProtecaoAsync()
     {
         await PrepararAsync();
         using HttpClient diogo = await GestorAsync();
-        Guid perfilId = (await PerfilVigenteAsync(diogo, Consultar)).PerfilId;
+        Guid perfilId = await PerfilDeUnidadeComConcessaoAsync(diogo, Consultar);
         await SuspenderComSucessoAsync(diogo, perfilId);
         Envio acrescimo = await PendenteVerificadaAsync(diogo, perfilId, Consultar, Sensivel);
         using HttpClient gestao = await GestaoAsync();
