@@ -8144,7 +8144,7 @@
           "ordem",
           "instante",
           "ator",
-          "pessoaNome",
+          "pessoa",
           "etapa",
           "motivo",
           "origem",
@@ -8175,10 +8175,14 @@
           "ator": {
             "type": "string"
           },
-          "pessoaNome": {
-            "type": [
-              "null",
-              "string"
+          "pessoa": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/IdentidadeDto"
+              }
             ]
           },
           "etapa": {

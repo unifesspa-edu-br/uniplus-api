@@ -31,13 +31,24 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
         resultado.Value!.Select(r => r.Tipo).Should().BeEquivalentTo("suspensao", "retomada", ContencaoMapping.TipoDaDecisao);
         RegistroDaContencaoDto decisao = resultado.Value!.Single(r => r.Tipo == ContencaoMapping.TipoDaDecisao);
         decisao.Etapa.Should().Be("gestao_de_acessos");
-        decisao.PessoaNome.Should().Be(PerfisDeTeste.ProtecaoDeDados.Nome);
+        decisao.Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.Sub, PerfisDeTeste.ProtecaoDeDados.Nome));
         decisao.DecisorTemConcessao.Should().BeTrue();
         RegistroDaContencaoDto retomada = resultado.Value!.Single(r => r.Tipo == "retomada");
         retomada.Ator.Should().Be("sistema");
         retomada.Origem.Should().Be("decisao_da_etapa");
-        retomada.PessoaNome.Should().BeNull();
+        retomada.Pessoa.Should().BeNull();
         cenario.Verificador.Gravados.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "A suspensão por token sem nome traz o emissor e o sub de quem agiu, com o nome nulo")]
+    public async Task Obter_SuspensaoSemNome_TrazEmissorESub()
+    {
+        Perfil perfil = Suspenso(new Identidade(PerfisDeTeste.Gestora.Emissor, PerfisDeTeste.Gestora.Sub, null));
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Manter]);
+
+        Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);
+
+        resultado.Value!.Single().Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.Gestora.Emissor, PerfisDeTeste.Gestora.Sub, null));
     }
 
     [Fact(DisplayName = "Quem aprova pela proteção de dados também lê a trilha")]
@@ -74,10 +85,10 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
     private static Task<Result<IReadOnlyList<RegistroDaContencaoDto>>> Obter(CenarioDaGovernancaDaVersao cenario, Guid perfilId) =>
         ObterContencaoDoPerfilQueryHandler.Handle(new ObterContencaoDoPerfilQuery(perfilId), cenario.Verificador, cenario.Perfis, CancellationToken.None);
 
-    private static Perfil Suspenso()
+    private static Perfil Suspenso(Identidade? autor = null)
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", "Descrição válida.", [Consultar], new DoublesDePerfis.CatalogoDeTeste());
-        perfil.Suspender(PerfisDeTeste.Gestora, EtapaDaVersao.GestaoDeAcessos, Motivo, PerfisDeTeste.Instante, new DoublesDePerfis.CatalogoDeTeste());
+        perfil.Suspender(autor ?? PerfisDeTeste.Gestora, EtapaDaVersao.GestaoDeAcessos, Motivo, PerfisDeTeste.Instante, new DoublesDePerfis.CatalogoDeTeste());
 
         return perfil;
     }

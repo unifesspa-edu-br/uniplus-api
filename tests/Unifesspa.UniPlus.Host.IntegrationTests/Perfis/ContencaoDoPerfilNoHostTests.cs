@@ -138,11 +138,12 @@ public sealed class ContencaoDoPerfilNoHostTests : ContencaoDoPerfilNoHostTestBa
 
         trilha.Select(r => r.GetProperty("tipo").GetString()).Should().Equal("suspensao", "decisao_da_retomada", "decisao_da_retomada", "retomada");
         trilha.Select(r => r.GetProperty("ordem").GetInt64()).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
-        trilha[0].GetProperty("pessoaNome").GetString().Should().Be(Diogo.Nome);
+        trilha[0].GetProperty("pessoa").GetProperty("nome").GetString().Should().Be(Diogo.Nome);
+        trilha[0].GetProperty("pessoa").GetProperty("sub").GetString().Should().Be(Diogo.Sub.ToString());
         trilha[1].GetProperty("etapa").GetString().Should().Be(EtapaProtecao);
         trilha[3].GetProperty("ator").GetString().Should().Be("sistema");
         trilha[3].GetProperty("origem").GetString().Should().Be("decisao_da_etapa");
-        trilha[3].GetProperty("pessoaNome").ValueKind.Should().Be(JsonValueKind.Null);
+        trilha[3].GetProperty("pessoa").ValueKind.Should().Be(JsonValueKind.Null);
         trilha.Select(r => r.GetProperty("referenciaId").GetGuid()).Distinct().Should().ContainSingle();
     }
 
