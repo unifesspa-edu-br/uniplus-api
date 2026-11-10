@@ -154,6 +154,15 @@ public sealed class ReclassificacaoDaPermissaoTests
             .IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O motivo da suspensão mantida é gravado sem os espaços das pontas")]
+    public void Decidir_MantidaComEspacos_GravaOMotivoAparado()
+    {
+        Result<DesfechoDaDecisaoDaReclassificacao> mantida = Subida(deUnidade: false)
+            .Decidir(Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Mantida, [Concessao(Paulo)], motivo: $" {new string('a', 500)} "));
+
+        mantida.Value!.Liberacoes.Single().Motivo.Should().Be(new string('a', 500));
+    }
+
     [Fact(DisplayName = "Manter a suspensão exige motivo")]
     public void Decidir_MantidaSemMotivo_Recusa() =>
         Recusa(Subida(false), Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Mantida, [Concessao(Paulo)], motivo: "  "))
