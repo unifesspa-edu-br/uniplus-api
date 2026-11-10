@@ -472,7 +472,7 @@ jobs:
     # falhas reais — esta fase não mascara nada, só agrega.
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
 
