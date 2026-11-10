@@ -104,7 +104,7 @@ public sealed class PropostasDeVersaoTests
     public async Task Propor_ComJanelaAberta_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], janelaAberta: true);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], estado: new EstadoDasConcessoes(JanelaAberta: true));
 
         GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
             perfil.Id, Dados("Analista", Consultar, Pessoal), CancellationToken.None);
@@ -163,7 +163,7 @@ public sealed class PropostasDeVersaoTests
     public async Task Propor_PendenteRecusada_DesfazARemocao()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Pessoal], Catalogo);
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], janelaAberta: true);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [], estado: new EstadoDasConcessoes(JanelaAberta: true));
 
         GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
             perfil.Id, Dados("Analista", [Consultar, Publicar], Motivo, null), CancellationToken.None);
