@@ -35,19 +35,23 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
     public DecisaoDeAcesso DecisaoDa(EtapaDaVersao etapa) =>
         etapa == EtapaDaVersao.GestaoDeAcessos ? DecisaoDaGestao : DecisaoDaProtecaoDeDados;
 
-    /// <summary>Consulta as duas etapas, sem registrar. Nulo quando o token não identifica o solicitante por completo.</summary>
-    public static async Task<AcessoDaVersao?> ConsultarAsync(IVerificadorDeAcesso verificador, Guid? perfilId, CancellationToken cancellationToken)
+    /// <summary>
+    /// Consulta as duas etapas, sem registrar. O recurso da trilha é o perfil, ou o do tipo dado quando a operação é de
+    /// outro, como a reclassificação. Nulo quando o token não identifica o solicitante por completo.
+    /// </summary>
+    public static async Task<AcessoDaVersao?> ConsultarAsync(
+        IVerificadorDeAcesso verificador, Guid? recursoId, CancellationToken cancellationToken, string tipoDoRecurso = ResourceTiposAutorizacao.Perfil)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        DecisaoDeAcesso gestao = await AvaliarAsync(verificador, PermissaoDaGestao, perfilId, cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso gestao = await AvaliarAsync(verificador, PermissaoDaGestao, recursoId, cancellationToken, tipoDoRecurso).ConfigureAwait(false);
         if (gestao is SemSujeito)
         {
             return null;
         }
 
         return new AcessoDaVersao(
-            gestao, await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, perfilId, cancellationToken).ConfigureAwait(false));
+            gestao, await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, recursoId, cancellationToken, tipoDoRecurso).ConfigureAwait(false));
     }
 
     /// <summary>Se a pessoa mantém perfis; a avaliação não registra nada.</summary>
@@ -164,9 +168,13 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
         CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Requisito;
 
     private static Task<DecisaoDeAcesso> AvaliarAsync(
-        IVerificadorDeAcesso verificador, PermissionRequirement permissao, Guid? perfilId, CancellationToken cancellationToken) =>
+        IVerificadorDeAcesso verificador,
+        PermissionRequirement permissao,
+        Guid? recursoId,
+        CancellationToken cancellationToken,
+        string tipoDoRecurso = ResourceTiposAutorizacao.Perfil) =>
         verificador.AvaliarAsync(
             permissao,
-            perfilId is { } id ? ResourceContext.From(ResourceTiposAutorizacao.Perfil, permissao.Sensibilidade, resourceId: id).Value : null,
+            recursoId is { } id ? ResourceContext.From(tipoDoRecurso, permissao.Sensibilidade, resourceId: id).Value : null,
             cancellationToken);
 }

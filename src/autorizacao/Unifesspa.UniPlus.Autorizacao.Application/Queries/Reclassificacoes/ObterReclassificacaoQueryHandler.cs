@@ -27,7 +27,7 @@ public static class ObterReclassificacaoQueryHandler
         ArgumentNullException.ThrowIfNull(autorizacao);
         ArgumentNullException.ThrowIfNull(detalhe);
 
-        Result<Identidade?> autorizada = await autorizacao.AutorizarLeituraAsync(verificador, cancellationToken).ConfigureAwait(false);
+        Result<Identidade?> autorizada = await autorizacao.AutorizarLeituraAsync(query.Id, verificador, cancellationToken).ConfigureAwait(false);
         if (autorizada.IsFailure)
         {
             return Result<ReclassificacaoDto>.Failure(autorizada.Error!);

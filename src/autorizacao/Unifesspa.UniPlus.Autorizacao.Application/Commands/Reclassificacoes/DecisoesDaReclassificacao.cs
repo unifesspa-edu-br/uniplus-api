@@ -68,7 +68,7 @@ public sealed class DecisoesDaReclassificacao
         Result<PedidoLido> lido = Ler(dados);
         Result permitida = lido.IsFailure
             ? Result.Failure(lido.Error!)
-            : await AutorizacaoDaReclassificacao.ConferirEtapaAsync(lido.Value!.Etapa, verificador, cancellationToken).ConfigureAwait(false);
+            : await AutorizacaoDaReclassificacao.ConferirEtapaAsync(reclassificacaoId, lido.Value!.Etapa, verificador, cancellationToken).ConfigureAwait(false);
 
         return permitida.IsFailure
             ? Result<Autorizada>.Failure(permitida.Error!)
