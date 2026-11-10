@@ -7211,7 +7211,8 @@
         "required": [
           "perfilId",
           "perfilNome",
-          "versao"
+          "versao",
+          "propostaPorQuemLe"
         ],
         "type": "object",
         "properties": {
@@ -7224,6 +7225,9 @@
           },
           "versao": {
             "$ref": "#/components/schemas/VersaoPendenteDto"
+          },
+          "propostaPorQuemLe": {
+            "type": "boolean"
           }
         }
       },
@@ -8618,7 +8622,8 @@
           "acrescimo",
           "remocao",
           "decisoes",
-          "criadorTemConcessao"
+          "criadorTemConcessao",
+          "propostaPorQuemLe"
         ],
         "type": "object",
         "properties": {
@@ -8685,6 +8690,9 @@
             }
           },
           "criadorTemConcessao": {
+            "type": "boolean"
+          },
+          "propostaPorQuemLe": {
             "type": "boolean"
           }
         }

@@ -11,7 +11,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/> e para o retrato que o aprovador avalia.</summary>
 public static class PerfilMapping
 {
-    public static PerfilDto ToDto(Perfil perfil, CatalogoDaAplicacao catalogo)
+    /// <summary>O perfil como a API o expõe.</summary>
+    /// <param name="perfil">O perfil.</param>
+    /// <param name="catalogo">O catálogo de permissões.</param>
+    /// <param name="leitor">Quem lê, para dizer se a versão pendente é dele; nulo quando a resposta não é de uma leitura.</param>
+    public static PerfilDto ToDto(Perfil perfil, CatalogoDaAplicacao catalogo, Identidade? leitor = null)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(catalogo);
@@ -24,7 +28,7 @@ public static class PerfilMapping
             perfil.Governanca?.ToCodigo(),
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
             ComposicaoDe(perfil, catalogo),
-            VersaoMapping.PendenteDe(perfil, catalogo),
+            VersaoMapping.PendenteDe(perfil, catalogo, leitor),
             VersaoMapping.UltimaEncerradaSemVigorDe(perfil),
             SuspensaoDe(perfil, catalogo),
             perfil.DesativacaoAberta?.DesativadaEm);
