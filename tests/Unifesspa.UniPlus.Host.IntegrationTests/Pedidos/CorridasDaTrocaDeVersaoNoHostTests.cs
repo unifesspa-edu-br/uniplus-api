@@ -48,7 +48,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar]);
 
         Task<HttpResponseMessage> aprovacao = EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes");
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await troca.AguardarBloqueioAsync();
         aprovacao.IsCompleted.Should().BeFalse();
         await troca.ConfirmarAsync();
 
@@ -67,7 +67,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar, Laudos]);
 
         Task<HttpResponseMessage> aprovacao = EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes");
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await troca.AguardarBloqueioAsync();
         await troca.ConfirmarAsync();
 
         await ConferirRecusaAsync(await aprovacao, HttpStatusCode.UnprocessableEntity, "situacao_invalida");
@@ -88,7 +88,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await decisao.Servicos.GetRequiredService<IConcessaoRepository>().ObterParaConcederAsync(perfil);
 
         Task<IReadOnlyList<EnviarEmail>> troca = TrocarComposicaoAsync(perfil, Analisar);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await decisao.AguardarBloqueioAsync();
         troca.IsCompleted.Should().BeFalse();
         await decisao.ConfirmarAsync();
         await troca;
@@ -108,7 +108,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar, Laudos]);
 
         Task<HttpResponseMessage> criacao = CriarBrutoAsync(betina, perfil, unidade, null);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await troca.AguardarBloqueioAsync();
         criacao.IsCompleted.Should().BeFalse();
         await troca.ConfirmarAsync();
 
@@ -126,7 +126,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await RevogarNaTransacaoAsync(revogacao.Servicos, concessao);
 
         Task troca = TrocarComposicaoAsync(perfil, Analisar);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await revogacao.AguardarBloqueioAsync();
         troca.IsCompleted.Should().BeFalse();
         await revogacao.ConfirmarAsync();
         await troca;
@@ -149,7 +149,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
             HttpMethod.Post,
             $"{RotaDasConcessoes}/{concessao}/revogacao",
             new { motivo = "Revogação concorrente com a troca de versão.", confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await troca.AguardarBloqueioAsync();
         await troca.ConfirmarAsync();
 
         using HttpResponseMessage resposta = await revogacao;

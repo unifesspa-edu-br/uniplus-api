@@ -33,6 +33,8 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected const string EtapaProtecao = "protecao_de_dados";
     private protected const string Protocolo = "23479.000123/2026-11";
 
+    private TransacaoRetidaDeTeste? _travaDaFila;
+
     private protected VersoesDoPerfilNoHostTestBase(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
@@ -139,6 +141,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<HttpResponseMessage[]> EmFilaSobATravaAsync(Guid perfilId, params Func<Task<HttpResponseMessage>>[] chamadas)
     {
         await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        _travaDaFila = trava;
         await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
 
@@ -146,13 +149,17 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         foreach (Func<Task<HttpResponseMessage>> chamada in chamadas)
         {
             disparadas.Add(chamada());
-            await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, disparadas.Count);
+            await trava.AguardarBloqueioAsync(disparadas.Count);
         }
 
         await trava.ConfirmarAsync();
 
         return await Task.WhenAll(disparadas);
     }
+
+    /// <summary>Dentro de uma chamada de <see cref="EmFilaSobATravaAsync"/>: espera o número de sessões bloqueadas pela trava que o teste segura.</summary>
+    private protected Task AguardarFilaDaTravaAsync(int sessoes) =>
+        (_travaDaFila ?? throw new InvalidOperationException("Não há trava retida pelo teste.")).AguardarBloqueioAsync(sessoes);
 
     private protected static async Task<JsonElement> AprovarAsync(HttpClient cliente, Envio envio, string etapa)
     {

@@ -54,7 +54,7 @@ public sealed class JanelaDeMigracaoPrazoNoHostTests : JanelaDeMigracaoNoHostTes
             "SELECT 1 FROM autorizacao.concessoes WHERE id = {0} FOR UPDATE", concessao);
 
         Task<HttpResponseMessage> lote = EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(concessao, "migrar")]);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Relogio.Avancar(DepoisDoPrazo);
         await trava.ConfirmarAsync();
         using HttpResponseMessage resposta = await lote;

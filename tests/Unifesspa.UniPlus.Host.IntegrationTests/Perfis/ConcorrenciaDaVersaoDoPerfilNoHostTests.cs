@@ -47,7 +47,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         await ConcederAsync(concessao.Servicos, Leandro, original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
 
         Task<HttpResponseMessage> aprovacao = AprovarBrutoAsync(gestao, ampliada, EtapaGestao);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await concessao.AguardarBloqueioAsync();
         aprovacao.IsCompleted.Should().BeFalse();
         await concessao.ConfirmarAsync();
 
@@ -74,7 +74,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
             async () =>
             {
                 concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
-                await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+                await AguardarFilaDaTravaAsync(2);
                 return new HttpResponseMessage(HttpStatusCode.OK);
             });
 
@@ -155,7 +155,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
             async () =>
             {
                 expiracao = ExpirarPendentesAsync();
-                await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+                await AguardarFilaDaTravaAsync(2);
                 return new HttpResponseMessage(HttpStatusCode.OK);
             });
 
