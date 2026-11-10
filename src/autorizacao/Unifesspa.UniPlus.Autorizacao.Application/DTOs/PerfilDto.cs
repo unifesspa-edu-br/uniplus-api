@@ -19,9 +19,9 @@ public sealed record PerfilDto(
     ComposicaoEmVigorDto? ComposicaoEmVigor,
     VersaoPendenteDto? VersaoPendente,
     UltimaVersaoEncerradaSemVigorDto? UltimaVersaoEncerradaSemVigor,
-    JanelaDoPerfilDto? Janela = null,
-    SuspensaoDoPerfilDto? Suspensao = null,
-    DateTimeOffset? DesativadoDesde = null);
+    SuspensaoDoPerfilDto? Suspensao,
+    DateTimeOffset? DesativadoDesde,
+    JanelaDoPerfilDto? Janela = null);
 
 /// <summary>Perfil de acesso como a listagem o resume.</summary>
 /// <param name="TemVersaoVigente">O perfil comum tem composição em vigor; o de governança dispensa a versão e a tem sempre.</param>

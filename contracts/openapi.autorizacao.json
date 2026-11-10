@@ -7822,6 +7822,23 @@
               }
             ]
           },
+          "suspensao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SuspensaoDoPerfilDto"
+              }
+            ]
+          },
+          "desativadoDesde": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "janela": {
             "oneOf": [
               {
