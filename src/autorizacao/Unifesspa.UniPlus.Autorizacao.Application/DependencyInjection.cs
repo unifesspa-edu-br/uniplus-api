@@ -85,6 +85,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<EmissorDeAvisos>();
         services.AddScoped<AvisosDosEfeitosDaJanela>();
         services.AddScoped<GruposDaGovernanca>();
+        services.AddScoped<AvisoDeEtapaApta>();
     }
 
     private static void AdicionarJanelaDeMigracao(IServiceCollection services)

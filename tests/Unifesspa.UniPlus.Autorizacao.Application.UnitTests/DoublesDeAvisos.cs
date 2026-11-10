@@ -35,7 +35,10 @@ internal static class DoublesDeAvisos
 
     /// <summary>O tratamento de versões do perfil sobre os perfis dados, com a unidade de trabalho e o relógio dados.</summary>
     public static ResultadoDoDocumentoDaVersao Versoes(DoublesDePerfis.PerfisNaMemoria perfis, IAutorizacaoUnitOfWork unidade, TimeProvider relogio) =>
-        new(perfis, new OperacaoSobreOPerfil(perfis, unidade, relogio));
+        new(
+            perfis,
+            new OperacaoSobreOPerfil(perfis, unidade, relogio),
+            CenarioDaGovernancaDaVersao.AvisoDeEtapaApta(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), null, relogio));
 
     internal sealed class PerfilQualquer : IPerfilRepository
     {

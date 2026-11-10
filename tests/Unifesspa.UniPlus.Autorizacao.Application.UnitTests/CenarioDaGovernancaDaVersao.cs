@@ -57,6 +57,7 @@ internal sealed class CenarioDaGovernancaDaVersao
                 new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
                 new LinkDeTeste(),
                 new CatalogoDaAplicacao([])),
+            AvisoDeEtapaApta(Registro, titulares, tempo),
             new CatalogoDaAplicacao([]),
             conferencia);
         Aprovacoes = new AprovacoesDaVersao(
@@ -147,6 +148,14 @@ internal sealed class CenarioDaGovernancaDaVersao
     {
         public override DateTimeOffset GetUtcNow() => agora;
     }
+
+    public static AvisoDeEtapaApta AvisoDeEtapaApta(IRegistroDeAvisos registro, TitularDaPermissao[]? titulares, TimeProvider tempo) =>
+        new(
+            new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
+            new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
+            new LinkDeTeste(),
+            new CatalogoDaAplicacao([]),
+            tempo);
 
     public static AvisoDePedidoDevolvido AvisoDeDevolucao(IRegistroDeAvisos registro) =>
         new(new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance), new LinkDeTeste());

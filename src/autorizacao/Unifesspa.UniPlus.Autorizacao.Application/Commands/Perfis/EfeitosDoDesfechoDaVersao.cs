@@ -18,19 +18,26 @@ public sealed class EfeitosDoDesfechoDaVersao
 {
     private readonly EfeitosDaTrocaDeVigencia _efeitos;
     private readonly AvisosDaVersao _avisos;
+    private readonly AvisoDeEtapaApta _etapaApta;
     private readonly CatalogoDaAplicacao _catalogo;
     private readonly ConferenciaDoCatalogoNaVersao _conferencia;
 
     public EfeitosDoDesfechoDaVersao(
-        EfeitosDaTrocaDeVigencia efeitos, AvisosDaVersao avisos, CatalogoDaAplicacao catalogo, ConferenciaDoCatalogoNaVersao conferencia)
+        EfeitosDaTrocaDeVigencia efeitos,
+        AvisosDaVersao avisos,
+        AvisoDeEtapaApta etapaApta,
+        CatalogoDaAplicacao catalogo,
+        ConferenciaDoCatalogoNaVersao conferencia)
     {
         ArgumentNullException.ThrowIfNull(efeitos);
         ArgumentNullException.ThrowIfNull(avisos);
+        ArgumentNullException.ThrowIfNull(etapaApta);
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(conferencia);
 
         _efeitos = efeitos;
         _avisos = avisos;
+        _etapaApta = etapaApta;
         _catalogo = catalogo;
         _conferencia = conferencia;
     }
@@ -55,6 +62,17 @@ public sealed class EfeitosDoDesfechoDaVersao
     }
 
     private async Task<IReadOnlyList<EnviarEmail>> AvisosAsync(
+        Perfil perfil, DesfechoDaVersao desfecho, Identidade autor, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<EnviarEmail> doFato = await DoFatoAsync(perfil, desfecho, autor, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> etapaApta = desfecho.Gravar
+            ? await _etapaApta.EmitirAsync(perfil, cancellationToken).ConfigureAwait(false)
+            : [];
+
+        return [.. doFato, .. etapaApta];
+    }
+
+    private async Task<IReadOnlyList<EnviarEmail>> DoFatoAsync(
         Perfil perfil, DesfechoDaVersao desfecho, Identidade autor, CancellationToken cancellationToken)
     {
         List<EnviarEmail> avisos = [];

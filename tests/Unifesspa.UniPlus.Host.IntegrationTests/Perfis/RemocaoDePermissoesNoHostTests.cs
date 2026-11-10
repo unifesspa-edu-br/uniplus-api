@@ -112,7 +112,7 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         (await RemoverBrutoAsync(diogo, vigente.PerfilId, [Consultar])).Dispose();
 
         await AguardarAvisoAsync(Isabella, vigente.PerfilId, AssuntoDaRemocao);
-        (await MensagensAsync(Marlene, vigente.PerfilId)).Should().BeEmpty();
+        (await MensagensAsync(Marlene, vigente.PerfilId)).Select(m => m.GetProperty("Subject").GetString()).Should().NotContain(m => m!.Contains(AssuntoDaRemocao, StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "A segunda remoção também permite ler o documento instituidor, que é o da proposta")]

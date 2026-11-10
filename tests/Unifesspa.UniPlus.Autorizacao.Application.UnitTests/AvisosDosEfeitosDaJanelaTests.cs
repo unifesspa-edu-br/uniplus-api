@@ -5,9 +5,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
@@ -24,10 +22,10 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos
 /// </summary>
 public sealed class AvisosDosEfeitosDaJanelaTests
 {
-    private const string Emissor = "https://idp.test/realms/unifesspa";
-    private const string EmailDiogo = "diogo.bruno.souza@uniplus-test.local";
-    private const string EmailIsabella = "isabellapriscilafigueiredo@uniplus-test.local";
-    private const string EmailMarlene = "marlenemarciamartins@uniplus-test.local";
+    private const string Emissor = TitularesDaGovernanca.Emissor;
+    private const string EmailDiogo = TitularesDaGovernanca.EmailDiogo;
+    private const string EmailIsabella = TitularesDaGovernanca.EmailIsabella;
+    private const string EmailMarlene = TitularesDaGovernanca.EmailMarlene;
     private const string EmailLeandro = "leandro-viana84@uniplus-test.local";
     private const string EmailBetina = "betina-dasneves81@uniplus-test.local";
 
@@ -149,26 +147,7 @@ public sealed class AvisosDosEfeitosDaJanelaTests
     private static AvisosDosEfeitosDaJanela Efeitos() =>
         new(
             new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-            new GruposDaGovernanca(new TitularesPorPermissao()),
+            new GruposDaGovernanca(new TitularesDaGovernanca()),
             new LinkDeTeste(),
             new CatalogoDaAplicacao([]));
-
-    // Diogo aprova pela gestão, Marlene pela proteção de dados e Isabella pelas duas.
-    private sealed class TitularesPorPermissao : ITitularesDaPermissao
-    {
-        private static readonly string Gestao = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.PerfisAprovarFuncional).Codigo;
-
-        public Task<IReadOnlyList<string>> ListarEmailsAsync(string codigoDaPermissao, CancellationToken cancellationToken = default) =>
-            throw new NotSupportedException();
-
-        public Task<IReadOnlyList<TitularDaPermissao>> ListarTitularesComEmailAsync(
-            string codigoDaPermissao, CancellationToken cancellationToken = default)
-        {
-            TitularDaPermissao[] titulares = codigoDaPermissao == Gestao
-                ? [new(Emissor, Diogo.Sub, EmailDiogo), new(Emissor, "isabella.figueiredo", EmailIsabella)]
-                : [new(Emissor, "marlene.martins", EmailMarlene), new(Emissor, "isabella.figueiredo", EmailIsabella)];
-
-            return Task.FromResult<IReadOnlyList<TitularDaPermissao>>(titulares);
-        }
-    }
 }

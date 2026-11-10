@@ -157,10 +157,13 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
 
     private async Task<DesfechoDoResultadoDaVersao> RegistrarNoRelogioAsync(Guid documentoId)
     {
-        await using AsyncServiceScope escopo = _host.Services.CreateAsyncScope();
+        await using TransacaoRetidaDeTeste transacao = await TransacaoRetidaDeTeste.AbrirAsync(_host.Services);
 
-        return await escopo.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
+        RegistroDoResultadoDaVersao registro = await transacao.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
             .RegistrarAsync(ResultadoDe(documentoId, VeredictoDaVerificacao.Verificado), CancellationToken.None);
+        await transacao.ConfirmarAsync();
+
+        return registro.Desfecho;
     }
 
     private async Task<(Envio Vigente, Envio Versao)> VigenteEPendenteVerificadaAsync()
