@@ -367,6 +367,9 @@ jobs:
             --no-restore \
             --filter "FullyQualifiedName~IntegrationTests" \
             --logger "trx" \
+            --blame-hang \
+            --blame-hang-timeout 5m \
+            --blame-hang-dump-type none \
             --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings \
             --results-directory ${{ env.COVERAGE_DIR }}
