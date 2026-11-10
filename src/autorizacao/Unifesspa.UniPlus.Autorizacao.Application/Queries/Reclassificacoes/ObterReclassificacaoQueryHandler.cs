@@ -27,16 +27,15 @@ public static class ObterReclassificacaoQueryHandler
         ArgumentNullException.ThrowIfNull(autorizacao);
         ArgumentNullException.ThrowIfNull(detalhe);
 
-        Guid? perfilId = await reclassificacoes.ObterPerfilIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
-        if (perfilId is null)
-        {
-            return Result<ReclassificacaoDto>.Failure(ReclassificacaoErros.NaoEncontrada());
-        }
-
-        Result<Identidade?> autorizada = await autorizacao.AutorizarLeituraAsync(perfilId.Value, verificador, cancellationToken).ConfigureAwait(false);
+        Result<Identidade?> autorizada = await autorizacao.AutorizarLeituraAsync(verificador, cancellationToken).ConfigureAwait(false);
         if (autorizada.IsFailure)
         {
             return Result<ReclassificacaoDto>.Failure(autorizada.Error!);
+        }
+
+        if (await reclassificacoes.ObterPerfilIdAsync(query.Id, cancellationToken).ConfigureAwait(false) is null)
+        {
+            return Result<ReclassificacaoDto>.Failure(ReclassificacaoErros.NaoEncontrada());
         }
 
         return await detalhe.ObterAsync(query.Id, autorizada.Value, cancellationToken).ConfigureAwait(false);

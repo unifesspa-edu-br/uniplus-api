@@ -22,35 +22,37 @@ public sealed class AutorizacaoDaReclassificacao
         _autoria = autoria;
     }
 
-    /// <summary>Quem decide a etapa, com o e-mail verificado do token, ou a recusa de acesso.</summary>
-    public async Task<Result<AutoriaDaVersao>> AutorizarAsync(
-        Guid perfilId, EtapaDaVersao etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    /// <summary>
+    /// Confere a permissão da etapa antes de qualquer leitura da reclassificação: a recusa de acesso é a mesma para o id que
+    /// existe e para o que não existe. A decisão que governou vai para a trilha, permitida ou negada.
+    /// </summary>
+    public static async Task<Result> ConferirEtapaAsync(EtapaDaVersao etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, null, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
-            return Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+            return Result.Failure(PerfilHandlerErros.AutorNaoIdentificado());
         }
 
         await AcessoDaVersao.RegistrarAsync(verificador, acesso.DecisaoDa(etapa), cancellationToken).ConfigureAwait(false);
-        if (!acesso.Decide(etapa))
-        {
-            return Result<AutoriaDaVersao>.Failure(ReclassificacaoErros.SemPermissaoNaEtapa());
-        }
 
-        return await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is { } autoria
-            ? Result<AutoriaDaVersao>.Success(autoria)
-            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+        return acesso.Decide(etapa) ? Result.Success() : Result.Failure(ReclassificacaoErros.SemPermissaoNaEtapa());
     }
 
+    /// <summary>Quem decide a etapa, com o e-mail verificado do token, ou a recusa de identificação.</summary>
+    public async Task<Result<AutoriaDaVersao>> AutoriaAsync(Guid perfilId, CancellationToken cancellationToken) =>
+        await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is { } autoria
+            ? Result<AutoriaDaVersao>.Success(autoria)
+            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+
     /// <summary>Quem lê o detalhe: quem decide alguma das duas etapas. Devolve a identidade, ou a recusa.</summary>
-    public async Task<Result<Identidade?>> AutorizarLeituraAsync(Guid perfilId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    public async Task<Result<Identidade?>> AutorizarLeituraAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, null, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
             return Result<Identidade?>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
