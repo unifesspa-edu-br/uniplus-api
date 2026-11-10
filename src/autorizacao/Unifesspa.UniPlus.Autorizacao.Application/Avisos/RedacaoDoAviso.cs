@@ -57,7 +57,7 @@ internal static class RedacaoDoAviso
     }
 
     private static string Abertura(TipoDeAviso tipo) =>
-        tipo >= TipoDeAviso.JanelaDeMigracaoAberta ? AberturaDaMigracao(tipo) : AberturaDaVersao(tipo);
+        tipo is >= TipoDeAviso.JanelaDeMigracaoAberta and <= TipoDeAviso.ConcessaoRetidaNaMigracao ? AberturaDaMigracao(tipo) : AberturaDaVersao(tipo);
 
     private static string AberturaDaVersao(TipoDeAviso tipo) => tipo switch
     {
