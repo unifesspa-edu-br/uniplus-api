@@ -5,10 +5,7 @@ using System.Net;
 
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 
-using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>
@@ -21,15 +18,14 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit exige tipo de teste público.")]
-public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHostTestBase, IDisposable
+public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHostTestBase, IClassFixture<HostComConflitoNaGravacao>
 {
-    private readonly ConflitoNaGravacaoDoHost _conflito = new();
-    private readonly WebApplicationFactory<HostAssemblyMarker> _host;
+    private readonly HostComConflitoNaGravacao _hostDaClasse;
 
-    public ConcorrenciaDaContencaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
+    public ConcorrenciaDaContencaoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostComConflitoNaGravacao hostDaClasse)
         : base(fixture)
     {
-        _host = Fixture.Factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(_conflito.Instalar));
+        _hostDaClasse = hostDaClasse;
     }
 
     [Fact(DisplayName = "Duas suspensões em fila: a primeira suspende e a segunda encontra o perfil suspenso")]
@@ -151,7 +147,7 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         using HttpClient isabella = await GestaoAsync();
         Guid perfilId = await PerfilComumComConcessaoAsync(diogo);
         await SuspenderComSucessoAsync(diogo, perfilId);
-        _conflito.Armar("UPDATE autorizacao.suspensoes_do_perfil SET updated_at = now() WHERE perfil_id = {0}", perfilId);
+        _hostDaClasse.Conflito.Armar("UPDATE autorizacao.suspensoes_do_perfil SET updated_at = now() WHERE perfil_id = {0}", perfilId);
 
         using HttpResponseMessage resposta = await RetomarAsync(isabella, perfilId, EtapaGestao);
 
@@ -161,7 +157,5 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao");
     }
 
-    public void Dispose() => _host.Dispose();
-
-    private protected override HttpClient NovoCliente() => _host.CreateClient();
+    private protected override HttpClient NovoCliente() => _hostDaClasse.Obter(Fixture).CreateClient();
 }
