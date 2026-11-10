@@ -233,9 +233,9 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
             // deste `return`, já que `ExceptionHandled` não é tocado aqui.
             if (executed.Exception is not null && !executed.ExceptionHandled)
             {
-                // A falha de registrar o acesso nasce antes da mutação: nada foi persistido, e prender a chave por
-                // 24 h faria a repetição, que agora poderia dar certo, receber 409.
-                if (EhFalhaDeRegistroDeAcesso(executed.Exception))
+                // A falha de registrar o acesso e o catálogo desatualizado nascem antes da mutação: nada foi persistido, e
+                // prender a chave por 24 h faria a repetição, que agora poderia dar certo, receber 409.
+                if (EhFalhaDeRegistroDeAcessoOuCatalogoDesatualizado(executed.Exception))
                 {
                     await _store.DeleteAsync(scope, endpoint, idempotencyKey, CancellationToken.None)
                         .ConfigureAwait(false);
@@ -543,11 +543,11 @@ public sealed class IdempotencyFilter<TDbContext> : IAsyncResourceFilter
         return JsonSerializer.Serialize(cached);
     }
 
-    private static bool EhFalhaDeRegistroDeAcesso(Exception falha)
+    private static bool EhFalhaDeRegistroDeAcessoOuCatalogoDesatualizado(Exception falha)
     {
         for (Exception? atual = falha; atual is not null; atual = atual.InnerException)
         {
-            if (atual is RegistroDeAcessoNaoGravadoException)
+            if (atual is RegistroDeAcessoNaoGravadoException or CatalogoDesatualizadoException)
             {
                 return true;
             }

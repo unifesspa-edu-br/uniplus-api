@@ -154,6 +154,17 @@ public sealed partial class GlobalExceptionMiddleware
             "Registro de acesso indisponível",
             "O acesso não pôde ser registrado e por isso não foi concluído. Tente novamente em instantes.");
 
+    // O catálogo é do shared e qualquer módulo que decide acesso pode lançar a falha; a resposta não depende do registro de
+    // erros de um módulo.
+    private static Task EscreverRespostaCatalogoDesatualizado(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
+        EscreverProblemAsync(
+            context,
+            problemTypeUriFactory,
+            StatusCodes.Status503ServiceUnavailable,
+            "uniplus.autorizacao.catalogo.desatualizado",
+            "Sistema em atualização",
+            "O sistema está sendo atualizado e o acesso não pôde ser decidido. Tente novamente em instantes.");
+
     private static Task EscreverRespostaErro(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
         EscreverProblemAsync(
             context,
@@ -200,6 +211,9 @@ public sealed partial class GlobalExceptionMiddleware
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Registro de acesso não gravado no request {Path}")]
     private static partial void LogRegistroDeAcessoNaoGravado(ILogger logger, PathString path, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Catálogo de permissões do banco diferente do desta instância no request {Path}")]
+    private static partial void LogCatalogoDesatualizado(ILogger logger, PathString path, Exception ex);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Erro não tratado no request {Path}")]
     private static partial void LogUnhandledError(ILogger logger, PathString path, Exception ex);

@@ -33,6 +33,10 @@ public sealed partial class GlobalExceptionMiddleware
             typeof(RegistroDeAcessoNaoGravadoException),
             static (l, p, e) => LogRegistroDeAcessoNaoGravado(l, p, e),
             static (c, _, f, _) => EscreverRespostaRegistroDeAcessoNaoGravado(c, f)),
+        new(
+            typeof(CatalogoDesatualizadoException),
+            static (l, p, e) => LogCatalogoDesatualizado(l, p, e),
+            static (c, _, f, _) => EscreverRespostaCatalogoDesatualizado(c, f)),
     ];
 
     private static readonly TraducaoDeExcecao NaoTratada = new(
