@@ -81,10 +81,15 @@ internal static class ComposicaoEmVigorNoBanco
             .Where(k => k.Codigo == codigo)
             .Select(k => k.ConcessaoId);
 
-    /// <summary>Os códigos que as concessões não revogadas do perfil dão no instante pela composição, com o retrato de cada um, sem olhar suspensão.</summary>
+    /// <summary>
+    /// Os códigos que as concessões ativas do perfil (não revogadas e com a vigência, se houver, ainda aberta) dão no
+    /// instante pela composição, com a classificação de cada um, sem olhar suspensão.
+    /// </summary>
     public static IQueryable<CodigoDaConcessao> CodigosDasConcessoesDoPerfil(
         this AutorizacaoDbContext context, Guid perfilId, DateTimeOffset agora) =>
-        context.CodigosDasConcessoes(context.Concessoes.Where(c => c.PerfilId == perfilId && c.RevogadaEm == null), agora);
+        context.CodigosDasConcessoes(
+            context.Concessoes.Where(c => c.PerfilId == perfilId && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)),
+            agora);
 
     /// <summary>Os códigos que a concessão dá no instante pela composição, sem olhar a suspensão do perfil.</summary>
     public static IQueryable<string> CodigosEmVigorDaConcessao(

@@ -86,6 +86,32 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         (await FilaDaProtecaoAsync()).Should().NotContain(descida.ToString());
     }
 
+    [Fact(DisplayName = "A concessão que venceu sem ser revogada sai da fila da reclassificação")]
+    public async Task ConcessaoVencida_SaiDaFila()
+    {
+        Cenario perfil = await CenarioAsync([Sensivel], Leandro);
+        await SubirAClasseAsync();
+        Guid reclassificacao = await ReclassificacaoAsync(perfil.Perfil, Sensivel);
+
+        await VencerAsync(perfil.De(Leandro));
+
+        (await FilaDaProtecaoAsync()).Should().NotContain(reclassificacao.ToString());
+    }
+
+    [Fact(DisplayName = "Liberar todas não libera a concessão que venceu: só a ativa ganha a liberação")]
+    public async Task LiberarTodas_DeixaDeForaAConcessaoVencida()
+    {
+        Cenario perfil = await CenarioAsync([Sensivel], Leandro, Betina);
+        await SubirAClasseAsync();
+        Guid reclassificacao = await ReclassificacaoAsync(perfil.Perfil, Sensivel);
+        await VencerAsync(perfil.De(Leandro));
+
+        await LiberarAsync(Marlene, EtapaProtecao, perfil.Perfil, reclassificacao);
+
+        (await LiberacoesAsync(reclassificacao)).Should().Be(1);
+        (await PermissoesAsync(Betina, perfil.Perfil)).Should().Equal(Sensivel);
+    }
+
     [Theory(DisplayName = "Subida de classe e mudança de escopo juntas pedem as duas etapas, em qualquer ordem")]
     [InlineData(true)]
     [InlineData(false)]
@@ -235,4 +261,10 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
 
         await ConferirRecusaDaReclassificacaoAsync(resposta, HttpStatusCode.UnprocessableEntity, "documento_nao_lido");
     }
+
+    /// <summary>Recua a concessão uma hora e fecha a vigência meia hora depois, como a que venceu sem ser revogada.</summary>
+    private Task VencerAsync(Guid concessao) =>
+        ExecutarSqlAsync(
+            "UPDATE autorizacao.concessoes SET concedida_em = concedida_em - interval '1 hour', valida_ate = concedida_em - interval '30 minutes' WHERE id = {0}",
+            concessao);
 }
