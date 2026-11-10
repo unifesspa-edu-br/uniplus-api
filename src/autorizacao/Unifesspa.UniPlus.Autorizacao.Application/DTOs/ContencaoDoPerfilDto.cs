@@ -28,7 +28,7 @@ public sealed record SuspensaoDoPerfilDto(
 /// <param name="ReferenciaId">A suspensão ou a desativação a que o registro pertence.</param>
 /// <param name="Ordem">A posição na ordem total da trilha, estritamente crescente.</param>
 /// <param name="Ator"><c>humano</c> ou <c>sistema</c>; a retomada é do sistema.</param>
-/// <param name="PessoaNome">O nome de quem agiu; nulo no sistema ou quando o token não trouxe nome.</param>
+/// <param name="Pessoa">Quem agiu, pelo emissor e <c>sub</c> do token e o nome quando o token trouxe; nulo só no registro do sistema.</param>
 /// <param name="Etapa">O papel da suspensão ou a etapa decidida; nulo nos demais.</param>
 /// <param name="Origem">O que fechou a suspensão, na retomada.</param>
 /// <param name="PerfilProtegido">Se o perfil era protegido no instante.</param>
@@ -40,7 +40,7 @@ public sealed record RegistroDaContencaoDto(
     long Ordem,
     DateTimeOffset Instante,
     string Ator,
-    string? PessoaNome,
+    IdentidadeDto? Pessoa,
     string? Etapa,
     string? Motivo,
     string? Origem,
