@@ -82,10 +82,10 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
 
         Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         AtravessarOPrazo();
         Task<int> rotina = ExpirarAsync();
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.AguardarBloqueioAsync(2);
         await trava.ConfirmarAsync();
 
         using HttpResponseMessage resposta = await decisao;
@@ -104,9 +104,9 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
 
         Task<int> rotina = ExpirarAsync();
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.AguardarBloqueioAsync(2);
         await trava.ConfirmarAsync();
 
         (await rotina).Should().Be(1);
@@ -180,7 +180,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
     {
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(perfilId);
         Task<HttpResponseMessage> disparada = chamada();
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         AtravessarOPrazo();
         await trava.ConfirmarAsync();
 

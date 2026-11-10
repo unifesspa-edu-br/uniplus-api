@@ -52,10 +52,10 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         Task<HttpResponseMessage> revogacao = EnviarAsync(
             administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Leandro]}/revogacao",
             new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email });
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Task<HttpResponseMessage> lote = EnviarLoteAsync(
             gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.AguardarBloqueioAsync(2);
         await trava.ConfirmarAsync();
 
         using HttpResponseMessage respostaDaRevogacao = await revogacao;
@@ -80,7 +80,7 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
 
         Task<HttpResponseMessage> etapa = EnviarAsync(
             protecao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Relogio.Avancar(DepoisDoPrazo);
         await trava.ConfirmarAsync();
 
@@ -101,9 +101,9 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         await using TransacaoRetidaDeTeste trava = await TravarPerfilAsync(cenario.PerfilId);
 
         Task<HttpResponseMessage> primeira = loteAntes ? Lote(gestao, cenario) : RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Task<HttpResponseMessage> segunda = loteAntes ? RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]) : Lote(gestao, cenario);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.AguardarBloqueioAsync(2);
         await trava.ConfirmarAsync();
 
         using HttpResponseMessage resposta1 = await primeira;
@@ -123,7 +123,7 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         await ConcederNaTransacaoAsync(criacao, Leandro);
 
         Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await criacao.AguardarBloqueioAsync();
         await criacao.ConfirmarAsync();
 
         using HttpResponseMessage resposta = await lote;
@@ -148,7 +148,7 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
             Leandro.Sub.ToString());
 
         Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await revogacao.AguardarBloqueioAsync();
         await revogacao.ConfirmarAsync();
 
         using HttpResponseMessage resposta = await lote;
@@ -166,10 +166,10 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
 
         Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Task<Guid> criacao = ConcessoesDeTeste.ConcederGovernancaAsync(
             Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.ProtecaoDeDados, Leandro.Email);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.AguardarBloqueioAsync(2);
         await trava.ConfirmarAsync();
 
         using HttpResponseMessage resposta = await lote;
@@ -191,11 +191,11 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
 
         Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await trava.AguardarBloqueioAsync();
         Task<HttpResponseMessage> revogacao = EnviarAsync(
             administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{governanca}/revogacao",
             new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email });
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services, 2);
+        await trava.AguardarBloqueioAsync(2);
         await trava.ConfirmarAsync();
 
         using HttpResponseMessage resposta = await lote;

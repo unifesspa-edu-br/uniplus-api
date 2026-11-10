@@ -75,7 +75,7 @@ public sealed class AtomicidadeDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTest
             Guid.CreateVersion7(), nomeNovo);
 
         Task<HttpResponseMessage> aprovacao = AprovarBrutoAsync(isabella, versao, EtapaGestao);
-        await TransacaoRetidaDeTeste.AguardarBloqueioAsync(Fixture.Factory.Services);
+        await outra.AguardarBloqueioAsync();
         await outra.ConfirmarAsync();
         using HttpResponseMessage falha = await aprovacao;
 
