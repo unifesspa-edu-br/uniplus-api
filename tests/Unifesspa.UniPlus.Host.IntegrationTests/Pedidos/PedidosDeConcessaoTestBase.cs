@@ -199,6 +199,7 @@ public abstract class PedidosDeConcessaoTestBase
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_decisoes");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexos");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedidos_de_concessao");
+        await ApagarFatosDasConcessoesAsync();
         await ExecutarSqlAsync(
             "DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id IN ({0}, {1})",
             PerfisDeSistema.GestorDeAcessosId,
@@ -222,9 +223,17 @@ public abstract class PedidosDeConcessaoTestBase
     {
         await ExecutarSqlAsync("DELETE FROM autorizacao.decisoes_da_migracao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.migracoes_da_concessao");
+        await ApagarFatosDasConcessoesAsync();
         await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE revogada_pela_janela_id IS NOT NULL");
         await ExecutarSqlAsync("DELETE FROM autorizacao.lotes_da_migracao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.janelas_de_migracao");
+    }
+
+    /// <summary>Apaga as liberações e as bases que apontam para as concessões, que as chaves estrangeiras não deixam para trás.</summary>
+    private protected async Task ApagarFatosDasConcessoesAsync()
+    {
+        await ExecutarSqlAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao");
     }
 
     private protected async Task ExecutarSqlAsync(string sql, params object[] parametros)
