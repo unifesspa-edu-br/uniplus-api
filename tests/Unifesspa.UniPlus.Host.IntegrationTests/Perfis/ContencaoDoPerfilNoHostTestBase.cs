@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostTestBase
 {
     private protected const string Catalogo = "autorizacao:permissoes:consultar-catalogo";
-    private protected const string Motivo = "Uso indevido apontado pela gestão.";
+    private protected const string Motivo = ChamadasDaContencao.MotivoPadrao;
     private protected const string AssuntoDaSuspensao = "Perfil de acesso suspenso";
 
     private protected ContencaoDoPerfilNoHostTestBase(MonolitoDaInstalacaoFixture fixture)
@@ -76,16 +76,16 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
     }
 
     private protected static Task<HttpResponseMessage> SuspenderAsync(HttpClient cliente, Guid perfilId, string? motivo = Motivo, string? chave = null) =>
-        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{perfilId}/suspensao", new { motivo }, chave);
+        ChamadasDaContencao.SuspenderAsync(cliente, perfilId, motivo, chave);
 
     private protected static Task<HttpResponseMessage> RetomarAsync(HttpClient cliente, Guid perfilId, string? etapa, string? motivo = Motivo, string? chave = null) =>
-        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{perfilId}/suspensao/retomada", new { etapa, motivo }, chave);
+        ChamadasDaContencao.RetomarAsync(cliente, perfilId, etapa, motivo, chave);
 
     private protected static Task<HttpResponseMessage> DesativarAsync(HttpClient cliente, Guid perfilId, string? motivo = Motivo) =>
-        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{perfilId}/desativacao", new { motivo });
+        ChamadasDaContencao.DesativarAsync(cliente, perfilId, motivo);
 
     private protected static Task<HttpResponseMessage> ReativarAsync(HttpClient cliente, Guid perfilId, string? motivo = Motivo) =>
-        EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{perfilId}/reativacao", new { motivo });
+        ChamadasDaContencao.ReativarAsync(cliente, perfilId, motivo);
 
     private protected static async Task SuspenderComSucessoAsync(HttpClient cliente, Guid perfilId)
     {
