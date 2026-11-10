@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Verificador.Contratos;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTestBase
 {
+    private const string MotivoDaDesativacao = "Perfil fora de uso.";
+
     public CicloDaVersaoDoPerfilNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
@@ -122,7 +124,7 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         using HttpClient betina = Cliente(Betina);
         Envio envio = await CriarPerfilAsync(gestor, Consultar);
         await ConfirmarEnvioAsync(gestor, envio);
-        (await EnviarAsync(gestor, HttpMethod.Delete, $"{RotaPerfis}/{envio.PerfilId}/ativacao")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await EnviarAsync(gestor, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/desativacao", new { motivo = MotivoDaDesativacao })).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await InjetarResultadoAsync(envio.DocumentoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(async () => await SituacaoDoDocumentoAsync(gestor, envio.PerfilId) == "verificado", "o documento não foi verificado");
@@ -145,7 +147,7 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         await EnviarEVerificarAsync(gestor, envio);
         (await ParaPedirAsync(betina)).Should().Contain(envio.PerfilId);
 
-        await EnviarAsync(gestor, HttpMethod.Delete, $"{RotaPerfis}/{envio.PerfilId}/ativacao");
+        await EnviarAsync(gestor, HttpMethod.Post, $"{RotaPerfis}/{envio.PerfilId}/desativacao", new { motivo = MotivoDaDesativacao });
 
         (await ParaPedirAsync(betina)).Should().NotContain(envio.PerfilId);
         (await TemVigenteAsync(gestor, envio.PerfilId)).Should().BeTrue();

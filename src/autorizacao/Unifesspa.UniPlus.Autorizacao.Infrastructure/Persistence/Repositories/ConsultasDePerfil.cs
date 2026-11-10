@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
-/// <summary>A leitura do perfil por inteiro: as versões, os documentos, as decisões e as vigências de que a composição em vigor e a aprovação dependem.</summary>
+/// <summary>A leitura do perfil por inteiro: as versões, os documentos, as decisões e as vigências de que a composição em vigor e a aprovação dependem, e a suspensão e a desativação abertas.</summary>
 internal static class ConsultasDePerfil
 {
     /// <summary>
@@ -19,5 +19,7 @@ internal static class ConsultasDePerfil
             .Include(p => p.Versoes).ThenInclude(v => v.Decisoes)
             .Include(p => p.Versoes).ThenInclude(v => v.Recalculos)
             .Include(p => p.Vigencias)
+            .Include(p => p.Suspensoes.Where(s => s.RetomadaEm == null)).ThenInclude(s => s.Decisoes)
+            .Include(p => p.Desativacoes.Where(d => d.ReativadaEm == null))
             .AsSplitQuery();
 }

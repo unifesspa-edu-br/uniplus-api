@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -122,6 +123,22 @@ public sealed class PerfilRepository : IPerfilRepository
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
+    }
+
+    public async Task<TrilhaDaContencao?> ObterTrilhaDaContencaoAsync(Guid perfilId, CancellationToken cancellationToken = default)
+    {
+        if (!await _context.Perfis.AnyAsync(p => p.Id == perfilId, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        return new TrilhaDaContencao(
+            await _context.EventosDaContencao.AsNoTracking().Where(e => e.PerfilId == perfilId).OrderBy(e => e.OrdemNaTrilha)
+                .ToListAsync(cancellationToken).ConfigureAwait(false),
+            await _context.DecisoesDasRetomadas.AsNoTracking()
+                .Where(d => _context.SuspensoesDosPerfis.Any(s => s.Id == d.SuspensaoId && s.PerfilId == perfilId))
+                .OrderBy(d => d.OrdemNaTrilha)
+                .ToListAsync(cancellationToken).ConfigureAwait(false));
     }
 
     public async Task<bool> NomeExisteAsync(string nome, Guid? exceto, CancellationToken cancellationToken = default)

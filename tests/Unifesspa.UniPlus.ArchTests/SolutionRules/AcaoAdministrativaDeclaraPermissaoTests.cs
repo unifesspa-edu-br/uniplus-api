@@ -75,6 +75,11 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirRetida))] = typeof(DecidirRetidaDaJanelaCommand),
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirProtecaoDeDados))] = typeof(DecidirEtapaDaProtecaoDaJanelaCommand),
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Encerrar))] = typeof(EncerrarJanelaDoPerfilCommand),
+        // A contenção do perfil: suspender e retomar pedem manter perfis ou a proteção de dados, e a etapa da retomada
+        // define qual vale; a leitura da trilha é de quem tem uma das duas.
+        [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.Suspender))] = typeof(SuspenderPerfilCommand),
+        [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.Retomar))] = typeof(RetomarSuspensaoDoPerfilCommand),
+        [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.ObterTrilha))] = typeof(ObterContencaoDoPerfilQuery),
         // A revisão dos acessos: a permissão que vale depende da governança que decide o item, e a leitura é de quem
         // conduz a revisão ou de quem revê os acessos da proteção de dados.
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Abrir))] = typeof(AbrirRevisaoDeAcessosCommand),

@@ -25,7 +25,9 @@ public static class PerfilMapping
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
             ComposicaoDe(perfil, catalogo),
             VersaoMapping.PendenteDe(perfil, catalogo),
-            VersaoMapping.UltimaEncerradaSemVigorDe(perfil));
+            VersaoMapping.UltimaEncerradaSemVigorDe(perfil),
+            Suspensao: SuspensaoDe(perfil, catalogo),
+            DesativadoDesde: perfil.DesativacaoAberta?.DesativadaEm);
     }
 
     public static PerfilListadoDto ToListadoDto(Perfil perfil, CatalogoDaAplicacao catalogo)
@@ -41,7 +43,9 @@ public static class PerfilMapping
             perfil.Governanca?.ToCodigo(),
             ValoresCanonicos.De(SensibilidadeDoPerfil(perfil, catalogo)),
             perfil.TemComposicaoEmVigor,
-            perfil.VersaoPendente is not null);
+            perfil.VersaoPendente is not null,
+            SuspensaoDe(perfil, catalogo),
+            perfil.DesativacaoAberta?.DesativadaEm);
     }
 
     /// <summary>
@@ -62,6 +66,16 @@ public static class PerfilMapping
             perfil.Governanca,
             perfil.Ativo);
     }
+
+    // As etapas exigidas se calculam pelo catálogo atual a cada leitura; o motivo e as pessoas ficam na trilha.
+    private static SuspensaoDoPerfilDto? SuspensaoDe(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+        perfil.SuspensaoAberta is { } suspensao
+            ? new SuspensaoDoPerfilDto(
+                suspensao.SuspensaEm,
+                suspensao.Papel.ToCodigo(),
+                [.. SuspensaoDoPerfil.EtapasExigidas(Avaliar(perfil, catalogo).ExigeAprovacaoDeProtecaoDeDados).Select(static e => e.ToCodigo())],
+                [.. suspensao.Decisoes.Select(static d => d.Etapa.ToCodigo())])
+            : null;
 
     // Código que o catálogo não conhece (permissão retirada do código) conta como a mais restrita: o perfil não pode
     // parecer menos sensível por causa de uma lacuna.

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 internal static class ErrosDoPerfil
 {
     public static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
-        [.. Definicao(), .. Versoes(), .. Documento(), .. Aprovacao()];
+        [.. Definicao(), .. Versoes(), .. Documento(), .. Aprovacao(), .. Contencao()];
 
     private static KeyValuePair<string, DomainErrorMapping>[] Definicao() =>
     [
@@ -57,5 +57,14 @@ internal static class ErrosDoPerfil
         new(PerfilErrorCodes.DecisorEAutor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.decisor_e_autor", "Quem criou a versão não a decide")),
         new(PerfilErrorCodes.MesmoDecisorNasDuasEtapas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.mesmo_decisor_nas_duas_etapas", "A mesma pessoa não decide as duas etapas")),
         new(PerfilErrorCodes.SemPermissaoNaEtapa, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.autorizacao.perfil.sem_permissao_na_etapa", "Acesso negado: a operação exige a permissão da etapa")),
+    ];
+
+    private static KeyValuePair<string, DomainErrorMapping>[] Contencao() =>
+    [
+        new(PerfilErrorCodes.JaSuspenso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.ja_suspenso", "O perfil já está suspenso")),
+        new(PerfilErrorCodes.NaoSuspenso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.nao_suspenso", "O perfil não está suspenso")),
+        new(PerfilErrorCodes.RetomadaPorQuemSuspendeu, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.retomada_por_quem_suspendeu", "Quem suspendeu o perfil não decide a retomada")),
+        new(PerfilErrorCodes.EtapaDaRetomadaJaDecidida, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.perfil.etapa_da_retomada_ja_decidida", "A etapa da retomada já foi decidida")),
+        new(PerfilErrorCodes.ReativacaoPorQuemDesativou, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.reativacao_por_quem_desativou", "Quem desativou o perfil não o reativa")),
     ];
 }

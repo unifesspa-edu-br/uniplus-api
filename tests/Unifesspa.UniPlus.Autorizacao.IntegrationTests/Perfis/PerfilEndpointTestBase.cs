@@ -32,6 +32,7 @@ public abstract class PerfilEndpointTestBase
 
     internal const string PermissaoManter = "autorizacao:perfis:manter";
     internal const string Diogo = "diogo.souza";
+    internal const string OutroGestor = "isabella.figueiredo";
 
     protected PerfilEndpointTestBase(AutorizacaoEndpointFixture fixture) => Fixture = fixture;
 
@@ -183,6 +184,13 @@ public abstract class PerfilEndpointTestBase
     {
         await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Diogo, TipoDeGovernanca.GestorDeAcessos);
         return Cliente(Diogo);
+    }
+
+    /// <summary>Outra pessoa com o perfil de gestor de acessos, para o que a regra proíbe a quem fez o primeiro ato.</summary>
+    internal async Task<HttpClient> ClienteDeOutroGestorAsync()
+    {
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, OutroGestor, TipoDeGovernanca.GestorDeAcessos);
+        return Cliente(OutroGestor);
     }
 
     internal async Task<HttpClient> ClienteComPermissoesAsync(string sub, params string[] permissoes)

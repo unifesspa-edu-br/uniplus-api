@@ -167,7 +167,7 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar]);
         Guid versaoId = perfil.VersaoPendente!.Id;
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, _catalogo);
         perfil.MaterializarExpiracao(Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias)).Should().BeTrue();
 
         for (int tentativa = 0; tentativa < 2; tentativa++)

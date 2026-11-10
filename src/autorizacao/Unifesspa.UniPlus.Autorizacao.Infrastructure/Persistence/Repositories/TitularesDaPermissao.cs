@@ -6,8 +6,9 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 
 /// <summary>
 /// Os titulares de uma permissão, lidos das concessões para quem precisa avisá-los. O perfil desativado
-/// continua concedendo as concessões que já existem, como na decisão de acesso, e por isso não é filtrado. A permissão
-/// é a que a concessão dá pela composição em vigor, na versão a que está presa.
+/// continua concedendo as concessões que já existem, como na decisão de acesso, e por isso não é filtrado; o perfil
+/// suspenso não concede e não tem titulares. A permissão é a que a concessão dá pela composição em vigor, na versão a que
+/// está presa.
 /// </summary>
 internal sealed class TitularesDaPermissao : ITitularesDaPermissao
 {

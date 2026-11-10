@@ -34,6 +34,24 @@ public static class PerfisDeTeste
 
     public static readonly ContextoDaVersao SemContexto = new(NomeEmUsoPorOutroPerfil: false, JanelaDeMigracaoAberta: false);
 
+    public const string MotivoDaContencao = "Uso indevido apontado pela gestão.";
+
+    /// <summary>Desativa o perfil como a gestora, com o motivo padrão.</summary>
+    public static Result Desativar(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+
+        return perfil.Desativar(Gestora, MotivoDaContencao, Instante, catalogo);
+    }
+
+    /// <summary>Reativa o perfil como outra pessoa que não a gestora, com o motivo padrão.</summary>
+    public static Result Reativar(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
+    {
+        ArgumentNullException.ThrowIfNull(perfil);
+
+        return perfil.Reativar(ProtecaoDeDados, MotivoDaContencao, Instante, catalogo);
+    }
+
     public static AutoriaDaVersao Autoria(Identidade pessoa, bool temConcessao = false)
     {
         ArgumentNullException.ThrowIfNull(pessoa);
@@ -106,7 +124,7 @@ public static class PerfisDeTeste
         List<TrocaDeVigencia> trocas = [];
         if (retiradas.Length > 0)
         {
-            trocas.Add(perfil.Remover(new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDaGestora, Instante)).Troca!);
+            trocas.Add(perfil.Remover(new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDaGestora, Instante), catalogo).Troca!);
         }
 
         if (desejadas.Except(perfil.ComposicaoEmVigor).Any())

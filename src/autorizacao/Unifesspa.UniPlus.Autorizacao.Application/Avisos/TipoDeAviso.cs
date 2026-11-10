@@ -23,6 +23,9 @@ public enum TipoDeAviso
 
     /// <summary>Concessões ficaram retidas, à espera de outra pessoa que as decida.</summary>
     ConcessaoRetidaNaMigracao = 7,
+
+    /// <summary>O perfil foi suspenso e nenhuma concessão dele vale até a retomada.</summary>
+    PerfilSuspenso = 8,
 }
 
 /// <summary>O texto estável de cada tipo: a finalidade do envio e o que o registro de avisos guarda.</summary>
@@ -37,6 +40,7 @@ public static class TipoDeAvisoCodigo
         TipoDeAviso.JanelaDeMigracaoFaltam48Horas => "janela_de_migracao_faltam_48_horas",
         TipoDeAviso.JanelaDeMigracaoFaltam24Horas => "janela_de_migracao_faltam_24_horas",
         TipoDeAviso.ConcessaoRetidaNaMigracao => "concessao_retida_na_migracao",
+        TipoDeAviso.PerfilSuspenso => "perfil_suspenso",
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
     };
 

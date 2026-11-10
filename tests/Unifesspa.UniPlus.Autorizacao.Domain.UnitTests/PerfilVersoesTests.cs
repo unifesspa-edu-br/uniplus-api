@@ -66,7 +66,7 @@ public sealed class PerfilVersoesTests
     public void CriarVersao_PerfilInativo_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
 
         CodigosDaRecusa(TentarCriar(perfil, "Analista", [Consultar])).Should().Equal(PerfilErrorCodes.Inativo);
     }
@@ -243,7 +243,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Guid versaoId = perfil.VersaoPendente!.Id;
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
 
         CodigosDaRecusa(perfil.NovoDocumento(versaoId, 10)).Should().Equal(PerfilErrorCodes.Inativo);
         CodigosDaRecusa(perfil.DocumentoParaReemitirEnvio(versaoId)).Should().Equal(PerfilErrorCodes.Inativo);
@@ -321,7 +321,7 @@ public sealed class PerfilVersoesTests
     public void Aprovar_PerfilInativo_EntraEmVigor()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
 
         PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Troca.Should().NotBeNull();
 
@@ -335,8 +335,8 @@ public sealed class PerfilVersoesTests
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
         Criar(perfil, "Analista", [Consultar, Publicar]);
 
-        perfil.Desativar();
-        perfil.Reativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
+        PerfisDeTeste.Reativar(perfil, Catalogo);
 
         perfil.VersaoPendente.Should().NotBeNull();
         perfil.VersaoVigente.Should().NotBeNull();

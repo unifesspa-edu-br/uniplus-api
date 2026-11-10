@@ -7,6 +7,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 /// <param name="ComposicaoEmVigor">O que decide acesso hoje; nulo no perfil comum sem versão vigente.</param>
 /// <param name="VersaoPendente">A versão que espera a aprovação; nula quando não há.</param>
 /// <param name="UltimaVersaoEncerradaSemVigor">Preenchida quando a versão mais recente do perfil terminou sem entrar em vigor.</param>
+/// <param name="Suspensao">A suspensão aberta; nula quando o perfil não está suspenso.</param>
+/// <param name="DesativadoDesde">Quando o perfil foi desativado; nulo quando está ativo.</param>
 public sealed record PerfilDto(
     Guid Id,
     string Nome,
@@ -17,11 +19,15 @@ public sealed record PerfilDto(
     ComposicaoEmVigorDto? ComposicaoEmVigor,
     VersaoPendenteDto? VersaoPendente,
     UltimaVersaoEncerradaSemVigorDto? UltimaVersaoEncerradaSemVigor,
-    JanelaDoPerfilDto? Janela = null);
+    JanelaDoPerfilDto? Janela = null,
+    SuspensaoDoPerfilDto? Suspensao = null,
+    DateTimeOffset? DesativadoDesde = null);
 
 /// <summary>Perfil de acesso como a listagem o resume.</summary>
 /// <param name="TemVersaoVigente">O perfil comum tem composição em vigor; o de governança dispensa a versão e a tem sempre.</param>
 /// <param name="TemVersaoPendente">Há versão esperando a aprovação.</param>
+/// <param name="Suspensao">A suspensão aberta; nula quando o perfil não está suspenso.</param>
+/// <param name="DesativadoDesde">Quando o perfil foi desativado; nulo quando está ativo.</param>
 public sealed record PerfilListadoDto(
     Guid Id,
     string Nome,
@@ -30,7 +36,9 @@ public sealed record PerfilListadoDto(
     string? Governanca,
     string Sensibilidade,
     bool TemVersaoVigente,
-    bool TemVersaoPendente);
+    bool TemVersaoPendente,
+    SuspensaoDoPerfilDto? Suspensao,
+    DateTimeOffset? DesativadoDesde);
 
 /// <summary>A composição que decide acesso agora. Os campos da versão são nulos no perfil de governança, que não é versionado.</summary>
 public sealed record ComposicaoEmVigorDto(

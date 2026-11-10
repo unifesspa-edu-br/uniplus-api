@@ -7,7 +7,7 @@ public static class PerfilErros
 {
     public static DomainError GovernancaImutavel() => new(
         PerfilErrorCodes.GovernancaImutavel,
-        "Perfil de governança é de sistema e não pode ser alterado, reativado nem desativado.");
+        "Perfil de governança é de sistema e não pode ser alterado, suspenso, reativado nem desativado.");
 
     public static DomainError Inativo() => new(
         PerfilErrorCodes.Inativo,
@@ -96,4 +96,24 @@ public static class PerfilErros
     public static DomainError JanelaDeMigracaoAberta() => new(
         PerfilErrorCodes.JanelaDeMigracaoAberta,
         "O perfil está em janela de migração e não aceita outra versão pendente até o fim dela.");
+
+    public static DomainError JaSuspenso() => new(
+        PerfilErrorCodes.JaSuspenso,
+        "O perfil já está suspenso: o motivo informado não foi registrado.");
+
+    public static DomainError NaoSuspenso() => new(
+        PerfilErrorCodes.NaoSuspenso,
+        "O perfil não está suspenso.");
+
+    public static DomainError RetomadaPorQuemSuspendeu() => new(
+        PerfilErrorCodes.RetomadaPorQuemSuspendeu,
+        "Quem suspendeu o perfil não decide a retomada.");
+
+    public static DomainError EtapaDaRetomadaJaDecidida() => new(
+        PerfilErrorCodes.EtapaDaRetomadaJaDecidida,
+        "A etapa já foi decidida nesta suspensão.");
+
+    public static DomainError ReativacaoPorQuemDesativou() => new(
+        PerfilErrorCodes.ReativacaoPorQuemDesativou,
+        "Quem desativou o perfil não o reativa.");
 }

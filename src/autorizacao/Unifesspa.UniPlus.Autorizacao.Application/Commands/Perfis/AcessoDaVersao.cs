@@ -59,6 +59,15 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
         return await AvaliarAsync(verificador, PermissaoDeManter, perfilId, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Se a pessoa aprova pela proteção de dados; a avaliação não registra nada.</summary>
+    public static async Task<DecisaoDeAcesso> AvaliarProtecaoDeDadosAsync(
+        IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        return await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, perfilId, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Se a pessoa lê o documento da versão: quem mantém perfis ou quem aprova pela proteção de dados. Registra o desfecho
     /// de uma só vez, as permissões que habilitaram ou, se nenhuma habilitou, as negativas.

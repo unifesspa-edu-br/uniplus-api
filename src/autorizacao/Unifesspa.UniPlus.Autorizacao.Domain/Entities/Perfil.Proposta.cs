@@ -31,7 +31,7 @@ public sealed partial class Perfil
 
         return MudaAlemDaRemocao(proposta.Conteudo, diferenca)
             ? RemoverEPropor(proposta, remocao, contexto, catalogo)
-            : Remover(remocao);
+            : Remover(remocao, catalogo);
     }
 
     private static DesfechoDaVersao DaCriacao(Result<VersaoDoPerfil> criada) =>
@@ -71,6 +71,6 @@ public sealed partial class Perfil
         Result<VersaoDoPerfil> pendente = CriarSobre(
             remocao, remocao.Numero + 1, proposta.Conteudo, contexto, proposta.Autoria, proposta.Instante, catalogo);
 
-        return pendente.IsFailure ? DesfechoDaVersao.Recusa(pendente.Error!) : EfetivarARemocao(pedido, remocao, pendente.Value!);
+        return pendente.IsFailure ? DesfechoDaVersao.Recusa(pendente.Error!) : EfetivarARemocao(pedido, remocao, pendente.Value!, catalogo);
     }
 }

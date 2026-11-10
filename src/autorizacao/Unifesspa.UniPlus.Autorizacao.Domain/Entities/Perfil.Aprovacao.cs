@@ -65,8 +65,9 @@ public sealed partial class Perfil
         return true;
     }
 
-    // A vigência aberta se encerra antes de a nova abrir: o banco admite uma só aberta por perfil.
-    internal TrocaDeVigencia TrocarVigencia(VersaoDoPerfil nova, DateTimeOffset instante)
+    // A vigência aberta se encerra antes de a nova abrir: o banco admite uma só aberta por perfil. Com a suspensão
+    // aberta, a troca reavalia a retomada, porque a composição em vigor pode ter mudado de classe.
+    internal TrocaDeVigencia TrocarVigencia(VersaoDoPerfil nova, DateTimeOffset instante, ICatalogoDePermissoesConsultavel catalogo)
     {
         VersaoDoPerfil? anterior = VersaoVigente;
         _vigencias.Find(static v => v.Aberta)?.Encerrar(instante);
@@ -76,6 +77,7 @@ public sealed partial class Perfil
         _vigencias.Add(VigenciaDoPerfil.Abrir(Id, nova.Id, instante));
         Nome = nova.Nome;
         Descricao = nova.Descricao;
+        ReavaliarRetomada(new OrigemDaReavaliacao.PelaTrocaDeVigencia(nova.Id), catalogo, instante);
 
         return new TrocaDeVigencia(anterior, nova);
     }

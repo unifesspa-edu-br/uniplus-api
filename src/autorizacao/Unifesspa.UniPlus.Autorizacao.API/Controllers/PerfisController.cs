@@ -125,45 +125,4 @@ public sealed class PerfisController : ControllerBase
             ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value!.PerfilId }, resultado.Value)
             : resultado.ToActionResult(_mapper);
     }
-
-    /// <summary>Reativa um perfil comum. Perfil de governança não se ativa.</summary>
-    [HttpPost("perfis/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Reativar(Guid id, CancellationToken cancellationToken)
-    {
-        Result resultado = await _commandBus
-            .Send(new ReativarPerfilCommand(id), cancellationToken)
-            .ConfigureAwait(false);
-
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>
-    /// Desativa um perfil comum. Não revoga concessão alguma: só impede pedidos novos.
-    /// Perfil de governança não se desativa.
-    /// </summary>
-    [HttpDelete("perfis/{id:guid}/ativacao")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Desativar(Guid id, CancellationToken cancellationToken)
-    {
-        Result resultado = await _commandBus
-            .Send(new DesativarPerfilCommand(id), cancellationToken)
-            .ConfigureAwait(false);
-
-        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
-    }
 }

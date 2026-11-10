@@ -149,7 +149,7 @@ public sealed class VersoesDoPerfilEndpointTests : PerfilEndpointTestBase
         using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await SemearPerfilVigenteAsync(ConsultarCatalogo);
         await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
-        await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
+        await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/desativacao", new { motivo = "Desativado para o teste." });
 
         using HttpResponseMessage resposta = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
 

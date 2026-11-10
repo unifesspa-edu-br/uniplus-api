@@ -43,7 +43,7 @@ public sealed class ConcessaoTests
     public void Conceder_PerfilInativo_Recusa()
     {
         Perfil perfil = PerfilComum();
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
 
         CodigosDaRecusa(Concessao.Conceder(
             Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
@@ -123,7 +123,7 @@ public sealed class ConcessaoTests
     public void Conceder_VariasViolacoes_AcumulaTodas()
     {
         Perfil perfil = PerfilComum();
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
 
         CodigosDaRecusa(Concessao.Conceder(
             Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo, Agora))

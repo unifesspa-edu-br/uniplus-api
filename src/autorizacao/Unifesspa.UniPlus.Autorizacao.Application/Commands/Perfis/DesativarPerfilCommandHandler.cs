@@ -4,15 +4,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler da desativação de perfil. Concessões existentes seguem como estão, e a versão pendente também: desativar
-/// só impede versões e pedidos novos. A operação trava o perfil como as demais.
+/// só impede versões e pedidos novos.
 /// </summary>
 public static class DesativarPerfilCommandHandler
 {
-    public static Task<Result> Handle(DesativarPerfilCommand command, OperacaoSobreOPerfil operacao, CancellationToken cancellationToken)
+    public static Task<Result> Handle(DesativarPerfilCommand command, AtivacaoDoPerfil ativacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(operacao);
+        ArgumentNullException.ThrowIfNull(ativacao);
 
-        return operacao.ExecutarAsync(command.Id, static perfil => perfil.Desativar(), cancellationToken);
+        return ativacao.DesativarAsync(command.Id, command.Motivo, cancellationToken);
     }
 }

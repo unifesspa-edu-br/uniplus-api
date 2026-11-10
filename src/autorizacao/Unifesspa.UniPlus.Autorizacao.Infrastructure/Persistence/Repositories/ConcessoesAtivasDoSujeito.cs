@@ -17,7 +17,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// requisição a pessoa é lida uma vez, porque o aprovador de um pedido consulta mais de uma
 /// permissão. A permissão que cada concessão dá é calculada a cada requisição, pela regra de <c>ComposicaoEmVigorNoBanco</c>;
 /// um cache futuro terá de respeitar a versão da concessão. O perfil desativado continua concedendo as concessões que já existem: desativar
-/// só impede concessão nova, e retirar acesso é revogar.
+/// só impede concessão nova, e retirar acesso é revogar. O perfil suspenso não concede: as concessões continuam listadas,
+/// sem permissão, até a retomada.
 /// </remarks>
 public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
 {
@@ -60,7 +61,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
         IQueryable<Concessao> daPessoa = _context.Concessoes.AsNoTracking()
             .Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioSub == sub && c.RevogadaEm == null);
 
-        return _context.ComCodigosEmVigor(daPessoa, _relogio.GetUtcNow()).ToListAsync(cancellationToken);
+        return _context.ComCodigosDeAcesso(daPessoa, _relogio.GetUtcNow()).ToListAsync(cancellationToken);
     }
 
     // A concessão sem permissão continua listada, com a lista vazia; só o código nulo é descartado.

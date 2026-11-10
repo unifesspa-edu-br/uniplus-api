@@ -38,6 +38,19 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
     private static readonly Guid ProtecaoDeDadosId = PerfisDeSistema.ProtecaoDeDadosId;
     private static readonly DateTimeOffset CargaInicial = new(2026, 10, 28, 0, 0, 0, TimeSpan.Zero);
 
+    // A contenção é evidência: o perfil não se exclui, e nenhum registro dela some em cascata.
+    private static void ConfigurarContencao(EntityTypeBuilder<Perfil> builder)
+    {
+        builder.HasMany(p => p.Suspensoes).WithOne().HasForeignKey(s => s.PerfilId).OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(p => p.Suspensoes).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(p => p.Desativacoes).WithOne().HasForeignKey(d => d.PerfilId).OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(p => p.Desativacoes).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasMany(p => p.Eventos).WithOne().HasForeignKey(e => e.PerfilId).OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(p => p.Eventos).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+
     public void Configure(EntityTypeBuilder<Perfil> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -86,6 +99,8 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
 
         builder.HasMany(p => p.Vigencias).WithOne().HasForeignKey(v => v.PerfilId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(p => p.Vigencias).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        ConfigurarContencao(builder);
 
         builder.OwnsMany(p => p.Permissoes, permissao =>
         {

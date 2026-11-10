@@ -17,6 +17,7 @@ internal static class RedacaoDoAviso
         TipoDeAviso.JanelaDeMigracaoFaltam48Horas => "Faltam 48 horas para o fim da migração de um perfil de acesso",
         TipoDeAviso.JanelaDeMigracaoFaltam24Horas => "Faltam 24 horas para o fim da migração de um perfil de acesso",
         TipoDeAviso.ConcessaoRetidaNaMigracao => "Concessão retida na migração de um perfil de acesso",
+        TipoDeAviso.PerfilSuspenso => "Perfil de acesso suspenso",
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
     };
 
@@ -65,6 +66,8 @@ internal static class RedacaoDoAviso
             "A versão que você criou foi cancelada porque o perfil teve permissões removidas. Se ela ainda for necessária, submeta-a de novo.",
         TipoDeAviso.AprovacoesDescartadas =>
             "As aprovações que você deu a uma versão de perfil foram descartadas porque mudou o que a versão exige. Decida de novo.",
+        TipoDeAviso.PerfilSuspenso =>
+            "Um perfil de acesso foi suspenso: nenhuma concessão dele vale até a retomada.",
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
     };
 

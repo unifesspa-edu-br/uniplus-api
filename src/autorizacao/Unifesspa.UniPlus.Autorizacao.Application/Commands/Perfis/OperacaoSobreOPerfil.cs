@@ -89,13 +89,14 @@ public sealed class OperacaoSobreOPerfil
     }
 
     /// <summary>A mesma operação com chave de idempotência, para as que só mudam o estado e não devolvem nada.</summary>
-    public async Task<Result> ExecutarAsync(Guid perfilId, Func<Perfil, Result> operacao, CancellationToken cancellationToken)
+    public async Task<Result> ExecutarAsync(
+        Guid perfilId, Func<Perfil, ContextoDaOperacao, Result> operacao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(operacao);
 
         Result<bool> resultado = await ExecutarAsync(
             perfilId,
-            (perfil, _) => Task.FromResult(Converter(operacao(perfil))),
+            (perfil, contexto) => Task.FromResult(Converter(operacao(perfil, contexto))),
             cancellationToken).ConfigureAwait(false);
 
         return resultado.IsSuccess ? Result.Success() : Result.ValidationFailure(resultado.Errors);

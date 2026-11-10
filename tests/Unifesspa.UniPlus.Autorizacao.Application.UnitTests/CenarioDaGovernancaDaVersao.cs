@@ -30,10 +30,11 @@ internal sealed class CenarioDaGovernancaDaVersao
         TitularDaPermissao[]? titulares = null,
         TimeProvider? relogio = null,
         bool janelaAberta = false,
+        bool temConcessao = false,
         Perfil[]? outrosPerfis = null)
     {
         TimeProvider tempo = relogio ?? new RelogioFixo(PerfisDeTeste.Instante.AddHours(1));
-        Concessoes = new(titulares: []);
+        Concessoes = new(temConcessao, titulares: []);
         JanelasNaMemoria janelas = new(janelaAberta);
         ConcessoesNaMemoria concessoes = Concessoes;
         Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
@@ -57,7 +58,16 @@ internal sealed class CenarioDaGovernancaDaVersao
         Aprovacoes = new AprovacoesDaVersao(
             operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, autoria, new CatalogoDeTeste());
         Cancelamento = new CancelamentoDaVersao(operacao, efeitos, autoria);
-        Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria);
+        Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria, new CatalogoDeTeste());
+        Ativacao = new AtivacaoDoPerfil(operacao, autoria, new CatalogoDeTeste());
+        Contencao = new ContencaoPorSuspensao(
+            operacao,
+            autoria,
+            new AvisosDaContencao(
+                new EmissorDeAvisos(Registro, NullLogger<EmissorDeAvisos>.Instance),
+                new TitularesDeTeste(titulares ?? []),
+                new LinkDaGovernancaDeTeste()),
+            new CatalogoDeTeste());
         Propostas = new PropostasDeVersao(
             operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, new EnvioDoDocumento(Armazenamento, tempo), autoria, new CatalogoDeTeste());
         Expiracao = new ExpiracaoDasVersoesPendentes(Perfis, new BarramentoDeTeste(operacao), tempo, NullLogger<ExpiracaoDasVersoesPendentes>.Instance);
@@ -90,6 +100,10 @@ internal sealed class CenarioDaGovernancaDaVersao
     public CancelamentoDaVersao Cancelamento { get; }
 
     public RemocaoDePermissoes Remocao { get; }
+
+    public AtivacaoDoPerfil Ativacao { get; }
+
+    public ContencaoPorSuspensao Contencao { get; }
 
     public PropostasDeVersao Propostas { get; }
 

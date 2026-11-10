@@ -78,7 +78,7 @@ public sealed class PrazoDaVersaoTests
     public async Task CriarVersao_RecusadaDepoisDoPrazo_GravaAExpiracao()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
         CenarioDaGovernancaDaVersao cenario = new(
             perfil, PerfisDeTeste.Autor, [], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo.AddDays(1)));
 
