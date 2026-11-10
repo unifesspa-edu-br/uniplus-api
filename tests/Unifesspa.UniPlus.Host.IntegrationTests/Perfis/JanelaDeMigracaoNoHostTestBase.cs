@@ -6,10 +6,8 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
@@ -27,35 +25,34 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// Montagens comuns às suítes da janela de migração pelo host real, com o relógio controlável: o perfil em vigor, as
 /// concessões dele, a versão que acrescenta permissão e a leitura e as decisões da janela.
 /// </summary>
-public abstract class JanelaDeMigracaoNoHostTestBase : AprovacaoDaVersaoNoHostTestBase, IAsyncLifetime, IDisposable
+public abstract class JanelaDeMigracaoNoHostTestBase : AprovacaoDaVersaoNoHostTestBase, IAsyncLifetime, IDisposable, IClassFixture<HostDaJanelaDeMigracao>
 {
     private protected const string RotaDeJanela = "janela";
 
-    private readonly WebApplicationFactory<HostAssemblyMarker> _host;
+    private readonly HostDaJanelaDeMigracao _hostDaClasse;
 
-    private protected JanelaDeMigracaoNoHostTestBase(MonolitoDaInstalacaoFixture fixture)
+    private protected JanelaDeMigracaoNoHostTestBase(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
         : base(fixture)
     {
-        _host = Fixture.Factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(servicos =>
-        {
-            servicos.RemoveAll<TimeProvider>();
-            servicos.AddSingleton<TimeProvider>(Relogio);
-        }));
+        _hostDaClasse = hostDaClasse;
     }
 
-    private protected RelogioAvancavelDeTeste Relogio { get; } = new();
+    private protected RelogioAvancavelDeTeste Relogio => _hostDaClasse.Relogio;
 
-    public Task InitializeAsync() => ResetarAsync();
+    private WebApplicationFactory<HostAssemblyMarker> Host => _hostDaClasse.Obter(Fixture);
+
+    public Task InitializeAsync()
+    {
+        Relogio.Reiniciar();
+
+        return ResetarAsync();
+    }
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    public void Dispose()
-    {
-        _host.Dispose();
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => GC.SuppressFinalize(this);
 
-    private protected override HttpClient NovoCliente() => _host.CreateClient();
+    private protected override HttpClient NovoCliente() => Host.CreateClient();
 
     /// <summary>Abre a janela: perfil em vigor com as concessões dos beneficiários e a versão que acrescenta permissão sensível.</summary>
     private protected async Task<JanelaAberta> AbrirJanelaAsync(params Persona[] beneficiarios)
@@ -106,14 +103,14 @@ public abstract class JanelaDeMigracaoNoHostTestBase : AprovacaoDaVersaoNoHostTe
 
     private protected async Task<int> ProcessarJanelasAsync()
     {
-        await using AsyncServiceScope escopo = _host.Services.CreateAsyncScope();
+        await using AsyncServiceScope escopo = Host.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<ProcessamentoDasJanelas>().ExecutarAsync(CancellationToken.None);
     }
 
     private protected async Task<bool> TemConcessaoAtivaAsync(Persona pessoa, Guid perfilId)
     {
-        await using AsyncServiceScope escopo = _host.Services.CreateAsyncScope();
+        await using AsyncServiceScope escopo = Host.Services.CreateAsyncScope();
         IReadOnlyList<ConcessaoAtiva> ativas = await escopo.ServiceProvider.GetRequiredService<IConcessoesAtivasDoSujeito>()
             .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, pessoa.Sub.ToString()).Value!, CancellationToken.None);
 

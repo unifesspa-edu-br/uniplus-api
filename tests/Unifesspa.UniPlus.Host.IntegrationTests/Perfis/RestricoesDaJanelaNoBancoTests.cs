@@ -31,8 +31,8 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
     private const string Restricao = "23001";
     private const string Duplicidade = "23505";
 
-    public RestricoesDaJanelaNoBancoTests(MonolitoDaInstalacaoFixture fixture)
-        : base(fixture)
+    public RestricoesDaJanelaNoBancoTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
+        : base(fixture, hostDaClasse)
     {
     }
 

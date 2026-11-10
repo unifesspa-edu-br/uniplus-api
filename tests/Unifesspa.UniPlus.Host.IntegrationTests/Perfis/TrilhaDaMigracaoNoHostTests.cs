@@ -21,8 +21,8 @@ public sealed class TrilhaDaMigracaoNoHostTests : JanelaDeMigracaoNoHostTestBase
 {
     private static readonly TimeSpan DepoisDoPrazo = TimeSpan.FromHours(73);
 
-    public TrilhaDaMigracaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
-        : base(fixture)
+    public TrilhaDaMigracaoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
+        : base(fixture, hostDaClasse)
     {
     }
 

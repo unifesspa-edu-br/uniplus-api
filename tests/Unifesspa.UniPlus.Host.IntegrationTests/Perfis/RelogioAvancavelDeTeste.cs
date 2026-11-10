@@ -8,5 +8,7 @@ internal sealed class RelogioAvancavelDeTeste : TimeProvider
     public override DateTimeOffset GetUtcNow() =>
         base.GetUtcNow() + TimeSpan.FromTicks(Interlocked.Read(ref _avancoEmTicks));
 
+    public void Reiniciar() => Interlocked.Exchange(ref _avancoEmTicks, 0);
+
     public void Avancar(TimeSpan intervalo) => Interlocked.Add(ref _avancoEmTicks, intervalo.Ticks);
 }
