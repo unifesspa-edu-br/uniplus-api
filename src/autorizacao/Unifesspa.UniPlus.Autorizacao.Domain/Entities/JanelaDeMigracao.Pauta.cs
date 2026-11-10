@@ -27,21 +27,19 @@ public sealed partial class JanelaDeMigracao
         }
 
         List<Concessao> deOutros = [.. concessoes.Where(c => Elegivel(c, agora) && c.Beneficiario != quem)];
+        Dictionary<Guid, SituacaoDaMigracao> situacoes = _migracoes.ToDictionary(static m => m.ConcessaoId, static m => m.Situacao);
         int quantidade = etapa == EtapaDaMigracao.ProtecaoDeDados
-            ? DaProtecao(deOutros, quem)
-            : DaGestao(deOutros);
+            ? DaProtecao(deOutros, situacoes, ConferenciasDaMigracao.ConcessoesDecididasNaGestaoPor(this, quem))
+            : DaGestao(deOutros, situacoes);
 
         return quantidade > 0 || (etapa == EtapaDaMigracao.GestaoDeAcessos && LoteDaGestao is null) ? quantidade : null;
     }
 
-    private int DaGestao(List<Concessao> deOutros) =>
-        LoteDaGestao is null ? deOutros.Count : deOutros.Count(c => LinhaDe(c.Id)?.Situacao == SituacaoDaMigracao.Retida);
+    private int DaGestao(List<Concessao> deOutros, Dictionary<Guid, SituacaoDaMigracao> situacoes) =>
+        LoteDaGestao is null ? deOutros.Count : deOutros.Count(c => situacoes.GetValueOrDefault(c.Id) == SituacaoDaMigracao.Retida);
 
-    private int DaProtecao(List<Concessao> deOutros, Identidade quem)
-    {
-        HashSet<Guid> decididasPelaPessoa = ConferenciasDaMigracao.ConcessoesDecididasNaGestaoPor(this, quem);
-
-        return deOutros.Count(c =>
-            LinhaDe(c.Id)?.Situacao == SituacaoDaMigracao.AguardandoProtecaoDeDados && !decididasPelaPessoa.Contains(c.Id));
-    }
+    private static int DaProtecao(
+        List<Concessao> deOutros, Dictionary<Guid, SituacaoDaMigracao> situacoes, HashSet<Guid> decididasPelaPessoa) =>
+        deOutros.Count(c =>
+            situacoes.GetValueOrDefault(c.Id) == SituacaoDaMigracao.AguardandoProtecaoDeDados && !decididasPelaPessoa.Contains(c.Id));
 }
