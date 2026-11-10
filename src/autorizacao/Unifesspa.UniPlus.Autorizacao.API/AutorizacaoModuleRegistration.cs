@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.API.Errors;
 using Unifesspa.UniPlus.Autorizacao.API.Rotinas;
 using Unifesspa.UniPlus.Autorizacao.Application;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure;
+using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -44,9 +45,19 @@ public static class AutorizacaoModuleRegistration
         services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
         services.AddHostedService<JanelasDeMigracaoHostedService>();
 
-        // Migrations aplicadas no StartAsync, ANTES do runtime Wolverine (invariante de ordem).
-        services.AddDbContextMigrationsOnStartup<AutorizacaoDbContext>();
+        // Migrations aplicadas no StartAsync, ANTES do runtime Wolverine (invariante de ordem); a conferência do catálogo
+        // roda logo depois delas, onde elas rodam.
+        services.AddDbContextMigrationsOnStartup<AutorizacaoDbContext>(ConciliarOCatalogoAsync);
 
         return services;
+    }
+
+    private static async Task ConciliarOCatalogoAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        AsyncServiceScope escopo = services.CreateAsyncScope();
+        await using (escopo.ConfigureAwait(false))
+        {
+            await escopo.ServiceProvider.GetRequiredService<ConciliacaoDoCatalogo>().ExecutarAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 }

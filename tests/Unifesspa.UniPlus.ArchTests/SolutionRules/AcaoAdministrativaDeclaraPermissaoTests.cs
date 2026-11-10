@@ -13,9 +13,11 @@ using Unifesspa.UniPlus.Autorizacao.API.Controllers;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
 using Unifesspa.UniPlus.Configuracao.API.Controllers;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
@@ -81,6 +83,12 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.Suspender))] = typeof(SuspenderPerfilCommand),
         [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.Retomar))] = typeof(RetomarSuspensaoDoPerfilCommand),
         [Acao(typeof(ContencaoDoPerfilController), nameof(ContencaoDoPerfilController.ObterTrilha))] = typeof(ObterContencaoDoPerfilQuery),
+        // A reclassificação do catálogo: a etapa pedida define a permissão da fila e da decisão, a leitura é de quem mantém
+        // perfis ou aprova pela proteção de dados, e a divergência da governança é de quem tem uma das duas.
+        [Acao(typeof(ReclassificacoesController), nameof(ReclassificacoesController.Listar))] = typeof(ListarReclassificacoesQuery),
+        [Acao(typeof(ReclassificacoesController), nameof(ReclassificacoesController.Obter))] = typeof(ObterReclassificacaoQuery),
+        [Acao(typeof(ReclassificacoesController), nameof(ReclassificacoesController.Decidir))] = typeof(DecidirReclassificacaoCommand),
+        [Acao(typeof(ReclassificacoesController), nameof(ReclassificacoesController.Divergencias))] = typeof(ListarDivergenciasDaGovernancaQuery),
         // A revisão dos acessos: a permissão que vale depende da governança que decide o item, e a leitura é de quem
         // conduz a revisão ou de quem revê os acessos da proteção de dados.
         [Acao(typeof(RevisoesDeAcessosController), nameof(RevisoesDeAcessosController.Abrir))] = typeof(AbrirRevisaoDeAcessosCommand),
