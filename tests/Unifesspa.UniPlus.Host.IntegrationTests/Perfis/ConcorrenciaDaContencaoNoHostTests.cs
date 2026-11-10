@@ -86,6 +86,47 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
         DescartarTodas(respostas);
     }
 
+    [Fact(DisplayName = "Duas decisões da gestão num perfil não protegido em fila: a primeira fecha a suspensão e a segunda recebe a recusa de não suspenso")]
+    public async Task DuasDecisoesDaGestao_ASegundaEncontraNaoSuspenso()
+    {
+        await PrepararAsync();
+        using HttpClient diogo = await GestorAsync();
+        using HttpClient isabella = await GestaoAsync();
+        using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
+        Guid perfilId = await PerfilComumComConcessaoAsync(diogo);
+        await SuspenderComSucessoAsync(diogo, perfilId);
+
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            perfilId, () => RetomarAsync(isabella, perfilId, EtapaGestao), () => RetomarAsync(betina, perfilId, EtapaGestao));
+
+        respostas[0].StatusCode.Should().Be(HttpStatusCode.OK);
+        await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.UnprocessableEntity, "nao_suspenso");
+        (await TiposDaContencaoAsync(diogo, perfilId)).Should().Equal("suspensao", "decisao_da_retomada", "retomada");
+        DescartarTodas(respostas);
+    }
+
+    [Fact(DisplayName = "A concessão que espera a suspensão nasce bloqueada: a decisão de acesso não lhe dá permissão")]
+    public async Task ConcessaoEsperaASuspensao_NasceBloqueada()
+    {
+        await PrepararAsync();
+        Guid perfilId = await SemearPerfilAsync("Acompanhamento de números", Consultar);
+        Guid unidade = await SemearUnidadeAsync();
+        using HttpClient diogo = await GestorAsync();
+        using HttpClient betina = Cliente(Betina);
+        Guid pedido = await CriarAsync(betina, perfilId, unidade, null);
+
+        HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
+            perfilId,
+            () => SuspenderAsync(diogo, perfilId),
+            () => EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes"));
+
+        respostas[0].StatusCode.Should().Be(HttpStatusCode.NoContent);
+        respostas[1].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[1].Content.ReadAsStringAsync());
+        (await ConcessoesAsync(Betina, perfilId)).Should().ContainSingle();
+        (await PermissoesDaConcessaoAsync(perfilId, Betina)).Should().BeEmpty();
+        DescartarTodas(respostas);
+    }
+
     [Fact(DisplayName = "A mesma chave de idempotência repete a resposta e a suspensão acontece uma vez")]
     public async Task MesmaChave_SuspendeUmaVez()
     {
@@ -123,12 +164,4 @@ public sealed class ConcorrenciaDaContencaoNoHostTests : ContencaoDoPerfilNoHost
     public void Dispose() => _host.Dispose();
 
     private protected override HttpClient NovoCliente() => _host.CreateClient();
-
-    private static void DescartarTodas(HttpResponseMessage[] respostas)
-    {
-        foreach (HttpResponseMessage resposta in respostas)
-        {
-            resposta.Dispose();
-        }
-    }
 }
