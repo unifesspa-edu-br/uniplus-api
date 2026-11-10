@@ -282,7 +282,7 @@ public abstract class PedidosDeConcessaoTestBase
         foreach (TrocaDeVigencia troca in PerfisDeTeste.Trocar(
             perfil, permissoes, servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>()))
         {
-            avisos.AddRange(await efeitos.AplicarAsync(perfil, troca, CancellationToken.None));
+            avisos.AddRange(await efeitos.AplicarAsync(perfil, troca, new Identidade(TestAuthHandler.DefaultIssuer, "diogo.souza"), CancellationToken.None));
         }
 
         await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();

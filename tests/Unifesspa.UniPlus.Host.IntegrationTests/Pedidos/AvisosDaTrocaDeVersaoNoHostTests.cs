@@ -49,7 +49,8 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         await EntregarPelaFilaAsync(versao2.DocumentoId);
         ITrackedSession sessao = await RastrearAsync(() => AprovarAteAVigenciaAsync(gestor, versao2));
 
-        sessao.Sent.MessagesOf<EnviarEmail>().Should().HaveCount(2, "o solicitante e o beneficiário");
+        sessao.Sent.MessagesOf<EnviarEmail>().Where(m => m.Finalidade == "perfil.pedido_devolvido_pela_janela").Should().HaveCount(2, "o solicitante e o beneficiário");
+        sessao.Sent.MessagesOf<EnviarEmail>().Should().ContainSingle(m => m.Finalidade == "perfil.versao_encerrada", "a versão anterior saiu sem concessão a migrar");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
         await AguardarAvisoAsync(Leandro, pedido, Devolvido);
         JsonElement lido = await LerAsync(gestor, $"{Rota}/{pedido}");

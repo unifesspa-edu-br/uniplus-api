@@ -15,48 +15,60 @@ public sealed class EfeitosDaJanelaNaTroca
     private readonly IJanelaDeMigracaoRepository _janelas;
     private readonly LeitorDaMigracao _leitor;
     private readonly AvisosDaJanela _avisos;
+    private readonly AvisosDosEfeitosDaJanela _efeitos;
 
-    public EfeitosDaJanelaNaTroca(IJanelaDeMigracaoRepository janelas, LeitorDaMigracao leitor, AvisosDaJanela avisos)
+    public EfeitosDaJanelaNaTroca(
+        IJanelaDeMigracaoRepository janelas, LeitorDaMigracao leitor, AvisosDaJanela avisos, AvisosDosEfeitosDaJanela efeitos)
     {
         ArgumentNullException.ThrowIfNull(janelas);
         ArgumentNullException.ThrowIfNull(leitor);
         ArgumentNullException.ThrowIfNull(avisos);
+        ArgumentNullException.ThrowIfNull(efeitos);
 
         _janelas = janelas;
         _leitor = leitor;
         _avisos = avisos;
+        _efeitos = efeitos;
     }
 
     /// <summary>
     /// Materializa a janela que já não está efetivamente aberta, para que nenhuma concessão vencida pelo prazo continue
-    /// não revogada, e devolve a janela que segue aberta, se houver.
+    /// não revogada, na transação de quem chama. Devolve a janela que segue aberta, se houver, e os avisos do fim.
     /// </summary>
-    public async Task<JanelaDeMigracao?> MaterializarSeVencidaAsync(Perfil perfil, CancellationToken cancellationToken)
+    public async Task<JanelaAposAMaterializacao> MaterializarSeVencidaAsync(Perfil perfil, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
         JanelaDeMigracao? janela = await _janelas.ObterNaoEncerradaParaAlterarAsync(perfil.Id, cancellationToken).ConfigureAwait(false);
         if (janela is null)
         {
-            return null;
+            return new JanelaAposAMaterializacao(null, []);
         }
 
         ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, cancellationToken).ConfigureAwait(false);
         if (janela.EstaAberta(contexto.Agora, janela.Pendencias(contexto.Concessoes, contexto.Agora)))
         {
-            return janela;
+            return new JanelaAposAMaterializacao(janela, []);
         }
 
-        janela.ConferirEstado(contexto);
+        return new JanelaAposAMaterializacao(null, await MaterializarAsync(new JanelaDaOperacao(perfil, janela, contexto), cancellationToken).ConfigureAwait(false));
+    }
 
-        return null;
+    private async Task<IReadOnlyList<EnviarEmail>> MaterializarAsync(JanelaDaOperacao operacao, CancellationToken cancellationToken)
+    {
+        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(operacao.Janela, operacao.Contexto);
+        operacao.Janela.ConferirEstado(operacao.Contexto);
+
+        return await _efeitos
+            .DoFimAsync(operacao, MudancasDaJanela.Entre(antes, operacao.Janela, operacao.Contexto), null, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
     /// Abre a janela da versão nova com as concessões elegíveis, que são as ativas do perfil fora dela. Sem nenhuma, a
-    /// versão simplesmente vigora. Devolve os avisos da abertura.
+    /// versão simplesmente vigora. Devolve se a janela abriu e os avisos da abertura.
     /// </summary>
-    public async Task<IReadOnlyList<EnviarEmail>> AbrirAsync(
+    public async Task<AberturaDaJanela> AbrirAsync(
         Perfil perfil, TrocaDeVigencia troca, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
@@ -66,14 +78,20 @@ public sealed class EfeitosDaJanelaNaTroca
         IReadOnlyList<Concessao> elegiveis = [.. concessoes.Where(c => c.EstaAtiva(agora) && c.VersaoId != troca.Nova.Id)];
         if (elegiveis.Count == 0)
         {
-            return [];
+            return new AberturaDaJanela(false, []);
         }
 
         JanelaDeMigracao janela = JanelaDeMigracao.Abrir(perfil.Id, troca.Nova, agora);
         await _janelas.AdicionarAsync(janela, cancellationToken).ConfigureAwait(false);
 
-        return await _avisos
-            .DaAberturaAsync(perfil, janela, elegiveis, troca.Nova.AcrescimosSobre(troca.Anterior!), cancellationToken)
-            .ConfigureAwait(false);
+        return new AberturaDaJanela(
+            true,
+            await _avisos.DaAberturaAsync(perfil, janela, elegiveis, troca.Nova.AcrescimosSobre(troca.Anterior!), cancellationToken).ConfigureAwait(false));
     }
 }
+
+/// <summary>A janela que seguiu aberta depois da materialização, se houver, e os avisos do fim da que se encerrou.</summary>
+public sealed record JanelaAposAMaterializacao(JanelaDeMigracao? Aberta, IReadOnlyList<EnviarEmail> Avisos);
+
+/// <summary>Se a troca abriu janela de migração, e os avisos da abertura.</summary>
+public sealed record AberturaDaJanela(bool Abriu, IReadOnlyList<EnviarEmail> Avisos);

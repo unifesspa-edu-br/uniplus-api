@@ -42,7 +42,7 @@ internal sealed class CenarioDeMigracao
 
     public IReadOnlyList<Concessao> Concessoes => _concessoes;
 
-    public Concessao Conceder(Identidade pessoa, Guid? unidade = null, DateTimeOffset? validaAte = null)
+    public Concessao Conceder(Identidade pessoa, Guid? unidade = null, DateTimeOffset? validaAte = null, string? email = null)
     {
         Concessao concessao = PerfisDeTeste.Garantir(Concessao.Conceder(
             pessoa,
@@ -52,7 +52,8 @@ internal sealed class CenarioDeMigracao
             PerfisDeTeste.Autor,
             Abertura.AddHours(-1),
             _catalogo,
-            validaAte));
+            validaAte,
+            email));
         _concessoes.Add(concessao);
 
         return concessao;

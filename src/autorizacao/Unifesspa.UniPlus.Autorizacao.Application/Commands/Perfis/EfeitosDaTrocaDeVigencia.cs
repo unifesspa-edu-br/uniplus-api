@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -26,6 +27,7 @@ public sealed class EfeitosDaTrocaDeVigencia
     private readonly AvisosDoPedido _avisos;
     private readonly AvisoDePedidoDevolvido _avisoDeDevolucao;
     private readonly EfeitosDaJanelaNaTroca _janela;
+    private readonly AvisosDosEfeitosDaJanela _avisosDaVersao;
     private readonly TimeProvider _clock;
 
     public EfeitosDaTrocaDeVigencia(
@@ -34,6 +36,7 @@ public sealed class EfeitosDaTrocaDeVigencia
         AvisosDoPedido avisos,
         AvisoDePedidoDevolvido avisoDeDevolucao,
         EfeitosDaJanelaNaTroca janela,
+        AvisosDosEfeitosDaJanela avisosDaVersao,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(concessoes);
@@ -41,6 +44,7 @@ public sealed class EfeitosDaTrocaDeVigencia
         ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(avisoDeDevolucao);
         ArgumentNullException.ThrowIfNull(janela);
+        ArgumentNullException.ThrowIfNull(avisosDaVersao);
         ArgumentNullException.ThrowIfNull(clock);
 
         _concessoes = concessoes;
@@ -48,42 +52,60 @@ public sealed class EfeitosDaTrocaDeVigencia
         _avisos = avisos;
         _avisoDeDevolucao = avisoDeDevolucao;
         _janela = janela;
+        _avisosDaVersao = avisosDaVersao;
         _clock = clock;
     }
 
     /// <summary>Aplica os efeitos da troca e devolve os avisos, que entram no outbox junto da gravação.</summary>
     /// <param name="perfil">O perfil já trocado e travado pelo chamador.</param>
     /// <param name="troca">A troca de vigência; a primeira vigência do perfil não tem efeitos e não deve chegar aqui.</param>
-    public async Task<IReadOnlyList<EnviarEmail>> AplicarAsync(Perfil perfil, TrocaDeVigencia troca, CancellationToken cancellationToken)
+    /// <param name="autor">Quem praticou o ato; não recebe o aviso da versão anterior encerrada.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    public async Task<IReadOnlyList<EnviarEmail>> AplicarAsync(
+        Perfil perfil, TrocaDeVigencia troca, Identidade autor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(troca);
+        ArgumentNullException.ThrowIfNull(autor);
 
         VersaoDoPerfil anterior = troca.Anterior
             ?? throw new ArgumentException("A primeira vigência do perfil não tem efeitos a aplicar.", nameof(troca));
 
-        DateTimeOffset agora = _clock.GetUtcNow();
-        JanelaDeMigracao? aberta = await _janela.MaterializarSeVencidaAsync(perfil, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<EnviarEmail> daAbertura = await ConcessoesDaTrocaAsync(perfil, troca, aberta, agora, cancellationToken).ConfigureAwait(false);
+        JanelaAposAMaterializacao materializada = await _janela.MaterializarSeVencidaAsync(perfil, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> daTroca = await ConcessoesDaTrocaAsync(perfil, troca, materializada.Aberta, autor, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dosPedidos = await ReavaliarPedidosAsync(perfil, troca, cancellationToken).ConfigureAwait(false);
 
-        return [.. daAbertura, .. await ReavaliarPedidosAsync(perfil, troca, cancellationToken).ConfigureAwait(false)];
+        return [.. materializada.Avisos, .. daTroca, .. dosPedidos];
     }
 
     // A versão com acréscimo abre a janela; a que não acrescenta leva as concessões da que saiu para a nova e, dentro de
-    // uma janela, faz da nova o destino das migrações.
+    // uma janela, faz da nova o destino das migrações. A versão anterior encerra com a troca quando não há janela dela.
     private async Task<IReadOnlyList<EnviarEmail>> ConcessoesDaTrocaAsync(
-        Perfil perfil, TrocaDeVigencia troca, JanelaDeMigracao? aberta, DateTimeOffset agora, CancellationToken cancellationToken)
+        Perfil perfil, TrocaDeVigencia troca, JanelaDeMigracao? aberta, Identidade autor, CancellationToken cancellationToken)
     {
         if (troca.TemAcrescimo)
         {
-            return await _janela.AbrirAsync(perfil, troca, agora, cancellationToken).ConfigureAwait(false);
+            AberturaDaJanela abertura = await _janela.AbrirAsync(perfil, troca, _clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+
+            return abertura.Abriu
+                ? abertura.Avisos
+                : await EncerrarAVersaoAsync(perfil, troca, FormaDoAviso.SemConcessaoAMigrar, autor, cancellationToken).ConfigureAwait(false);
         }
 
         await MigrarConcessoesAsync(perfil.Id, troca.Anterior!, troca.Nova, cancellationToken).ConfigureAwait(false);
-        aberta?.RedirecionarAlvo(troca.Nova.Id);
+        if (aberta is not null)
+        {
+            aberta.RedirecionarAlvo(troca.Nova.Id);
 
-        return [];
+            return [];
+        }
+
+        return await EncerrarAVersaoAsync(perfil, troca, FormaDoAviso.VersaoSubstituida, autor, cancellationToken).ConfigureAwait(false);
     }
+
+    private Task<IReadOnlyList<EnviarEmail>> EncerrarAVersaoAsync(
+        Perfil perfil, TrocaDeVigencia troca, FormaDoAviso forma, Identidade autor, CancellationToken cancellationToken) =>
+        _avisosDaVersao.DaVersaoSubstituidaAsync(perfil, troca.Anterior!, forma, autor, cancellationToken);
 
     private async Task MigrarConcessoesAsync(
         Guid perfilId, VersaoDoPerfil anterior, VersaoDoPerfil nova, CancellationToken cancellationToken)

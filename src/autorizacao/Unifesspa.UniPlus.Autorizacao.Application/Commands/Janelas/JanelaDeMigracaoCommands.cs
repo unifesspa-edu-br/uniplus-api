@@ -18,5 +18,8 @@ public sealed record DecidirEtapaDaProtecaoDaJanelaCommand(Guid PerfilId, Decidi
 /// <summary>Encerra a janela antes do prazo, com motivo: quem não migrou perde o acesso.</summary>
 public sealed record EncerrarJanelaDoPerfilCommand(Guid PerfilId, EncerrarJanelaRequest Dados) : ICommand<Result<JanelaDeMigracaoDto>>;
 
-/// <summary>Processa a janela de um perfil sob a trava dele: materializa o fim e emite os lembretes. Devolve se havia o que fazer.</summary>
-public sealed record ProcessarJanelaDoPerfilCommand(Guid PerfilId) : ICommand<Result<bool>>;
+/// <summary>
+/// Materializa o fim da janela de um perfil que já não está efetivamente aberta e emite os lembretes da que segue aberta, sob a
+/// trava do perfil, com os avisos no outbox da mesma transação. Devolve se havia o que fazer.
+/// </summary>
+public sealed record MaterializarJanelaVencidaCommand(Guid PerfilId) : ICommand<Result<bool>>;

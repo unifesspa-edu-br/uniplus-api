@@ -20,16 +20,20 @@ public sealed class DecisoesDaJanela
     private readonly MigracaoSobreOPerfil _migracao;
     private readonly AutorizacaoDaMigracao _autorizacao;
     private readonly AvisosDaJanela _avisos;
+    private readonly AvisosDosEfeitosDaJanela _efeitos;
 
-    public DecisoesDaJanela(MigracaoSobreOPerfil migracao, AutorizacaoDaMigracao autorizacao, AvisosDaJanela avisos)
+    public DecisoesDaJanela(
+        MigracaoSobreOPerfil migracao, AutorizacaoDaMigracao autorizacao, AvisosDaJanela avisos, AvisosDosEfeitosDaJanela efeitos)
     {
         ArgumentNullException.ThrowIfNull(migracao);
         ArgumentNullException.ThrowIfNull(autorizacao);
         ArgumentNullException.ThrowIfNull(avisos);
+        ArgumentNullException.ThrowIfNull(efeitos);
 
         _migracao = migracao;
         _autorizacao = autorizacao;
         _avisos = avisos;
+        _efeitos = efeitos;
     }
 
     public Task<GravacaoDaOperacao<JanelaDeMigracaoDto>> EnviarLoteAsync(
@@ -44,7 +48,7 @@ public sealed class DecisoesDaJanela
             new Etapa(EtapaDaVersao.GestaoDeAcessos, TravaProtecao: true),
             verificador,
             (j, autoria) => j.Janela.EnviarLote(pedido, autoria, j.Contexto),
-            AvisarDasRetidasAsync,
+            OperacaoNaJanela.Lote,
             cancellationToken);
     }
 
@@ -60,7 +64,7 @@ public sealed class DecisoesDaJanela
             new Etapa(EtapaDaVersao.GestaoDeAcessos, TravaProtecao: true),
             verificador,
             (j, autoria) => j.Janela.DecidirRetida(pedido, autoria, j.Contexto),
-            SemAvisos,
+            OperacaoNaJanela.Retida,
             cancellationToken);
     }
 
@@ -76,7 +80,7 @@ public sealed class DecisoesDaJanela
             new Etapa(EtapaDaVersao.ProtecaoDeDados, TravaProtecao: false),
             verificador,
             (j, autoria) => j.Janela.DecidirEtapaDaProtecao(pedido, autoria, j.Contexto),
-            SemAvisos,
+            OperacaoNaJanela.EtapaDaProtecao,
             cancellationToken);
     }
 
@@ -90,17 +94,28 @@ public sealed class DecisoesDaJanela
             new Etapa(EtapaDaVersao.GestaoDeAcessos, TravaProtecao: false),
             verificador,
             (j, autoria) => j.Janela.EncerrarManualmente(new EncerramentoManual(autoria, dados.Motivo), dados.ConfirmacaoDeExclusao, j.Contexto),
-            SemAvisos,
+            OperacaoNaJanela.Encerramento,
             cancellationToken);
     }
 
     private static List<ItemDoLote> Itens(IReadOnlyList<DecisaoDaMigracaoRequest>? decisoes) =>
         [.. (decisoes ?? []).Select(static d => new ItemDoLote(d.ConcessaoId, ResultadoDaMigracaoCodigo.TentarLerDaPessoa(d.Decisao)))];
 
-    private static Task<IReadOnlyList<EnviarEmail>> SemAvisos(JanelaDaOperacao janela, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<EnviarEmail>>([]);
+    // A decisão avisa quem migrou, quem foi recusado e quem decide o que vem depois; o lote retém as concessões do gestor
+    // que o enviou, e quem pode decidi-las precisa saber que o prazo corre; o encerramento da janela avisa o fim.
+    private async Task<IReadOnlyList<EnviarEmail>> AvisosAsync(
+        JanelaDaOperacao janela, EstadoDaJanelaAntesDaOperacao antes, OperacaoNaJanela operacao, Identidade ator, CancellationToken cancellationToken)
+    {
+        MudancasDaJanela mudancas = MudancasDaJanela.Entre(antes, janela.Janela, janela.Contexto);
+        IReadOnlyList<EnviarEmail> dasDecisoes = await _efeitos.DaDecisaoAsync(janela, mudancas, operacao, ator, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> doFim = await _efeitos.DoFimAsync(janela, mudancas, ator, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dasRetidas = operacao == OperacaoNaJanela.Lote
+            ? await AvisarDasRetidasAsync(janela, cancellationToken).ConfigureAwait(false)
+            : [];
 
-    // O lote retém as concessões do gestor que o enviou, e quem pode decidi-las precisa saber que o prazo corre.
+        return [.. dasDecisoes, .. doFim, .. dasRetidas];
+    }
+
     private Task<IReadOnlyList<EnviarEmail>> AvisarDasRetidasAsync(JanelaDaOperacao janela, CancellationToken cancellationToken)
     {
         IReadOnlyList<Concessao> retidas =
@@ -109,8 +124,8 @@ public sealed class DecisoesDaJanela
         ];
 
         return retidas.Count == 0
-            ? SemAvisos(janela, cancellationToken)
-            : _avisos.DasRetidasAsync(janela.Perfil, janela.Janela, retidas, cancellationToken);
+            ? Task.FromResult<IReadOnlyList<EnviarEmail>>([])
+            : _avisos.DasRetidasAsync(janela.Perfil, janela.Janela, retidas, janela.Contexto.Agora, cancellationToken);
     }
 
     private async Task<GravacaoDaOperacao<JanelaDeMigracaoDto>> ExecutarAsync(
@@ -118,7 +133,7 @@ public sealed class DecisoesDaJanela
         Etapa etapa,
         IVerificadorDeAcesso verificador,
         Func<JanelaDaOperacao, AutoriaDaVersao, Result> transicao,
-        Func<JanelaDaOperacao, CancellationToken, Task<IReadOnlyList<EnviarEmail>>> avisos,
+        OperacaoNaJanela operacao,
         CancellationToken cancellationToken)
     {
         Result<AutoriaDaVersao> autorizada = await _autorizacao
@@ -135,27 +150,29 @@ public sealed class DecisoesDaJanela
             .ExecutarAsync(
                 perfilId,
                 etapa.TravaProtecao,
-                j => DecidirAsync(j, transicao(j, autoria), autoria, avisos, cancellationToken),
+                j => DecidirAsync(j, autoria, transicao, operacao, cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
     }
 
-    private static async Task<DesfechoDaOperacao<JanelaDeMigracaoDto>> DecidirAsync(
+    private async Task<DesfechoDaOperacao<JanelaDeMigracaoDto>> DecidirAsync(
         JanelaDaOperacao janela,
-        Result transicao,
         AutoriaDaVersao autoria,
-        Func<JanelaDaOperacao, CancellationToken, Task<IReadOnlyList<EnviarEmail>>> avisos,
+        Func<JanelaDaOperacao, AutoriaDaVersao, Result> transicao,
+        OperacaoNaJanela operacao,
         CancellationToken cancellationToken)
     {
-        if (transicao.IsFailure)
+        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela.Janela, janela.Contexto);
+        Result resultado = transicao(janela, autoria);
+        if (resultado.IsFailure)
         {
-            return new DesfechoDaOperacao<JanelaDeMigracaoDto>(Result<JanelaDeMigracaoDto>.ValidationFailure(transicao.Errors));
+            return new DesfechoDaOperacao<JanelaDeMigracaoDto>(Result<JanelaDeMigracaoDto>.ValidationFailure(resultado.Errors));
         }
 
         JanelaDeMigracaoDto dto = JanelaMapping.ToDto(janela.Janela, janela.Perfil, janela.Contexto, autoria.Pessoa);
+        IReadOnlyList<EnviarEmail> avisos = await AvisosAsync(janela, antes, operacao, autoria.Pessoa, cancellationToken).ConfigureAwait(false);
 
-        return new DesfechoDaOperacao<JanelaDeMigracaoDto>(
-            Result<JanelaDeMigracaoDto>.Success(dto), Avisos: await avisos(janela, cancellationToken).ConfigureAwait(false));
+        return new DesfechoDaOperacao<JanelaDeMigracaoDto>(Result<JanelaDeMigracaoDto>.Success(dto), Avisos: avisos);
     }
 
     private sealed record Etapa(EtapaDaVersao Permissao, bool TravaProtecao);

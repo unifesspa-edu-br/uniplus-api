@@ -38,7 +38,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         Concessao concessao = Conceder(perfil);
         TrocaDeVigencia troca = Trocar(perfil, A);
 
-        await Efeitos(concessoes: [concessao]).AplicarAsync(perfil, troca, CancellationToken.None);
+        await Efeitos(concessoes: [concessao]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         concessao.VersaoId.Should().Be(troca.Nova.Id);
     }
@@ -51,7 +51,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         Guid versaoAntiga = concessao.VersaoId!.Value;
         TrocaDeVigencia troca = Trocar(perfil, A, B);
 
-        await Efeitos(concessoes: [concessao]).AplicarAsync(perfil, troca, CancellationToken.None);
+        await Efeitos(concessoes: [concessao]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         concessao.VersaoId.Should().Be(versaoAntiga);
     }
@@ -63,7 +63,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         PedidoDeConcessao pedido = Pedido(perfil, paraSiMesmo: true);
         TrocaDeVigencia troca = Trocar(perfil, A);
 
-        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido]).AplicarAsync(perfil, troca, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         avisos.Should().BeEmpty();
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
@@ -79,7 +79,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         TrocaDeVigencia troca = Trocar(perfil, A);
         TitularComEmail gestor = new(new Identidade(Emissor, "isabella.figueiredo"), "isabellapriscilafigueiredo@uniplus-test.local");
 
-        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido], titulares: [gestor]).AplicarAsync(perfil, troca, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido], titulares: [gestor]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.ValidaAte.Should().BeNull();
@@ -96,7 +96,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         PedidoDeConcessao pedido = Pedido(perfil, paraSiMesmo: false);
         TrocaDeVigencia troca = Trocar(perfil, A, B);
 
-        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido]).AplicarAsync(perfil, troca, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
         pedido.EncerradoEm.Should().NotBeNull();
@@ -119,7 +119,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         cancelado.Cancelar(DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         TrocaDeVigencia troca = Trocar(perfil, A, B);
 
-        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [doOutro, cancelado]).AplicarAsync(perfil, troca, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [doOutro, cancelado]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         avisos.Should().BeEmpty();
         doOutro.TrocasDeVersao.Should().BeEmpty();
@@ -133,7 +133,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         Perfil perfil = PerfisDeTeste.Pendente("Perfil novo", "Perfil de teste.", [A], Catalogo);
         TrocaDeVigencia troca = PerfisDeTeste.EntrarEmVigor(perfil, Catalogo).Troca!;
 
-        Func<Task> aplicar = () => Efeitos().AplicarAsync(perfil, troca, CancellationToken.None);
+        Func<Task> aplicar = () => Efeitos().AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         await aplicar.Should().ThrowAsync<ArgumentException>();
     }
@@ -146,6 +146,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
             new AvisosDoPedido(new ConcessoesNaMemoria(titulares: titulares ?? []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
             CenarioDaGovernancaDaVersao.AvisoDeDevolucao(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
             CenarioDaGovernancaDaVersao.JanelaDaTroca(new JanelasNaMemoria(), new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), TimeProvider.System),
+            CenarioDaGovernancaDaVersao.AvisosDosEfeitos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
             TimeProvider.System);
 
     private static Perfil PerfilNaVersao1(params string[] permissoes) =>

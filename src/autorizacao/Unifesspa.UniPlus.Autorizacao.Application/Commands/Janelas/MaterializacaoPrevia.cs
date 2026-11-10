@@ -39,7 +39,7 @@ public sealed class MaterializacaoPrevia
         await using (escopo.ConfigureAwait(false))
         {
             await escopo.ServiceProvider.GetRequiredService<ICommandBus>()
-                .Send(new ProcessarJanelaDoPerfilCommand(perfilId), cancellationToken)
+                .Send(new MaterializarJanelaVencidaCommand(perfilId), cancellationToken)
                 .ConfigureAwait(false);
         }
     }
