@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -13,13 +14,14 @@ public sealed partial class Perfil
     /// pendente vencida expira e a que ainda vale é cancelada por contenção. A remoção pode zerar as permissões: a regra
     /// de ao menos uma é só da proposta.
     /// </summary>
-    public DesfechoDaVersao Remover(PedidoDeRemocao pedido)
+    public DesfechoDaVersao Remover(PedidoDeRemocao pedido, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
         DomainError? recusa = RecusaDaRemocao(pedido);
 
-        return recusa is null ? RemoverDaVigente(pedido) : DesfechoDaVersao.Recusa(recusa);
+        return recusa is null ? RemoverDaVigente(pedido, catalogo) : DesfechoDaVersao.Recusa(recusa);
     }
 
     private DomainError? RecusaDaRemocao(PedidoDeRemocao pedido)
@@ -37,16 +39,17 @@ public sealed partial class Perfil
     private bool CodigosValidos(IReadOnlyList<string> codigos) =>
         codigos.Count > 0 && codigos.All(c => VersaoVigente!.Codigos().Contains(c, StringComparer.Ordinal));
 
-    private DesfechoDaVersao RemoverDaVigente(PedidoDeRemocao pedido) =>
-        EfetivarARemocao(pedido, VersaoDoPerfil.DaRemocao(VersaoVigente!, ProximoNumero(), pedido), null);
+    private DesfechoDaVersao RemoverDaVigente(PedidoDeRemocao pedido, ICatalogoDePermissoesConsultavel catalogo) =>
+        EfetivarARemocao(pedido, VersaoDoPerfil.DaRemocao(VersaoVigente!, ProximoNumero(), pedido), null, catalogo);
 
     // A remoção entra em vigor e a pendente que ainda valia é cancelada; a versão que a proposta criou além da remoção
     // passa a ser a única pendente.
-    private DesfechoDaVersao EfetivarARemocao(PedidoDeRemocao pedido, VersaoDoPerfil remocao, VersaoDoPerfil? proposta)
+    private DesfechoDaVersao EfetivarARemocao(
+        PedidoDeRemocao pedido, VersaoDoPerfil remocao, VersaoDoPerfil? proposta, ICatalogoDePermissoesConsultavel catalogo)
     {
         VersaoDoPerfil? cancelada = EncerrarPendenteParaARemocao(pedido);
         _versoes.Add(remocao);
-        TrocaDeVigencia troca = TrocarVigencia(remocao, pedido.Instante);
+        TrocaDeVigencia troca = TrocarVigencia(remocao, pedido.Instante, catalogo);
 
         if (proposta is not null)
         {

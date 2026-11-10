@@ -145,7 +145,7 @@ public sealed class PerfilPropostaTests
     public void Propor_Remove_PerfilInativo_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, _catalogo);
 
         Propor(perfil, "Analista", [Consultar, Publicar]).Erro!.Code.Should().Be(PerfilErrorCodes.Inativo);
         NadaMudou(perfil);

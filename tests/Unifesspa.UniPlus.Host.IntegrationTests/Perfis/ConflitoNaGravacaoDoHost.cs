@@ -7,19 +7,23 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 
 /// <summary>
-/// Provoca o conflito de concorrência otimista na gravação do documento de uma versão: logo antes de a gravação do
-/// host sob teste sair, outra conexão regrava a linha do documento e troca o xmin que o host leu.
+/// Provoca o conflito de concorrência otimista na gravação de uma linha: logo antes de a gravação do host sob teste
+/// sair, outra conexão regrava a linha e troca o xmin que o host leu.
 /// </summary>
 internal sealed class ConflitoNaGravacaoDoHost
 {
     private readonly Lock _trava = new();
-    private Guid? _documento;
+    private (string Sql, object[] Parametros)? _regravacao;
 
-    public void Armar(Guid documentoId)
+    public void Armar(Guid documentoId) =>
+        Armar("UPDATE autorizacao.documentos_da_versao SET updated_at = now() WHERE id = {0}", documentoId);
+
+    /// <summary>Arma a instrução que regrava a linha na próxima gravação; os parâmetros seguem a sintaxe <c>{0}</c> do EF.</summary>
+    public void Armar(string sql, params object[] parametros)
     {
         lock (_trava)
         {
-            _documento = documentoId;
+            _regravacao = (sql, parametros);
         }
     }
 
@@ -35,21 +39,21 @@ internal sealed class ConflitoNaGravacaoDoHost
 
     private async Task ProvocarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
     {
-        Guid documentoId;
+        (string Sql, object[] Parametros) regravacao;
         lock (_trava)
         {
-            if (_documento is not { } armado)
+            if (_regravacao is not { } armada)
             {
                 return;
             }
 
-            documentoId = armado;
-            _documento = null;
+            regravacao = armada;
+            _regravacao = null;
         }
 
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
         await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
-            .ExecuteSqlRawAsync("UPDATE autorizacao.documentos_da_versao SET updated_at = now() WHERE id = {0}", [documentoId], cancellationToken)
+            .ExecuteSqlRawAsync(regravacao.Sql, regravacao.Parametros, cancellationToken)
             .ConfigureAwait(false);
     }
 

@@ -58,6 +58,9 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<AprovacoesDaVersao>();
         services.AddScoped<CancelamentoDaVersao>();
         services.AddScoped<RemocaoDePermissoes>();
+        services.AddScoped<ContencaoPorSuspensao>();
+        services.AddScoped<AtivacaoDoPerfil>();
+        services.AddScoped<AvisosDaContencao>();
         services.AddScoped<EfeitosDoDesfechoDaVersao>();
         services.AddScoped<ExpiracaoDasVersoesPendentes>();
         services.AddScoped<AvisosDaVersao>();

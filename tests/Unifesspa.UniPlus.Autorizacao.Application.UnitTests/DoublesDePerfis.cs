@@ -49,7 +49,7 @@ internal static class DoublesDePerfis
 
         public int Descartes { get; private set; }
 
-        public Exception? Falha { get; init; }
+        public Exception? Falha { get; set; }
 
         public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
         {
@@ -123,6 +123,11 @@ internal static class DoublesDePerfis
 
         public Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Guid>>([.. _perfis.Where(p => p.VersaoPendente is { } v && v.Expirou(agora)).Select(p => p.Id)]);
+
+        public Task<TrilhaDaContencao?> ObterTrilhaDaContencaoAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_perfis.Find(p => p.Id == perfilId) is { } perfil
+                ? new TrilhaDaContencao(perfil.Eventos, [.. perfil.Suspensoes.SelectMany(static s => s.Decisoes)])
+                : null);
 
         public Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Perfil entity) => throw new InvalidOperationException();

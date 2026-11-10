@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
@@ -52,6 +53,12 @@ public interface IPerfilRepository : IRepository<Perfil>
     /// por aqui.
     /// </summary>
     Task<Perfil?> ObterParaEditarAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A trilha da contenção do perfil, sem rastrear nada, com as suspensões e as desativações já fechadas; nula quando o
+    /// perfil não existe.
+    /// </summary>
+    Task<TrilhaDaContencao?> ObterTrilhaDaContencaoAsync(Guid perfilId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Indica se outro perfil já usa o nome, sem distinguir maiúsculas de minúsculas. A checagem

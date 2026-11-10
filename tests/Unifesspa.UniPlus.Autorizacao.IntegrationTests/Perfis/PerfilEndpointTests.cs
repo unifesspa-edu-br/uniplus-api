@@ -147,7 +147,7 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         Guid id = Guid.Parse(GestorDeAcessosId);
 
         using HttpResponseMessage versao = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/versoes", Corpo(Nome(), [ConsultarCatalogo]));
-        using HttpResponseMessage desativacao = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
+        using HttpResponseMessage desativacao = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/desativacao", new { motivo = "Desativado para o teste." });
 
         versao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         desativacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -164,11 +164,12 @@ public sealed class PerfilEndpointTests : PerfilEndpointTestBase
         using HttpClient diogo = await ClienteDoGestorAsync();
         Guid id = await CriarAsync(diogo);
 
-        using HttpResponseMessage desativada = await EnviarAsync(diogo, HttpMethod.Delete, $"{Rota}/{id}/ativacao");
+        using HttpResponseMessage desativada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/desativacao", new { motivo = "Desativado para o teste." });
         desativada.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await LerAsync(diogo, id)).RootElement.GetProperty("ativo").GetBoolean().Should().BeFalse();
 
-        using HttpResponseMessage reativada = await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/ativacao");
+        using HttpClient isabella = await ClienteDeOutroGestorAsync();
+        using HttpResponseMessage reativada = await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/reativacao", new { motivo = "Reativado para o teste." });
         reativada.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await LerAsync(diogo, id)).RootElement.GetProperty("ativo").GetBoolean().Should().BeTrue();
     }

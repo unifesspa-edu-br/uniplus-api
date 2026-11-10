@@ -41,6 +41,7 @@ internal static class DoublesDeAvisos
         public Task<Perfil?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.FromResult<Perfil?>(PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new CatalogoLivre()));
 
+        public Task<TrilhaDaContencao?> ObterTrilhaDaContencaoAsync(Guid perfilId, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<Perfil>> ObterTodosAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task AdicionarAsync(Perfil entity, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void Atualizar(Perfil entity) => throw new InvalidOperationException();

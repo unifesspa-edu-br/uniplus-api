@@ -152,7 +152,7 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
         Envio vigente = await PerfilVigenteAsync(diogo, Consultar);
-        (await EnviarAsync(diogo, HttpMethod.Delete, $"{RotaPerfis}/{vigente.PerfilId}/ativacao")).Dispose();
+        (await EnviarAsync(diogo, HttpMethod.Post, $"{RotaPerfis}/{vigente.PerfilId}/desativacao", new { motivo = Motivo })).Dispose();
 
         using HttpResponseMessage resposta = await RemoverBrutoAsync(diogo, vigente.PerfilId, [Consultar]);
 

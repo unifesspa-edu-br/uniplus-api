@@ -31,8 +31,13 @@ public static class AutorizacaoInfrastructureRegistration
 
         services.AddUniPlusEfInterceptors();
 
+        services.AddScoped<OrdemDaTrilhaDeContencaoInterceptor>();
+
         services.AddDbContext<AutorizacaoDbContext>((serviceProvider, options) =>
-            options.UseUniPlusNpgsqlConventions<AutorizacaoDbContext>(serviceProvider, ConnectionStringName, schema: AutorizacaoDbContext.Schema));
+        {
+            options.UseUniPlusNpgsqlConventions<AutorizacaoDbContext>(serviceProvider, ConnectionStringName, schema: AutorizacaoDbContext.Schema);
+            options.AddInterceptors(serviceProvider.GetRequiredService<OrdemDaTrilhaDeContencaoInterceptor>());
+        });
 
         // A Application consome a abstração do próprio módulo, roteada para o DbContext (ADR-0042).
         services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();

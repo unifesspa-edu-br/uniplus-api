@@ -155,8 +155,8 @@ public sealed class PerfilTests
             PerfisDeTeste.AutoriaDoAutor,
             PerfisDeTeste.Instante,
             Catalogo)).Should().Equal(PerfilErrorCodes.GovernancaImutavel);
-        perfil.Desativar().Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
-        perfil.Reativar().Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
+        PerfisDeTeste.Desativar(perfil, Catalogo).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
+        PerfisDeTeste.Reativar(perfil, Catalogo).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
         perfil.Ativo.Should().BeTrue();
     }
 
@@ -165,10 +165,10 @@ public sealed class PerfilTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
 
-        perfil.Desativar().IsSuccess.Should().BeTrue();
+        PerfisDeTeste.Desativar(perfil, Catalogo).IsSuccess.Should().BeTrue();
         perfil.Ativo.Should().BeFalse();
         perfil.VersaoPendente.Should().NotBeNull();
-        perfil.Reativar().IsSuccess.Should().BeTrue();
+        PerfisDeTeste.Reativar(perfil, Catalogo).IsSuccess.Should().BeTrue();
         perfil.Ativo.Should().BeTrue();
     }
 

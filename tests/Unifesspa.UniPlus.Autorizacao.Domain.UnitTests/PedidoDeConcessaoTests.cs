@@ -101,7 +101,7 @@ public sealed class PedidoDeConcessaoTests
     public void Criar_ViolacoesIndependentes_Acumula()
     {
         Perfil perfil = PerfilComum();
-        perfil.Desativar();
+        PerfisDeTeste.Desativar(perfil, Catalogo);
 
         Result<PedidoDeConcessao> resultado = PedidoDeConcessao.Criar(
             Betina, "leandro@gmail.com", perfil, EscopoDaConcessao.DaInstituicao(), "curta", Dominios, Catalogo, Agora);

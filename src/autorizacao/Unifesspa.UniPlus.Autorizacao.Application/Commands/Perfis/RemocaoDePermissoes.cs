@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -16,16 +17,20 @@ public sealed class RemocaoDePermissoes
     private readonly OperacaoSobreOPerfil _operacao;
     private readonly EfeitosDoDesfechoDaVersao _efeitos;
     private readonly AutoriaDaOperacao _autoria;
+    private readonly ICatalogoDePermissoesConsultavel _catalogo;
 
-    public RemocaoDePermissoes(OperacaoSobreOPerfil operacao, EfeitosDoDesfechoDaVersao efeitos, AutoriaDaOperacao autoria)
+    public RemocaoDePermissoes(
+        OperacaoSobreOPerfil operacao, EfeitosDoDesfechoDaVersao efeitos, AutoriaDaOperacao autoria, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(operacao);
         ArgumentNullException.ThrowIfNull(efeitos);
         ArgumentNullException.ThrowIfNull(autoria);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
         _operacao = operacao;
         _efeitos = efeitos;
         _autoria = autoria;
+        _catalogo = catalogo;
     }
 
     public async Task<GravacaoDaOperacao<PerfilDto>> RemoverAsync(
@@ -66,5 +71,5 @@ public sealed class RemocaoDePermissoes
 
     private async Task<DesfechoDaOperacao<PerfilDto>> RemoverDoPerfilAsync(
         Perfil perfil, PedidoDeRemocao pedido, CancellationToken cancellationToken) =>
-        await _efeitos.AplicarAsync(perfil, perfil.Remover(pedido), pedido.Autoria.Pessoa, cancellationToken).ConfigureAwait(false);
+        await _efeitos.AplicarAsync(perfil, perfil.Remover(pedido, _catalogo), pedido.Autoria.Pessoa, cancellationToken).ConfigureAwait(false);
 }

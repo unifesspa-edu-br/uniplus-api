@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
@@ -160,7 +161,11 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
         Perfil perfil = await db.Perfis.SingleAsync(p => p.Id == perfilId);
-        perfil.Desativar();
+        perfil.Desativar(
+            new Identidade("https://idp.test/realms/unifesspa", "betina.neves", "Betina Neves"),
+            "Desativado para o teste.",
+            scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow(),
+            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
         await db.SaveChangesAsync();
     }
 }

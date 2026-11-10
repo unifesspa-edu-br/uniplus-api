@@ -25,12 +25,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </para>
 /// <para>
 /// <b>Perfil não se exclui, se desativa.</b> Desativar não revoga concessão alguma nem cancela versão; só impede
-/// pedidos e versões novos.
+/// pedidos e versões novos. A contenção do perfil inteiro é a suspensão, que bloqueia todas as concessões na decisão de
+/// acesso sem revogá-las.
 /// </para>
 /// <para>
 /// <b>Perfis de governança</b> (<see cref="Governanca"/> preenchida) são de sistema: nascem da carga inicial, têm as
 /// permissões próprias, sem versão, são os únicos que podem reunir permissões reservadas à governança e não se
-/// alteram, reativam nem desativam por esta API.
+/// alteram, suspendem, reativam nem desativam por esta API.
 /// </para>
 /// </remarks>
 public sealed partial class Perfil : EntityBase
@@ -142,12 +143,6 @@ public sealed partial class Perfil : EntityBase
             : Result<VersaoDoPerfil>.Failure(recusa);
     }
 
-    /// <summary>Reativa o perfil. Reativar o que já está ativo não muda nada.</summary>
-    public Result Reativar() => AlterarAtivo(true);
-
-    /// <summary>Desativa o perfil. Desativar o que já está inativo não muda nada.</summary>
-    public Result Desativar() => AlterarAtivo(false);
-
     /// <summary>
     /// O alcance em que o perfil se concede: unidade quando todas as permissões em vigor são de unidade, instituição
     /// quando nenhuma é. Nulo quando mistura os dois.
@@ -157,18 +152,6 @@ public sealed partial class Perfil : EntityBase
         ArgumentNullException.ThrowIfNull(catalogo);
 
         return AlcanceDasPermissoes.De(ComposicaoEmVigor, catalogo);
-    }
-
-    private Result AlterarAtivo(bool ativo)
-    {
-        if (Governanca is not null)
-        {
-            return Result.Failure(PerfilErros.GovernancaImutavel());
-        }
-
-        Ativo = ativo;
-
-        return Result.Success();
     }
 
     private Result<VersaoDoPerfil> ObterVersao(Guid versaoId) =>

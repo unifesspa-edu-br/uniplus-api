@@ -9,13 +9,16 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// <see cref="DbContext"/> do módulo Autorização, no schema <c>autorizacao</c> do banco único,
-/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões, anexos e trocas de versão, as revisões periódicas dos acessos e o cache de Idempotency-Key
+/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões, anexos e trocas de versão, as revisões periódicas dos acessos, a contenção dos perfis (suspensões, desativações e a trilha) e o cache de Idempotency-Key
 /// (ADR-0027) adjacente, que permite gravação atômica com o outbox.
 /// </summary>
 public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
 {
     /// <summary>Schema do módulo: tabelas, índices, FKs e idempotency_cache deste DbContext.</summary>
     public const string Schema = "autorizacao";
+
+    /// <summary>A sequence compartilhada que dá a ordem total da trilha da contenção do perfil.</summary>
+    public const string SequenciaDaOrdemDaTrilha = "ordem_da_trilha_de_contencao";
 
     public AutorizacaoDbContext(DbContextOptions<AutorizacaoDbContext> options)
         : base(options)
@@ -35,6 +38,14 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
     public DbSet<DocumentoDaVersao> DocumentosDasVersoes => Set<DocumentoDaVersao>();
 
     public DbSet<LeituraDoDocumentoDaVersao> LeiturasDosDocumentosDasVersoes => Set<LeituraDoDocumentoDaVersao>();
+
+    public DbSet<SuspensaoDoPerfil> SuspensoesDosPerfis => Set<SuspensaoDoPerfil>();
+
+    public DbSet<DecisaoDaRetomada> DecisoesDasRetomadas => Set<DecisaoDaRetomada>();
+
+    public DbSet<DesativacaoDoPerfil> DesativacoesDosPerfis => Set<DesativacaoDoPerfil>();
+
+    public DbSet<EventoDaContencao> EventosDaContencao => Set<EventoDaContencao>();
 
     public DbSet<Concessao> Concessoes => Set<Concessao>();
 
@@ -75,6 +86,7 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AutorizacaoDbContext).Assembly);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
         modelBuilder.AplicarFiltroGlobalSoftDelete();
+        modelBuilder.HasSequence<long>(SequenciaDaOrdemDaTrilha, Schema).StartsAt(1).IncrementsBy(1);
 
         base.OnModelCreating(modelBuilder);
     }

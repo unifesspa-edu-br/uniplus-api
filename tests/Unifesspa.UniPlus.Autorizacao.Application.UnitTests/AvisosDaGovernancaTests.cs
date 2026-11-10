@@ -49,6 +49,7 @@ public sealed class AvisosDaGovernancaTests
     [InlineData(TipoDeAviso.PermissoesRemovidas, "permissoes_removidas")]
     [InlineData(TipoDeAviso.VersaoCanceladaPelaRemocao, "versao_cancelada_pela_remocao")]
     [InlineData(TipoDeAviso.AprovacoesDescartadas, "aprovacoes_descartadas")]
+    [InlineData(TipoDeAviso.PerfilSuspenso, "perfil_suspenso")]
     public void Tipo_TemCodigoEFinalidade(TipoDeAviso tipo, string codigo)
     {
         tipo.ToCodigo().Should().Be(codigo);

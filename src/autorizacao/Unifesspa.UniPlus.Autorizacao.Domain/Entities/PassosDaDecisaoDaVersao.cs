@@ -114,6 +114,6 @@ internal sealed class PassosDaDecisaoDaVersao
 
         bool completa = _pedida.Etapa == EtapaDaVersao.ProtecaoDeDados || !diferenca.ExigeProtecaoDeDados;
 
-        return DesfechoDaVersao.Concluido(completa ? _perfil.TrocarVigencia(_versao, _pedida.Instante) : null);
+        return DesfechoDaVersao.Concluido(completa ? _perfil.TrocarVigencia(_versao, _pedida.Instante, _catalogo) : null);
     }
 }
