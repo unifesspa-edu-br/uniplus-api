@@ -27,8 +27,8 @@ public sealed class JanelaDeMigracaoPrazoNoHostTests : JanelaDeMigracaoNoHostTes
 {
     private static readonly TimeSpan DepoisDoPrazo = TimeSpan.FromHours(73);
 
-    public JanelaDeMigracaoPrazoNoHostTests(MonolitoDaInstalacaoFixture fixture)
-        : base(fixture)
+    public JanelaDeMigracaoPrazoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
+        : base(fixture, hostDaClasse)
     {
     }
 

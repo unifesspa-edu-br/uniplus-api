@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
     Justification = "xUnit exige tipo de teste público.")]
 public sealed class JanelaDeMigracaoNoHostTests : JanelaDeMigracaoNoHostTestBase
 {
-    public JanelaDeMigracaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
-        : base(fixture)
+    public JanelaDeMigracaoNoHostTests(MonolitoDaInstalacaoFixture fixture, HostDaJanelaDeMigracao hostDaClasse)
+        : base(fixture, hostDaClasse)
     {
     }
 
