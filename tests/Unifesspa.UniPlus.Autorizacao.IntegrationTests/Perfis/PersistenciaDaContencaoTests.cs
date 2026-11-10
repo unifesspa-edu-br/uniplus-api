@@ -9,6 +9,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -148,6 +153,29 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
             Guid.CreateVersion7(), perfil, suspensao);
 
         await acao.Should().ThrowAsync<Npgsql.PostgresException>();
+    }
+
+    [Fact(DisplayName = "A gravação síncrona numera o registro novo da trilha pela sequence, como a assíncrona")]
+    public async Task Trilha_GravacaoSincrona_NumeraORegistro()
+    {
+        Guid perfilId = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        await using (AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope())
+        {
+            IServiceProvider servicos = scope.ServiceProvider;
+            Perfil perfil = (await servicos.GetRequiredService<IPerfilRepository>().ObterParaEditarAsync(perfilId))!;
+            perfil.Suspender(
+                new Identidade("https://idp.test/realms/unifesspa", "diogo.souza", "Diogo Souza"),
+                EtapaDaVersao.GestaoDeAcessos,
+                Motivo,
+                DateTimeOffset.UtcNow,
+                servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>());
+
+            servicos.GetRequiredService<AutorizacaoDbContext>().SaveChanges();
+        }
+
+        (string Tipo, long Ordem)[] registros = await OrdemDosRegistrosAsync(perfilId);
+
+        registros.Should().ContainSingle().Which.Ordem.Should().BePositive();
     }
 
     [Fact(DisplayName = "A ordem da trilha é única e crescente entre as quatro tabelas, na ordem em que as operações aconteceram")]
