@@ -11,7 +11,8 @@ public sealed partial class ReclassificacaoDaPermissao
     /// <summary>
     /// Decide uma etapa para as concessões alvo, de forma atômica: ou todas são decididas ou nenhuma. Quando as etapas
     /// exigidas de uma concessão estão todas liberadas, ela ganha a base nova. Na decisão em lote, a concessão do próprio
-    /// decisor, a que ele já decidiu em outra etapa e a que o escopo não comporta ficam de fora e voltam na resposta.
+    /// decisor e a que o escopo não comporta ficam de fora e voltam na resposta; a que ele já decidiu em outra etapa recusa
+    /// o lote inteiro.
     /// </summary>
     public Result<DesfechoDaDecisaoDaReclassificacao> Decidir(PedidoDeDecisaoDaReclassificacao pedido)
     {
@@ -74,7 +75,7 @@ public sealed partial class ReclassificacaoDaPermissao
         concessao.Decisoes.Any(d => d.Etapa != pedido.Etapa && d.Decisor.Equals(pedido.Decisor));
 
     private static bool ParaOutraPessoa(PedidoDeDecisaoDaReclassificacao pedido, ConcessaoNaReclassificacao concessao) =>
-        concessao.Beneficiario.Equals(pedido.Decisor) || DecididaEmOutraEtapaPeloDecisor(pedido, concessao);
+        concessao.Beneficiario.Equals(pedido.Decisor);
 
     // Só a gestão de acessos decide o escopo, e liberar o que o escopo da concessão não comporta é o que se recusa; manter
     // a suspensão continua permitido.
