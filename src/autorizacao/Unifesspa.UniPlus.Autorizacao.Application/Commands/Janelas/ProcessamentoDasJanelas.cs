@@ -72,7 +72,7 @@ public sealed partial class ProcessamentoDasJanelas
     {
         try
         {
-            Result<bool> resultado = await _bus.Send(new ProcessarJanelaDoPerfilCommand(perfilId), cancellationToken).ConfigureAwait(false);
+            Result<bool> resultado = await _bus.Send(new MaterializarJanelaVencidaCommand(perfilId), cancellationToken).ConfigureAwait(false);
             if (resultado.IsFailure)
             {
                 LogFalhaAoProcessar(_logger, perfilId, null);

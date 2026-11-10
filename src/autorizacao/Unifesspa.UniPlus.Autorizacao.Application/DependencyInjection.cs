@@ -74,11 +74,17 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDoCatalogoNaVersao>();
         services.AddScoped<ExpiracaoDasVersoesPendentes>();
         services.AddScoped<AvisosDaVersao>();
-        services.AddScoped<EmissorDeAvisos>();
-        services.AddScoped<GruposDaGovernanca>();
 
+        AdicionarEmissaoDeAvisos(services);
         AdicionarJanelaDeMigracao(services);
         AdicionarReclassificacoes(services);
+    }
+
+    private static void AdicionarEmissaoDeAvisos(IServiceCollection services)
+    {
+        services.AddScoped<EmissorDeAvisos>();
+        services.AddScoped<AvisosDosEfeitosDaJanela>();
+        services.AddScoped<GruposDaGovernanca>();
     }
 
     private static void AdicionarJanelaDeMigracao(IServiceCollection services)

@@ -86,7 +86,7 @@ public sealed class EfeitosDoDesfechoDaVersao
             return [];
         }
 
-        IReadOnlyList<EnviarEmail> dosEfeitos = await _efeitos.AplicarAsync(perfil, troca, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dosEfeitos = await _efeitos.AplicarAsync(perfil, troca, autor, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<EnviarEmail> daRemocao = troca.Nova.Origem == OrigemDaVersao.Remocao
             ? await _avisos.DaRemocaoAsync(perfil, troca, autor, cancellationToken).ConfigureAwait(false)
             : [];

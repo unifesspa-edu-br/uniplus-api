@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -56,13 +57,20 @@ public sealed class ProcessamentoDaJanela
             return new DesfechoDaOperacao<bool>(Result<bool>.Success(false));
         }
 
-        IReadOnlyList<Concessao> pendentes = [.. janela.Contexto.Concessoes.Where(c => janela.Janela.Elegivel(c, janela.Contexto.Agora))];
         IReadOnlyList<EnviarEmail> avisos = await _avisos
-            .DoLembreteAsync(janela.Perfil, janela.Janela, devido, pendentes, cancellationToken)
+            .DoLembreteAsync(janela.Perfil, janela.Janela, LembreteDe(janela, devido), cancellationToken)
             .ConfigureAwait(false);
         Marcar(janela.Janela, devido, janela.Contexto.Agora);
 
         return new DesfechoDaOperacao<bool>(Result<bool>.Success(true), Avisos: avisos);
+    }
+
+    private static LembreteDaJanela LembreteDe(JanelaDaOperacao janela, int horas)
+    {
+        IReadOnlyList<Concessao> pendentes = [.. janela.Contexto.Concessoes.Where(c => janela.Janela.Elegivel(c, janela.Contexto.Agora))];
+        IReadOnlyList<Concessao> retidas = [.. pendentes.Where(c => janela.Janela.LinhaDe(c.Id)?.Situacao == SituacaoDaMigracao.Retida)];
+
+        return new LembreteDaJanela(horas, pendentes, retidas, pendentes.Any(c => janela.Contexto.ComposicaoDe(c).ExigeProtecaoDeDados));
     }
 
     // O lembrete de 24 horas vence o de 48: quem chega atrasado recebe só o mais próximo do prazo.

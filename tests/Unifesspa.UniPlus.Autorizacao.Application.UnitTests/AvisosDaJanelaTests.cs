@@ -49,29 +49,57 @@ public sealed class AvisosDaJanelaTests
             [EmailDiogo, EmailIsabella, EmailMarlene, EmailLeandro, EmailBetina]);
     }
 
-    [Theory(DisplayName = "Os lembretes de 48 e de 24 horas avisam quem aprova e só os beneficiários com pendência")]
+    [Theory(DisplayName = "Os lembretes de 48 e de 24 horas mandam os gestores agir e advertem só os beneficiários com pendência")]
     [InlineData(48)]
     [InlineData(24)]
-    public async Task Lembrete_AvisaAprovadoresEPendentes(int horas)
+    public async Task Lembrete_AvisaAprovadoresEAdvertePendentes(int horas)
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
         Concessao[] pendentes = [Conceder(perfil, Leandro, EmailLeandro)];
 
-        IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, horas, pendentes, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, new LembreteDaJanela(horas, pendentes, [], true), CancellationToken.None);
 
         enviados.Select(e => e.Destinatario).Should().BeEquivalentTo([EmailDiogo, EmailIsabella, EmailMarlene, EmailLeandro]);
-        enviados.Select(e => e.Finalidade).Distinct().Should().ContainSingle();
+        enviados.Single(e => e.Destinatario == EmailLeandro).Finalidade.Should().Be("perfil.advertencia_de_fim_da_migracao");
+        enviados.Where(e => e.Destinatario != EmailLeandro).Select(e => e.Finalidade).Distinct().Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "A retenção avisa os gestores, menos o dono da concessão retida, e o dono")]
+    [Fact(DisplayName = "Sem a etapa da proteção de dados, o lembrete não chega a quem só aprova por ela")]
+    public async Task Lembrete_SemEtapaDaProtecao_NaoAvisaAProtecaoDeDados()
+    {
+        (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
+        Concessao[] pendentes = [Conceder(perfil, Leandro, EmailLeandro)];
+
+        IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, new LembreteDaJanela(24, pendentes, [], false), CancellationToken.None);
+
+        enviados.Select(e => e.Destinatario).Should().BeEquivalentTo([EmailDiogo, EmailIsabella, EmailLeandro]);
+    }
+
+    [Fact(DisplayName = "O dono da concessão retida recebe a advertência do prazo e os outros gestores, a mensagem de agir")]
+    public async Task Lembrete_DonoDaRetida_RecebeAAdvertencia()
+    {
+        (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
+        Concessao[] retidas = [Conceder(perfil, Diogo, EmailDiogo)];
+
+        IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, new LembreteDaJanela(24, retidas, retidas, false), CancellationToken.None);
+
+        EnviarEmail dono = enviados.Single(e => e.Destinatario == EmailDiogo);
+        dono.Finalidade.Should().Be("perfil.advertencia_de_fim_da_migracao");
+        dono.CorpoTexto.Should().Contain("Horas restantes: 24");
+        enviados.Single(e => e.Destinatario == EmailIsabella).Finalidade.Should().Be("perfil.janela_de_migracao_faltam_24_horas");
+    }
+
+    [Fact(DisplayName = "A retenção avisa os gestores, menos o dono da concessão retida, e adverte o dono")]
     public async Task Retida_AvisaGestoresMenosODono()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
         Concessao[] retidas = [Conceder(perfil, Isabella, EmailIsabella)];
 
-        IReadOnlyList<EnviarEmail> enviados = await avisos.DasRetidasAsync(perfil, janela, retidas, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> enviados = await avisos.DasRetidasAsync(perfil, janela, retidas, Instante, CancellationToken.None);
 
         enviados.Select(e => e.Destinatario).Should().BeEquivalentTo([EmailDiogo, EmailIsabella]);
+        enviados.Single(e => e.Destinatario == EmailIsabella).Finalidade.Should().Be("perfil.advertencia_de_fim_da_migracao");
+        enviados.Single(e => e.Destinatario == EmailDiogo).Finalidade.Should().Be("perfil.concessao_retida_na_migracao");
     }
 
     [Fact(DisplayName = "O beneficiário sem e-mail na concessão não recebe aviso e a janela segue com os demais")]

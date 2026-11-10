@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 
+using System.Globalization;
+
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
@@ -16,6 +18,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// </summary>
 public sealed class AvisosDaJanela
 {
+    private const string MarcoDaRetida = "retida";
+
     private readonly EmissorDeAvisos _emissor;
     private readonly GruposDaGovernanca _grupos;
     private readonly ILinkDaGovernanca _link;
@@ -46,28 +50,38 @@ public sealed class AvisosDaJanela
 
         ModeloDeAviso modelo = Modelo(TipoDeAviso.JanelaDeMigracaoAberta, perfil, janela, elegiveis.Count, acrescimo);
 
-        return await EmitirAsync(modelo, janela, [.. await AprovadoresAsync(cancellationToken).ConfigureAwait(false), .. Beneficiarios(elegiveis)], [], cancellationToken)
+        return await EmitirAsync(modelo, janela, [.. await AprovadoresAsync(cancellationToken).ConfigureAwait(false), .. Beneficiarios(elegiveis)], [], string.Empty, cancellationToken)
             .ConfigureAwait(false);
     }
 
-    /// <summary>O lembrete de 48 ou de 24 horas avisa quem aprova e cada beneficiário com pendência.</summary>
+    /// <summary>
+    /// O lembrete de 48 ou de 24 horas avisa os gestores, e a proteção de dados se há essa etapa, de que precisam agir, e
+    /// cada beneficiário com pendência da advertência de que perderá o acesso. O dono de concessão retida não recebe a
+    /// mensagem de agir: quem a decide é outro gestor.
+    /// </summary>
     public async Task<IReadOnlyList<EnviarEmail>> DoLembreteAsync(
-        Perfil perfil, JanelaDeMigracao janela, int horas, IReadOnlyList<Concessao> pendentes, CancellationToken cancellationToken)
+        Perfil perfil, JanelaDeMigracao janela, LembreteDaJanela lembrete, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(janela);
-        ArgumentNullException.ThrowIfNull(pendentes);
+        ArgumentNullException.ThrowIfNull(lembrete);
 
-        TipoDeAviso tipo = horas <= 24 ? TipoDeAviso.JanelaDeMigracaoFaltam24Horas : TipoDeAviso.JanelaDeMigracaoFaltam48Horas;
-        ModeloDeAviso modelo = Modelo(tipo, perfil, janela, pendentes.Count, []);
+        TipoDeAviso tipo = lembrete.Horas <= 24 ? TipoDeAviso.JanelaDeMigracaoFaltam24Horas : TipoDeAviso.JanelaDeMigracaoFaltam48Horas;
+        GrupoDaGovernanca[] grupos = lembrete.ComEtapaDaProtecao ? [GrupoDaGovernanca.Gestao, GrupoDaGovernanca.ProtecaoDeDados] : [GrupoDaGovernanca.Gestao];
+        List<DestinatarioDoAviso> aprovadores = await _grupos.ListarAsync(grupos, cancellationToken).ConfigureAwait(false);
+        ModeloDeAviso agir = Modelo(tipo, perfil, janela, lembrete.Pendentes.Count, []);
 
-        return await EmitirAsync(modelo, janela, [.. await AprovadoresAsync(cancellationToken).ConfigureAwait(false), .. Beneficiarios(pendentes)], [], cancellationToken)
+        IReadOnlyList<EnviarEmail> dosAprovadores = await EmitirAsync(agir, janela, aprovadores, Donos(lembrete.Retidas), string.Empty, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dosBeneficiarios = await EmitirAsync(
+            Advertencia(perfil, janela, lembrete.Horas), janela, Beneficiarios(lembrete.Pendentes), [], lembrete.Horas.ToString(CultureInfo.InvariantCulture), cancellationToken)
             .ConfigureAwait(false);
+
+        return [.. dosAprovadores, .. dosBeneficiarios];
     }
 
-    /// <summary>A concessão retida avisa os gestores, menos o dono dela, e o dono.</summary>
+    /// <summary>A concessão retida avisa os gestores, menos o dono dela, e o dono, de que perderá o acesso no prazo.</summary>
     public async Task<IReadOnlyList<EnviarEmail>> DasRetidasAsync(
-        Perfil perfil, JanelaDeMigracao janela, IReadOnlyList<Concessao> retidas, CancellationToken cancellationToken)
+        Perfil perfil, JanelaDeMigracao janela, IReadOnlyList<Concessao> retidas, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(janela);
@@ -75,13 +89,27 @@ public sealed class AvisosDaJanela
 
         ModeloDeAviso modelo = Modelo(TipoDeAviso.ConcessaoRetidaNaMigracao, perfil, janela, retidas.Count, []);
         List<DestinatarioDoAviso> gestores = await _grupos.ListarAsync(GrupoDaGovernanca.Gestao, cancellationToken).ConfigureAwait(false);
-        HashSet<Identidade> donos = [.. retidas.Select(static c => c.Beneficiario)];
+        int horas = (int)Math.Ceiling((janela.Prazo - agora).TotalHours);
 
-        IReadOnlyList<EnviarEmail> dosGestores = await EmitirAsync(modelo, janela, gestores, donos, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<EnviarEmail> dosDonos = await EmitirAsync(modelo, janela, Beneficiarios(retidas), [], cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dosGestores = await EmitirAsync(modelo, janela, gestores, Donos(retidas), string.Empty, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> dosDonos = await EmitirAsync(
+            Advertencia(perfil, janela, horas), janela, Beneficiarios(retidas), [], MarcoDaRetida, cancellationToken)
+            .ConfigureAwait(false);
 
         return [.. dosGestores, .. dosDonos];
     }
+
+    private static HashSet<Identidade> Donos(IEnumerable<Concessao> retidas) => [.. retidas.Select(static c => c.Beneficiario)];
+
+    private ModeloDeAviso Advertencia(Perfil perfil, JanelaDeMigracao janela, int horas) =>
+        new(
+            TipoDeAviso.AdvertenciaDeFimDaMigracao,
+            perfil.Nome,
+            janela.NumeroDaVersaoNova,
+            [],
+            _link.DasConcessoes(),
+            Prazo: janela.Prazo,
+            HorasRestantes: horas);
 
     // Quem aprova pela gestão ou pela proteção de dados.
     private Task<List<DestinatarioDoAviso>> AprovadoresAsync(CancellationToken cancellationToken) =>
@@ -105,6 +133,10 @@ public sealed class AvisosDaJanela
         JanelaDeMigracao janela,
         IReadOnlyList<DestinatarioDoAviso> destinatarios,
         IReadOnlyCollection<Identidade> excluidos,
+        string marco,
         CancellationToken cancellationToken) =>
-        _emissor.EmitirAsync(new PedidoDeAviso(modelo, janela.Id, string.Empty, destinatarios, excluidos), cancellationToken);
+        _emissor.EmitirAsync(new PedidoDeAviso(modelo, janela.Id, marco, destinatarios, excluidos), cancellationToken);
 }
+
+/// <summary>O que o lembrete de 48 ou de 24 horas precisa saber da janela: as horas, as concessões pendentes e retidas e se há a etapa da proteção de dados.</summary>
+public sealed record LembreteDaJanela(int Horas, IReadOnlyList<Concessao> Pendentes, IReadOnlyList<Concessao> Retidas, bool ComEtapaDaProtecao);

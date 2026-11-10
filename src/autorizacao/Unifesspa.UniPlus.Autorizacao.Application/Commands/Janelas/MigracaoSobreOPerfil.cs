@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
@@ -21,16 +22,20 @@ public sealed class MigracaoSobreOPerfil
     private readonly OperacaoSobreOPerfil _operacao;
     private readonly IJanelaDeMigracaoRepository _janelas;
     private readonly LeitorDaMigracao _leitor;
+    private readonly AvisosDosEfeitosDaJanela _avisos;
 
-    public MigracaoSobreOPerfil(OperacaoSobreOPerfil operacao, IJanelaDeMigracaoRepository janelas, LeitorDaMigracao leitor)
+    public MigracaoSobreOPerfil(
+        OperacaoSobreOPerfil operacao, IJanelaDeMigracaoRepository janelas, LeitorDaMigracao leitor, AvisosDosEfeitosDaJanela avisos)
     {
         ArgumentNullException.ThrowIfNull(operacao);
         ArgumentNullException.ThrowIfNull(janelas);
         ArgumentNullException.ThrowIfNull(leitor);
+        ArgumentNullException.ThrowIfNull(avisos);
 
         _operacao = operacao;
         _janelas = janelas;
         _leitor = leitor;
+        _avisos = avisos;
     }
 
     /// <summary>A operação de endpoint com chave de idempotência: o conflito de concorrência volta como recusa.</summary>
@@ -80,9 +85,15 @@ public sealed class MigracaoSobreOPerfil
         }
 
         ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, cancellationToken).ConfigureAwait(false);
+        JanelaDaOperacao daOperacao = new(perfil, janela, contexto);
+        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, contexto);
 
         return janela.ConferirEstado(contexto) is { } recusa
-            ? new DesfechoDaOperacao<T>(Result<T>.Failure(recusa), GravarMesmoNaFalha: true)
-            : await operacao(new JanelaDaOperacao(perfil, janela, contexto)).ConfigureAwait(false);
+            ? new DesfechoDaOperacao<T>(Result<T>.Failure(recusa), GravarMesmoNaFalha: true, Avisos: await AvisosDoFimAsync(daOperacao, antes, cancellationToken).ConfigureAwait(false))
+            : await operacao(daOperacao).ConfigureAwait(false);
     }
+
+    // O fim que a conferência materializou avisa a quem perdeu o acesso e aos grupos, sem exclusão: ninguém praticou o ato.
+    private Task<IReadOnlyList<EnviarEmail>> AvisosDoFimAsync(JanelaDaOperacao janela, EstadoDaJanelaAntesDaOperacao antes, CancellationToken cancellationToken) =>
+        _avisos.DoFimAsync(janela, MudancasDaJanela.Entre(antes, janela.Janela, janela.Contexto), null, cancellationToken);
 }

@@ -199,7 +199,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar");
 
-        avisos.Should().OnlyContain(a => a.Finalidade == "pedido.fila_do_gestor");
+        avisos.Where(a => a.Finalidade != "perfil.versao_encerrada").Should().OnlyContain(a => a.Finalidade == "pedido.fila_do_gestor");
         JsonElement voltado = await LerAsync(betina, $"{Rota}/{id}");
         voltado.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
         voltado.GetProperty("versao").GetInt32().Should().Be(2);
@@ -227,8 +227,8 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
 
         IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoAsync(perfil, "teste:atendimento:analisar", "teste:laudos:consultar");
 
-        avisos.Select(a => a.Finalidade).Should().OnlyContain(f => f == "pedido.devolvido").And.HaveCount(2);
-        avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
+        IReadOnlyList<EnviarEmail> devolucoes = [.. avisos.Where(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela")];
+        devolucoes.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
         JsonElement devolvido = await LerAsync(betina, $"{Rota}/{id}");
         devolvido.GetProperty("situacao").GetString().Should().Be("devolvido");
         devolvido.GetProperty("versao").GetInt32().Should().Be(1);

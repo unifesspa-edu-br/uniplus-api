@@ -50,6 +50,7 @@ internal sealed class CenarioDaGovernancaDaVersao
                 new AvisosDoPedido(concessoes, new SemUnidade(), new LinkDeTeste(), tempo),
                 AvisoDeDevolucao(Registro),
                 JanelaDaTroca(janelas, Registro, tempo, titulares),
+                AvisosDosEfeitos(Registro, titulares),
                 tempo),
             new AvisosDaVersao(
                 new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
@@ -96,7 +97,16 @@ internal sealed class CenarioDaGovernancaDaVersao
                 new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
                 new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
                 new LinkDeTeste(),
-                new CatalogoDaAplicacao([])));
+                new CatalogoDaAplicacao([])),
+            AvisosDosEfeitos(registro, titulares));
+
+    /// <summary>Os avisos do que a janela de migração fez às concessões e à versão anterior, sobre o registro em memória.</summary>
+    public static AvisosDosEfeitosDaJanela AvisosDosEfeitos(RegistroDeAvisosNaMemoria registro, TitularDaPermissao[]? titulares = null) =>
+        new(
+            new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
+            new GruposDaGovernanca(new TitularesDeTeste(titulares ?? [])),
+            new LinkDeTeste(),
+            new CatalogoDaAplicacao([]));
 
     public AprovacoesDaVersao Aprovacoes { get; }
 
