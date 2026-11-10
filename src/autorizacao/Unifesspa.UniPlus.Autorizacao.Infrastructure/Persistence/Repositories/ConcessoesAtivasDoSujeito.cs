@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -24,16 +25,19 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
 {
     private readonly AutorizacaoDbContext _context;
     private readonly TimeProvider _relogio;
+    private readonly CatalogoDaAplicacao _catalogo;
 
     private UsuarioRef? _pessoaLida;
     private IReadOnlyList<ConcessaoAtiva>? _concessoesLidas;
 
-    public ConcessoesAtivasDoSujeito(AutorizacaoDbContext context, TimeProvider relogio)
+    public ConcessoesAtivasDoSujeito(AutorizacaoDbContext context, TimeProvider relogio, CatalogoDaAplicacao catalogo)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(relogio);
+        ArgumentNullException.ThrowIfNull(catalogo);
         _context = context;
         _relogio = relogio;
+        _catalogo = catalogo;
     }
 
     public async Task<IReadOnlyList<ConcessaoAtiva>> ListarAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
@@ -45,15 +49,17 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
             return _concessoesLidas;
         }
 
-        List<LinhaDaConcessao> linhas = await LerLinhasAsync(pessoa, cancellationToken).ConfigureAwait(false);
-        _concessoesLidas = Agrupar(linhas);
+        List<LinhaDoAcesso> lidas = await LerLinhasAsync(pessoa, cancellationToken).ConfigureAwait(false);
+        ConferirOCatalogo(lidas);
+        _concessoesLidas = Agrupar([.. lidas.Select(static l => l.Linha).OfType<LinhaDaConcessao>()]);
         _pessoaLida = pessoa;
 
         return _concessoesLidas;
     }
 
-    // Uma única instrução SQL: o retrato das concessões e dos códigos que elas dão é consistente sob READ COMMITTED.
-    private Task<List<LinhaDaConcessao>> LerLinhasAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
+    // Uma única instrução SQL: o retrato das concessões, dos códigos que elas dão e do catálogo gravado é consistente sob
+    // READ COMMITTED.
+    private Task<List<LinhaDoAcesso>> LerLinhasAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
     {
         string emissor = pessoa.Emissor;
         string sub = pessoa.Subject;
@@ -61,7 +67,17 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
         IQueryable<Concessao> daPessoa = _context.Concessoes.AsNoTracking()
             .Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioSub == sub && c.RevogadaEm == null);
 
-        return _context.ComCodigosDeAcesso(daPessoa, _relogio.GetUtcNow()).ToListAsync(cancellationToken);
+        return _context.LinhasDeAcessoComImpressao(daPessoa, _relogio.GetUtcNow()).ToListAsync(cancellationToken);
+    }
+
+    // O catálogo gravado que não é o desta instância, ou a falta dele, recusa a decisão: a instância é anterior à implantação
+    // que o trocou, e a suspensão que ela não conhece não pode ser contornada.
+    private void ConferirOCatalogo(List<LinhaDoAcesso> lidas)
+    {
+        if (lidas.Exists(l => !string.Equals(l.Impressao, _catalogo.Impressao, StringComparison.Ordinal)))
+        {
+            throw new CatalogoDesatualizadoException();
+        }
     }
 
     // A concessão sem permissão continua listada, com a lista vazia; só o código nulo é descartado.

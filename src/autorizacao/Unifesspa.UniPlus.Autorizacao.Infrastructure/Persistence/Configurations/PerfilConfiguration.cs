@@ -111,18 +111,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             permissao.Property(x => x.Codigo).HasMaxLength(CodigoPermissaoMaxLength).IsRequired();
             permissao.HasKey("PerfilId", nameof(PermissaoDoPerfil.Codigo));
 
-            permissao.HasData(
-                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:concessoes:administrar" },
-                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:pedidos:aprovar-funcional" },
-                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:aprovar-funcional" },
-                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:perfis:manter" },
-                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
-                new { PerfilId = GestorDeAcessosId, Codigo = "autorizacao:revisoes:rever-protecao-de-dados" },
-                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:concessoes:administrar" },
-                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:pedidos:aprovar-protecao-de-dados" },
-                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:perfis:aprovar-protecao-de-dados" },
-                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:permissoes:consultar-catalogo" },
-                new { PerfilId = ProtecaoDeDadosId, Codigo = "autorizacao:revisoes:conduzir" });
+            permissao.HasData(ComposicaoDaGovernanca.Esperada.Select(static p => new { p.PerfilId, p.Codigo }));
         });
 
         builder.HasData(

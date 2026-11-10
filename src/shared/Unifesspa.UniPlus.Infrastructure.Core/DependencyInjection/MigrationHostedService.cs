@@ -23,7 +23,7 @@ internal sealed class MigrationHostedService<TContext> : IHostedService
     }
 
     public Task StartAsync(CancellationToken cancellationToken) =>
-        _services.ApplyMigrationsAsync<TContext>(cancellationToken);
+        _services.MigrarEExecutarEtapaAsync<TContext>(cancellationToken);
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
