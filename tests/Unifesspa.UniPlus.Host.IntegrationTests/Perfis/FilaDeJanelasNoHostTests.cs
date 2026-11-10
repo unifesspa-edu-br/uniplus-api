@@ -103,6 +103,47 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
         PerfisDa(await FilaAsync(marlene, EtapaProtecao)).Should().Contain(cenario.PerfilId);
     }
 
+    [Fact(DisplayName = "A proteção de dados não conta a própria concessão, e quem só tem a própria não encontra a janela")]
+    public async Task Protecao_NaoContaAPropriaConcessao()
+    {
+        JanelaAberta comOutra = await AbrirJanelaAsync(Leandro, Marlene);
+        JanelaAberta soAPropria = await AbrirJanelaAsync(Marlene);
+        using HttpClient gestao = await GestaoAsync();
+        foreach (JanelaAberta janela in new[] { comOutra, soAPropria })
+        {
+            using HttpResponseMessage lote = await EnviarLoteAsync(
+                gestao, janela.PerfilId, [.. janela.Concessoes.Values.Select(id => Decisao(id, "migrar"))]);
+            await CorpoAsync(lote, HttpStatusCode.OK);
+        }
+
+        using HttpClient marlene = await ProtecaoAsync();
+        JsonElement fila = await FilaAsync(marlene, EtapaProtecao);
+
+        ItemDoPerfil(fila, comOutra.PerfilId).GetProperty("quantidadeADecidir").GetInt32().Should().Be(1);
+        PerfisDa(fila).Should().NotContain(soAPropria.PerfilId);
+    }
+
+    [Fact(DisplayName = "A concessão vencida ou revogada deixa de contar enquanto a janela continua aberta")]
+    public async Task Gestao_ConcessaoVencidaOuRevogada_DeixaDeContar()
+    {
+        JanelaAberta cenario = await AbrirJanelaAsync(Leandro, Betina, Isabella);
+        await ExecutarSqlAsync(
+            "UPDATE autorizacao.concessoes SET valida_ate = now() + interval '1 hour' WHERE id = {0}", cenario.Concessoes[Leandro]);
+        using HttpClient diogo = await GestorAsync();
+        (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(3);
+
+        Relogio.Avancar(TimeSpan.FromHours(2));
+        (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(2);
+
+        using HttpResponseMessage revogacao = await EnviarAsync(
+            diogo, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Betina]}/revogacao",
+            new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Betina.Email });
+        revogacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(1);
+        (await JanelaAsync(diogo, cenario.PerfilId)).GetProperty("situacao").GetString().Should().Be("aberta");
+    }
+
     [Fact(DisplayName = "A fila recusa, antes de ler qualquer janela, quem não tem a permissão da etapa")]
     public async Task Fila_SemPermissaoDaEtapa_Responde403SemDados()
     {
@@ -157,6 +198,9 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
 
     private static async Task<JsonElement> FilaAsync(HttpClient cliente, string etapa) =>
         await LerAsync(cliente, $"{RotaDaFila}?etapa={etapa}");
+
+    private static async Task<int> QuantidadeAsync(HttpClient cliente, Guid perfilId) =>
+        ItemDoPerfil(await FilaAsync(cliente, EtapaGestao), perfilId).GetProperty("quantidadeADecidir").GetInt32();
 
     private static Guid[] PerfisDa(JsonElement fila) => [.. fila.EnumerateArray().Select(i => i.GetProperty("perfilId").GetGuid())];
 
