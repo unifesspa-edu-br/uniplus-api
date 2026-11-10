@@ -39,8 +39,9 @@ public interface IReclassificacaoRepository
     Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarVigentesQueSuspendemAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Ainda vale: é a mais recente do par (perfil, permissão) e a permissão continua no catálogo implantado. A permissão
-    /// que saiu do catálogo não é mais suspensa por ela, então a reclassificação não tem o que decidir.
+    /// Ainda vale: é a mais recente do par (perfil, permissão) e o catálogo implantado ainda traz a permissão com a classe e o
+    /// escopo que ela gravou. A permissão que saiu do catálogo, ou voltou a ele com outra classe ou escopo, não é mais suspensa
+    /// por ela, então a reclassificação não tem o que decidir.
     /// </summary>
     Task<bool> EstaVigenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default);
 

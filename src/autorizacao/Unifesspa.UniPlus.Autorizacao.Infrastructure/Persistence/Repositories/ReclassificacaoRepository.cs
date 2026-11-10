@@ -94,7 +94,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
     private IQueryable<ReclassificacaoDaPermissao> Vigentes() =>
         _context.Reclassificacoes.AsNoTracking()
             .Where(r => !_context.Reclassificacoes.Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha)
-                && _context.ImplantacaoAtual().Any(p => p.Codigo == r.Codigo));
+                && _context.ImplantacaoAtual().Any(p => p.Codigo == r.Codigo && p.Classificacao == r.ClassificacaoNova && p.DeUnidade == r.DeUnidadeNovo));
 
     public async Task<IReadOnlyList<LiberacaoDaReclassificacao>> ListarLiberacoesAsync(
         Guid reclassificacaoId, CancellationToken cancellationToken = default) =>

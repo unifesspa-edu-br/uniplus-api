@@ -221,6 +221,21 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         (await reclassificacoes.EstaVigenteAsync((await reclassificacoes.ObterAsync(id))!)).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "A reclassificação deixa de valer quando a permissão volta ao catálogo com outra classe")]
+    public async Task PermissaoDeVoltaComOutraClasse_DeixaDeValer()
+    {
+        (Guid perfil, _) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
+        await ConciliarAsync();
+        Guid id = await ReclassificacaoDoPerfilAsync(perfil);
+
+        await GravarCatalogoAnteriorAsync(Codigo, ClassificacaoDeProtecao.Publico, deUnidade: false, new string('c', 64));
+
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
+        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().NotContain(r => r.Id == id);
+        (await reclassificacoes.EstaVigenteAsync((await reclassificacoes.ObterAsync(id))!)).Should().BeFalse();
+    }
+
     private async Task<Guid> ConcessaoDoPerfilAsync(Guid perfil)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
