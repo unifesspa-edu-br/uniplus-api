@@ -19,16 +19,20 @@ public sealed class EfeitosDoDesfechoDaVersao
     private readonly EfeitosDaTrocaDeVigencia _efeitos;
     private readonly AvisosDaVersao _avisos;
     private readonly CatalogoDaAplicacao _catalogo;
+    private readonly ConferenciaDoCatalogoNaVersao _conferencia;
 
-    public EfeitosDoDesfechoDaVersao(EfeitosDaTrocaDeVigencia efeitos, AvisosDaVersao avisos, CatalogoDaAplicacao catalogo)
+    public EfeitosDoDesfechoDaVersao(
+        EfeitosDaTrocaDeVigencia efeitos, AvisosDaVersao avisos, CatalogoDaAplicacao catalogo, ConferenciaDoCatalogoNaVersao conferencia)
     {
         ArgumentNullException.ThrowIfNull(efeitos);
         ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(conferencia);
 
         _efeitos = efeitos;
         _avisos = avisos;
         _catalogo = catalogo;
+        _conferencia = conferencia;
     }
 
     /// <param name="perfil">O perfil já alterado pela operação.</param>
@@ -76,6 +80,7 @@ public sealed class EfeitosDoDesfechoDaVersao
     private async Task<IReadOnlyList<EnviarEmail>> DaTrocaAsync(
         Perfil perfil, TrocaDeVigencia troca, Identidade autor, CancellationToken cancellationToken)
     {
+        await _conferencia.RegistrarNaEntradaAsync(perfil, troca.Nova, cancellationToken).ConfigureAwait(false);
         if (troca.Anterior is null)
         {
             return [];

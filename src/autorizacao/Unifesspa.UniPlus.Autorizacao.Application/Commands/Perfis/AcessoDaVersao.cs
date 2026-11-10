@@ -121,6 +121,26 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
         return decisao is DecisaoPermitida;
     }
 
+    /// <summary>
+    /// Se a pessoa vê as divergências da governança: quem mantém perfis ou aprova pela proteção de dados. Registra o
+    /// desfecho de uma só vez. Nulo quando o token não identifica a pessoa.
+    /// </summary>
+    public static async Task<bool?> PodeVerAGovernancaAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        DecisaoDeAcesso manter = await AvaliarAsync(verificador, PermissaoDeManter, null, cancellationToken).ConfigureAwait(false);
+        if (manter is SemSujeito)
+        {
+            return null;
+        }
+
+        DecisaoDeAcesso protecao = await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, null, cancellationToken).ConfigureAwait(false);
+        await verificador.RegistrarDesfechoAsync([manter, protecao], IntencaoDoRegistro.Aprovador, cancellationToken).ConfigureAwait(false);
+
+        return manter is DecisaoPermitida || protecao is DecisaoPermitida;
+    }
+
     /// <summary>Registra a decisão que governou o desfecho, permitida ou negada.</summary>
     public static Task RegistrarAsync(IVerificadorDeAcesso verificador, DecisaoDeAcesso decisao, CancellationToken cancellationToken)
     {
