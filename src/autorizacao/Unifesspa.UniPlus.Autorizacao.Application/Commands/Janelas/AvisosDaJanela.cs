@@ -109,7 +109,7 @@ public sealed class AvisosDaJanela
             janela.NumeroDaVersaoNova,
             [.. acrescimo.Select(c => PerfilMapping.Descrever(c, _catalogo).Nome)],
             _link.DoPerfil(perfil.Id),
-            quantidade,
+            new ContagensDoAviso(Pendentes: quantidade),
             janela.Prazo);
 
     private Task<IReadOnlyList<EnviarEmail>> EmitirAsync(

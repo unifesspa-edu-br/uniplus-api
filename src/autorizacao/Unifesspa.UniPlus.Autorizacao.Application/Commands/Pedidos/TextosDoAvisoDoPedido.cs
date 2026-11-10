@@ -45,11 +45,6 @@ internal static class TextosDoAvisoDoPedido
             "Pedido de acesso cancelado",
             "O pedido de acesso em seu nome foi cancelado pelo solicitante.",
             "Cancelado"),
-        [SituacaoDoPedido.Devolvido] = new(
-            "pedido.devolvido",
-            "Pedido de acesso devolvido",
-            "O perfil de acesso pedido mudou e o pedido foi devolvido. Faça o pedido de novo depois que o perfil for atualizado.",
-            "Devolvido"),
     }.ToFrozenDictionary();
 
     public static TextoDoAviso Da(SituacaoDoPedido situacao) =>

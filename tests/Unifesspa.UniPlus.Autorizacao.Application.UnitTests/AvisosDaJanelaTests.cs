@@ -118,7 +118,7 @@ public sealed class AvisosDaJanelaTests
         Perfil perfil = PerfisDeTeste.Vigente($"Perfil {Guid.NewGuid():N}", "Perfil de teste.", ["a:b:c"], Catalogo);
         JanelaDeMigracao janela = JanelaDeMigracao.Abrir(perfil.Id, perfil.Versoes[^1], Instante);
         AvisosDaJanela avisos = new(
-            new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), NullLogger<EmissorDeAvisos>.Instance),
+            new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
             new TitularesPorPermissao(titulares),
             new LinkDeTeste(),
             new CatalogoDaAplicacao([]));
@@ -158,12 +158,5 @@ public sealed class AvisosDaJanelaTests
             codigo == Gestao
                 ? [new(Emissor, Diogo.Sub, EmailDiogo), new(Emissor, Isabella.Sub, EmailIsabella)]
                 : [new(Emissor, "marlene.martins", EmailMarlene), new(Emissor, Isabella.Sub, EmailIsabella)];
-    }
-
-    private sealed class LinkDeTeste : ILinkDaGovernanca
-    {
-        public string DoPerfil(Guid perfilId) => $"https://uniplus.test/configuracao/perfis/{perfilId}";
-
-        public string DaVersao(Guid perfilId, Guid versaoId) => $"https://uniplus.test/configuracao/perfis/{perfilId}/versoes/{versaoId}";
     }
 }

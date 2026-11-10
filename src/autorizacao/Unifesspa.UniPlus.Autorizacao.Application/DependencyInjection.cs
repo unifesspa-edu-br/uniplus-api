@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
+using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
 
@@ -32,6 +33,8 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
 
         services.AddScoped<AvisosDoPedido>();
+        services.AddScoped<AvisoDePedidoDevolvido>();
+        services.AddSingleton<MetricasDaGovernancaDePerfis>();
 
         AdicionarVersoesDoPerfil(services);
         AdicionarReceptoresDoResultado(services);

@@ -1,7 +1,11 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 
 using System.Collections.Frozen;
+using System.Globalization;
 using System.Net;
+
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Extensions;
 
 /// <summary>
 /// O texto de cada aviso: assunto e abertura fixos por tipo, e os campos do modelo no corpo, em texto e em HTML. Os
@@ -9,103 +13,72 @@ using System.Net;
 /// </summary>
 internal static class RedacaoDoAviso
 {
-    private static readonly FrozenDictionary<TipoDeAviso, string> Assuntos = new Dictionary<TipoDeAviso, string>
-    {
-        [TipoDeAviso.PermissoesRemovidas] = "Permissões removidas de um perfil de acesso",
-        [TipoDeAviso.VersaoCanceladaPelaRemocao] = "Versão de perfil de acesso cancelada pela remoção de permissões",
-        [TipoDeAviso.AprovacoesDescartadas] = "Aprovações de uma versão de perfil de acesso descartadas",
-        [TipoDeAviso.JanelaDeMigracaoAberta] = "Janela de migração aberta para um perfil de acesso",
-        [TipoDeAviso.JanelaDeMigracaoFaltam48Horas] = "Faltam 48 horas para o fim da migração de um perfil de acesso",
-        [TipoDeAviso.JanelaDeMigracaoFaltam24Horas] = "Faltam 24 horas para o fim da migração de um perfil de acesso",
-        [TipoDeAviso.ConcessaoRetidaNaMigracao] = "Concessão retida na migração de um perfil de acesso",
-        [TipoDeAviso.PerfilSuspenso] = "Perfil de acesso suspenso",
-        [TipoDeAviso.PermissaoReclassificada] = "Permissão de perfil de acesso reclassificada",
-        [TipoDeAviso.EscopoDaPermissaoAlterado] = "Escopo de permissão de perfil de acesso alterado",
-        [TipoDeAviso.DivergenciaDaGovernanca] = "Divergência em perfil de governança",
-    }.ToFrozenDictionary();
+    private static readonly FrozenDictionary<TipoDeAviso, TextoDoAviso> Textos = TextosDosAvisosDaVersao.Todos
+        .Concat(TextosDaJanela.Todos)
+        .Concat(TextosDosAvisosDaContencao.Todos)
+        .Concat(TextosDosAvisosDeReclassificacaoEDivergencia.Todos)
+        .ToFrozenDictionary();
 
-    public static string Assunto(TipoDeAviso tipo) =>
-        Assuntos.TryGetValue(tipo, out string? assunto) ? assunto : throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null);
+    public static string Assunto(TipoDeAviso tipo) => TextoDe(tipo).Assunto;
 
     public static string CorpoEmTexto(ModeloDeAviso modelo)
     {
         ArgumentNullException.ThrowIfNull(modelo);
 
-        string versao = modelo.VersaoNumero is { } numero ? $"\nVersão: {numero}" : string.Empty;
-        string permissoes = modelo.Permissoes.Count > 0 ? $"\nPermissões: {string.Join(", ", modelo.Permissoes)}" : string.Empty;
+        string campos = string.Concat(Campos(modelo).Select(static c => $"\n{c.Rotulo}: {c.Valor}"));
 
-        return $"{Abertura(modelo.Tipo)}\n\nPerfil: {modelo.PerfilNome}{versao}{permissoes}{Janela(modelo)}{Mudanca(modelo)}\n\nAbra em: {modelo.Link}";
+        return $"{Abertura(modelo)}\n{campos}\n\nAbra em: {modelo.Link}";
     }
 
     public static string CorpoEmHtml(ModeloDeAviso modelo)
     {
         ArgumentNullException.ThrowIfNull(modelo);
 
-        string versao = modelo.VersaoNumero is { } numero ? $"<br>Versão: <b>{numero}</b>" : string.Empty;
-        string permissoes = modelo.Permissoes.Count > 0
-            ? $"<br>Permissões: <b>{WebUtility.HtmlEncode(string.Join(", ", modelo.Permissoes))}</b>"
-            : string.Empty;
+        string campos = string.Join("<br>", Campos(modelo).Select(static c => $"{c.Rotulo}: <b>{WebUtility.HtmlEncode(c.Valor)}</b>"));
 
-        return $"<p>{Abertura(modelo.Tipo)}</p>"
-            + $"<p>Perfil: <b>{WebUtility.HtmlEncode(modelo.PerfilNome)}</b>{versao}{permissoes}{(Janela(modelo) + WebUtility.HtmlEncode(Mudanca(modelo))).Replace("\n", "<br>", StringComparison.Ordinal)}</p>"
-            + $"<p><a href=\"{WebUtility.HtmlEncode(modelo.Link)}\">Abrir</a></p>";
+        return $"<p>{Abertura(modelo)}</p><p>{campos}</p><p><a href=\"{WebUtility.HtmlEncode(modelo.Link)}\">Abrir</a></p>";
     }
 
-    // A quantidade e o prazo da janela de migração, quando o aviso é dela; o prazo vai em horário de Brasília (UTC-3).
-    private static string Janela(ModeloDeAviso modelo)
-    {
-        string quantidade = modelo.Quantidade is { } n ? $"\nConcessões: {n}" : string.Empty;
-        string prazo = modelo.Prazo is { } fim
-            ? $"\nPrazo: {fim.ToOffset(TimeSpan.FromHours(-3)).ToString("dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)} (Brasília)"
-            : string.Empty;
+    private static TextoDoAviso TextoDe(TipoDeAviso tipo) =>
+        Textos.TryGetValue(tipo, out TextoDoAviso? texto) ? texto : throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null);
 
-        return quantidade + prazo;
+    private static string Abertura(ModeloDeAviso modelo) =>
+        modelo.Forma is { } forma && TextosDaJanela.PorForma.TryGetValue((modelo.Tipo, forma), out string? daForma)
+            ? daForma
+            : TextoDe(modelo.Tipo).Abertura;
+
+    private static IEnumerable<(string Rotulo, string Valor)> Campos(ModeloDeAviso modelo)
+    {
+        yield return ("Perfil", modelo.PerfilNome);
+
+        foreach ((string rotulo, string? valor) in Opcionais(modelo).Concat(ContagensDe(modelo.Contagens)))
+        {
+            if (valor is not null)
+            {
+                yield return (rotulo, valor);
+            }
+        }
     }
 
-    // O que mudou na permissão: texto fixo do vocabulário canônico.
-    private static string Mudanca(ModeloDeAviso modelo) =>
-        modelo.Mudanca is { } mudanca ? $"\nMudança: {mudanca}" : string.Empty;
-
-    private static string Abertura(TipoDeAviso tipo) => tipo switch
+    private static IEnumerable<(string Rotulo, string? Valor)> Opcionais(ModeloDeAviso modelo)
     {
-        >= TipoDeAviso.PermissaoReclassificada => AberturaDaReclassificacao(tipo),
-        >= TipoDeAviso.JanelaDeMigracaoAberta and <= TipoDeAviso.ConcessaoRetidaNaMigracao => AberturaDaMigracao(tipo),
-        _ => AberturaDaVersao(tipo),
-    };
+        yield return ("Versão", modelo.VersaoNumero?.ToString(CultureInfo.InvariantCulture));
+        yield return ("Etapa", modelo.Etapa is { } etapa ? NomeDaEtapa(etapa) : null);
+        yield return ("Permissões", modelo.Permissoes.Count > 0 ? string.Join(", ", modelo.Permissoes) : null);
+        yield return ("Prazo", modelo.Prazo is { } prazo ? $"{prazo.ParaHorarioBrasilia().ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)} (Brasília)" : null);
+        yield return ("Horas restantes", modelo.HorasRestantes?.ToString(CultureInfo.InvariantCulture));
+        yield return ("Mudança", modelo.Mudanca);
+    }
 
-    private static string AberturaDaReclassificacao(TipoDeAviso tipo) => tipo switch
+    private static IEnumerable<(string Rotulo, string? Valor)> ContagensDe(ContagensDoAviso? contagens)
     {
-        TipoDeAviso.PermissaoReclassificada =>
-            "A classificação de uma permissão de perfil subiu. A permissão fica suspensa nas concessões do perfil até a liberação.",
-        TipoDeAviso.EscopoDaPermissaoAlterado =>
-            "O escopo de uma permissão de perfil mudou. A permissão fica suspensa nas concessões do perfil até a liberação.",
-        TipoDeAviso.DivergenciaDaGovernanca =>
-            "Um perfil de governança diverge do que o código espera. O perfil não é suspenso; a divergência pede conferência.",
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
-    };
+        yield return ("Concessões pendentes", Numero(contagens?.Pendentes));
+        yield return ("Aguardando a proteção de dados", Numero(contagens?.Aguardando));
+        yield return ("Migradas", Numero(contagens?.Migradas));
+        yield return ("Revogadas", Numero(contagens?.Revogadas));
+    }
 
-    private static string AberturaDaVersao(TipoDeAviso tipo) => tipo switch
-    {
-        TipoDeAviso.PermissoesRemovidas => "Permissões foram removidas de um perfil de acesso, e a remoção já vale.",
-        TipoDeAviso.VersaoCanceladaPelaRemocao =>
-            "A versão que você criou foi cancelada porque o perfil teve permissões removidas. Se ela ainda for necessária, submeta-a de novo.",
-        TipoDeAviso.AprovacoesDescartadas =>
-            "As aprovações que você deu a uma versão de perfil foram descartadas porque mudou o que a versão exige. Decida de novo.",
-        TipoDeAviso.PerfilSuspenso =>
-            "Um perfil de acesso foi suspenso: nenhuma concessão dele vale até a retomada.",
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
-    };
+    private static string? Numero(int? valor) => valor?.ToString(CultureInfo.InvariantCulture);
 
-    private static string AberturaDaMigracao(TipoDeAviso tipo) => tipo switch
-    {
-        TipoDeAviso.JanelaDeMigracaoAberta =>
-            "Uma versão que acrescenta permissão entrou em vigor. As concessões da versão anterior têm 72 horas para ser migradas; quem não migrar perde o acesso.",
-        TipoDeAviso.JanelaDeMigracaoFaltam48Horas =>
-            "Faltam 48 horas para o fim da migração. As concessões ainda pendentes serão revogadas no prazo.",
-        TipoDeAviso.JanelaDeMigracaoFaltam24Horas =>
-            "Faltam 24 horas para o fim da migração. As concessões ainda pendentes serão revogadas no prazo.",
-        TipoDeAviso.ConcessaoRetidaNaMigracao =>
-            "Há concessões retidas na migração que só outra pessoa pode decidir, e o prazo corre.",
-        _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
-    };
+    private static string NomeDaEtapa(EtapaDaVersao etapa) => etapa == EtapaDaVersao.GestaoDeAcessos ? "gestão de acessos" : "proteção de dados";
 }

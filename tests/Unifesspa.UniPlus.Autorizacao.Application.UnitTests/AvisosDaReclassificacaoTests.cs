@@ -132,9 +132,9 @@ public sealed class AvisosDaReclassificacaoTests
         {
             Repositorio.NomesDosPerfis[PerfilId] = "Perfil de teste";
             Avisos = new AvisosDaReclassificacao(
-                new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), NullLogger<EmissorDeAvisos>.Instance),
+                new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
                 new TitularesPorGrupo(),
-                new LinkDeTeste(),
+                new DoublesDeAvisos.LinkDeTeste(),
                 new CatalogoDaAplicacao([]),
                 Repositorio);
         }
@@ -169,10 +169,4 @@ public sealed class AvisosDaReclassificacaoTests
         }
     }
 
-    private sealed class LinkDeTeste : ILinkDaGovernanca
-    {
-        public string DoPerfil(Guid perfilId) => $"https://uniplus.test/configuracao/perfis/{perfilId}";
-
-        public string DaVersao(Guid perfilId, Guid versaoId) => $"https://uniplus.test/configuracao/perfis/{perfilId}/versoes/{versaoId}";
-    }
 }

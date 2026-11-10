@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
+using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -68,10 +69,22 @@ internal static class DoublesDeAvisos
             Task.FromResult<UnidadeView?>(null);
     }
 
-    internal sealed class LinkDeTeste : ILinkDoPedido
+    internal sealed class LinkDeTeste : ILinkDoPedido, ILinkDaGovernanca
     {
         public string Para(Guid pedidoId) => $"https://uniplus.test/configuracao/acessos/pedidos/{pedidoId}";
+
+        public string DoPerfil(Guid perfilId) => $"https://uniplus.test/configuracao/perfis/{perfilId}";
+
+        public string DaVersao(Guid perfilId, Guid versaoId) => $"{DoPerfil(perfilId)}/versoes/{versaoId}";
+
+        public string DaJanela(Guid perfilId) => $"{DoPerfil(perfilId)}/janela";
+
+        public string DasConcessoes() => "https://uniplus.test/configuracao/concessoes";
+
+        public string DoNovoPedido() => "https://uniplus.test/configuracao/pedidos/novo";
     }
+
+    internal static MetricasDaGovernancaDePerfis MetricasDeTeste { get; } = new(TimeProvider.System);
 
     internal sealed class SemTitulares : IConcessaoRepository
     {
