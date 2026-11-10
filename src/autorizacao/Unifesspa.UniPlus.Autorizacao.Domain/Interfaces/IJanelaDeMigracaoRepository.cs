@@ -48,6 +48,13 @@ public interface IJanelaDeMigracaoRepository
     Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterComposicoesAsync(
         IReadOnlyCollection<Guid> concessaoIds, DateTimeOffset agora, CancellationToken cancellationToken = default);
 
+    /// <summary>As janelas não encerradas com o prazo por vencer em <paramref name="agora"/>, com lotes, situações e decisões, sem rastrear.</summary>
+    Task<IReadOnlyList<JanelaDeMigracao>> ListarAbertasParaLeituraAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
+
+    /// <summary>As concessões não revogadas dos perfis, sem rastrear nem travar: a leitura da fila de janelas.</summary>
+    Task<IReadOnlyList<Concessao>> ListarConcessoesAtivasDosPerfisAsync(
+        IReadOnlyCollection<Guid> perfilIds, CancellationToken cancellationToken = default);
+
     /// <summary>Os perfis com janela não encerrada, lidos sem trava: quem os processa trava e confere cada um de novo.</summary>
     Task<IReadOnlyList<Guid>> ListarPerfisComJanelaNaoEncerradaAsync(CancellationToken cancellationToken = default);
 

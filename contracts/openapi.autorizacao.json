@@ -2651,6 +2651,88 @@
         ]
       }
     },
+    "/api/autorizacao/janelas-de-migracao": {
+      "get": {
+        "tags": [
+          "JanelaDeMigracao"
+        ],
+        "parameters": [
+          {
+            "name": "etapa",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDaFilaDeJanelasDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDaFilaDeJanelasDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDaFilaDeJanelasDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/autorizacao/perfis/{id}/janela/lote": {
       "post": {
         "tags": [
@@ -7204,6 +7286,41 @@
           "expiraEm": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ItemDaFilaDeJanelasDto": {
+        "required": [
+          "perfilId",
+          "perfilNome",
+          "versaoAlvo",
+          "prazo",
+          "loteEnviado",
+          "quantidadeADecidir"
+        ],
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilNome": {
+            "type": "string"
+          },
+          "versaoAlvo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "prazo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "loteEnviado": {
+            "type": "boolean"
+          },
+          "quantidadeADecidir": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

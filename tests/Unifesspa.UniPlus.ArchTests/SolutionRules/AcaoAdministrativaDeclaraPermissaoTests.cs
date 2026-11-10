@@ -71,6 +71,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         // A janela de migração: o lote, a retida e o encerramento são da gestão de acessos, a etapa da proteção de dados é
         // da proteção de dados, e a leitura é de quem mantém perfis ou aprova por qualquer das duas etapas.
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Obter))] = typeof(ObterJanelaDoPerfilQuery),
+        [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Fila))] = typeof(ListarFilaDeJanelasQuery),
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.EnviarLote))] = typeof(EnviarLoteDaJanelaCommand),
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirRetida))] = typeof(DecidirRetidaDaJanelaCommand),
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.DecidirProtecaoDeDados))] = typeof(DecidirEtapaDaProtecaoDaJanelaCommand),

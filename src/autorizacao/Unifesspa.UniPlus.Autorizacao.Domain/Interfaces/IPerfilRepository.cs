@@ -40,6 +40,9 @@ public interface IPerfilRepository : IRepository<Perfil>
     /// </summary>
     Task<IReadOnlyList<Guid>> ListarComPendenteVencidaAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
 
+    /// <summary>Os perfis de <paramref name="ids"/>, com versões e vigências, sem rastrear nada.</summary>
+    Task<IReadOnlyList<Perfil>> ListarPorIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
+
     /// <summary>O perfil dono do documento da versão, sem rastrear nada; nulo quando o documento não existe.</summary>
     Task<Guid?> ObterPerfilIdDoDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default);
 
