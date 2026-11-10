@@ -167,7 +167,7 @@ public sealed class DecisoesDaReclassificacao
             decisao.Pedido.Todas,
             Guid.CreateVersion7(),
             decisao.Agora,
-            await _reclassificacoes.EhMaisRecenteAsync(reclassificacao, cancellationToken).ConfigureAwait(false),
+            await _reclassificacoes.EstaVigenteAsync(reclassificacao, cancellationToken).ConfigureAwait(false),
             concessoes);
     }
 

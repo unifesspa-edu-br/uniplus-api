@@ -111,8 +111,10 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     {
         using HttpClient protecao = await ProtecaoAsync();
         using HttpResponseMessage fila = await protecao.GetAsync(new Uri($"{RotaReclassificacoes}?etapa={EtapaProtecao}", UriKind.Relative));
+        string corpo = await fila.Content.ReadAsStringAsync();
+        fila.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
 
-        return await fila.Content.ReadAsStringAsync();
+        return corpo;
     }
 
     private protected Task<long> ReclassificacoesAsync(Guid perfil) =>

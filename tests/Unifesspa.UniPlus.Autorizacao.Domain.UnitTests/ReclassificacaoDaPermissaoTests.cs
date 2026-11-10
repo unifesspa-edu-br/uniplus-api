@@ -99,7 +99,7 @@ public sealed class ReclassificacaoDaPermissaoTests
 
     [Fact(DisplayName = "A reclassificação superada recusa a decisão")]
     public void Decidir_Superada_Recusa() =>
-        Recusa(Subida(false), Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Liberada, [Concessao(Paulo)], modo: new ModoDoPedido(MaisRecente: false)))
+        Recusa(Subida(false), Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Liberada, [Concessao(Paulo)], modo: new ModoDoPedido(Vigente: false)))
             .Should().Be(ReclassificacaoErrorCodes.Superada);
 
     [Fact(DisplayName = "A concessão que não reúne a permissão ou não está suspensa por ela fica fora da reclassificação")]
@@ -239,8 +239,8 @@ public sealed class ReclassificacaoDaPermissaoTests
     {
         ModoDoPedido o = modo ?? new ModoDoPedido();
 
-        return new(etapa, resultado, motivo, decisor ?? PerfisDeTeste.ProtecaoDeDados, o.TemConcessao, o.Todas, Guid.CreateVersion7(), Agora, o.MaisRecente, alvos);
+        return new(etapa, resultado, motivo, decisor ?? PerfisDeTeste.ProtecaoDeDados, o.TemConcessao, o.Todas, Guid.CreateVersion7(), Agora, o.Vigente, alvos);
     }
 
-    private sealed record ModoDoPedido(bool Todas = false, bool MaisRecente = true, bool TemConcessao = false);
+    private sealed record ModoDoPedido(bool Todas = false, bool Vigente = true, bool TemConcessao = false);
 }

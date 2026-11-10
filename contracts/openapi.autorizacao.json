@@ -8881,7 +8881,7 @@
           "codigo",
           "mudanca",
           "instante",
-          "maisRecente",
+          "vigente",
           "versoes",
           "concessoes"
         ],
@@ -8908,7 +8908,7 @@
             "type": "string",
             "format": "date-time"
           },
-          "maisRecente": {
+          "vigente": {
             "type": "boolean"
           },
           "versoes": {

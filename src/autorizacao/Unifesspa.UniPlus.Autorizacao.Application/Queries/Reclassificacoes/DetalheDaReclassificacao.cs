@@ -70,7 +70,7 @@ public sealed class DetalheDaReclassificacao
             reclassificacao.Codigo,
             Mudanca(reclassificacao),
             reclassificacao.Instante,
-            await _reclassificacoes.EhMaisRecenteAsync(reclassificacao, cancellationToken).ConfigureAwait(false),
+            await _reclassificacoes.EstaVigenteAsync(reclassificacao, cancellationToken).ConfigureAwait(false),
             [.. perfil.Versoes.Where(v => emUso.Contains(v.Id)).OrderByDescending(static v => v.Numero).Select(v => Versao(perfil, v))],
             [.. suspensas.Select(s => Concessao(perfil, reclassificacao, s, leitor))]);
     }

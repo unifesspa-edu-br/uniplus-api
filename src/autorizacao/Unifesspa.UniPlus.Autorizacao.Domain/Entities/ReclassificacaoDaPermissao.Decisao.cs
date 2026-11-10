@@ -19,7 +19,7 @@ public sealed partial class ReclassificacaoDaPermissao
         ArgumentNullException.ThrowIfNull(pedido);
 
         PartilhaDosAlvos partilha = Partilhar(pedido);
-        DomainError? recusa = !pedido.MaisRecente ? ReclassificacaoErros.Superada() : RecusaDosAlvos(pedido, partilha.Decididas) ?? RecusaDoMotivo(pedido);
+        DomainError? recusa = !pedido.Vigente ? ReclassificacaoErros.Superada() : RecusaDosAlvos(pedido, partilha.Decididas) ?? RecusaDoMotivo(pedido);
 
         return recusa is not null
             ? Result<DesfechoDaDecisaoDaReclassificacao>.Failure(recusa)

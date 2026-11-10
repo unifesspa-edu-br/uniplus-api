@@ -7,10 +7,10 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary>
-/// A fila de uma etapa: as reclassificações mais recentes de cada perfil e permissão que ainda têm concessão suspensa à
+/// A fila de uma etapa: as reclassificações vigentes de cada perfil e permissão que ainda têm concessão suspensa à
 /// espera da etapa, da mais antiga para a mais nova. A entrada vem do que ainda se exige contra a base de cada concessão,
 /// não da direção da última mudança: a descida que não leva a classe abaixo da base de uma concessão suspensa mantém essa
-/// concessão na fila, e é a reclassificação mais recente que se decide.
+/// concessão na fila, e é a reclassificação vigente que se decide.
 /// </summary>
 public sealed class FilaDeReclassificacoes
 {
@@ -32,7 +32,7 @@ public sealed class FilaDeReclassificacoes
     public async Task<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>> MontarAsync(EtapaDaVersao etapa, CancellationToken cancellationToken)
     {
         IReadOnlyList<ReclassificacaoDaPermissao> candidatas = await _reclassificacoes
-            .ListarMaisRecentesQueSuspendemAsync(cancellationToken).ConfigureAwait(false);
+            .ListarVigentesQueSuspendemAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, string> nomes = await _reclassificacoes
             .ObterNomesDosPerfisAsync([.. candidatas.Select(static r => r.PerfilId).Distinct()], cancellationToken).ConfigureAwait(false);
         List<ItemDaFilaDeReclassificacoesDto> fila = [];

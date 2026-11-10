@@ -43,10 +43,10 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
     public Task<ReclassificacaoDaPermissao?> ObterAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Reclassificacoes.FirstOrDefault(r => r.Id == id));
 
-    public Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarMaisRecentesQueSuspendemAsync(CancellationToken cancellationToken = default) =>
+    public Task<IReadOnlyList<ReclassificacaoDaPermissao>> ListarVigentesQueSuspendemAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<ReclassificacaoDaPermissao>>(Reclassificacoes);
 
-    public Task<bool> EhMaisRecenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default) => Task.FromResult(true);
+    public Task<bool> EstaVigenteAsync(ReclassificacaoDaPermissao reclassificacao, CancellationToken cancellationToken = default) => Task.FromResult(true);
 
     public Task<IReadOnlyList<LiberacaoDaReclassificacao>> ListarLiberacoesAsync(Guid reclassificacaoId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<LiberacaoDaReclassificacao>>([.. Liberacoes.Where(l => l.ReclassificacaoId == reclassificacaoId)]);
