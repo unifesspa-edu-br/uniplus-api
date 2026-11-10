@@ -133,7 +133,7 @@ public sealed class AvisosDaReclassificacaoTests
             Repositorio.NomesDosPerfis[PerfilId] = "Perfil de teste";
             Avisos = new AvisosDaReclassificacao(
                 new EmissorDeAvisos(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
-                new TitularesPorGrupo(),
+                new GruposDaGovernanca(new TitularesPorGrupo()),
                 new DoublesDeAvisos.LinkDeTeste(),
                 new CatalogoDaAplicacao([]),
                 Repositorio);

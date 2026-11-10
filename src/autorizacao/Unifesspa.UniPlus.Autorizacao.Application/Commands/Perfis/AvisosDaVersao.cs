@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
@@ -18,25 +17,21 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class AvisosDaVersao
 {
-    private static readonly string CodigoDeManterPerfis = CodigoDe(PermissaoAutorizacao.PerfisManter);
-    private static readonly string CodigoDaGestao = CodigoDe(PermissaoAutorizacao.PerfisAprovarFuncional);
-    private static readonly string CodigoDaProtecaoDeDados = CodigoDe(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados);
-
     private readonly EmissorDeAvisos _emissor;
-    private readonly ITitularesDaPermissao _titulares;
+    private readonly GruposDaGovernanca _grupos;
     private readonly ILinkDaGovernanca _link;
     private readonly CatalogoDaAplicacao _catalogo;
 
     public AvisosDaVersao(
-        EmissorDeAvisos emissor, ITitularesDaPermissao titulares, ILinkDaGovernanca link, CatalogoDaAplicacao catalogo)
+        EmissorDeAvisos emissor, GruposDaGovernanca grupos, ILinkDaGovernanca link, CatalogoDaAplicacao catalogo)
     {
         ArgumentNullException.ThrowIfNull(emissor);
-        ArgumentNullException.ThrowIfNull(titulares);
+        ArgumentNullException.ThrowIfNull(grupos);
         ArgumentNullException.ThrowIfNull(link);
         ArgumentNullException.ThrowIfNull(catalogo);
 
         _emissor = emissor;
-        _titulares = titulares;
+        _grupos = grupos;
         _link = link;
         _catalogo = catalogo;
     }
@@ -70,7 +65,7 @@ public sealed class AvisosDaVersao
         ModeloDeAviso modelo = Modelo(
             TipoDeAviso.VersaoCanceladaPelaRemocao, perfil, cancelada, [], _link.DaVersao(perfil.Id, cancelada.Id));
         DestinatarioDoAviso? criador = await IndividualAsync(
-            cancelada.CriadaPor, cancelada.CriadaPorEmail, CodigoDeManterPerfis, cancellationToken).ConfigureAwait(false);
+            cancelada.CriadaPor, cancelada.CriadaPorEmail, GrupoDaGovernanca.Manutencao, cancellationToken).ConfigureAwait(false);
 
         return await _emissor
             .EmitirAsync(new PedidoDeAviso(modelo, cancelada.Id, string.Empty, Lista(criador), []), cancellationToken)
@@ -90,7 +85,7 @@ public sealed class AvisosDaVersao
         foreach (DecisaoDaVersao decisao in desfecho.Descartadas)
         {
             DestinatarioDoAviso? decisor = await IndividualAsync(
-                decisao.Decisor, decisao.DecisorEmail, CodigoDaEtapa(decisao.Etapa), cancellationToken).ConfigureAwait(false);
+                decisao.Decisor, decisao.DecisorEmail, GruposDaGovernanca.DaEtapa(decisao.Etapa), cancellationToken).ConfigureAwait(false);
             decisores.AddRange(Lista(decisor));
         }
 
@@ -98,11 +93,6 @@ public sealed class AvisosDaVersao
             .EmitirAsync(new PedidoDeAviso(modelo, desfecho.Recalculo!.Id, string.Empty, decisores, []), cancellationToken)
             .ConfigureAwait(false);
     }
-
-    private static string CodigoDe(PermissaoAutorizacao permissao) => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Codigo;
-
-    private static string CodigoDaEtapa(EtapaDaVersao etapa) =>
-        etapa == EtapaDaVersao.GestaoDeAcessos ? CodigoDaGestao : CodigoDaProtecaoDeDados;
 
     private static DestinatarioDoAviso[] Lista(DestinatarioDoAviso? destinatario) => destinatario is null ? [] : [destinatario];
 
@@ -113,29 +103,26 @@ public sealed class AvisosDaVersao
     private async Task<IReadOnlyList<DestinatarioDoAviso>> DestinatariosDaRemocaoAsync(
         TrocaDeVigencia troca, CancellationToken cancellationToken)
     {
-        List<DestinatarioDoAviso> destinatarios = await TitularesAsync(CodigoDeManterPerfis, cancellationToken).ConfigureAwait(false);
+        List<DestinatarioDoAviso> destinatarios = await _grupos.ListarAsync(GrupoDaGovernanca.Manutencao, cancellationToken).ConfigureAwait(false);
         if (troca.Removidas.Any(c => PerfilMapping.SensibilidadeDe(c, _catalogo) >= ClassificacaoDeProtecao.Pessoal))
         {
-            destinatarios.AddRange(await TitularesAsync(CodigoDaProtecaoDeDados, cancellationToken).ConfigureAwait(false));
+            destinatarios.AddRange(await _grupos.ListarAsync(GrupoDaGovernanca.ProtecaoDeDados, cancellationToken).ConfigureAwait(false));
         }
 
         return destinatarios;
     }
 
-    private Task<List<DestinatarioDoAviso>> TitularesAsync(string codigoDaPermissao, CancellationToken cancellationToken) =>
-        TitularesDoAviso.ListarAsync(_titulares, codigoDaPermissao, cancellationToken);
-
     // O e-mail gravado no ato vale mesmo que a pessoa tenha perdido a permissão depois; sem ele, vale o da concessão
     // ativa que ainda lhe dá a permissão pertinente; sem nenhum, o aviso não sai.
     private async Task<DestinatarioDoAviso?> IndividualAsync(
-        Identidade pessoa, string? emailGravado, string codigoDaPermissao, CancellationToken cancellationToken)
+        Identidade pessoa, string? emailGravado, GrupoDaGovernanca grupo, CancellationToken cancellationToken)
     {
         if (emailGravado is not null)
         {
             return new DestinatarioDoAviso(pessoa, emailGravado);
         }
 
-        List<DestinatarioDoAviso> titulares = await TitularesAsync(codigoDaPermissao, cancellationToken).ConfigureAwait(false);
+        List<DestinatarioDoAviso> titulares = await _grupos.ListarAsync(grupo, cancellationToken).ConfigureAwait(false);
 
         return titulares.Find(t => t.Pessoa == pessoa);
     }
