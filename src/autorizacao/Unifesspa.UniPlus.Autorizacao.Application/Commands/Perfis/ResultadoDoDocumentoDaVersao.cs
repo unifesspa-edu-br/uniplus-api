@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
+using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -18,6 +19,12 @@ public enum DesfechoDoResultadoDaVersao
     Aplicado = 3,
 }
 
+/// <summary>O que o veredicto fez ao documento e os avisos que a gravação dele pede.</summary>
+public sealed record RegistroDoResultadoDaVersao(DesfechoDoResultadoDaVersao Desfecho, IReadOnlyList<EnviarEmail> Avisos)
+{
+    public static RegistroDoResultadoDaVersao Sem(DesfechoDoResultadoDaVersao desfecho) => new(desfecho, []);
+}
+
 /// <summary>
 /// Grava o veredicto da verificação de um arquivo no documento de uma versão do perfil. Roda na ordem de travas única
 /// das demais operações, que materializa o prazo vencido da pendente e o grava mesmo quando o veredicto é ignorado. O
@@ -28,17 +35,20 @@ public sealed class ResultadoDoDocumentoDaVersao
 {
     private readonly IPerfilRepository _perfis;
     private readonly OperacaoSobreOPerfil _operacao;
+    private readonly AvisoDeEtapaApta _etapaApta;
 
-    public ResultadoDoDocumentoDaVersao(IPerfilRepository perfis, OperacaoSobreOPerfil operacao)
+    public ResultadoDoDocumentoDaVersao(IPerfilRepository perfis, OperacaoSobreOPerfil operacao, AvisoDeEtapaApta etapaApta)
     {
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(operacao);
+        ArgumentNullException.ThrowIfNull(etapaApta);
 
         _perfis = perfis;
         _operacao = operacao;
+        _etapaApta = etapaApta;
     }
 
-    public async Task<DesfechoDoResultadoDaVersao> RegistrarAsync(
+    public async Task<RegistroDoResultadoDaVersao> RegistrarAsync(
         ResultadoDaVerificacaoDeArquivo resultado, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(resultado);
@@ -46,17 +56,27 @@ public sealed class ResultadoDoDocumentoDaVersao
         Guid? perfilId = await _perfis.ObterPerfilIdDoDocumentoAsync(resultado.ArquivoId, cancellationToken).ConfigureAwait(false);
         if (perfilId is null)
         {
-            return DesfechoDoResultadoDaVersao.Desconhecido;
+            return RegistroDoResultadoDaVersao.Sem(DesfechoDoResultadoDaVersao.Desconhecido);
         }
 
-        Result<DesfechoDoResultadoDaVersao> registrado = await _operacao.ExecutarSemChaveAsync(
-            perfilId.Value,
-            (perfil, contexto) => Task.FromResult(Result<DesfechoDoResultadoDaVersao>.Success(Aplicar(perfil, resultado, contexto.Agora))),
-            cancellationToken).ConfigureAwait(false);
+        GravacaoDaOperacao<RegistroDoResultadoDaVersao> gravacao = await _operacao.ExecutarComAvisosSemChaveAsync(
+            perfilId.Value, (perfil, contexto) => RegistrarNoPerfilAsync(perfil, resultado, contexto.Agora, cancellationToken), cancellationToken)
+            .ConfigureAwait(false);
 
-        return registrado.IsSuccess
-            ? registrado.Value
+        return gravacao.Resultado.IsSuccess
+            ? gravacao.Resultado.Value! with { Avisos = gravacao.Avisos }
             : throw new InvalidOperationException($"O perfil {perfilId} do documento {resultado.ArquivoId} não existe.");
+    }
+
+    private async Task<DesfechoDaOperacao<RegistroDoResultadoDaVersao>> RegistrarNoPerfilAsync(
+        Perfil perfil, ResultadoDaVerificacaoDeArquivo resultado, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        DesfechoDoResultadoDaVersao desfecho = Aplicar(perfil, resultado, agora);
+        IReadOnlyList<EnviarEmail> avisos = desfecho == DesfechoDoResultadoDaVersao.Aplicado
+            ? await _etapaApta.EmitirAsync(perfil, cancellationToken).ConfigureAwait(false)
+            : [];
+
+        return new DesfechoDaOperacao<RegistroDoResultadoDaVersao>(Result<RegistroDoResultadoDaVersao>.Success(RegistroDoResultadoDaVersao.Sem(desfecho)), Avisos: avisos);
     }
 
     private static DesfechoDoResultadoDaVersao Aplicar(Perfil perfil, ResultadoDaVerificacaoDeArquivo resultado, DateTimeOffset agora)

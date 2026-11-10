@@ -33,6 +33,7 @@ public static class AutorizacaoMessagingRegistration
         opts.ListenToRabbitQueue(FilasDaVerificacao.ResultadosAutorizacao, fila => fila.QueueType = QueueType.quorum)
             .AddStickyHandler(typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler));
 
+        opts.Policies.Add<TransacaoDoResultadoDaVerificacaoDaAutorizacao>();
         opts.Policies.Add<ReentregaDoResultadoDaVerificacaoDaAutorizacao>();
     }
 }

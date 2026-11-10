@@ -255,10 +255,13 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<DesfechoDoResultadoDaVersao> RegistrarDiretoAsync(
         Guid documentoId, VeredictoDaVerificacao veredicto = VeredictoDaVerificacao.Verificado)
     {
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await using TransacaoRetidaDeTeste transacao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
 
-        return await scope.ServiceProvider.GetRequiredService<ResultadoDoDocumentoDaVersao>()
+        RegistroDoResultadoDaVersao registro = await transacao.Servicos.GetRequiredService<ResultadoDoDocumentoDaVersao>()
             .RegistrarAsync(ResultadoDe(documentoId, veredicto), CancellationToken.None);
+        await transacao.ConfirmarAsync();
+
+        return registro.Desfecho;
     }
 
     /// <summary>Entrega o veredicto pela fila do Wolverine, como o verificador faria, e espera o processamento terminar.</summary>
