@@ -29,12 +29,23 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
 
     private const string Persistencia = @"Unifesspa\.UniPlus\.Autorizacao\.Infrastructure\.Persistence\.";
 
-    // Dono das linhas de permissão: o perfil, a versão, o mapeamento do EF e as leituras do banco que as juntam.
+    private const string Autorizacao = @"Unifesspa\.UniPlus\.Autorizacao\.";
+
+    // Quem lê o retrato que a versão guarda da classe e do escopo de cada permissão, e a composição gravada da governança, para compará-los com o catálogo
+    // gravado: a conferência na entrada em vigor, a conciliação e o detalhe da reclassificação. Não decidem acesso.
+    private const string LeitoresDoRetrato =
+        $@"{Autorizacao}Application\.Commands\.Perfis\.ConferenciaDoCatalogoNaVersao"
+        + $@"|{Autorizacao}Application\.Queries\.Reclassificacoes\.DetalheDaReclassificacao"
+        + $@"|{Autorizacao}Infrastructure\.Catalogo\.(PerfisAfetadosPeloCatalogo|PermissaoEmUso|ConciliacaoDoCatalogo)";
+
+    // Dono das linhas de permissão: o perfil, a versão, a concessão que grava a base dos códigos que a versão retrata, o
+    // mapeamento do EF, as leituras do banco que as juntam e quem lê o retrato.
     private const string DonosDasPermissoes =
-        $@"^({Dominio}(Perfil|VersaoDoPerfil|PermissaoDoPerfil|PermissaoDaVersao)"
+        $@"^({Dominio}(Perfil|VersaoDoPerfil|PermissaoDoPerfil|PermissaoDaVersao|Concessao)"
         + $@"|{Persistencia}(AutorizacaoDbContext|Configurations\.(PerfilConfiguration|VersaoDoPerfilConfiguration)"
         + $@"|Repositories\.(ComposicaoEmVigorNoBanco|ConsultasDePerfil))"
-        + $@"|{Persistencia}Migrations\..+)(\+|$)";
+        + $@"|{Persistencia}Migrations\..+"
+        + $@"|{LeitoresDoRetrato})(\+|$)";
 
     // Dono da leitura da composição em vigor: o perfil, quem presta a concessão e o pedido à versão, e a projeção.
     private const string DonosDaVersaoVigente =

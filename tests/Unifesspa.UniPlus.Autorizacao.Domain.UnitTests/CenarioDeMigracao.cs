@@ -76,7 +76,7 @@ internal sealed class CenarioDeMigracao
         Dictionary<Guid, IReadOnlyList<string>> composicoes = _concessoes.ToDictionary(
             static c => c.Id, c => (IReadOnlyList<string>)(c.VersaoId == VersaoNova.Id ? alvo : [Consultar]));
 
-        return new ContextoDaMigracao(agora, _concessoes, composicoes, alvo, _comProtecao, _catalogo);
+        return new ContextoDaMigracao(agora, _concessoes, composicoes, alvo, _comProtecao, _catalogo, Perfil.Versoes);
     }
 
     public static AutoriaDaVersao Autoria(Identidade pessoa) => PerfisDeTeste.Autoria(pessoa);

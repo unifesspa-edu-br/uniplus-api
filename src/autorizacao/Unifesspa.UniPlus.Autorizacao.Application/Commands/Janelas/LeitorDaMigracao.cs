@@ -63,6 +63,6 @@ public sealed class LeitorDaMigracao
             .ListarTitularesDaProtecaoDeDadosAsync(agora, cancellationToken)
             .ConfigureAwait(false);
 
-        return new ContextoDaMigracao(agora, concessoes, composicoes, perfil.Versoes.First(v => v.Id == janela.VersaoAlvoId).Codigos(), comProtecao, _catalogo);
+        return new ContextoDaMigracao(agora, concessoes, composicoes, perfil.Versoes.First(v => v.Id == janela.VersaoAlvoId).Codigos(), comProtecao, _catalogo, perfil.Versoes);
     }
 }

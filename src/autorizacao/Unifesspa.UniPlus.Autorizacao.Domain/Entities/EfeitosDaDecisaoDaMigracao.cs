@@ -78,7 +78,7 @@ internal sealed class EfeitosDaDecisaoDaMigracao
 
     private void Migrar(Concessao concessao, ComposicaoDoLote composicao, DecisaoHumana decisao)
     {
-        concessao.MigrarParaVersao(_janela.VersaoAlvoId, concessao.VersaoId!.Value);
+        concessao.MigrarParaVersao(_contexto.Versao(concessao.VersaoId!.Value), _contexto.Versao(_janela.VersaoAlvoId));
         Gravar(concessao, SituacaoDaMigracao.Migrada, composicao, decisao);
     }
 

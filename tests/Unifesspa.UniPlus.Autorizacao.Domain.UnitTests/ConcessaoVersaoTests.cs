@@ -39,7 +39,7 @@ public sealed class ConcessaoVersaoTests
         (Perfil perfil, Concessao concessao, Guid versao1) = ConcessaoNaVersao1(Agora.AddDays(30));
         Guid versao2 = perfil.VersaoVigente!.Id;
 
-        concessao.MigrarParaVersao(versao2, versao1);
+        concessao.MigrarParaVersao(perfil.Versoes.First(v => v.Id == versao1), perfil.VersaoVigente);
 
         concessao.VersaoId.Should().Be(versao2);
         concessao.BeneficiarioSub.Should().Be(Isabella.Sub);
@@ -55,7 +55,7 @@ public sealed class ConcessaoVersaoTests
         (Perfil perfil, Concessao concessao, Guid versao1) = ConcessaoNaVersao1();
         concessao.Revogar(Diogo, "Fim da função.", Agora).IsSuccess.Should().BeTrue();
 
-        FluentActions.Invoking(() => concessao.MigrarParaVersao(perfil.VersaoVigente!.Id, versao1))
+        FluentActions.Invoking(() => concessao.MigrarParaVersao(perfil.Versoes.First(v => v.Id == versao1), perfil.VersaoVigente!))
             .Should().Throw<InvalidOperationException>();
         concessao.VersaoId.Should().Be(versao1);
     }
@@ -65,7 +65,7 @@ public sealed class ConcessaoVersaoTests
     {
         Concessao concessao = ConcessaoDeGovernanca();
 
-        FluentActions.Invoking(() => concessao.MigrarParaVersao(Guid.NewGuid(), Guid.NewGuid()))
+        FluentActions.Invoking(() => concessao.MigrarParaVersao(PerfilNaVersao2().VersaoVigente!, PerfilNaVersao2().VersaoVigente!))
             .Should().Throw<InvalidOperationException>();
         concessao.VersaoId.Should().BeNull();
     }
@@ -75,7 +75,7 @@ public sealed class ConcessaoVersaoTests
     {
         (Perfil perfil, Concessao concessao, Guid versao1) = ConcessaoNaVersao1();
 
-        FluentActions.Invoking(() => concessao.MigrarParaVersao(perfil.VersaoVigente!.Id, Guid.NewGuid()))
+        FluentActions.Invoking(() => concessao.MigrarParaVersao(PerfilNaVersao1().VersaoVigente!, perfil.VersaoVigente!))
             .Should().Throw<InvalidOperationException>();
         concessao.VersaoId.Should().Be(versao1);
     }
