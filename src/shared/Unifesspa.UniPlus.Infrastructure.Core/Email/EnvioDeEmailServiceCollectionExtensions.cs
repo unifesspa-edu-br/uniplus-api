@@ -5,10 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
+using OpenTelemetry.Metrics;
+
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 
 using Wolverine;
 using Wolverine.Postgresql;
+using Wolverine.Runtime;
 
 public static class EnvioDeEmailServiceCollectionExtensions
 {
@@ -18,6 +21,9 @@ public static class EnvioDeEmailServiceCollectionExtensions
     /// processo. Fila local do Wolverine não serve: é em memória.
     /// </summary>
     public const string FilaDeEnvio = "email-envio";
+
+    /// <summary>A connection string do banco do outbox, onde a fila e as mortas são lidas.</summary>
+    public const string ConexaoDoOutbox = "UniPlusDb";
 
     /// <summary>
     /// Registra o transporte SMTP e valida <c>Email:Smtp</c> na subida: sem relay configurado a
@@ -33,8 +39,26 @@ public static class EnvioDeEmailServiceCollectionExtensions
             .ValidateOnStart();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<EmailSmtpOptions>, EmailSmtpOptionsValidator>());
         services.TryAddSingleton<ITransporteDeEmail, SmtpTransporteDeEmail>();
+        AddMonitoramento(services);
 
         return services;
+    }
+
+    // A fila e as mortas vivem no banco do outbox: o retrato lê dele, e o medidor entra no pipeline de métricas.
+    private static void AddMonitoramento(IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<MetricasDaFilaDeEmail>();
+        services.AddSingleton(sp => new LeituraDaFilaDeEmail(
+            sp.GetRequiredService<IConfiguration>().GetConnectionString(ConexaoDoOutbox)
+                ?? throw new InvalidOperationException($"Connection string '{ConexaoDoOutbox}' não configurada."),
+            TabelasDoEnvioDeEmail.Do(sp.GetRequiredService<IWolverineRuntime>())));
+        services.AddSingleton<AmostragemDaFilaDeEmail>();
+        services.AddHostedService<AmostragemDaFilaDeEmailHostedService>();
+
+        // O medidor nasce antes do provedor de métricas: a série dos instantes existe desde a primeira coleta.
+        services.ConfigureOpenTelemetryMeterProvider(static (sp, builder) =>
+            builder.AddMeter(sp.GetRequiredService<MetricasDaFilaDeEmail>().Medidor.Name));
     }
 
     /// <summary>Roteia <see cref="EnviarEmail"/> para a fila durável e a consome neste processo.</summary>

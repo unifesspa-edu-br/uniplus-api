@@ -10,11 +10,12 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Observability;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using Wolverine;
 
-public sealed class EntregaDeEmailTests
+public sealed class EntregaDeEmailTests : IDisposable
 {
     private const string Assunto = "Código de instalação 481516";
     private const string CorpoTexto = "Seu código de confirmação é 481516.";
@@ -22,6 +23,21 @@ public sealed class EntregaDeEmailTests
 
     private readonly ITransporteDeEmail _transporte = Substitute.For<ITransporteDeEmail>();
     private readonly LoggerDeCaptura _logger = new();
+    private readonly RelogioFixo _relogio = new(new DateTimeOffset(2026, 11, 10, 12, 0, 0, TimeSpan.Zero));
+    private readonly MetricasDaFilaDeEmail _metricas;
+    private readonly ColetorDeMedidas _coletor;
+
+    public EntregaDeEmailTests()
+    {
+        _metricas = new MetricasDaFilaDeEmail(_relogio);
+        _coletor = new ColetorDeMedidas(_metricas.Medidor);
+    }
+
+    public void Dispose()
+    {
+        _coletor.Dispose();
+        _metricas.Dispose();
+    }
 
     [Fact(DisplayName = "O log do envio traz a finalidade e o e-mail mascarado, sem assunto nem corpo")]
     public async Task Handle_Enviado_LogSemConteudoEComEmailMascarado()
@@ -86,10 +102,51 @@ public sealed class EntregaDeEmailTests
             .And.NotContain("candidato@unifesspa.edu.br");
     }
 
-    private EntregaDeEmail Entrega() => new(_transporte, _logger);
+    [Fact(DisplayName = "O aceite do relay soma em enviados e guarda o instante do último envio")]
+    public async Task Handle_Enviado_SomaEmEnviadosEGuardaOInstante()
+    {
+        await Entrega().Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
+
+        _coletor.Soma("uniplus.email.enviados").Should().Be(1);
+        _coletor.Ultima("uniplus.email.ultimo_envio").Should().Be(_relogio.GetUtcNow().ToUnixTimeSeconds());
+        _coletor.Ultima("uniplus.email.ultima_falha").Should().Be(0, "nenhuma falha aconteceu");
+    }
+
+    [Fact(DisplayName = "A falha transitória soma em falhas por tipo e guarda o instante da última falha")]
+    public async Task Handle_FalhaTransitoria_SomaEmFalhasTransitoria()
+    {
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new InvalidOperationException());
+
+        Func<Task> envio = () => Entrega().Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
+
+        await envio.Should().ThrowAsync<FalhaNoEnvioDeEmailException>();
+        _coletor.Soma("uniplus.email.falhas", "tipo", "transitoria").Should().Be(1);
+        _coletor.Soma("uniplus.email.falhas", "tipo", "permanente").Should().Be(0);
+        _coletor.Ultima("uniplus.email.ultima_falha").Should().Be(_relogio.GetUtcNow().ToUnixTimeSeconds());
+        _coletor.Ultima("uniplus.email.ultimo_envio").Should().Be(0, "nenhum aceite aconteceu");
+    }
+
+    [Fact(DisplayName = "A recusa permanente do relay soma em falhas como permanente")]
+    public async Task Handle_Rejeicao5xx_SomaEmFalhasPermanente()
+    {
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw new SmtpCommandException(SmtpErrorCode.RecipientNotAccepted, SmtpStatusCode.MailboxUnavailable, "550"));
+
+        Func<Task> envio = () => Entrega().Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
+
+        await envio.Should().ThrowAsync<EnvioDeEmailRecusadoException>();
+        _coletor.Soma("uniplus.email.falhas", "tipo", "permanente").Should().Be(1);
+    }
+
+    private EntregaDeEmail Entrega() => new(_transporte, _metricas, _relogio, _logger);
 
     private static EnviarEmail NovaMensagem() => EnviarEmail.Para(
         Email.Criar("candidato@unifesspa.edu.br").Value!, Assunto, CorpoTexto, CorpoHtml, "instalacao.codigo");
+
+    private sealed class RelogioFixo(DateTimeOffset agora) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => agora;
+    }
 
     private sealed class LoggerDeCaptura : ILogger<EntregaDeEmail>
     {
