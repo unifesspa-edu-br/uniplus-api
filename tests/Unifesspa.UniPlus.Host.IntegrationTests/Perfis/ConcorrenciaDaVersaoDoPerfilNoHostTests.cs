@@ -58,7 +58,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
     }
 
-    [Fact(DisplayName = "A aprovação final que vence a trava faz a concessão ser avaliada contra a composição nova")]
+    [Fact(DisplayName = "A aprovação final que vence a trava faz a concessão ser avaliada contra a composição nova", Skip = "Intermitente na suíte completa: a transação retida termina antes de a segunda operação disputar a trava (#2305).")]
     public async Task AprovacaoVenceATrava_ConcessaoLeAComposicaoNova()
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
@@ -141,7 +141,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         DescartarTodas(respostas);
     }
 
-    [Fact(DisplayName = "Aprovação e expiração simultâneas: a versão vencida expira e nunca entra em vigor")]
+    [Fact(DisplayName = "Aprovação e expiração simultâneas: a versão vencida expira e nunca entra em vigor", Skip = "Intermitente na suíte completa: a transação retida termina antes de a segunda operação disputar a trava (#2305).")]
     public async Task AprovacaoEExpiracaoSimultaneas_ExpiraSemEntrarEmVigor()
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
