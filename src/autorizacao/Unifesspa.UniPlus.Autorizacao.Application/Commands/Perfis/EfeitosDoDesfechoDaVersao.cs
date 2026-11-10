@@ -45,7 +45,7 @@ public sealed class EfeitosDoDesfechoDaVersao
         IReadOnlyList<EnviarEmail> avisos = await AvisosAsync(perfil, desfecho, autor, cancellationToken).ConfigureAwait(false);
         Result<PerfilDto> resposta = desfecho.Erro is { } erro
             ? Result<PerfilDto>.Failure(erro)
-            : Result<PerfilDto>.Success(PerfilMapping.ToDto(perfil, _catalogo));
+            : Result<PerfilDto>.Success(PerfilMapping.ToDto(perfil, _catalogo, autor));
 
         return new DesfechoDaOperacao<PerfilDto>(resposta, desfecho.Gravar, avisos);
     }

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>Mapeamento das versões do perfil e dos documentos que as instituem para os DTOs.</summary>
@@ -26,9 +27,9 @@ public static class VersaoMapping
             perfil.DocumentoDe(vigente)?.VerificadoEm,
             perfil.Vigencias.FirstOrDefault(v => v.VersaoId == vigente.Id && v.Aberta)?.Desde);
 
-    internal static VersaoPendenteDto? PendenteDe(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+    internal static VersaoPendenteDto? PendenteDe(Perfil perfil, CatalogoDaAplicacao catalogo, Identidade? leitor) =>
         perfil.VersaoPendente is { } pendente && perfil.DocumentoDe(pendente) is { } documento
-            ? Pendente(perfil, pendente, documento, catalogo)
+            ? Pendente(perfil, pendente, documento, catalogo, leitor)
             : null;
 
     internal static UltimaVersaoEncerradaSemVigorDto? UltimaEncerradaSemVigorDe(Perfil perfil) =>
@@ -38,7 +39,7 @@ public static class VersaoMapping
             : null;
 
     private static VersaoPendenteDto Pendente(
-        Perfil perfil, VersaoDoPerfil pendente, DocumentoDaVersao documento, CatalogoDaAplicacao catalogo)
+        Perfil perfil, VersaoDoPerfil pendente, DocumentoDaVersao documento, CatalogoDaAplicacao catalogo, Identidade? leitor)
     {
         (IReadOnlyList<string> acrescimo, bool exige) = DiferencaDe(perfil, pendente, catalogo);
 
@@ -48,7 +49,8 @@ public static class VersaoMapping
             EtapaAtual(pendente, exige).ToCodigo(), exige, Descrever(acrescimo, catalogo),
             Descrever((perfil.VersaoVigente?.Codigos() ?? []).Except(pendente.Codigos(), StringComparer.Ordinal), catalogo),
             [.. pendente.DecisoesDoCiclo().Select(DecisaoDe)],
-            pendente.CriadorTemConcessao);
+            pendente.CriadorTemConcessao,
+            leitor is not null && pendente.CriadaPor == leitor);
     }
 
     private static (IReadOnlyList<string> Acrescimo, bool Exige) DiferencaDe(

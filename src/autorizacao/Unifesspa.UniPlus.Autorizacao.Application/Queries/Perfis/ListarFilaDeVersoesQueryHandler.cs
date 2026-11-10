@@ -1,7 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
@@ -14,36 +15,27 @@ public static class ListarFilaDeVersoesQueryHandler
         ListarFilaDeVersoesQuery query,
         IVerificadorDeAcesso verificador,
         FilaDeVersoesDaEtapa fila,
+        IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(fila);
+        ArgumentNullException.ThrowIfNull(userContext);
 
         if (EtapaDaVersaoCodigo.TentarLer(query.Fila) is not { } etapa)
         {
             return Recusa(PerfilErros.EtapaInvalida());
         }
 
-        DomainError? negado = await NegadoAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
+        DomainError? negado = await AcessoAFila.NegadoAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
 
         return negado is not null
             ? Recusa(negado)
-            : Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>.Success(await fila.MontarAsync(etapa, cancellationToken).ConfigureAwait(false));
+            : Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>.Success(
+                await fila.MontarAsync(etapa, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false));
     }
 
     private static Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> Recusa(DomainError erro) =>
         Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>.Failure(erro);
-
-    private static async Task<DomainError?> NegadoAsync(IVerificadorDeAcesso verificador, EtapaDaVersao etapa, CancellationToken cancellationToken)
-    {
-        bool? pode = await AcessoDaVersao.PodeListarAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
-
-        return pode switch
-        {
-            null => PerfilHandlerErros.AutorNaoIdentificado(),
-            false => PerfilErros.SemPermissaoNaEtapa(),
-            _ => null,
-        };
-    }
 }

@@ -61,6 +61,26 @@ public sealed class DocumentoEFilaDaVersaoNoHostTests : AprovacaoDaVersaoNoHostT
         (await FilaAsync(isabella, EtapaGestao)).Should().NotContain(protegido.PerfilId);
     }
 
+    [Fact(DisplayName = "A fila e o perfil dizem só ao autor que a versão pendente é dele")]
+    public async Task Fila_ApontaAVersaoProposta_SoParaOAutor()
+    {
+        await ResetarAsync();
+        using HttpClient diogo = await GestorAsync();
+        using HttpClient isabella = await GestaoAsync();
+        Envio proposta = await PendenteDeUmPerfilNovoAsync(diogo, Consultar);
+
+        JsonElement daFilaDoAutor = await ItemDaFilaAsync(diogo, proposta.PerfilId);
+        JsonElement daFilaDeOutraPessoa = await ItemDaFilaAsync(isabella, proposta.PerfilId);
+
+        daFilaDoAutor.GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
+        daFilaDoAutor.GetProperty("versao").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
+        daFilaDeOutraPessoa.GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
+        daFilaDeOutraPessoa.GetProperty("versao").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
+        (await PerfilAsync(diogo, proposta.PerfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
+        (await PerfilAsync(isabella, proposta.PerfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
+        daFilaDoAutor.GetRawText().Should().NotContain(Diogo.Sub.ToString());
+    }
+
     [Fact(DisplayName = "A fila recusa quem não tem a permissão da etapa e a etapa que não existe")]
     public async Task Fila_RecusaSemPermissaoEEtapaInvalida()
     {
@@ -115,6 +135,13 @@ public sealed class DocumentoEFilaDaVersaoNoHostTests : AprovacaoDaVersaoNoHostT
         Envio vigente = await PerfilVigenteAsync(criador, Consultar);
 
         return await PendenteVerificadaAsync(criador, vigente.PerfilId, permissoes);
+    }
+
+    private static async Task<JsonElement> ItemDaFilaAsync(HttpClient cliente, Guid perfilId)
+    {
+        JsonElement fila = await LerAsync(cliente, $"{RotaDaFila}?fila={EtapaGestao}");
+
+        return fila.EnumerateArray().Single(i => i.GetProperty("perfilId").GetGuid() == perfilId);
     }
 
     private static async Task<Guid[]> FilaAsync(HttpClient cliente, string etapa)

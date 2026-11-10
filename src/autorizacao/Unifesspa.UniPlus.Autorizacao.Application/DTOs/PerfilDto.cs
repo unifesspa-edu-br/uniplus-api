@@ -57,6 +57,7 @@ public sealed record ComposicaoEmVigorDto(
 /// <param name="Remocao">As permissões que a versão retira da em vigor.</param>
 /// <param name="Decisoes">As decisões do ciclo atual da aprovação.</param>
 /// <param name="CriadorTemConcessao">Quem criou a versão tinha concessão do perfil.</param>
+/// <param name="PropostaPorQuemLe">Quem lê é quem criou a versão; a identidade do autor não sai da API.</param>
 public sealed record VersaoPendenteDto(
     Guid VersaoId,
     int Numero,
@@ -73,7 +74,8 @@ public sealed record VersaoPendenteDto(
     IReadOnlyList<PermissaoDoPerfilDto> Acrescimo,
     IReadOnlyList<PermissaoDoPerfilDto> Remocao,
     IReadOnlyList<DecisaoDaVersaoDto> Decisoes,
-    bool CriadorTemConcessao);
+    bool CriadorTemConcessao,
+    bool PropostaPorQuemLe);
 
 /// <summary>Uma decisão dada a uma etapa da aprovação. O motivo da recusa não sai daqui.</summary>
 public sealed record DecisaoDaVersaoDto(string Etapa, string Resultado, string? Nome, bool TemConcessao, DateTimeOffset Instante);
@@ -88,4 +90,5 @@ public sealed record UltimaVersaoEncerradaSemVigorDto(int Numero, string Situaca
 public sealed record PermissaoDoPerfilDto(string Codigo, string Nome, string Sensibilidade);
 
 /// <summary>Uma versão pendente na fila de aprovação de uma etapa, com o perfil a que pertence.</summary>
-public sealed record ItemDaFilaDeVersoesDto(Guid PerfilId, string PerfilNome, VersaoPendenteDto Versao);
+/// <param name="PropostaPorQuemLe">Quem lê é quem criou a versão, que não a aprova.</param>
+public sealed record ItemDaFilaDeVersoesDto(Guid PerfilId, string PerfilNome, VersaoPendenteDto Versao, bool PropostaPorQuemLe);

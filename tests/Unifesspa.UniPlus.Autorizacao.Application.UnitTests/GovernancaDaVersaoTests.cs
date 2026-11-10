@@ -252,7 +252,21 @@ public sealed class GovernancaDaVersaoTests
         Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> daProtecao = await Fila(cenario, EtapaProtecao);
 
         fila.Value!.Should().ContainSingle().Which.PerfilId.Should().Be(perfil.Id);
+        fila.Value!.Single().PropostaPorQuemLe.Should().BeFalse();
         daProtecao.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
+    }
+
+    [Fact(DisplayName = "A fila marca como proposta por quem lê a versão que o leitor criou")]
+    public async Task Fila_MarcaAVersaoDoProprioAutor()
+    {
+        Perfil perfil = PendenteVerificada([A]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Gestao]);
+
+        Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> fila = await Fila(cenario, EtapaGestao, PerfisDeTeste.Autor);
+
+        ItemDaFilaDeVersoesDto item = fila.Value!.Should().ContainSingle().Subject;
+        item.PropostaPorQuemLe.Should().BeTrue();
+        item.Versao.PropostaPorQuemLe.Should().BeTrue();
     }
 
     [Theory(DisplayName = "A fila de etapa desconhecida é recusada")]
@@ -291,7 +305,8 @@ public sealed class GovernancaDaVersaoTests
         recusa.Mensagens.Should().BeEmpty();
     }
 
-    private static Task<Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>> Fila(CenarioDaGovernancaDaVersao cenario, string? etapa) =>
+    private static Task<Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>> Fila(
+        CenarioDaGovernancaDaVersao cenario, string? etapa, Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.Identidade? leitor = null) =>
         ListarFilaDeVersoesQueryHandler.Handle(
             new ListarFilaDeVersoesQuery(etapa),
             cenario.Verificador,
@@ -299,6 +314,7 @@ public sealed class GovernancaDaVersaoTests
                 cenario.Perfis,
                 new Unifesspa.UniPlus.Authorization.Catalogo.CatalogoDaAplicacao([]),
                 new RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
+            new DoublesDePerfis.Usuario(leitor ?? PerfisDeTeste.Gestora),
             CancellationToken.None);
 
     private static TitularDaPermissao Titular(Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.Identidade pessoa) =>

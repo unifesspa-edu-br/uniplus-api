@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
@@ -17,12 +19,14 @@ public static class ObterPerfilQueryHandler
         IPerfilRepository repository,
         CatalogoDaAplicacao catalogo,
         LeituraDaJanela janelas,
+        IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(janelas);
+        ArgumentNullException.ThrowIfNull(userContext);
 
         Perfil? perfil = await repository.ObterPorIdAsync(query.Id, cancellationToken).ConfigureAwait(false);
         if (perfil is null)
@@ -32,6 +36,6 @@ public static class ObterPerfilQueryHandler
 
         JanelaDoPerfilDto? janela = await janelas.ResumirAsync(perfil.Id, cancellationToken).ConfigureAwait(false);
 
-        return Result<PerfilDto>.Success(PerfilMapping.ToDto(perfil, catalogo) with { Janela = janela });
+        return Result<PerfilDto>.Success(PerfilMapping.ToDto(perfil, catalogo, IdentidadeDoToken.De(userContext)) with { Janela = janela });
     }
 }
