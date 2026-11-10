@@ -26,8 +26,8 @@ public static class PerfilMapping
             ComposicaoDe(perfil, catalogo),
             VersaoMapping.PendenteDe(perfil, catalogo),
             VersaoMapping.UltimaEncerradaSemVigorDe(perfil),
-            Suspensao: SuspensaoDe(perfil, catalogo),
-            DesativadoDesde: perfil.DesativacaoAberta?.DesativadaEm);
+            SuspensaoDe(perfil, catalogo),
+            perfil.DesativacaoAberta?.DesativadaEm);
     }
 
     public static PerfilListadoDto ToListadoDto(Perfil perfil, CatalogoDaAplicacao catalogo)
