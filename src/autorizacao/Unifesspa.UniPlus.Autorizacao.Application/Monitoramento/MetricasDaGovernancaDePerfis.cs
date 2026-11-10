@@ -10,7 +10,7 @@ using System.Diagnostics.Metrics;
 public sealed record AmostraDaGovernanca(long VersoesVencendo, long JanelasAbertas, long ReclassificacoesPendentes, long Divergencias);
 
 /// <summary>
-/// As métricas da governança de perfis: o retrato que a amostragem lê do banco, guardado com <see cref="Interlocked"/> e
+/// As métricas da governança de perfis: o estado que a amostragem lê do banco, guardado com <see cref="Interlocked"/> e
 /// lido na coleta, e o contador dos avisos que ficaram sem destinatário. A idade da amostra torna visível a amostragem
 /// que parou: ela cresce desde a subida até a primeira amostra bem-sucedida e entre elas.
 /// </summary>

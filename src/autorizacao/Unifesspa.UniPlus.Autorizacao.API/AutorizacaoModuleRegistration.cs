@@ -3,9 +3,12 @@ namespace Unifesspa.UniPlus.Autorizacao.API;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using OpenTelemetry.Metrics;
+
 using Unifesspa.UniPlus.Autorizacao.API.Errors;
 using Unifesspa.UniPlus.Autorizacao.API.Rotinas;
 using Unifesspa.UniPlus.Autorizacao.Application;
+using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
@@ -44,12 +47,21 @@ public static class AutorizacaoModuleRegistration
         services.AddAutorizacaoInfrastructure();
         services.AddHostedService<ExpiracaoDasVersoesPendentesHostedService>();
         services.AddHostedService<JanelasDeMigracaoHostedService>();
+        AddMonitoramento(services);
 
         // Migrations aplicadas no StartAsync, ANTES do runtime Wolverine (invariante de ordem); a conferência do catálogo
         // roda logo depois delas, onde elas rodam.
         services.AddDbContextMigrationsOnStartup<AutorizacaoDbContext>(ConciliarOCatalogoAsync);
 
         return services;
+    }
+
+    // O medidor nasce antes do provedor de métricas: a série existe desde a primeira coleta.
+    private static void AddMonitoramento(IServiceCollection services)
+    {
+        services.AddHostedService<AmostragemDaGovernancaHostedService>();
+        services.ConfigureOpenTelemetryMeterProvider(static (sp, builder) =>
+            builder.AddMeter(sp.GetRequiredService<MetricasDaGovernancaDePerfis>().Medidor.Name));
     }
 
     private static async Task ConciliarOCatalogoAsync(IServiceProvider services, CancellationToken cancellationToken)

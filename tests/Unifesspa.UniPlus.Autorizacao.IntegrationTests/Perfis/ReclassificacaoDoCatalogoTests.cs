@@ -12,7 +12,9 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
+using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -71,6 +73,17 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         IReadOnlyList<string> permissoes = await PermissoesDaPessoaAsync(paulo);
         permissoes.Should().NotContain(Codigo).And.Contain(Outra);
         (await ContarReclassificacoesAsync(perfil)).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "O monitoramento conta a reclassificação que suspende a permissão enquanto a liberação não vem")]
+    public async Task Monitoramento_ContaAReclassificacaoPendente()
+    {
+        long antes = (await LerMonitoramentoAsync()).ReclassificacoesPendentes;
+        await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
+
+        await ConciliarAsync();
+
+        (await LerMonitoramentoAsync()).ReclassificacoesPendentes.Should().Be(antes + 1);
     }
 
     [Fact(DisplayName = "A descida de classe não suspende, não gera aviso e grava a base conciliada")]
@@ -333,6 +346,13 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
             WHERE p.implantacao_id = atual.id AND p.codigo <> {2}
             """,
             Guid.CreateVersion7(), impressao, codigo);
+
+    private async Task<AmostraDaGovernanca> LerMonitoramentoAsync()
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+
+        return await scope.ServiceProvider.GetRequiredService<ILeituraDoMonitoramento>().LerAsync(DateTimeOffset.UtcNow);
+    }
 
     private async Task ConciliarAsync()
     {
