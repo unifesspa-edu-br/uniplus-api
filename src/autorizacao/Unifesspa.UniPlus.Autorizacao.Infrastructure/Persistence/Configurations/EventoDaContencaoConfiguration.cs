@@ -109,7 +109,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
     private static string RamoDaRetomada() =>
         $"tipo <> '{TipoDoEventoDaContencaoCodigo.Retomada}' OR (ator = '{AtorDoEventoDaContencaoCodigo.Sistema}'"
         + " AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_sub IS NULL"
-        + " AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL"
+        + " AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL"
         + $" AND (({OrigemDe(OrigemDaRetomadaCodigo.DecisaoDaEtapa, "decisao_id", "versao_que_entrou_id", "permissao_codigo")})"
         + $" OR ({OrigemDe(OrigemDaRetomadaCodigo.TrocaDeVigencia, "versao_que_entrou_id", "decisao_id", "permissao_codigo")})"
         + $" OR ({OrigemDe(OrigemDaRetomadaCodigo.Reclassificacao, "permissao_codigo", "decisao_id", "versao_que_entrou_id")})))";

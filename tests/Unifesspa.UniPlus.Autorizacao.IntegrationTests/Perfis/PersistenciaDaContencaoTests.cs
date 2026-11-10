@@ -131,6 +131,25 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await acao.Should().ThrowAsync<Npgsql.PostgresException>();
     }
 
+    [Fact(DisplayName = "O banco barra a retomada sem origem, mesmo com a referência da decisão preenchida")]
+    public async Task Banco_BarraRetomadaSemOrigem()
+    {
+        Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
+        Guid suspensao = await InserirSuspensaoAsync(perfil);
+        await InserirDecisaoAsync(suspensao, "gestao_de_acessos");
+
+        Func<Task> acao = () => ExecutarAsync(
+            """
+            INSERT INTO autorizacao.eventos_da_contencao
+                (id, perfil_id, instante, tipo, suspensao_id, ator, decisao_id, perfil_protegido, ordem_na_trilha)
+            SELECT {0}, {1}, now(), 'retomada', {2}, 'sistema', d.id, false, nextval('autorizacao.ordem_da_trilha_de_contencao')
+            FROM autorizacao.decisoes_da_retomada d WHERE d.suspensao_id = {2}
+            """,
+            Guid.CreateVersion7(), perfil, suspensao);
+
+        await acao.Should().ThrowAsync<Npgsql.PostgresException>();
+    }
+
     [Fact(DisplayName = "A ordem da trilha é única e crescente entre as quatro tabelas, na ordem em que as operações aconteceram")]
     public async Task Trilha_OrdemUnicaEntreAsTabelas()
     {
