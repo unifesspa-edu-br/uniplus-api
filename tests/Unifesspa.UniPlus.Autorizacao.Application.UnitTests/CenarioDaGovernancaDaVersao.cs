@@ -42,6 +42,7 @@ internal sealed class CenarioDaGovernancaDaVersao
         Verificador = new VerificadorDeTeste(ator?.Sub ?? "sem-autor", permitidas);
         OperacaoSobreOPerfil operacao = new(Perfis, Unidade, tempo);
         AutoriaDaOperacao autoria = new(new Usuario(ator), tempo, concessoes);
+        ConferenciaDoCatalogoNaVersao conferencia = new(new ReclassificacoesNaMemoria(), new CatalogoDaAplicacao([]), tempo);
         EfeitosDoDesfechoDaVersao efeitos = new(
             new EfeitosDaTrocaDeVigencia(
                 concessoes,
@@ -54,9 +55,10 @@ internal sealed class CenarioDaGovernancaDaVersao
                 new TitularesDeTeste(titulares ?? []),
                 new LinkDaGovernancaDeTeste(),
                 new CatalogoDaAplicacao([])),
-            new CatalogoDaAplicacao([]));
+            new CatalogoDaAplicacao([]),
+            conferencia);
         Aprovacoes = new AprovacoesDaVersao(
-            operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, autoria, new CatalogoDeTeste());
+            operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, autoria, new CatalogoDeTeste(), conferencia);
         Cancelamento = new CancelamentoDaVersao(operacao, efeitos, autoria);
         Remocao = new RemocaoDePermissoes(operacao, efeitos, autoria, new CatalogoDeTeste());
         Ativacao = new AtivacaoDoPerfil(operacao, autoria, new CatalogoDeTeste());

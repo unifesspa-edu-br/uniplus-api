@@ -11,6 +11,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 /// <param name="Link">O endereço da tela autenticada em que a pessoa age.</param>
 /// <param name="Quantidade">A quantidade de concessões a que o aviso se refere, quando há.</param>
 /// <param name="Prazo">O fim da janela de migração, quando o aviso é dela.</param>
+/// <param name="Mudanca">O que mudou na permissão, em texto fixo do vocabulário canônico, quando o aviso é da reclassificação.</param>
 public sealed record ModeloDeAviso(
     TipoDeAviso Tipo,
     string PerfilNome,
@@ -18,4 +19,5 @@ public sealed record ModeloDeAviso(
     IReadOnlyList<string> Permissoes,
     string Link,
     int? Quantidade = null,
-    DateTimeOffset? Prazo = null);
+    DateTimeOffset? Prazo = null,
+    string? Mudanca = null);

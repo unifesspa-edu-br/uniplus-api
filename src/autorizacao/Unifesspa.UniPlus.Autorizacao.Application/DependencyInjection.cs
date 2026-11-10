@@ -9,9 +9,11 @@ using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
 
 /// <summary>
 /// Registra a camada Application do módulo Autorização. O CQRS roda sobre Wolverine, então
@@ -63,11 +65,13 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<AtivacaoDoPerfil>();
         services.AddScoped<AvisosDaContencao>();
         services.AddScoped<EfeitosDoDesfechoDaVersao>();
+        services.AddScoped<ConferenciaDoCatalogoNaVersao>();
         services.AddScoped<ExpiracaoDasVersoesPendentes>();
         services.AddScoped<AvisosDaVersao>();
         services.AddScoped<EmissorDeAvisos>();
 
         AdicionarJanelaDeMigracao(services);
+        AdicionarReclassificacoes(services);
     }
 
     private static void AdicionarJanelaDeMigracao(IServiceCollection services)
@@ -83,6 +87,17 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<MaterializacaoPrevia>();
         services.AddScoped<PerfilParaPedir>();
         services.AddScoped<LeituraDaJanela>();
+    }
+
+    private static void AdicionarReclassificacoes(IServiceCollection services)
+    {
+        services.AddScoped<ConcessoesDaReclassificacao>();
+        services.AddScoped<AutorizacaoDaReclassificacao>();
+        services.AddScoped<DecisoesDaReclassificacao>();
+        services.AddScoped<FilaDeReclassificacoes>();
+        services.AddScoped<DetalheDaReclassificacao>();
+        services.AddScoped<AvisosDaReclassificacao>();
+        services.AddScoped<ProcessamentoDosAvisosDaReclassificacao>();
     }
 
     private static void AdicionarReceptoresDoResultado(IServiceCollection services)
