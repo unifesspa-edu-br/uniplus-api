@@ -107,16 +107,22 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
     public async Task<IReadOnlyList<ConcessaoComAPermissao>> ListarConcessoesComAPermissaoAsync(
         Guid perfilId, string codigo, DateTimeOffset agora, bool travar, CancellationToken cancellationToken = default)
     {
-        List<Guid> ids = await _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
-            .Where(k => k.Codigo == codigo).Select(k => k.ConcessaoId).OrderBy(id => id)
-            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        List<Guid> ids = await IdsDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
         if (travar && ids.Count > 0)
         {
             await TravarParaLeituraAsync(ids, cancellationToken).ConfigureAwait(false);
+
+            // Quem revogou enquanto a trava esperava já confirmou: o conjunto vale o de depois das travas.
+            ids = await IdsDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
         }
 
         return await ComAsBasesAsync(codigo, ids, agora, perfilId, cancellationToken).ConfigureAwait(false);
     }
+
+    private Task<List<Guid>> IdsDasConcessoesAsync(Guid perfilId, string codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
+        _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
+            .Where(k => k.Codigo == codigo).Select(k => k.ConcessaoId).OrderBy(id => id)
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<Guid>> ListarVersoesEmUsoAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
         await _context.VersoesEmUso(perfilId).ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -213,10 +219,12 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
             .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => b.ConcessaoId);
 
         return
-        [.. concessoes.Select(c => new ConcessaoComAPermissao(
-            c,
-            vivas.TryGetValue(c.Id, out BaseViva? viva)
-                ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
-                : new BaseDaConcessao(retratos[c.Id].RetratoDaClassificacao!.Value, retratos[c.Id].RetratoDeUnidade)))];
+        [.. concessoes
+            .Where(c => retratos.ContainsKey(c.Id))
+            .Select(c => new ConcessaoComAPermissao(
+                c,
+                vivas.TryGetValue(c.Id, out BaseViva? viva)
+                    ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
+                    : new BaseDaConcessao(retratos[c.Id].RetratoDaClassificacao!.Value, retratos[c.Id].RetratoDeUnidade)))];
     }
 }
