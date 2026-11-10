@@ -551,6 +551,8 @@ public sealed class ConcessaoEndpointTests
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao WHERE perfil_id = {0}", perfilId);
+        await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0}", perfilId);
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", perfilId);
     }
 

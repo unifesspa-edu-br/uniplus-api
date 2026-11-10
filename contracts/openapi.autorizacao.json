@@ -5182,6 +5182,367 @@
         ]
       }
     },
+    "/api/autorizacao/reclassificacoes": {
+      "get": {
+        "tags": [
+          "Reclassificacoes"
+        ],
+        "parameters": [
+          {
+            "name": "etapa",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDaFilaDeReclassificacoesDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDaFilaDeReclassificacoesDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemDaFilaDeReclassificacoesDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/autorizacao/reclassificacoes/{id}": {
+      "get": {
+        "tags": [
+          "Reclassificacoes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReclassificacaoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReclassificacaoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReclassificacaoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/autorizacao/reclassificacoes/{id}/decisoes": {
+      "post": {
+        "tags": [
+          "Reclassificacoes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecidirReclassificacaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecidirReclassificacaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/DecidirReclassificacaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisaoDaReclassificacaoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisaoDaReclassificacaoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisaoDaReclassificacaoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Idempotency-Key ausente ou malformada (uniplus.idempotency.key_ausente, uniplus.idempotency.key_malformada), ou corpo JSON inv\u00E1lido."
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/autorizacao/governanca/divergencias": {
+      "get": {
+        "tags": [
+          "Reclassificacoes"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DivergenciaDaGovernancaDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DivergenciaDaGovernancaDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DivergenciaDaGovernancaDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/autorizacao/revisoes": {
       "post": {
         "tags": [
@@ -6656,6 +7017,63 @@
           }
         }
       },
+      "ConcessaoSuspensaDto": {
+        "required": [
+          "concessaoId",
+          "beneficiarioNome",
+          "escopoTipo",
+          "unidadeId",
+          "versao",
+          "etapasExigidas",
+          "etapasDecididas",
+          "ehDoLeitor"
+        ],
+        "type": "object",
+        "properties": {
+          "concessaoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "beneficiarioNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "escopoTipo": {
+            "type": "string"
+          },
+          "unidadeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "versao": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "etapasExigidas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "etapasDecididas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ehDoLeitor": {
+            "type": "boolean"
+          }
+        }
+      },
       "ConfirmarAnexoDoPedidoRequest": {
         "required": [
           "etag"
@@ -6817,6 +7235,49 @@
           }
         }
       },
+      "DecidirReclassificacaoRequest": {
+        "required": [
+          "etapa",
+          "resultado",
+          "concessoes",
+          "todas",
+          "motivo"
+        ],
+        "type": "object",
+        "properties": {
+          "etapa": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resultado": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "concessoes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "todas": {
+            "type": "boolean"
+          },
+          "motivo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "DecidirRetidaRequest": {
         "required": [
           "decisao",
@@ -6851,6 +7312,50 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DecisaoDaReclassificacaoDto": {
+        "required": [
+          "loteId",
+          "decididas",
+          "liberadas",
+          "paraOutraPessoa",
+          "puladasPorEscopo"
+        ],
+        "type": "object",
+        "properties": {
+          "loteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decididas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "liberadas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "paraOutraPessoa": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "puladasPorEscopo": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -6931,6 +7436,54 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DivergenciaDaGovernancaDto": {
+        "required": [
+          "id",
+          "perfilId",
+          "perfilNome",
+          "codigo",
+          "tipo",
+          "de",
+          "para",
+          "instante"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilNome": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "de": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "para": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -7324,6 +7877,45 @@
           }
         }
       },
+      "ItemDaFilaDeReclassificacoesDto": {
+        "required": [
+          "id",
+          "perfilId",
+          "perfilNome",
+          "codigo",
+          "mudanca",
+          "instante",
+          "concessoesAguardando"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilNome": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "mudanca": {
+            "$ref": "#/components/schemas/MudancaDaPermissaoDto"
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "concessoesAguardando": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ItemDaFilaDeVersoesDto": {
         "required": [
           "perfilId",
@@ -7636,6 +8228,29 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "MudancaDaPermissaoDto": {
+        "required": [
+          "classificacaoAnterior",
+          "classificacaoNova",
+          "deUnidadeAnterior",
+          "deUnidadeNovo"
+        ],
+        "type": "object",
+        "properties": {
+          "classificacaoAnterior": {
+            "type": "string"
+          },
+          "classificacaoNova": {
+            "type": "string"
+          },
+          "deUnidadeAnterior": {
+            "type": "boolean"
+          },
+          "deUnidadeNovo": {
+            "type": "boolean"
           }
         }
       },
@@ -8085,6 +8700,25 @@
           }
         }
       },
+      "PermissaoDaVersaoEmUsoDto": {
+        "required": [
+          "codigo",
+          "classificacao",
+          "deUnidade"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "classificacao": {
+            "type": "string"
+          },
+          "deUnidade": {
+            "type": "boolean"
+          }
+        }
+      },
       "PermissaoDoCatalogoResponse": {
         "required": [
           "codigo",
@@ -8236,6 +8870,58 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ReclassificacaoDto": {
+        "required": [
+          "id",
+          "perfilId",
+          "perfilNome",
+          "codigo",
+          "mudanca",
+          "instante",
+          "maisRecente",
+          "versoes",
+          "concessoes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilNome": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "mudanca": {
+            "$ref": "#/components/schemas/MudancaDaPermissaoDto"
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "maisRecente": {
+            "type": "boolean"
+          },
+          "versoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersaoEmUsoDto"
+            }
+          },
+          "concessoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConcessaoSuspensaDto"
+            }
           }
         }
       },
@@ -8722,6 +9408,41 @@
           }
         }
       },
+      "VersaoEmUsoDto": {
+        "required": [
+          "id",
+          "numero",
+          "situacao",
+          "permissoes",
+          "linkDoDocumento"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "permissoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissaoDaVersaoEmUsoDto"
+            }
+          },
+          "linkDoDocumento": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "VersaoPendenteDto": {
         "required": [
           "versaoId",
@@ -8851,6 +9572,9 @@
     },
     {
       "name": "Autoriza\u00E7\u00E3o"
+    },
+    {
+      "name": "Reclassificacoes"
     },
     {
       "name": "RevisoesDeAcessos"
