@@ -55,30 +55,11 @@ public sealed partial class GlobalExceptionMiddleware
         {
             await _next(context).ConfigureAwait(false);
         }
-        catch (ValidationException ex)
-        {
-            LogValidationError(_logger, context.Request.Path, ex);
-            await EscreverRespostaValidacao(context, ex, _domainErrorMapper).ConfigureAwait(false);
-        }
-        catch (CursorAnchorMismatchException ex)
-        {
-            LogAncoraDeCursorInvalida(_logger, context.Request.Path, ex);
-            await EscreverRespostaCursorInvalido(context, _problemTypeUriFactory).ConfigureAwait(false);
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            LogConflitoDeConcorrencia(_logger, context.Request.Path, ex);
-            await EscreverRespostaConflitoDeConcorrencia(context, _problemTypeUriFactory).ConfigureAwait(false);
-        }
-        catch (RegistroDeAcessoNaoGravadoException ex)
-        {
-            LogRegistroDeAcessoNaoGravado(_logger, context.Request.Path, ex);
-            await EscreverRespostaRegistroDeAcessoNaoGravado(context, _problemTypeUriFactory).ConfigureAwait(false);
-        }
         catch (Exception ex)
         {
-            LogUnhandledError(_logger, context.Request.Path, ex);
-            await EscreverRespostaErro(context, _problemTypeUriFactory).ConfigureAwait(false);
+            TraducaoDeExcecao traducao = Traducoes.FirstOrDefault(t => t.Tipo.IsInstanceOfType(ex)) ?? NaoTratada;
+            traducao.Registrar(_logger, context.Request.Path, ex);
+            await traducao.Escrever(context, ex, _problemTypeUriFactory, _domainErrorMapper).ConfigureAwait(false);
         }
     }
 
