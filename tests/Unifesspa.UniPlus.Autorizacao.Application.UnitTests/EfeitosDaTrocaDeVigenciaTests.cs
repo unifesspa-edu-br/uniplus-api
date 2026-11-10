@@ -100,7 +100,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
         pedido.EncerradoEm.Should().NotBeNull();
-        avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "pedido.devolvido");
+        avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela");
         avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
         foreach (EnviarEmail aviso in avisos)
         {
@@ -144,6 +144,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
             new ConcessoesNaMemoria(paraMigrar: concessoes ?? [], titulares: titulares ?? []),
             new PedidosAtivosNaMemoria(pedidos ?? []),
             new AvisosDoPedido(new ConcessoesNaMemoria(titulares: titulares ?? []), new SemUnidade(), new LinkDeTeste(), TimeProvider.System),
+            CenarioDaGovernancaDaVersao.AvisoDeDevolucao(new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria()),
             CenarioDaGovernancaDaVersao.JanelaDaTroca(new JanelasNaMemoria(), new CenarioDaGovernancaDaVersao.RegistroDeAvisosNaMemoria(), TimeProvider.System),
             TimeProvider.System);
 

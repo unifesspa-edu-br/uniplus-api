@@ -48,12 +48,13 @@ internal sealed class CenarioDaGovernancaDaVersao
                 concessoes,
                 new PedidosAtivosNaMemoria(),
                 new AvisosDoPedido(concessoes, new SemUnidade(), new LinkDeTeste(), tempo),
+                AvisoDeDevolucao(Registro),
                 JanelaDaTroca(janelas, Registro, tempo, titulares),
                 tempo),
             new AvisosDaVersao(
-                new EmissorDeAvisos(Registro, NullLogger<EmissorDeAvisos>.Instance),
+                new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
                 new TitularesDeTeste(titulares ?? []),
-                new LinkDaGovernancaDeTeste(),
+                new LinkDeTeste(),
                 new CatalogoDaAplicacao([])),
             new CatalogoDaAplicacao([]),
             conferencia);
@@ -66,9 +67,9 @@ internal sealed class CenarioDaGovernancaDaVersao
             operacao,
             autoria,
             new AvisosDaContencao(
-                new EmissorDeAvisos(Registro, NullLogger<EmissorDeAvisos>.Instance),
+                new EmissorDeAvisos(Registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
                 new TitularesDeTeste(titulares ?? []),
-                new LinkDaGovernancaDeTeste()),
+                new LinkDeTeste()),
             new CatalogoDeTeste());
         Propostas = new PropostasDeVersao(
             operacao, new LeitorDoContextoDaVersao(Perfis, janelas, tempo), efeitos, new EnvioDoDocumento(Armazenamento, tempo), autoria, new CatalogoDeTeste());
@@ -92,9 +93,9 @@ internal sealed class CenarioDaGovernancaDaVersao
             janelas,
             new LeitorDaMigracao(janelas, new CatalogoDeTeste(), relogio),
             new AvisosDaJanela(
-                new EmissorDeAvisos(registro, NullLogger<EmissorDeAvisos>.Instance),
+                new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance),
                 new TitularesDeTeste(titulares ?? []),
-                new LinkDaGovernancaDeTeste(),
+                new LinkDeTeste(),
                 new CatalogoDaAplicacao([])));
 
     public AprovacoesDaVersao Aprovacoes { get; }
@@ -137,6 +138,9 @@ internal sealed class CenarioDaGovernancaDaVersao
         public override DateTimeOffset GetUtcNow() => agora;
     }
 
+    public static AvisoDePedidoDevolvido AvisoDeDevolucao(IRegistroDeAvisos registro) =>
+        new(new EmissorDeAvisos(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance), new LinkDeTeste());
+
     public sealed class RegistroDeAvisosNaMemoria : IRegistroDeAvisos
     {
         private readonly HashSet<Guid> _ja = [];
@@ -156,12 +160,6 @@ internal sealed class CenarioDaGovernancaDaVersao
             Task.FromResult<IReadOnlyList<TitularDaPermissao>>(titulares);
     }
 
-    private sealed class LinkDaGovernancaDeTeste : ILinkDaGovernanca
-    {
-        public string DoPerfil(Guid perfilId) => $"https://uniplus.test/configuracao/perfis/{perfilId}";
-
-        public string DaVersao(Guid perfilId, Guid versaoId) => $"https://uniplus.test/configuracao/perfis/{perfilId}/versoes/{versaoId}";
-    }
 }
 
 /// <summary>O que o cenário simula das concessões: a janela de migração aberta e se quem decide tem concessão do perfil.</summary>

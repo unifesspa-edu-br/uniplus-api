@@ -11,4 +11,13 @@ public interface ILinkDaGovernanca
 
     /// <summary>A tela da versão do perfil.</summary>
     string DaVersao(Guid perfilId, Guid versaoId);
+
+    /// <summary>A tela da janela de migração do perfil.</summary>
+    string DaJanela(Guid perfilId);
+
+    /// <summary>A tela das concessões da pessoa.</summary>
+    string DasConcessoes();
+
+    /// <summary>A tela para pedir um acesso.</summary>
+    string DoNovoPedido();
 }

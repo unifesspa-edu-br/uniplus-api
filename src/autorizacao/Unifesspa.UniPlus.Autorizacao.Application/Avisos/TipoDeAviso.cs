@@ -37,6 +37,33 @@ public enum TipoDeAviso
 
     /// <summary>Um perfil de governança divergiu do que o código espera.</summary>
     DivergenciaDaGovernanca = 11,
+
+    /// <summary>Uma versão pendente ficou apta para a etapa de quem a aprova.</summary>
+    VersaoPendenteApta = 12,
+
+    /// <summary>Migrações passaram a aguardar a decisão da proteção de dados.</summary>
+    MigracoesAguardandoProtecaoDeDados = 13,
+
+    /// <summary>O lote da gestão de acessos foi enviado com recusas.</summary>
+    LoteEnviadoComRecusas = 14,
+
+    /// <summary>A concessão foi migrada para a versão nova do perfil.</summary>
+    ConcessaoMigrada = 15,
+
+    /// <summary>A concessão foi revogada pela migração.</summary>
+    ConcessaoRevogada = 16,
+
+    /// <summary>Concessões foram revogadas pela migração, para quem a gere.</summary>
+    RevogacoesNaMigracao = 17,
+
+    /// <summary>A versão anterior do perfil foi encerrada.</summary>
+    VersaoEncerrada = 18,
+
+    /// <summary>Quem tem o perfil perderá o acesso se a migração dele não for concluída até o prazo.</summary>
+    AdvertenciaDeFimDaMigracao = 19,
+
+    /// <summary>O pedido em andamento foi devolvido porque o perfil pedido mudou.</summary>
+    PedidoDevolvidoPelaJanela = 20,
 }
 
 /// <summary>O texto estável de cada tipo: a finalidade do envio e o que o registro de avisos guarda.</summary>
@@ -55,6 +82,15 @@ public static class TipoDeAvisoCodigo
         [TipoDeAviso.PermissaoReclassificada] = "permissao_reclassificada",
         [TipoDeAviso.EscopoDaPermissaoAlterado] = "escopo_da_permissao_alterado",
         [TipoDeAviso.DivergenciaDaGovernanca] = "divergencia_da_governanca",
+        [TipoDeAviso.VersaoPendenteApta] = "versao_pendente_apta",
+        [TipoDeAviso.MigracoesAguardandoProtecaoDeDados] = "migracoes_aguardando_protecao_de_dados",
+        [TipoDeAviso.LoteEnviadoComRecusas] = "lote_enviado_com_recusas",
+        [TipoDeAviso.ConcessaoMigrada] = "concessao_migrada",
+        [TipoDeAviso.ConcessaoRevogada] = "concessao_revogada",
+        [TipoDeAviso.RevogacoesNaMigracao] = "revogacoes_na_migracao",
+        [TipoDeAviso.VersaoEncerrada] = "versao_encerrada",
+        [TipoDeAviso.AdvertenciaDeFimDaMigracao] = "advertencia_de_fim_da_migracao",
+        [TipoDeAviso.PedidoDevolvidoPelaJanela] = "pedido_devolvido_pela_janela",
     }.ToFrozenDictionary();
 
     public static string ToCodigo(this TipoDeAviso tipo) =>

@@ -93,7 +93,7 @@ public sealed class AvisosDaGovernancaTests
     public async Task Emissor_AplicaExclusoesEDeduplica()
     {
         RegistroDeAvisosNaMemoria registro = new();
-        EmissorDeAvisos emissor = new(registro, NullLogger<EmissorDeAvisos>.Instance);
+        EmissorDeAvisos emissor = new(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance);
         Guid fato = Guid.NewGuid();
         ModeloDeAviso modelo = Modelo(TipoDeAviso.PermissoesRemovidas);
 

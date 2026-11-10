@@ -78,7 +78,7 @@ public sealed class AvisosDoPedido
             SituacaoDoPedido.AguardandoBeneficiario => Imediato([pedido.BeneficiarioEmail]),
             SituacaoDoPedido.AguardandoGestor => TitularesAsync(pedido, PerfisDeSistema.GestorDeAcessosId, [], cancellationToken),
             SituacaoDoPedido.AguardandoProtecaoDeDados => TitularesDaProtecaoDeDadosAsync(pedido, cancellationToken),
-            SituacaoDoPedido.Aprovado or SituacaoDoPedido.Recusado or SituacaoDoPedido.Devolvido =>
+            SituacaoDoPedido.Aprovado or SituacaoDoPedido.Recusado =>
                 Imediato(Distintos([pedido.SolicitanteEmail, pedido.BeneficiarioEmail])),
             SituacaoDoPedido.Cancelado when situacaoAnterior != SituacaoDoPedido.AguardandoDocumento =>
                 Imediato(DestinatariosDoCancelamento(pedido)),
