@@ -45,20 +45,32 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
     }
 
     /// <summary>Perfil de unidade em vigor com permissão sensível, concedido a Leandro: a retomada pede a gestão e a proteção de dados.</summary>
-    private protected async Task<Guid> PerfilProtegidoComConcessaoAsync(HttpClient gestor)
+    private protected Task<Guid> PerfilProtegidoComConcessaoAsync(HttpClient gestor) =>
+        PerfilDeUnidadeComConcessaoAsync(gestor, Consultar, Sensivel);
+
+    /// <summary>Perfil de unidade em vigor com as permissões dadas, concedido a Leandro.</summary>
+    private protected async Task<Guid> PerfilDeUnidadeComConcessaoAsync(HttpClient gestor, params string[] permissoes)
     {
-        Envio envio = await PerfilVigenteAsync(gestor, Consultar, Sensivel);
+        Envio envio = await PerfilVigenteAsync(gestor, permissoes);
         await SemearConcessaoAsync(Leandro, envio.PerfilId, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
 
         return envio.PerfilId;
     }
 
+    /// <summary>Propõe uma versão só com remoção, que vale na hora: o perfil passa a ter apenas as permissões que permanecem.</summary>
+    private protected static async Task<HttpResponseMessage> RemoverPermissoesAsync(HttpClient cliente, Guid perfilId, params string[] permanecem)
+    {
+        string nome = (await PerfilAsync(cliente, perfilId)).GetProperty("nome").GetString()!;
+
+        return await EnviarAsync(cliente, HttpMethod.Post, $"{RotaPerfis}/{perfilId}/versoes", DadosComRemocao(nome, Motivo, permanecem));
+    }
+
     /// <summary>As permissões que a decisão de acesso dá a Leandro pela concessão do perfil: vazias enquanto o perfil está suspenso.</summary>
-    private protected async Task<string[]> PermissoesDaConcessaoAsync(Guid perfilId)
+    private protected async Task<string[]> PermissoesDaConcessaoAsync(Guid perfilId, Persona? titular = null)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         IReadOnlyList<ConcessaoAtiva> concessoes = await escopo.ServiceProvider.GetRequiredService<IConcessoesAtivasDoSujeito>()
-            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, Leandro.Sub.ToString()).Value!, CancellationToken.None);
+            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, (titular ?? Leandro).Sub.ToString()).Value!, CancellationToken.None);
 
         return [.. concessoes.Single(c => c.PerfilId == perfilId).Permissoes];
     }
@@ -100,6 +112,14 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
         using HttpResponseMessage resposta = await cliente.GetAsync(new Uri("/api/autorizacao/permissoes", UriKind.Relative));
 
         return resposta.StatusCode;
+    }
+
+    private protected static void DescartarTodas(HttpResponseMessage[] respostas)
+    {
+        foreach (HttpResponseMessage resposta in respostas)
+        {
+            resposta.Dispose();
+        }
     }
 
     private protected async Task<IReadOnlyList<string>> TitularesAsync(string permissao)
