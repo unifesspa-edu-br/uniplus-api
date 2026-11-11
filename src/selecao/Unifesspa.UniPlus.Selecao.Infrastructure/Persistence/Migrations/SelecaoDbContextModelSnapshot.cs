@@ -18,7 +18,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("selecao")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -2832,7 +2832,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.ToTable("modelos_de_documento", "selecao");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDecisaoIsencao", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDeDecisao", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2864,17 +2864,22 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("descricao");
 
-                    b.Property<string>("Fundamento")
+                    b.Property<string>("Sentido")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasColumnName("fundamento");
+                        .HasColumnName("sentido");
 
-                    b.Property<string>("ResultadoPermitido")
+                    b.Property<string>("Subclassificacao")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("subclassificacao");
+
+                    b.Property<string>("Tipo")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("resultado_permitido");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("tipo");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2892,16 +2897,103 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id")
-                        .HasName("pk_motivos_decisao_isencao");
+                        .HasName("pk_motivos_de_decisao");
 
-                    b.HasIndex("Codigo")
+                    b.HasIndex("Tipo", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ux_motivos_decisao_isencao_codigo");
+                        .HasDatabaseName("ux_motivos_de_decisao_tipo_codigo");
 
-                    b.HasIndex("Fundamento", "Ativo")
-                        .HasDatabaseName("ix_motivos_decisao_isencao_fundamento_ativo");
+                    b.HasIndex("Tipo", "Subclassificacao", "Ativo")
+                        .HasDatabaseName("ix_motivos_de_decisao_tipo_subclassificacao_ativo");
 
-                    b.ToTable("motivos_decisao_isencao", "selecao");
+                    b.ToTable("motivos_de_decisao", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.MotivoDoProcesso", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo");
+
+                    b.Property<bool>("Congelado")
+                        .HasColumnType("boolean")
+                        .HasColumnName("congelado");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descricao");
+
+                    b.Property<string>("JustificativaDaInclusao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("justificativa_da_inclusao");
+
+                    b.Property<Guid>("MotivoDeDecisaoOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("motivo_de_decisao_origem_id");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<string>("Sentido")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("sentido");
+
+                    b.Property<string>("Subclassificacao")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("subclassificacao");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("tipo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_motivos_do_processo");
+
+                    b.HasIndex("ProcessoSeletivoId", "MotivoDeDecisaoOrigemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_motivos_do_processo_processo_origem");
+
+                    b.ToTable("motivos_do_processo", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>

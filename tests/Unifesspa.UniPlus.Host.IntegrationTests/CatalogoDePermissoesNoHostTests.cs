@@ -137,7 +137,7 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
         JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         JsonElement selecao = corpo.EnumerateArray().Single(m => m.GetProperty("modulo").GetString() == "selecao");
         JsonElement resource = selecao.GetProperty("resources").EnumerateArray()
-            .Single(r => r.GetProperty("resource").GetString() == "motivos-decisao-isencao");
+            .Single(r => r.GetProperty("resource").GetString() == "motivos-de-decisao");
 
         resource.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())

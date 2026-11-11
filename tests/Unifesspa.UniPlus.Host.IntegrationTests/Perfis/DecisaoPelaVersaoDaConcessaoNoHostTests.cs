@@ -148,7 +148,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
     private static async Task<HttpStatusCode> ManterMotivosAsync(HttpClient cliente)
     {
         using HttpResponseMessage resposta = await EnviarAsync(
-            cliente, HttpMethod.Post, $"/api/selecao/admin/motivos-decisao-isencao/{Guid.NewGuid()}/ativacao");
+            cliente, HttpMethod.Post, $"/api/selecao/admin/motivos-de-decisao/{Guid.NewGuid()}/ativacao");
 
         return resposta.StatusCode;
     }

@@ -57,7 +57,7 @@ public static class SelecaoModuleRegistration
         // HATEOAS Level 1 (ADR-0029) — builder de _links por recurso. Singleton
         // porque encapsula apenas um LinkGenerator (também singleton); função pura.
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<MotivoDecisaoIsencaoDto>, MotivoDecisaoIsencaoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<MotivoDeDecisaoDto>, MotivoDeDecisaoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<RegraCatalogoDto>, RegraCatalogoLinksBuilder>();
 

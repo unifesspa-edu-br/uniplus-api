@@ -7,8 +7,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Permissoes;
 /// </summary>
 public static class ResourceTiposSelecao
 {
-    /// <summary>Tipo <c>motivo-decisao-isencao</c>.</summary>
-    public const string MotivoDecisaoIsencao = "motivo-decisao-isencao";
+    /// <summary>Tipo <c>motivo-de-decisao</c>.</summary>
+    public const string MotivoDeDecisao = "motivo-de-decisao";
 
     /// <summary>Tipo <c>regra-catalogo</c>.</summary>
     public const string RegraCatalogo = "regra-catalogo";

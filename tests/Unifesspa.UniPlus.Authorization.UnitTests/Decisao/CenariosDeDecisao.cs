@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal static class CenariosDeDecisao
 {
     public const string Permissao = "selecao:motivos-de-decisao:manter";
-    public const string ResourceTipo = "motivo-decisao-isencao";
+    public const string ResourceTipo = "motivo-de-decisao";
 
     /// <summary>Instante fixo do acesso — a decisão inteira se explica por ele.</summary>
     public static DateTimeOffset Agora { get; } = new(2026, 8, 22, 13, 0, 0, TimeSpan.Zero);
