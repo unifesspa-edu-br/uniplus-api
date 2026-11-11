@@ -103,6 +103,34 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse();
     }
 
+    [Fact(DisplayName = "A avaliação já lançada numa etapa da fase faz a fase contar como iniciada")]
+    public async Task Iniciadas_ContaPelaAvaliacaoLancadaNaEtapa()
+    {
+        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS avaliacao da etapa");
+        (Guid outroProcessoId, FaseCronograma outraFase, _) = await PublicadoAsync("PS avaliacao de outra etapa");
+        await SemearAvaliacaoAsync(etapa.Id);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
+        FasesIniciadas deOutroProcesso = await IniciadasAsync(outroProcessoId, outraFase.Inicio!.Value.AddDays(-30));
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+        deOutroProcesso.Contem(outraFase.FaseCanonicaOrigemId).Should().BeFalse();
+    }
+
+    // As chaves estrangeiras do lote e da inscrição ficam fora da semeadura: o que se verifica é só a leitura.
+    private async Task SemearAvaliacaoAsync(Guid etapaId)
+    {
+        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao = await semeadura.Database.BeginTransactionAsync();
+        await semeadura.Database.ExecuteSqlRawAsync("SET LOCAL session_replication_role = replica");
+        await semeadura.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO selecao.avaliacoes_da_etapa (id, lote_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota)
+            VALUES ({Guid.CreateVersion7()}, {Guid.CreateVersion7()}, {etapaId}, {Guid.CreateVersion7()}, {Guid.CreateVersion7()}, 'TECNOLOGICA', 1, 600.5)
+            """);
+        await transacao.CommitAsync();
+    }
+
     private async Task<FasesIniciadas> IniciadasAsync(Guid processoId, DateTimeOffset agora)
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
