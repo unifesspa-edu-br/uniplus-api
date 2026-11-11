@@ -9,8 +9,6 @@ using Domain.Interfaces;
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
-using MotivosDecisaoIsencao;
-
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>

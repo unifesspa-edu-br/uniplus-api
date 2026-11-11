@@ -7,7 +7,6 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDecisaoIsencao;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>

@@ -9,7 +9,6 @@ using Kernel.Results;
 
 // O detector de conflito de gravação mora no slice dos motivos de isenção, onde nasceu;
 // reconhece a exceção do EF pelo nome do tipo para não trazer o ORM à camada Application.
-using MotivosDecisaoIsencao;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 

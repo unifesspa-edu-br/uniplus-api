@@ -16,8 +16,6 @@ using DTOs.Comprovantes;
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
-using MotivosDecisaoIsencao;
-
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
