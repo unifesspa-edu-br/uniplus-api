@@ -20,16 +20,26 @@ public static class ListarReclassificacoesQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(fila);
 
+        Result<EtapaDaVersao> etapa = await EtapaPermitidaAsync(query, verificador, cancellationToken).ConfigureAwait(false);
+
+        return etapa.IsSuccess
+            ? Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>>.Success(await fila.MontarAsync(etapa.Value, cancellationToken).ConfigureAwait(false))
+            : Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>>.Failure(etapa.Error!);
+    }
+
+    /// <summary>A etapa pedida, quando é válida e a pessoa tem a permissão dela; a recusa, quando não.</summary>
+    private static async Task<Result<EtapaDaVersao>> EtapaPermitidaAsync(
+        ListarReclassificacoesQuery query, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
         if (EtapaDaVersaoCodigo.TentarLer(query.Etapa) is not { } etapa)
         {
-            return Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>>.Failure(ReclassificacaoErros.EtapaInvalida());
+            return Result<EtapaDaVersao>.Failure(ReclassificacaoErros.EtapaInvalida());
         }
 
-        bool? pode = await AcessoDaVersao.PodeListarAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
+        AcessoAvaliado acesso = await AcessoDaVersao.AvaliarListagemAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
 
-        return pode is true
-            ? Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>>.Success(await fila.MontarAsync(etapa, cancellationToken).ConfigureAwait(false))
-            : Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>>.Failure(
-                pode is null ? PerfilHandlerErros.AutorNaoIdentificado() : ReclassificacaoErros.SemPermissaoNaEtapa());
+        return acesso.Recusa(ReclassificacaoErros.SemPermissaoNaEtapa) is { } recusa
+            ? Result<EtapaDaVersao>.Failure(recusa)
+            : Result<EtapaDaVersao>.Success(etapa);
     }
 }

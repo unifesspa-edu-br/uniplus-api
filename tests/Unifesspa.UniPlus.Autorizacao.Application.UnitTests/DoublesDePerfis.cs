@@ -179,7 +179,7 @@ internal static class DoublesDePerfis
         public Task<int> ContarGestoresAtivosAsync(Guid perfilId, Guid exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
-    internal sealed class JanelasNaMemoria(bool aberta = false) : IJanelaDeMigracaoRepository
+    internal sealed class JanelasNaMemoria(bool aberta = false, JanelaDeMigracao? ultima = null) : IJanelaDeMigracaoRepository
     {
         public List<JanelaDeMigracao> Adicionadas { get; } = [];
 
@@ -194,7 +194,7 @@ internal static class DoublesDePerfis
             Task.FromResult<JanelaDeMigracao?>(null);
 
         public Task<JanelaDeMigracao?> ObterUltimaParaLeituraAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<JanelaDeMigracao?>(null);
+            Task.FromResult(ultima);
 
         public Task<bool> TemJanelaAbertaAsync(Guid perfilId, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
             Task.FromResult(aberta);

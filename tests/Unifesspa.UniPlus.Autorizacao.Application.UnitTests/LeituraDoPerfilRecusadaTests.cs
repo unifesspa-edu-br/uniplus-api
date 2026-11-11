@@ -4,11 +4,14 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Authorization.Contracts;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -24,12 +27,14 @@ public sealed class LeituraDoPerfilRecusadaTests
     public async Task Listar_SemPermissao_RecusaSemConsultarOsPerfis()
     {
         IPerfilRepository perfis = Substitute.For<IPerfilRepository>();
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.Sub, []);
 
         Result<ListarPerfisResult> resultado = await ListarPerfisQueryHandler.Handle(
-            new ListarPerfisQuery(null, 10, default), new VerificadorDeTeste(PerfisDeTeste.Autor.Sub, []), perfis, Catalogo, CancellationToken.None);
+            new ListarPerfisQuery(null, 10, default), verificador, perfis, Catalogo, CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(PerfilErrorCodes.LeituraNegada);
         perfis.ReceivedCalls().Should().BeEmpty();
+        TrilhaDeAcesso.Do(verificador).Should().BeEquivalentTo(Negativas(ResourceTipos.Operacao, null));
     }
 
     [Fact(DisplayName = "A leitura recusada de um perfil não consulta o perfil nem a janela de migração")]
@@ -37,22 +42,24 @@ public sealed class LeituraDoPerfilRecusadaTests
     {
         IPerfilRepository perfis = Substitute.For<IPerfilRepository>();
         IJanelaDeMigracaoRepository janelasDoBanco = Substitute.For<IJanelaDeMigracaoRepository>();
-        LeituraDaJanela janelas = new(
-            janelasDoBanco,
-            new LeitorDaMigracao(janelasDoBanco, Substitute.For<ICatalogoDePermissoesConsultavel>(), TimeProvider.System),
-            TimeProvider.System);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.Sub, []);
+        Guid perfilId = Guid.CreateVersion7();
 
-        Result<PerfilDto> resultado = await ObterPerfilQueryHandler.Handle(
-            new ObterPerfilQuery(Guid.NewGuid()),
-            new VerificadorDeTeste(PerfisDeTeste.Autor.Sub, []),
-            perfis,
-            Catalogo,
-            janelas,
-            Substitute.For<IUserContext>(),
-            CancellationToken.None);
+        Result<PerfilDto> resultado = await ObterPerfilQueryHandler.Handle(new ObterPerfilQuery(perfilId), verificador, Detalhe(perfis, janelasDoBanco), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(PerfilErrorCodes.LeituraNegada);
         perfis.ReceivedCalls().Should().BeEmpty();
         janelasDoBanco.ReceivedCalls().Should().BeEmpty();
+        TrilhaDeAcesso.Do(verificador).Should().BeEquivalentTo(Negativas(ResourceTiposAutorizacao.Perfil, perfilId));
+    }
+
+    private static IEnumerable<TrilhaDeAcesso> Negativas(string resourceTipo, Guid? resourceId) =>
+        new[] { Manter, Gestao, Protecao }.Select(p => new TrilhaDeAcesso(PerfisDeTeste.Autor.Sub, p, resourceTipo, resourceId, ResultadoDoAcesso.Negado));
+
+    private static DetalheDoPerfil Detalhe(IPerfilRepository perfis, IJanelaDeMigracaoRepository janelasDoBanco)
+    {
+        LeitorDaMigracao leitor = new(janelasDoBanco, Substitute.For<ICatalogoDePermissoesConsultavel>(), TimeProvider.System);
+
+        return new DetalheDoPerfil(perfis, Catalogo, new LeituraDaJanela(janelasDoBanco, leitor, TimeProvider.System), Substitute.For<IUserContext>());
     }
 }

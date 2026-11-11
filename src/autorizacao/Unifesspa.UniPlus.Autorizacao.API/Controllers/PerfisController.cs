@@ -70,21 +70,13 @@ public sealed class PerfisController : ControllerBase
             new ListarPerfisQuery(page.AfterId, page.Limit, page.Direction),
             cancellationToken).ConfigureAwait(false);
 
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        ListarPerfisResult pagina = resultado.Value!;
-
-        return await this.OkPaginatedAsync(
-            pagina.Items,
-            pagina.AnteriorAfterId,
-            pagina.ProximoAfterId,
-            page,
-            ResourceTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? resultado.ToActionResult(_mapper)
+            : await PaginaAsync(resultado.Value!, page, cancellationToken).ConfigureAwait(false);
     }
+
+    private Task<IActionResult> PaginaAsync(ListarPerfisResult pagina, PageRequest page, CancellationToken cancellationToken) =>
+        this.OkPaginatedAsync(pagina.Items, pagina.AnteriorAfterId, pagina.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken);
 
     /// <summary>Obtém um perfil pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("perfis/{id:guid}")]

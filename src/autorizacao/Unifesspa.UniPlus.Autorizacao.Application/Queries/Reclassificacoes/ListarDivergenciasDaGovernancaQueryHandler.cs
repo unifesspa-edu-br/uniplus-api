@@ -20,19 +20,24 @@ public static class ListarDivergenciasDaGovernancaQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(reclassificacoes);
 
-        bool? pode = await AcessoDaVersao.PodeVerAGovernancaAsync(verificador, cancellationToken).ConfigureAwait(false);
-        if (pode is not true)
+        AcessoAvaliado acesso = await AcessoDaVersao.AvaliarVisaoDaGovernancaAsync(verificador, cancellationToken).ConfigureAwait(false);
+        if (acesso.Recusa(ReclassificacaoErros.SemPermissaoNaEtapa) is { } recusa)
         {
-            return Result<IReadOnlyList<DivergenciaDaGovernancaDto>>.Failure(
-                pode is null ? PerfilHandlerErros.AutorNaoIdentificado() : ReclassificacaoErros.SemPermissaoNaEtapa());
+            return Result<IReadOnlyList<DivergenciaDaGovernancaDto>>.Failure(recusa);
         }
 
+        return Result<IReadOnlyList<DivergenciaDaGovernancaDto>>.Success(
+            await MontarAsync(reclassificacoes, cancellationToken).ConfigureAwait(false));
+    }
+
+    private static async Task<IReadOnlyList<DivergenciaDaGovernancaDto>> MontarAsync(
+        IReclassificacaoRepository reclassificacoes, CancellationToken cancellationToken)
+    {
         IReadOnlyList<DivergenciaDaGovernanca> divergencias = await reclassificacoes.ListarDivergenciasAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyDictionary<Guid, string> nomes = await reclassificacoes
             .ObterNomesDosPerfisAsync([.. divergencias.Select(static d => d.PerfilId).Distinct()], cancellationToken).ConfigureAwait(false);
 
-        return Result<IReadOnlyList<DivergenciaDaGovernancaDto>>.Success(
-        [.. divergencias.Select(d => new DivergenciaDaGovernancaDto(
-            d.Id, d.PerfilId, nomes.GetValueOrDefault(d.PerfilId, string.Empty), d.Codigo, d.Tipo.ToCodigo(), d.De, d.Para, d.Instante))]);
+        return [.. divergencias.Select(d => new DivergenciaDaGovernancaDto(
+            d.Id, d.PerfilId, nomes.GetValueOrDefault(d.PerfilId, string.Empty), d.Codigo, d.Tipo.ToCodigo(), d.De, d.Para, d.Instante))];
     }
 }
