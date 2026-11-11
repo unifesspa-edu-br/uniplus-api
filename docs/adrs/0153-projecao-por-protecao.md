@@ -171,6 +171,7 @@ A banca não é desenhada aqui, mas a base não a bloqueia:
 
 - o resource da banca é a avaliação da inscrição na etapa, com só os fatos e documentos que a etapa declara analisar; o recorte vem do resource, e as permissões de classificação continuam por módulo;
 - o escopo é a designação da banca (processo, fase, etapa e código da banca), fato da Seleção conferido a cada acesso por verificação de contexto declarada na permissão; revogar a designação corta o acesso na hora;
+- a concessão de quem integra a banca é na unidade da fase ou da etapa da banca, conforme a [ADR-0159](0159-acao-interna-da-fase-decidida-na-unidade-responsavel-pela-fase.md), e a banca da própria fase entra no mesmo recorte;
 - o motor de autorização não conhece escopo de negócio: a concessão diz o que a pessoa pode fazer, em que unidade e até quando, e o escopo de negócio entra pela verificação do módulo. Por isso a chamada e o processo deixam de ser escopo de concessão no motor, em frente própria: o escopo de negócio da concessão excepcional da [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) (processo, fase, banca) passa à designação, e a concessão excepcional fica com unidade e tipo de resource.
 
 ### Aprovação da proteção de dados como pré-condição

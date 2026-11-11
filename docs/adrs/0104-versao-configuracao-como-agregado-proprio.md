@@ -128,3 +128,4 @@ Determinístico mesmo com empate de instante, e o índice de unicidade sobre `da
 - [ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md) — canonicalização e hash da configuração congelada
 - [ADR-0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) — retificação é relação entre atos
 - [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md) — o módulo que possui o ato publicado
+- Emenda ([ADR-0159](0159-acao-interna-da-fase-decidida-na-unidade-responsavel-pela-fase.md)): o órgão do documento normativo é o da unidade do ato, nunca o da unidade de quem fez o pedido; o ato de uma fase tem o órgão da unidade da fase.
