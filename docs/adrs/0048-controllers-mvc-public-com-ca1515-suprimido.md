@@ -52,6 +52,8 @@ A opção B (`<NoWarn>` no csproj) silencia globalmente o analyzer no projeto, p
 
 A sentinela de discovery MVC (`ControllersMvcDiscoverySentinelTests` em PR #325, issue #199) protege contra recidiva: se algum dev no futuro mudar `public` para `internal`, o teste falha cedo com mensagem direcional.
 
+> **Emenda (2026-11-11) — sem atributo por controller.** A [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md) proíbe `[SuppressMessage]`. Controllers continuam `public`, como o MVC exige; o `CA1515` da camada de controllers passa a ser decisão de camada no `.editorconfig`, com a justificativa da descoberta do MVC, e os atributos existentes são dívida a remover. O mesmo vale para as test factories citadas nas consequências: a supressão inline nelas também é proibida, e a correção estrutural do `CA1515` nos testes está na uniplus-api#2345.
+
 ## Consequências
 
 ### Positivas

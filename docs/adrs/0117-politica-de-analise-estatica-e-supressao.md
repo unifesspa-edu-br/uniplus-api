@@ -73,6 +73,8 @@ Aplicado ao estado atual (validado por build completo da solution), o resultado 
 
 Nota sobre a linha "código gerado" da tabela: refere-se apenas ao código **efetivamente gerado** (migrations EF, que trazem `#pragma 612/618` automático). Classes Avro escritas à mão como `ProcessoPublicado` **não** são código gerado; nesse caso específico, aliás, a supressão nem era necessária.
 
+> **Emenda (2026-11-11) — supressão por símbolo e por linha proibida.** A [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md) substitui as linhas de `[SuppressMessage]` e de `#pragma` da tabela de mecanismos, a regra de desempate e o critério da confirmação que admite `#pragma` remanescente: o aviso se corrige no código, e as supressões existentes, inclusive o `#pragma` de `CA1873`, são dívida a remover. Continua valendo o desligamento de regra que não se aplica ao projeto inteiro ou a uma camada inteira no `.editorconfig`, com justificativa.
+
 ## Consequências
 
 ### Positivas

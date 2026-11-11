@@ -324,7 +324,7 @@ public static class ObterProcessoSeletivoQueryHandler
 
 #### Tamanho de arquivo
 
-Nenhum arquivo `*.cs` de `src/` passa de **400 linhas físicas** (comentários, documentação XML e linhas em branco contam). Ficam fora: `Migrations/`, `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs`, `*ModelSnapshot.cs` e todo o diretório `tests/`. O job `tamanho-de-arquivo` do CI roda `bash tools/tamanho-de-arquivo/check.sh` e recusa arquivo novo acima do limite. Os arquivos que ainda excedem o limite constam em `tools/tamanho-de-arquivo/excecoes.txt`: a lista **só diminui** — arquivo dela que cresce é recusado, toda redução tem de ser registrada nela e arquivo que cai para 400 linhas ou menos deve sair dela (`--atualizar` faz as duas coisas).
+A regra de tamanho de arquivo (400 linhas físicas, testes incluídos) está em [§ Métricas de qualidade](#métricas-de-qualidade). O job `tamanho-de-arquivo` do CI roda `bash tools/tamanho-de-arquivo/check.sh` e, por enquanto, mede só os `*.cs` de `src/` (fora `Migrations/`, `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs` e `*ModelSnapshot.cs`): ele **ainda não mede `tests/`, mas a regra vale para os testes**, e a revisão a cobra. O job recusa arquivo novo de `src/` acima do limite. Os arquivos de `src/` que ainda excedem o limite constam em `tools/tamanho-de-arquivo/excecoes.txt`: a lista **só diminui** — arquivo dela que cresce é recusado, toda redução tem de ser registrada nela e arquivo que cai para 400 linhas ou menos deve sair dela (`--atualizar` faz as duas coisas). A lista é dívida a pagar, não autorização: o CI aceita arquivo dela que não cresce (e, se diminuir, pede a lista atualizada), mas a regra pede que arquivo de código alterado pelo PR, fora os gerados, termine com até 400 linhas.
 
 ### 3. Testar
 
@@ -477,9 +477,10 @@ testes, então o resultado é o build inteiro quebrado com `xUnit1000: Test clas
 
 Manter o `CA1515` ativo no build é desejável: ele pega tipos públicos legítimos que deveriam ser
 `internal`, inclusive dentro de projetos de teste que o suppressor não cobre por não conterem
-métodos de teste (helpers e fixtures — daí os atributos `[SuppressMessage]` em
-`tests/*/Infrastructure/*ApiFactory.cs`). Por isso a regra é filtrada apenas no comando do
-`dotnet format`, e não silenciada no `.editorconfig`.
+métodos de teste (helpers e fixtures). Os atributos `[SuppressMessage]` que ainda existem em
+`tests/*/Infrastructure/*ApiFactory.cs` são dívida: supressão é proibida em código novo
+(ver [§ Métricas de qualidade](#métricas-de-qualidade)). Por isso a regra é filtrada apenas no
+comando do `dotnet format`, e não silenciada no `.editorconfig`.
 
 A exclusão de `**/Migrations/**` também é necessária: o `dotnet ef` gera migrations com UTF-8 BOM
 enquanto o `.editorconfig` exige `charset = utf-8` sem BOM. Sem ela, todo PR que adicionasse uma
@@ -528,6 +529,81 @@ Regras essenciais (mais detalhes no guia):
 - **Nunca editar migrations já aplicadas** — criar nova.
 - **Soft delete obrigatório** via `HasQueryFilter(e => !e.IsDeleted)` + `SoftDeleteInterceptor` (já no helper).
 - **Aplicação automática no startup** via `MigrationHostedService<TContext>` registrado antes do `WolverineRuntime` em cada Program.cs ([ADR-0039](docs/adrs/0039-provisioning-schema-wolverine-via-deploy.md) + [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)).
+
+### Métricas de qualidade
+
+As métricas abaixo valem para todo código que o PR cria ou altera, de produção e de teste. A revisão as cobra; o analisador e o CI são sinais auxiliares, não a medida.
+
+| # | Regra | Limite |
+|---|---|---|
+| 1 | Linhas físicas por método | 15 |
+| 2 | Linhas físicas por arquivo | 400 |
+| 3 | Parâmetros por método ou construtor | 7 |
+| 4 | Complexidade cognitiva / ciclomática por método | 15 / 10 |
+| 5 | Supressão de aviso do analisador | proibida |
+| 6 | Código escrito só para caber na métrica | reprovado |
+
+**1. Método: até 15 linhas físicas.** Conta-se da linha da assinatura (a primeira linha da declaração, depois dos atributos) até a linha da chave final, inclusive, com linhas em branco, comentários e linhas só com chave. Só ficam fora os atributos e a documentação XML (`///`) que estão acima da assinatura; comentário de qualquer tipo dentro do corpo conta. Vale para todo método, construtor, acessor com corpo, função local e lambda de várias linhas: de produção e de teste, inclusive cada `[Fact]` e cada `[Theory]`. Método de corpo de expressão (`=>`) conta da assinatura até o `;` final. Fica fora só a configuração do EF Core: classes `IEntityTypeConfiguration<T>`, `Migrations/` e o `*ModelSnapshot.cs`. Configuração longa se divide por assunto, e o arquivo da `IEntityTypeConfiguration<T>`, escrito à mão, continua sujeito ao limite de 400 linhas; migrations e snapshot, gerados, ficam fora também do limite de arquivo.
+
+A S138 do SonarAnalyzer (`SonarLint.xml`, `max=15`) **não é a medida**: ela conta só as linhas de código do corpo, sem a assinatura, as linhas em branco e os comentários, e não mede projetos de teste. Um método de 24 linhas físicas pode passar na S138 sem aviso e está fora da regra. Use a S138 como alerta precoce; o que vale é a contagem física.
+
+**2. Arquivo: até 400 linhas físicas.** Todas as linhas do arquivo contam (comentários, documentação XML, `using` e linhas em branco), e a última linha conta mesmo sem quebra no fim. Vale para todo arquivo de código do repositório: `src/`, `tests/` (inclusive auxiliares, fixtures e bases de teste) e qualquer outro diretório (ferramentas, scripts). Contratos e baselines gerados, como os de `contracts/`, não são código. Ficam fora só os arquivos gerados: `Migrations/`, `*.g.cs`, `*.Designer.cs` e `*ModelSnapshot.cs` (e `obj/`/`bin/`). O job `tamanho-de-arquivo` do CI ainda mede só `src/` (ver [§ Tamanho de arquivo](#tamanho-de-arquivo)).
+
+**3. Parâmetros: até 7** por método, função local, lambda, construtor (inclusive construtor primário) ou delegate. `CancellationToken` conta. A S107 mede este limite como sinal auxiliar.
+
+**4. Complexidade: cognitiva até 15 (S3776) e ciclomática até 10 (S1541)**, por método, com a medida do SonarAnalyzer.
+
+**5. Supressão de aviso: proibida** ([ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md)). Não se usa `[SuppressMessage]`, `GlobalSuppressions.cs`, `#pragma warning disable` nem `<NoWarn>` para calar aviso: o aviso se corrige no código. Quando o analisador revela design ruim (por exemplo, `bool?` usado como três estados), o design é refeito (um `enum` com os três estados). Continua permitido desligar no `.editorconfig`, com comentário justificando, uma regra que não se aplica ao projeto inteiro ou a uma camada inteira (código com o mesmo papel, como testes, controllers ou configuração do EF, selecionado por glob de caminho): é decisão de projeto, não supressão por símbolo. Seção que isenta um arquivo ou um tipo específico, e não uma camada inteira, é supressão disfarçada e também é proibida.
+
+**6. Código feito só para caber na métrica é reprovado**, mesmo dentro dos limites: método-ponte que só repassa a chamada, sobrecarga ou serviço que só repassa, estado fatiado sem sentido (campos ou classes criados só para dividir um método), parâmetros agrupados num objeto artificial que não existe no domínio, vista ou cópia da entidade e coleção viva exposta. A divisão segue responsabilidade, conforme SOLID, Clean Code e as recomendações da comunidade .NET.
+
+#### Exemplo
+
+Divisão correta: o handler orquestra, e a regra fica no agregado, num método com responsabilidade e nome de domínio. Cada método tem até 15 linhas físicas.
+
+```csharp
+public async Task<Result> Handle(AprovarPedidoCommand command, CancellationToken cancellationToken)
+{
+    var pedido = await _pedidos.ObterAsync(command.PedidoId, cancellationToken);
+    if (pedido is null)
+        return Result.Failure(PedidoErrors.NaoEncontrado);
+
+    var aprovacao = pedido.Aprovar(command.Aprovador, _relogio.Agora);
+    if (aprovacao.IsFailure)
+        return aprovacao;
+
+    await _concessoes.AdicionarAsync(Concessao.DoPedido(pedido), cancellationToken);
+    return Result.Success();
+}
+
+// No agregado PedidoDeConcessao:
+public Result Aprovar(UsuarioRef aprovador, DateTimeOffset agora)
+{
+    if (Situacao != SituacaoDoPedido.Pendente)
+        return Result.Failure(PedidoErrors.JaDecidido);
+    if (aprovador == Solicitante)
+        return Result.Failure(PedidoErrors.AprovadorIgualAoSolicitante);
+
+    Situacao = SituacaoDoPedido.Aprovado;
+    DecididoPor = aprovador;
+    DecididoEm = agora;
+    return Result.Success();
+}
+```
+
+Divisão reprovada: o método longo foi cortado em pedaços que só repassam, sem responsabilidade própria.
+
+```csharp
+public Task<Result> Handle(AprovarPedidoCommand command, CancellationToken cancellationToken)
+    => HandleInterno(command, cancellationToken);              // método-ponte
+
+private Task<Result> HandleInterno(AprovarPedidoCommand command, CancellationToken cancellationToken)
+    => ExecutarParte1(new ContextoDoHandle(command, cancellationToken)); // objeto artificial
+```
+
+#### Dívida existente e CI
+
+O CI **não barra** a dívida antiga: a severidade de S138, S107, S3776 e S1541 continua aviso ([ADR-0155](docs/adrs/0155-analisadores-de-qualidade-na-build.md)), o job de tamanho ainda não mede `tests/` e a lista `tools/tamanho-de-arquivo/excecoes.txt` continua. As regras valem para o que o PR cria ou altera: método novo ou alterado cumpre os limites, e arquivo sujeito à regra (todo arquivo de código, fora os gerados) que o PR cria ou altera termina com até 400 linhas (se já passava, o PR o divide por assunto). A dívida é paga por módulo, cada um com sua issue; quando um módulo zera a dívida, o CI passa a barrar aquele módulo.
 
 ---
 
@@ -659,6 +735,7 @@ Complementa os Quality gates acima (verificações de CI automáticas) com higie
 - [ ] Branch **rebaseada** sobre a `main` mais recente
 - [ ] Commits "WIP" / "ajustes do PR" foram **squashados** via `git rebase -i`
 - [ ] PR vinculado à issue com `Closes #N` na descrição
+- [ ] Métricas de qualidade cumpridas no código criado ou alterado, inclusive testes, sem supressão de aviso ([§ Métricas de qualidade](#métricas-de-qualidade)) — o CI ainda não as barra
 
 ---
 
@@ -668,7 +745,7 @@ Todo PR passa por revisão humana. O revisor verifica:
 
 1. **Segurança** — PII, injection, OWASP, LGPD
 2. **Arquitetura** — Clean Architecture, SOLID, acoplamento entre módulos
-3. **Qualidade** — legibilidade, complexidade, duplicação
+3. **Qualidade** — legibilidade, complexidade, duplicação e as [métricas de qualidade](#métricas-de-qualidade) contadas em linhas físicas
 4. **Testes** — cobertura, casos de borda, assertions significativas
 5. **Domínio** — regras de negócio corretas, conformidade legal
 

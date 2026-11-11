@@ -144,22 +144,21 @@ Sem `SkipEnabledCheck`, o source generator sempre gera a guarda internamente —
 
 ## Supressão de análise de código
 
-`AnalysisLevel=latest-recommended` + `TreatWarningsAsErrors` — política registrada na [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md). Regras extras de valor que o `recommended` não liga por padrão são religadas por opt-in nomeado no `.editorconfig` (ex.: `CA1062`); regras que não se aplicam ao projeto são desligadas ali com justificativa (ex.: `CA1000` para o `Result<T>`). Supressões são permanentes — antes de suprimir, **investigar causa raiz**: o warning pode apontar naming, dependência invertida ou catch-all legítimo de refactor.
+`AnalysisLevel=latest-recommended` + `TreatWarningsAsErrors` — política registrada na [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md), emendada pela [ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md). Regras extras de valor que o `recommended` não liga por padrão são religadas por opt-in nomeado no `.editorconfig` (ex.: `CA1062`); regras que não se aplicam ao projeto são desligadas ali com justificativa (ex.: `CA1000` para o `Result<T>`).
 
-Escolher o mecanismo pelo **alcance da exceção**, sempre com justificativa:
+**Supressão de aviso é proibida** (ADR-0160): o aviso se corrige no código. Quando o analisador revela design ruim (ex.: `bool?` usado como três estados), o design é refeito. Investigar a causa raiz: o aviso pode apontar naming, dependência invertida ou responsabilidade misturada.
 
-| Alcance | Mecanismo |
+| Situação | Mecanismo |
 |---|---|
-| A regra não se aplica ao projeto ou a uma camada (é decisão, não exceção) | `.editorconfig`: `severity = none` (global) ou glob de caminho (camada) + comentário com o porquê |
-| A exceção pertence a um símbolo (membro ou tipo) | `[SuppressMessage]` no símbolo, ou `GlobalSuppressions.cs` com `Scope`/`Target`, com `Justification` |
-| A exceção é de 1–2 linhas dentro de um símbolo maior | `#pragma disable/restore` + comentário na mesma linha explicando o porquê |
+| A regra não se aplica ao projeto inteiro ou a uma camada inteira (código com o mesmo papel, como testes, controllers ou configuração do EF, selecionado por glob de caminho) (é decisão, não exceção) | `.editorconfig`: `severity = none` (global) ou glob de caminho da camada + comentário com o porquê |
+| O aviso aponta um símbolo ou uma linha | corrigir o código; **nunca** `[SuppressMessage]`, `GlobalSuppressions.cs`, `#pragma warning disable` ou `<NoWarn>` |
 | Código gerado (migrations EF) | não suprimir manualmente — o tool já emite as supressões |
 
-**Regra de desempate:** a mesma regra suprimida 3+ vezes pelo mesmo motivo virou decisão — sobe para o `.editorconfig`. Evitar `<NoWarn>` em csproj.
+Seção de `.editorconfig` que isenta um arquivo ou um tipo específico, e não uma camada inteira, é supressão disfarçada e também é proibida. As supressões por símbolo que ainda existem (`[SuppressMessage]` de CA1515/CA1812 nos handlers, `GlobalSuppressions.cs`, `#pragma` de `CA1873`) são dívida a pagar por módulo, não exemplo a seguir.
 
-Exemplos no repo: `.editorconfig` seção `[*.cs]` (CA1000/CA1062, globais) e `[tests/**/*.cs]` (convenções xUnit), `src/*/API/GlobalSuppressions.cs` (CA1515/Program), `#pragma` de `CA1873` em `MigrationServiceCollectionExtensions` (1 linha).
+Métricas de qualidade (método até 15 linhas físicas, arquivo até 400 linhas com testes, parâmetros, complexidade, código feito só para caber na métrica): `CONTRIBUTING.md` § Métricas de qualidade. A S138 não é a medida de tamanho de método.
 
-Docs: [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md), [SuppressMessageAttribute](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/suppress-warnings), [editorconfig](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files).
+Docs: [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md), [ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md), [editorconfig](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files).
 
 ## Comandos úteis
 
