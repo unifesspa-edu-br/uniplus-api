@@ -84,3 +84,4 @@ O domínio recusa janela de etapa com âncora inválida ou duplicada, e o proces
 - [ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) (Emenda 4), [ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md).
 - UNI-REQ-0080, UNI-REQ-0081, UNI-REQ-0115.
 - Implementação da instância superior: uniplus-api#1991.
+- Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): todo recurso abre pela publicação confirmada de um ato, e a ciência individual sai do recurso, inclusive na etapa com nota do ENEM, cujo recurso passa a ser o da fase; cada janela declara quem pode recorrer.

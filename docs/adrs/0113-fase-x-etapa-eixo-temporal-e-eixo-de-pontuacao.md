@@ -320,3 +320,4 @@ A segunda seção "Emenda 2" foi renumerada para "Emenda 3" em 2026-10-18, para 
 - RN08 — Congelamento de parâmetros por edital.
 - UNI-REQ-0064 — Fases canônicas e tipos de banca.
 - Issue #851 — Cronograma de Fases do Processo Seletivo.
+- Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): a regra de recurso da fase também declara quem pode recorrer e exige banca de análise de recursos.

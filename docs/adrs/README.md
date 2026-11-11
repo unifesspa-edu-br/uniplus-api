@@ -131,9 +131,9 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0100](0100-canonicalizacao-hash-snapshot-publicacao.md) | Contrato de canonicalização e hash do snapshot de publicação (RN08) | accepted | 2026-07-07 |
 | [0101](0101-retificacao-novo-edital-novo-snapshot-motivo.md) | Retificação de processo publicado é sempre novo Edital + novo snapshot + motivo | superseded by ADR-0103 | 2026-07-07 |
 | [0102](0102-invariantes-coerencia-processo-guard-rails-422.md) | Invariantes de coerência de processo como guard rails no banco, mapeadas a HTTP 422 | accepted | 2026-07-07 |
-| [0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) | Retificação é uma relação entre atos publicados, não um tipo de ato | accepted | 2026-07-09 |
+| [0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) | Retificação é uma relação entre atos publicados, não um tipo de ato — emendada pela ADR-0158 | accepted | 2026-07-09 |
 | [0104](0104-versao-configuracao-como-agregado-proprio.md) | A vigência da configuração ordena versões, não documentos | accepted | 2026-07-09 |
-| [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios | accepted | 2026-07-09 |
+| [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios — emendada pela ADR-0158 | accepted | 2026-07-09 |
 | [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | superseded by ADR-0108 | 2026-07-10 |
 | [0107](0107-vaga-de-linhagem-unica-por-objeto.md) | A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato | accepted | 2026-07-11 |
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) — emendada em 2026-10-17: o produto publicado também tem registro na Seleção | accepted | 2026-07-12 |
@@ -141,7 +141,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0110](0110-retificacao-como-sessao-editorial.md) | A retificação é uma sessão editorial sobre a configuração, não um estado do certame — emendada pela ADR-0137: regime transitório até a primeira publicação em produção | accepted | 2026-07-13 |
 | [0111](0111-vocabulario-fechado-de-fatos-do-candidato.md) | Vocabulário fechado de fatos do candidato (catálogo seed-governado em Configuração, identidade imutável) — emendada em 2026-07-22: operadores de exclusão, semântica sobre fato multivalorado e ordem canônica; sucedida em parte pela ADR-0136: governança por seed só para fatos de sistema, domínios texto, data e endereço, fonte dos valores, derivado categórico multivalorado e marcos de imutabilidade | accepted | 2026-07-15 |
 | [0112](0112-fronteira-append-only-do-catalogo-de-regras.md) | Fronteira do append-only na correção do catálogo de regras (substituível enquanto nada congelado referenciar) | accepted | 2026-07-14 |
-| [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro | accepted | 2026-07-15 |
+| [0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md) | Fase × Etapa — eixo temporal (cronograma) e eixo de pontuação são agregados distintos, ligados por bicondicional; precedência entre fases é dado de cadastro — emendada pela ADR-0158 | accepted | 2026-07-15 |
 | [0114](0114-ruleset-conformidade-legal-processo-seletivo.md) | Ruleset de conformidade legal do processo seletivo | accepted | 2026-07-15 |
 | [0115](0115-quadro-de-vagas-materializacao-derivada-congelamento-atomico.md) | O quadro de vagas é output derivado da configuração de distribuição, materializado e congelado na mesma operação que os insumos | accepted | 2026-07-16 |
 | [0116](0116-origem-ponto-resolucao-binding-fato-valor-dominio.md) | Fato multi-fonte: origem (renomeia/reclassifica `Natureza`), ponto de resolução, binding e `FatoValorDominio` — refina a ADR-0111; emendada em 2026-07-22: `MODALIDADE` passa a derivado e o binding admite mais de um prefixo por origem; sucedida em parte pela ADR-0136: governança por seed e marco de imutabilidade só para fatos de sistema (eixos do fato do administrador editáveis, por emenda de 17/10/2026), e novo mapa de prefixos | accepted | 2026-07-19 |
@@ -173,7 +173,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0142](0142-elegibilidade-do-fator-de-atenuacao.md) | O Fator de Atenuação das Desigualdades de Acesso cita o fato booleano do processo que decide quem o recebe; o motor aplica o acréscimo a quem o fato resolve verdadeiro | proposed | 2026-10-10 |
 | [0143](0143-avaliacao-sob-demanda-dos-fatos-do-candidato.md) | A API avalia sob demanda o que depende dos fatos do candidato | proposed | 2026-10-10 |
 | [0144](0144-regra-de-aplicabilidade-pertence-a-modalidade.md) | A regra de aplicabilidade pertence à modalidade | proposed | 2026-10-11 |
-| [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior | accepted | 2026-10-18 |
+| [0145](0145-recurso-por-etapa.md) | O recurso também pertence à etapa, e cada janela declara se admite instância superior — emendada pela ADR-0158 | accepted | 2026-10-18 |
 | [0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) | O arquivo do candidato é cifrado pelo armazenamento (SSE-KMS no MinIO, chave do KES no Vault, chave de dados por objeto) e verificado por um processo fora da API, que lê direto do MinIO e é acionado por fila no RabbitMQ — emenda a ADR-0121 | accepted | 2026-10-22 |
 | [0147](0147-base-de-assinaturas-do-antivirus-por-espelho-interno.md) | A base de assinaturas do antivírus chega aos clamd sidecar do verificador por um espelho interno no cluster; o verificador não tem saída para a internet | accepted | 2026-10-23 |
 | [0148](0148-leiautes-versionados-dos-arquivos-do-inep.md) | Os arquivos de notas, a começar pelos do INEP, seguem leiautes versionados no código, compostos de colunas; o administrador escolhe o leiaute na importação, o arquivo de outra estrutura é recusado e o lote registra a versão usada | accepted | 2026-10-26 |
@@ -185,9 +185,10 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0154](0154-classificacao-da-modalidade-e-dos-opt-ins.md) | A modalidade e os opt-ins de concorrência passam a `Interno`, como reclassificação de fato de sistema pela aprovação da proteção de dados | proposed | 2026-10-31 |
 | [0155](0155-analisadores-de-qualidade-na-build.md) | Sonar, Meziantou e Roslynator rodam na build, com um dono por regra; as métricas de qualidade avisam até as ocorrências acabarem e depois passam a erro; emenda a 0117 nesse ponto | accepted | 2026-11-06 |
 | [0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md) | Limites de 400 linhas por arquivo, 15 por método, complexidade e parâmetros; o que o código atual ainda não cumpre é dívida registrada, e as métricas seguem como aviso até acabar | accepted | 2026-11-06 |
-| [0157](0157-perfis-de-acesso-versionados-e-aprovados.md) | Perfis de acesso versionados: a concessão fica presa à versão aprovada, e a ampliação chega a quem já tem o perfil por migração em lote em 72 horas, com segregação; emenda a 0152 | accepted | 2026-11-09 |
+| [0157](0157-perfis-de-acesso-versionados-e-aprovados.md) | Perfis de acesso versionados: a concessão fica presa à versão aprovada, e a ampliação chega a quem já tem o perfil por migração em lote em 72 horas, com segregação; emenda a 0152 — emendada pela ADR-0158 | accepted | 2026-11-09 |
+| [0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md) | O recurso abre pela publicação confirmada de um ato (a ciência individual sai do recurso), cada janela declara quem pode recorrer, a retificação depois do preliminar abre novo ciclo do item, a banca delibera pela regra do edital e as decisões saem em documento único conferido antes do definitivo; emenda as ADRs 0103, 0105, 0113, 0145 e 0157 | proposed | 2026-11-10 |
 
-> **Nota de numeração:** a sequência de `0001` a `0157` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0158+`.
+> **Nota de numeração:** a sequência de `0001` a `0158` está completa, sem lacunas. Ao adicionar uma ADR nova, use `0159+`.
 
 ## Como adicionar um novo ADR
 

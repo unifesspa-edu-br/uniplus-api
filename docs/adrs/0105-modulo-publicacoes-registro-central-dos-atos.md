@@ -114,3 +114,4 @@ O módulo entra como **quinto módulo interno** do monolito modular, com schema 
 - [ADR-0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) — retificação é relação entre atos
 - [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md) — a vigência ordena versões, não documentos
 - Evidência empírica: acervos completos do PS Canaã dos Carajás 2026 (CEPS) e do SiSU 2026 — Edição Única (CRCA)
+- Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): a publicação única por item passa a valer por ciclo, e o ato do novo ciclo leva o número do ciclo e a referência ao ato substituído.
