@@ -126,6 +126,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -251,6 +252,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -331,6 +333,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
 

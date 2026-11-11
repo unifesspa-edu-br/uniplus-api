@@ -278,6 +278,7 @@ public sealed class ValoresSelecionaveisResolverTests
             mocks.FatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
     }

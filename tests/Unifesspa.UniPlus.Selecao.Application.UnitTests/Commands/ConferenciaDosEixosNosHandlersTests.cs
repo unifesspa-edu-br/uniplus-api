@@ -420,6 +420,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             Unidades,
+            MotivosDoProcessoDeTeste.Nenhum(),
             _registro,
             new RelogioFixo(),
             CancellationToken.None);
@@ -445,6 +446,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             Unidades,
+            MotivosDoProcessoDeTeste.Nenhum(),
             _registro,
             new RelogioFixo(),
             CancellationToken.None);

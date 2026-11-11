@@ -220,6 +220,7 @@ public sealed class AnexosDoEditalNosHandlersTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -255,6 +256,7 @@ public sealed class AnexosDoEditalNosHandlersTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
