@@ -34,6 +34,7 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     private const string Leandro = "leandro.viana";
     private const string Diogo = "diogo.souza";
     private const string Paulo = "paulo.conceicao";
+    private const string Lucia = "lucia.almeida";
     private const string PapelDeInstalacao = "uniplus-instalacao";
     private const string PrefixoDeTeste = "TEST_MDI_";
 
@@ -47,7 +48,7 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     // As personas compartilham o banco da coleção: cada teste começa sem concessão alguma.
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Diogo, Paulo })
+        foreach (string sub in new[] { Leandro, Diogo, Paulo, Lucia })
         {
             await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
         }
@@ -137,6 +138,23 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
             leandro, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
 
         depois.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "Sem a permissão de manutenção, editar, desativar e reativar motivo são recusados")]
+    public async Task ManterSemPermissao_Recusa()
+    {
+        using HttpClient comPermissao = await ClienteComConcessaoAsync();
+        using HttpResponseMessage criada = await PostAsync(comPermissao, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
+        Guid id = await criada.Content.ReadFromJsonAsync<Guid>();
+        using HttpClient lucia = ClienteAutenticado(Lucia);
+
+        using HttpResponseMessage edicao = await EnviarAsync(lucia, HttpMethod.Put, $"/api/selecao/admin/motivos-de-decisao/{id}", new { id, descricao = "Outra redação do motivo." });
+        using HttpResponseMessage desativacao = await EnviarAsync(lucia, HttpMethod.Delete, $"/api/selecao/admin/motivos-de-decisao/{id}/ativacao", null);
+        using HttpResponseMessage reativacao = await EnviarAsync(lucia, HttpMethod.Post, $"/api/selecao/admin/motivos-de-decisao/{id}/ativacao", null);
+
+        edicao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        desativacao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        reativacao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "POST sem autenticação alguma é 401, não 403")]
@@ -384,6 +402,18 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Admin Test");
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "admin@unifesspa.edu.br");
         return client;
+    }
+
+    private static async Task<HttpResponseMessage> EnviarAsync(HttpClient client, HttpMethod metodo, string url, object? payload)
+    {
+        using HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload);
+        }
+
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        return await client.SendAsync(request);
     }
 
     private static async Task<HttpResponseMessage> PostAsync(HttpClient client, string url, object payload)
