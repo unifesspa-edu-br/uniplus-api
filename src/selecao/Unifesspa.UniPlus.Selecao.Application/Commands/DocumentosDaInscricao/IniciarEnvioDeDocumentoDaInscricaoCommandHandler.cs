@@ -10,8 +10,6 @@ using DTOs;
 
 using Kernel.Results;
 
-using MotivosDecisaoIsencao;
-
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
