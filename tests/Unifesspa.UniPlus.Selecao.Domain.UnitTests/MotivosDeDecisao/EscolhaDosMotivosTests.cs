@@ -104,6 +104,15 @@ public sealed class EscolhaDosMotivosTests
             .Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.JustificativaObrigatoria);
     }
 
+    [Fact(DisplayName = "Na retificação, a justificativa com caractere nulo é recusada pelo domínio, não pelo banco")]
+    public void Retificacao_JustificativaComCaractereNulo_Recusa()
+    {
+        MotivoDeDecisao origem = ProcessoParaMotivos.Motivo(TipoMotivoDeDecisao.Classificacao, "NOTA_ZERADA", SentidoDoMotivo.Desfavoravel);
+
+        Incluir(ProcessoParaMotivos.EmRetificacao(), origem, "Norma\0nova")
+            .Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido);
+    }
+
     [Fact(DisplayName = "Na retificação, a justificativa acima do tamanho é recusada")]
     public void Retificacao_JustificativaLonga_Recusa()
     {

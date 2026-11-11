@@ -83,6 +83,19 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         escolhidos.Should().HaveCount(2).And.OnlyContain(static e => e.GetProperty("congelado").GetBoolean());
     }
 
+    [Fact(DisplayName = "Na retificação, a justificativa com caractere nulo é recusada com 422, e não com erro de servidor")]
+    public async Task Retificacao_JustificativaComCaractereNulo_Recusa()
+    {
+        Guid processoId = await SemearPublicadoComIsencaoAsync(nameof(Retificacao_JustificativaComCaractereNulo_Recusa));
+        string etag = await AbrirRetificacaoAsync(processoId);
+        MotivoDeDecisao homologacao = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
+
+        using HttpResponseMessage resposta = await IncluirAsync(processoId, homologacao.Id, "Norma\u0000nova", etag);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoDoErro(resposta)).Should().Be("uniplus.selecao.motivo_de_decisao.justificativa_caractere_invalido");
+    }
+
     [Fact(DisplayName = "A justificativa da inclusão não sai em leitura anônima nem de quem não configura o processo")]
     public async Task Justificativa_NaoSaiEmLeituraPublica()
     {

@@ -48,6 +48,7 @@ internal static class ErrosDosMotivosDeDecisao
         Mapear(MotivoDeDecisaoErrorCodes.NaoEscolhido, StatusCodes.Status404NotFound, "nao_escolhido", "O processo não escolheu este motivo"),
         Recusa(MotivoDeDecisaoErrorCodes.JustificativaObrigatoria, "justificativa_obrigatoria", "Inclusão depois da publicação exige justificativa"),
         Recusa(MotivoDeDecisaoErrorCodes.JustificativaTamanho, "justificativa_tamanho", "Justificativa fora do tamanho permitido"),
+        Recusa(MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido, "justificativa_caractere_invalido", "Justificativa contém caractere não permitido"),
         Recusa(MotivoDeDecisaoErrorCodes.AvaliacaoIniciada, "avaliacao_iniciada", "A avaliação desta decisão já começou"),
         Recusa(MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao, "retirada_apos_publicacao", "Motivo publicado não é retirado do processo"),
 

@@ -31,6 +31,7 @@ public static class MotivoDeDecisaoErrorCodes
     public const string NaoEscolhido = "MotivoDeDecisao.NaoEscolhido";
     public const string JustificativaObrigatoria = "MotivoDeDecisao.JustificativaObrigatoria";
     public const string JustificativaTamanho = "MotivoDeDecisao.JustificativaTamanho";
+    public const string JustificativaCaractereInvalido = "MotivoDeDecisao.JustificativaCaractereInvalido";
     public const string AvaliacaoIniciada = "MotivoDeDecisao.AvaliacaoIniciada";
     public const string RetiradaAposPublicacao = "MotivoDeDecisao.RetiradaAposPublicacao";
     public const string MotivoDesativado = "MotivoDeDecisao.MotivoDesativado";

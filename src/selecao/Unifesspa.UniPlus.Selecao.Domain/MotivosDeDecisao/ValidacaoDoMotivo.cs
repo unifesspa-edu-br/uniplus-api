@@ -50,7 +50,7 @@ public static class ValidacaoDoMotivo
 
         // O caractere nulo não é espaço em branco e cabe no tamanho, mas a coluna textual do banco
         // não o armazena: sem esta recusa o valor só falharia ao gravar, com 500 em vez de 422.
-        if (normalizada.Contains('\0', StringComparison.Ordinal))
+        if (TemCaractereNulo(normalizada))
         {
             return FalhaDaDescricao(MotivoDeDecisaoErrorCodes.DescricaoCaractereInvalido, "Descrição do motivo não pode conter o caractere nulo.");
         }
@@ -58,6 +58,17 @@ public static class ValidacaoDoMotivo
         return normalizada.Length is < DescricaoMinLength or > DescricaoMaxLength
             ? FalhaDaDescricao(MotivoDeDecisaoErrorCodes.DescricaoTamanho, $"Descrição do motivo deve ter entre {DescricaoMinLength} e {DescricaoMaxLength} caracteres.")
             : Result<string>.Success(normalizada);
+    }
+
+    /// <summary>
+    /// Se o texto livre traz o caractere nulo, que a coluna textual do banco não armazena: sem a recusa,
+    /// o valor só falharia ao gravar, com 500 em vez de 422. Vale para todo texto livre do cadastro e da
+    /// escolha dos motivos.
+    /// </summary>
+    public static bool TemCaractereNulo(string texto)
+    {
+        ArgumentNullException.ThrowIfNull(texto);
+        return texto.Contains('\0', StringComparison.Ordinal);
     }
 
     private static Result<string> FalhaDaDescricao(string codigo, string mensagem) =>
