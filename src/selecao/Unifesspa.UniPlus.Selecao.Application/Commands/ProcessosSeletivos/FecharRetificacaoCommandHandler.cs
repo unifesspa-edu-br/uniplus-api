@@ -68,6 +68,7 @@ public static class FecharRetificacaoCommandHandler
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
+        IMotivoDoProcessoRepository motivoDoProcessoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -78,7 +79,7 @@ public static class FecharRetificacaoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return RecopiaAoCongelar.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, registroCodecs, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, motivoDoProcessoRepository, registroCodecs, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
@@ -102,6 +103,7 @@ public static class FecharRetificacaoCommandHandler
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
+        IMotivoDoProcessoRepository motivoDoProcessoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -123,6 +125,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
+        ArgumentNullException.ThrowIfNull(motivoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -137,28 +140,9 @@ public static class FecharRetificacaoCommandHandler
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), []);
         }
 
-        // Incondicional nesta rota (D9, "3 antes de 10") — ela existe para a sessão.
-        if (!command.Precondicao.Presente)
+        if (PrecondicoesDoFechamento.Recusa(command.Precondicao, processo) is { } recusa)
         {
-            return (Result.Failure(new DomainError(
-                "Precondicao.Requerida",
-                "O fechamento encerra a sessão editorial em curso — informe o If-Match com o ETag dela.")), []);
-        }
-
-        if (processo.Rascunho is null)
-        {
-            return (Result.Failure(new DomainError(
-                "RascunhoRetificacao.NaoAberta",
-                "Não há retificação em curso neste processo.")), []);
-        }
-
-        // A precondição precede as regras de negócio (ADR-0110 D9), e a antecipação é a mesma
-        // dos seis Definir*: um cliente com ETag defasado tem de saber disso antes de o
-        // servidor ir conferir documento, catálogo de atos e vaga de linhagem — três consultas
-        // que ele não errou. O FecharRetificacao do agregado reconfere.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
-        {
-            return (Result.Failure(bloqueio), []);
+            return (Result.Failure(recusa), []);
         }
 
         Result<AtoEDocumentoConferidos> conferenciaDoAto = await ConferenciaDoAtoEDoDocumento
@@ -176,7 +160,7 @@ public static class FecharRetificacaoCommandHandler
         Result<VersaoConfiguracao> linhagem = await ConferenciaDaLinhagemRetificavel
             .ConferirAsync(
                 processoSeletivoRepository, vagaDeLinhagemReader, atoDoProcessoRepository, registroCodecs,
-                processo, processo.Rascunho.VersaoBaseId, cancellationToken)
+                processo, processo.Rascunho!.VersaoBaseId, cancellationToken)
             .ConfigureAwait(false);
         if (linhagem.IsFailure)
         {
@@ -346,6 +330,14 @@ public static class FecharRetificacaoCommandHandler
         if (avaliavel.IsFailure)
         {
             return (Result.Failure(avaliavel.Error!), []);
+        }
+
+        // Último portão, depois de todos os demais: os motivos escolhidos vêm de motivo ativo e cobrem
+        // as decisões do processo (UNI-REQ-0123); só então a escolha congela.
+        Result motivos = await ConferenciaDosMotivosAoCongelar.ConferirAsync(motivoDoProcessoRepository, processo, cancellationToken).ConfigureAwait(false);
+        if (motivos.IsFailure)
+        {
+            return (Result.ValidationFailure(motivos.Errors), []);
         }
 
         string atorUsuarioSub = userContext.UserId ?? "system";

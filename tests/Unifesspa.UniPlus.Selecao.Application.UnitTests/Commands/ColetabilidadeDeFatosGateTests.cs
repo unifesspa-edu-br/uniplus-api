@@ -109,6 +109,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -153,6 +154,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -201,6 +203,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -246,6 +249,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -328,6 +332,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             fatoCandidatoReader,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

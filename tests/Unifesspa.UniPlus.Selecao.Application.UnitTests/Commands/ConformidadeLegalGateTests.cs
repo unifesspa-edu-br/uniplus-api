@@ -83,6 +83,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -126,6 +127,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -173,6 +175,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -215,6 +218,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -261,6 +265,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -298,6 +303,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -340,6 +346,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -386,6 +393,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -434,6 +442,7 @@ public sealed class ConformidadeLegalGateTests
             CadastrosVivos.CatalogoDeFatos(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
+            MotivosDoProcessoDeTeste.Nenhum(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);
