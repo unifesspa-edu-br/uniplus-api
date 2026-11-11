@@ -31,6 +31,7 @@ public static class DefinirCronogramaFasesCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
         IRegistroCodecsEnvelope registroCodecs,
+        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -38,6 +39,7 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
+        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
@@ -59,8 +61,12 @@ public static class DefinirCronogramaFasesCommandHandler
             faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader);
         AtosConsultadosNaEdicao atos = new(
             tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider);
+        FasesIniciadas iniciadas = processo.Rascunho is null
+            ? FasesIniciadas.Nenhuma
+            : await fasesIniciadasDoProcesso
+                .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         Result definida = await DefinirAsync(
-                processo, command, new MontagemDasFases(processo, cadastros, atos), precedenciaFaseReader, cancellationToken)
+                processo, command, new MontagemDasFases(processo, cadastros, atos), (precedenciaFaseReader, iniciadas), cancellationToken)
             .ConfigureAwait(false);
         if (definida.IsFailure)
         {
@@ -77,7 +83,7 @@ public static class DefinirCronogramaFasesCommandHandler
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
         MontagemDasFases montagem,
-        IPrecedenciaFaseReader precedenciaFaseReader,
+        (IPrecedenciaFaseReader Precedencias, FasesIniciadas Iniciadas) leituras,
         CancellationToken cancellationToken)
     {
         Result<List<FaseCronograma>> fases = await montagem.MontarAsync(command.Fases, cancellationToken).ConfigureAwait(false);
@@ -86,11 +92,11 @@ public static class DefinirCronogramaFasesCommandHandler
             return Result.ValidationFailure(fases.Errors);
         }
 
-        IReadOnlyList<PrecedenciaFaseView> arestasVivas = await precedenciaFaseReader
+        IReadOnlyList<PrecedenciaFaseView> arestasVivas = await leituras.Precedencias
             .ListarVivasAsync(cancellationToken)
             .ConfigureAwait(false);
         List<ArestaPrecedencia> precedencias = [.. arestasVivas
             .Select(static a => new ArestaPrecedencia(a.AntecessoraCodigo, a.SucessoraCodigo, a.PermiteSobreposicao))];
-        return processo.DefinirCronogramaFases(fases.Value!, precedencias, command.Precondicao);
+        return processo.DefinirCronogramaFases(fases.Value!, precedencias, command.Precondicao, leituras.Iniciadas);
     }
 }

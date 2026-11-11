@@ -19,9 +19,11 @@ internal static class RegrasDoCronograma
     internal static Result<PlanoDoCronograma> Planejar(
         EstadoDaConfiguracao estado,
         IReadOnlyList<FaseCronograma> fases,
-        IReadOnlyList<ArestaPrecedencia> precedencias)
+        IReadOnlyList<ArestaPrecedencia> precedencias,
+        FasesIniciadas iniciadas)
     {
         ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(iniciadas);
 
         DomainError? recusa = CronogramaVazio(fases) ?? OrdemRepetida(fases) ?? FaseCanonicaRepetida(fases);
         if (recusa is not null)
@@ -40,7 +42,7 @@ internal static class RegrasDoCronograma
         List<DocumentoExigido> documentosQueFicam =
             [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
 
-        recusa = RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
+        recusa = RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam, iniciadas)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem)
             ?? RecusaDePrecedencia(fases, precedencias);
@@ -125,12 +127,13 @@ internal static class RegrasDoCronograma
         EstadoDaConfiguracao estado,
         Dictionary<Guid, FaseCronograma> antigasPorOrigem,
         Dictionary<Guid, FaseCronograma> novasPorOrigem,
-        List<DocumentoExigido> documentosQueFicam)
+        List<DocumentoExigido> documentosQueFicam,
+        FasesIniciadas iniciadas)
     {
         foreach (FaseCronograma antiga in antigasPorOrigem.Values)
         {
             DomainError? recusa = novasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova)
-                ? RecusaDaFaseRetida(estado, antiga, nova, documentosQueFicam)
+                ? RecusaDaUnidadeDeFaseIniciada(antiga, nova, iniciadas) ?? RecusaDaFaseRetida(estado, antiga, nova, documentosQueFicam)
                 : RecusaDaFaseRemovida(estado, antiga, documentosQueFicam);
             if (recusa is not null)
             {
@@ -140,6 +143,15 @@ internal static class RegrasDoCronograma
 
         return null;
     }
+
+    // A unidade que conduz a fase decide as ações dela, e a fase que já começou tem ato e registro feitos sob essa
+    // unidade: trocá-la deixaria o que já aconteceu sem a unidade que o conduziu.
+    private static DomainError? RecusaDaUnidadeDeFaseIniciada(FaseCronograma antiga, FaseCronograma nova, FasesIniciadas iniciadas) =>
+        antiga.UnidadeResponsavelOrigemId != nova.UnidadeResponsavelOrigemId && iniciadas.Contem(antiga.FaseCanonicaOrigemId)
+            ? new DomainError(
+                "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
+                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) já começou, e a unidade responsável por ela não muda.")
+            : null;
 
     // A exigência declarada na fase removida sai junto, na poda. A âncora de idade máxima é outra
     // coisa: quem a declara é uma exigência de outra fase, que só usa esta como marco temporal, e
