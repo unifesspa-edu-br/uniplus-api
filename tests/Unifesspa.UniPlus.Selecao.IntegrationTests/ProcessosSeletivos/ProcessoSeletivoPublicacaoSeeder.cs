@@ -42,7 +42,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// preenchidas (etapas, atendimento, distribuição de vagas, classificação)
     /// — o mínimo que <c>AvaliarConformidade</c> exige para publicar.
     /// </summary>
-    public static ProcessoSeletivo NovoProcessoConforme(string nome)
+    public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
@@ -92,8 +92,8 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             agrupaEtapas: true,
             permiteComplementacao: false,
             coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
@@ -256,11 +256,11 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// Publica o processo pelo agregado e persiste raiz, documento e versão 1
     /// da configuração — o mesmo caminho do handler, sem a pipeline HTTP.
     /// </summary>
-    public static async Task<Resultado> PublicarAsync(ProcessoSeletivoDbFixture fixture, string nome)
+    public static async Task<Resultado> PublicarAsync(ProcessoSeletivoDbFixture fixture, string nome, DateTimeOffset? inicioDaFase = null)
     {
         ArgumentNullException.ThrowIfNull(fixture);
 
-        ProcessoSeletivo processo = NovoProcessoConforme(nome);
+        ProcessoSeletivo processo = NovoProcessoConforme(nome, inicioDaFase);
 
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;

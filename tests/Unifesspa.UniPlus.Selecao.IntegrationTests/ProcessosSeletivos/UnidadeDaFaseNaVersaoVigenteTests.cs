@@ -154,11 +154,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     public async Task Iniciadas_JanelaAdiadaNaRetificacao_ContinuaIniciada()
     {
         (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela adiada");
-        await SucederAsync(processoId, DateTimeOffset.UtcNow, f =>
-        {
-            f["inicio"] = "2031-01-01T00:00:00+00:00";
-            f["fim"] = "2031-01-31T00:00:00+00:00";
-        });
+        await SucederAsync(processoId, DateTimeOffset.UtcNow, AdiaAJanela);
 
         FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -175,6 +171,36 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+    }
+
+    private static readonly DateTimeOffset Abertura = new(2040, 3, 10, 0, 0, 0, TimeSpan.Zero);
+
+    [Fact(DisplayName = "A janela adiada antes de abrir não faz a fase contar como iniciada")]
+    public async Task Iniciadas_JanelaAdiadaAntesDeAbrir_NaoConta()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS adiada antes de abrir", Abertura);
+        await SucederAsync(processoId, Abertura.AddDays(-9), AdiaAJanela);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, Abertura.AddDays(5));
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse("a versão que previa a janela foi substituída antes de ela abrir");
+    }
+
+    [Fact(DisplayName = "A janela adiada depois de abrir continua contando como fase iniciada")]
+    public async Task Iniciadas_JanelaAdiadaDepoisDeAbrir_Conta()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS adiada depois de abrir", Abertura);
+        await SucederAsync(processoId, Abertura.AddDays(2), AdiaAJanela);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, Abertura.AddDays(5));
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue("a janela abriu enquanto a versão que a previa vigia");
+    }
+
+    private static void AdiaAJanela(JsonObject fase)
+    {
+        fase["inicio"] = "2045-01-01T00:00:00+00:00";
+        fase["fim"] = "2045-01-31T00:00:00+00:00";
     }
 
     private async Task SucederAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraAFase)
@@ -211,9 +237,9 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         await semeadura.SaveChangesAsync();
     }
 
-    private async Task<(Guid ProcessoId, FaseCronograma Fase, EtapaProcesso Etapa)> PublicadoAsync(string nome)
+    private async Task<(Guid ProcessoId, FaseCronograma Fase, EtapaProcesso Etapa)> PublicadoAsync(string nome, DateTimeOffset? inicioDaFase = null)
     {
-        ProcessoSeletivoPublicacaoSeeder.Resultado resultado = await ProcessoSeletivoPublicacaoSeeder.PublicarAsync(_fixture, nome);
+        ProcessoSeletivoPublicacaoSeeder.Resultado resultado = await ProcessoSeletivoPublicacaoSeeder.PublicarAsync(_fixture, nome, inicioDaFase);
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await context.ProcessosSeletivos
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
