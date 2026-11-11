@@ -67,6 +67,7 @@ public static class SelecaoInfrastructureRegistration
 
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<IUnidadeDaFaseNaVersaoVigente, UnidadeDaFaseNaVersaoVigente>();
+        services.AddScoped<IFasesIniciadasDoProcesso, FasesIniciadasDoProcesso>();
 
         // Projeção pública do certame: a tabela cuja existência de linha é a publicidade.
         services.AddScoped<ICertameDivulgadoRepository, CertameDivulgadoRepository>();

@@ -94,6 +94,10 @@ public static class SelecaoCodegenRegistration
         // tanto no handler que divulga quanto nos dois de leitura.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICertameDivulgadoRepository>();
 
+        // As fases iniciadas do processo, lidas na versão publicada pela edição do cronograma: concreto
+        // internal na Infrastructure de Seleção, mesmo motivo acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFasesIniciadasDoProcesso>();
+
         // Vocabulário fechado de fatos do candidato (#846, ADR-0111), consumido pelo
         // handler de critérios de desempate para validar DESEMPATE-PREDICADO-FATO
         // (Story #847). Mesmo motivo dos demais readers cross-módulo acima.

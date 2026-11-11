@@ -363,17 +363,22 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
         EstadoDaConfiguracao.De(this).FormularioDe(finalidade);
 
-    /// <summary>Substitui o cronograma. O grafo de precedências é parâmetro: o domínio não consulta a Configuração.</summary>
+    /// <summary>
+    /// Substitui o cronograma. O grafo de precedências e as fases já iniciadas são parâmetros: o domínio não consulta a
+    /// Configuração nem o que já aconteceu em cada fase, e a unidade de uma fase iniciada não troca. Sem
+    /// <paramref name="iniciadas"/>, nenhuma fase conta como iniciada (o rascunho nunca publicado).
+    /// </summary>
     public Result DefinirCronogramaFases(
         IReadOnlyList<FaseCronograma> fases,
         IReadOnlyList<ArestaPrecedencia> precedencias,
-        PrecondicaoIfMatch precondicao)
+        PrecondicaoIfMatch precondicao,
+        FasesIniciadas? iniciadas = null)
     {
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(precedencias);
 
         return Editar(precondicao,
-            () => RegrasDoCronograma.Planejar(EstadoDaConfiguracao.De(this), fases, precedencias),
+            () => RegrasDoCronograma.Planejar(EstadoDaConfiguracao.De(this), fases, precedencias, iniciadas ?? FasesIniciadas.Nenhuma),
             Aplicar);
     }
 

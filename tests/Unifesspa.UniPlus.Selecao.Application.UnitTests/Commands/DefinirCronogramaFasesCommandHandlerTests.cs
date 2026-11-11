@@ -36,6 +36,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
         IRegraCatalogoReader RegraCatalogoReader,
         ITipoAtoPublicadoReader TipoAtoPublicadoReader,
         IRegistroCodecsEnvelope Codecs,
+        IFasesIniciadasDoProcesso FasesIniciadas,
         ISelecaoUnitOfWork UnitOfWork,
         TimeProvider TimeProvider);
 
@@ -58,6 +59,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             Substitute.For<IRegraCatalogoReader>(),
             Substitute.For<ITipoAtoPublicadoReader>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
+            Substitute.For<IFasesIniciadasDoProcesso>(),
             Substitute.For<ISelecaoUnitOfWork>(),
             TimeProvider.System);
     }
@@ -74,6 +76,7 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
             mocks.RegraCatalogoReader,
             mocks.TipoAtoPublicadoReader,
             mocks.Codecs,
+            mocks.FasesIniciadas,
             mocks.UnitOfWork,
             mocks.TimeProvider,
             CancellationToken.None);
