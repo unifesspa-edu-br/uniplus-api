@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.MotivosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -198,18 +199,28 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         escolhido.Congelado.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O descarte da sessão retira só as inclusões ainda não congeladas")]
-    public async Task DescartarPendentes_RetiraSoOsNaoCongelados()
+    [Fact(DisplayName = "O descarte da sessão apaga o rascunho do ato e as inclusões de motivo pendentes")]
+    public async Task DescarteDaSessao_ApagaRascunhoEMotivosPendentes()
     {
-        MotivoDoProcesso congelado = Escolhido(Motivo(codigo: "RENDA_A"));
-        MotivosAoCongelar.Congelar([congelado]);
-        MotivoDoProcesso pendente = Escolhido(Motivo(codigo: "RENDA_B"));
-        _escolhidos.ListarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>()).Returns([congelado, pendente]);
+        IRascunhoDePublicacaoRepository rascunhos = Substitute.For<IRascunhoDePublicacaoRepository>();
 
-        await ConferenciaDosMotivosAoCongelar.DescartarPendentesAsync(_escolhidos, _processo.Id, CancellationToken.None);
+        await DescarteDaSessao.ApagarPendenciasAsync(rascunhos, _processos, _processo.Id, CancellationToken.None);
 
-        _escolhidos.Received(1).Remover(pendente);
-        _escolhidos.DidNotReceive().Remover(congelado);
+        await rascunhos.Received(1).ApagarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>());
+        await _processos.Received(1).DescartarMotivosPendentesAsync(_processo.Id, Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Nos últimos portões, sem recusa anterior, a falta de cobertura recusa")]
+    public async Task UltimosPortoes_SemRecusaAnterior_RecusaPorCobertura()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
+
+        Result<DefinicaoAvaliavel> resultado = await ConferenciaDosMotivosAoCongelar.UltimosPortoesAsync(
+            MotivosDoProcessoDeTeste.Com([]), processo, [], CancellationToken.None);
+
+        resultado.Errors.Should().HaveCount(2).And.OnlyContain(e => e.Error.Code == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
     }
 
     private Task<Result<MutacaoAceita>> Incluir(Guid motivoId) =>

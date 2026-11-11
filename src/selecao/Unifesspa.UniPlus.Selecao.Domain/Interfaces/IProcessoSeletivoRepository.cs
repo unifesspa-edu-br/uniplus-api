@@ -232,4 +232,13 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
         IdentificadorLegivel identificador,
         Guid? excluirId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Os motivos que o processo escolheu, rastreados, cada um com o motivo de origem no cadastro: é o
+    /// que a publicação, a retificação e o fechamento da sessão conferem e congelam (UNI-REQ-0285).
+    /// </summary>
+    Task<IReadOnlyList<MotivoEscolhidoComOrigem>> ListarMotivosEscolhidosAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+
+    /// <summary>Retira as escolhas de motivo ainda não congeladas: as que a sessão de retificação descartada incluiu.</summary>
+    Task DescartarMotivosPendentesAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 }

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
-public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
+public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 {
     private readonly SelecaoDbContext _context;
     private readonly TimeProvider _timeProvider;

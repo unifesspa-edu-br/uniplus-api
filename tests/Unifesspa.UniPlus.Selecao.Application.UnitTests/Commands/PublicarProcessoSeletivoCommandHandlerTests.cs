@@ -225,7 +225,6 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks.FatoCandidatoReader,
             calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
             unidades ?? ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
     }
