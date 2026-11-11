@@ -112,6 +112,92 @@ public static class AcessoAoProcesso
     }
 
     /// <summary>
+    /// O resource da ação interna de uma fase, na unidade que conduz a fase. Leva sempre o processo: sem ele o
+    /// impedimento por inscrição aprovaria quem está inscrito.
+    /// </summary>
+    public static ResourceContext ResourceDaFase(UnidadeDaFase fase, Guid processoId)
+    {
+        ArgumentNullException.ThrowIfNull(fase);
+
+        return ResourceContext.From(
+            ResourceTiposSelecao.FaseDoProcesso, ClassificacaoDeProtecao.Publico, fase.UnidadeId, processoId,
+            resourceId: fase.FaseId).Value!;
+    }
+
+    /// <summary>
+    /// Decide a ação interna de uma fase na unidade que a conduz na versão publicada vigente (ADR-0079), e não na dona
+    /// do processo. A fase que não se resolve não tem unidade sobre a qual decidir: o acesso é negado sem recorrer à
+    /// dona e sem consultar o ponto de decisão, como no processo inexistente. A ação que por natureza não tem fase
+    /// decide na dona, por <see cref="VerificarAsync"/>.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> ExigirNaFaseAsync(
+        IVerificadorDeAcesso verificador,
+        IUnidadeDaFaseNaVersaoVigente fases,
+        Guid processoId,
+        Guid faseId,
+        PermissaoSelecao permissao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+
+        UnidadeDaFase? fase = await fases.DaFaseAsync(processoId, faseId, cancellationToken).ConfigureAwait(false);
+        return await ExigirNaUnidadeDaFaseAsync(verificador, fase, processoId, permissao, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Decide a ação interna de uma etapa na unidade da fase que a contém. A etapa sem fase resolvida na versão
+    /// vigente é negada como a fase que não se resolve.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> ExigirNaEtapaAsync(
+        IVerificadorDeAcesso verificador,
+        IUnidadeDaFaseNaVersaoVigente fases,
+        Guid processoId,
+        Guid etapaId,
+        PermissaoSelecao permissao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+
+        UnidadeDaFase? fase = await fases.DaEtapaAsync(processoId, etapaId, cancellationToken).ConfigureAwait(false);
+        return await ExigirNaUnidadeDaFaseAsync(verificador, fase, processoId, permissao, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Pergunta se a pessoa poderia exercer a ação da fase na unidade dela, sem registrar nada: serve a mostrar ou
+    /// filtrar o que ela pode fazer, e quem entrega dado decide por <see cref="ExigirNaFaseAsync"/>.
+    /// </summary>
+    public static async Task<ResultadoDoAcesso> PodeNaFaseAsync(
+        IVerificadorDeAcesso verificador,
+        IUnidadeDaFaseNaVersaoVigente fases,
+        Guid processoId,
+        Guid faseId,
+        PermissaoSelecao permissao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(fases);
+
+        UnidadeDaFase? fase = await fases.DaFaseAsync(processoId, faseId, cancellationToken).ConfigureAwait(false);
+        return fase is null
+            ? ResultadoDoAcesso.Negado
+            : await verificador.PodeAsync(permissao.Requisito, ResourceDaFase(fase, processoId), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<ResultadoDoAcesso> ExigirNaUnidadeDaFaseAsync(
+        IVerificadorDeAcesso verificador,
+        UnidadeDaFase? fase,
+        Guid processoId,
+        PermissaoSelecao permissao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        return fase is null
+            ? ResultadoDoAcesso.Negado
+            : await verificador.ExigirAsync(permissao.Requisito, ResourceDaFase(fase, processoId), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Decide a leitura do processo: o que já saiu de rascunho é aberto a qualquer pessoa, inclusive sem identificação,
     /// e não registra decisão; o rascunho só abre com <see cref="PermissaoSelecao.ProcessosConfigurar"/> na unidade
     /// dona. O processo que não existe nunca é permitido, e a resposta é a de quem não pode ler.

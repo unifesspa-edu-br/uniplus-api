@@ -66,6 +66,7 @@ public static class SelecaoInfrastructureRegistration
             serviceProvider.GetRequiredService<SelecaoDbContext>());
 
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
+        services.AddScoped<IUnidadeDaFaseNaVersaoVigente, UnidadeDaFaseNaVersaoVigente>();
 
         // Projeção pública do certame: a tabela cuja existência de linha é a publicidade.
         services.AddScoped<ICertameDivulgadoRepository, CertameDivulgadoRepository>();
