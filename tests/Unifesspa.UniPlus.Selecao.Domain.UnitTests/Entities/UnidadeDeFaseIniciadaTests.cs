@@ -84,9 +84,9 @@ public sealed class UnidadeDeFaseIniciadaTests
         ProcessoSeletivo processo = ProcessoComCronograma(ComUnidade(fase, UnidadesDeTeste.Cga));
         FasesIniciadas iniciadas = new([KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]);
 
-        processo.RecusaDoFechamentoPorUnidadeDeFaseIniciada(iniciadas)!.Code
+        iniciadas.RecusaDaTroca(processo.CronogramaFases)!.Code
             .Should().Be("FaseCronograma.UnidadeDeFaseIniciadaNaoMuda");
-        processo.RecusaDoFechamentoPorUnidadeDeFaseIniciada(FasesIniciadas.Nenhuma).Should().BeNull();
+        FasesIniciadas.Nenhuma.RecusaDaTroca(processo.CronogramaFases).Should().BeNull();
     }
 
     [Fact(DisplayName = "O conjunto de fases iniciadas responde só pelas fases que recebeu")]

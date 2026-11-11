@@ -353,7 +353,7 @@ public static class FecharRetificacaoCommandHandler
 
         FasesIniciadas iniciadas = await fasesIniciadasDoProcesso
             .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        if (processo.RecusaDoFechamentoPorUnidadeDeFaseIniciada(iniciadas) is { } unidadeTrocada)
+        if (iniciadas.RecusaDaTroca(processo.CronogramaFases) is { } unidadeTrocada)
         {
             return (Result.Failure(unidadeTrocada), []);
         }

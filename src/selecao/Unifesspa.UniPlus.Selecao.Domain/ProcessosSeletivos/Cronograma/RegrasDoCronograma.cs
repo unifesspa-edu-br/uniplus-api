@@ -42,7 +42,7 @@ internal static class RegrasDoCronograma
         List<DocumentoExigido> documentosQueFicam =
             [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
 
-        recusa = RecusaDaUnidadeDeFaseIniciada(fases, iniciadas)
+        recusa = iniciadas.RecusaDaTroca(fases)
             ?? RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem)
@@ -143,16 +143,6 @@ internal static class RegrasDoCronograma
 
         return null;
     }
-
-    // A unidade que conduz a fase decide as ações dela, e a fase que já começou tem ato e registro feitos sob a
-    // unidade publicada: trocá-la deixaria o que já aconteceu sem a unidade que o conduziu. A comparação é com a
-    // versão publicada, e não com o rascunho anterior, para que retirar e reinserir a fase não contorne a regra.
-    internal static DomainError? RecusaDaUnidadeDeFaseIniciada(IEnumerable<FaseCronograma> fases, FasesIniciadas iniciadas) =>
-        fases.FirstOrDefault(iniciadas.UnidadeTrocada) is { } fase
-            ? new DomainError(
-                "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
-                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) já começou, e a unidade responsável por ela não muda.")
-            : null;
 
     // A exigência declarada na fase removida sai junto, na poda. A âncora de idade máxima é outra
     // coisa: quem a declara é uma exigência de outra fase, que só usa esta como marco temporal, e
