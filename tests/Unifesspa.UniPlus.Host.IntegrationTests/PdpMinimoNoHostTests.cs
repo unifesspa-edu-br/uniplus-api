@@ -56,7 +56,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     // Os requisitos são pessoais para que a decisão seja registrada: a permissão operacional decide sem gravar.
     private const string BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III";
 
-    private static readonly PermissionRequirement ManterMotivos = Pessoal(PermissaoSelecao.MotivosDecisaoIsencaoManter.Requisito);
+    private static readonly PermissionRequirement ManterMotivos = Pessoal(PermissaoSelecao.MotivosDeDecisaoManter.Requisito);
 
     private static readonly PermissionRequirement OperarInscricoes =
         Pessoal(CatalogoDePermissoes<PermissaoDeTeste>.Obter(PermissaoDeTeste.InscricoesOperar).Requisito);

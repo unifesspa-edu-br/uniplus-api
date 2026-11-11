@@ -121,7 +121,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     public async Task Institucional_SemPermissao_403(string recurso, string metodo, string rota, PermissaoSelecao permissao)
     {
         await ConcessoesDeTeste.ConcederPermissoesAsync(
-            _fixture.Factory.Services, Leandro, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+            _fixture.Factory.Services, Leandro, PermissaoSelecao.MotivosDeDecisaoManter.Codigo);
 
         using HttpResponseMessage administrador = await EnviarAsync(Diogo, metodo, rota, "plataforma-admin");
         using HttpResponseMessage outroRecurso = await EnviarAsync(Leandro, metodo, rota);

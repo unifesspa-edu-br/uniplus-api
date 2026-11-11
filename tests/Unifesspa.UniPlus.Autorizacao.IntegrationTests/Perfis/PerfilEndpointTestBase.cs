@@ -25,7 +25,7 @@ public abstract class PerfilEndpointTestBase
 {
     internal const string Rota = "/api/autorizacao/perfis";
     internal const string ConsultarCatalogo = "autorizacao:permissoes:consultar-catalogo";
-    internal const string ManterMotivos = "selecao:motivos-decisao-isencao:manter";
+    internal const string ManterMotivos = "selecao:motivos-de-decisao:manter";
     internal const string OperarInscricoes = "teste:inscricoes:operar";
     internal const string AnalisarAtendimento = "teste:atendimento:analisar";
     internal const string GestorDeAcessosId = "019a0000-0000-7000-8000-000000000001";

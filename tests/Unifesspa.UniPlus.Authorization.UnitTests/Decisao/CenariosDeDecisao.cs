@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 internal static class CenariosDeDecisao
 {
-    public const string Permissao = "selecao:motivos-decisao-isencao:manter";
+    public const string Permissao = "selecao:motivos-de-decisao:manter";
     public const string ResourceTipo = "motivo-decisao-isencao";
 
     /// <summary>Instante fixo do acesso — a decisão inteira se explica por ele.</summary>

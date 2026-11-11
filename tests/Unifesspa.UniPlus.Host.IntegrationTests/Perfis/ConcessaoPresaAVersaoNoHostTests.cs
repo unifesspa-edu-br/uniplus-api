@@ -35,7 +35,7 @@ public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBas
     private const string B = "teste:atendimento:analisar";
     private const string C = "teste:laudos:consultar";
     private const string Catalogo = "autorizacao:permissoes:consultar-catalogo";
-    private const string Motivos = "selecao:motivos-decisao-isencao:manter";
+    private const string Motivos = "selecao:motivos-de-decisao:manter";
 
     public ConcessaoPresaAVersaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)

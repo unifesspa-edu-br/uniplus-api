@@ -18,13 +18,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 [ModuloDePermissoes("selecao")]
 public enum PermissaoSelecao
 {
-    /// <summary>Manter os motivos de decisão de isenção.</summary>
+    /// <summary>Manter o cadastro único de motivos de decisão, de todos os tipos.</summary>
     [Permissao(
-        "selecao:motivos-decisao-isencao:manter",
-        "Manter motivos de decisão de isenção",
-        "Cria, edita, ativa e desativa os motivos institucionais de decisão de isenção.",
+        "selecao:motivos-de-decisao:manter",
+        "Manter motivos de decisão",
+        "Cria, edita, ativa e desativa os motivos institucionais de decisão de todos os tipos, da isenção da taxa à classificação.",
         ClassificacaoDeProtecao.Interno)]
-    MotivosDecisaoIsencaoManter = 1,
+    MotivosDeDecisaoManter = 1,
 
     /// <summary>Configurar o processo seletivo em rascunho.</summary>
     [Permissao(
