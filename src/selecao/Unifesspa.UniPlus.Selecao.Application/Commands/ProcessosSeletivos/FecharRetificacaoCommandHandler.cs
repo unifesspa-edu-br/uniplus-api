@@ -68,7 +68,6 @@ public static class FecharRetificacaoCommandHandler
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
-        IMotivoDoProcessoRepository motivoDoProcessoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -79,7 +78,7 @@ public static class FecharRetificacaoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return RecopiaAoCongelar.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, motivoDoProcessoRepository, registroCodecs, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, registroCodecs, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
@@ -103,7 +102,6 @@ public static class FecharRetificacaoCommandHandler
         IFatoCandidatoReader fatoCandidatoReader,
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
-        IMotivoDoProcessoRepository motivoDoProcessoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -125,7 +123,6 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
-        ArgumentNullException.ThrowIfNull(motivoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -326,18 +323,10 @@ public static class FecharRetificacaoCommandHandler
 
         // Os fatos que as regras citam e nenhum formulário pergunta saem com o rótulo e o tipo do
         // catálogo, congelados na versão; o fato citado sem cadastro recusa aqui, antes de canonicalizar.
-        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);
+        Result<DefinicaoAvaliavel> avaliavel = await ConferenciaDosMotivosAoCongelar.UltimosPortoesAsync(processoSeletivoRepository, processo, catalogoDeFatos, cancellationToken).ConfigureAwait(false);
         if (avaliavel.IsFailure)
         {
-            return (Result.Failure(avaliavel.Error!), []);
-        }
-
-        // Último portão, depois de todos os demais: os motivos escolhidos vêm de motivo ativo e cobrem
-        // as decisões do processo (UNI-REQ-0123); só então a escolha congela.
-        Result motivos = await ConferenciaDosMotivosAoCongelar.ConferirAsync(motivoDoProcessoRepository, processo, cancellationToken).ConfigureAwait(false);
-        if (motivos.IsFailure)
-        {
-            return (Result.ValidationFailure(motivos.Errors), []);
+            return (Result.ValidationFailure(avaliavel.Errors), []);
         }
 
         string atorUsuarioSub = userContext.UserId ?? "system";

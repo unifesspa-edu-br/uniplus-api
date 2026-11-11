@@ -59,6 +59,10 @@ public sealed class PublicarProcessoSeletivoGateTests
     {
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        // Cobra a taxa com um fundamento e não escolheu motivo: a recusa estrutural tem de vir antes da
+        // cobertura dos motivos, que é o último portão.
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
 
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
@@ -126,7 +130,6 @@ public sealed class PublicarProcessoSeletivoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -135,6 +138,7 @@ public sealed class PublicarProcessoSeletivoGateTests
             "ProcessoSeletivo.ConformidadeInsuficiente",
             "o contrato HTTP não muda — continua sendo o mesmo 422 de sempre");
 
+        await processoRepository.DidNotReceive().ListarMotivosEscolhidosAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         canonicalizer.FoiInvocado.Should().BeFalse(
             "um processo não conforme NÃO chega a ser canonicalizado (ADR-0109 D5). Sem o gate antecipado, a " +
             "projeção de uma dimensão obrigatória ausente lançaria (D8) e o 422 viraria 500.");
@@ -252,7 +256,6 @@ public sealed class PublicarProcessoSeletivoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
 
@@ -333,7 +336,6 @@ public sealed class PublicarProcessoSeletivoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            MotivosDoProcessoDeTeste.Nenhum(),
             TimeProvider.System,
             CancellationToken.None);
 

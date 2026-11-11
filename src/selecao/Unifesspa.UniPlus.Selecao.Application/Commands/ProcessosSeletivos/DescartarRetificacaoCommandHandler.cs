@@ -39,7 +39,6 @@ public static class DescartarRetificacaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRestauradorDeConfiguracao restaurador,
         IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
-        IMotivoDoProcessoRepository motivoDoProcessoRepository,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
@@ -48,7 +47,6 @@ public static class DescartarRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(restaurador);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(rascunhoDePublicacaoRepository);
-        ArgumentNullException.ThrowIfNull(motivoDoProcessoRepository);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
@@ -154,14 +152,10 @@ public static class DescartarRetificacaoCommandHandler
 
         // A sessão foi abandonada e a configuração congelada, reposta: não haverá ato de
         // retificação, e o rascunho que existia para ele deixa de ter destino. Apagá-lo aqui é
-        // o que impede o nome do assinante de sobreviver a uma retificação que não aconteceu.
-        await rascunhoDePublicacaoRepository
-            .ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        // Os motivos que a sessão incluiu e não chegaram a congelar saem com ela: não constam de edital algum.
-        await ConferenciaDosMotivosAoCongelar
-            .DescartarPendentesAsync(motivoDoProcessoRepository, command.ProcessoSeletivoId, cancellationToken)
+        // o que impede o nome do assinante de sobreviver a uma retificação que não aconteceu; os
+        // motivos que a sessão incluiu e não congelaram saem com ela pelo mesmo motivo.
+        await DescarteDaSessao
+            .ApagarPendenciasAsync(rascunhoDePublicacaoRepository, processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

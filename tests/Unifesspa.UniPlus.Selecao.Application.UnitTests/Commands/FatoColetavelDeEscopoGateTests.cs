@@ -67,7 +67,6 @@ public sealed class FatoColetavelDeEscopoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            MotivosDoProcessoDeTeste.Nenhum(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -127,7 +126,6 @@ public sealed class FatoColetavelDeEscopoGateTests
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            MotivosDoProcessoDeTeste.Nenhum(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
             new RelogioFixo(Agora),
             CancellationToken.None);

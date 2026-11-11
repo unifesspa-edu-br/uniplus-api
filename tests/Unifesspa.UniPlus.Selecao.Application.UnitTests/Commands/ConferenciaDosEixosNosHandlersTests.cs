@@ -136,6 +136,45 @@ public sealed class ConferenciaDosEixosNosHandlersTests
         resposta.Error.Message.Should().Contain(Fato).And.Contain("tipo de renderização");
     }
 
+    [Fact(DisplayName = "Retificar de uma vez recusa o processo cujo fundamento de isenção habilitado não tem motivos escolhidos")]
+    public async Task Retificar_SemCoberturaDosMotivos_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.ComIsencaoHabilitadaSemMotivos();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().OnlyContain(c => c == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente)
+            .And.HaveCount(2, "falta um motivo favorável e um desfavorável para o fundamento");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa o processo cujo fundamento de isenção habilitado não tem motivos escolhidos")]
+    public async Task Fechar_SemCoberturaDosMotivos_Recusa()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "BOOLEANO");
+        cenario.AbrirSessao();
+        cenario.ComIsencaoHabilitadaSemMotivos();
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.FecharAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().OnlyContain(c => c == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
+        eventos.Should().BeEmpty();
+        cenario.Processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
+    }
+
+    [Fact(DisplayName = "Fechar a retificação com recusa anterior não chega à cobertura dos motivos")]
+    public async Task Fechar_RecusaAnterior_PrecedeACobertura()
+    {
+        Cenario cenario = Cenario.Publicado(dominioCongelado: "CATEGORICO");
+        cenario.AbrirSessao();
+        cenario.ComIsencaoHabilitadaSemMotivos();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.FecharAsync();
+
+        resposta.Error!.Code.Should().Be(Recusa, "o portão da cobertura é o último");
+    }
+
     [Fact(DisplayName = "Fechar a retificação sem troca de eixo passa mesmo com o catálogo editado num eixo de item coletado")]
     public async Task Fechar_CatalogoEditadoNoEixoDoItemSemRegravar_Passa()
     {
@@ -383,6 +422,22 @@ public sealed class ConferenciaDosEixosNosHandlersTests
                 FatosDasVersoesPublicadas.De([_grafoPublicado], [_congelado]), "user-sub-1", Agora)
                 .IsSuccess.Should().BeTrue();
 
+        /// <summary>
+        /// O processo passa a cobrar a taxa com um fundamento de isenção e não escolheu motivo algum.
+        /// Sob a sessão, pela edição; sem ela, direto no estado, porque o processo publicado não se edita.
+        /// </summary>
+        public void ComIsencaoHabilitadaSemMotivos()
+        {
+            ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!;
+            if (Processo.Rascunho is not null)
+            {
+                Processo.DefinirTaxaInscricao(taxa, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                return;
+            }
+
+            typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao))!.SetValue(Processo, taxa);
+        }
+
         /// <summary>O tipo da exigência voltou a pendente na proteção de dados depois de vinculado.</summary>
         public void ComTipoDaExigenciaPendente()
         {
@@ -420,7 +475,6 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             Unidades,
-            MotivosDoProcessoDeTeste.Nenhum(),
             _registro,
             new RelogioFixo(),
             CancellationToken.None);
@@ -446,7 +500,6 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             _catalogo,
             CalendarioVigenteReaderDeTeste.SemVigente(),
             Unidades,
-            MotivosDoProcessoDeTeste.Nenhum(),
             _registro,
             new RelogioFixo(),
             CancellationToken.None);
