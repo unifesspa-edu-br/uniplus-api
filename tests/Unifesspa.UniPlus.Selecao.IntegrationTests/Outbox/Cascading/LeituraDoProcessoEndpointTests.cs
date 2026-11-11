@@ -60,11 +60,10 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
 
         using HttpResponseMessage porId = await EnviarAsync(null, HttpMethod.Get, $"{Rota}/{processoId}");
         using HttpResponseMessage snapshot = await EnviarAsync(null, HttpMethod.Get, $"{Rota}/{processoId}/snapshot-vigente");
-        using HttpResponseMessage listagem = await EnviarAsync(null, HttpMethod.Get, $"{Rota}?limit=100");
 
         porId.StatusCode.Should().Be(HttpStatusCode.OK);
         snapshot.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await IdsAsync(listagem)).Should().Contain(processoId);
+        (await TodosOsIdsAsync(null)).Should().Contain(processoId);
     }
 
     [Fact(DisplayName = "O rascunho é lido por quem configura na unidade dona; em outra unidade, sem token ou sem concessão responde 404")]
@@ -109,8 +108,8 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         Guid publicado = await SemearPublicadoAsync(nameof(Listagem_RascunhoSoNaUnidadeQueConfigura));
         await ConcederConfigurarAsync(Betina, await UnidadeDoProcessoAsync(rascunhoDela));
 
-        List<Guid> anonimo = await IdsAsync(await EnviarAsync(null, HttpMethod.Get, $"{Rota}?limit=100"));
-        List<Guid> betina = await IdsAsync(await EnviarAsync(Betina, HttpMethod.Get, $"{Rota}?limit=100"));
+        List<Guid> anonimo = await TodosOsIdsAsync(null);
+        List<Guid> betina = await TodosOsIdsAsync(Betina);
 
         anonimo.Should().Contain(publicado).And.NotContain([rascunhoDela, rascunhoDosOutros]);
         betina.Should().Contain([publicado, rascunhoDela]).And.NotContain(rascunhoDosOutros);
@@ -293,6 +292,43 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
         return json.RootElement.GetProperty("etapas").GetArrayLength();
+    }
+
+    /// <summary>
+    /// Percorre a listagem inteira pelo cursor (header <c>Link</c> com <c>rel="next"</c>): o banco é
+    /// compartilhado pela coleção, e o processo recém-criado pode estar além da primeira página.
+    /// </summary>
+    private async Task<List<Guid>> TodosOsIdsAsync(string? sub)
+    {
+        List<Guid> ids = [];
+        string? proxima = $"{Rota}?limit=100";
+        while (proxima is not null)
+        {
+            using HttpResponseMessage pagina = await EnviarAsync(sub, HttpMethod.Get, proxima);
+            ids.AddRange(await IdsAsync(pagina));
+            proxima = ProximaPagina(pagina);
+        }
+
+        return ids;
+    }
+
+    private static string? ProximaPagina(HttpResponseMessage resposta)
+    {
+        if (!resposta.Headers.TryGetValues("Link", out IEnumerable<string>? valores))
+        {
+            return null;
+        }
+
+        string? next = string.Join(",", valores).Split(',')
+            .Select(static parte => parte.Trim())
+            .FirstOrDefault(static parte => parte.EndsWith("rel=\"next\"", StringComparison.Ordinal));
+        if (next is null)
+        {
+            return null;
+        }
+
+        string url = next[(next.IndexOf('<', StringComparison.Ordinal) + 1)..next.IndexOf('>', StringComparison.Ordinal)];
+        return Uri.TryCreate(url, UriKind.Absolute, out Uri? absoluta) ? absoluta.PathAndQuery : url;
     }
 
     private static async Task<List<Guid>> IdsAsync(HttpResponseMessage resposta)
