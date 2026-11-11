@@ -73,11 +73,13 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
         registrados.Should().BeEquivalentTo(enums);
     }
 
-    [Fact(DisplayName = "Os códigos existentes continuam sendo os nomes dos papéis do client no Keycloak")]
-    public void Codigos_SaoOsNomesDosPapeis()
+    [Fact(DisplayName = "O catálogo publica a manutenção dos motivos e o papel do client no Keycloak que restou")]
+    public void Codigos_ContemOsMotivosEOPapelDoKeycloak()
     {
         CatalogoDaAplicacao catalogo = _fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>();
 
+        // Só a consulta do catálogo continua papel do client no realm; a manutenção dos motivos é
+        // concedida por perfil, e o código dela existe apenas no catálogo em código.
         catalogo.Definicoes.Select(static d => d.Codigo).Should().Contain(
         [
             "selecao:motivos-de-decisao:manter",
