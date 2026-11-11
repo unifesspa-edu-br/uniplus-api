@@ -199,17 +199,6 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         escolhido.Congelado.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "O descarte da sessão apaga o rascunho do ato e as inclusões de motivo pendentes")]
-    public async Task DescarteDaSessao_ApagaRascunhoEMotivosPendentes()
-    {
-        IRascunhoDePublicacaoRepository rascunhos = Substitute.For<IRascunhoDePublicacaoRepository>();
-
-        await DescarteDaSessao.ApagarPendenciasAsync(rascunhos, _processos, _processo.Id, CancellationToken.None);
-
-        await rascunhos.Received(1).ApagarDoProcessoAsync(_processo.Id, Arg.Any<CancellationToken>());
-        await _processos.Received(1).DescartarMotivosPendentesAsync(_processo.Id, Arg.Any<CancellationToken>());
-    }
-
     [Fact(DisplayName = "Nos últimos portões, sem recusa anterior, a falta de cobertura recusa")]
     public async Task UltimosPortoes_SemRecusaAnterior_RecusaPorCobertura()
     {

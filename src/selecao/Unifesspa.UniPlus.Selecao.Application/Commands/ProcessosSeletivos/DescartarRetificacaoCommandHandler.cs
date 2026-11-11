@@ -154,9 +154,8 @@ public static class DescartarRetificacaoCommandHandler
         // retificação, e o rascunho que existia para ele deixa de ter destino. Apagá-lo aqui é
         // o que impede o nome do assinante de sobreviver a uma retificação que não aconteceu; os
         // motivos que a sessão incluiu e não congelaram saem com ela pelo mesmo motivo.
-        await DescarteDaSessao
-            .ApagarPendenciasAsync(rascunhoDePublicacaoRepository, processoSeletivoRepository, command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
+        await rascunhoDePublicacaoRepository.ApagarDoProcessoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
+        await processoSeletivoRepository.DescartarMotivosPendentesAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
