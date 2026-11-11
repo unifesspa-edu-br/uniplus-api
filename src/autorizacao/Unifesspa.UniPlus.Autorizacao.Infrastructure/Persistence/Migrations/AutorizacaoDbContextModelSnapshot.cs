@@ -2471,11 +2471,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_versoes_do_perfil_pendente")
                         .HasFilter("situacao = 'pendente'");
 
-                    b.HasIndex(new[] { "PerfilId" }, "ux_versoes_do_perfil_vigente")
-                        .IsUnique()
-                        .HasDatabaseName("ux_versoes_do_perfil_vigente")
-                        .HasFilter("situacao = 'vigente'");
-
                     b.ToTable("versoes_do_perfil", "autorizacao", t =>
                         {
                             t.HasCheckConstraint("ck_versoes_do_perfil_cancelamento", "(situacao = 'cancelada') = (forma_do_cancelamento IS NOT NULL AND cancelada_em IS NOT NULL) AND (forma_do_cancelamento IS NULL) = (cancelada_em IS NULL)");

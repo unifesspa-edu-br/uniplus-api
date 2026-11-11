@@ -22,6 +22,7 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
 {
     private const string Acrescimo = "teste:laudos:consultar";
     private const string Motivo = "Permissão concedida por engano.";
+    private const int TentativasDeSorteio = 40;
 
     public PropostaComRemocaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
@@ -44,6 +45,21 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
             .Select(p => p.GetProperty("codigo").GetString()).Should().Equal(Consultar);
         (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("pendente");
         (await VigenciasAsync(vigente.PerfilId)).Count(v => v.Aberta).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Aprovar a versão pendente criada junto com a remoção a põe em vigor e encerra a reduzida")]
+    public async Task AprovaAPendenteCriadaComARemocao_PendenteEmVigorEReduzidaEncerrada()
+    {
+        await ResetarAsync();
+        using HttpClient diogo = await GestorAsync();
+        (Envio vigente, Envio pendente, Guid reduzidaId) = await PropostaComPendenteGravadaAntesDaReduzidaAsync(diogo);
+
+        await EnviarEVerificarAsync(diogo, pendente);
+
+        (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("vigente");
+        (await SituacaoDaVersaoNoBancoAsync(reduzidaId)).Should().Be("encerrada");
+        (await SituacaoDaVersaoNoBancoAsync(vigente.VersaoId)).Should().Be("encerrada");
+        (await QuantidadeDeVersoesVigentesAsync(vigente.PerfilId)).Should().Be(1);
     }
 
     [Fact(DisplayName = "A proposta só com remoção vale na hora, devolve o perfil e não cria versão pendente")]
@@ -90,6 +106,25 @@ public sealed class PropostaComRemocaoNoHostTests : AprovacaoDaVersaoNoHostTestB
         perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
         perfil.GetProperty("composicaoEmVigor").GetProperty("permissoes").GetArrayLength().Should().Be(1);
         perfil.GetProperty("versaoPendente").ValueKind.Should().Be(JsonValueKind.Object);
+    }
+
+    // Os ids são UUID v7 e as duas versões nascem no mesmo milissegundo, então a ordem entre elas é sorteada. O defeito só
+    // aparece quando a pendente tem o menor id; o teste repete a proposta até a ordem sorteada ser essa, em vez de depender da sorte.
+    private async Task<(Envio Vigente, Envio Pendente, Guid ReduzidaId)> PropostaComPendenteGravadaAntesDaReduzidaAsync(HttpClient gestor)
+    {
+        for (int tentativa = 0; tentativa < TentativasDeSorteio; tentativa++)
+        {
+            Envio vigente = await PerfilVigenteAsync(gestor, Consultar, Sensivel);
+            using HttpResponseMessage resposta = await ProporAsync(gestor, vigente.PerfilId, Motivo, Consultar, Acrescimo);
+            Envio pendente = LerEnvio(await CorpoAsync(resposta, HttpStatusCode.Created));
+            Guid reduzidaId = (await PerfilAsync(gestor, vigente.PerfilId)).GetProperty("composicaoEmVigor").GetProperty("versaoId").GetGuid();
+            if (await TemIdMenorAsync(pendente.VersaoId, reduzidaId))
+            {
+                return (vigente, pendente, reduzidaId);
+            }
+        }
+
+        throw new InvalidOperationException("A pendente nunca recebeu id menor que o da reduzida; o sorteio dos ids mudou.");
     }
 
     private static Task<HttpResponseMessage> ProporAsync(HttpClient cliente, Guid perfilId, string? motivo, params string[] permissoes) =>

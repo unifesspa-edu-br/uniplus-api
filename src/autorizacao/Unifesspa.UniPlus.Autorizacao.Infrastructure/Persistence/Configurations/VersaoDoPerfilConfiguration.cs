@@ -92,7 +92,11 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
         builder.Property(v => v.CicloDeAprovacao).IsRequired();
     }
 
-    // Uma pendente e uma vigente por perfil: a trava do perfil serializa, e o índice parcial barra o que escapar dela.
+    // Uma pendente por perfil: a trava do perfil serializa, e o índice parcial barra o que escapar dela.
+    // Uma vigente por perfil: a restrição ex_versoes_do_perfil_vigente_unica (EXCLUDE ... DEFERRABLE INITIALLY DEFERRED)
+    // vive só na migration, porque o EF não modela exclusão. A troca de vigência grava o encerramento da anterior e a
+    // entrada da nova na mesma transação, em ordem de chave que o EF não controla; um índice único conferiria cada
+    // gravação e recusaria a ordem inversa, mesmo com o estado final válido. A restrição adiada confere no commit.
     private static void ConfigurarSituacao(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
         builder.Property(v => v.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
@@ -101,10 +105,6 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
             .IsUnique()
             .HasFilter($"situacao = '{SituacaoDaVersaoCodigo.Pendente}'")
             .HasDatabaseName("ux_versoes_do_perfil_pendente");
-        builder.HasIndex(v => v.PerfilId, "ux_versoes_do_perfil_vigente")
-            .IsUnique()
-            .HasFilter($"situacao = '{SituacaoDaVersaoCodigo.Vigente}'")
-            .HasDatabaseName("ux_versoes_do_perfil_vigente");
     }
 
     private static void ConfigurarAutoria(EntityTypeBuilder<VersaoDoPerfil> builder)

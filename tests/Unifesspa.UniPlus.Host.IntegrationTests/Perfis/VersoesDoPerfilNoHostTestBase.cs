@@ -296,6 +296,23 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         return await db.Database.SqlQuery<string>($"SELECT situacao AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE id = {versaoId}").SingleAsync();
     }
 
+    /// <summary>Compara os ids como o banco os ordena, que é a ordem em que o EF grava as linhas da mesma tabela.</summary>
+    private protected async Task<bool> TemIdMenorAsync(Guid id, Guid outroId)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+
+        return await db.Database.SqlQuery<bool>($"SELECT {id}::uuid < {outroId}::uuid AS \"Value\"").SingleAsync();
+    }
+
+    private protected async Task<int> QuantidadeDeVersoesVigentesAsync(Guid perfilId)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+
+        return await db.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'vigente'").SingleAsync();
+    }
+
     /// <summary>Concede o perfil na transação do chamador, pela mesma leitura travada da concessão real, e devolve o perfil avaliado.</summary>
     private protected static async Task<Perfil> ConcederAsync(IServiceProvider servicos, Persona beneficiario, Guid perfilId, EscopoDaConcessao escopo)
     {
