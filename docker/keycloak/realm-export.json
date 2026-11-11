@@ -410,13 +410,6 @@
       ],
       "uniplus-api": [
         {
-          "name": "selecao:motivos-de-decisao:manter",
-          "description": "Manter os motivos de decisao",
-          "composite": false,
-          "clientRole": true,
-          "attributes": {}
-        },
-        {
           "name": "autorizacao:permissoes:consultar-catalogo",
           "description": "Consultar o catalogo de permissoes",
           "composite": false,
@@ -620,7 +613,6 @@
       {
         "client": "configuracao-web",
         "roles": [
-          "selecao:motivos-de-decisao:manter",
           "autorizacao:permissoes:consultar-catalogo"
         ]
       }
@@ -3098,7 +3090,6 @@
           "manage-account"
         ],
         "uniplus-api": [
-          "selecao:motivos-de-decisao:manter",
           "autorizacao:permissoes:consultar-catalogo"
         ]
       },
