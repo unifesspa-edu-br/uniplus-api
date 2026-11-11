@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Entities;
 
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
 /// As fases do cronograma publicado que já começaram, com a unidade que cada uma tem na versão publicada, pela
 /// identidade estável da fase (a fase canônica de origem). É o fato de que a retificação precisa para recusar a
@@ -32,5 +34,20 @@ public sealed record FasesIniciadas
 
         return _unidadesPublicadas.TryGetValue(fase.FaseCanonicaOrigemId, out Guid? publicada)
             && publicada != fase.UnidadeResponsavelOrigemId;
+    }
+
+    // A unidade que conduz a fase decide as ações dela, e a fase que já começou tem ato e registro feitos sob a
+    // unidade publicada: trocá-la deixaria o que já aconteceu sem a unidade que o conduziu. A comparação é com a
+    // versão publicada, e não com o rascunho anterior, para que retirar e reinserir a fase não contorne a regra.
+    /// <summary>A recusa da troca de unidade numa fase iniciada, citando a primeira fase trocada; nula se não há troca.</summary>
+    public DomainError? RecusaDaTroca(IEnumerable<FaseCronograma> fases)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+
+        return fases.FirstOrDefault(UnidadeTrocada) is { } fase
+            ? new DomainError(
+                "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
+                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) já começou, e a unidade responsável por ela não muda.")
+            : null;
     }
 }

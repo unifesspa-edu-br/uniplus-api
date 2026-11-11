@@ -363,16 +363,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public FormularioProcesso? FormularioDe(FinalidadeFormulario finalidade) =>
         EstadoDaConfiguracao.De(this).FormularioDe(finalidade);
 
-    /// <summary>
-    /// Substitui o cronograma. O grafo de precedências e as fases já iniciadas são parâmetros: o domínio não consulta a
-    /// Configuração nem o que já aconteceu em cada fase, e a unidade de uma fase iniciada não troca. Sem
-    /// <paramref name="iniciadas"/>, nenhuma fase conta como iniciada (o rascunho nunca publicado).
-    /// </summary>
+    /// <summary>Substitui o cronograma. O grafo de precedências é parâmetro: o domínio não consulta a Configuração.</summary>
     public Result DefinirCronogramaFases(
         IReadOnlyList<FaseCronograma> fases,
         IReadOnlyList<ArestaPrecedencia> precedencias,
-        PrecondicaoIfMatch precondicao,
-        FasesIniciadas? iniciadas = null)
+        PrecondicaoIfMatch precondicao, FasesIniciadas? iniciadas = null)
     {
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(precedencias);
@@ -504,17 +499,6 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <param name="motivo">Justificativa obrigatória do ato (ADR-0101).</param>
     public Result<VersaoConfiguracao> Retificar(PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo) =>
         AssumirVersaoEmitida(TransicoesDaVersao.Retificar(EstadoDaConfiguracao.De(this), pedido, versaoAtual, motivo));
-
-    /// <summary>
-    /// A recusa de fechar a sessão com a unidade trocada numa fase que já começou, conferida contra a versão publicada
-    /// no instante do fechamento: a fase pode ter começado depois da edição do cronograma.
-    /// </summary>
-    public DomainError? RecusaDoFechamentoPorUnidadeDeFaseIniciada(FasesIniciadas iniciadas)
-    {
-        ArgumentNullException.ThrowIfNull(iniciadas);
-
-        return RegrasDoCronograma.RecusaDaUnidadeDeFaseIniciada(CronogramaFases, iniciadas);
-    }
 
     /// <summary>Fecha a sessão editorial: congela a versão seguinte com a configuração editada e encerra a sessão (ADR-0110).</summary>
     public Result<VersaoConfiguracao> FecharRetificacao(
