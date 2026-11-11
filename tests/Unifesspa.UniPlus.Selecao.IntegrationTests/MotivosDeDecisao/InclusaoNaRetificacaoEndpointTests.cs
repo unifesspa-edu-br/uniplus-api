@@ -66,6 +66,23 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
             "a janela do pedido de isenção já começou, e a avaliação dessa decisão com ela");
     }
 
+    [Fact(DisplayName = "Descartar a sessão de retificação retira o motivo incluído nela e mantém os congelados na publicação")]
+    public async Task Descarte_RetiraPendenteEMantemCongelados()
+    {
+        Guid processoId = await SemearPublicadoComIsencaoAsync(nameof(Descarte_RetiraPendenteEMantemCongelados));
+        string etag = await AbrirRetificacaoAsync(processoId);
+        MotivoDeDecisao novo = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
+        using HttpResponseMessage inclusao = await IncluirAsync(processoId, novo.Id, "Retorno do INEP passou a ser exigido pela norma.", etag);
+        inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
+
+        using HttpResponseMessage descarte = await EnviarAsync(HttpMethod.Delete, $"{Rota}/{processoId}/retificacao-em-curso", new { }, inclusao.Headers.ETag!.Tag);
+
+        descarte.IsSuccessStatusCode.Should().BeTrue(await descarte.Content.ReadAsStringAsync());
+        IReadOnlyList<JsonElement> escolhidos = await EscolhidosAsync(processoId);
+        escolhidos.Select(static e => e.GetProperty("codigo").GetString()).Should().NotContain(novo.Codigo.Valor);
+        escolhidos.Should().HaveCount(2).And.OnlyContain(static e => e.GetProperty("congelado").GetBoolean());
+    }
+
     [Fact(DisplayName = "A justificativa da inclusão não sai em leitura anônima nem de quem não configura o processo")]
     public async Task Justificativa_NaoSaiEmLeituraPublica()
     {
@@ -202,6 +219,13 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         HttpResponseMessage resposta = await client.SendAsync(request);
         await resposta.Content.LoadIntoBufferAsync();
         return resposta;
+    }
+
+    private async Task<IReadOnlyList<JsonElement>> EscolhidosAsync(Guid processoId)
+    {
+        using HttpResponseMessage leitura = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", sub: null, papel: "plataforma-admin");
+        leitura.StatusCode.Should().Be(HttpStatusCode.OK, await leitura.Content.ReadAsStringAsync());
+        return [.. (await leitura.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
     }
 
     private static async Task<string?> CodigoDoErro(HttpResponseMessage resposta)
