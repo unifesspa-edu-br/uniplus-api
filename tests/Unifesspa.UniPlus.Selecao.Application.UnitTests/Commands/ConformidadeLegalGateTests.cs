@@ -435,6 +435,7 @@ public sealed class ConformidadeLegalGateTests
             Substitute.For<ICalendarioVigenteReader>(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
+            FasesIniciadasDeTeste.Nenhuma(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

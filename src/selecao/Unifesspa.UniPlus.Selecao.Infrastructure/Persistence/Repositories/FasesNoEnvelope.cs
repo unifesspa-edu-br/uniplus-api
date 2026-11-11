@@ -20,7 +20,7 @@ internal static class FasesNoEnvelope
         DateTimeOffset? Inicio,
         DateTimeOffset? Fim,
         bool ColetaInscricao,
-        IReadOnlyList<string> AtosDeclarados);
+        IReadOnlyList<Guid> Etapas);
 
     internal static IReadOnlyList<Fase> Das(string? congelado) =>
         Envelope(congelado) is { } envelope ? Das(envelope) : [];
@@ -48,13 +48,19 @@ internal static class FasesNoEnvelope
             ? TextoDe(etapa["faseCodigo"])
             : null;
 
-    private static List<Fase> Das(JsonObject envelope) =>
-        [.. ((envelope["cronogramaFases"] as JsonObject)?["fases"] as JsonArray ?? [])
+    private static List<Fase> Das(JsonObject envelope)
+    {
+        List<(Guid Id, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
             .OfType<JsonObject>()
-            .Select(LerFase)
-            .Where(static f => f.Id != Guid.Empty)];
+            .Select(static e => (Id: GuidDe(e["id"]) ?? Guid.Empty, FaseCodigo: TextoDe(e["faseCodigo"])))];
 
-    private static Fase LerFase(JsonObject f) => new(
+        return [.. ((envelope["cronogramaFases"] as JsonObject)?["fases"] as JsonArray ?? [])
+            .OfType<JsonObject>()
+            .Select(f => LerFase(f, etapas))
+            .Where(static f => f.Id != Guid.Empty)];
+    }
+
+    private static Fase LerFase(JsonObject f, List<(Guid Id, string? FaseCodigo)> etapas) => new(
         GuidDe(f["id"]) ?? Guid.Empty,
         GuidDe(f["faseCanonicaOrigemId"]) ?? Guid.Empty,
         TextoDe(f["codigo"]) ?? string.Empty,
@@ -62,7 +68,7 @@ internal static class FasesNoEnvelope
         InstanteDe(f["inicio"]),
         InstanteDe(f["fim"]),
         f["coletaInscricao"] is JsonValue coleta && coleta.TryGetValue(out bool coletaInscricao) && coletaInscricao,
-        [.. (f["produtos"] as JsonArray ?? []).OfType<JsonObject>().Select(static p => TextoDe(p["atoCodigo"])).OfType<string>()]);
+        [.. etapas.Where(e => string.Equals(e.FaseCodigo, TextoDe(f["codigo"]), StringComparison.Ordinal)).Select(static e => e.Id)]);
 
     private static JsonObject? Envelope(string? congelado)
     {

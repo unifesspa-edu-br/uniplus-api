@@ -18,7 +18,7 @@ public sealed class UnidadeDeFaseIniciadaTests
 
         Result resultado = processo.DefinirCronogramaFases(
             [ComUnidade(fase, UnidadesDeTeste.Cga)], [], PrecondicaoIfMatch.Curinga,
-            new FasesIniciadas([fase.FaseCanonicaOrigemId]));
+            new FasesIniciadas([KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.UnidadeDeFaseIniciadaNaoMuda");
@@ -47,7 +47,7 @@ public sealed class UnidadeDeFaseIniciadaTests
 
         Result resultado = processo.DefinirCronogramaFases(
             [ComUnidade(fase, UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Curinga,
-            new FasesIniciadas([fase.FaseCanonicaOrigemId]));
+            new FasesIniciadas([KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -62,11 +62,38 @@ public sealed class UnidadeDeFaseIniciadaTests
             .IsSuccess.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Retirar a fase iniciada e reinseri-la com outra unidade continua recusado")]
+    public void ReinserirComOutraUnidade_FaseIniciada_Recusa()
+    {
+        FaseCronograma fase = ProcessoConformeFactory.FaseConforme();
+        FaseCronograma outra = ProcessoConformeFactory.FaseConforme();
+        ProcessoSeletivo processo = ProcessoComCronograma(outra);
+        FasesIniciadas iniciadas = new([KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]);
+
+        Result resultado = processo.DefinirCronogramaFases(
+            [ComUnidade(fase, UnidadesDeTeste.Cga)], [], PrecondicaoIfMatch.Curinga, iniciadas);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("FaseCronograma.UnidadeDeFaseIniciadaNaoMuda");
+    }
+
+    [Fact(DisplayName = "O fechamento recusa a unidade trocada numa fase que começou depois da edição")]
+    public void Fechamento_UnidadeTrocadaEmFaseQueComecou_Recusa()
+    {
+        FaseCronograma fase = ProcessoConformeFactory.FaseConforme();
+        ProcessoSeletivo processo = ProcessoComCronograma(ComUnidade(fase, UnidadesDeTeste.Cga));
+        FasesIniciadas iniciadas = new([KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]);
+
+        processo.RecusaDoFechamentoPorUnidadeDeFaseIniciada(iniciadas)!.Code
+            .Should().Be("FaseCronograma.UnidadeDeFaseIniciadaNaoMuda");
+        processo.RecusaDoFechamentoPorUnidadeDeFaseIniciada(FasesIniciadas.Nenhuma).Should().BeNull();
+    }
+
     [Fact(DisplayName = "O conjunto de fases iniciadas responde só pelas fases que recebeu")]
     public void FasesIniciadas_ContemSoAsRecebidas()
     {
         Guid iniciada = Guid.CreateVersion7();
-        FasesIniciadas conjunto = new([iniciada]);
+        FasesIniciadas conjunto = new([KeyValuePair.Create<Guid, Guid?>(iniciada, null)]);
 
         conjunto.Contem(iniciada).Should().BeTrue();
         conjunto.Contem(Guid.CreateVersion7()).Should().BeFalse();

@@ -501,6 +501,7 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             CalendarioVigenteReaderDeTeste.SemVigente(),
             Unidades,
             _registro,
+            FasesIniciadasDeTeste.Nenhuma(),
             new RelogioFixo(),
             CancellationToken.None);
 

@@ -69,6 +69,7 @@ public static class FecharRetificacaoCommandHandler
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
         IRegistroCodecsEnvelope registroCodecs,
+        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -78,7 +79,7 @@ public static class FecharRetificacaoCommandHandler
         // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
         return RecopiaAoCongelar.SemPersistirEmRecusaAsync(
             unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, registroCodecs, timeProvider, cancellationToken));
+            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, registroCodecs, fasesIniciadasDoProcesso, timeProvider, cancellationToken));
     }
 
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
@@ -103,6 +104,7 @@ public static class FecharRetificacaoCommandHandler
         ICalendarioVigenteReader calendarioVigenteReader,
         IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
         IRegistroCodecsEnvelope registroCodecs,
+        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -124,6 +126,7 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
         ArgumentNullException.ThrowIfNull(registroCodecs);
+        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -347,6 +350,13 @@ public static class FecharRetificacaoCommandHandler
                     FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados),
                 fusoInstitucional, atorUsuarioSub, fatosDeModalidade, tiposDeAtoUnicos, cancellationToken)
             .ConfigureAwait(false);
+
+        FasesIniciadas iniciadas = await fasesIniciadasDoProcesso
+            .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        if (processo.RecusaDoFechamentoPorUnidadeDeFaseIniciada(iniciadas) is { } unidadeTrocada)
+        {
+            return (Result.Failure(unidadeTrocada), []);
+        }
 
         Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(pedido, versaoAtual, command.Precondicao);
         if (fechamento.IsFailure)
