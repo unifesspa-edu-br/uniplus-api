@@ -97,6 +97,8 @@ src/selecao/Selecao.Infrastructure/Messaging/EditalPublicadoToKafkaCascadeHandle
 
 **Resource name canônico:** `Unifesspa.UniPlus.Selecao.Domain.Events.Schemas.EditalPublicado.avsc` (assembly + path no .csproj). Lido pelo hosted service via `Assembly.GetManifestResourceStream(...)`.
 
+> **Emenda (2026-11-11) — sem supressão do CA1707 na classe Avro.** A [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md) proíbe a supressão por símbolo citada nas consequências. O namespace das classes Avro continua casando com o do schema; o `CA1707` passa a ser tratado no código ou como decisão de camada no `.editorconfig`, e a supressão existente é dívida a remover.
+
 ## Consequências
 
 ### Positivas

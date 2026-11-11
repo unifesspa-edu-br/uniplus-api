@@ -49,6 +49,8 @@ Mecanismo, implementado e testado no agregado `Campus`:
 
 **Escopo desta ADR**: valida o mecanismo (aditivo no `Kernel`, reutilizável por todo módulo) e aplica-o integralmente em `Campus`, com evidência de zero regressão na suíte inteira da solução (unit + arch + integration, todos os módulos) — exceto a diferença de comportamento documentada abaixo (`Id` vazio). **Fora de escopo**: migrar os demais ~60 validators do repositório para o mesmo padrão — trabalho real, mecânico caso a caso (cada agregado precisa da mesma auditoria "o que aqui não tem equivalente de domínio?"), rastreado à parte.
 
+> **Emenda (2026-11-11) — sem supressão do CA1062 no símbolo.** A [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md) proíbe a supressão por símbolo descrita no item 4. O mecanismo desta ADR continua; o `CA1062` do domínio passa a ser tratado no código, e a supressão existente é dívida a remover.
+
 ## Consequências
 
 ### Positivas

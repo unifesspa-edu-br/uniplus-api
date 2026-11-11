@@ -1,8 +1,9 @@
 # Arquivos de produção (src/**/*.cs) que ainda passam de 400 linhas físicas.
 #
-# Regra: nenhum arquivo de produção passa de 400 linhas (comentários,
-# documentação XML e linhas em branco contam). Ficam fora da regra:
-# Migrations/, obj/, bin/, *.g.cs, *.Designer.cs, *ModelSnapshot.cs e tests/.
+# A regra de 400 linhas físicas vale para src/ e tests/ (CONTRIBUTING.md,
+# seção "Métricas de qualidade"). Esta lista e o check.sh cobrem por enquanto
+# só src/ (comentários, documentação XML e linhas em branco contam), fora
+# Migrations/, obj/, bin/, *.g.cs, *.Designer.cs e *ModelSnapshot.cs.
 #
 # Esta lista SÓ DIMINUI: não se acrescenta arquivo nem se aumenta número.
 # Ao dividir um arquivo, remova a entrada (ou rode

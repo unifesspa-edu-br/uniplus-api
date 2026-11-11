@@ -89,7 +89,8 @@ dotnet_diagnostic.S3776.severity = warning
 dotnet_diagnostic.S1541.severity = warning
 dotnet_diagnostic.S107.severity = warning
 
-# Dono único de cada regra. Tamanho de método é da S138. Estas têm dono na análise do .NET:
+# Dono único de cada regra. O aviso de tamanho de método é da S138, sinal auxiliar: a medida é a
+# contagem física do CONTRIBUTING.md, seção "Métricas de qualidade". Estas têm dono na análise do .NET:
 # CA2007 (ConfigureAwait), CA1822 (membro que pode ser estático), CA2200 (relançar exceção),
 # CA1825 (array vazio), CA1018 (AttributeUsage), CA1050 (tipo fora de namespace),
 # CA2201 (exceção reservada), CA1041 (Obsolete sem mensagem), CA1067 (Equals de IEquatable),

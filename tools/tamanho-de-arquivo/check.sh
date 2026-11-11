@@ -2,10 +2,12 @@
 # tools/tamanho-de-arquivo/check.sh — guarda do limite de linhas por arquivo
 # de código de produção do Uni+.
 #
-# Regra: nenhum *.cs de src/ passa de 400 linhas físicas (comentários,
-# documentação XML e linhas em branco contam; a última linha conta mesmo sem
-# quebra no fim, como em `wc -l` corrigido). Ficam fora: Migrations/, obj/,
-# bin/, *.g.cs, *.Designer.cs, *ModelSnapshot.cs e todo o diretório tests/.
+# A regra de 400 linhas físicas vale para src/ e tests/ (CONTRIBUTING.md,
+# seção "Métricas de qualidade"). Este script ainda mede só os *.cs de src/
+# (comentários, documentação XML e linhas em branco contam; a última linha
+# conta mesmo sem quebra no fim, como em `wc -l` corrigido). Ficam fora da
+# medição: Migrations/, obj/, bin/, *.g.cs, *.Designer.cs, *ModelSnapshot.cs
+# e, por enquanto, tests/, cuja regra a revisão cobra.
 #
 # Arquivos que ainda excedem o limite constam em
 # tools/tamanho-de-arquivo/excecoes.txt ("<linhas> <caminho>"). A lista só

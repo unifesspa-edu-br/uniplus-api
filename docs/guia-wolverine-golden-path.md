@@ -15,6 +15,8 @@ Guia operacional em pt-BR para criar novos commands, queries, handlers e domain 
 
 Dúvidas sobre implementação no dia a dia ficam neste guia. Dúvidas sobre contrato, escopo ou reversibilidade vão para a ADR correspondente. Mudanças de escopo (novas abstrações, adoção de features avançadas do Wolverine) exigem emenda à ADR-0003 com PR explícito.
 
+> **Exemplos e métricas de qualidade:** os exemplos deste guia mostram o encaixe no Wolverine (assinatura, retorno, cascading), não o tamanho. Alguns deles, como o handler do Passo 2 (48 linhas físicas e 8 parâmetros) e a query que vem logo depois (18 linhas), passam dos limites e são dívida, não modelo. Código novo segue os limites do `CONTRIBUTING.md`, seção "Métricas de qualidade": método até 15 linhas físicas, até 7 parâmetros, sem supressão de aviso.
+
 > **Princípio central:** habilitar o time antes de completar a arquitetura. Apenas duas abstrações (`ICommandBus`, `IQueryBus`) cruzam para `Application`. Drenagem de domain events não é abstração — é convenção de retorno do handler (cascading messages, ADR-0005). Features avançadas do Wolverine (sagas, scheduled messages, middleware custom específico) ficam fora do escopo até um caso de uso concreto pedir.
 
 ## Arquitetura resumida
@@ -217,7 +219,7 @@ Handlers são classes `sealed class` ou `static class` convention-based. **Sem i
 
 Quando o handler **muta agregado** e o agregado emite domain events, o retorno é uma **tupla** `(Result, IEnumerable<object>)` ([ADR-0041](adrs/0041-padrao-retorno-handlers-wolverine-cascading.md)). O Wolverine reconhece o padrão, propaga a `Result` para o caller via `ICommandBus.Send<Result>` e captura o `IEnumerable<object>` como cascading messages, persistindo cada envelope no outbox dentro da `IEnvelopeTransaction` ativa — atomicidade write+evento garantida por design.
 
-Slice de referência (Story #759, T4 #785): `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs`.
+Slice de referência (Story #759, T4 #785): `src/selecao/Unifesspa.UniPlus.Selecao.Application/Commands/ProcessosSeletivos/PublicarProcessoSeletivoCommandHandler.cs`. O exemplo abaixo mostra a forma do handler e do retorno; o tamanho dele passa do limite de método (ver o aviso no início do guia), e o código novo divide carga, regra e persistência por responsabilidade.
 
 ```csharp
 public static class PublicarProcessoSeletivoCommandHandler
@@ -317,10 +319,6 @@ Domain events reagem a fatos consumados. Mesmo padrão dos command handlers: cla
 
 ```csharp
 // src/selecao/Unifesspa.UniPlus.Selecao.Application/Events/ProcessosSeletivos/ProcessoPublicadoEventHandler.cs
-[SuppressMessage(
-    "Naming",
-    "CA1711:Identifiers should not have incorrect suffix",
-    Justification = "Convenção do projeto: subscritores de domain events terminam em EventHandler.")]
 public sealed partial class ProcessoPublicadoEventHandler
 {
     public static void Handle(
@@ -349,6 +347,7 @@ public sealed partial class ProcessoPublicadoEventHandler
 - **Logging via `[LoggerMessage]` source generator é obrigatório** — chamadas diretas a `_logger.LogInformation(...)` etc. são bloqueadas pelo analisador `CA1848` com `TreatWarningsAsErrors`.
 - **Não engula falhas transitórias.** Wolverine entrega eventos at-least-once: se o handler completar normalmente, a mensagem é considerada processada. Para falhas retryables (rede instável, serviço externo indisponível, deadlock transient), **deixe a exceção propagar** — Wolverine aplica a política de retry configurada e, esgotada, manda para dead letter. Apenas suprima erros que sejam **esperados e idempotentes** ("já processado", "estado consistente"). Handlers devem ser idempotentes por convenção (mesma mensagem entregue duas vezes não deve duplicar side-effect).
 - Um evento pode ter múltiplos handlers. Wolverine invoca todos.
+- **Não suprima aviso do analisador** ([ADR-0160](adrs/0160-supressao-de-aviso-do-analisador-proibida.md)). O sufixo `EventHandler` dispara hoje o `CA1711`, e o arquivo real do exemplo ainda o cala com `[SuppressMessage]`: isso é dívida, não padrão a copiar. A correção estrutural dos avisos dos handlers (`CA1711`, `CA1515`, `CA1812`) está na issue #2345.
 
 ## Invocando bus a partir de um controller
 
