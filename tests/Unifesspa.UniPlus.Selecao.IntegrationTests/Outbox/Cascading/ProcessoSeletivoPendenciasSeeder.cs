@@ -44,6 +44,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result cronogramaResult = processo.DefinirCronogramaFases(
             [faseBuilder(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -70,6 +71,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: null).Value!;
         Result cronogramaResult = processo.DefinirCronogramaFases([faseSemUnidade], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -109,6 +111,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result cronogramaResult = processo.DefinirCronogramaFases(
             [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -126,6 +129,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result cronogramaResult = processo.DefinirCronogramaFases(
             [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
 
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
@@ -162,6 +166,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result cronogramaResult = processo.DefinirCronogramaFases(
             [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
 
         return documentoConfirmado
             ? await PersistirComDocumentoConfirmadoAsync(db, processo)
@@ -235,6 +240,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         Result cronogramaResult = processo.DefinirCronogramaFases(
             [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
 
         Result itensResult = processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)], PrecondicaoIfMatch.Curinga);
         itensResult.IsSuccess.Should().BeTrue(itensResult.Error?.Message);
@@ -257,6 +263,17 @@ internal static class ProcessoSeletivoPendenciasSeeder
             regraAjuste: null, referenciaDemografica: null, modalidades: [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
     }
 
+    private static void DefinirEtapaDaFase(ProcessoSeletivo processo)
+    {
+        Result etapasResult = processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                "Prova Objetiva", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
+        ], PrecondicaoIfMatch.Ausente);
+        etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
+    }
+
     private static ProcessoSeletivo ProcessoBaseConforme(
         string nome,
         out FaseCronogramaBuilder faseBuilder,
@@ -266,14 +283,6 @@ internal static class ProcessoSeletivoPendenciasSeeder
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        Result etapasResult = processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
-        ], PrecondicaoIfMatch.Ausente);
-        etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
 
         if (definirOfertaAtendimento)
         {

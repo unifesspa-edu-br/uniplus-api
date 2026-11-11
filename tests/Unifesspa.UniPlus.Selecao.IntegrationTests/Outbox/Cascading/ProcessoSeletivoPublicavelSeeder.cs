@@ -54,13 +54,6 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, tipo ?? TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        Result etapasResult = processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
-        ], PrecondicaoIfMatch.Ausente);
-        etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
 
         Result ofertaResult = processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
@@ -126,6 +119,13 @@ internal static class ProcessoSeletivoPublicavelSeeder
             regraRecurso: null,
             unidadeResponsavel: unidadeResponsavel ?? UnidadesDeTeste.Ceps).Value!;
         Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
+        Result etapasResult = processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                "Prova Objetiva", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
+        ], PrecondicaoIfMatch.Ausente);
+        etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 

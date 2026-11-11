@@ -85,7 +85,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         EtapaProcesso etapa = EtapaProcesso.Criar(
             "Nota do ENEM", CaraterEtapa.Classificatoria,
             TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!,
-            peso: 1m, notaMinima: null, ordem: 1).Value!;
+            peso: 1m, notaMinima: null, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!;
         Exigir(processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,

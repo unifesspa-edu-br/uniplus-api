@@ -233,7 +233,7 @@ internal static class CorpusEnvelope
             itensDeAvaliacao: Ordem([
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(2, variante), "Bloco de Matemática", 40.0000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
-            ], permutar));
+            ], permutar), faseCodigo: "RESULTADO_PRELIMINAR");
         etapaObjetiva.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
         // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
         // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
@@ -304,7 +304,7 @@ internal static class CorpusEnvelope
         ]).IsSuccess.Should().BeTrue();
 
         EtapaProcesso etapaRedacao = EtapaProcesso.Reidratar(redacao, "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 100.0000m,
-            formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
+            formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_PRELIMINAR");
 
         // A etapa de avaliação humana exige ao menos uma banca para publicar.
         EtapaProcesso etapaEntrevista = EtapaProcesso.Reidratar(entrevista, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m, passoDoLancamento: 0.5000m,
@@ -312,7 +312,7 @@ internal static class CorpusEnvelope
             itensDeAvaliacao: Ordem([
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
-            ], permutar));
+            ], permutar), faseCodigo: "RESULTADO_FINAL");
         etapaEntrevista.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
 
         // A banca escolhe o nível de cada critério, sem digitar a nota: é o caso que congela a
@@ -328,8 +328,13 @@ internal static class CorpusEnvelope
                 new NivelDeAtendimento("Atendeu parcialmente", 0.5000m),
                 new NivelDeAtendimento("Atendeu", 1.0000m),
                 new NivelDeAtendimento("Não atendeu", 0.0000m),
-            ], permutar));
+            ], permutar), faseCodigo: "RESULTADO_FINAL");
         etapaDefesa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+
+
+        processo.DefinirCronogramaFases(
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas(Ordem([
             etapaObjetiva,
@@ -408,9 +413,7 @@ internal static class CorpusEnvelope
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+
 
         // Coleta de fatos + derivação (Story #928, §7.4): COR_RACA vem da seção do conjunto básico,
         // sem gate; RENDA é gatado por COR_RACA (pré-condição); a modalidade do candidato é
