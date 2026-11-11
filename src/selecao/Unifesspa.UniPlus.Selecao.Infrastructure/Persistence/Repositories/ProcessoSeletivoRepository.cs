@@ -263,19 +263,8 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
         // vigente_a_partir_de): quando o relógio regride, VersaoConfiguracao.Suceder
         // ancora a sucessora no instante da anterior, e é o número decrescente que
         // elege a mais nova.
-        //
-        // O EXISTS através de ProcessosSeletivos herda o filtro global de
-        // soft-delete (ProcessoSeletivo é SoftDeletableEntity; VersaoConfiguracao
-        // é forense, sem exclusão lógica própria): um processo excluído
-        // logicamente não vaza sua configuração congelada — cai no mesmo caminho
-        // 404 que o resto da API, coerente com ExisteAsync.
-        return await _context.VersoesConfiguracao
+        return await _context.Vigentes(processoSeletivoId, instanteUtc)
             .AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == processoSeletivoId
-                && v.VigenteAPartirDe <= instanteUtc
-                && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
-            .OrderByDescending(v => v.VigenteAPartirDe)
-            .ThenByDescending(v => v.NumeroVersao)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }
