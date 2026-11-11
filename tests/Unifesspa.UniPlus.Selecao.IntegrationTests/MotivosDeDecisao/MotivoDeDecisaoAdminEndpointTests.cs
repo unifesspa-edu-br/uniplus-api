@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.MotivosDeDecisao;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -150,11 +151,27 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
 
         using HttpResponseMessage edicao = await EnviarAsync(lucia, HttpMethod.Put, $"/api/selecao/admin/motivos-de-decisao/{id}", new { id, descricao = "Outra redação do motivo." });
         using HttpResponseMessage desativacao = await EnviarAsync(lucia, HttpMethod.Delete, $"/api/selecao/admin/motivos-de-decisao/{id}/ativacao", null);
+        (await AtivoAsync(comPermissao, id)).Should().BeTrue("a desativação recusada por falta de permissão não altera o motivo");
         using HttpResponseMessage reativacao = await EnviarAsync(lucia, HttpMethod.Post, $"/api/selecao/admin/motivos-de-decisao/{id}/ativacao", null);
 
         edicao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         desativacao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         reativacao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "POST com tipo fora do domínio fechado é recusado como tipo não informado")]
+    public async Task Criar_TipoForaDoDominio_Recusa()
+    {
+        using HttpClient client = await ClienteComConcessaoAsync();
+
+        using HttpResponseMessage resposta = await PostAsync(
+            client,
+            "/api/selecao/admin/motivos-de-decisao",
+            new { tipo = "RECURSO", codigo = Codigo(), descricao = "Motivo de um tipo que não existe.", subclassificacao = (string?)null, sentido = "DESFAVORAVEL" });
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("\"code\":\"uniplus.selecao.motivo_de_decisao.tipo_obrigatorio\"",
+            "o tipo fora do vocabulário do wire é lido como tipo não informado");
     }
 
     [Fact(DisplayName = "POST sem autenticação alguma é 401, não 403")]
@@ -345,6 +362,13 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
                 "o desafio é o que diz ao cliente que a credencial precisa ser renovada");
             resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
         }
+    }
+
+    private static async Task<bool> AtivoAsync(HttpClient client, Guid id)
+    {
+        using HttpResponseMessage leitura = await client.GetAsync(new Uri($"/api/selecao/motivos-de-decisao/{id}", UriKind.Relative));
+        leitura.StatusCode.Should().Be(HttpStatusCode.OK, await leitura.Content.ReadAsStringAsync());
+        return (await leitura.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("ativo").GetBoolean();
     }
 
     private static object PayloadValido(string codigo) => new
