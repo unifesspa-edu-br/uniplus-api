@@ -16,13 +16,8 @@ internal static class RecusaDaLeituraDoPerfil
     /// </summary>
     public static async Task<DomainError?> ConferirAsync(IVerificadorDeAcesso verificador, Guid? perfilId, CancellationToken cancellationToken)
     {
-        bool? pode = await AcessoDaVersao.PodeLerOPerfilAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        AcessoAvaliado acesso = await AcessoDaVersao.AvaliarLeituraDoPerfilAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
 
-        return pode switch
-        {
-            true => null,
-            null => PerfilHandlerErros.AutorNaoIdentificado(),
-            false => PerfilErros.LeituraNegada(),
-        };
+        return acesso.Recusa(PerfilErros.LeituraNegada);
     }
 }

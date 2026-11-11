@@ -29,20 +29,34 @@ public static class AutorizacaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(AutorizacaoApplicationServiceRegistration).Assembly);
 
-        // As origens "instalação" e "pedido" acrescentam os eventos delas à trilha da concessão que gerou.
-        services.AddScoped<IEventosDaOrigem, EventosDaInstalacao>();
-        services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
-
-        services.AddScoped<AvisosDoPedido>();
-        services.AddScoped<AvisoDePedidoDevolvido>();
-        services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton<MetricasDaGovernancaDePerfis>();
-        services.AddScoped<AmostragemDaGovernanca>();
+        AdicionarEventosDaOrigem(services);
+        AdicionarAvisosDoPedido(services);
+        AdicionarMetricasDaGovernanca(services);
 
         AdicionarVersoesDoPerfil(services);
         AdicionarReceptoresDoResultado(services);
 
         return services;
+    }
+
+    private static void AdicionarEventosDaOrigem(IServiceCollection services)
+    {
+        // As origens "instalação" e "pedido" acrescentam os eventos delas à trilha da concessão que gerou.
+        services.AddScoped<IEventosDaOrigem, EventosDaInstalacao>();
+        services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
+    }
+
+    private static void AdicionarAvisosDoPedido(IServiceCollection services)
+    {
+        services.AddScoped<AvisosDoPedido>();
+        services.AddScoped<AvisoDePedidoDevolvido>();
+    }
+
+    private static void AdicionarMetricasDaGovernanca(IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<MetricasDaGovernancaDePerfis>();
+        services.AddScoped<AmostragemDaGovernanca>();
     }
 
     private static void AdicionarVersoesDoPerfil(IServiceCollection services)
@@ -54,6 +68,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<VersoesDoPerfil>();
         services.AddScoped<PropostasDeVersao>();
         services.AddScoped<DocumentosDasVersoes>();
+        services.AddScoped<LeitorDoDocumentoDaVersao>();
         services.AddScoped<EfeitosDaTrocaDeVigencia>();
         services.AddScoped<ResultadoDoDocumentoDaVersao>();
 
@@ -62,22 +77,36 @@ public static class AutorizacaoApplicationServiceRegistration
 
     private static void AdicionarGovernancaDaVersao(IServiceCollection services)
     {
+        AdicionarFilas(services);
+        AdicionarDecisoesDaVersao(services);
+        AdicionarEfeitosDaVersao(services);
+        AdicionarEmissaoDeAvisos(services);
+        AdicionarJanelaDeMigracao(services);
+        AdicionarReclassificacoes(services);
+    }
+
+    private static void AdicionarFilas(IServiceCollection services)
+    {
         services.AddScoped<FilaDeVersoesDaEtapa>();
         services.AddScoped<FilaDeJanelasDaEtapa>();
+    }
+
+    private static void AdicionarDecisoesDaVersao(IServiceCollection services)
+    {
         services.AddScoped<AprovacoesDaVersao>();
         services.AddScoped<CancelamentoDaVersao>();
         services.AddScoped<RemocaoDePermissoes>();
         services.AddScoped<ContencaoPorSuspensao>();
         services.AddScoped<AtivacaoDoPerfil>();
+    }
+
+    private static void AdicionarEfeitosDaVersao(IServiceCollection services)
+    {
         services.AddScoped<AvisosDaContencao>();
         services.AddScoped<EfeitosDoDesfechoDaVersao>();
         services.AddScoped<ConferenciaDoCatalogoNaVersao>();
         services.AddScoped<ExpiracaoDasVersoesPendentes>();
         services.AddScoped<AvisosDaVersao>();
-
-        AdicionarEmissaoDeAvisos(services);
-        AdicionarJanelaDeMigracao(services);
-        AdicionarReclassificacoes(services);
     }
 
     private static void AdicionarEmissaoDeAvisos(IServiceCollection services)
@@ -101,6 +130,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<MaterializacaoPrevia>();
         services.AddScoped<PerfilParaPedir>();
         services.AddScoped<LeituraDaJanela>();
+        services.AddScoped<DetalheDoPerfil>();
     }
 
     private static void AdicionarReclassificacoes(IServiceCollection services)

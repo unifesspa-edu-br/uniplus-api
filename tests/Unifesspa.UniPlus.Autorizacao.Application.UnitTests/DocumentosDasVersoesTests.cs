@@ -2,8 +2,14 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
+using NSubstitute;
+
+using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
+
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
@@ -157,7 +163,7 @@ public sealed class DocumentosDasVersoesTests
 
         (await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, cenario.Verificador, CancellationToken.None)).IsSuccess.Should().BeTrue();
 
-        cenario.Verificador.Gravados.Should().ContainSingle();
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(SobreOPerfil(AprovarProtecaoDeDados, perfil.Id, ResultadoDoAcesso.Permitido));
     }
 
     [Fact(DisplayName = "Sem nenhuma das duas permissões a leitura do documento é recusada, sem URL nem acesso gravado")]
@@ -169,7 +175,8 @@ public sealed class DocumentosDasVersoesTests
         Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, cenario.Verificador, CancellationToken.None);
 
         resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
-        cenario.Verificador.Gravados.Should().ContainSingle();
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(
+            SobreOPerfil(Manter, perfil.Id, ResultadoDoAcesso.Negado), SobreOPerfil(AprovarProtecaoDeDados, perfil.Id, ResultadoDoAcesso.Negado));
         cenario.Armazenamento.ChavesDeLeitura.Should().BeEmpty();
         cenario.Perfis.Leituras.Should().BeEmpty();
     }
@@ -188,6 +195,24 @@ public sealed class DocumentosDasVersoesTests
             .Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
     }
 
+    [Fact(DisplayName = "Ler com a autoria presente e o verificador sem sujeito recusa pelo token, sem registrar nem emitir URL")]
+    public async Task Ler_VerificadorSemSujeito_RecusaSemRegistrarNemEmitirUrl()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+        Cenario cenario = new(perfil);
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.AvaliarAsync(default!, default, default).ReturnsForAnyArgs(Task.FromResult<DecisaoDeAcesso>(SemSujeito.Instancia));
+
+        Result<LeituraDoDocumentoDaVersaoDto> resultado = await cenario.Documentos.LerAsync(perfil.Id, perfil.VersaoVigente!.Id, verificador, CancellationToken.None);
+
+        resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
+        await verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
+        cenario.Armazenamento.ChavesDeLeitura.Should().BeEmpty();
+    }
+
+    private static TrilhaDeAcesso SobreOPerfil(string permissao, Guid perfilId, ResultadoDoAcesso resultado) =>
+        new(PerfisDeTeste.Autor.Sub, permissao, ResourceTiposAutorizacao.Perfil, perfilId, resultado);
+
     private sealed class Cenario
     {
         public Cenario(Perfil perfil, bool autorIdentificado = true, params string[] permitidas)
@@ -199,10 +224,11 @@ public sealed class DocumentosDasVersoesTests
             Documentos = new DocumentosDasVersoes(
                 new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
                 new EnvioDoDocumento(Armazenamento, TimeProvider.System),
-                new AutoriaDaOperacao(new Usuario(autorIdentificado ? PerfisDeTeste.Autor : null), TimeProvider.System, new ConcessoesNaMemoria()),
-                Perfis,
-                Armazenamento,
-                Unidade);
+                new LeitorDoDocumentoDaVersao(
+                    new AutoriaDaOperacao(new Usuario(autorIdentificado ? PerfisDeTeste.Autor : null), TimeProvider.System, new ConcessoesNaMemoria()),
+                    Perfis,
+                    Armazenamento,
+                    Unidade));
         }
 
         public VerificadorDeTeste Verificador { get; }

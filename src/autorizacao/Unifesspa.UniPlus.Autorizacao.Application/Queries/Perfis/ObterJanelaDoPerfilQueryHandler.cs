@@ -20,28 +20,34 @@ using Unifesspa.UniPlus.Kernel.Results;
 public static class ObterJanelaDoPerfilQueryHandler
 {
     public static async Task<Result<JanelaDeMigracaoDto>> Handle(
-        ObterJanelaDoPerfilQuery query,
-        IVerificadorDeAcesso verificador,
-        IPerfilRepository perfis,
-        LeituraDaJanela leitura,
-        IUserContext userContext,
-        CancellationToken cancellationToken)
+        ObterJanelaDoPerfilQuery query, IVerificadorDeAcesso verificador, IPerfilRepository perfis,
+        LeituraDaJanela leitura, IUserContext userContext, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(leitura);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        if (!await AcessoDaVersao.PodeLerAJanelaAsync(verificador, query.PerfilId, cancellationToken).ConfigureAwait(false))
+        Result<Perfil> perfil = await PerfilLegivelAsync(query, verificador, perfis, cancellationToken).ConfigureAwait(false);
+
+        return perfil.IsSuccess
+            ? await LerAsync(perfil.Value!, leitura, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false)
+            : Result<JanelaDeMigracaoDto>.Failure(perfil.Error!);
+    }
+
+    /// <summary>O perfil pedido, quando a pessoa pode lê-lo e ele existe; a recusa, quando não.</summary>
+    private static async Task<Result<Perfil>> PerfilLegivelAsync(
+        ObterJanelaDoPerfilQuery query, IVerificadorDeAcesso verificador, IPerfilRepository perfis, CancellationToken cancellationToken)
+    {
+        AcessoAvaliado acesso = await AcessoDaVersao.AvaliarLeituraDoPerfilAsync(verificador, query.PerfilId, cancellationToken).ConfigureAwait(false);
+        if (acesso.Recusa(PerfilErros.SemPermissaoNaEtapa) is { } recusa)
         {
-            return Result<JanelaDeMigracaoDto>.Failure(PerfilErros.SemPermissaoNaEtapa());
+            return Result<Perfil>.Failure(recusa);
         }
 
-        Perfil? perfil = await perfis.ObterPorIdAsync(query.PerfilId, cancellationToken).ConfigureAwait(false);
-
-        return perfil is null
-            ? Result<JanelaDeMigracaoDto>.Failure(PerfilHandlerErros.NaoEncontrado(query.PerfilId))
-            : await LerAsync(perfil, leitura, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false);
+        return await perfis.ObterPorIdAsync(query.PerfilId, cancellationToken).ConfigureAwait(false) is { } perfil
+            ? Result<Perfil>.Success(perfil)
+            : Result<Perfil>.Failure(PerfilHandlerErros.NaoEncontrado(query.PerfilId));
     }
 
     private static async Task<Result<JanelaDeMigracaoDto>> LerAsync(

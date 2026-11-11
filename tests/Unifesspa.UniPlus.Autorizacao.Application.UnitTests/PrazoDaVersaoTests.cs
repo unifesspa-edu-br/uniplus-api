@@ -175,7 +175,7 @@ public sealed class PrazoDaVersaoTests
             _operacao = new OperacaoSobreOPerfil(_perfis, Unidade, _relogio);
             AutoriaDaOperacao autoria = new(new Usuario(PerfisDeTeste.Autor), _relogio, new ConcessoesNaMemoria());
             EnvioDoDocumento envio = new(Armazenamento, _relogio);
-            Documentos = new DocumentosDasVersoes(_operacao, envio, autoria, _perfis, Armazenamento, Unidade);
+            Documentos = new DocumentosDasVersoes(_operacao, envio, new LeitorDoDocumentoDaVersao(autoria, _perfis, Armazenamento, Unidade));
         }
 
         public UnidadeDeTrabalho Unidade { get; }

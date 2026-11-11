@@ -1,13 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -16,36 +11,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class DocumentosDasVersoes
 {
-    private const string NomeDoArquivo = "documento-da-versao.pdf";
-
     private readonly OperacaoSobreOPerfil _operacao;
     private readonly EnvioDoDocumento _envio;
-    private readonly AutoriaDaOperacao _autoria;
-    private readonly IPerfilRepository _perfis;
-    private readonly IArmazenamentoDosDocumentosDaAutorizacao _armazenamento;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly LeitorDoDocumentoDaVersao _leitor;
 
-    public DocumentosDasVersoes(
-        OperacaoSobreOPerfil operacao,
-        EnvioDoDocumento envio,
-        AutoriaDaOperacao autoria,
-        IPerfilRepository perfis,
-        IArmazenamentoDosDocumentosDaAutorizacao armazenamento,
-        IAutorizacaoUnitOfWork unitOfWork)
+    public DocumentosDasVersoes(OperacaoSobreOPerfil operacao, EnvioDoDocumento envio, LeitorDoDocumentoDaVersao leitor)
     {
         ArgumentNullException.ThrowIfNull(operacao);
         ArgumentNullException.ThrowIfNull(envio);
-        ArgumentNullException.ThrowIfNull(autoria);
-        ArgumentNullException.ThrowIfNull(perfis);
-        ArgumentNullException.ThrowIfNull(armazenamento);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(leitor);
 
         _operacao = operacao;
         _envio = envio;
-        _autoria = autoria;
-        _perfis = perfis;
-        _armazenamento = armazenamento;
-        _unitOfWork = unitOfWork;
+        _leitor = leitor;
     }
 
     /// <summary>Outro documento para a versão pendente cujo documento foi recusado pela verificação.</summary>
@@ -71,68 +49,14 @@ public sealed class DocumentosDasVersoes
             (perfil, contexto) => Task.FromResult(perfil.ConfirmarDocumento(versaoId, etag, contexto.Agora)),
             cancellationToken);
 
-    /// <summary>
-    /// Só o documento verificado tem URL de leitura, e só para quem mantém perfis ou aprova pela proteção de dados. Cada
-    /// acesso fica registrado com quem o pediu.
-    /// </summary>
-    public async Task<Result<LeituraDoDocumentoDaVersaoDto>> LerAsync(
-        Guid perfilId, Guid versaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        DomainError? negado = await NegadoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
-        if (negado is not null)
-        {
-            return Result<LeituraDoDocumentoDaVersaoDto>.Failure(negado);
-        }
-
-        Result<DocumentoDaVersao> documento = await DocumentoParaLeituraAsync(perfilId, versaoId, cancellationToken).ConfigureAwait(false);
-
-        return documento.IsFailure
-            ? Result<LeituraDoDocumentoDaVersaoDto>.ValidationFailure(documento.Errors)
-            : await LerVerificadoAsync(documento.Value!, _autoria.Autor!, cancellationToken).ConfigureAwait(false);
-    }
+    /// <summary>Só o documento verificado tem URL de leitura; a leitura fica registrada com quem a pediu.</summary>
+    public Task<Result<LeituraDoDocumentoDaVersaoDto>> LerAsync(
+        Guid perfilId, Guid versaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        _leitor.LerAsync(perfilId, versaoId, verificador, cancellationToken);
 
     private async Task<Result<EnvioDoDocumentoDto>> EmitirAsync(Result<DocumentoDaVersao> documento, CancellationToken cancellationToken) =>
         documento.IsFailure
             ? Result<EnvioDoDocumentoDto>.ValidationFailure(documento.Errors)
             : Result<EnvioDoDocumentoDto>.Success(
                 await _envio.EmitirAsync(documento.Value!, cancellationToken).ConfigureAwait(false));
-
-    // O acesso se registra antes de a URL sair: a URL só vai a quem ficou na trilha.
-    private async Task<Result<LeituraDoDocumentoDaVersaoDto>> LerVerificadoAsync(
-        DocumentoDaVersao documento, Identidade leitor, CancellationToken cancellationToken)
-    {
-        DateTimeOffset agora = _autoria.Agora;
-        string url = await _armazenamento
-            .GerarUrlDeLeituraAsync(documento.ChaveDefinitiva, NomeDoArquivo, LerAnexoDoPedidoCommandHandler.PrazoDaLeitura, cancellationToken)
-            .ConfigureAwait(false);
-
-        await _perfis.AdicionarLeituraAsync(LeituraDoDocumentoDaVersao.Registrar(documento.Id, leitor, agora), cancellationToken).ConfigureAwait(false);
-        await _unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return Result<LeituraDoDocumentoDaVersaoDto>.Success(
-            new LeituraDoDocumentoDaVersaoDto(new Uri(url, UriKind.Absolute), agora + LerAnexoDoPedidoCommandHandler.PrazoDaLeitura));
-    }
-
-    private async Task<DomainError?> NegadoAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
-    {
-        if (_autoria.Autor is null)
-        {
-            return PerfilHandlerErros.AutorNaoIdentificado();
-        }
-
-        bool pode = await AcessoDaVersao.PodeLerODocumentoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
-
-        return pode ? null : PerfilErros.SemPermissaoNaEtapa();
-    }
-
-    private async Task<Result<DocumentoDaVersao>> DocumentoParaLeituraAsync(Guid perfilId, Guid versaoId, CancellationToken cancellationToken)
-    {
-        Perfil? perfil = await _perfis.ObterPorIdAsync(perfilId, cancellationToken).ConfigureAwait(false);
-
-        return perfil is null
-            ? Result<DocumentoDaVersao>.Failure(PerfilHandlerErros.NaoEncontrado(perfilId))
-            : perfil.DocumentoParaLeitura(versaoId);
-    }
 }

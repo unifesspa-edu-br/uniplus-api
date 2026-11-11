@@ -4,14 +4,20 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using NSubstitute;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Catalogo;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
@@ -41,7 +47,7 @@ public sealed class GovernancaDaVersaoTests
         gravacao.Resultado.IsSuccess.Should().BeTrue();
         perfil.VersaoVigente.Should().NotBeNull();
         cenario.Unidade.Gravacoes.Should().Be(1);
-        cenario.Verificador.Gravados.Should().ContainSingle();
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(SobreOPerfil(PerfisDeTeste.Gestora.Sub, Gestao, perfil.Id, ResultadoDoAcesso.Permitido));
     }
 
     [Fact(DisplayName = "Sem nenhuma das permissões da aprovação a decisão é recusada e nada é gravado")]
@@ -54,7 +60,9 @@ public sealed class GovernancaDaVersaoTests
 
         gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
         cenario.Unidade.Gravacoes.Should().Be(0);
-        cenario.Verificador.Gravados.Should().ContainSingle();
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(
+            SobreOPerfil(PerfisDeTeste.Gestora.Sub, Gestao, perfil.Id, ResultadoDoAcesso.Negado),
+            SobreOPerfil(PerfisDeTeste.Gestora.Sub, Protecao, perfil.Id, ResultadoDoAcesso.Negado));
         cenario.Concessoes.ConsultasDeConcessaoAtiva.Should().Be(0, "a recusa de acesso vem antes de qualquer leitura de concessão");
     }
 
@@ -147,7 +155,7 @@ public sealed class GovernancaDaVersaoTests
             perfil.Id, perfil.VersaoPendente!.Id, "A mudança foi substituída.", cenario.Verificador, CancellationToken.None);
 
         gravacao.Resultado.IsSuccess.Should().BeTrue();
-        cenario.Verificador.Gravados.Should().ContainSingle();
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().BeEmpty();
     }
 
     [Theory(DisplayName = "Sem a permissão, cancelar a pendente de outra pessoa ou uma versão inexistente é negado")]
@@ -281,6 +289,62 @@ public sealed class GovernancaDaVersaoTests
 
         fila.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.EtapaInvalida);
     }
+
+    [Theory(DisplayName = "A fila de versões recusada registra a negativa da permissão da etapa na operação")]
+    [InlineData(EtapaGestao, Gestao, Protecao)]
+    [InlineData(EtapaProtecao, Protecao, Gestao)]
+    public async Task Fila_SemPermissaoDaEtapa_RegistraANegativaDaEtapa(string etapa, string permissaoDaEtapa, string deOutraEtapa)
+    {
+        CenarioDaGovernancaDaVersao cenario = new(PendenteVerificada([A]), PerfisDeTeste.Gestora, [deOutraEtapa]);
+
+        Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> fila = await Fila(cenario, etapa);
+
+        fila.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(NaOperacao(permissaoDaEtapa, ResultadoDoAcesso.Negado));
+    }
+
+    [Theory(DisplayName = "A fila de versões permitida registra a decisão da permissão da etapa na operação")]
+    [InlineData(EtapaGestao, Gestao)]
+    [InlineData(EtapaProtecao, Protecao)]
+    public async Task Fila_ComPermissaoDaEtapa_RegistraAPermitida(string etapa, string permissaoDaEtapa)
+    {
+        CenarioDaGovernancaDaVersao cenario = new(PendenteVerificada([A]), PerfisDeTeste.Gestora, [permissaoDaEtapa]);
+
+        Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> fila = await Fila(cenario, etapa);
+
+        fila.IsSuccess.Should().BeTrue();
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(NaOperacao(permissaoDaEtapa, ResultadoDoAcesso.Permitido));
+    }
+
+    [Theory(DisplayName = "A fila de versões recusa o token sem autor sem consultar os perfis nem registrar")]
+    [InlineData(EtapaGestao)]
+    [InlineData(EtapaProtecao)]
+    public async Task Fila_SemAutor_RecusaPeloTokenSemConsultarNemRegistrar(string etapa)
+    {
+        IPerfilRepository perfis = Substitute.For<IPerfilRepository>();
+        IVerificadorDeAcesso verificador = SemAutor();
+
+        Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> fila = await ListarFilaDeVersoesQueryHandler.Handle(
+            new ListarFilaDeVersoesQuery(etapa), verificador, new FilaDeVersoesDaEtapa(perfis, new CatalogoDaAplicacao([]), TimeProvider.System),
+            new Usuario(PerfisDeTeste.Gestora), CancellationToken.None);
+
+        fila.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
+        perfis.ReceivedCalls().Should().BeEmpty();
+        await verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
+    }
+
+    private static IVerificadorDeAcesso SemAutor()
+    {
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.AvaliarAsync(default!, default, default).ReturnsForAnyArgs(Task.FromResult<DecisaoDeAcesso>(SemSujeito.Instancia));
+        return verificador;
+    }
+
+    private static TrilhaDeAcesso SobreOPerfil(string ator, string permissao, Guid perfilId, ResultadoDoAcesso resultado) =>
+        new(ator, permissao, ResourceTiposAutorizacao.Perfil, perfilId, resultado);
+
+    private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
+        new(PerfisDeTeste.Gestora.Sub, permissao, ResourceTipos.Operacao, null, resultado);
 
     [Fact(DisplayName = "Os handlers devolvem a resposta e os avisos para a cascata do Wolverine")]
     public async Task Handlers_DevolvemRespostaEAvisos()
