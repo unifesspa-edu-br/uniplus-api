@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Text;
+using System.Text.Json.Nodes;
+
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +31,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS unidade da fase");
         await using SelecaoDbContext context = _fixture.CreateDbContext();
-        UnidadeDaFaseNaVersaoVigente leitor = new(context);
+        UnidadeDaFaseNaVersaoVigente leitor = new(context, TimeProvider.System);
 
         UnidadeDaFase? daFase = await leitor.DaFaseAsync(processoId, fase.Id);
         UnidadeDaFase? daEtapa = await leitor.DaEtapaAsync(processoId, etapa.Id);
@@ -43,7 +46,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS fase inexistente");
         (Guid outroProcessoId, _, _) = await PublicadoAsync("PS outro processo");
         await using SelecaoDbContext context = _fixture.CreateDbContext();
-        UnidadeDaFaseNaVersaoVigente leitor = new(context);
+        UnidadeDaFaseNaVersaoVigente leitor = new(context, TimeProvider.System);
 
         (await leitor.DaFaseAsync(processoId, Guid.CreateVersion7())).Should().BeNull();
         (await leitor.DaEtapaAsync(processoId, Guid.CreateVersion7())).Should().BeNull();
@@ -131,6 +134,62 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         await transacao.CommitAsync();
     }
 
+    [Fact(DisplayName = "A versão de vigência futura não vale: a unidade da fase é a da versão que já vige")]
+    public async Task DaFase_VersaoComVigenciaFutura_NaoVale()
+    {
+        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS vigencia futura");
+        await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+
+        UnidadeDaFase? daFase = await new UnidadeDaFaseNaVersaoVigente(context, TimeProvider.System).DaFaseAsync(processoId, fase.Id);
+        UnidadeDaFase? daEtapa = await new UnidadeDaFaseNaVersaoVigente(context, TimeProvider.System).DaEtapaAsync(processoId, etapa.Id);
+        UnidadeDaFase? depoisDaVigencia = await new UnidadeDaFaseNaVersaoVigente(context, new RelogioFixo(DateTimeOffset.UtcNow.AddDays(31))).DaFaseAsync(processoId, fase.Id);
+
+        daFase!.UnidadeId.Should().Be(UnidadesDeTeste.Ceps.OrigemId);
+        daEtapa!.UnidadeId.Should().Be(UnidadesDeTeste.Ceps.OrigemId);
+        depoisDaVigencia!.UnidadeId.Should().Be(UnidadesDeTeste.Cga.OrigemId, "a partir da vigência a sucessora vale");
+    }
+
+    [Fact(DisplayName = "A janela aberta numa versão e adiada na seguinte continua contando como fase iniciada")]
+    public async Task Iniciadas_JanelaAdiadaNaRetificacao_ContinuaIniciada()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela adiada");
+        await SucederAsync(processoId, DateTimeOffset.UtcNow, f =>
+        {
+            f["inicio"] = "2031-01-01T00:00:00+00:00";
+            f["fim"] = "2031-01-31T00:00:00+00:00";
+        });
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue("a janela da primeira versão já abriu");
+    }
+
+    [Fact(DisplayName = "A fase iniciada retirada numa versão e reinserida na seguinte continua contando como iniciada")]
+    public async Task Iniciadas_FaseRetiradaEReinserida_ContinuaIniciada()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS fase retirada");
+        await SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
+        await SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+    }
+
+    private async Task SucederAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraAFase)
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        VersaoConfiguracao anterior = await context.VersoesConfiguracao
+            .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).FirstAsync();
+        JsonObject envelope = JsonNode.Parse(anterior.ConfiguracaoCongelada)!.AsObject();
+        alteraAFase((JsonObject)envelope["cronogramaFases"]!["fases"]![0]!);
+        context.VersoesConfiguracao.Add(VersaoConfiguracao.Suceder(
+            anterior, Encoding.UTF8.GetBytes(envelope.ToJsonString()), anterior.SchemaVersion, anterior.AlgoritmoHash,
+            Guid.CreateVersion7(), anterior.AtoCriadorHash, anterior.AtoCriadorId, "plataforma-admin", vigenteAPartirDe));
+        await context.SaveChangesAsync();
+    }
+
     private async Task<FasesIniciadas> IniciadasAsync(Guid processoId, DateTimeOffset agora)
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
@@ -161,5 +220,10 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
             .Include(p => p.Etapas)
             .SingleAsync(p => p.Id == resultado.ProcessoId);
         return (processo.Id, processo.CronogramaFases.Single(), processo.Etapas.Single());
+    }
+
+    private sealed class RelogioFixo(DateTimeOffset agora) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => agora;
     }
 }

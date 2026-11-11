@@ -7,10 +7,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Quais fases da versão publicada vigente já começaram: pela janela que começou ou terminou, pelo ato do item que a
-/// fase declara, pela avaliação já lançada numa etapa dela, ou pela inscrição recebida na fase que a coleta. A leitura
-/// é da versão publicada, e não da edição em curso, de modo que mover a janela no rascunho não faz a fase deixar de
-/// ter começado.
+/// Quais fases já começaram, com a unidade que cada uma tem na versão publicada. A fase começou se a janela dela abriu
+/// ou encerrou em qualquer versão publicada, se há ato do item que ela declara, avaliação lançada numa etapa dela ou
+/// inscrição recebida na fase que a coleta. O que começou não "desinicia": uma retificação que adia a janela, ou que
+/// retira a fase, não apaga o início (UNI-REQ-0333). A unidade é a da versão mais vigente em que a fase aparece.
 /// </summary>
 internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
 {
@@ -20,36 +20,50 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
 
     public async Task<FasesIniciadas> ObterAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken = default)
     {
-        string? envelope = await _context.VersoesConfiguracao
-            .AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == processoId)
-            .OrderByDescending(v => v.NumeroVersao)
-            .Select(v => v.ConfiguracaoCongelada)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        IReadOnlyList<FasesNoEnvelope.Fase> fases = FasesNoEnvelope.Das(envelope);
-        List<string> itensComAto = await ItensComAtoRegistradoAsync(processoId, cancellationToken).ConfigureAwait(false);
-        HashSet<Guid> etapasComAvaliacao = await EtapasComAvaliacaoAsync(fases, cancellationToken).ConfigureAwait(false);
-        bool haInscricao = await _context.Inscricoes
-            .AsNoTracking()
-            .AnyAsync(i => i.ProcessoSeletivoId == processoId && i.Situacao != SituacaoInscricao.Rascunho, cancellationToken)
-            .ConfigureAwait(false);
+        IReadOnlyList<FasesNoEnvelope.Fase> fases = await FasesPublicadasAsync(processoId, agora, cancellationToken).ConfigureAwait(false);
+        Sinais sinais = await SinaisAsync(processoId, fases, cancellationToken).ConfigureAwait(false);
 
         return new FasesIniciadas([.. fases
-            .Where(f => Iniciada(f, agora, itensComAto, etapasComAvaliacao, haInscricao))
-            .Select(static f => KeyValuePair.Create(f.OrigemId, f.Unidade))]);
+            .GroupBy(static f => f.OrigemId)
+            .Where(g => g.Any(f => Iniciada(f, agora, sinais)))
+            .Select(static g => KeyValuePair.Create(g.Key, g.First().Unidade))]);
     }
+
+    // A janela de uma versão, o ato, a avaliação e a inscrição são fatos do processo, e só a janela vive no envelope.
+    private sealed record Sinais(List<string> ItensComAto, HashSet<Guid> EtapasComAvaliacao, bool HaInscricao);
 
     // O ato guarda o lugar do item que o edital declara: a fase de origem, ou a etapa. O tipo do ato sozinho não
     // serve, porque duas fases podem declarar o mesmo tipo e o ato de uma não inicia a outra.
-    private static bool Iniciada(
-        FasesNoEnvelope.Fase fase, DateTimeOffset agora, List<string> itensComAto, HashSet<Guid> etapasComAvaliacao, bool haInscricao) =>
+    private static bool Iniciada(FasesNoEnvelope.Fase fase, DateTimeOffset agora, Sinais sinais) =>
         fase.Inicio <= agora
         || fase.Fim <= agora
-        || itensComAto.Any(item => DoLugar(item, $"fase:{fase.OrigemId:D}") || fase.Etapas.Any(e => DoLugar(item, $"etapa:{e:D}")))
-        || fase.Etapas.Any(etapasComAvaliacao.Contains)
-        || (fase.ColetaInscricao && haInscricao);
+        || sinais.ItensComAto.Any(item => DoLugar(item, $"fase:{fase.OrigemId:D}") || fase.Etapas.Any(e => DoLugar(item, $"etapa:{e:D}")))
+        || fase.Etapas.Any(sinais.EtapasComAvaliacao.Contains)
+        || (fase.ColetaInscricao && sinais.HaInscricao);
+
+    private static bool DoLugar(string item, string lugar) => item.StartsWith(lugar + "|", StringComparison.Ordinal);
+
+    private async Task<IReadOnlyList<FasesNoEnvelope.Fase>> FasesPublicadasAsync(
+        Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        List<string> envelopes = await _context.Publicadas(processoId, agora)
+            .AsNoTracking()
+            .Select(v => v.ConfiguracaoCongelada)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. envelopes.SelectMany(static e => FasesNoEnvelope.Das(e))];
+    }
+
+    private async Task<Sinais> SinaisAsync(Guid processoId, IReadOnlyList<FasesNoEnvelope.Fase> fases, CancellationToken cancellationToken) => new(
+        await ItensComAtoRegistradoAsync(processoId, cancellationToken).ConfigureAwait(false),
+        await EtapasComAvaliacaoAsync(fases, cancellationToken).ConfigureAwait(false),
+        await HaInscricaoRecebidaAsync(processoId, cancellationToken).ConfigureAwait(false));
+
+    private Task<bool> HaInscricaoRecebidaAsync(Guid processoId, CancellationToken cancellationToken) =>
+        _context.Inscricoes
+            .AsNoTracking()
+            .AnyAsync(i => i.ProcessoSeletivoId == processoId && i.Situacao != SituacaoInscricao.Rascunho, cancellationToken);
 
     private async Task<HashSet<Guid>> EtapasComAvaliacaoAsync(IReadOnlyList<FasesNoEnvelope.Fase> fases, CancellationToken cancellationToken)
     {
@@ -62,8 +76,6 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false)];
     }
-
-    private static bool DoLugar(string item, string lugar) => item.StartsWith(lugar + "|", StringComparison.Ordinal);
 
     private Task<List<string>> ItensComAtoRegistradoAsync(Guid processoId, CancellationToken cancellationToken) =>
         _context.AtosDoProcesso
