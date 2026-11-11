@@ -82,8 +82,27 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
+        processo.DefinirCronogramaFases(
+            [FaseCronograma.Criar(
+                ordem: 1,
+                faseCanonicaOrigemId: Guid.CreateVersion7(),
+                codigo: "RESULTADO_FINAL",
+                origemData: OrigemDataFase.NoEdital,
+                agrupaEtapas: true,
+                permiteComplementacao: false,
+                coletaInscricao: true, coletaSolicitacaoIsencao: false,
+                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+                produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+                faseConcluinteCodigo: null,
+                emiteParecerIndividual: false,
+                bancasRequeridas: [],
+                regraRecurso: null,
+                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
+            [],
+            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -104,25 +123,6 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                ordem: 1,
-                faseCanonicaOrigemId: Guid.CreateVersion7(),
-                codigo: "RESULTADO_FINAL",
-                origemData: OrigemDataFase.NoEdital,
-                agrupaEtapas: true,
-                permiteComplementacao: false,
-                coletaInscricao: true, coletaSolicitacaoIsencao: false,
-                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null,
-                emiteParecerIndividual: false,
-                bancasRequeridas: [],
-                regraRecurso: null,
-                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(

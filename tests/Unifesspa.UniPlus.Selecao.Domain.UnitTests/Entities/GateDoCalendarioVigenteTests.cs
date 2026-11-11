@@ -63,7 +63,7 @@ public sealed class GateDoCalendarioVigenteTests
 
     /// <summary>
     /// Cronograma mínimo que satisfaz os demais gates: coleta inscrição (a origem do corpus é
-    /// inscrição própria), agrupa a etapa pontuada, produz resultado preliminar recorrível e
+    /// inscrição própria), abriga a etapa pontuada na fase do resultado final, produz resultado preliminar recorrível e
     /// fecha com o resultado definitivo.
     /// </summary>
     private static FaseCronograma[] CronogramaComRecurso(UnidadePrazo unidade) =>
@@ -79,7 +79,7 @@ public sealed class GateDoCalendarioVigenteTests
             bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
         FaseCronograma.Criar(
             2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-            agrupaEtapas: true, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+            agrupaEtapas: false, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
             produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
             faseConcluinteCodigo: "RESULTADO_FINAL",
             emiteParecerIndividual: false,

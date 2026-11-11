@@ -157,9 +157,6 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // DEPOIS removida via DefinirEtapas([]): a fase de avaliação fica órfã, e essa direção só
         // o gate de publicação (LAZY) pega — é exatamente o defeito que o docblock de
         // PendenciaDoCronograma descreve como "defesa em profundidade".
-        processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
                 1, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
@@ -169,6 +166,11 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 emiteParecerIndividual: false,
                 bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.DefinirEtapas(
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
         processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
@@ -179,21 +181,20 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.AvaliacaoSemEtapa");
     }
 
-    [Fact(DisplayName = "Cronograma: etapa pontuada sem fase de avaliação — item vermelho e Publicar recusa com EtapaSemFaseDeAvaliacao")]
-    public void Cronograma_EtapaSemFaseDeAvaliacao()
+    [Fact(DisplayName = "Cronograma: etapa pontuada sem fase declarada — item vermelho e Publicar recusa com EtapaSemFaseDeclarada")]
+    public void Cronograma_EtapaSemFaseDeclarada()
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-        // Fase permanece sem agrupar etapas (herdada de ProcessoConforme).
 
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("cronograma_etapa_pontuada_sem_fase_agrupadora");
+            .Which.Codigo.Should().Be("cronograma_etapa_declara_a_fase");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseDeAvaliacao");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseDeclarada");
     }
 
     [Fact(DisplayName = "Cronograma: InscricaoPropria sem fase de coleta — item vermelho e Publicar recusa com InscricaoPropriaSemFaseDeColeta (cenário da issue)")]
@@ -1019,9 +1020,6 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     private static ProcessoSeletivo ProcessoConformeComEtapaQueCompoeNota()
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaAmpla(10, GrupoTecnologica)]);
-        processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
                 1, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
@@ -1031,6 +1029,11 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 emiteParecerIndividual: false,
                 bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+
+        processo.DefinirEtapas(
+            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
@@ -1228,7 +1231,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(
             i => i.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && i.Ok);
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(
-            i => i.Codigo == "cronograma_etapa_pontuada_sem_fase_agrupadora" && i.Ok);
+            i => i.Codigo == "cronograma_etapa_declara_a_fase" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -1523,8 +1526,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
         processo.DefinirEtapas(
             [
-                EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 2m, ordem: 1).Value!,
-                EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
+                EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 2m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!,
+                EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
             ],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 

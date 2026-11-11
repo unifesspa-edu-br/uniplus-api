@@ -147,10 +147,12 @@ public sealed class ConformidadeCronogramaTests
 
     // ── CA-14 — direção lazy: etapa sem fase de avaliação ──
 
-    [Fact(DisplayName = "CA-14: etapa pontuada declarada e NENHUMA fase agrupa etapas reprova a publicação")]
-    public void Etapa_SemFaseDeAvaliacao_Reprova()
+    [Fact(DisplayName = "Etapa pontuada sem fase declarada reprova a publicação, citando a etapa")]
+    public void Etapa_SemFaseDeclarada_Reprova()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
@@ -159,14 +161,14 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'd'), 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente);
-        // Fase que produz resultado, mas NÃO agrupa etapas.
-        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+
         DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseDeAvaliacao");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseDeclarada");
+        resultado.Error!.Message.Should().Contain("'Prova'");
     }
 
     // ── CA-15 — DefinirEtapas([]) aceito; divisor > 0 só sob fórmula local ──

@@ -160,13 +160,37 @@ internal static class FormularioDeTeste
             processo.RemoverFormulario(FinalidadeFormulario.Inscricao, precondicao);
         }
 
+        List<EtapaProcesso> etapasAntes = [.. processo.Etapas];
         Result trocado = processo.DefinirCronogramaFases(fases, [], precondicao);
+        if (trocado.IsSuccess)
+        {
+            ReporEtapasDeFaseQueContinua(processo, etapasAntes, fases, precondicao);
+        }
+
         if (tinhaFormulario)
         {
             GarantirFormulario(processo, FinalidadeFormulario.Inscricao, precondicao);
         }
 
         return trocado;
+    }
+
+    // A poda do cronograma leva junto a etapa da fase que sai, e a troca de teste recria a fase com a mesma
+    // identidade de negócio (o código) e outra origem: a etapa volta, presa à fase de mesmo código.
+    private static void ReporEtapasDeFaseQueContinua(
+        ProcessoSeletivo processo, List<EtapaProcesso> etapasAntes, IReadOnlyList<FaseCronograma> fases, PrecondicaoIfMatch precondicao)
+    {
+        HashSet<Guid> sobreviventes = [.. processo.Etapas.Select(static e => e.Id)];
+        List<EtapaProcesso> podadas = [.. etapasAntes.Where(e => !sobreviventes.Contains(e.Id)
+            && fases.Any(f => string.Equals(f.Codigo, e.FaseCodigo, StringComparison.Ordinal)))];
+        if (podadas.Count > 0)
+        {
+            Result reposta = processo.DefinirEtapas([.. processo.Etapas, .. podadas], precondicao);
+            if (reposta.IsFailure)
+            {
+                throw new InvalidOperationException($"A etapa podada não voltou ao cronograma de teste: {reposta.Error?.Message}");
+            }
+        }
     }
 
     /// <summary>

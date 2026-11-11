@@ -133,11 +133,13 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
 
         // A fase conforme agrupa etapas, e a bicondicional do cronograma exige que exista etapa
         // pontuada quando alguma fase as agrupa.
+        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 "Prova Objetiva", CaraterEtapa.Classificatoria,
                 TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!,
+                peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
@@ -160,8 +162,6 @@ public sealed class TaxaInscricaoSemFundamentoPersistenciaTests : IClassFixture<
                 Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
 
         Result<ConfiguracaoTaxaInscricao> taxa = ConfiguracaoTaxaInscricao.Criar(
             cobra: true, valor: 100m,

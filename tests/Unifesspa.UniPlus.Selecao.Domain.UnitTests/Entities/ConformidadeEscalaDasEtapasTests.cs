@@ -29,13 +29,14 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static EtapaProcesso Etapa(
         string nome, int ordem, CaraterEtapa carater = CaraterEtapa.Classificatoria, decimal? peso = null,
         decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null, bool notaDoEnem = false,
-        bool semForma = false) =>
+        bool semForma = false, string? faseCodigo = "RESULTADO_FINAL") =>
         EtapaProcesso.Criar(
             nome, carater, Tipo(notaDoEnem), peso, notaMinima, ordem, notaMaxima: notaMaxima, passoDoLancamento: passo,
-            formaDeAvaliacao: notaDoEnem || semForma ? null : FormaDeAvaliacao.Objetiva).Value!;
+            formaDeAvaliacao: notaDoEnem || semForma ? null : FormaDeAvaliacao.Objetiva, faseCodigo: faseCodigo).Value!;
 
-    private static EtapaProcesso EtapaDaMedia(string nome = "Prova", int ordem = 1, decimal? notaMaxima = 10m) =>
-        Etapa(nome, ordem, peso: 1m, notaMaxima: notaMaxima);
+    private static EtapaProcesso EtapaDaMedia(
+        string nome = "Prova", int ordem = 1, decimal? notaMaxima = 10m, string? faseCodigo = "RESULTADO_FINAL") =>
+        Etapa(nome, ordem, peso: 1m, notaMaxima: notaMaxima, faseCodigo: faseCodigo);
 
     private static ProcessoSeletivo ProcessoCom(params EtapaProcesso[] etapas)
     {
@@ -170,7 +171,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirEtapas([EtapaDaMedia(notaMaxima: null)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaDaMedia(notaMaxima: null, faseCodigo: null)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Etapa sem nota com nota máxima ou com passo recusa a publicação; sem escala publica")]

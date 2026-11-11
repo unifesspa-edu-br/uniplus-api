@@ -195,12 +195,6 @@ public sealed class HashEstavelEntreGravacoesTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(TipoEtapaOrigem, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         // O canonicalizador exige a configuração que o gate de publicação já teria cobrado.
         processo.DefinirOfertaAtendimento(
@@ -222,6 +216,12 @@ public sealed class HashEstavelEntreGravacoesTests
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                "Prova Objetiva", CaraterEtapa.Classificatoria,
+                TipoEtapaSnapshot.Criar(TipoEtapaOrigem, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+                peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

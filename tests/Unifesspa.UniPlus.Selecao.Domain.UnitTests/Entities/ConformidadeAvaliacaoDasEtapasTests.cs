@@ -41,7 +41,7 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
             regraConsolidacao: comRegra
                 ? ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b")
                 : null,
-            itensDeAvaliacao: itens, escalaDeAtendimento: escala).Value!;
+            itensDeAvaliacao: itens, escalaDeAtendimento: escala, faseCodigo: "RESULTADO_FINAL").Value!;
         if (comBanca)
         {
             etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA")]).IsSuccess.Should().BeTrue();

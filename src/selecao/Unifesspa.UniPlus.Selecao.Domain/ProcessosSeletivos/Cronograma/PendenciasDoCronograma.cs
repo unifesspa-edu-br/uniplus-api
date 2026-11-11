@@ -43,13 +43,14 @@ public static class PendenciasDoCronograma
                 "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
         }
 
-        // §3.5, direção "etapa sem fase de avaliação" — lazy por natureza (a etapa pode
-        // ser declarada depois do cronograma).
-        if (HaEtapaSemFaseDeAvaliacao(estado))
+        // A etapa segue a unidade da fase que a contém, então toda etapa publicada declara a fase em que
+        // acontece; o rascunho a aceita sem fase. A bicondicional por sinalizador de fase agrupadora deixou de
+        // valer para a etapa sem fase: ela é recusada aqui, citando a etapa.
+        if (EtapaSemFaseDeclarada(estado) is { } etapaSemFase)
         {
             return new DomainError(
-                "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
-                "O processo tem etapa pontuada, mas nenhuma fase do cronograma agrupa etapas.");
+                "ProcessoSeletivo.EtapaSemFaseDeclarada",
+                $"A etapa '{etapaSemFase.Nome}' não declara a fase em que acontece — declare a fase antes de publicar ou retificar o processo.");
         }
 
         // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
@@ -156,9 +157,12 @@ public static class PendenciasDoCronograma
             && !estado.Etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
             && !estado.Etapas.Any(static e => e.FaseCodigo is null));
 
-    internal static bool HaEtapaSemFaseDeAvaliacao(EstadoDaConfiguracao estado) =>
-        estado.Etapas.Any(static e => e.FaseCodigo is null)
-        && !estado.CronogramaFases.Any(static f => f.AgrupaEtapas);
+    /// <summary>A primeira etapa, na ordem, que não declara a fase em que acontece.</summary>
+    internal static EtapaProcesso? EtapaSemFaseDeclarada(EstadoDaConfiguracao estado) =>
+        estado.Etapas
+            .OrderBy(static e => e.Ordem ?? int.MaxValue)
+            .ThenBy(static e => e.Nome, StringComparer.Ordinal)
+            .FirstOrDefault(static e => e.FaseCodigo is null);
 
     /// <summary>Origem InscricaoPropria sem nenhuma fase que colete inscrição (§3.4).</summary>
     internal static bool HaInscricaoPropriaSemFaseDeColeta(EstadoDaConfiguracao estado) =>

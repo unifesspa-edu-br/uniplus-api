@@ -159,9 +159,6 @@ public sealed class PoliticaDeOrdenacaoTests
             "PS Política de Ordenação", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        processo.DefinirEtapas(etapas ?? [
-            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirOfertaAtendimento(
             ofertaAtendimento ?? OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
@@ -188,6 +185,9 @@ public sealed class PoliticaDeOrdenacaoTests
 
         processo.DefinirCronogramaFases(
             cronogramaFases ?? [FaseMinima()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas ?? [
+            EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, faseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo).Value!,
+        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         if (documentosExigidos is not null)
         {

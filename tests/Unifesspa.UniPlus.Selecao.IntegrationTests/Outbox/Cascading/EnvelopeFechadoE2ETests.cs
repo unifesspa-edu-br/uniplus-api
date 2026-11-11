@@ -118,6 +118,10 @@ public sealed class EnvelopeFechadoE2ETests
         // ══════════════════════════════════════════════════════════════════════════════
 
         await ExecutarPassoAsync(
+            () => ctx.PutCronogramaFasesAsync(),
+            HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
+
+        await ExecutarPassoAsync(
             () => ctx.PutEtapasAsync(EtapasIniciais(), ifMatch: null),
             HttpStatusCode.NoContent, "PUT etapas", "/etapas");
 
@@ -212,10 +216,6 @@ public sealed class EnvelopeFechadoE2ETests
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 8 — cronograma de fases (resolve FaseCanonica/TipoBanca do catálogo semeado)
         // ══════════════════════════════════════════════════════════════════════════════
-
-        await ExecutarPassoAsync(
-            () => ctx.PutCronogramaFasesAsync(),
-            HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Passo 9 — formulário de inscrição, respondido na fase que coleta a inscrição, e os
@@ -327,7 +327,7 @@ public sealed class EnvelopeFechadoE2ETests
                 "cascata_pendente",
                 // ── PendenciaDoCronograma ──
                 "cronograma_fase_agrupadora_sem_etapa_pontuada",
-                "cronograma_etapa_pontuada_sem_fase_agrupadora",
+                "cronograma_etapa_declara_a_fase",
                 "cronograma_inscricao_propria_sem_fase_de_coleta",
                 "cronograma_fase_que_coleta_inscricao_sem_janela",
                 "cronograma_fase_sem_unidade_responsavel",
@@ -563,9 +563,9 @@ public sealed class EnvelopeFechadoE2ETests
 
     private static object[] EtapasIniciais() =>
     [
-        new { nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 3.5000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 3.5000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
 
     /// <summary>
@@ -575,9 +575,9 @@ public sealed class EnvelopeFechadoE2ETests
     /// </summary>
     private static object[] EtapasComPesoAlterado(Guid objetivaId, Guid redacaoId, Guid entrevistaId) =>
     [
-        new { id = objetivaId, nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 4.0000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { id = objetivaId, nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 4.0000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
 
     // ══════════════════════════════════════════════════════════════════════════════
