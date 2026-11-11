@@ -13,8 +13,10 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
@@ -234,6 +236,33 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
         (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().NotContain(r => r.Id == id);
         (await reclassificacoes.EstaVigenteAsync((await reclassificacoes.ObterAsync(id))!)).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "A permissão que volta ao catálogo acima da base rebaixada da concessão suspende com reclassificação vigente")]
+    public async Task PermissaoDeVoltaAcimaDaBaseRebaixada_TemReclassificacaoVigente()
+    {
+        Guid perfil = await SemearPerfilVigenteAsync(Codigo, Outra);
+        string pessoa = $"pessoa.{Guid.NewGuid():N}";
+        await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, pessoa, perfil);
+        await GravarBaseRebaixadaAsync(perfil, await ConcessaoDoPerfilAsync(perfil), ClassificacaoDeProtecao.Publico);
+        await GravarCatalogoSemAPermissaoAsync(Codigo, new string('d', 64));
+
+        await ConciliarAsync();
+
+        (await PermissoesDaPessoaAsync(pessoa)).Should().NotContain(Codigo).And.Contain(Outra);
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
+        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().ContainSingle(r => r.PerfilId == perfil && r.Codigo == Codigo);
+    }
+
+    private async Task GravarBaseRebaixadaAsync(Guid perfil, Guid concessao, ClassificacaoDeProtecao classificacao)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        Guid implantacao = await db.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).FirstAsync();
+        db.BasesDasPermissoes.Add(BaseDaPermissaoNaConcessao.Registrar(
+            perfil, concessao, Codigo, new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
+        await db.SaveChangesAsync();
     }
 
     private async Task<Guid> ConcessaoDoPerfilAsync(Guid perfil)

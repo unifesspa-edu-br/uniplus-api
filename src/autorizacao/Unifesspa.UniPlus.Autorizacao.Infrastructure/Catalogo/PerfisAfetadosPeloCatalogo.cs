@@ -42,11 +42,12 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     private async Task ConciliarOPerfilAsync(Perfil perfil, ComparacaoDeCatalogos comparacao, CancellationToken cancellationToken)
     {
         IReadOnlyList<VersaoDoPerfil> emUso = await VersoesEmUsoAsync(perfil, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<BaseEmVigor> bases = await BasesEmVigorAsync(perfil, comparacao.Instante, cancellationToken).ConfigureAwait(false);
         List<ReclassificacaoDaPermissao> registradas = [.. CodigosEmUso(emUso)
-            .Select(codigo => ReclassificarSeMudou(perfil, new PermissaoEmUso(codigo, emUso), comparacao))
+            .Select(codigo => ReclassificarSeMudou(perfil, new PermissaoEmUso(codigo, emUso, bases), comparacao))
             .OfType<ReclassificacaoDaPermissao>()];
 
-        await AcompanharAsBasesAsync(perfil, registradas, comparacao, cancellationToken).ConfigureAwait(false);
+        AcompanharAsBases(perfil, registradas, bases, comparacao);
         RetomarSeAClasseMudou(perfil, registradas, comparacao.Instante);
     }
 
@@ -65,10 +66,14 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
         return null;
     }
 
+    /// <summary>
+    /// Sem o código no catálogo anterior, o valor anterior vem da versão e da base em vigor de cada concessão: a permissão que
+    /// volta ao catálogo acima de uma base rebaixada suspende essa concessão, e a suspensão precisa de reclassificação vigente.
+    /// </summary>
     private ReclassificacaoDaPermissao? Reclassificar(
         Perfil perfil, PermissaoEmUso permissao, LinhaDoRetratoDoCatalogo nova, ComparacaoDeCatalogos comparacao)
     {
-        MudancaDaPermissao? mudanca = permissao.Retratos
+        MudancaDaPermissao? mudanca = permissao.Anteriores
             .Select(r => ComparacaoComOCatalogo.MudancaDe(comparacao.AnteriorDe(permissao.Codigo, r), nova))
             .FirstOrDefault(static m => m is not null);
         if (mudanca is null)
@@ -83,39 +88,41 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
         return reclassificacao;
     }
 
-    private async Task AcompanharAsBasesAsync(
-        Perfil perfil, List<ReclassificacaoDaPermissao> registradas, ComparacaoDeCatalogos comparacao, CancellationToken cancellationToken)
+    private void AcompanharAsBases(
+        Perfil perfil, List<ReclassificacaoDaPermissao> registradas, IReadOnlyList<BaseEmVigor> bases, ComparacaoDeCatalogos comparacao)
     {
-        if (registradas.Count == 0)
-        {
-            return;
-        }
+        HashSet<string> alterados = [.. registradas.Select(static r => r.Codigo)];
 
-        string[] alterados = [.. registradas.Select(static r => r.Codigo)];
-        List<CodigoDaConcessao> codigos = await _db.CodigosDasConcessoesDoPerfil(perfil.Id, comparacao.Instante)
-            .Where(k => alterados.Contains(k.Codigo)).ToListAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<(Guid, string), BaseViva> vivas = (await _db.BasesVivas()
-            .Where(b => _db.Concessoes.Any(c => c.Id == b.ConcessaoId && c.PerfilId == perfil.Id))
-            .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => (b.ConcessaoId, b.Codigo));
-
-        _db.BasesDasPermissoes.AddRange(codigos
-            .Select(k => BaseAcompanhada(perfil.Id, k, vivas.GetValueOrDefault((k.ConcessaoId, k.Codigo)), comparacao))
+        _db.BasesDasPermissoes.AddRange(bases
+            .Where(b => alterados.Contains(b.Codigo))
+            .Select(b => BaseAcompanhada(perfil.Id, b, comparacao))
             .OfType<BaseDaPermissaoNaConcessao>());
     }
 
-    private static BaseDaPermissaoNaConcessao? BaseAcompanhada(Guid perfilId, CodigoDaConcessao codigo, BaseViva? viva, ComparacaoDeCatalogos comparacao)
+    private static BaseDaPermissaoNaConcessao? BaseAcompanhada(Guid perfilId, BaseEmVigor emVigor, ComparacaoDeCatalogos comparacao)
     {
-        BaseDaConcessao atual = viva is null
-            ? new BaseDaConcessao(codigo.RetratoDaClassificacao!.Value, codigo.RetratoDeUnidade)
-            : new BaseDaConcessao(viva.Classificacao, viva.DeUnidade);
         MudancaDaPermissao? mudanca = ComparacaoComOCatalogo.MudancaDe(
-            comparacao.AnteriorDe(codigo.Codigo, atual), comparacao.Atualizado[codigo.Codigo]);
+            comparacao.AnteriorDe(emVigor.Codigo, emVigor.Base), comparacao.Atualizado[emVigor.Codigo]);
 
         return mudanca is null
             ? null
             : BaseDaPermissaoNaConcessao.Registrar(
-                perfilId, codigo.ConcessaoId, codigo.Codigo, ComparacaoComOCatalogo.BaseDaConciliacao(atual, mudanca),
+                perfilId, emVigor.ConcessaoId, emVigor.Codigo, ComparacaoComOCatalogo.BaseDaConciliacao(emVigor.Base, mudanca),
                 OrigemDaBase.Conciliacao, comparacao.ImplantacaoId, 0);
+    }
+
+    /// <summary>A base de cada código das concessões ativas do perfil: a gravada em vigor e, sem ela, o retrato da versão.</summary>
+    private async Task<IReadOnlyList<BaseEmVigor>> BasesEmVigorAsync(Perfil perfil, DateTimeOffset instante, CancellationToken cancellationToken)
+    {
+        List<CodigoDaConcessao> codigos = await _db.CodigosDasConcessoesDoPerfil(perfil.Id, instante)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        Dictionary<(Guid, string), BaseViva> vivas = (await _db.BasesVivas()
+            .Where(b => _db.Concessoes.Any(c => c.Id == b.ConcessaoId && c.PerfilId == perfil.Id))
+            .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => (b.ConcessaoId, b.Codigo));
+
+        return [.. codigos.Select(k => new BaseEmVigor(k.ConcessaoId, k.Codigo, vivas.GetValueOrDefault((k.ConcessaoId, k.Codigo)) is { } viva
+            ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
+            : new BaseDaConcessao(k.RetratoDaClassificacao!.Value, k.RetratoDeUnidade)))];
     }
 
     private void RetomarSeAClasseMudou(Perfil perfil, List<ReclassificacaoDaPermissao> registradas, DateTimeOffset instante)
@@ -140,10 +147,15 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     private static partial void LogCodigoForaDoCatalogo(ILogger logger, Guid perfilId, string codigo);
 }
 
-/// <summary>Uma permissão em uso por um perfil: o código e as versões em uso que a reúnem.</summary>
-internal sealed record PermissaoEmUso(string Codigo, IReadOnlyList<VersaoDoPerfil> Versoes)
+/// <summary>A base de uma permissão numa concessão ativa, no momento da conciliação.</summary>
+internal sealed record BaseEmVigor(Guid ConcessaoId, string Codigo, BaseDaConcessao Base);
+
+/// <summary>Uma permissão em uso por um perfil: o código, as versões em uso que a reúnem e as bases das concessões.</summary>
+internal sealed record PermissaoEmUso(string Codigo, IReadOnlyList<VersaoDoPerfil> Versoes, IReadOnlyList<BaseEmVigor> Bases)
 {
-    public IEnumerable<BaseDaConcessao> Retratos => Versoes
+    /// <summary>Os valores que a permissão tinha para o perfil: o retrato de cada versão em uso e a base de cada concessão.</summary>
+    public IEnumerable<BaseDaConcessao> Anteriores => Versoes
         .SelectMany(v => v.Permissoes.Where(p => p.Codigo == Codigo))
-        .Select(static p => new BaseDaConcessao(p.Classificacao, p.DeUnidade));
+        .Select(static p => new BaseDaConcessao(p.Classificacao, p.DeUnidade))
+        .Concat(Bases.Where(b => b.Codigo == Codigo).Select(static b => b.Base));
 }
