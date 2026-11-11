@@ -77,7 +77,8 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IRegistroCodecsEnvelope, RegistroCodecsEnvelope>();
         services.AddScoped<IRestauradorDeConfiguracao, RestauradorDeConfiguracao>();
         services.AddScoped<IObrigatoriedadeLegalRepository, ObrigatoriedadeLegalRepository>();
-        services.AddScoped<IMotivoDecisaoIsencaoRepository, MotivoDecisaoIsencaoRepository>();
+        services.AddScoped<IMotivoDeDecisaoRepository, MotivoDeDecisaoRepository>();
+        services.AddScoped<IMotivoDoProcessoRepository, MotivoDoProcessoRepository>();
         services.AddScoped<IDocumentoAPublicarRepository, DocumentoAPublicarRepository>();
         services.AddScoped<IAtoDoProcessoRepository, AtoDoProcessoRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();

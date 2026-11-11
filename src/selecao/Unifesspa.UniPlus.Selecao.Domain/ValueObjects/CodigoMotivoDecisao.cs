@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
-/// Código do motivo de decisão de isenção (UNI-REQ-0120) — chave natural
-/// estável, citada na decisão que o usa (ex.: <c>RENDA_ACIMA_DO_LIMITE</c>,
-/// <c>NIS_NAO_LOCALIZADO</c>). Formato fechado
+/// Código do motivo de decisão (UNI-REQ-0120, UNI-REQ-0283) — chave natural
+/// estável dentro do tipo do motivo, citada na decisão que o usa (ex.:
+/// <c>RENDA_ACIMA_DO_LIMITE</c>, <c>SEM_RESULTADO_INEP</c>). Formato fechado
 /// <c>^[A-Z][A-Z0-9_]{1,49}$</c>: inicia com letra maiúscula e segue com letras
 /// maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. Persistido como
 /// <c>varchar</c> por conversor de valor.
@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// descrição vigentes no momento do julgamento (UNI-REQ-0120): quem lê a
 /// decisão antiga lê o rótulo daquela época, não o de hoje. A grafia maiúscula
 /// segue a mesma convenção de <see cref="FundamentoIsencaoCodigo"/> e
-/// <see cref="ResultadoPermitidoCodigo"/> — token de domínio em UPPER_SNAKE,
+/// <see cref="SentidoDoMotivoCodigo"/> — token de domínio em UPPER_SNAKE,
 /// sem acento.
 /// </remarks>
 public sealed partial record CodigoMotivoDecisao
@@ -41,8 +41,8 @@ public sealed partial record CodigoMotivoDecisao
         if (string.IsNullOrWhiteSpace(valor))
         {
             return Result<CodigoMotivoDecisao>.Failure(new DomainError(
-                MotivoDecisaoIsencaoErrorCodes.CodigoObrigatorio,
-                "Código do motivo de decisão de isenção é obrigatório."));
+                MotivoDeDecisaoErrorCodes.CodigoObrigatorio,
+                "Código do motivo de decisão é obrigatório."));
         }
 
         string normalizado = valor.Trim();
@@ -50,7 +50,7 @@ public sealed partial record CodigoMotivoDecisao
         if (!FormatoValido().IsMatch(normalizado))
         {
             return Result<CodigoMotivoDecisao>.Failure(new DomainError(
-                MotivoDecisaoIsencaoErrorCodes.CodigoFormatoInvalido,
+                MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido,
                 "Código do motivo deve iniciar com letra maiúscula e conter apenas letras maiúsculas, "
                 + $"dígitos e sublinhado, com {TamanhoMinimo} a {TamanhoMaximo} caracteres "
                 + "(ex.: RENDA_ACIMA_DO_LIMITE)."));

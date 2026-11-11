@@ -19,19 +19,6 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.impedido_por_inscricao_no_processo", "Impedido de atuar no processo seletivo")),
         // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
         new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
-        // Catálogo de motivos de decisão de isenção (UNI-REQ-0120 a UNI-REQ-0122).
-        new(MotivoDecisaoIsencaoErrorCodes.CodigoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.codigo_obrigatorio", "Código do motivo é obrigatório")),
-        new(MotivoDecisaoIsencaoErrorCodes.CodigoFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.codigo_formato_invalido", "Código do motivo fora do formato aceito")),
-        new(MotivoDecisaoIsencaoErrorCodes.CodigoJaExiste, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.codigo_ja_existe", "Já existe motivo com este código")),
-        new(MotivoDecisaoIsencaoErrorCodes.DescricaoObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.descricao_obrigatoria", "Descrição do motivo é obrigatória")),
-        new(MotivoDecisaoIsencaoErrorCodes.DescricaoTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.descricao_tamanho", "Descrição do motivo fora do tamanho permitido")),
-        new(MotivoDecisaoIsencaoErrorCodes.DescricaoCaractereInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.descricao_caractere_invalido", "Descrição do motivo contém caractere não permitido")),
-        new(MotivoDecisaoIsencaoErrorCodes.FundamentoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.fundamento_obrigatorio", "Fundamento de isenção do motivo é obrigatório")),
-        new(MotivoDecisaoIsencaoErrorCodes.ResultadoPermitidoObrigatorio, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.resultado_permitido_obrigatorio", "Motivo deve declarar exatamente um resultado permitido")),
-        new(MotivoDecisaoIsencaoErrorCodes.JaAtivo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_ativo", "O motivo já está ativo")),
-        new(MotivoDecisaoIsencaoErrorCodes.JaInativo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.motivo_decisao_isencao.ja_inativo", "O motivo já está inativo")),
-        new(MotivoDecisaoIsencaoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.motivo_decisao_isencao.nao_encontrado", "Motivo de decisão de isenção não encontrado")),
-        new(MotivoDecisaoIsencaoErrorCodes.SituacaoAlteradaConcorrentemente, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.motivo_decisao_isencao.situacao_alterada_concorrentemente", "A situação do motivo foi alterada por outra operação", RetryableConflict: true)),
         // ObrigatoriedadeLegal forma plena (ADR-0058). Os códigos refletem invariantes da
         // forma plena (vigência, governance, hash UNIQUE, regra duplicada).
         new("ObrigatoriedadeLegal.RegraCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_obrigatorio", "RegraCodigo obrigatório")),

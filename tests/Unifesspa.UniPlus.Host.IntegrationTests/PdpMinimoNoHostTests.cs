@@ -51,7 +51,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     private const string Leandro = "leandro.viana";
     private const string Betina = "betina.neves";
     private const string Diogo = "diogo.souza";
-    private const string ResourceTipo = "motivo-decisao-isencao";
+    private const string ResourceTipo = "motivo-de-decisao";
 
     // Os requisitos são pessoais para que a decisão seja registrada: a permissão operacional decide sem gravar.
     private const string BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III";
