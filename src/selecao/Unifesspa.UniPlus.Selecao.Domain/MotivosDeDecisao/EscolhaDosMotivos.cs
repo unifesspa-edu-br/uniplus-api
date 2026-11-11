@@ -101,6 +101,11 @@ public static class EscolhaDosMotivos
                 "Incluir motivo no processo publicado exige justificativa, de uso interno da administração.");
         }
 
+        if (ValidacaoDoMotivo.TemCaractereNulo(justificativa))
+        {
+            return new DomainError(MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido, "A justificativa não pode conter o caractere nulo.");
+        }
+
         return justificativa.Trim().Length > JustificativaMaxLength
             ? new DomainError(MotivoDeDecisaoErrorCodes.JustificativaTamanho, $"A justificativa deve ter até {JustificativaMaxLength} caracteres.")
             : null;
