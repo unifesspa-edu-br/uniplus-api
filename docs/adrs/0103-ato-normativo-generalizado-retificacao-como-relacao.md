@@ -114,3 +114,4 @@ A cadeia de retificação é **linear**: um ato é retificado no máximo uma vez
 - [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md) — a vigência ordena versões, não documentos
 - [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md) — o módulo que possui o ato publicado
 - Evidência empírica: acervos completos do PS Canaã dos Carajás 2026 (CEPS) e do SiSU 2026 — Edição Única (CRCA)
+- Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): ao lado da correção como relação entre atos, a retificação do edital depois do preliminar abre um novo ciclo do item, com publicação original própria e referência ao preliminar substituído.

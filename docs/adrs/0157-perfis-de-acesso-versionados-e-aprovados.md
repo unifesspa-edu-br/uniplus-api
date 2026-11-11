@@ -170,3 +170,4 @@ Quem cria a versão, quem a aprova pela gestão de acessos e quem a aprova pela 
   - [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md);
   - [ADR-0152](0152-governanca-das-concessoes-de-acesso.md);
   - [ADR-0153](0153-projecao-por-protecao.md).
+- Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): a designação da banca de análise de recursos é ato do processo, distinto da concessão de perfil.
