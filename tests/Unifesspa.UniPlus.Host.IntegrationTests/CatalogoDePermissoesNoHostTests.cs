@@ -80,7 +80,7 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
 
         catalogo.Definicoes.Select(static d => d.Codigo).Should().Contain(
         [
-            "selecao:motivos-decisao-isencao:manter",
+            "selecao:motivos-de-decisao:manter",
             "autorizacao:permissoes:consultar-catalogo",
         ]);
     }
@@ -115,7 +115,7 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
     [Fact(DisplayName = "GET do catálogo sem a permissão responde 403")]
     public async Task Catalogo_SemPermissao_403()
     {
-        using HttpClient client = await ClienteComConcessaoAsync(PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+        using HttpClient client = await ClienteComConcessaoAsync(PermissaoSelecao.MotivosDeDecisaoManter.Codigo);
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Catalogo, UriKind.Relative));
 
@@ -139,7 +139,7 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
 
         resource.GetProperty("permissoes").EnumerateArray()
             .Select(p => p.GetProperty("codigo").GetString())
-            .Should().BeEquivalentTo("selecao:motivos-decisao-isencao:manter");
+            .Should().BeEquivalentTo("selecao:motivos-de-decisao:manter");
         resource.GetProperty("permissoes")[0].GetProperty("nome").GetString().Should().NotBeNullOrWhiteSpace();
         resource.GetProperty("permissoes")[0].GetProperty("sensibilidade").GetString().Should().Be("interno");
     }
@@ -250,7 +250,7 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
     public async Task Efetivas_DevolveSoAsDasConcessoes()
     {
         await ConcessoesDeTeste.ConcederPermissoesAsync(
-            _fixture.Factory.Services, Leandro, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+            _fixture.Factory.Services, Leandro, PermissaoSelecao.MotivosDeDecisaoManter.Codigo);
         using HttpClient client = Cliente(Leandro, papeisDeRealm: CodigoDoCatalogo);
 
         using HttpResponseMessage resposta = await client.GetAsync(new Uri(Efetivas, UriKind.Relative));
@@ -260,8 +260,8 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
 
         JsonElement corpo = await resposta.Content.ReadFromJsonAsync<JsonElement>();
         corpo.GetArrayLength().Should().Be(1);
-        corpo[0].GetProperty("codigo").GetString().Should().Be("selecao:motivos-decisao-isencao:manter");
-        corpo[0].GetProperty("nome").GetString().Should().Be("Manter motivos de decisão de isenção");
+        corpo[0].GetProperty("codigo").GetString().Should().Be("selecao:motivos-de-decisao:manter");
+        corpo[0].GetProperty("nome").GetString().Should().Be("Manter motivos de decisão");
     }
 
     [Fact(DisplayName = "GET das efetivas devolve lista vazia sem concessão, ainda que o token traga o papel mais amplo")]

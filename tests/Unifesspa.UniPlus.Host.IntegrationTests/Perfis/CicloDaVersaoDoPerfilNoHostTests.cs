@@ -58,13 +58,13 @@ public sealed class CicloDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTest
         using HttpResponseMessage cancelamento = await CancelarBrutoAsync(gestor, primeira);
         cancelamento.StatusCode.Should().Be(HttpStatusCode.OK, await cancelamento.Content.ReadAsStringAsync());
 
-        Envio segunda = await CriarVersaoAsync(gestor, primeira.PerfilId, Nome(), "selecao:motivos-decisao-isencao:manter");
+        Envio segunda = await CriarVersaoAsync(gestor, primeira.PerfilId, Nome(), "selecao:motivos-de-decisao:manter");
         await EnviarEVerificarAsync(gestor, segunda);
 
         JsonElement perfil = await LerAsync(gestor, $"{RotaPerfis}/{primeira.PerfilId}");
         perfil.GetProperty("composicaoEmVigor").GetProperty("numero").GetInt32().Should().Be(2);
         perfil.GetProperty("composicaoEmVigor").GetProperty("permissoes").EnumerateArray()
-            .Select(p => p.GetProperty("codigo").GetString()).Should().Equal("selecao:motivos-decisao-isencao:manter");
+            .Select(p => p.GetProperty("codigo").GetString()).Should().Equal("selecao:motivos-de-decisao:manter");
     }
 
     [Fact(DisplayName = "Documento recusado pela verificação libera outro documento para a mesma versão, que então entra em vigor")]

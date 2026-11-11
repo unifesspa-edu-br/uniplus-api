@@ -410,8 +410,8 @@
       ],
       "uniplus-api": [
         {
-          "name": "selecao:motivos-decisao-isencao:manter",
-          "description": "Manter os motivos de decisao de isencao",
+          "name": "selecao:motivos-de-decisao:manter",
+          "description": "Manter os motivos de decisao",
           "composite": false,
           "clientRole": true,
           "attributes": {}
@@ -620,7 +620,7 @@
       {
         "client": "configuracao-web",
         "roles": [
-          "selecao:motivos-decisao-isencao:manter",
+          "selecao:motivos-de-decisao:manter",
           "autorizacao:permissoes:consultar-catalogo"
         ]
       }
@@ -3098,7 +3098,7 @@
           "manage-account"
         ],
         "uniplus-api": [
-          "selecao:motivos-decisao-isencao:manter",
+          "selecao:motivos-de-decisao:manter",
           "autorizacao:permissoes:consultar-catalogo"
         ]
       },

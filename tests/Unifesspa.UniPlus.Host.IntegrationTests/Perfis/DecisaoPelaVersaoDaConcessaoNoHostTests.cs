@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoHostTestBase, IAsyncLifetime
 {
     private const string Catalogo = "autorizacao:permissoes:consultar-catalogo";
-    private const string Motivos = "selecao:motivos-decisao-isencao:manter";
+    private const string Motivos = "selecao:motivos-de-decisao:manter";
     private const string Campi = "configuracao:campi:manter";
 
     public DecisaoPelaVersaoDaConcessaoNoHostTests(MonolitoDaInstalacaoFixture fixture)

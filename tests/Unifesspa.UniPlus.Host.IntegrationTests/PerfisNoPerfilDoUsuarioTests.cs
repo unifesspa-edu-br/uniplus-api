@@ -69,7 +69,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
     public async Task ListaConcessaoInstitucional()
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(
-            _fixture.Factory.Services, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+            _fixture.Factory.Services, PermissaoSelecao.MotivosDeDecisaoManter.Codigo);
         Guid institucional = await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
 
         using JsonDocument corpo = await ConsultarAsync(Leandro);
@@ -104,7 +104,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
     public async Task ConcessaoRevogadaEDeOutraPessoa_NaoAparecem()
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(
-            _fixture.Factory.Services, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+            _fixture.Factory.Services, PermissaoSelecao.MotivosDeDecisaoManter.Codigo);
         Guid revogada = await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
         await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Fernanda, perfil);
         await RevogarAsync(revogada);
@@ -118,7 +118,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
     public async Task PerfilDesativadoComConcessaoVigente_ContinuaListado()
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(
-            _fixture.Factory.Services, PermissaoSelecao.MotivosDecisaoIsencaoManter.Codigo);
+            _fixture.Factory.Services, PermissaoSelecao.MotivosDeDecisaoManter.Codigo);
         await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
         await DesativarAsync(perfil);
 

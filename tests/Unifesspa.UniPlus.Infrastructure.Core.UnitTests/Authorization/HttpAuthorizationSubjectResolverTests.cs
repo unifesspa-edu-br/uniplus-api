@@ -27,7 +27,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
 {
     private const string ClientDaApi = "uniplus-api";
     private const string Emissor = "https://idp.exemplo/realms/unifesspa";
-    private const string Permissao = "selecao:motivos-decisao-isencao:manter";
+    private const string Permissao = "selecao:motivos-de-decisao:manter";
 
     private static readonly Guid Unidade = Guid.CreateVersion7();
 

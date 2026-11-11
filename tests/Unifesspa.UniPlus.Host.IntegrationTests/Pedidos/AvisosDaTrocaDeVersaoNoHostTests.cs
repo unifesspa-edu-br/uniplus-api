@@ -29,7 +29,7 @@ using Wolverine.Tracking;
 public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     private const string Catalogo = "autorizacao:permissoes:consultar-catalogo";
-    private const string Motivos = "selecao:motivos-decisao-isencao:manter";
+    private const string Motivos = "selecao:motivos-de-decisao:manter";
     private const string Devolvido = "Pedido de acesso devolvido";
     private const string AguardaOGestor = "análise do gestor de acessos";
 
