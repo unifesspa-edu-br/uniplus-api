@@ -202,6 +202,7 @@ public sealed class ColetabilidadeDeFatosGateTests
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
+            FasesIniciadasDeTeste.Nenhuma(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

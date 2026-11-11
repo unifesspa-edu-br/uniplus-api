@@ -145,6 +145,7 @@ public sealed class FatoDeElegibilidadeGateTests
             CalendarioVigenteReaderDeTeste.SemVigente(),
             ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
             CodecsDeTeste.QueReidrataSemTiposDeAto(),
+            FasesIniciadasDeTeste.Nenhuma(),
             new RelogioFixo(Agora),
             CancellationToken.None);
 

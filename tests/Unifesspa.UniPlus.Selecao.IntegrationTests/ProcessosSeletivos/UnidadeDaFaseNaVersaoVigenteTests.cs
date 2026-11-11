@@ -68,29 +68,60 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         semProcesso.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "O ato do tipo que a fase declara faz a fase contar como iniciada antes da janela")]
-    public async Task Iniciadas_ContaPeloAtoDoTipoDaFase()
+    [Fact(DisplayName = "O ato do item que a fase declara faz a fase contar como iniciada antes da janela")]
+    public async Task Iniciadas_ContaPeloAtoDoItemDaFase()
     {
         (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS ato da fase");
-        DateTimeOffset antesDaJanela = fase.Inicio!.Value.AddDays(-30);
-        await using (SelecaoDbContext semeadura = _fixture.CreateDbContext())
-        {
-            DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-                processoId, FinalidadeDoDocumento.DocumentoDeAto, "resultado.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-            documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
-            semeadura.DocumentosAPublicar.Add(documento);
-            semeadura.AtosDoProcesso.Add(AtoDoProcesso.Registrar(
-                new NovoAtoDoProcesso(
-                    Guid.CreateVersion7(), processoId, fase.Produtos.Single().AtoCodigo, "Resultado", Numero: null,
-                    new DateOnly(2025, 12, 1), "Diretoria", "ceps", IdentificadoresDeTeste.NovoValor(), documento.Id, []),
-                TimeProvider.System).Value!);
-            await semeadura.SaveChangesAsync();
-        }
+        await SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaFase(fase, fase.Produtos.Single()));
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-        FasesIniciadas iniciadas = await new FasesIniciadasDoProcesso(context).ObterAsync(processoId, antesDaJanela);
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O ato de uma etapa faz a fase que a contém contar como iniciada")]
+    public async Task Iniciadas_ContaPeloAtoDaEtapaDaFase()
+    {
+        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS ato da etapa");
+        await SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "O ato de um item de outra fase com o mesmo tipo não inicia a fase")]
+    public async Task Iniciadas_AtoDeOutraFaseNaoIniciaAFase()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS ato de outra fase");
+        (_, FaseCronograma faseDeOutroProcesso, _) = await PublicadoAsync("PS outra fase");
+        IdentidadeDoItemDoEdital deOutraFase = IdentidadeDoItemDoEdital.DaFase(faseDeOutroProcesso, fase.Produtos.Single());
+        await SemearAtoAsync(processoId, deOutraFase);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse();
+    }
+
+    private async Task<FasesIniciadas> IniciadasAsync(Guid processoId, DateTimeOffset agora)
+    {
+        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        return await new FasesIniciadasDoProcesso(context).ObterAsync(processoId, agora);
+    }
+
+    private async Task SemearAtoAsync(Guid processoId, IdentidadeDoItemDoEdital item)
+    {
+        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
+            processoId, FinalidadeDoDocumento.DocumentoDeAto, "resultado.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
+        semeadura.DocumentosAPublicar.Add(documento);
+        semeadura.AtosDoProcesso.Add(AtoDoProcesso.Registrar(
+            new NovoAtoDoProcesso(
+                Guid.CreateVersion7(), processoId, item.AtoCodigo, "Resultado", Numero: null,
+                new DateOnly(2025, 12, 1), "Diretoria", "ceps", IdentificadoresDeTeste.NovoValor(), documento.Id, [], item),
+            TimeProvider.System).Value!);
+        await semeadura.SaveChangesAsync();
     }
 
     private async Task<(Guid ProcessoId, FaseCronograma Fase, EtapaProcesso Etapa)> PublicadoAsync(string nome)

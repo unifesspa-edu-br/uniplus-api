@@ -505,6 +505,17 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     public Result<VersaoConfiguracao> Retificar(PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo) =>
         AssumirVersaoEmitida(TransicoesDaVersao.Retificar(EstadoDaConfiguracao.De(this), pedido, versaoAtual, motivo));
 
+    /// <summary>
+    /// A recusa de fechar a sessão com a unidade trocada numa fase que já começou, conferida contra a versão publicada
+    /// no instante do fechamento: a fase pode ter começado depois da edição do cronograma.
+    /// </summary>
+    public DomainError? RecusaDoFechamentoPorUnidadeDeFaseIniciada(FasesIniciadas iniciadas)
+    {
+        ArgumentNullException.ThrowIfNull(iniciadas);
+
+        return RegrasDoCronograma.RecusaDaUnidadeDeFaseIniciada(CronogramaFases, iniciadas);
+    }
+
     /// <summary>Fecha a sessão editorial: congela a versão seguinte com a configuração editada e encerra a sessão (ADR-0110).</summary>
     public Result<VersaoConfiguracao> FecharRetificacao(
         PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, PrecondicaoIfMatch precondicao) =>
