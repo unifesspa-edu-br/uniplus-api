@@ -27,4 +27,7 @@ public static class ResourceTiposSelecao
 
     /// <summary>Tipo <c>documento-da-inscricao</c>.</summary>
     public const string DocumentoDaInscricao = "documento-da-inscricao";
+
+    /// <summary>Tipo <c>fase-do-processo</c>.</summary>
+    public const string FaseDoProcesso = "fase-do-processo";
 }

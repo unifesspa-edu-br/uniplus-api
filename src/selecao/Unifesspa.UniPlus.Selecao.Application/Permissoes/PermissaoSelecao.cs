@@ -232,4 +232,13 @@ public enum PermissaoSelecao
         BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 11, II, a",
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     InscricoesEmitirComprovante = 22,
+
+    /// <summary>Publicar os documentos de uma fase do processo seletivo.</summary>
+    [Permissao(
+        "selecao:documentos-da-fase:publicar",
+        "Publicar documentos da fase",
+        "Publica os documentos da fase do processo seletivo, na unidade responsável pela fase vigente, mesmo quando ela não é a unidade proprietária do processo.",
+        ClassificacaoDeProtecao.Interno,
+        EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
+    DocumentosDaFasePublicar = 23,
 }
