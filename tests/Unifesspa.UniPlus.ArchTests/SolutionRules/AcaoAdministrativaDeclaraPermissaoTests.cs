@@ -70,6 +70,10 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Cancelar))] = typeof(CancelarVersaoDoPerfilCommand),
         [Acao(typeof(AprovacaoDeVersoesController), nameof(AprovacaoDeVersoesController.Fila))] = typeof(ListarFilaDeVersoesQuery),
         [Acao(typeof(VersoesDoPerfilController), nameof(VersoesDoPerfilController.Ler))] = typeof(LerDocumentoDaVersaoCommand),
+        // A leitura do perfil e da listagem é de quem mantém perfis ou aprova por qualquer das duas etapas; as ações de
+        // manutenção seguem no atributo.
+        [Acao(typeof(PerfisController), nameof(PerfisController.Listar))] = typeof(ListarPerfisQuery),
+        [Acao(typeof(PerfisController), nameof(PerfisController.ObterPorId))] = typeof(ObterPerfilQuery),
         // A janela de migração: o lote, a retida e o encerramento são da gestão de acessos, a etapa da proteção de dados é
         // da proteção de dados, e a leitura é de quem mantém perfis ou aprova por qualquer das duas etapas.
         [Acao(typeof(JanelaDeMigracaoController), nameof(JanelaDeMigracaoController.Obter))] = typeof(ObterJanelaDoPerfilQuery),

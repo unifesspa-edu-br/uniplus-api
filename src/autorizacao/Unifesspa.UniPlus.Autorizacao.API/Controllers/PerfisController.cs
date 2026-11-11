@@ -24,10 +24,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Perfis de acesso sob <c>/api/autorizacao/perfis</c>.
 /// </summary>
 /// <remarks>
-/// Todas as operações, inclusive a leitura, exigem <c>autorizacao:perfis:manter</c> pelo ponto
-/// de decisão único. O <c>[Authorize]</c> sem papel na classe separa os desfechos: quem não se
-/// autenticou recebe <c>401</c> da própria pipeline; quem se autenticou sem a concessão recebe
-/// <c>403</c> do <c>[ExigePermissao]</c> de cada ação.
+/// As operações de manutenção exigem <c>autorizacao:perfis:manter</c> pelo ponto de decisão único; a leitura
+/// aceita também <c>autorizacao:perfis:aprovar-protecao-de-dados</c> e <c>autorizacao:perfis:aprovar-funcional</c>, e o
+/// handler a decide antes de ler qualquer dado. O <c>[Authorize]</c> sem papel na classe separa os desfechos: quem não se
+/// autenticou recebe <c>401</c> da própria pipeline; quem se autenticou sem a concessão recebe <c>403</c>.
 /// </remarks>
 [ApiController]
 [Authorize]
@@ -52,7 +52,6 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Lista os perfis, paginados por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
     [HttpGet("perfis")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<PerfilListadoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -67,14 +66,21 @@ public sealed class PerfisController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        ListarPerfisResult resultado = await _queryBus.Send(
+        Result<ListarPerfisResult> resultado = await _queryBus.Send(
             new ListarPerfisQuery(page.AfterId, page.Limit, page.Direction),
             cancellationToken).ConfigureAwait(false);
 
+        if (resultado.IsFailure)
+        {
+            return resultado.ToActionResult(_mapper);
+        }
+
+        ListarPerfisResult pagina = resultado.Value!;
+
         return await this.OkPaginatedAsync(
-            resultado.Items,
-            resultado.AnteriorAfterId,
-            resultado.ProximoAfterId,
+            pagina.Items,
+            pagina.AnteriorAfterId,
+            pagina.ProximoAfterId,
             page,
             ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -82,7 +88,6 @@ public sealed class PerfisController : ControllerBase
 
     /// <summary>Obtém um perfil pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("perfis/{id:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.PerfisManter, ResourceTipo = ResourceTiposAutorizacao.Perfil)]
     [VendorMediaType(Resource = "perfil", Versions = [1])]
     [ProducesResponseType(typeof(PerfilDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

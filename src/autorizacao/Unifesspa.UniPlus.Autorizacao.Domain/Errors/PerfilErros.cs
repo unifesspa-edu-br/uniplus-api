@@ -85,6 +85,10 @@ public static class PerfilErros
         PerfilErrorCodes.SemPermissaoNaEtapa,
         "Acesso negado: a operação exige a permissão da etapa.");
 
+    public static DomainError LeituraNegada() => new(
+        PerfilErrorCodes.LeituraNegada,
+        "Acesso negado: ler perfis exige a permissão de manter perfis ou de aprovar a versão.");
+
     public static DomainError PermissaoInexistente() => new(
         PerfilErrorCodes.PermissaoInexistente,
         "A versão reúne permissão que não consta mais do catálogo.");

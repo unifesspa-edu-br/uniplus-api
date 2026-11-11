@@ -57,6 +57,7 @@ internal static class ErrosDoPerfil
         new(PerfilErrorCodes.DecisorEAutor, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.decisor_e_autor", "Quem criou a versão não a decide")),
         new(PerfilErrorCodes.MesmoDecisorNasDuasEtapas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.perfil.mesmo_decisor_nas_duas_etapas", "A mesma pessoa não decide as duas etapas")),
         new(PerfilErrorCodes.SemPermissaoNaEtapa, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.autorizacao.perfil.sem_permissao_na_etapa", "Acesso negado: a operação exige a permissão da etapa")),
+        new(PerfilErrorCodes.LeituraNegada, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.forbidden", "Acesso negado")),
     ];
 
     private static KeyValuePair<string, DomainErrorMapping>[] Contencao() =>
