@@ -65,7 +65,7 @@ A [ADR-0157](0157-perfis-de-acesso-versionados-e-aprovados.md) trata do acesso p
 
 - A publicação do edital ganha mais conferências: opção de quem recorre por janela, banca prevista e regra de deliberação completa.
 - O definitivo com recursos depende de um passo manual, fora do sistema, até haver integração com a assinatura gov.br.
-- A ciência individual vira capacidade sem uso; o código que a aceita na configuração do recurso precisa ser retirado (uniplus-api#2307).
+- A ciência individual vira capacidade sem uso; o código que a aceita na configuração do recurso precisa ser retirado.
 - A publicação confirmada tarde obriga a republicar o ato, com novo prazo inteiro.
 
 ### Neutras
@@ -106,5 +106,5 @@ A [ADR-0157](0157-perfis-de-acesso-versionados-e-aprovados.md) trata do acesso p
 - Emenda a [ADR-0157](0157-perfis-de-acesso-versionados-e-aprovados.md): a designação da banca é ato do processo, distinto da concessão de perfil.
 - Relacionadas: [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md), [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), [ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md), [ADR-0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md).
 - Requisitos: UNI-REQ-0080, UNI-REQ-0115, UNI-REQ-0157, UNI-REQ-0160, UNI-REQ-0269 a UNI-REQ-0291.
-- Pendências: gatilhos do novo ciclo para além da homologação das inscrições e ajuste do UNI-REQ-0157 (uniplus-developers#445); confirmação pelo PO por escrito do UNI-REQ-0282 (novo ciclo do item e recursos do ciclo anterior), do UNI-REQ-0283 (vínculo do motivo com o lado favorável ou desfavorável, usado para saber quem pode recorrer) e do UNI-REQ-0281 (arquivo de retorno do INEP depois do preliminar publicado, que esta ADR não decide, mas que convive com o novo ciclo); retirada da ciência individual da configuração do recurso (uniplus-api#2307).
+- Pendências: gatilhos do novo ciclo para além da homologação das inscrições e ajuste do UNI-REQ-0157 (uniplus-developers#445); confirmação pelo PO por escrito do UNI-REQ-0282 (novo ciclo do item e recursos do ciclo anterior), do UNI-REQ-0283 (vínculo do motivo com o lado favorável ou desfavorável, usado para saber quem pode recorrer) e do UNI-REQ-0281 (arquivo de retorno do INEP depois do preliminar publicado, que esta ADR não decide, mas que convive com o novo ciclo); forma da âncora do prazo, se data no fuso congelado ou instante absoluto, que segue em aberto na revisão da ADR-0145 (uniplus-api#2307, ligada à uniplus-developers#440). Dessa revisão, esta ADR já decide a retirada da âncora por ciência individual e a regra da etapa com nota do ENEM, cujo recurso é o da fase, contra a publicação dela.
 - Issue: uniplus-api#2306.
