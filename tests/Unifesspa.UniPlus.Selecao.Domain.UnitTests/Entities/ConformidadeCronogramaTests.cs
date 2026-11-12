@@ -150,9 +150,17 @@ public sealed class ConformidadeCronogramaTests
     [Fact(DisplayName = "Etapa pontuada sem fase declarada reprova a publicação, citando a etapa")]
     public void Etapa_SemFaseDeclarada_Reprova()
     {
+        Result<VersaoConfiguracao> resultado = Publicar(ProcessoComEtapaPontuadaSemFaseDeclarada());
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseDeclarada");
+        resultado.Error!.Message.Should().Contain("'Prova'");
+    }
+
+    private static ProcessoSeletivo ProcessoComEtapaPontuadaSemFaseDeclarada()
+    {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
-
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
@@ -161,14 +169,9 @@ public sealed class ConformidadeCronogramaTests
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
             Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'd'), 2,
             Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente);
-
         DeclararNaoCobra(processo);
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseDeclarada");
-        resultado.Error!.Message.Should().Contain("'Prova'");
+        return processo;
     }
 
     // ── CA-15 — DefinirEtapas([]) aceito; divisor > 0 só sob fórmula local ──

@@ -160,16 +160,23 @@ internal static class FormularioDeTeste
             processo.RemoverFormulario(FinalidadeFormulario.Inscricao, precondicao);
         }
 
+        Result trocado = DefinirCronogramaRepondoEtapas(processo, fases, precondicao);
+        if (tinhaFormulario)
+        {
+            GarantirFormulario(processo, FinalidadeFormulario.Inscricao, precondicao);
+        }
+
+        return trocado;
+    }
+
+    private static Result DefinirCronogramaRepondoEtapas(
+        ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases, PrecondicaoIfMatch precondicao)
+    {
         List<EtapaProcesso> etapasAntes = [.. processo.Etapas];
         Result trocado = processo.DefinirCronogramaFases(fases, [], precondicao);
         if (trocado.IsSuccess)
         {
             ReporEtapasDeFaseQueContinua(processo, etapasAntes, fases, precondicao);
-        }
-
-        if (tinhaFormulario)
-        {
-            GarantirFormulario(processo, FinalidadeFormulario.Inscricao, precondicao);
         }
 
         return trocado;

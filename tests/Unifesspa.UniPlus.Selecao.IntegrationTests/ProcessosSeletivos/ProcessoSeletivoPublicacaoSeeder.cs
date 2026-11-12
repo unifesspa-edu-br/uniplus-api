@@ -44,38 +44,65 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// </summary>
     public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null)
     {
+        ProcessoSeletivo processo = ProcessoVazio(nome);
+        DefinirOfertaSemAtendimentoEspecializado(processo);
+        processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase);
+
+        DefinirTaxaEFormularioDeInscricao(processo);
+        return processo;
+    }
+
+    // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+    private static void DefinirTaxaEFormularioDeInscricao(ProcessoSeletivo processo)
+    {
+        DefinirTaxaInscricaoNaoCobra(processo);
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+    }
+
+    private static ProcessoSeletivo ProcessoVazio(string nome)
+    {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        return processo;
+    }
 
-
+    private static void DefinirOfertaSemAtendimentoEspecializado(ProcessoSeletivo processo) =>
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+    private static ModalidadeSelecionada ModalidadeAmplaDeTeste() => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(),
+        codigo: "AC",
+        descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+        composicaoOrigemCodigo: null,
+        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null,
+        remanejamentoPar: null,
+        remanejamentoFallback: null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
+        acaoQuandoIndeferido: null,
+        baseLegal: "Res. Unifesspa 532/2021",
+        quantidadeDeclarada: 40).Value!;
 
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(
+        ofertaCursoOrigemId: Guid.CreateVersion7(),
+        voBase: 40,
+        pr: 1m,
+        regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+        regraAjuste: null,
+        referenciaDemografica: null,
+        modalidades: [ModalidadeAmplaDeTeste()], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
+    private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
+    {
+        DefinirClassificacaoImportada(processo);
+        DefinirFaseDeResultadoFinalComProvaObjetiva(processo, inicioDaFase);
+    }
+
+    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
+    {
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             regraArredondamento: null,
@@ -83,37 +110,35 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        DefinirTaxaInscricaoNaoCobra(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
     }
+
+    private static void DefinirFaseDeResultadoFinalComProvaObjetiva(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
+    {
+        processo.DefinirCronogramaFases([FaseDeResultadoFinal(inicioDaFase)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([ProvaObjetivaDoResultadoFinal()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
+
+    private static FaseCronograma FaseDeResultadoFinal(DateTimeOffset? inicioDaFase) => FaseCronograma.Criar(
+        ordem: 1,
+        faseCanonicaOrigemId: Guid.CreateVersion7(),
+        codigo: "RESULTADO_FINAL",
+        origemData: OrigemDataFase.NoEdital,
+        agrupaEtapas: true,
+        permiteComplementacao: false,
+        coletaInscricao: true, coletaSolicitacaoIsencao: false,
+        inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+        faseConcluinteCodigo: null,
+        emiteParecerIndividual: false,
+        bancasRequeridas: [],
+        regraRecurso: null,
+        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+
+    private static EtapaProcesso ProvaObjetivaDoResultadoFinal() => EtapaProcesso.Criar(
+        "Prova Objetiva", CaraterEtapa.Classificatoria,
+        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+        peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!;
 
     /// <summary>
     /// Não cobra taxa — declaração padrão dos seeders desta classe, que representam processos
@@ -147,55 +172,17 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// </param>
     public static ProcessoSeletivo NovoProcessoComOfertaFederalECascata(string nome, bool comCascata = true)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
+        ProcessoSeletivo processo = ProcessoVazio(nome);
+        DefinirOfertaSemAtendimentoEspecializado(processo);
         processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo);
 
         if (comCascata)
         {
             processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        DefinirTaxaInscricaoNaoCobra(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+        DefinirTaxaEFormularioDeInscricao(processo);
         RegrasDeAplicabilidadeDeTeste.DerivarOQueAOpcaoPelasCotasCita(processo);
 
         return processo;
@@ -261,39 +248,54 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         ArgumentNullException.ThrowIfNull(fixture);
 
         ProcessoSeletivo processo = NovoProcessoConforme(nome, inicioDaFase);
+        DocumentoAPublicar documento = DocumentoDoEditalConfirmado(processo);
+        VersaoConfiguracao versao = PublicarProcesso(processo, documento);
 
+        await PersistirAsync(fixture, processo, documento, versao);
+
+        return new Resultado(processo.Id, versao.AtoCriadorId, versao.Id);
+    }
+
+    private static DocumentoAPublicar DocumentoDoEditalConfirmado(ProcessoSeletivo processo)
+    {
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, HashDocumento, TimeProvider.System).IsSuccess.Should().BeTrue();
 
-        DadosEdital dados = DadosEdital.Criar(
-            numero: "001/2026",
-            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            documentoEditalId: documento.Id).Value!;
+        return documento;
+    }
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+    private static VersaoConfiguracao PublicarProcesso(ProcessoSeletivo processo, DocumentoAPublicar documento)
+    {
+        DadosEdital dados = DadosDoEdital(documento);
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
+            processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
+            FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dados,
-            canonico.Bytes,
-            canonico.SchemaVersion,
-            canonico.AlgoritmoHash,
-            documento.HashSha256!,
+            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!,
             atorUsuarioSub: "integration-test-user",
             TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
+        return publicarResult.Value!;
+    }
+
+    private static DadosEdital DadosDoEdital(DocumentoAPublicar documento) => DadosEdital.Criar(
+        numero: "001/2026",
+        periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+        periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+        documentoEditalId: documento.Id).Value!;
+
+    private static async Task PersistirAsync(
+        ProcessoSeletivoDbFixture fixture, ProcessoSeletivo processo, DocumentoAPublicar documento, VersaoConfiguracao versao)
+    {
         await using SelecaoDbContext context = fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await context.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
-        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
-
-        return new Resultado(
-            processo.Id,
-            publicarResult.Value!.AtoCriadorId,
-            publicarResult.Value!.Id);
     }
 }

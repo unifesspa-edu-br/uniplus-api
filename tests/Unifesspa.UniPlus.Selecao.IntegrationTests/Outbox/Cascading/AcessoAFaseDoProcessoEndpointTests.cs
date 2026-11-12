@@ -160,34 +160,33 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
     // O processo é publicado de verdade, com a fase única sob a unidade da fase, que não é a dona do processo.
     private async Task<Publicado> PublicarAsync(string nome)
     {
-        CascadingApiFactory api = _fixture.Factory;
-        await TiposDeAtoSeeder.SemearAsync(api.Services);
-
-        Guid processoId;
-        Guid documentoEdital;
-        Guid faseId;
-        Guid unidadeDona;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
-                .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", unidadeResponsavel: UnidadesDeTeste.Cga);
-            processoId = processo.Id;
-            documentoEdital = documento.Id;
-            faseId = processo.CronogramaFases.Single().Id;
-            unidadeDona = processo.UnidadeAdministradoraOrigemId;
-        }
+        await TiposDeAtoSeeder.SemearAsync(_fixture.Factory.Services);
+        (Guid processoId, Guid documentoEdital, Guid faseId, Guid unidadeDona) = await SemearRascunhoAsync(nome);
 
         using (HttpResponseMessage publicacao = await SendAdminAsync($"/api/selecao/processos-seletivos/{processoId}/publicacao", CorpoDoAto(documentoEdital)))
         {
             publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
         }
 
-        await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        Guid versaoId = await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().VersoesConfiguracao.AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).Select(v => v.Id).FirstAsync();
+        return new Publicado(processoId, unidadeDona, faseId, await VersaoVigenteAsync(processoId));
+    }
 
-        return new Publicado(processoId, unidadeDona, faseId, versaoId);
+    private async Task<(Guid ProcessoId, Guid DocumentoEdital, Guid FaseId, Guid UnidadeDona)> SemearRascunhoAsync(string nome)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
+            .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", unidadeResponsavel: UnidadesDeTeste.Cga);
+
+        return (processo.Id, documento.Id, processo.CronogramaFases.Single().Id, processo.UnidadeAdministradoraOrigemId);
+    }
+
+    private async Task<Guid> VersaoVigenteAsync(Guid processoId)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+
+        return await scope.ServiceProvider.GetRequiredService<SelecaoDbContext>().VersoesConfiguracao.AsNoTracking()
+            .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).Select(v => v.Id).FirstAsync();
     }
 
     private async Task InscreverAsync(Publicado publicado, string sub)

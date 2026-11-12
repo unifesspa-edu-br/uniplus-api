@@ -479,9 +479,11 @@ public sealed class ConferenciaDosEixosNosHandlersTests
             new RelogioFixo(),
             CancellationToken.None);
 
+        private static FecharRetificacaoCommand ComandoDeFechamentoDaRetificacao(Guid processoId) =>
+            new(processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga);
+
         public Task<(Result, IEnumerable<object>)> FecharAsync() => FecharRetificacaoCommandHandler.Handle(
-            new FecharRetificacaoCommand(
-                Processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga),
+            ComandoDeFechamentoDaRetificacao(Processo.Id),
             _repositorio,
             RepositorioDeDocumento(Processo.Id),
             Substitute.For<IRascunhoDePublicacaoRepository>(),
