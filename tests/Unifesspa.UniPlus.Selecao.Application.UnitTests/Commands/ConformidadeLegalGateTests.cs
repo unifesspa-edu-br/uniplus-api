@@ -413,9 +413,7 @@ public sealed class ConformidadeLegalGateTests
         repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
 
         (Result resposta, IEnumerable<object> eventos) = await FecharRetificacaoCommandHandler.Handle(
-            new FecharRetificacaoCommand(
-                processo.Id, "001/2026-R1", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga),
+            ComandoDeFechamentoDaRetificacao(processo.Id),
             repositorio,
             RepositorioDeDocumento(processo.Id),
             Substitute.For<IRascunhoDePublicacaoRepository>(),
@@ -506,6 +504,9 @@ public sealed class ConformidadeLegalGateTests
         contexto.UserId.Returns("user-sub-1");
         return contexto;
     }
+
+    private static FecharRetificacaoCommand ComandoDeFechamentoDaRetificacao(Guid processoId) =>
+        new(processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga);
 
     internal static DadosDoAto NovoAto() => new(
         Orgao: "CEPS",

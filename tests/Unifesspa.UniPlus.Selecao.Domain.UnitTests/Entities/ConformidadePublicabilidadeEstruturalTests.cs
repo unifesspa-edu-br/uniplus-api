@@ -166,11 +166,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 emiteParecerIndividual: false,
                 bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-
         processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
@@ -1029,11 +1027,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 emiteParecerIndividual: false,
                 bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }

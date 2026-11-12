@@ -238,11 +238,16 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         result.Itens.Select(static i => i.Codigo).Should().OnlyHaveUniqueItems();
     }
 
+    private static EtapaProcesso EtapaDaProvaObjetivaNoResultadoFinal() =>
+        EtapaProcesso.Criar(
+            "Prova Objetiva", CaraterEtapa.Classificatoria,
+            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
+            peso: 3m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!;
+
     [Fact(DisplayName = "Handle com todos os itens obrigatórios configurados devolve checklist sem pendências, e a publicação aceita (bicondicional, issue #1092)")]
     public async Task Handle_TodosOsItens_SemPendencia()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
         processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
@@ -279,7 +284,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             regraRecurso: null,
             unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDaProvaObjetivaNoResultadoFinal()], PrecondicaoIfMatch.Ausente);
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(

@@ -42,26 +42,36 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-
-        IPrecedenciaFaseReader precedenciaFaseReader = Substitute.For<IPrecedenciaFaseReader>();
-        precedenciaFaseReader.ListarVivasAsync(Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<PrecedenciaFaseView>)[]);
-
         return new Mocks(
-            repository,
+            RepositorioQueDevolve(processo, processoId),
             Substitute.For<IFaseCanonicaReader>(),
             Substitute.For<IResolvedorDaUnidadeResponsavel>(),
             Substitute.For<ITipoBancaReader>(),
             Substitute.For<ICategoriaDocumentoReader>(),
-            precedenciaFaseReader,
+            PrecedenciasSemArestas(),
             Substitute.For<IRegraCatalogoReader>(),
             Substitute.For<ITipoAtoPublicadoReader>(),
             Substitute.For<IRegistroCodecsEnvelope>(),
             Substitute.For<IFasesIniciadasDoProcesso>(),
             Substitute.For<ISelecaoUnitOfWork>(),
             TimeProvider.System);
+    }
+
+    private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo? processo, Guid processoId)
+    {
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
+
+        return repository;
+    }
+
+    private static IPrecedenciaFaseReader PrecedenciasSemArestas()
+    {
+        IPrecedenciaFaseReader precedenciaFaseReader = Substitute.For<IPrecedenciaFaseReader>();
+        precedenciaFaseReader.ListarVivasAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<PrecedenciaFaseView>)[]);
+
+        return precedenciaFaseReader;
     }
 
     private static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, DefinirCronogramaFasesCommand command) =>

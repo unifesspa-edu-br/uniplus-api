@@ -331,11 +331,9 @@ internal static class CorpusEnvelope
             ], permutar), faseCodigo: "RESULTADO_FINAL");
         etapaDefesa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
 
-
         processo.DefinirCronogramaFases(
             Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-
         processo.DefinirEtapas(Ordem([
             etapaObjetiva,
             etapaRedacao,
@@ -412,7 +410,6 @@ internal static class CorpusEnvelope
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-
 
 
         // Coleta de fatos + derivação (Story #928, §7.4): COR_RACA vem da seção do conjunto básico,

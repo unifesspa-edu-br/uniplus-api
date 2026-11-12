@@ -595,7 +595,6 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
 
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-
         processo.DefinirEtapas([
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -639,7 +638,6 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-
 
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).

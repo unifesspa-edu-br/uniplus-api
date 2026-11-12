@@ -41,10 +41,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
 
-        Result cronogramaResult = processo.DefinirCronogramaFases(
-            [faseBuilder(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
+        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: false)]);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -69,9 +66,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             faseConcluinteCodigo: null,
             emiteParecerIndividual: false,
             bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: null).Value!;
-        Result cronogramaResult = processo.DefinirCronogramaFases([faseSemUnidade], [], PrecondicaoIfMatch.Ausente);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
+        DefinirCronogramaEEtapaDaFase(processo, [faseSemUnidade]);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -108,10 +103,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, distribuicao: [distribuicaoResult.Value!]);
 
-        Result cronogramaResult = processo.DefinirCronogramaFases(
-            [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
+        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
     }
@@ -126,10 +118,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         SelecaoDbContext db, string nome)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
-        Result cronogramaResult = processo.DefinirCronogramaFases(
-            [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
+        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
@@ -163,10 +152,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         SelecaoDbContext db, string nome, bool documentoConfirmado = true)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, definirOfertaAtendimento: false);
-        Result cronogramaResult = processo.DefinirCronogramaFases(
-            [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
+        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         return documentoConfirmado
             ? await PersistirComDocumentoConfirmadoAsync(db, processo)
@@ -237,10 +223,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga);
         opcoesResult.IsSuccess.Should().BeTrue(opcoesResult.Error?.Message);
 
-        Result cronogramaResult = processo.DefinirCronogramaFases(
-            [faseBuilder(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente);
-        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
-        DefinirEtapaDaFase(processo);
+        DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         Result itensResult = processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)], PrecondicaoIfMatch.Curinga);
         itensResult.IsSuccess.Should().BeTrue(itensResult.Error?.Message);
@@ -261,6 +244,13 @@ internal static class ProcessoSeletivoPendenciasSeeder
             ofertaCursoOrigemId: Guid.CreateVersion7(), voBase: 40, pr: 1m,
             regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
             regraAjuste: null, referenciaDemografica: null, modalidades: [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+    }
+
+    private static void DefinirCronogramaEEtapaDaFase(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
+    {
+        Result cronogramaResult = processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente);
+        cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
+        DefinirEtapaDaFase(processo);
     }
 
     private static void DefinirEtapaDaFase(ProcessoSeletivo processo)
