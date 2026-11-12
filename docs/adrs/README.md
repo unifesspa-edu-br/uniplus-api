@@ -133,7 +133,7 @@ npx markdownlint-cli2 'docs/adrs/**/*.md'
 | [0102](0102-invariantes-coerencia-processo-guard-rails-422.md) | Invariantes de coerência de processo como guard rails no banco, mapeadas a HTTP 422 | accepted | 2026-07-07 |
 | [0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md) | Retificação é uma relação entre atos publicados, não um tipo de ato — emendada pela ADR-0158 | accepted | 2026-07-09 |
 | [0104](0104-versao-configuracao-como-agregado-proprio.md) | A vigência da configuração ordena versões, não documentos | accepted | 2026-07-09 |
-| [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios — emendada pela ADR-0158 | accepted | 2026-07-09 |
+| [0105](0105-modulo-publicacoes-registro-central-dos-atos.md) | O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios — emendada pela ADR-0158; emendada em 2026-11-12: o ato vale na divulgação e o registro no `Publicacoes` é auditoria posterior | accepted | 2026-07-09 |
 | [0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md) | Publicar um Edital registra o ato em Publicações de forma síncrona, antes de concluir | superseded by ADR-0108 | 2026-07-10 |
 | [0107](0107-vaga-de-linhagem-unica-por-objeto.md) | A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato | accepted | 2026-07-11 |
 | [0108](0108-registro-do-ato-por-mensagem-duravel.md) | O domínio registra o ato por mensagem durável, não por chamada síncrona (supersede a 0106 no mecanismo) — emendada em 2026-10-17: o produto publicado também tem registro na Seleção | accepted | 2026-07-12 |
