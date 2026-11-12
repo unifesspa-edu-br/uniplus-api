@@ -44,12 +44,12 @@ public sealed class AutenticacaoPorPadraoTests : IClassFixture<InfraCoreApiFacto
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    // As sondas que agregam verificações respondem 503 aqui, porque a fábrica não sobe o provedor de identidade: é a
-    // resposta da sonda, e não a recusa por falta de token. A liveness não avalia verificação nenhuma e responde 200.
+    // A fábrica não sobe o provedor de identidade: a verificação dele reporta degradado, e a sonda de prontidão e o
+    // health completo seguem respondendo 200 — o provedor fora do ar não derruba as rotas públicas.
     [Theory(DisplayName = "Rotas públicas do host respondem sem token")]
     [InlineData("/health/live", HttpStatusCode.OK)]
-    [InlineData("/health/ready", HttpStatusCode.ServiceUnavailable)]
-    [InlineData("/health", HttpStatusCode.ServiceUnavailable)]
+    [InlineData("/health/ready", HttpStatusCode.OK)]
+    [InlineData("/health", HttpStatusCode.OK)]
     [InlineData("/openapi/selecao.json", HttpStatusCode.OK)]
     public async Task RotaPublica_RespondeSemToken(string rota, HttpStatusCode esperado)
     {

@@ -105,8 +105,8 @@ public static class OidcAuthenticationConfiguration
         services.AddHealthChecks()
             .AddCheck<OidcDiscoveryHealthCheck>(
                 name: "oidc-discovery",
-                failureStatus: HealthStatus.Unhealthy,
-                tags: ["ready", "auth"]);
+                failureStatus: HealthStatus.Degraded,
+                tags: ["auth"]);
 
         // Rota sem atributo de autorização exige pessoa autenticada; o que é público declara AllowAnonymous. Sem rota
         // (404) ou com método não aceito (405, endpoint que não é RouteEndpoint), a requisição segue para a própria
