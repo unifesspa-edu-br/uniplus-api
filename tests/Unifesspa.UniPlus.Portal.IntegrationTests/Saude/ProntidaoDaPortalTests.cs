@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Portal.IntegrationTests.Saude;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -52,11 +53,13 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
     public async Task HealthCompleto_ProvedorDeIdentidadeForaDoAr_ReportaDegradado()
     {
         _factory.ProvedorDeIdentidade.Status = HttpStatusCode.ServiceUnavailable;
-        HealthCheckService servico = _factory.Services.GetRequiredService<HealthCheckService>();
+        using HttpClient client = _factory.CreateClient();
 
-        HealthReport relatorio = await servico.CheckHealthAsync(r => r.Name == VerificacaoDoProvedor);
+        using HttpResponseMessage resposta = await client.GetAsync(new Uri("/health", UriKind.Relative));
 
-        relatorio.Entries[VerificacaoDoProvedor].Status.Should().Be(HealthStatus.Degraded);
+        using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        corpo.RootElement.GetProperty("verificacoes").GetProperty(VerificacaoDoProvedor).GetProperty("status")
+            .GetString().Should().Be("Degraded");
     }
 
     [Fact(DisplayName = "Banco, cache e armazenamento fora do ar não reprovam a prontidão")]
