@@ -167,7 +167,7 @@ healthcheck:
   # com todos os checks (OIDC, Postgres, Kafka, Redis), removendo o pod
   # do Service quando dependência transitória cai sem reiniciá-lo.
   livenessPath: /health/live
-  readinessPath: /health
+  readinessPath: /health/ready
   initialDelaySeconds: 20
   periodSeconds: 10
   timeoutSeconds: 5
