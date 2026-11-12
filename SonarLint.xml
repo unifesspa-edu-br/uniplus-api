@@ -2,9 +2,9 @@
 <AnalysisInput>
   <Rules>
     <Rule>
-      <Key>S138</Key>
+      <Key>S104</Key>
       <Parameters>
-        <Parameter><Key>max</Key><Value>15</Value></Parameter>
+        <Parameter><Key>maximumFileLocThreshold</Key><Value>400</Value></Parameter>
       </Parameters>
     </Rule>
     <Rule>

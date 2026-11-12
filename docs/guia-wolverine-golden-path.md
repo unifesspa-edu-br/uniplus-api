@@ -15,7 +15,7 @@ Guia operacional em pt-BR para criar novos commands, queries, handlers e domain 
 
 Dúvidas sobre implementação no dia a dia ficam neste guia. Dúvidas sobre contrato, escopo ou reversibilidade vão para a ADR correspondente. Mudanças de escopo (novas abstrações, adoção de features avançadas do Wolverine) exigem emenda à ADR-0003 com PR explícito.
 
-> **Exemplos e métricas de qualidade:** os exemplos deste guia mostram o encaixe no Wolverine (assinatura, retorno, cascading), não o tamanho. Alguns deles, como o handler do Passo 2 (48 linhas físicas e 8 parâmetros) e a query que vem logo depois (18 linhas), passam dos limites e são dívida, não modelo. Código novo segue os limites do `CONTRIBUTING.md`, seção "Métricas de qualidade": método até 15 linhas físicas, até 7 parâmetros, sem supressão de aviso.
+> **Exemplos e métricas de qualidade:** os exemplos deste guia mostram o encaixe no Wolverine (assinatura, retorno, cascading), não o tamanho. Alguns deles, como o handler do Passo 2 (longo e com 8 parâmetros) e a query que vem logo depois, passam dos limites e são dívida, não modelo. Código novo segue os limites do `CONTRIBUTING.md`, seção "Métricas de qualidade": método até 15 linhas pela MA0051, até 7 parâmetros, sem supressão de aviso.
 
 > **Princípio central:** habilitar o time antes de completar a arquitetura. Apenas duas abstrações (`ICommandBus`, `IQueryBus`) cruzam para `Application`. Drenagem de domain events não é abstração — é convenção de retorno do handler (cascading messages, ADR-0005). Features avançadas do Wolverine (sagas, scheduled messages, middleware custom específico) ficam fora do escopo até um caso de uso concreto pedir.
 

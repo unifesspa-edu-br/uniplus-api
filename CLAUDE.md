@@ -156,7 +156,7 @@ Sem `SkipEnabledCheck`, o source generator sempre gera a guarda internamente —
 
 Seção de `.editorconfig` que isenta um arquivo ou um tipo específico, e não uma camada inteira, é supressão disfarçada e também é proibida. As supressões por símbolo que ainda existem (`[SuppressMessage]` de CA1515/CA1812 nos handlers, `GlobalSuppressions.cs`, `#pragma` de `CA1873`) são dívida a pagar por módulo, não exemplo a seguir.
 
-Métricas de qualidade (método até 15 linhas físicas, arquivo até 400 linhas com testes, parâmetros, complexidade, código feito só para caber na métrica): `CONTRIBUTING.md` § Métricas de qualidade. A S138 não é a medida de tamanho de método.
+Métricas de qualidade (método até 15 linhas pela MA0051, arquivo até 400 linhas com código pela S104, parâmetros pela S107, complexidade pela S3776 e pela S1541, código feito só para caber na métrica), medidas pelos analisadores em produção e teste, menos a S1541, que não roda em projeto de teste ([ADR-0161](docs/adrs/0161-metricas-medidas-pelos-analisadores.md)): `CONTRIBUTING.md` § Métricas de qualidade. O número que vale é o do aviso. Código que se explica, comentários e documentação XML: `CONTRIBUTING.md` § Código que se explica.
 
 Docs: [ADR-0117](docs/adrs/0117-politica-de-analise-estatica-e-supressao.md), [ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md), [editorconfig](https://learn.microsoft.com/dotnet/fundamentals/code-analysis/configuration-files).
 

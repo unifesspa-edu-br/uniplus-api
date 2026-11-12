@@ -83,21 +83,24 @@ dotnet_naming_style.camel_case_underscore_prefix.capitalization = camel_case
 indent_size = 2
 
 [*.cs]
-# Métricas de qualidade: limites em SonarLint.xml. Avisam até o fim da refatoração.
-dotnet_diagnostic.S138.severity = warning
+# Métricas de qualidade (CONTRIBUTING.md, seção "Métricas de qualidade"). Os limites do Sonar
+# ficam em SonarLint.xml; os da MA0051, aqui. Avisam até o módulo zerar a dívida.
+dotnet_diagnostic.MA0051.severity = warning
+MA0051.maximum_lines_per_method = 15
+MA0051.maximum_statements_per_method = -1
+dotnet_diagnostic.S104.severity = warning
 dotnet_diagnostic.S3776.severity = warning
 dotnet_diagnostic.S1541.severity = warning
 dotnet_diagnostic.S107.severity = warning
 
-# Dono único de cada regra. O aviso de tamanho de método é da S138, sinal auxiliar: a medida é a
-# contagem física do CONTRIBUTING.md, seção "Métricas de qualidade". Estas têm dono na análise do .NET:
+# Dono único de cada regra. Tamanho de método é da MA0051; a S138, que não mede projeto de teste, fica desligada no .globalconfig.
+# Estas têm dono na análise do .NET:
 # CA2007 (ConfigureAwait), CA1822 (membro que pode ser estático), CA2200 (relançar exceção),
 # CA1825 (array vazio), CA1018 (AttributeUsage), CA1050 (tipo fora de namespace),
 # CA2201 (exceção reservada), CA1041 (Obsolete sem mensagem), CA1067 (Equals de IEquatable),
 # CA2211 (campo estático visível).
 dotnet_diagnostic.CA2007.severity = warning
 # CA1000 (membro estático em tipo genérico) está desligada por decisão, e a duplicata sai junto.
-dotnet_diagnostic.MA0051.severity = none
 dotnet_diagnostic.MA0004.severity = none
 dotnet_diagnostic.MA0018.severity = none
 dotnet_diagnostic.MA0041.severity = none
@@ -170,21 +173,22 @@ dotnet_diagnostic.CA1861.severity = none
 # Mapeamento do EF é lista declarativa de propriedades: dividi-la só para caber em tamanho de
 # método seria artificial. Mapeamento longo se divide por assunto; quem cobra é a revisão.
 [{src/**/Persistence/Configurations/**.cs,src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyEntryConfiguration.cs,src/shared/Unifesspa.UniPlus.Infrastructure.Core/Persistence/EnderecoGeoOwnedConfiguration.cs}]
-dotnet_diagnostic.S138.severity = none
+dotnet_diagnostic.MA0051.severity = none
 
 # Migrations EF Core são auto-geradas pelo tool — analyzers que cobram
 # defensive coding, perf de array literal ou estilo C# moderno não se aplicam:
 # - CA1062: tool não emite ArgumentNullException no migrationBuilder
 # - CA1861: tool emite arrays inline (`new[] { ... }`) em CreateIndex
 # - IDE0161: tool emite namespace-block clássico, não file-scoped
-# - S138, S3776, S1541, S107: tamanho e complexidade de Up/Down vêm do modelo, não de quem escreve
+# - MA0051, S104, S3776, S1541, S107: tamanho e complexidade vêm do modelo, não de quem escreve
 #
 # Pelo mesmo motivo, duas regras de formatação seguem o que o `dotnet ef`
 # emite, em vez de exigir retrabalho manual a cada migration gerada:
 # - charset: o tool grava com BOM
 # - separate_import_directive_groups: o tool não separa grupos de using
 [src/**/Migrations/**.cs]
-dotnet_diagnostic.S138.severity = none
+dotnet_diagnostic.MA0051.severity = none
+dotnet_diagnostic.S104.severity = none
 dotnet_diagnostic.S3776.severity = none
 dotnet_diagnostic.S1541.severity = none
 dotnet_diagnostic.S107.severity = none

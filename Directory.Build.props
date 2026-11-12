@@ -9,7 +9,7 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);S138;S3776;S1541;S107</WarningsNotAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);MA0051;S104;S3776;S1541;S107</WarningsNotAsErrors>
     <ErrorLog>$(MSBuildThisFileDirectory)artifacts/analise/$(MSBuildProjectName).sarif,version=2.1</ErrorLog>
   </PropertyGroup>
 
