@@ -177,8 +177,9 @@ public sealed class AuthE2ETests : IClassFixture<OidcRealApiFactoryWrapper>
         using HttpResponseMessage response = await client.GetAsync(HealthUri);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        string body = await response.Content.ReadAsStringAsync();
-        body.Should().Be("Healthy");
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        body.RootElement.GetProperty("verificacoes").GetProperty("oidc-discovery").GetProperty("status")
+            .GetString().Should().Be("Healthy");
     }
 
     private HttpClient CreateClientWithToken(string accessToken)
