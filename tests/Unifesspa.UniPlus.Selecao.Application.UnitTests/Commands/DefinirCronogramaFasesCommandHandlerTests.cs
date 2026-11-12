@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static ConformidadeLegalGateTests;
+
 /// <summary>
 /// Cobertura do <see cref="DefinirCronogramaFasesCommandHandler"/> (Story #851): a
 /// resolução das dependências cross-módulo (FaseCanonica/TipoBanca/precedência —
@@ -1176,5 +1178,37 @@ public sealed class DefinirCronogramaFasesCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("fases[0].regraRecurso.regraCodigo");
+    }
+
+    [Fact(DisplayName = "Na retificação, trocar a fase iniciada por outra recusa a remoção dela, e a que não começou segue só as demais regras de remoção")]
+    public async Task Handle_RetificacaoQueRemoveFaseIniciada_Recusa()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
+        processo.AbrirRetificacao(
+            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora)
+            .IsSuccess.Should().BeTrue();
+        FaseCronograma publicada = processo.CronogramaFases.Single();
+        Guid outraFase = Guid.CreateVersion7();
+        Mocks mocks = ComUmaFaseNova(processo, outraFase);
+        DefinirCronogramaFasesCommand command = new(processo.Id, [InputResultado(outraFase)], PrecondicaoIfMatch.Curinga);
+        FasesIniciadas iniciada = new(
+            [KeyValuePair.Create<Guid, Guid?>(publicada.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)],
+            [KeyValuePair.Create(publicada.FaseCanonicaOrigemId, publicada.Codigo)]);
+
+        Result<MutacaoAceita> recusada = await HandleAsync(mocks with { FasesIniciadas = FasesIniciadasDeTeste.Com(iniciada) }, command);
+        Result<MutacaoAceita> aceita = await HandleAsync(mocks with { FasesIniciadas = FasesIniciadasDeTeste.Nenhuma() }, command);
+
+        recusada.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+        aceita.Error!.Code.Should().Be("ProcessoSeletivo.FaseReferenciadaPorFormulario", "a fase que não começou só encontra as demais regras de remoção");
+    }
+
+    private static Mocks ComUmaFaseNova(ProcessoSeletivo processo, Guid faseCanonicaId)
+    {
+        Mocks mocks = NovosMocks(processo, processo.Id);
+        mocks.FaseCanonicaReader.ObterPorIdAsync(faseCanonicaId, Arg.Any<CancellationToken>())
+            .Returns(FaseCanonicaResultado(faseCanonicaId));
+        mocks.TipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(new TipoAtoPublicadoView("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: false, UnicoPorObjeto: false, EfeitoIrreversivel: false, EhResultado: true));
+        return mocks;
     }
 }

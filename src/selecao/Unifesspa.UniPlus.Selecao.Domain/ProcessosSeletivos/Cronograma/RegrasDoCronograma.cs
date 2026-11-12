@@ -42,7 +42,7 @@ internal static class RegrasDoCronograma
         List<DocumentoExigido> documentosQueFicam =
             [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
 
-        recusa = iniciadas.RecusaDaTroca(fases)
+        recusa = iniciadas.RecusaDaAlteracao(fases)
             ?? RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem)

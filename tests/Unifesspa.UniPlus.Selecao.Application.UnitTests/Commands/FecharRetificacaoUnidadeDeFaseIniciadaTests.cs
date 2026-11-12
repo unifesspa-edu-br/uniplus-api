@@ -18,8 +18,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static ConformidadeLegalGateTests;
 
 /// <summary>
-/// A troca de unidade aceita na edição do cronograma, quando a fase já começou antes do fechamento da retificação, é
-/// recusada no fechamento: a unidade que vale é a da versão publicada vigente, conferida no instante do fechamento (UNI-REQ-0332).
+/// A troca de unidade e a remoção aceitas na edição do cronograma, quando a fase já começou antes do fechamento da
+/// retificação, são recusadas no fechamento: a unidade e a presença que valem são as da versão publicada vigente,
+/// conferidas no instante do fechamento (UNI-REQ-0332, UNI-REQ-0364).
 /// </summary>
 public sealed class FecharRetificacaoUnidadeDeFaseIniciadaTests
 {
@@ -47,6 +48,38 @@ public sealed class FecharRetificacaoUnidadeDeFaseIniciadaTests
         (Result resposta, _) = await FecharAsync(processo, versaoAtual, iniciadas);
 
         resposta.Error?.Code.Should().NotBe(CodigoDaRecusa);
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa a remoção de uma fase que começou depois da edição, e a sessão editorial permanece aberta")]
+    public async Task Fechar_FaseIniciadaRemovidaDoRascunho_Recusa()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoComRetificacaoAberta();
+        FasesIniciadas iniciadas = FaseIniciadaForaDoRascunho();
+
+        (Result resposta, IEnumerable<object> eventos) = await FecharAsync(processo, versaoAtual, iniciadas);
+
+        resposta.Error!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+        eventos.Should().BeEmpty();
+        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
+    }
+
+    [Fact(DisplayName = "Fechar a retificação não recusa a fase iniciada que continua no rascunho")]
+    public async Task Fechar_FaseIniciadaMantidaNoRascunho_NaoRecusaPelaRemocao()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoComRetificacaoAberta();
+        Guid origem = processo.CronogramaFases.Single().FaseCanonicaOrigemId;
+        FasesIniciadas iniciadas = new(
+            [KeyValuePair.Create<Guid, Guid?>(origem, UnidadesDeTeste.Ceps.OrigemId)], [KeyValuePair.Create(origem, "RESULTADO_FINAL")]);
+
+        (Result resposta, _) = await FecharAsync(processo, versaoAtual, iniciadas);
+
+        resposta.Error?.Code.Should().NotBe("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+    }
+
+    private static FasesIniciadas FaseIniciadaForaDoRascunho()
+    {
+        Guid origem = Guid.CreateVersion7();
+        return new([KeyValuePair.Create<Guid, Guid?>(origem, UnidadesDeTeste.Ceps.OrigemId)], [KeyValuePair.Create(origem, "HABILITACAO")]);
     }
 
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoComRetificacaoAberta()
