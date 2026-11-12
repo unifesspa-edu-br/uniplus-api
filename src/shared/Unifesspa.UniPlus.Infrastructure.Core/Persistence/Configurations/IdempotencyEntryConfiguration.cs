@@ -1,8 +1,9 @@
-namespace Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence.Configurations;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 

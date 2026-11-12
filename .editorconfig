@@ -172,7 +172,7 @@ dotnet_diagnostic.CA1861.severity = none
 
 # Mapeamento do EF é lista declarativa de propriedades: dividi-la só para caber em tamanho de
 # método seria artificial. Mapeamento longo se divide por assunto; quem cobra é a revisão.
-[{src/**/Persistence/Configurations/**.cs,src/shared/Unifesspa.UniPlus.Infrastructure.Core/Idempotency/IdempotencyEntryConfiguration.cs,src/shared/Unifesspa.UniPlus.Infrastructure.Core/Persistence/EnderecoGeoOwnedConfiguration.cs}]
+[src/**/Persistence/Configurations/**.cs]
 dotnet_diagnostic.MA0051.severity = none
 
 # Migrations EF Core são auto-geradas pelo tool — analyzers que cobram

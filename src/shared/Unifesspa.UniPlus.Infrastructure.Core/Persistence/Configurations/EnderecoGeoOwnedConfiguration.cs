@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence.Configurations;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
