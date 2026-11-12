@@ -163,3 +163,13 @@ Medido no spike, contra o host real, e replicado na implementação:
 ## Emenda 1 (2026-10-17) — o produto publicado também tem registro na Seleção
 
 Para o ato de processo que não cria versão de configuração (aviso, errata e semelhantes), o fato "produto publicado" passa a ter também um registro na Seleção, gravado na mesma transação do outbox, e não só o ato em Publicações. Detalhes na emenda 1 da [ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md). No ato que não cria versão, a idempotência do comando vem da `Idempotency-Key`; o `AtoId` decidido pela Seleção, gerado a cada requisição, fica nesse registro e é o que liga o `AtoNormativoRegistrado` a ele. Quando o tipo é único por objeto ([ADR-0107](0107-vaga-de-linhagem-unica-por-objeto.md)), a vaga continua sendo reservada pelo Publicações. Nenhum outro trecho desta ADR muda.
+
+## Emenda 2 (2026-11-12) — o registro é efeito posterior da divulgação, e a mensagem sem instante é recusada
+
+O mecanismo decidido aqui permanece: mensagem durável no outbox, `AtoId` decidido pelo domínio, idempotência por chave primária e falha que aflora. Esta emenda acrescenta o que muda com a publicação passando a valer na divulgação ([ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), emenda 1).
+
+- **Efeito posterior da divulgação.** O registro do ato no `Publicacoes` deixa de ser consequência de publicar a versão e passa a ser **um dos efeitos da divulgação**, executado depois do commit da transação que a grava. Quem conduz os efeitos é uma saga que **só avança**: nunca desfaz a divulgação nem volta de estado.
+- **Estado por efeito.** Cada efeito tem estado próprio, com reprocessamento, alerta e pendência visível. A falha do registro aflora como pendência do efeito, na dead letter e no alerta, e não impede nem desfaz a divulgação.
+- **Instante da divulgação na mensagem.** A requisição de registro leva o instante gravado na divulgação. A mensagem antiga, sem instante, é **recusada**: o `Publicacoes` não a registra com a data do processamento nem com data inventada.
+
+Nenhum outro trecho desta ADR muda.
