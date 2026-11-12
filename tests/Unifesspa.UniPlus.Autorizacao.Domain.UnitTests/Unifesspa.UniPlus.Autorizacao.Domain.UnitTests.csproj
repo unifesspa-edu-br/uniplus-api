@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.Domain/Unifesspa.UniPlus.Autorizacao.Domain.csproj" />
+    <ProjectReference Include="../../src/shared/Unifesspa.UniPlus.Authorization/Unifesspa.UniPlus.Authorization.csproj" />
   </ItemGroup>
 
   <ItemGroup>

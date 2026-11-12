@@ -7,7 +7,9 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -87,6 +89,24 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         (await PermissoesAsync(Marlene, PerfisDeSistema.ProtecaoDeDadosId)).Should().Contain(AprovarProtecaoDeDados);
     }
 
+    [Fact(DisplayName = "A reclassificação de permissão dos perfis de governança não grava reclassificação nem base para eles")]
+    public async Task Governanca_NaoGravaReclassificacaoNemBase()
+    {
+        using HttpClient protecao = await ProtecaoAsync();
+        using HttpClient gestor = await GestorAsync();
+        string codigo = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.ConcessoesAdministrar).Codigo;
+        long divergencias = await DivergenciasDeClasseAsync(codigo);
+
+        await SubirAClasseAsync(codigo);
+
+        (await DivergenciasDeClasseAsync(codigo)).Should().BeGreaterThan(divergencias, "a troca de catálogo precisa ter sido processada");
+        foreach (Guid perfil in new[] { PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.ProtecaoDeDadosId })
+        {
+            (await ReclassificacoesAsync(perfil)).Should().Be(0);
+            (await BasesAsync(perfil)).Should().Be(0);
+        }
+    }
+
     [Fact(DisplayName = "O perfil suspenso é retomado pela reclassificação quando a classe muda e as etapas decididas bastam")]
     public async Task Retomada_PelaReclassificacao()
     {
@@ -99,7 +119,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
 
         await ImplantarAsync(Sensivel, ClassificacaoDeProtecao.Interno);
 
-        (await OrigemDaRetomadaAsync(perfil.Perfil)).Should().Be("reclassificacao");
+        (await OrigemDaRetomadaAsync(perfil.Perfil)).Should().Be(OrigemDaRetomadaCodigo.Reclassificacao);
     }
 
     private static async Task ConferirAsync(HttpResponseMessage resposta, HttpStatusCode esperado)
@@ -119,6 +139,15 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
             await AprovarAteAVigenciaAsync(gestor, envio);
         }
     }
+
+    private Task<long> BasesAsync(Guid perfil) =>
+        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0}""", perfil);
+
+    private Task<long> DivergenciasDeClasseAsync(string codigo) =>
+        ContarAsync(
+            """SELECT count(*) AS "Value" FROM autorizacao.divergencias_da_governanca WHERE codigo = {0} AND tipo = {1}""",
+            codigo,
+            TipoDeDivergenciaCodigo.Classificacao);
 
     private Task<long> DivergenciasAsync() =>
         ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.divergencias_da_governanca""");
