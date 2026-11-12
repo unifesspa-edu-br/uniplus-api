@@ -4,25 +4,43 @@ using Entities;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
+/// <summary>Uma etapa que já começou, pela identidade dela, e se a versão publicada vigente ainda a traz.</summary>
+public sealed record EtapaIniciada(Guid Id, string Nome, bool NaVersaoVigente);
+
 /// <summary>
 /// As fases do cronograma publicado que já começaram, com a unidade que cada uma tem na versão publicada, pela
-/// identidade estável da fase (a fase canônica de origem). É o fato de que a retificação precisa para recusar a
-/// troca da unidade de uma fase em andamento.
+/// identidade estável da fase (a fase canônica de origem), e as que ainda estão no cronograma da versão publicada
+/// vigente, e as etapas que já começaram. É o fato de que a retificação precisa para recusar a troca da unidade e a
+/// remoção de uma fase ou de uma etapa em andamento.
 /// </summary>
 public sealed record FasesIniciadas
 {
     private readonly Dictionary<Guid, Guid?> _unidadesPublicadas;
+    private readonly Dictionary<Guid, string> _codigosNaVersaoVigente;
+    private readonly Dictionary<Guid, EtapaIniciada> _etapas;
 
-    /// <summary>Cria o conjunto a partir da fase canônica de origem e da unidade publicada de cada fase iniciada.</summary>
-    public FasesIniciadas(IEnumerable<KeyValuePair<Guid, Guid?>> unidadesPublicadas)
+    /// <summary>
+    /// Cria o conjunto a partir da fase canônica de origem e da unidade publicada de cada fase iniciada, e do código das
+    /// fases iniciadas que a versão publicada vigente ainda traz no cronograma: só essas podem ser removidas. As etapas
+    /// iniciadas seguem a mesma regra.
+    /// </summary>
+    public FasesIniciadas(
+        IEnumerable<KeyValuePair<Guid, Guid?>> unidadesPublicadas,
+        IEnumerable<KeyValuePair<Guid, string>>? codigosNaVersaoVigente = null,
+        IEnumerable<EtapaIniciada>? etapas = null)
     {
         ArgumentNullException.ThrowIfNull(unidadesPublicadas);
 
         _unidadesPublicadas = new(unidadesPublicadas);
+        _codigosNaVersaoVigente = new(codigosNaVersaoVigente ?? []);
+        _etapas = (etapas ?? []).ToDictionary(static e => e.Id);
     }
 
     /// <summary>Nenhuma fase iniciada: o rascunho, que nunca foi publicado.</summary>
     public static FasesIniciadas Nenhuma { get; } = new([]);
+
+    /// <summary>Se a etapa já começou: a janela dela abriu, ela tem ato ou registro próprio, ou já terminou. A abertura de uma etapa não inicia as outras da fase.</summary>
+    public bool ContemEtapa(Guid etapaId) => _etapas.ContainsKey(etapaId);
 
     /// <summary>Se a fase de origem informada já começou.</summary>
     public bool Contem(Guid faseCanonicaOrigemId) => _unidadesPublicadas.ContainsKey(faseCanonicaOrigemId);
@@ -48,6 +66,39 @@ public sealed record FasesIniciadas
             ? new DomainError(
                 "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
                 $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) já começou, e a unidade responsável por ela não muda.")
+            : null;
+    }
+
+    /// <summary>A recusa de trocar a unidade ou de remover do cronograma uma fase iniciada; nula se não há nenhuma das duas.</summary>
+    public DomainError? RecusaDaAlteracao(IEnumerable<FaseCronograma> fases) => RecusaDaTroca(fases) ?? RecusaDaRemocao(fases);
+
+    // Remover a fase numa retificação e recolocá-la com outra unidade na seguinte contornaria a recusa da troca. Só conta
+    // a fase que a versão publicada vigente ainda traz: a que já saiu de uma versão anterior não é removida agora.
+    /// <summary>A recusa da remoção de uma fase iniciada do cronograma, citando a primeira removida; nula se não há remoção.</summary>
+    public DomainError? RecusaDaRemocao(IEnumerable<FaseCronograma> fases)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+
+        HashSet<Guid> restantes = [.. fases.Select(static f => f.FaseCanonicaOrigemId)];
+
+        return _codigosNaVersaoVigente.FirstOrDefault(f => !restantes.Contains(f.Key)) is { Value: { } codigo }
+            ? new DomainError(
+                "FaseCronograma.FaseIniciadaNaoSaiDoCronograma",
+                $"A fase '{codigo}' já começou, e ela não sai do cronograma.")
+            : null;
+    }
+
+    /// <summary>A recusa da remoção de uma etapa iniciada, citando a primeira removida; nula se não há remoção.</summary>
+    public DomainError? RecusaDaRemocaoDaEtapa(IEnumerable<EtapaProcesso> etapas)
+    {
+        ArgumentNullException.ThrowIfNull(etapas);
+
+        HashSet<Guid> restantes = [.. etapas.Select(static e => e.Id)];
+
+        return _etapas.Values.FirstOrDefault(e => e.NaVersaoVigente && !restantes.Contains(e.Id)) is { } removida
+            ? new DomainError(
+                "FaseCronograma.EtapaIniciadaNaoSaiDoCronograma",
+                $"A etapa '{removida.Nome}' já começou, e ela não sai do cronograma.")
             : null;
     }
 }

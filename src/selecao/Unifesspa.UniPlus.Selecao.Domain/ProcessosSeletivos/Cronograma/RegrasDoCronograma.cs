@@ -25,39 +25,62 @@ internal static class RegrasDoCronograma
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(iniciadas);
 
-        DomainError? recusa = CronogramaVazio(fases) ?? OrdemRepetida(fases) ?? FaseCanonicaRepetida(fases);
-        if (recusa is not null)
-        {
-            return Result<PlanoDoCronograma>.Failure(recusa);
-        }
+        DomainError? recusa = CronogramaVazio(fases) ?? OrdemRepetida(fases) ?? FaseCanonicaRepetida(fases)
+            ?? RecusaDaMudanca(estado, fases, precedencias, iniciadas);
 
-        Dictionary<Guid, FaseCronograma> antigasPorOrigem = estado.CronogramaFases.ToDictionary(f => f.FaseCanonicaOrigemId);
-        Dictionary<Guid, FaseCronograma> novasPorOrigem = fases.ToDictionary(f => f.FaseCanonicaOrigemId);
+        return recusa is not null
+            ? Result<PlanoDoCronograma>.Failure(recusa)
+            : RecusaDoCicloEDaJanelaDaEtapa(estado, fases) ?? Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases));
+    }
 
-        // O documento exigido numa fase que também sai vai junto com ela, na poda; contá-lo como
-        // referência viva recusaria uma remoção que o próprio comando resolve. Só quem fica reclama.
-        HashSet<Guid> fasesQueFicam = [.. antigasPorOrigem.Values
-            .Where(f => novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
-            .Select(f => f.Id)];
-        List<DocumentoExigido> documentosQueFicam =
-            [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
+    private static Dictionary<Guid, FaseCronograma> PorOrigem(IEnumerable<FaseCronograma> fases) =>
+        fases.ToDictionary(static f => f.FaseCanonicaOrigemId);
 
-        recusa = iniciadas.RecusaDaTroca(fases)
+    // As recusas do que muda em relação ao cronograma que o processo já tem, na ordem em que orientam.
+    private static DomainError? RecusaDaMudanca(
+        EstadoDaConfiguracao estado,
+        IReadOnlyList<FaseCronograma> fases,
+        IReadOnlyList<ArestaPrecedencia> precedencias,
+        FasesIniciadas iniciadas)
+    {
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem = PorOrigem(estado.CronogramaFases);
+        Dictionary<Guid, FaseCronograma> novasPorOrigem = PorOrigem(fases);
+        List<DocumentoExigido> documentosQueFicam = DocumentosQueFicam(estado, antigasPorOrigem, novasPorOrigem);
+
+        return iniciadas.RecusaDaAlteracao(fases)
+            ?? RecusaDaEtapaPodada(iniciadas, estado, antigasPorOrigem, novasPorOrigem)
             ?? RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem)
             ?? RecusaDePrecedencia(fases, precedencias);
-        if (recusa is not null)
-        {
-            return Result<PlanoDoCronograma>.Failure(recusa);
-        }
+    }
 
-        if (RecusaDoCicloEDaJanelaDaEtapa(estado, fases) is { } recusaDoConjunto)
-        {
-            return recusaDoConjunto;
-        }
+    // O documento exigido numa fase que também sai vai junto com ela, na poda; contá-lo como
+    // referência viva recusaria uma remoção que o próprio comando resolve. Só quem fica reclama.
+    private static List<DocumentoExigido> DocumentosQueFicam(
+        EstadoDaConfiguracao estado,
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem,
+        Dictionary<Guid, FaseCronograma> novasPorOrigem)
+    {
+        HashSet<Guid> fasesQueFicam = [.. antigasPorOrigem.Values
+            .Where(f => novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
+            .Select(f => f.Id)];
 
-        return Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases, antigasPorOrigem, novasPorOrigem));
+        return [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
+    }
+
+    // A etapa da fase que sai vai junto na poda: se ela já começou, a remoção da fase a levaria sem que ninguém a conferisse.
+    private static DomainError? RecusaDaEtapaPodada(
+        FasesIniciadas iniciadas,
+        EstadoDaConfiguracao estado,
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem,
+        Dictionary<Guid, FaseCronograma> novasPorOrigem)
+    {
+        HashSet<string> codigosRemovidos = [.. antigasPorOrigem.Values
+            .Where(f => !novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
+            .Select(static f => f.Codigo)];
+
+        return iniciadas.RecusaDaRemocaoDaEtapa(estado.Etapas.Where(e => e.FaseCodigo is not { } codigo || !codigosRemovidos.Contains(codigo)));
     }
 
     // A conclusão do ciclo recursal roda sobre o conjunto candidato, não sobre o agregado
@@ -90,12 +113,10 @@ internal static class RegrasDoCronograma
         }
     }
 
-    private static PlanoDoCronograma MontarPlano(
-        EstadoDaConfiguracao estado,
-        IReadOnlyList<FaseCronograma> fases,
-        Dictionary<Guid, FaseCronograma> antigasPorOrigem,
-        Dictionary<Guid, FaseCronograma> novasPorOrigem)
+    private static PlanoDoCronograma MontarPlano(EstadoDaConfiguracao estado, IReadOnlyList<FaseCronograma> fases)
     {
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem = PorOrigem(estado.CronogramaFases);
+        Dictionary<Guid, FaseCronograma> novasPorOrigem = PorOrigem(fases);
         List<(FaseCronograma Existente, FaseCronograma Nova)> retidas =
             [.. fases.Where(f => antigasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId)).Select(f => (antigasPorOrigem[f.FaseCanonicaOrigemId], f))];
         List<FaseCronograma> resultantes = [.. fases.Select(f => antigasPorOrigem.GetValueOrDefault(f.FaseCanonicaOrigemId) ?? f)];
