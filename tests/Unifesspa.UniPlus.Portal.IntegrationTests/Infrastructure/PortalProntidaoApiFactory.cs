@@ -64,7 +64,13 @@ public sealed class PortalProntidaoApiFactory : ApiFactoryBase<PortalApiAssembly
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken) =>
-            Task.FromResult(new HttpResponseMessage(provedor.Status));
+            provedor.Pendurado ? EsperarAteCancelarAsync(cancellationToken) : Task.FromResult(new HttpResponseMessage(provedor.Status));
+
+        private static async Task<HttpResponseMessage> EsperarAteCancelarAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            throw new InvalidOperationException("Inalcançável.");
+        }
     }
 }
 
@@ -78,4 +84,6 @@ public sealed class PortalProntidaoApiFactory : ApiFactoryBase<PortalApiAssembly
 public sealed class ProvedorDeIdentidadeSimulado
 {
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+
+    public bool Pendurado { get; set; }
 }
