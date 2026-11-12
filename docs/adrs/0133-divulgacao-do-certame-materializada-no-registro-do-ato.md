@@ -110,3 +110,16 @@ Permanece intacto o que aquela decisão fixou sobre o Portal ser um BFF por expe
 ## Emenda 1 (2026-10-17) — a projeção também deriva do registro do ato do processo
 
 A projeção pública passa a derivar também do registro do ato do processo na Seleção, para o ato que não cria versão de configuração ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), emenda 1). Essa fonte é da Seleção e a projeção continua reconstruível a partir dela. O ato avulso só acrescenta documentos à linha do tempo: título e conteúdo da configuração da projeção continuam avançando só com o ato que cria versão. Nenhum outro trecho desta ADR muda.
+
+## Emenda 2 (2026-11-12) — a divulgação é fato durável da transação final
+
+A projeção pública continua derivada, reconstruível e sem acoplar a leitura a outro módulo. Muda o fato de que ela depende: deixa de ser o registro do ato e passa a ser a **divulgação**.
+
+**Trechos substituídos.** A frase "a existência do registro é a publicidade" e o critério da emenda à ADR-0131 leem-se assim: **o certame é público quando existe divulgação gravada para ele**. Registrar o ato no `Publicacoes` é auditoria posterior ([ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), emenda 1) e não condiciona nem retira a divulgação.
+
+- **Fato durável.** A divulgação é gravada uma só vez na transação final, com o instante oficial definido pelo sistema. Se a transação falha, não há divulgação.
+- **Comparação pelo fato.** A comparação entre a versão vigente e a divulgada usa esse fato, nunca o estado da saga de efeitos ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md), emenda 2) nem o registro no `Publicacoes`.
+- **Reconstruir não cria data.** Reconstruir a projeção reaproveita o instante gravado e nunca cria outra data oficial.
+- **Recusado por versão defasada.** A divulgação é recusada quando a versão preparada já não é a vigente ([ADR-0104](0104-versao-configuracao-como-agregado-proprio.md)). O ato recusado por versão defasada é **estado terminal**: libera o item para novo preparo, não é visto pelo candidato e seu documento permanece privado ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), emenda 2).
+
+Nenhum outro trecho desta ADR muda.
