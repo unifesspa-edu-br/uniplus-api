@@ -115,3 +115,13 @@ O módulo entra como **quinto módulo interno** do monolito modular, com schema 
 - [ADR-0104](0104-versao-configuracao-como-agregado-proprio.md) — a vigência ordena versões, não documentos
 - Evidência empírica: acervos completos do PS Canaã dos Carajás 2026 (CEPS) e do SiSU 2026 — Edição Única (CRCA)
 - Emendada pela [ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md): a publicação única por item passa a valer por ciclo, e o ato do novo ciclo leva o número do ciclo e a referência ao ato substituído.
+
+## Emenda 1 (2026-11-12) — o ato vale na divulgação, e o Publicações só audita
+
+A decisão sobre onde vive o ato publicado não muda. Esta emenda registra o que a ADR não dizia: **quando o ato passa a valer**.
+
+- **O ato vale na divulgação.** A data de publicação do ato é o instante da divulgação do certame ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md), emenda 2), gravado **uma só vez pelo sistema**, na transação final da divulgação. Quem publica não informa data de publicação, e a data impressa no documento é a de emissão e não conta para prazo nem para vigência.
+- **O registro no `Publicacoes` é auditoria posterior.** Ele é efeito da divulgação, feito depois dela ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md), emenda 2). O `Publicacoes` guarda o instante que recebe e nunca o define: o ato não passa a valer por ter sido registrado, e o registro pendente ou falho não desfaz nem adia a divulgação.
+- **Novo ciclo do item.** Além da correção como relação entre atos ([ADR-0103](0103-ato-normativo-generalizado-retificacao-como-relacao.md)), o ato do novo ciclo do item é a publicação original do ciclo e referencia o ato do ciclo anterior, que permanece registrado. Não é correção do ato anterior ([ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md)).
+
+Nenhum outro trecho desta ADR muda.
