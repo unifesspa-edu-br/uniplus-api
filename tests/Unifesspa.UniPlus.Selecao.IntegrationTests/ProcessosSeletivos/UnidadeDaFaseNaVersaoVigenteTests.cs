@@ -258,6 +258,20 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         iniciadas.Contem(segundaOrigem).Should().BeFalse("a etapa só passou à segunda fase depois da importação");
     }
 
+    [Fact(DisplayName = "A importação contra a versão divulgada conta para a fase da etapa nela, mesmo com a retificação já fechada e não divulgada")]
+    public async Task Iniciadas_ImportacaoUsaAVersaoFixadaNoLote()
+    {
+        (Guid processoId, FaseCronograma primeira, EtapaProcesso etapa) = await PublicadoAsync("PS etapa movida nao divulgada", Abertura);
+        Guid segundaOrigem = Guid.CreateVersion7();
+        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => MoveAEtapaParaNovaFase(envelope, segundaOrigem));
+        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow.AddDays(5));
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow.AddDays(10));
+
+        iniciadas.Contem(primeira.FaseCanonicaOrigemId).Should().BeTrue("o lote fixou a versão em que a etapa era da primeira fase");
+        iniciadas.Contem(segundaOrigem).Should().BeFalse("a versão da segunda fase ainda não foi divulgada");
+    }
+
     private static void JanelaNoPassado(JsonObject fase)
     {
         fase["inicio"] = "2020-01-01T00:00:00+00:00";
