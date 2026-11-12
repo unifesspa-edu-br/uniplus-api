@@ -94,10 +94,6 @@ public static class SelecaoCodegenRegistration
         // tanto no handler que divulga quanto nos dois de leitura.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICertameDivulgadoRepository>();
 
-        // As fases iniciadas do processo, lidas na versão publicada pela edição do cronograma: concreto
-        // internal na Infrastructure de Seleção, mesmo motivo acima.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFasesIniciadasDoProcesso>();
-
         // Vocabulário fechado de fatos do candidato (#846, ADR-0111), consumido pelo
         // handler de critérios de desempate para validar DESEMPATE-PREDICADO-FATO
         // (Story #847). Mesmo motivo dos demais readers cross-módulo acima.
@@ -111,25 +107,8 @@ public static class SelecaoCodegenRegistration
         // transacional write+evento do outbox (ADR-0004), que Publicar precisa.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICalendarioVigenteReader>();
 
-        // Cronograma de fases (Story #851): FaseCanonica/TipoBanca (Configuração) e o
-        // grafo de precedências (idem) — primeiro consumo real dos dois primeiros
-        // readers desde que a #40 os deixou registrados sem consumidor. Mesmo motivo
-        // dos demais readers cross-módulo acima — gap real, confirmado ausente antes
-        // desta entrega.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFaseCanonicaReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
-
-        // Unidade responsável por fase: o cronograma a congela por snapshot-copy a partir do cadastro
-        // da Organização Institucional (ADR-0056). O resolvedor interno à infraestrutura impede que o
-        // detector de transação enxergue o DbContext da Organização no handler, que segue
-        // transacional por causa do lock pessimista do processo.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
-
-        // Recorte de competência da banca requerida: a categoria de documento que cada
-        // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
-        // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();
+        OptInDasLeiturasDoCronograma(opts);
+        OptInDasLeiturasDaFase(opts);
 
         // Documentos exigidos (Story #554, PR #895): snapshot-copy de TipoDocumento
         // (Configuração) para cada exigência. Mesmo motivo dos demais readers
@@ -178,5 +157,35 @@ public static class SelecaoCodegenRegistration
         // Impedimento do servidor inscrito: a porta é registrada por fábrica, e os handlers que a alcançam pelo
         // ponto de decisão a resolvem por service location em vez de construí-la.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IInscricaoDoSujeitoNoProcesso>();
+    }
+
+    private static void OptInDasLeiturasDoCronograma(WolverineOptions opts)
+    {
+        // Cronograma de fases (Story #851): FaseCanonica/TipoBanca (Configuração) e o
+        // grafo de precedências (idem) — primeiro consumo real dos dois primeiros
+        // readers desde que a #40 os deixou registrados sem consumidor. Mesmo motivo
+        // dos demais readers cross-módulo acima — gap real, confirmado ausente antes
+        // desta entrega.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFaseCanonicaReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ITipoBancaReader>();
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IPrecedenciaFaseReader>();
+    }
+
+    private static void OptInDasLeiturasDaFase(WolverineOptions opts)
+    {
+        // Unidade responsável por fase: o cronograma a congela por snapshot-copy a partir do cadastro
+        // da Organização Institucional (ADR-0056). O resolvedor interno à infraestrutura impede que o
+        // detector de transação enxergue o DbContext da Organização no handler, que segue
+        // transacional por causa do lock pessimista do processo.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
+
+        // Recorte de competência da banca requerida: a categoria de documento que cada
+        // banca julga é snapshot-copy do cadastro de Configuração. Mesmo motivo dos demais
+        // readers cross-módulo acima — o concreto é internal a Configuracao.Infrastructure.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<ICategoriaDocumentoReader>();
+
+        // As fases iniciadas do processo, lidas na versão publicada pela edição do cronograma: concreto
+        // internal na Infrastructure de Seleção, mesmo motivo acima.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IFasesIniciadasDoProcesso>();
     }
 }

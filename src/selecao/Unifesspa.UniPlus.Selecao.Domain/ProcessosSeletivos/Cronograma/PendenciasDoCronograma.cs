@@ -43,14 +43,9 @@ public static class PendenciasDoCronograma
                 "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
         }
 
-        // A etapa segue a unidade da fase que a contém, então toda etapa publicada declara a fase em que
-        // acontece; o rascunho a aceita sem fase. A bicondicional por sinalizador de fase agrupadora deixou de
-        // valer para a etapa sem fase: ela é recusada aqui, citando a etapa.
-        if (EtapaSemFaseDeclarada(estado) is { } etapaSemFase)
+        if (RecusaDaEtapaSemFaseDeclarada(estado) is { } etapaSemFase)
         {
-            return new DomainError(
-                "ProcessoSeletivo.EtapaSemFaseDeclarada",
-                $"A etapa '{etapaSemFase.Nome}' não declara a fase em que acontece — declare a fase antes de publicar ou retificar o processo.");
+            return etapaSemFase;
         }
 
         // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
@@ -156,6 +151,15 @@ public static class PendenciasDoCronograma
         estado.CronogramaFases.Any(f => f.AgrupaEtapas
             && !estado.Etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
             && !estado.Etapas.Any(static e => e.FaseCodigo is null));
+
+    // A etapa segue a unidade da fase que a contém, então toda etapa publicada declara a fase em que
+    // acontece; o rascunho a aceita sem fase. A etapa sem fase é recusada aqui, citando a etapa.
+    private static DomainError? RecusaDaEtapaSemFaseDeclarada(EstadoDaConfiguracao estado) =>
+        EtapaSemFaseDeclarada(estado) is { } etapa
+            ? new DomainError(
+                "ProcessoSeletivo.EtapaSemFaseDeclarada",
+                $"A etapa '{etapa.Nome}' não declara a fase em que acontece — declare a fase antes de publicar ou retificar o processo.")
+            : null;
 
     /// <summary>A primeira etapa, na ordem, que não declara a fase em que acontece.</summary>
     internal static EtapaProcesso? EtapaSemFaseDeclarada(EstadoDaConfiguracao estado) =>

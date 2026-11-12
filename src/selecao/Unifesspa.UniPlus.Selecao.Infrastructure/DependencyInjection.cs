@@ -32,6 +32,13 @@ public static class SelecaoInfrastructureRegistration
 {
     private const string ConnectionStringName = "SelecaoDb";
 
+    private static void AddProcessoSeletivoEAsLeiturasDaVersaoPublicada(this IServiceCollection services)
+    {
+        services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
+        services.AddScoped<IUnidadeDaFaseNaVersaoVigente, UnidadeDaFaseNaVersaoVigente>();
+        services.AddScoped<IFasesIniciadasDoProcesso, FasesIniciadasDoProcesso>();
+    }
+
     /// <summary>
     /// Registra a infraestrutura do módulo Seleção (DbContext + interceptors +
     /// repositórios + serviços externos). Wire-up centralizado em
@@ -65,9 +72,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<ISelecaoUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<SelecaoDbContext>());
 
-        services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
-        services.AddScoped<IUnidadeDaFaseNaVersaoVigente, UnidadeDaFaseNaVersaoVigente>();
-        services.AddScoped<IFasesIniciadasDoProcesso, FasesIniciadasDoProcesso>();
+        services.AddProcessoSeletivoEAsLeiturasDaVersaoPublicada();
 
         // Projeção pública do certame: a tabela cuja existência de linha é a publicidade.
         services.AddScoped<ICertameDivulgadoRepository, CertameDivulgadoRepository>();

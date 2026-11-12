@@ -43,20 +43,13 @@ public static class DefinirCronogramaFasesCommandHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
-            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (processo is null)
+        Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
+        if (obtido.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            return Result<MutacaoAceita>.Failure(obtido.Error!);
         }
 
-        // A precondição precede a resolução de regras externas (ADR-0110).
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
-        {
-            return Result<MutacaoAceita>.Failure(bloqueio);
-        }
-
+        ProcessoSeletivo processo = obtido.Value!;
         CadastrosDasFases cadastros = new(
             faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader);
         AtosConsultadosNaEdicao atos = new(
@@ -75,6 +68,23 @@ public static class DefinirCronogramaFasesCommandHandler
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+    }
+
+    // A precondição precede a resolução de regras externas (ADR-0110).
+    private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
+        IProcessoSeletivoRepository repositorio, DefinirCronogramaFasesCommand command, CancellationToken cancellationToken)
+    {
+        ProcessoSeletivo? processo = await repositorio
+            .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
+            .ConfigureAwait(false);
+        if (processo is null)
+        {
+            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+        }
+
+        return processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio
+            ? Result<ProcessoSeletivo>.Failure(bloqueio)
+            : Result<ProcessoSeletivo>.Success(processo);
     }
 
     // O grafo de precedências é parâmetro do domínio, e não navegação (ADR-0042): é lido depois de as fases
