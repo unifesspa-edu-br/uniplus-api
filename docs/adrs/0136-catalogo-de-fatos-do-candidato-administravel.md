@@ -236,3 +236,11 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 - UNI-REQ-0143 (catálogo de fatos administrável), UNI-REQ-0065 (vocabulário extensível por configuração), UNI-REQ-0074 (estados do fato), UNI-REQ-0075 (derivados pelo sistema), UNI-REQ-0077 (ordem de coleta), UNI-REQ-0144 (formulário por finalidade), UNI-REQ-0145 (regras do item) e UNI-REQ-0148 (origem escolar).
 - ADR-0055 (código imutável por invariante), ADR-0056 (leitor cross-módulo), ADR-0061 (cópia por valor), ADR-0081 (classificação e base legal do dado pessoal), ADR-0082 (nome social público quando preferido), ADR-0096 (endereço estruturado), ADR-0111 (vocabulário de fatos), ADR-0116 (origem, ponto de resolução e vínculo), ADR-0122 (desativação prospectiva), ADR-0129 (identidade da origem) e ADR-0135 (projeto compartilhado de regras).
 - Lei 13.709/2018 (LGPD), arts. 5º, I e II, 7º e 11.
+
+## Emenda (2026-11-12) — escopo de fato `Recurso`
+
+Em "Forma do fato", o escopo deixa de ser só `CANDIDATO` ou `MEMBRO_GRUPO`: passa a existir também o escopo **`Recurso`**.
+
+- **Sobre o recurso, não sobre o candidato.** O fato de escopo `Recurso` é respondido sobre o recurso apresentado, e não sobre quem recorre. O formulário de recurso coleta campos configuráveis, que não são fatos do candidato, e não entram no cadastro do candidato nem nas regras que o avaliam.
+- **Único escopo do formulário de recurso.** O formulário de recurso coleta só fato de escopo `Recurso`. O cadastro recusa, no formulário de recurso, fato de escopo `Candidato`.
+- **Citação em regra.** O fato de escopo `Recurso` segue as demais regras de forma, classificação e proteção do catálogo. Regra configurada de fato de escopo `Candidato` não o cita, como já ocorre com o escopo `MEMBRO_GRUPO`.
