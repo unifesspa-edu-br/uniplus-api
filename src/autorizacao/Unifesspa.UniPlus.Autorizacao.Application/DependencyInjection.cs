@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
@@ -31,6 +32,7 @@ public static class AutorizacaoApplicationServiceRegistration
 
         AdicionarEventosDaOrigem(services);
         AdicionarAvisosDoPedido(services);
+        AdicionarDecisoesDaGovernanca(services);
         AdicionarMetricasDaGovernanca(services);
 
         AdicionarVersoesDoPerfil(services);
@@ -50,6 +52,16 @@ public static class AutorizacaoApplicationServiceRegistration
     {
         services.AddScoped<AvisosDoPedido>();
         services.AddScoped<AvisoDePedidoDevolvido>();
+    }
+
+    private static void AdicionarDecisoesDaGovernanca(IServiceCollection services)
+    {
+        services.AddScoped<ConcessaoDoPedidoAprovado>();
+        services.AddScoped<GravacaoDaDecisaoDoPedido>();
+        services.AddScoped<AprovacaoDoPedido>();
+        services.AddScoped<PreparoDaDecisaoDoItem>();
+        services.AddScoped<LeituraDaRevisao>();
+        services.AddScoped<AberturaDaRevisao>();
     }
 
     private static void AdicionarMetricasDaGovernanca(IServiceCollection services)

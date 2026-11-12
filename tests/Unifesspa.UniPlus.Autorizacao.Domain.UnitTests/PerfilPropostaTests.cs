@@ -22,7 +22,7 @@ public sealed class PerfilPropostaTests
 
     private readonly CatalogoMutavelDeTeste _catalogo = new();
 
-    [Fact(DisplayName = "A proposta que remove e acrescenta aplica a remoção na hora e deixa só o acréscimo pendente")]
+    [Fact(DisplayName = "A proposta que remove e acrescenta aplica a remoção na hora")]
     public void Propor_RemoveEAcrescenta_RemocaoNaHoraEPendenteSoComOAcrescimo()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
@@ -39,6 +39,15 @@ public sealed class PerfilPropostaTests
         remocao.MotivoDaRemocao.Should().Be(Motivo);
         remocao.Codigos().Should().Equal(Consultar);
         perfil.ComposicaoEmVigor.Should().Equal(Consultar);
+    }
+
+    [Fact(DisplayName = "A proposta que remove e acrescenta deixa pendente uma versão só com o acréscimo, à espera do documento")]
+    public void Propor_RemoveEAcrescenta_PendenteComOAcrescimo()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
+
+        DesfechoDaVersao desfecho = Propor(perfil, "Analista", [Consultar, Publicar]);
+
         VersaoDoPerfil pendente = perfil.VersaoPendente!;
         desfecho.Criada.Should().BeSameAs(pendente);
         pendente.Numero.Should().Be(3);
@@ -80,13 +89,7 @@ public sealed class PerfilPropostaTests
     public void Propor_ComPendente_CancelaAAnteriorECriaANova()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Dados], _catalogo);
-        VersaoDoPerfil anterior = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(
-            perfil,
-            PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Dados, Publicar], _catalogo),
-            PerfisDeTeste.SemContexto,
-            PerfisDeTeste.AutoriaDoAutor,
-            Agora,
-            _catalogo));
+        VersaoDoPerfil anterior = Pendente(perfil, [Consultar, Dados, Publicar]);
 
         DesfechoDaVersao desfecho = Propor(perfil, "Analista", [Consultar, Publicar]);
 
@@ -166,8 +169,12 @@ public sealed class PerfilPropostaTests
                 PerfisDeTeste.Conteudo(nome, Descricao, permissoes, _catalogo),
                 motivo,
                 CategoriaDaRemocao.Incidente,
-                PerfisDeTeste.AutoriaDaGestora,
+                PerfisDeTeste.AutoriaDoGestor,
                 Agora),
             contexto ?? PerfisDeTeste.SemContexto,
             _catalogo);
+
+    private VersaoDoPerfil Pendente(Perfil perfil, string[] codigos) =>
+        PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(
+            perfil, PerfisDeTeste.Conteudo("Analista", Descricao, codigos, _catalogo), PerfisDeTeste.SemContexto, PerfisDeTeste.AutoriaDoAutor, Agora, _catalogo));
 }

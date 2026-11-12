@@ -30,7 +30,7 @@ public enum PermissaoAutorizacao
         "Administrar concessões de acesso",
         "Consulta as concessões e a trilha de cada uma e revoga concessões, o que expõe quem tem acesso a quê, por pessoa.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     ConcessoesAdministrar = 3,
 
@@ -40,37 +40,37 @@ public enum PermissaoAutorizacao
         "Aprovar a adequação funcional dos pedidos de concessão",
         "Consulta a fila da primeira etapa dos pedidos de concessão, com o nome e o e-mail de quem pede e de quem recebe o acesso, e aprova ou recusa a adequação funcional.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     PedidosAprovarFuncional = 4,
 
-    /// <summary>Aprovar, na etapa de proteção de dados, a adequação do pedido de concessão à proteção de dados.</summary>
+    /// <summary>Aprovar, como Representante do controlador, a adequação do pedido de concessão à proteção de dados.</summary>
     [Permissao(
         "autorizacao:pedidos:aprovar-protecao-de-dados",
         "Aprovar a adequação dos pedidos de concessão à proteção de dados",
-        "Consulta a fila da segunda etapa dos pedidos de concessão, os de perfil com permissão pessoal ou sensível, e aprova ou recusa a adequação à proteção de dados.",
+        "Consulta a fila da segunda etapa dos pedidos de concessão, os de perfil com permissão pessoal ou sensível, e aprova ou recusa, em nome da Unifesspa, a adequação à proteção de dados.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     PedidosAprovarProtecaoDeDados = 5,
 
-    /// <summary>Conduzir a revisão periódica dos acessos a dado pessoal ou sensível, como proteção de dados.</summary>
+    /// <summary>Conduzir a revisão periódica dos acessos a dado pessoal ou sensível, como Representante do controlador.</summary>
     [Permissao(
         "autorizacao:revisoes:conduzir",
         "Conduzir a revisão periódica dos acessos a dado pessoal ou sensível",
-        "Abre e consulta as revisões, que listam quem tem acesso a dado pessoal ou sensível, e confirma ou revoga cada concessão, exceto as da própria proteção de dados.",
+        "Abre e consulta as revisões, que listam quem tem acesso a dado pessoal ou sensível, e confirma ou revoga cada concessão, exceto as de quem é Representante do controlador.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     RevisoesConduzir = 6,
 
-    /// <summary>Rever, como gestor de acessos, as concessões da proteção de dados na revisão periódica.</summary>
+    /// <summary>Rever, como gestor de acessos, as concessões dos Representantes do controlador na revisão periódica.</summary>
     [Permissao(
         "autorizacao:revisoes:rever-protecao-de-dados",
-        "Rever as concessões da proteção de dados na revisão periódica dos acessos",
-        "Consulta as revisões e confirma ou revoga as concessões da proteção de dados, que ela própria não revê.",
+        "Rever as concessões dos Representantes do controlador na revisão periódica dos acessos",
+        "Consulta as revisões e confirma ou revoga as concessões de quem é Representante do controlador, que os Representantes não reveem.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     RevisoesReverProtecaoDeDados = 7,
 
@@ -80,17 +80,26 @@ public enum PermissaoAutorizacao
         "Aprovar as versões de perfil pela gestão de acessos",
         "Consulta a fila da primeira etapa das versões propostas dos perfis, com quem as criou e as permissões que acrescentam, e aprova ou recusa a versão.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     PerfisAprovarFuncional = 8,
 
-    /// <summary>Aprovar, na etapa de proteção de dados, a versão proposta de um perfil de acesso que acrescenta permissão protegida.</summary>
+    /// <summary>Aprovar, como Representante do controlador, a versão proposta de um perfil de acesso que acrescenta permissão protegida.</summary>
     [Permissao(
         "autorizacao:perfis:aprovar-protecao-de-dados",
-        "Aprovar as versões de perfil pela proteção de dados",
+        "Aprovar as versões de perfil na etapa de proteção de dados",
         "Consulta a fila da segunda etapa das versões propostas dos perfis, as que acrescentam permissão pessoal, identificadora ou sensível, lê o documento instituidor e aprova ou recusa a versão.",
         ClassificacaoDeProtecao.Pessoal,
-        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     PerfisAprovarProtecaoDeDados = 9,
+
+    /// <summary>Publicar uma versão do termo de responsabilidade, como gestor de acessos.</summary>
+    [Permissao(
+        "autorizacao:termos:publicar",
+        "Publicar o termo de responsabilidade",
+        "Publica uma nova versão do termo de responsabilidade que o beneficiário aceita antes de receber acesso a dado pessoal ou sensível.",
+        ClassificacaoDeProtecao.Interno,
+        ReservadaAGovernanca = true)]
+    TermosPublicar = 10,
 }

@@ -22,10 +22,6 @@ public static class MigracaoMapping
             decisao.Ator.ToCodigo());
     }
 
-    private static string Detalhe(DecisaoDaMigracao decisao)
-    {
-        string dispensa = decisao.Dispensa is null ? string.Empty : $" Dispensa: {decisao.Dispensa}.";
-
-        return $"Etapa: {decisao.Etapa.ToCodigo()}. Janela: {decisao.JanelaId}.{dispensa}";
-    }
+    private static string Detalhe(DecisaoDaMigracao decisao) =>
+        $"Etapa: {decisao.Etapa.ToCodigo()}. Janela: {decisao.JanelaId}.";
 }

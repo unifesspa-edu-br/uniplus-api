@@ -50,7 +50,6 @@ autorizacao.decisoes_da_migracao.decisor_emissor: Pessoal
 autorizacao.decisoes_da_migracao.decisor_nome: Pessoal
 autorizacao.decisoes_da_migracao.decisor_sub: Pessoal
 autorizacao.decisoes_da_migracao.decisor_tem_concessao: Pessoal
-autorizacao.decisoes_da_migracao.dispensa: Pessoal
 autorizacao.decisoes_da_migracao.envio_etapa: Pessoal
 autorizacao.decisoes_da_migracao.envio_id: Pessoal
 autorizacao.decisoes_da_migracao.etapa: Pessoal
@@ -242,7 +241,6 @@ autorizacao.lotes_da_migracao.quantidade: Pessoal
 autorizacao.migracoes_da_concessao.atualizada_em: Pessoal
 autorizacao.migracoes_da_concessao.concessao_id: Pessoal
 autorizacao.migracoes_da_concessao.created_at: Pessoal
-autorizacao.migracoes_da_concessao.dispensa: Pessoal
 autorizacao.migracoes_da_concessao.exige_protecao_de_dados: Pessoal
 autorizacao.migracoes_da_concessao.id: Pessoal
 autorizacao.migracoes_da_concessao.janela_id: Pessoal
@@ -339,7 +337,7 @@ autorizacao.reclassificacoes_da_permissao.ordem_na_trilha: Interno
 autorizacao.reclassificacoes_da_permissao.perfil_id: Interno
 autorizacao.revisao_itens.concessao_id: Pessoal
 autorizacao.revisao_itens.created_at: Pessoal
-autorizacao.revisao_itens.decide: Pessoal
+autorizacao.revisao_itens.decidido_como: Pessoal
 autorizacao.revisao_itens.decidido_em: Pessoal
 autorizacao.revisao_itens.decidido_por_emissor: Pessoal
 autorizacao.revisao_itens.decidido_por_nome: Pessoal

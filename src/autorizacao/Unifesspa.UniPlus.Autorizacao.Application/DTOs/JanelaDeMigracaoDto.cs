@@ -36,7 +36,6 @@ public sealed record ItemDaJanelaDto(
     IReadOnlyList<string> Acrescimo,
     bool ExigeProtecaoDeDados,
     string Situacao,
-    string? Dispensa,
     bool EhDoLeitor);
 
 /// <summary>Uma janela de migração na fila de uma etapa, com o perfil a que pertence. Não traz nome de beneficiário.</summary>

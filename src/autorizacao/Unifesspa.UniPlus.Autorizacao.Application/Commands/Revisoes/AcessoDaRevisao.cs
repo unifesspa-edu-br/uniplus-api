@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>
-/// O que o solicitante da requisição pode fazer na revisão dos acessos: conduzi-la como proteção de dados e decidir os
-/// itens dela, ou rever como gestor de acessos os itens da proteção de dados. Cada capacidade é avaliada pelo ponto de
+/// O que o solicitante da requisição pode fazer na revisão dos acessos: conduzi-la como Representante do controlador e
+/// decidir os itens dela, ou rever como gestor de acessos os itens de quem é Representante. Cada capacidade é avaliada pelo ponto de
 /// decisão único, por permissão do catálogo, sem registrar: quem usa o resultado grava a decisão que governou o desfecho
 /// (<see cref="RegistrarAsync"/>), para que a trilha traga a decisão real e não a de uma permissão que a operação não
 /// exigia.
@@ -21,22 +21,22 @@ internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoD
     private static readonly PermissionRequirement PermissaoReverProtecaoDeDados =
         CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.RevisoesReverProtecaoDeDados).Requisito;
 
-    /// <summary>Conduz a revisão como proteção de dados.</summary>
+    /// <summary>Conduz a revisão como Representante do controlador.</summary>
     public bool Conduz => DecisaoConduzir is DecisaoPermitida;
 
-    /// <summary>Revê como gestor de acessos os itens da proteção de dados.</summary>
+    /// <summary>Revê como gestor de acessos os itens de quem é Representante.</summary>
     public bool ReveProtecaoDeDados => DecisaoReverProtecaoDeDados is DecisaoPermitida;
 
     /// <summary>Lê as revisões: quem conduz ou quem revê.</summary>
     public bool Le => Conduz || ReveProtecaoDeDados;
 
-    /// <summary>A permissão de quem decide o item: a proteção de dados decide os seus, e os gestores, os da proteção de dados.</summary>
+    /// <summary>A permissão de quem decide o item: o Representante decide os comuns, e os gestores, os de quem é Representante.</summary>
     public bool Decide(TipoDeGovernanca quemDecide) =>
-        quemDecide == TipoDeGovernanca.ProtecaoDeDados ? Conduz : ReveProtecaoDeDados;
+        quemDecide == TipoDeGovernanca.RepresentanteDoControlador ? Conduz : ReveProtecaoDeDados;
 
     /// <summary>A decisão da permissão de quem decide os itens da governança.</summary>
     public DecisaoDeAcesso DecisaoDe(TipoDeGovernanca quemDecide) =>
-        quemDecide == TipoDeGovernanca.ProtecaoDeDados ? DecisaoConduzir : DecisaoReverProtecaoDeDados;
+        quemDecide == TipoDeGovernanca.RepresentanteDoControlador ? DecisaoConduzir : DecisaoReverProtecaoDeDados;
 
     /// <summary>
     /// Consulta o que a requisição pode, sem registrar. Nulo quando o token não identifica o solicitante por completo: a
@@ -48,19 +48,12 @@ internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoD
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        ResourceContext? ResourceDe(PermissionRequirement permissao) => revisaoId is { } id
-            ? ResourceContext.From(ResourceTiposAutorizacao.Revisao, permissao.Sensibilidade, resourceId: id).Value
-            : null;
+        DecisaoDeAcesso conduzir = await AvaliarAsync(verificador, PermissaoConduzir, revisaoId, cancellationToken).ConfigureAwait(false);
 
-        DecisaoDeAcesso conduzir = await verificador.AvaliarAsync(PermissaoConduzir, ResourceDe(PermissaoConduzir), cancellationToken).ConfigureAwait(false);
-        if (conduzir is SemSujeito)
-        {
-            return null;
-        }
-
-        DecisaoDeAcesso rever = await verificador.AvaliarAsync(PermissaoReverProtecaoDeDados, ResourceDe(PermissaoReverProtecaoDeDados), cancellationToken).ConfigureAwait(false);
-
-        return new AcessoDaRevisao(conduzir, rever);
+        return conduzir is SemSujeito
+            ? null
+            : new AcessoDaRevisao(
+                conduzir, await AvaliarAsync(verificador, PermissaoReverProtecaoDeDados, revisaoId, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -69,6 +62,16 @@ internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoD
     /// </summary>
     public Task RegistrarAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
         RegistrarAsync(verificador, [DecisaoConduzir, DecisaoReverProtecaoDeDados], cancellationToken);
+
+    private static Task<DecisaoDeAcesso> AvaliarAsync(
+        IVerificadorDeAcesso verificador, PermissionRequirement permissao, Guid? revisaoId, CancellationToken cancellationToken)
+    {
+        ResourceContext? recurso = revisaoId is { } id
+            ? ResourceContext.From(ResourceTiposAutorizacao.Revisao, permissao.Sensibilidade, resourceId: id).Value
+            : null;
+
+        return verificador.AvaliarAsync(permissao, recurso, cancellationToken);
+    }
 
     /// <summary>Registra o desfecho da decisão que governou a operação, permitida ou negada.</summary>
     public static Task RegistrarAsync(

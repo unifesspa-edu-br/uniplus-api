@@ -20,7 +20,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguration<MigracaoDaConcessao>
 {
     private const int SituacaoMaxLength = 40;
-    private const int DispensaMaxLength = 80;
 
     private static readonly ValueConverter<SituacaoDaMigracao, string> SituacaoConverter = new(
         situacao => situacao.ToCodigo(),
@@ -37,7 +36,6 @@ internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguratio
 
         builder.Property(m => m.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(m => m.ExigeProtecaoDeDados).IsRequired();
-        builder.Property(m => m.Dispensa).HasMaxLength(DispensaMaxLength);
         builder.Property(m => m.AtualizadaEm).IsRequired();
 
         // A concessão é do mesmo perfil da janela: a chave composta impede a linha de apontar para a de outro perfil.
@@ -56,8 +54,5 @@ internal sealed class MigracaoDaConcessaoConfiguration : IEntityTypeConfiguratio
         tabela.HasCheckConstraint(
             "ck_migracoes_da_concessao_situacao",
             $"situacao IN ('{SituacaoDaMigracaoCodigo.Retida}', '{SituacaoDaMigracaoCodigo.AguardandoProtecaoDeDados}', '{SituacaoDaMigracaoCodigo.Migrada}', '{SituacaoDaMigracaoCodigo.Recusada}', '{SituacaoDaMigracaoCodigo.NaoMigrada}', '{SituacaoDaMigracaoCodigo.ForaDaLista}')");
-        tabela.HasCheckConstraint(
-            "ck_migracoes_da_concessao_dispensa",
-            $"dispensa IS NULL OR dispensa = '{MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados}'");
     }
 }

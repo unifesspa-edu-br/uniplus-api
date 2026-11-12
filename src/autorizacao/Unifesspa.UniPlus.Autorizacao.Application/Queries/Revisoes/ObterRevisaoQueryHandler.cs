@@ -3,23 +3,20 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
-using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Handler da leitura de uma revisão. Lê quem conduz a revisão ou quem revê os acessos da proteção de dados.</summary>
+/// <summary>Handler da leitura de uma revisão. Lê quem conduz a revisão ou quem revê os acessos dos Representantes do controlador.</summary>
 public static class ObterRevisaoQueryHandler
 {
     public static async Task<Result<RevisaoDeAcessosDto>> Handle(
         ObterRevisaoQuery query,
-        IRevisaoDeAcessosRepository repository,
+        LeituraDaRevisao leitura,
         IVerificadorDeAcesso verificador,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(leitura);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         AcessoDaRevisao? acesso = await AcessoDaRevisao.ConsultarAsync(verificador, query.Id, cancellationToken).ConfigureAwait(false);
@@ -29,18 +26,14 @@ public static class ObterRevisaoQueryHandler
         }
 
         await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
-
-        if (!acesso.Le)
-        {
-            return Result<RevisaoDeAcessosDto>.Failure(RevisaoHandlerErros.SemPermissao());
-        }
-
-        RevisaoDetalhada? detalhada = await repository
-            .ObterDetalhadaAsync(query.Id, timeProvider.GetUtcNow(), cancellationToken)
-            .ConfigureAwait(false);
-
-        return detalhada is null
-            ? Result<RevisaoDeAcessosDto>.Failure(RevisaoHandlerErros.NaoEncontrada())
-            : Result<RevisaoDeAcessosDto>.Success(RevisaoMapping.ToDto(detalhada));
+        return acesso.Le
+            ? await LerAsync(leitura, query.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false)
+            : Result<RevisaoDeAcessosDto>.Failure(RevisaoHandlerErros.SemPermissao());
     }
+
+    private static async Task<Result<RevisaoDeAcessosDto>> LerAsync(
+        LeituraDaRevisao leitura, Guid revisaoId, DateTimeOffset agora, CancellationToken cancellationToken) =>
+        await leitura.LerAsync(revisaoId, agora, cancellationToken).ConfigureAwait(false) is { } revisao
+            ? Result<RevisaoDeAcessosDto>.Success(revisao)
+            : Result<RevisaoDeAcessosDto>.Failure(RevisaoHandlerErros.NaoEncontrada());
 }

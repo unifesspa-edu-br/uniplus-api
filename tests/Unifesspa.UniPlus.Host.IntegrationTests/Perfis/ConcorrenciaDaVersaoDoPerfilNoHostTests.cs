@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -26,10 +25,6 @@ using Wolverine.Tracking;
 /// confirma, de modo que a ordem é a decidida pelo teste e não pela sorte do agendador.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoHostTestBase
 {
     public ConcorrenciaDaVersaoDoPerfilNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -51,10 +46,8 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         aprovacao.IsCompleted.Should().BeFalse();
         await concessao.ConfirmarAsync();
 
-        using HttpResponseMessage recusa = await aprovacao;
-        recusa.StatusCode.Should().Be(HttpStatusCode.OK, await recusa.Content.ReadAsStringAsync());
-        (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle();
-        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("pendente");
+        (await aprovacao).StatusCode.Should().Be(HttpStatusCode.OK);
+        await ConferirConcessaoESituacaoAsync(original.PerfilId, ampliada.VersaoId, "pendente");
         (await VigenciasAsync(original.PerfilId)).Should().ContainSingle(v => v.Aberta && v.VersaoId == original.VersaoId);
     }
 
@@ -69,19 +62,11 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         Task<Perfil>? concessao = null;
 
         HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
-            original.PerfilId,
-            () => AprovarBrutoAsync(protecao, ampliada, EtapaProtecao),
-            async () =>
-            {
-                concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade));
-                await AguardarFilaDaTravaAsync(2);
-                return new HttpResponseMessage(HttpStatusCode.OK);
-            });
+            original.PerfilId, () => AprovarBrutoAsync(protecao, ampliada, EtapaProtecao), NaFila(() => concessao = ConcederEmTransacaoAsync(original.PerfilId, EscopoDaConcessao.DaUnidade(unidade))));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
         (await concessao!).ComposicaoEmVigor.Should().BeEquivalentTo(Consultar, Sensivel);
-        (await ConcessoesAsync(Leandro, original.PerfilId)).Should().ContainSingle();
-        (await SituacaoDaVersaoNoBancoAsync(ampliada.VersaoId)).Should().Be("vigente");
+        await ConferirConcessaoESituacaoAsync(original.PerfilId, ampliada.VersaoId, "vigente");
         DescartarTodas(respostas);
     }
 
@@ -108,12 +93,12 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
     {
         (Envio original, Envio ampliada) = await PerfilComAmpliadaVerificadaAsync();
         using HttpClient recusadora = await GestaoAsync();
-        using HttpClient aprovadora = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
+        using HttpClient aprovador = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
 
         HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
             original.PerfilId,
             () => RecusarBrutoAsync(recusadora, ampliada, EtapaGestao),
-            () => AprovarBrutoAsync(aprovadora, ampliada, EtapaGestao));
+            () => AprovarBrutoAsync(aprovador, ampliada, EtapaGestao));
 
         respostas[0].StatusCode.Should().Be(HttpStatusCode.OK, await respostas[0].Content.ReadAsStringAsync());
         await ConferirRecusaDoPerfilAsync(respostas[1], HttpStatusCode.Conflict, "etapa_ja_decidida");
@@ -150,14 +135,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         Task<int>? expiracao = null;
 
         HttpResponseMessage[] respostas = await EmFilaSobATravaAsync(
-            original.PerfilId,
-            () => AprovarBrutoAsync(gestao, ampliada, EtapaGestao),
-            async () =>
-            {
-                expiracao = ExpirarPendentesAsync();
-                await AguardarFilaDaTravaAsync(2);
-                return new HttpResponseMessage(HttpStatusCode.OK);
-            });
+            original.PerfilId, () => AprovarBrutoAsync(gestao, ampliada, EtapaGestao), NaFila(() => expiracao = ExpirarPendentesAsync()));
 
         await ConferirRecusaDoPerfilAsync(respostas[0], HttpStatusCode.UnprocessableEntity, "versao_expirada");
         await expiracao!;
@@ -211,5 +189,19 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
         {
             resposta.Dispose();
         }
+    }
+
+    // A segunda operação da fila: começa e espera as duas sessões disputarem a trava do perfil.
+    private Func<Task<HttpResponseMessage>> NaFila(Action iniciar) => async () =>
+    {
+        iniciar();
+        await AguardarFilaDaTravaAsync(2);
+        return new HttpResponseMessage(HttpStatusCode.OK);
+    };
+
+    private async Task ConferirConcessaoESituacaoAsync(Guid perfilId, Guid versaoId, string situacao)
+    {
+        (await ConcessoesAsync(Leandro, perfilId)).Should().ContainSingle();
+        (await SituacaoDaVersaoNoBancoAsync(versaoId)).Should().Be(situacao);
     }
 }

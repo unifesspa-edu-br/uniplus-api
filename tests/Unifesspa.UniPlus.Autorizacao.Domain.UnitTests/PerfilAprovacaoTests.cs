@@ -25,7 +25,7 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar]);
 
-        DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora);
+        DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor);
 
         desfecho.Concluida.Should().BeTrue();
         desfecho.Troca.Should().NotBeNull();
@@ -37,7 +37,7 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar, Dados]);
 
-        DesfechoDaVersao gestao = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora);
+        DesfechoDaVersao gestao = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor);
         gestao.Troca.Should().BeNull();
         perfil.VersaoPendente!.AprovadaPelaGestao.Should().BeTrue();
 
@@ -71,9 +71,9 @@ public sealed class PerfilAprovacaoTests
     public void Aprovar_MesmaPessoaNasDuasEtapas_Recusa()
     {
         Perfil perfil = PendenteVerificada([Consultar, Dados]);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora);
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor);
 
-        Decidir(perfil, EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.AutoriaDaGestora)
+        Decidir(perfil, EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.AutoriaDoGestor)
             .Erro!.Code.Should().Be(PerfilErrorCodes.MesmoDecisorNasDuasEtapas);
     }
 
@@ -82,7 +82,7 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar]);
 
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.Autoria(PerfisDeTeste.Gestora, temConcessao: true))
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.Autoria(PerfisDeTeste.Gestor, temConcessao: true))
             .Concluida.Should().BeTrue();
 
         DecisaoDaVersao decisao = perfil.VersaoVigente!.Decisoes.Single();
@@ -95,7 +95,7 @@ public sealed class PerfilAprovacaoTests
     public void Aprovar_EtapaJaDecidida_Recusa()
     {
         Perfil perfil = PendenteVerificada([Consultar, Dados]);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora);
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor);
 
         Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.Autoria(PerfisDeTeste.ProtecaoDeDados))
             .Erro!.Code.Should().Be(PerfilErrorCodes.EtapaJaDecidida);
@@ -106,7 +106,7 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], _catalogo);
 
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora)
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor)
             .Erro!.Code.Should().Be(PerfilErrorCodes.DocumentoNaoVerificado);
     }
 
@@ -115,9 +115,9 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar]);
 
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, ResultadoDaDecisao.Recusado, null)
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, ResultadoDaDecisao.Recusado, null)
             .Erro!.Code.Should().Be(PerfilErrorCodes.MotivoInvalido);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, ResultadoDaDecisao.Recusado, "Fora do escopo.")
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, ResultadoDaDecisao.Recusado, "Fora do escopo.")
             .Concluida.Should().BeTrue();
 
         VersaoDoPerfil recusada = perfil.UltimaVersaoEncerradaSemVigor!;
@@ -133,7 +133,7 @@ public sealed class PerfilAprovacaoTests
         VersaoDoPerfil versao = perfil.VersaoPendente!;
         DateTimeOffset noPrazoExato = Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias);
 
-        DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, instante: noPrazoExato);
+        DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, instante: noPrazoExato);
 
         desfecho.Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
         desfecho.Gravar.Should().BeTrue();
@@ -151,16 +151,19 @@ public sealed class PerfilAprovacaoTests
 
         for (int tentativa = 0; tentativa < 2; tentativa++)
         {
-            Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, versaoId: versaoId)
-                .Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-            Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, ResultadoDaDecisao.Recusado, "Fora do escopo.", versaoId: versaoId)
-                .Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-            perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, "Motivo.", Agora).Erro!.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-            perfil.NovoDocumento(versaoId, 1024).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-            perfil.DocumentoParaReemitirEnvio(versaoId).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-            perfil.ConfirmarDocumento(versaoId, "etag", Agora).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            CodigosNaVersaoExpirada(perfil, versaoId).Should().AllBe(PerfilErrorCodes.VersaoExpirada);
         }
     }
+
+    private string[] CodigosNaVersaoExpirada(Perfil perfil, Guid versaoId) =>
+    [
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, versaoId: versaoId).Erro!.Code,
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, ResultadoDaDecisao.Recusado, "Fora do escopo.", versaoId: versaoId).Erro!.Code,
+        perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, "Motivo.", Agora).Erro!.Code,
+        perfil.NovoDocumento(versaoId, 1024).Errors.Single().Error.Code,
+        perfil.DocumentoParaReemitirEnvio(versaoId).Errors.Single().Error.Code,
+        perfil.ConfirmarDocumento(versaoId, "etag", Agora).Errors.Single().Error.Code,
+    ];
 
     [Fact(DisplayName = "No perfil desativado, a versão expirada responde versão expirada ao novo documento e à reemissão")]
     public void VersaoExpirada_PerfilDesativado_RecusaPeloPrazo()
@@ -183,7 +186,7 @@ public sealed class PerfilAprovacaoTests
         Perfil perfil = PendenteVerificada([Consultar, Dados]);
         VersaoDoPerfil versao = perfil.VersaoPendente!;
         DateTimeOffset expiraEm = versao.ExpiraEm!.Value;
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, instante: Agora.AddDays(14));
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, instante: Agora.AddDays(14));
 
         versao.ExpiraEm.Should().Be(expiraEm);
         Decidir(perfil, EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.AutoriaDaProtecaoDeDados, instante: expiraEm)
@@ -204,7 +207,7 @@ public sealed class PerfilAprovacaoTests
     public void Decidir_ClasseDeixaDeExigir_DescartaAsAprovacoes()
     {
         Perfil perfil = PendenteVerificada([Consultar, Dados]);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora);
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor);
         _catalogo.SensibilidadeDosDados = ClassificacaoDeProtecao.Interno;
 
         DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.AutoriaDaProtecaoDeDados);
@@ -213,11 +216,8 @@ public sealed class PerfilAprovacaoTests
         desfecho.Gravar.Should().BeTrue();
         desfecho.Descartadas.Should().ContainSingle();
         desfecho.Recalculo.Should().Match<RecalculoDaAprovacao>(r => r.ExigiaAntes && !r.ExigeAgora && r.CicloAnterior == 1);
-        VersaoDoPerfil versao = perfil.VersaoPendente!;
-        versao.ExigeProtecaoDeDados.Should().BeFalse();
-        versao.CicloDeAprovacao.Should().Be(2);
-        versao.DecisoesDoCiclo().Should().BeEmpty();
-        versao.Recalculos.Should().ContainSingle();
+        perfil.VersaoPendente!.Should().Match<VersaoDoPerfil>(v =>
+            !v.ExigeProtecaoDeDados && v.CicloDeAprovacao == 2 && !v.DecisoesDoCiclo().Any() && v.Recalculos.Count == 1);
     }
 
     [Fact(DisplayName = "Recálculo para mais: a classe passa a exigir a proteção de dados e recomeça pela gestão")]
@@ -227,12 +227,12 @@ public sealed class PerfilAprovacaoTests
         Perfil perfil = PendenteVerificada([Consultar, Dados]);
         _catalogo.SensibilidadeDosDados = ClassificacaoDeProtecao.Pessoal;
 
-        DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora);
+        DesfechoDaVersao desfecho = Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor);
 
         desfecho.Erro!.Code.Should().Be(PerfilErrorCodes.AprovacoesDescartadas);
         desfecho.Descartadas.Should().BeEmpty();
         desfecho.Recalculo.Should().Match<RecalculoDaAprovacao>(r => !r.ExigiaAntes && r.ExigeAgora);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora).Troca.Should().BeNull();
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor).Troca.Should().BeNull();
         perfil.VersaoPendente!.ExigeProtecaoDeDados.Should().BeTrue();
     }
 
@@ -242,7 +242,7 @@ public sealed class PerfilAprovacaoTests
         Perfil perfil = PendenteVerificada([Consultar]);
         _catalogo.DeUnidadeExtras.Add(Consultar);
 
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora)
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor)
             .Erro!.Code.Should().Be(PerfilErrorCodes.AlcanceAlterado);
     }
 
@@ -251,12 +251,12 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar]);
         _catalogo.Reservadas.Add(Consultar);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora)
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor)
             .Erro!.Code.Should().Be(PerfilErrorCodes.PermissaoReservada);
 
         _catalogo.Reservadas.Clear();
         _catalogo.Inexistentes.Add(Consultar);
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora)
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor)
             .Erro!.Code.Should().Be(PerfilErrorCodes.PermissaoInexistente);
     }
 
@@ -265,7 +265,7 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PendenteVerificada([Consultar]);
 
-        perfil.Decidir(Pedido(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora), NomeEmUso, _catalogo)
+        perfil.Decidir(Pedido(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor), NomeEmUso, _catalogo)
             .Erro!.Code.Should().Be(PerfilErrorCodes.NomeDuplicado);
     }
 
@@ -275,7 +275,7 @@ public sealed class PerfilAprovacaoTests
         Perfil interno = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], _catalogo);
         Verificada(interno, [Consultar, Publicar]);
 
-        Decidir(interno, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora).Troca.Should().NotBeNull();
+        Decidir(interno, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor).Troca.Should().NotBeNull();
     }
 
     [Fact(DisplayName = "A versão que só muda nome ou descrição exige apenas a gestão")]
@@ -292,7 +292,7 @@ public sealed class PerfilAprovacaoTests
         nova.ExigeProtecaoDeDados.Should().BeFalse();
         Verificar(perfil);
 
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora).Troca.Should().NotBeNull();
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor).Troca.Should().NotBeNull();
         perfil.Nome.Should().Be("Analista sênior");
     }
 
@@ -308,9 +308,9 @@ public sealed class PerfilAprovacaoTests
     {
         Perfil perfil = PerfisDeTeste.DeGovernanca("Gestor de acessos", Descricao, [Consultar], _catalogo);
 
-        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDaGestora, versaoId: Guid.NewGuid())
+        Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, versaoId: Guid.NewGuid())
             .Erro!.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
-        perfil.CancelarVersao(Guid.NewGuid(), PerfisDeTeste.Gestora, "Motivo.", Agora)
+        perfil.CancelarVersao(Guid.NewGuid(), PerfisDeTeste.Gestor, "Motivo.", Agora)
             .Erro!.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
     }
 
@@ -372,7 +372,6 @@ public sealed class PerfilAprovacaoTests
         ResultadoDaDecisao resultado = ResultadoDaDecisao.Aprovado,
         string? motivo = null,
         DateTimeOffset? instante = null,
-        ContextoDaVersao? contexto = null,
         Guid? versaoId = null) =>
-        perfil.Decidir(Pedido(perfil, etapa, autoria, resultado, motivo, instante, versaoId), contexto ?? PerfisDeTeste.SemContexto, _catalogo);
+        perfil.Decidir(Pedido(perfil, etapa, autoria, resultado, motivo, instante, versaoId), PerfisDeTeste.SemContexto, _catalogo);
 }

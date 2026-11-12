@@ -31,6 +31,18 @@ public sealed class PerfilRemocaoTests
         desfecho.Concluida.Should().BeTrue();
         desfecho.Troca!.Removidas.Should().Equal(Publicar);
         anterior.Situacao.Should().Be(SituacaoDaVersao.Encerrada);
+        perfil.ComposicaoEmVigor.Should().Equal(Consultar);
+        perfil.Vigencias.Count(v => v.Aberta).Should().Be(1);
+    }
+
+    [Fact(DisplayName = "A versão de remoção guarda o motivo, a categoria e o alcance e o protocolo da anterior")]
+    public void Remover_VersaoDeRemocaoGuardaOAto()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
+        VersaoDoPerfil anterior = perfil.VersaoVigente!;
+
+        perfil.Remover(Pedido([Publicar]), _catalogo);
+
         VersaoDoPerfil remocao = perfil.VersaoVigente!;
         remocao.Origem.Should().Be(OrigemDaVersao.Remocao);
         remocao.Numero.Should().Be(2);
@@ -39,8 +51,6 @@ public sealed class PerfilRemocaoTests
         remocao.Codigos().Should().Equal(Consultar);
         remocao.Alcance.Should().Be(anterior.Alcance);
         remocao.Protocolo.Should().Be(anterior.Protocolo);
-        perfil.ComposicaoEmVigor.Should().Equal(Consultar);
-        perfil.Vigencias.Count(v => v.Aberta).Should().Be(1);
     }
 
     [Fact(DisplayName = "A remoção total é admitida e preserva o alcance de unidade e o institucional")]
@@ -76,12 +86,8 @@ public sealed class PerfilRemocaoTests
     public void Remover_ComPendente_CancelaPorContencao()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
-        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
-            PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo),
-            PerfisDeTeste.SemContexto,
-            PerfisDeTeste.AutoriaDoAutor,
-            Agora,
-            _catalogo));
+        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(
+            perfil, PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo), PerfisDeTeste.SemContexto, PerfisDeTeste.AutoriaDoAutor, Agora, _catalogo));
 
         DesfechoDaVersao desfecho = perfil.Remover(Pedido([Publicar], Agora.AddDays(3)), _catalogo);
 
@@ -96,12 +102,8 @@ public sealed class PerfilRemocaoTests
     public void Remover_PendenteNoPrazoExato_Expira()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
-        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(perfil,
-            PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo),
-            PerfisDeTeste.SemContexto,
-            PerfisDeTeste.AutoriaDoAutor,
-            Agora,
-            _catalogo));
+        VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(
+            perfil, PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo), PerfisDeTeste.SemContexto, PerfisDeTeste.AutoriaDoAutor, Agora, _catalogo));
 
         DesfechoDaVersao desfecho = perfil.Remover(Pedido([Publicar], Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias)), _catalogo);
 
@@ -128,5 +130,5 @@ public sealed class PerfilRemocaoTests
     }
 
     private static PedidoDeRemocao Pedido(string[] codigos, DateTimeOffset? instante = null, string? motivo = Motivo) =>
-        new(codigos, motivo, CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDaGestora, instante ?? Agora);
+        new(codigos, motivo, CategoriaDaRemocao.Incidente, PerfisDeTeste.AutoriaDoGestor, instante ?? Agora);
 }

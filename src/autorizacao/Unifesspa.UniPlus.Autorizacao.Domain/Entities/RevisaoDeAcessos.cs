@@ -6,14 +6,19 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Concessão ativa de perfil pessoal ou sensível que entra na revisão.</summary>
-/// <param name="BeneficiarioTemProtecaoDeDados">O beneficiário tem hoje concessão ativa do perfil da proteção de dados, seja qual for o perfil desta concessão.</param>
-public sealed record ConcessaoARever(Guid ConcessaoId, bool BeneficiarioTemProtecaoDeDados);
+/// <summary>Quem decide um item da revisão e a condição do beneficiário lida, sob a trava do papel, no instante da decisão.</summary>
+/// <param name="Pessoa">Quem decide.</param>
+/// <param name="BeneficiarioERepresentante">O beneficiário tem, no instante da decisão, concessão vigente de Representante do controlador.</param>
+public sealed record DecisorDoItem(Identidade Pessoa, bool BeneficiarioERepresentante)
+{
+    /// <summary>A governança que decide o item, pela condição do beneficiário.</summary>
+    public TipoDeGovernanca Como => ItemDaRevisao.QuemDecide(BeneficiarioERepresentante);
+}
 
 /// <summary>
 /// Revisão periódica dos acessos a dado pessoal ou sensível (ADR-0152): um item por concessão ativa dessa natureza no
-/// instante da abertura. A proteção de dados decide os itens; os da própria proteção de dados são decididos pelos
-/// gestores de acessos.
+/// instante da abertura. O Representante do controlador decide os itens; os de quem é Representante no instante da
+/// decisão são decididos pelos gestores de acessos (ADR-0162).
 /// </summary>
 /// <remarks>
 /// <b>A situação não é gravada.</b> A revisão está em andamento enquanto algum item sem decisão trata de concessão ainda
@@ -41,10 +46,11 @@ public sealed class RevisaoDeAcessos : EntityBase
     {
     }
 
-    public static RevisaoDeAcessos Abrir(Identidade abertaPor, IEnumerable<ConcessaoARever> concessoes, DateTimeOffset instante)
+    /// <summary>Abre a revisão com um item por concessão, sem fixar quem decide cada um.</summary>
+    public static RevisaoDeAcessos Abrir(Identidade abertaPor, IEnumerable<Guid> concessaoIds, DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(abertaPor);
-        ArgumentNullException.ThrowIfNull(concessoes);
+        ArgumentNullException.ThrowIfNull(concessaoIds);
 
         RevisaoDeAcessos revisao = new()
         {
@@ -54,7 +60,7 @@ public sealed class RevisaoDeAcessos : EntityBase
             AbertaPorNome = abertaPor.Nome,
         };
 
-        revisao._itens.AddRange(concessoes.DistinctBy(static c => c.ConcessaoId).Select(c => ItemDaRevisao.Para(revisao.Id, c)));
+        revisao._itens.AddRange(concessaoIds.Distinct().Select(id => ItemDaRevisao.Para(revisao.Id, id)));
 
         return revisao;
     }
@@ -71,77 +77,61 @@ public sealed class RevisaoDeAcessos : EntityBase
     /// <summary>Algum item sem decisão trata de concessão que ainda está ativa.</summary>
     public bool EstaEmAndamento(IReadOnlySet<Guid> concessoesAtivas) => Pendentes(concessoesAtivas) > 0;
 
-    /// <summary>Mantém a concessão ativa e registra a decisão no item.</summary>
-    public Result Confirmar(Guid itemId, Concessao concessao, Identidade decisor, DateTimeOffset instante)
+    /// <summary>Mantém a concessão ativa e registra a decisão no item, com a governança que a tomou.</summary>
+    public Result Confirmar(Guid itemId, Concessao concessao, DecisorDoItem decisor, DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(concessao);
         ArgumentNullException.ThrowIfNull(decisor);
 
-        Result<ItemDaRevisao> item = ItemDecidivel(itemId, concessao, decisor, instante);
-        if (item.IsFailure)
-        {
-            return Result.Failure(item.Error!);
-        }
+        Result<ItemDaRevisao> item = ItemDecidivel(itemId, concessao, decisor.Pessoa, instante);
+        item.Value?.Decidir(ResultadoDoItemDaRevisao.Confirmada, decisor.Pessoa, decisor.Como, instante);
 
-        item.Value!.Decidir(ResultadoDoItemDaRevisao.Confirmada, decisor, instante);
-
-        return Result.Success();
+        return item.IsFailure ? Result.Failure(item.Error!) : Result.Success();
     }
 
     /// <summary>
-    /// Revoga a concessão e registra a decisão no item. A recusa por item decidido, concessão encerrada ou decisor que é
-    /// o beneficiário sai antes da do motivo, que a revogação da concessão valida.
+    /// Revoga a concessão e registra a decisão no item, com a governança que a tomou. A recusa por item decidido,
+    /// concessão encerrada ou decisor que é o beneficiário sai antes da do motivo, que a revogação da concessão valida.
     /// </summary>
-    public Result Revogar(Guid itemId, Concessao concessao, Identidade decisor, string? motivo, DateTimeOffset instante)
+    public Result Revogar(Guid itemId, Concessao concessao, DecisorDoItem decisor, string? motivo, DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(concessao);
         ArgumentNullException.ThrowIfNull(decisor);
 
-        Result<ItemDaRevisao> item = ItemDecidivel(itemId, concessao, decisor, instante);
-        if (item.IsFailure)
+        Result<ItemDaRevisao> item = ItemDecidivel(itemId, concessao, decisor.Pessoa, instante);
+        Result revogada = item.IsFailure ? Result.Failure(item.Error!) : concessao.Revogar(decisor.Pessoa, motivo, instante);
+        if (revogada.IsSuccess)
         {
-            return Result.Failure(item.Error!);
+            item.Value!.Decidir(ResultadoDoItemDaRevisao.Revogada, decisor.Pessoa, decisor.Como, instante);
         }
 
-        Result revogada = concessao.Revogar(decisor, motivo, instante);
-        if (revogada.IsFailure)
-        {
-            return revogada;
-        }
-
-        item.Value!.Decidir(ResultadoDoItemDaRevisao.Revogada, decisor, instante);
-
-        return Result.Success();
+        return revogada;
     }
 
     private Result<ItemDaRevisao> ItemDecidivel(Guid itemId, Concessao concessao, Identidade decisor, DateTimeOffset instante)
     {
         ItemDaRevisao? item = _itens.FirstOrDefault(i => i.Id == itemId && i.ConcessaoId == concessao.Id);
-        if (item is null)
-        {
-            return Result<ItemDaRevisao>.Failure(new DomainError(
-                RevisaoErrorCodes.ItemNaoEncontrado, "Item da revisão não encontrado."));
-        }
+        DomainError? recusa = item is null
+            ? new DomainError(RevisaoErrorCodes.ItemNaoEncontrado, "Item da revisão não encontrado.")
+            : RecusaDaDecisao(item, concessao, decisor, instante);
 
+        return recusa is null ? Result<ItemDaRevisao>.Success(item!) : Result<ItemDaRevisao>.Failure(recusa);
+    }
+
+    private static DomainError? RecusaDaDecisao(ItemDaRevisao item, Concessao concessao, Identidade decisor, DateTimeOffset instante)
+    {
         if (!item.Pendente)
         {
-            return Result<ItemDaRevisao>.Failure(new DomainError(
-                RevisaoErrorCodes.ItemJaDecidido, "O item da revisão já foi decidido."));
+            return new DomainError(RevisaoErrorCodes.ItemJaDecidido, "O item da revisão já foi decidido.");
         }
 
         if (!concessao.EstaAtiva(instante))
         {
-            return Result<ItemDaRevisao>.Failure(new DomainError(
-                RevisaoErrorCodes.ConcessaoNaoAtiva,
-                "A concessão deste item já não está ativa: foi revogada ou venceu fora da revisão."));
+            return new DomainError(RevisaoErrorCodes.ConcessaoNaoAtiva, "A concessão deste item já não está ativa: foi revogada ou venceu fora da revisão.");
         }
 
-        if (decisor.Equals(new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub)))
-        {
-            return Result<ItemDaRevisao>.Failure(new DomainError(
-                RevisaoErrorCodes.DecisorEBeneficiario, "Ninguém decide o item da própria concessão."));
-        }
-
-        return Result<ItemDaRevisao>.Success(item);
+        return decisor.Equals(new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub))
+            ? new DomainError(RevisaoErrorCodes.DecisorEBeneficiario, "Ninguém decide o item da própria concessão.")
+            : null;
     }
 }

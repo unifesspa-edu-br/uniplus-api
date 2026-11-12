@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Email;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -10,6 +9,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -23,10 +23,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// da escrita.
 /// </summary>
 [Collection(MonolitoComMailpitCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class SolicitacaoDaProtecaoNoHostTests
 {
     private const string Base = "/api/configuracao/admin/protecao-do-catalogo";
@@ -41,61 +37,36 @@ public sealed class SolicitacaoDaProtecaoNoHostTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Quem mantém o cadastro solicita; a escrita e o aviso por e-mail à aprovadora saem juntos, com um único contexto transacional")]
+    [Fact(DisplayName = "Quem mantém o cadastro solicita; a escrita e o aviso por e-mail ao Representante do controlador saem juntos, com um único contexto transacional")]
     public async Task Solicitar_DecideNoHandler_EscritaEAvisoAtomicos()
     {
-        IServiceProvider servicos = _fixture.Factory.Services;
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, Leandro);
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, Caroline);
-        await ConcessoesDeTeste.ConcederAsync(
-            servicos, Leandro, await ConcessoesDeTeste.CriarPerfilAsync(servicos, PermissaoConfiguracao.TiposDocumentoManter.Codigo));
-        await ConcessoesDeTeste.ConcederAsync(
-            servicos, Caroline, await ConcessoesDeTeste.CriarPerfilAsync(servicos, PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo),
-            email: EmailDeCaroline);
-
+        await PrepararPessoasAsync(EmailDeCaroline);
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid pendente = await CadastrarTipoPendenteAsync(client);
 
-        using HttpResponseMessage resposta = await EnviarAsync(
-            client, HttpMethod.Post, $"{Base}/solicitacoes",
-            new { itens = new[] { new { cadastro = "TIPO_DOCUMENTO", id = pendente } } });
+        using HttpResponseMessage resposta = await SolicitarAsync(client, pendente);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
         (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("tiposDeDocumento").GetInt32().Should().Be(1);
-        (await ListarAsync(client)).Single(i => i.GetProperty("id").GetGuid() == pendente)
-            .GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("SOLICITADA");
+        (await SituacaoAsync(client, pendente)).Should().Be("SOLICITADA");
         await AguardarEmailPara(EmailDeCaroline, TimeSpan.FromSeconds(30));
     }
 
     [Fact(DisplayName = "Falha no commit, com o aviso já gravado no outbox: nada fica gravado, o item segue pendente e nenhum e-mail sai (a escrita e o outbox são a mesma transação)")]
     public async Task Solicitar_FalhaNoCommit_NadaPersistidoNemAvisado()
     {
-        IServiceProvider servicos = _fixture.Factory.Services;
-        string emailDoAprovador = $"aprovadora.{Guid.NewGuid():N}@unifesspa.edu.br";
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, Leandro);
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, Caroline);
-        await ConcessoesDeTeste.ConcederAsync(
-            servicos, Leandro, await ConcessoesDeTeste.CriarPerfilAsync(servicos, PermissaoConfiguracao.TiposDocumentoManter.Codigo));
-        await ConcessoesDeTeste.ConcederAsync(
-            servicos, Caroline, await ConcessoesDeTeste.CriarPerfilAsync(servicos, PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo),
-            email: emailDoAprovador);
-
+        string emailDoAprovador = await PrepararPessoasAsync($"representante.{Guid.NewGuid():N}@unifesspa.edu.br");
         using HttpClient client = _fixture.Factory.CreateClient();
         Guid pendente = await CadastrarTipoPendenteAsync(client);
-        int disparosAntes = _fixture.Factory.FalhaNoCommit.Disparos;
-        int envelopesAntes = await EnvelopesDeEmailNoOutboxAsync();
+        (int disparosAntes, int envelopesAntes) = (_fixture.Factory.FalhaNoCommit.Disparos, await EnvelopesDeEmailNoOutboxAsync());
         _fixture.Factory.FalhaNoCommit.Armar();
 
-        using HttpResponseMessage resposta = await EnviarAsync(
-            client, HttpMethod.Post, $"{Base}/solicitacoes",
-            new { itens = new[] { new { cadastro = "TIPO_DOCUMENTO", id = pendente } } });
+        using HttpResponseMessage resposta = await SolicitarAsync(client, pendente);
 
         _fixture.Factory.FalhaNoCommit.Disparos.Should().Be(disparosAntes + 1);
-        _fixture.Factory.FalhaNoCommit.EnvelopesNaTransacao.Should().BeGreaterThan(
-            envelopesAntes, "o aviso já estava gravado no outbox, na transação, quando o commit falhou");
+        _fixture.Factory.FalhaNoCommit.EnvelopesNaTransacao.Should().BeGreaterThan(envelopesAntes, "o aviso já estava gravado no outbox, na transação, quando o commit falhou");
         resposta.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-        (await ListarAsync(client)).Single(i => i.GetProperty("id").GetGuid() == pendente)
-            .GetProperty("aprovacao").GetProperty("situacao").GetString().Should().Be("PENDENTE", "a escrita foi desfeita");
+        (await SituacaoAsync(client, pendente)).Should().Be("PENDENTE", "a escrita foi desfeita");
         (await EnvelopesDeEmailNoOutboxAsync()).Should().BeLessThanOrEqualTo(envelopesAntes, "o envelope do aviso foi desfeito com a transação");
         (await HaEmailParaAsync(emailDoAprovador, TimeSpan.FromSeconds(8))).Should().BeFalse("o aviso estava na mesma transação da escrita");
     }
@@ -184,9 +155,7 @@ public sealed class SolicitacaoDaProtecaoNoHostTests
         DateTime fim = DateTime.UtcNow + limite;
         while (DateTime.UtcNow < fim)
         {
-            JsonElement lista = await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages");
-            if (lista.GetProperty("messages").EnumerateArray().Any(m =>
-                m.GetProperty("To").EnumerateArray().Any(t => t.GetProperty("Address").GetString() == destinatario)))
+            if (TemMensagemPara(await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages"), destinatario))
             {
                 return;
             }
@@ -196,4 +165,24 @@ public sealed class SolicitacaoDaProtecaoNoHostTests
 
         throw new TimeoutException($"O aviso para '{destinatario}' não chegou ao Mailpit em {limite}.");
     }
+
+    // Leandro mantém os tipos de documento; Caroline é Representante do controlador e recebe o aviso no e-mail pedido.
+    private async Task<string> PrepararPessoasAsync(string emailDoRepresentante)
+    {
+        IServiceProvider servicos = _fixture.Factory.Services;
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, Leandro);
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, Caroline);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(servicos, Leandro, PermissaoConfiguracao.TiposDocumentoManter.Codigo);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Caroline, TipoDeGovernanca.RepresentanteDoControlador, emailDoRepresentante);
+        return emailDoRepresentante;
+    }
+
+    private static Task<HttpResponseMessage> SolicitarAsync(HttpClient client, Guid pendente) =>
+        EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = new[] { new { cadastro = "TIPO_DOCUMENTO", id = pendente } } });
+
+    private static async Task<string?> SituacaoAsync(HttpClient client, Guid id) =>
+        (await ListarAsync(client)).Single(i => i.GetProperty("id").GetGuid() == id).GetProperty("aprovacao").GetProperty("situacao").GetString();
+
+    private static bool TemMensagemPara(JsonElement lista, string destinatario) =>
+        lista.GetProperty("messages").EnumerateArray().Any(m => m.GetProperty("To").EnumerateArray().Any(t => t.GetProperty("Address").GetString() == destinatario));
 }

@@ -8,14 +8,16 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler da revogação. Quem revoga é o sujeito autenticado. A concessão de gestor de acessos
-/// só se revoga se sobrarem ao menos dois gestores distintos com concessão ativa.
+/// Handler da revogação. Quem revoga é o sujeito autenticado. A concessão de gestor de acessos só se revoga se sobrarem ao
+/// menos dois gestores distintos com concessão ativa. A de Representante do controlador se revoga sob a trava do papel,
+/// tomada antes da trava da concessão (ADR-0162).
 /// </summary>
 public static class RevogarConcessaoCommandHandler
 {
     public static async Task<Result> Handle(
         RevogarConcessaoCommand command,
         IConcessaoRepository repository,
+        IPapelDoRepresentante papel,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -23,7 +25,7 @@ public static class RevogarConcessaoCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(papel);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -34,34 +36,55 @@ public static class RevogarConcessaoCommandHandler
             return Result.Failure(ConcessaoHandlerErros.AutorNaoIdentificado());
         }
 
-        // A linha da concessão é travada antes da trava da governança, na mesma ordem da revogação pela revisão:
-        // as duas revogações do mesmo gestor esperam uma pela outra em vez de travarem em ciclo.
-        Concessao? concessao = await repository.ObterParaAlterarAsync(command.Id, cancellationToken).ConfigureAwait(false);
-        if (concessao is null)
+        return await TravarERevogarAsync(new(command, revogadaPor, timeProvider), repository, papel, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> TravarERevogarAsync(
+        Pedido pedido, IConcessaoRepository repository, IPapelDoRepresentante papel, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        Concessao? concessao = await TravarAsync(pedido.Command.Id, repository, papel, cancellationToken).ConfigureAwait(false);
+        return concessao is null
+            ? Result.Failure(ConcessaoHandlerErros.NaoEncontrada(pedido.Command.Id))
+            : await RevogarAsync(new(pedido.Command, concessao, pedido.Por, pedido.Clock.GetUtcNow()), repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // A trava do papel vem antes da linha da concessão, e a linha da concessão antes da trava da governança, na mesma
+    // ordem da revogação pela revisão: as revogações concorrentes esperam umas pelas outras em vez de travarem em ciclo.
+    private static async Task<Concessao?> TravarAsync(
+        Guid concessaoId, IConcessaoRepository repository, IPapelDoRepresentante papel, CancellationToken cancellationToken)
+    {
+        ConcessaoComPerfil? lida = await repository.ObterComPerfilAsync(concessaoId, cancellationToken).ConfigureAwait(false);
+        if (lida?.Concessao.PerfilId == PerfisDeSistema.RepresentanteDoControladorId)
         {
-            return Result.Failure(ConcessaoHandlerErros.NaoEncontrada(command.Id));
+            await papel.TravarAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        return lida is null ? null : await repository.ObterParaAlterarAsync(concessaoId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> RevogarAsync(
+        Revogacao r, IConcessaoRepository repository, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         // A concessão já revogada responde antes: confirmar a pessoa de algo encerrado não leva a nada.
-        if (concessao.RevogadaEm is null && !concessao.ConfirmaEmailDoBeneficiario(command.ConfirmacaoEmail))
+        if (r.Concessao.RevogadaEm is null && !r.Concessao.ConfirmaEmailDoBeneficiario(r.Command.ConfirmacaoEmail))
         {
             return Result.ValidationFailure([new FieldError("confirmacaoEmail", ConcessaoHandlerErros.ConfirmacaoDivergente())]);
         }
 
-        DateTimeOffset agora = timeProvider.GetUtcNow();
-
-        Result revogacao = await RevogacaoDaConcessao
+        Result revogada = await RevogacaoDaConcessao
             .AplicarAsync(
-                concessao, agora, () => concessao.Revogar(revogadaPor, command.Motivo, agora), repository, unitOfWork, cancellationToken)
+                r.Concessao, r.Agora, () => r.Concessao.Revogar(r.Por, r.Command.Motivo, r.Agora), repository, unitOfWork, cancellationToken)
             .ConfigureAwait(false);
-        if (revogacao.IsFailure)
-        {
-            return revogacao;
-        }
 
+        return revogada.IsFailure ? revogada : await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> GravarAsync(IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
         }
         catch (Exception ex) when (ConcessaoViolacoes.EhConflitoDeConcorrencia(ex))
         {
@@ -71,7 +94,9 @@ public static class RevogarConcessaoCommandHandler
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(ConcessaoHandlerErros.ConflitoDeConcorrencia());
         }
-
-        return Result.Success();
     }
+
+    private sealed record Pedido(RevogarConcessaoCommand Command, Identidade Por, TimeProvider Clock);
+
+    private sealed record Revogacao(RevogarConcessaoCommand Command, Concessao Concessao, Identidade Por, DateTimeOffset Agora);
 }

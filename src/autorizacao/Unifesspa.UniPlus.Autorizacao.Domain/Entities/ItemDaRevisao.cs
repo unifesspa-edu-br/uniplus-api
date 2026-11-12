@@ -5,8 +5,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 
 /// <summary>
-/// Uma concessão a rever. Não copia nada da concessão: perfil, beneficiário e escopo são lidos dela. O resultado é
-/// escrito uma vez; sem ele o item está pendente.
+/// Uma concessão a rever. Não copia nada da concessão: perfil, beneficiário e escopo são lidos dela. Quem decide não se
+/// fixa na abertura: é avaliado no instante da decisão (ADR-0162). O resultado e o tipo de governança com que foi decidido
+/// são escritos uma vez; sem eles o item está pendente.
 /// </summary>
 public sealed class ItemDaRevisao : EntityBase
 {
@@ -14,8 +15,8 @@ public sealed class ItemDaRevisao : EntityBase
 
     public Guid ConcessaoId { get; private set; }
 
-    /// <summary>Quem decide o item: a proteção de dados, ou os gestores de acessos quando o beneficiário é a própria proteção de dados.</summary>
-    public TipoDeGovernanca Decide { get; private set; }
+    /// <summary>A governança com que o item foi decidido; nula enquanto o item está pendente.</summary>
+    public TipoDeGovernanca? DecididoComo { get; private set; }
 
     /// <summary>Nulo enquanto o item está pendente.</summary>
     public ResultadoDoItemDaRevisao? Resultado { get; private set; }
@@ -38,19 +39,24 @@ public sealed class ItemDaRevisao : EntityBase
     {
     }
 
-    internal static ItemDaRevisao Para(Guid revisaoId, ConcessaoARever concessao) =>
+    /// <summary>
+    /// Quem decide o item de um beneficiário: os gestores de acessos, quando ele é Representante do controlador no
+    /// instante da decisão; o Representante, nos demais casos.
+    /// </summary>
+    public static TipoDeGovernanca QuemDecide(bool beneficiarioERepresentante) =>
+        beneficiarioERepresentante ? TipoDeGovernanca.GestorDeAcessos : TipoDeGovernanca.RepresentanteDoControlador;
+
+    internal static ItemDaRevisao Para(Guid revisaoId, Guid concessaoId) =>
         new()
         {
             RevisaoId = revisaoId,
-            ConcessaoId = concessao.ConcessaoId,
-            Decide = concessao.BeneficiarioTemProtecaoDeDados
-                ? TipoDeGovernanca.GestorDeAcessos
-                : TipoDeGovernanca.ProtecaoDeDados,
+            ConcessaoId = concessaoId,
         };
 
-    internal void Decidir(ResultadoDoItemDaRevisao resultado, Identidade decisor, DateTimeOffset instante)
+    internal void Decidir(ResultadoDoItemDaRevisao resultado, Identidade decisor, TipoDeGovernanca como, DateTimeOffset instante)
     {
         Resultado = resultado;
+        DecididoComo = como;
         DecididoPorEmissor = decisor.Emissor;
         DecididoPorSub = decisor.Sub;
         DecididoPorNome = decisor.Nome;

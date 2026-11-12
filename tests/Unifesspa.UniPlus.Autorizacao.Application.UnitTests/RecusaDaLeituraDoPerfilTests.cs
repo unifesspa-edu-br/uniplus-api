@@ -30,18 +30,18 @@ public sealed class RecusaDaLeituraDoPerfilTests
     [Fact(DisplayName = "Quem aprova pela gestão de acessos lê o perfil e a trilha registra a permissão sobre ele")]
     public async Task Conferir_PelaGestaoDeAcessos_PermiteERegistraAPermissaoSobreOPerfil()
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         DomainError? recusa = await RecusaDaLeituraDoPerfil.ConferirAsync(verificador, PerfilId, CancellationToken.None);
 
         recusa.Should().BeNull();
-        TrilhaDeAcesso.Do(verificador).Should().Equal(SobreOPerfil(PerfisDeTeste.Gestora.Sub, Gestao, ResultadoDoAcesso.Permitido));
+        TrilhaDeAcesso.Do(verificador).Should().Equal(SobreOPerfil(PerfisDeTeste.Gestor.Sub, Gestao, ResultadoDoAcesso.Permitido));
     }
 
     [Fact(DisplayName = "Quem mantém perfis lê o perfil sem registro, por ser operação do dia a dia sobre dado não pessoal")]
     public async Task Conferir_PelaManutencao_PermiteSemRegistrar()
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Manter]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Manter]);
 
         DomainError? recusa = await RecusaDaLeituraDoPerfil.ConferirAsync(verificador, PerfilId, CancellationToken.None);
 

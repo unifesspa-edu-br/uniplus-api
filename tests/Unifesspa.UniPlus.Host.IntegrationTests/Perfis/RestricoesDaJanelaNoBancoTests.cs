@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -19,10 +18,6 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 /// índices únicos parciais e as chaves estrangeiras que restringem a exclusão.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestBase
 {
     private const string Decisoes = "decisoes_da_migracao";
@@ -38,7 +33,6 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
 
     public static TheoryData<string, string, string, string> DecisoesInvalidas => new()
     {
-        { "dispensa fora do catálogo", "humana", "dispensa = 'motivo_livre'", "ck_decisoes_da_migracao_dispensa" },
         { "envio sem etapa do envio", "protecao", "envio_etapa = NULL", "ck_decisoes_da_migracao_envio" },
         { "envio com etapa fora do catálogo", "protecao", "envio_etapa = 'outra'", "ck_decisoes_da_migracao_envio" },
         { "lote de origem sem etapa", "humana", "lote_de_origem_etapa = NULL", "ck_decisoes_da_migracao_lote_de_origem" },
@@ -146,9 +140,7 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
         PostgresException outraJanela = await FalharAsync(Revogar(
             cenario, "revogada_em = now(), motivo_revogacao = 'x', revogada_pela_janela_id = gen_random_uuid()"));
 
-        semMotivo.ConstraintName.Should().Be("ck_concessoes_revogacao_completa");
-        comPessoa.ConstraintName.Should().Be("ck_concessoes_revogacao_completa");
-        soJanela.ConstraintName.Should().Be("ck_concessoes_revogacao_completa");
+        new[] { semMotivo, comPessoa, soJanela }.Should().OnlyContain(static e => e.ConstraintName == "ck_concessoes_revogacao_completa");
         outraJanela.SqlState.Should().Be(ChaveEstrangeira);
         (await ExecutarAsync(Revogar(cenario, $"revogada_em = now(), motivo_revogacao = 'x', revogada_pela_janela_id = '{janela}'"))).Should().Be(1);
     }
@@ -174,13 +166,7 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
     private async Task<Cenario> MontarAsync()
     {
         JanelaAberta janela = await AbrirJanelaAsync(Isabella, Leandro);
-        using HttpClient gestao = await GestaoAsync();
-        using HttpResponseMessage lote = await EnviarLoteAsync(gestao, janela.PerfilId, [Decisao(janela.Concessoes[Leandro], "migrar")]);
-        await CorpoAsync(lote, HttpStatusCode.OK);
-        using HttpClient protecao = await ProtecaoAsync();
-        using HttpResponseMessage etapa = await EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaJanela(janela.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(janela.Concessoes[Leandro], "migrar") } });
-        await CorpoAsync(etapa, HttpStatusCode.OK);
+        await MigrarNasDuasEtapasAsync(janela.PerfilId, janela.Concessoes[Leandro]);
 
         return new Cenario(
             await UnicoAsync("SELECT id AS \"Value\" FROM autorizacao.janelas_de_migracao"),
@@ -224,5 +210,16 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
             "protecao" => DecisaoDaProtecao,
             _ => DecisaoDoSistema,
         };
+    }
+
+    private async Task MigrarNasDuasEtapasAsync(Guid perfilId, Guid concessao)
+    {
+        using HttpClient gestao = await GestaoAsync();
+        using HttpResponseMessage lote = await EnviarLoteAsync(gestao, perfilId, [Decisao(concessao, "migrar")]);
+        await CorpoAsync(lote, HttpStatusCode.OK);
+        using HttpClient protecao = await ProtecaoAsync();
+        using HttpResponseMessage etapa = await EnviarAsync(
+            protecao, HttpMethod.Post, RotaDaJanela(perfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+        await CorpoAsync(etapa, HttpStatusCode.OK);
     }
 }

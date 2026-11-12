@@ -15,10 +15,15 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class ConferenciaDoCatalogoTests
 {
+    private const string AprovacaoDaProtecaoDoCatalogo = "configuracao:protecao-do-catalogo:aprovar";
+
     private static readonly DateTimeOffset Agora = PerfisDeTeste.Instante;
     private static readonly Guid Catalogo = Guid.CreateVersion7();
 
-    /// <summary>As permissões de decisão protegida: só o perfil de proteção de dados as reúne.</summary>
+    /// <summary>
+    /// As permissões de decisão protegida: só o perfil de Representante do controlador as reúne. A aprovação da proteção do
+    /// catálogo é do módulo de configuração, reservada à governança.
+    /// </summary>
     private static readonly PermissaoAutorizacao[] DecisoesProtegidas =
     [
         PermissaoAutorizacao.PerfisAprovarProtecaoDeDados,
@@ -27,7 +32,9 @@ public sealed class ConferenciaDoCatalogoTests
     ];
 
     private static string[] CodigosDasDecisoesProtegidas =>
-        [.. DecisoesProtegidas.Select(static p => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(p).Codigo)];
+        [.. DecisoesProtegidas.Select(static p => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(p).Codigo), AprovacaoDaProtecaoDoCatalogo];
+
+    private static string PublicacaoDoTermo => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.TermosPublicar).Codigo;
 
     private static LinhaDoRetratoDoCatalogo Linha(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade = false) =>
         new(codigo, "autorizacao", classificacao, deUnidade, false);
@@ -117,16 +124,24 @@ public sealed class ConferenciaDoCatalogoTests
     [Fact(DisplayName = "A composição esperada de cada perfil de governança lista só os códigos dele")]
     public void Composicao_CodigosPorPerfil()
     {
-        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().HaveCount(6);
-        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.ProtecaoDeDadosId).Should().HaveCount(5);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().HaveCount(7);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.RepresentanteDoControladorId).Should().HaveCount(6);
         ComposicaoDaGovernanca.CodigosDe(Guid.NewGuid()).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de proteção de dados e não no do gestor de acessos")]
-    public void Composicao_DecisoesProtegidas_SoNaProtecaoDeDados()
+    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de Representante do controlador e não no do gestor de acessos")]
+    public void Composicao_DecisoesProtegidas_SoNoRepresentante()
     {
-        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.ProtecaoDeDadosId).Should().Contain(CodigosDasDecisoesProtegidas);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.RepresentanteDoControladorId).Should().Contain(CodigosDasDecisoesProtegidas);
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().NotContain(CodigosDasDecisoesProtegidas);
+    }
+
+    [Fact(DisplayName = "A publicação do termo de responsabilidade é só do gestor de acessos")]
+    public void Composicao_PublicacaoDoTermo_SoNoGestor()
+    {
+        ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo == PublicacaoDoTermo)
+            .Should().ContainSingle().Which.PerfilId.Should().Be(PerfisDeSistema.GestorDeAcessosId);
+        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.TermosPublicar).ReservadaAGovernanca.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Toda aprovação de proteção de dados da composição é decisão protegida e só um perfil a reúne")]
@@ -137,6 +152,6 @@ public sealed class ConferenciaDoCatalogoTests
         ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo.EndsWith(':' + sufixo, StringComparison.Ordinal))
             .Select(static p => p.Codigo).Should().OnlyContain(c => CodigosDasDecisoesProtegidas.Contains(c));
         ComposicaoDaGovernanca.Esperada.Where(p => CodigosDasDecisoesProtegidas.Contains(p.Codigo))
-            .Should().OnlyContain(static p => p.PerfilId == PerfisDeSistema.ProtecaoDeDadosId);
+            .Should().OnlyContain(static p => p.PerfilId == PerfisDeSistema.RepresentanteDoControladorId);
     }
 }

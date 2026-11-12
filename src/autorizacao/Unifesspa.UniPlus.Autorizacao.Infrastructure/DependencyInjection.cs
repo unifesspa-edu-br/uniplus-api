@@ -30,13 +30,7 @@ public static class AutorizacaoInfrastructureRegistration
         ArgumentNullException.ThrowIfNull(services);
 
         AddContexto(services);
-
-        // A Application consome a abstração do próprio módulo, roteada para o DbContext (ADR-0042).
-        services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
-
-        services.AddScoped<IAutorizacaoUnitOfWork>(serviceProvider =>
-            serviceProvider.GetRequiredService<AutorizacaoDbContext>());
-
+        AddUnidadeDeTrabalho(services);
         AddRepositorios(services);
         AddInstalacao(services);
         AddAvisos(services);
@@ -56,11 +50,21 @@ public static class AutorizacaoInfrastructureRegistration
         });
     }
 
+    private static void AddUnidadeDeTrabalho(IServiceCollection services)
+    {
+        // A Application consome a abstração do próprio módulo, roteada para o DbContext (ADR-0042).
+        services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
+
+        services.AddScoped<IAutorizacaoUnitOfWork>(serviceProvider =>
+            serviceProvider.GetRequiredService<AutorizacaoDbContext>());
+    }
+
     private static void AddRepositorios(IServiceCollection services)
     {
         services.AddScoped<IPerfilRepository, PerfilRepository>();
         services.AddScoped<IConcessaoRepository, ConcessaoRepository>();
         services.AddScoped<IJanelaDeMigracaoRepository, JanelaDeMigracaoRepository>();
+        services.AddScoped<IPapelDoRepresentante, PapelDoRepresentante>();
         services.AddScoped<IInstalacaoRepository, InstalacaoRepository>();
         services.AddScoped<IConcessoesAtivasDoSujeito, ConcessoesAtivasDoSujeito>();
         services.AddScoped<ITitularesDaPermissao, TitularesDaPermissao>();
@@ -109,13 +113,15 @@ public static class AutorizacaoInfrastructureRegistration
                     && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey),
                 "ArquivosDoCandidato:BucketDeEnvio, BucketDefinitivo, AccessKey e SecretKey são obrigatórios.")
             .ValidateOnStart();
-        services.AddSingleton<IArmazenamentoDosDocumentosDaAutorizacao>(static sp =>
-        {
-            IOptions<ArquivosDaAutorizacaoOptions> instalacao = sp.GetRequiredService<IOptions<ArquivosDaAutorizacaoOptions>>();
-            return new ArmazenamentoDosDocumentosDaAutorizacao(
-                StorageServiceCollectionExtensions.CriarStorageComCredencialPropria(
-                    sp, instalacao.Value.AccessKey, instalacao.Value.SecretKey),
-                instalacao);
-        });
+        services.AddSingleton<IArmazenamentoDosDocumentosDaAutorizacao>(CriarArmazenamento);
+    }
+
+    private static ArmazenamentoDosDocumentosDaAutorizacao CriarArmazenamento(IServiceProvider sp)
+    {
+        IOptions<ArquivosDaAutorizacaoOptions> instalacao = sp.GetRequiredService<IOptions<ArquivosDaAutorizacaoOptions>>();
+        return new ArmazenamentoDosDocumentosDaAutorizacao(
+            StorageServiceCollectionExtensions.CriarStorageComCredencialPropria(
+                sp, instalacao.Value.AccessKey, instalacao.Value.SecretKey),
+            instalacao);
     }
 }

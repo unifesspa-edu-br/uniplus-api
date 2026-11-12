@@ -21,8 +21,8 @@ public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTes
     {
     }
 
-    /// <summary>Gestora que também exerce a proteção de dados, como a persona do portal.</summary>
-    private protected Task<HttpClient> GestoraComAmbasAsync() =>
+    /// <summary>Gestor que também exerce a proteção de dados, como a persona do portal.</summary>
+    private protected Task<HttpClient> GestorComAmbasAsync() =>
         ClienteComPermissoesAsync(Isabella, AprovarFuncional, AprovarProtecaoDeDados);
 
     private protected static Task<JsonElement> PerfilAsync(HttpClient cliente, Guid perfilId) =>
@@ -52,19 +52,24 @@ public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTes
     private protected async Task<HttpResponseMessage> AprovarUltimaEtapaBrutoAsync(HttpClient criador, Envio envio)
     {
         JsonElement pendente = (await PerfilAsync(criador, envio.PerfilId)).GetProperty("versaoPendente");
-        if (pendente.GetProperty("etapaAtual").GetString() == EtapaGestao && pendente.GetProperty("exigeProtecaoDeDados").GetBoolean())
+        if (pendente.GetProperty("etapaAtual").GetString() != EtapaGestao)
         {
-            using HttpClient gestao = await GestaoAsync();
-            await AprovarAsync(gestao, envio, EtapaGestao);
-        }
-        else if (pendente.GetProperty("etapaAtual").GetString() == EtapaGestao)
-        {
-            using HttpClient unica = await GestaoAsync();
-            return await AprovarBrutoAsync(unica, envio, EtapaGestao);
+            return await AprovarProtecaoBrutoAsync(envio);
         }
 
+        using HttpClient gestao = await GestaoAsync();
+        if (!pendente.GetProperty("exigeProtecaoDeDados").GetBoolean())
+        {
+            return await AprovarBrutoAsync(gestao, envio, EtapaGestao);
+        }
+
+        await AprovarAsync(gestao, envio, EtapaGestao);
+        return await AprovarProtecaoBrutoAsync(envio);
+    }
+
+    private async Task<HttpResponseMessage> AprovarProtecaoBrutoAsync(Envio envio)
+    {
         using HttpClient protecao = await ProtecaoAsync();
-
         return await AprovarBrutoAsync(protecao, envio, EtapaProtecao);
     }
 

@@ -109,7 +109,7 @@ public abstract class PedidosDeConcessaoTestBase
 
         if (permissoes.Contains(AprovarProtecaoDeDados))
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.ProtecaoDeDados, persona.Email);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.RepresentanteDoControlador, persona.Email);
         }
     }
 
@@ -203,7 +203,7 @@ public abstract class PedidosDeConcessaoTestBase
         await ExecutarSqlAsync(
             "DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id IN ({0}, {1})",
             PerfisDeSistema.GestorDeAcessosId,
-            PerfisDeSistema.ProtecaoDeDadosId);
+            PerfisDeSistema.RepresentanteDoControladorId);
         await ExpirarVersoesVencidasDeTestesAnterioresAsync();
     }
 
@@ -298,15 +298,7 @@ public abstract class PedidosDeConcessaoTestBase
 
     private protected async Task<Guid> SemearUnidadeAsync()
     {
-        string sufixo = Guid.NewGuid().ToString("N")[..8];
-        Unidade unidade = Unidade.Criar(
-            $"Centro de Estudos {sufixo}",
-            new IdentificadoresDaUnidade($"ceps-{sufixo}", $"C{sufixo}".ToUpperInvariant(), $"PD{sufixo}".ToUpperInvariant(), null),
-            CidadeDaUnidade.Nenhuma,
-            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
-            null,
-            TipoUnidade.Centro,
-            true).Value!;
+        Unidade unidade = NovaUnidade(Guid.NewGuid().ToString("N")[..8]);
 
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         OrganizacaoInstitucionalDbContext db = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
@@ -314,6 +306,16 @@ public abstract class PedidosDeConcessaoTestBase
         await db.SaveChangesAsync();
         return unidade.Id;
     }
+
+    private static Unidade NovaUnidade(string sufixo) =>
+        Unidade.Criar(
+            $"Centro de Estudos {sufixo}",
+            new IdentificadoresDaUnidade($"ceps-{sufixo}", $"C{sufixo}".ToUpperInvariant(), $"PD{sufixo}".ToUpperInvariant(), null),
+            CidadeDaUnidade.Nenhuma,
+            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
+            null,
+            TipoUnidade.Centro,
+            true).Value!;
 
     private protected async Task SemearConcessaoAsync(Persona beneficiario, Guid perfilId, EscopoDaConcessao escopo)
     {
@@ -415,13 +417,9 @@ public abstract class PedidosDeConcessaoTestBase
         while (DateTime.UtcNow < fim)
         {
             JsonElement[] mensagens = await MensagensAsync(destinatario, pedidoId);
-            foreach (JsonElement mensagem in mensagens)
+            if (Array.Find(mensagens, m => FalaDe(m, assunto)) is { ValueKind: JsonValueKind.Object } mensagem)
             {
-                if (mensagem.GetProperty("Subject").GetString()!.Contains(assunto, StringComparison.OrdinalIgnoreCase)
-                    || mensagem.GetProperty("Text").GetString()!.Contains(assunto, StringComparison.OrdinalIgnoreCase))
-                {
-                    return mensagem;
-                }
+                return mensagem;
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(250));
@@ -435,14 +433,8 @@ public abstract class PedidosDeConcessaoTestBase
         using HttpClient mailpit = new() { BaseAddress = Fixture.ApiDoMailpit };
         JsonElement lista = await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages?limit=500");
         List<JsonElement> completas = [];
-        foreach (JsonElement resumo in lista.GetProperty("messages").EnumerateArray())
+        foreach (JsonElement resumo in lista.GetProperty("messages").EnumerateArray().Where(r => EnviadaA(r, destinatario)))
         {
-            if (!resumo.GetProperty("To").EnumerateArray().Any(t => string.Equals(
-                t.GetProperty("Address").GetString(), destinatario.Email, StringComparison.OrdinalIgnoreCase)))
-            {
-                continue;
-            }
-
             JsonElement completa = await mailpit.GetFromJsonAsync<JsonElement>($"/api/v1/message/{resumo.GetProperty("ID").GetString()}");
             if (completa.GetProperty("Text").GetString()!.Contains(pedidoId.ToString(), StringComparison.Ordinal))
             {
@@ -452,6 +444,14 @@ public abstract class PedidosDeConcessaoTestBase
 
         return [.. completas];
     }
+
+    private static bool EnviadaA(JsonElement resumo, Persona destinatario) =>
+        resumo.GetProperty("To").EnumerateArray().Any(t => string.Equals(
+            t.GetProperty("Address").GetString(), destinatario.Email, StringComparison.OrdinalIgnoreCase));
+
+    private static bool FalaDe(JsonElement mensagem, string assunto) =>
+        mensagem.GetProperty("Subject").GetString()!.Contains(assunto, StringComparison.OrdinalIgnoreCase)
+        || mensagem.GetProperty("Text").GetString()!.Contains(assunto, StringComparison.OrdinalIgnoreCase);
 
     private protected string LerLog()
     {

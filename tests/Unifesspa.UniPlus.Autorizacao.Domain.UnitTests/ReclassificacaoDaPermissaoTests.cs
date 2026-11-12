@@ -89,7 +89,7 @@ public sealed class ReclassificacaoDaPermissaoTests
     public void Decidir_DuasEtapasPorPessoasDiferentes_GravamABase()
     {
         ReclassificacaoDaPermissao reclassificacao = Mudanca(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, true);
-        ConcessaoNaReclassificacao ja = Concessao(Paulo, escopo: TipoDeEscopo.Unidade, decisoes: [new(EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.Gestora, ResultadoDaLiberacao.Liberada)]);
+        ConcessaoNaReclassificacao ja = Concessao(Paulo, escopo: TipoDeEscopo.Unidade, decisoes: [new(EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.Gestor, ResultadoDaLiberacao.Liberada)]);
 
         DesfechoDaDecisaoDaReclassificacao desfecho = reclassificacao
             .Decidir(Pedido(EtapaDaVersao.ProtecaoDeDados, ResultadoDaLiberacao.Liberada, [ja], decisor: PerfisDeTeste.ProtecaoDeDados)).Value!;
@@ -172,12 +172,12 @@ public sealed class ReclassificacaoDaPermissaoTests
     public void Decidir_Todas_SeparaAsQueFicamParaOutraPessoa()
     {
         ReclassificacaoDaPermissao reclassificacao = Mudanca(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Interno, false, true);
-        ConcessaoNaReclassificacao propria = Concessao(PerfisDeTeste.Gestora, escopo: TipoDeEscopo.Unidade);
+        ConcessaoNaReclassificacao propria = Concessao(PerfisDeTeste.Gestor, escopo: TipoDeEscopo.Unidade);
         ConcessaoNaReclassificacao semEscopo = Concessao(Isabella, escopo: TipoDeEscopo.Instituicao);
         ConcessaoNaReclassificacao decidivel = Concessao(Paulo, escopo: TipoDeEscopo.Unidade);
 
         DesfechoDaDecisaoDaReclassificacao desfecho = reclassificacao
-            .Decidir(Pedido(EtapaDaVersao.GestaoDeAcessos, ResultadoDaLiberacao.Liberada, [propria, semEscopo, decidivel], decisor: PerfisDeTeste.Gestora, modo: new ModoDoPedido(Todas: true))).Value!;
+            .Decidir(Pedido(EtapaDaVersao.GestaoDeAcessos, ResultadoDaLiberacao.Liberada, [propria, semEscopo, decidivel], decisor: PerfisDeTeste.Gestor, modo: new ModoDoPedido(Todas: true))).Value!;
 
         desfecho.Liberacoes.Select(l => l.ConcessaoId).Should().Equal(decidivel.Id);
         desfecho.ParaOutraPessoa.Should().Equal(propria.Id);
@@ -189,11 +189,11 @@ public sealed class ReclassificacaoDaPermissaoTests
     {
         ReclassificacaoDaPermissao reclassificacao = Mudanca(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, true);
         ConcessaoNaReclassificacao decididaAntes = Concessao(
-            Paulo, escopo: TipoDeEscopo.Unidade, decisoes: [new DecisaoNaConcessao(EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.Gestora, ResultadoDaLiberacao.Liberada)]);
+            Paulo, escopo: TipoDeEscopo.Unidade, decisoes: [new DecisaoNaConcessao(EtapaDaVersao.ProtecaoDeDados, PerfisDeTeste.Gestor, ResultadoDaLiberacao.Liberada)]);
         ConcessaoNaReclassificacao livre = Concessao(Isabella, escopo: TipoDeEscopo.Unidade);
 
         Result<DesfechoDaDecisaoDaReclassificacao> resultado = reclassificacao.Decidir(Pedido(
-            EtapaDaVersao.GestaoDeAcessos, ResultadoDaLiberacao.Liberada, [decididaAntes, livre], decisor: PerfisDeTeste.Gestora, modo: new ModoDoPedido(Todas: true)));
+            EtapaDaVersao.GestaoDeAcessos, ResultadoDaLiberacao.Liberada, [decididaAntes, livre], decisor: PerfisDeTeste.Gestor, modo: new ModoDoPedido(Todas: true)));
 
         resultado.Error!.Code.Should().Be(ReclassificacaoErrorCodes.MesmoDecisorNasDuasEtapas);
     }

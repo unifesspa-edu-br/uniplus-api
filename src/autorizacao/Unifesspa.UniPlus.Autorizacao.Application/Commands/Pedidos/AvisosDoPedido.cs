@@ -58,10 +58,14 @@ public sealed class AvisosDoPedido
             return [];
         }
 
-        TextoDoAviso texto = TextosDoAvisoDoPedido.Da(pedido.Situacao);
         string escopo = await EscopoAsync(pedido, cancellationToken).ConfigureAwait(false);
-        string link = _link.Para(pedido.Id);
 
+        return Emails(destinatarios, TextosDoAvisoDoPedido.Da(pedido.Situacao), perfilNome, escopo, _link.Para(pedido.Id));
+    }
+
+    private static List<EnviarEmail> Emails(
+        IReadOnlyList<string> destinatarios, TextoDoAviso texto, string perfilNome, string escopo, string link)
+    {
         string corpoEmTexto = CorpoEmTexto(texto, perfilNome, escopo, link);
         string corpoEmHtml = CorpoEmHtml(texto, perfilNome, escopo, link);
 
@@ -77,7 +81,7 @@ public sealed class AvisosDoPedido
         {
             SituacaoDoPedido.AguardandoBeneficiario => Imediato([pedido.BeneficiarioEmail]),
             SituacaoDoPedido.AguardandoGestor => TitularesAsync(pedido, PerfisDeSistema.GestorDeAcessosId, [], cancellationToken),
-            SituacaoDoPedido.AguardandoProtecaoDeDados => TitularesDaProtecaoDeDadosAsync(pedido, cancellationToken),
+            SituacaoDoPedido.AguardandoProtecaoDeDados => TitularesDosRepresentantesAsync(pedido, cancellationToken),
             SituacaoDoPedido.Aprovado or SituacaoDoPedido.Recusado =>
                 Imediato(Distintos([pedido.SolicitanteEmail, pedido.BeneficiarioEmail])),
             SituacaoDoPedido.Cancelado when situacaoAnterior != SituacaoDoPedido.AguardandoDocumento =>
@@ -87,7 +91,7 @@ public sealed class AvisosDoPedido
 
     private static Task<IReadOnlyList<string>> Imediato(IReadOnlyList<string> destinatarios) => Task.FromResult(destinatarios);
 
-    private Task<IReadOnlyList<string>> TitularesDaProtecaoDeDadosAsync(PedidoDeConcessao pedido, CancellationToken cancellationToken)
+    private Task<IReadOnlyList<string>> TitularesDosRepresentantesAsync(PedidoDeConcessao pedido, CancellationToken cancellationToken)
     {
         Identidade[] aprovadoresDoGestor =
         [
@@ -96,7 +100,7 @@ public sealed class AvisosDoPedido
                 .Select(d => d.Decisor),
         ];
 
-        return TitularesAsync(pedido, PerfisDeSistema.ProtecaoDeDadosId, aprovadoresDoGestor, cancellationToken);
+        return TitularesAsync(pedido, PerfisDeSistema.RepresentanteDoControladorId, aprovadoresDoGestor, cancellationToken);
     }
 
     // Quem cancela é o solicitante; só o beneficiário, que já sabia do pedido, precisa saber que ele acabou.

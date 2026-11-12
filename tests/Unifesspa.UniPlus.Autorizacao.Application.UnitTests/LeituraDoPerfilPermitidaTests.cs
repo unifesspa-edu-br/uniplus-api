@@ -41,7 +41,7 @@ public sealed class LeituraDoPerfilPermitidaTests
     [Fact(DisplayName = "A listagem permitida à gestão de acessos devolve os perfis e registra a decisão na operação")]
     public async Task Listar_PelaGestao_ListaERegistra()
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<ListarPerfisResult> resultado = await Listar(verificador, PerfisVazios());
 
@@ -66,7 +66,7 @@ public sealed class LeituraDoPerfilPermitidaTests
     public async Task Obter_PelaGestao_DevolveORegistra()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", ["a:b:c"], new CatalogoDeTeste());
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<PerfilDto> resultado = await Obter(perfil.Id, verificador, new PerfisNaMemoria(perfil));
 
@@ -78,7 +78,7 @@ public sealed class LeituraDoPerfilPermitidaTests
     public async Task Obter_PerfilInexistente_NaoEncontradoERegistra()
     {
         Guid perfilId = Guid.CreateVersion7();
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<PerfilDto> resultado = await Obter(perfilId, verificador, new PerfisNaMemoria());
 
@@ -87,7 +87,7 @@ public sealed class LeituraDoPerfilPermitidaTests
     }
 
     private static TrilhaDeAcesso Trilha(string permissao, string resourceTipo, Guid? resourceId) =>
-        new(PerfisDeTeste.Gestora.Sub, permissao, resourceTipo, resourceId, ResultadoDoAcesso.Permitido);
+        new(PerfisDeTeste.Gestor.Sub, permissao, resourceTipo, resourceId, ResultadoDoAcesso.Permitido);
 
     private static IVerificadorDeAcesso SemAutor()
     {

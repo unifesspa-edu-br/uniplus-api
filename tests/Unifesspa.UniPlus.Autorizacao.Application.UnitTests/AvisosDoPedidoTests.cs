@@ -93,7 +93,7 @@ public sealed class AvisosDoPedidoTests
     public async Task AguardandoProtecaoDeDados_ExcluiQuemAprovouComoGestor()
     {
         PedidoDeConcessao pedido = PedidoAprovadoPeloGestor(Diogo);
-        ConcessoesComTitulares concessoes = new(PerfisDeSistema.ProtecaoDeDadosId,
+        ConcessoesComTitulares concessoes = new(PerfisDeSistema.RepresentanteDoControladorId,
             new TitularComEmail(Diogo, EmailDiogo),
             new TitularComEmail(Marlene, EmailMarlene),
             new TitularComEmail(Leandro.Identidade, Leandro.Email!));
@@ -104,7 +104,7 @@ public sealed class AvisosDoPedidoTests
         EnviarEmail aviso = avisos.Should().ContainSingle().Subject;
         aviso.Destinatario.Should().Be(EmailMarlene);
         aviso.Finalidade.Should().Be("pedido.fila_da_protecao_de_dados");
-        concessoes.PerfilConsultado.Should().Be(PerfisDeSistema.ProtecaoDeDadosId);
+        concessoes.PerfilConsultado.Should().Be(PerfisDeSistema.RepresentanteDoControladorId);
     }
 
     [Fact(DisplayName = "O pedido aprovado avisa o solicitante e o beneficiário, um e-mail por endereço")]

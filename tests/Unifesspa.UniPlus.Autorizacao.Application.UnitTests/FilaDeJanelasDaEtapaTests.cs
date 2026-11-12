@@ -31,9 +31,9 @@ public sealed class FilaDeJanelasDaEtapaTests
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await ListarFilaDeJanelasQueryHandler.Handle(
             new ListarFilaDeJanelasQuery(etapa),
-            new VerificadorDeTeste(PerfisDeTeste.Gestora.Sub, [permissaoDeOutraEtapa]),
+            new VerificadorDeTeste(PerfisDeTeste.Gestor.Sub, [permissaoDeOutraEtapa]),
             new FilaDeJanelasDaEtapa(janelas, perfis, new RelogioFixo(PerfisDeTeste.Instante)),
-            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestora),
+            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestor),
             CancellationToken.None);
 
         fila.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
@@ -48,9 +48,9 @@ public sealed class FilaDeJanelasDaEtapaTests
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await ListarFilaDeJanelasQueryHandler.Handle(
             new ListarFilaDeJanelasQuery("outra"),
-            new VerificadorDeTeste(PerfisDeTeste.Gestora.Sub, [Gestao]),
+            new VerificadorDeTeste(PerfisDeTeste.Gestor.Sub, [Gestao]),
             new FilaDeJanelasDaEtapa(janelas, new DoublesDePerfis.PerfisNaMemoria(), new RelogioFixo(PerfisDeTeste.Instante)),
-            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestora),
+            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestor),
             CancellationToken.None);
 
         fila.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.EtapaInvalida);
@@ -62,7 +62,7 @@ public sealed class FilaDeJanelasDaEtapaTests
     [InlineData(EtapaProtecao, Protecao, Gestao)]
     public async Task SemPermissaoDaEtapa_RegistraANegativaDaEtapa(string etapa, string permissaoDaEtapa, string deOutraEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [deOutraEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [deOutraEtapa]);
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await Listar(etapa, verificador);
 
@@ -75,7 +75,7 @@ public sealed class FilaDeJanelasDaEtapaTests
     [InlineData(EtapaProtecao, Protecao)]
     public async Task ComPermissaoDaEtapa_RegistraAPermitida(string etapa, string permissaoDaEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [permissaoDaEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [permissaoDaEtapa]);
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await Listar(etapa, verificador);
 
@@ -113,18 +113,18 @@ public sealed class FilaDeJanelasDaEtapaTests
             new ListarFilaDeJanelasQuery(etapa),
             verificador,
             new FilaDeJanelasDaEtapa(janelas, perfis, new RelogioFixo(PerfisDeTeste.Instante)),
-            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestora),
+            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestor),
             CancellationToken.None);
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
-        new(PerfisDeTeste.Gestora.Sub, permissao, ResourceTipos.Operacao, null, resultado);
+        new(PerfisDeTeste.Gestor.Sub, permissao, ResourceTipos.Operacao, null, resultado);
 
     private static Task<Result<IReadOnlyList<ItemDaFilaDeJanelasDto>>> Listar(string etapa, VerificadorDeTeste verificador) =>
         ListarFilaDeJanelasQueryHandler.Handle(
             new ListarFilaDeJanelasQuery(etapa),
             verificador,
             new FilaDeJanelasDaEtapa(new DoublesDePerfis.JanelasNaMemoria(), new DoublesDePerfis.PerfisNaMemoria(), new RelogioFixo(PerfisDeTeste.Instante)),
-            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestora),
+            new DoublesDePerfis.Usuario(PerfisDeTeste.Gestor),
             CancellationToken.None);
 
     /// <summary>Repositório substituto que conta as chamadas e devolve o valor padrão do retorno.</summary>

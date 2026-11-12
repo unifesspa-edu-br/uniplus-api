@@ -35,7 +35,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
 
     // Perfis de sistema, com identificador fixo para que as migrations seguintes os alcancem.
     private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
-    private static readonly Guid ProtecaoDeDadosId = PerfisDeSistema.ProtecaoDeDadosId;
+    private static readonly Guid RepresentanteDoControladorId = PerfisDeSistema.RepresentanteDoControladorId;
     private static readonly DateTimeOffset CargaInicial = new(2026, 10, 28, 0, 0, 0, TimeSpan.Zero);
 
     // A contenção é evidência: o perfil não se exclui, e nenhum registro dela some em cascata.
@@ -119,18 +119,18 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
             {
                 Id = GestorDeAcessosId,
                 Nome = "Gestor de acessos",
-                Descricao = "Opera as concessões de acesso e mantém os perfis de acesso.",
+                Descricao = "Opera as concessões de acesso, mantém os perfis de acesso e publica o termo de responsabilidade.",
                 Ativo = true,
                 Governanca = (TipoDeGovernanca?)TipoDeGovernanca.GestorDeAcessos,
                 CreatedAt = CargaInicial,
             },
             new
             {
-                Id = ProtecaoDeDadosId,
-                Nome = "Encarregado(a) pelo tratamento de dados",
-                Descricao = "Aprova a concessão de acesso a dado pessoal ou sensível.",
+                Id = RepresentanteDoControladorId,
+                Nome = "Representante do controlador",
+                Descricao = "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.",
                 Ativo = true,
-                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.ProtecaoDeDados,
+                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.RepresentanteDoControlador,
                 CreatedAt = CargaInicial,
             });
     }

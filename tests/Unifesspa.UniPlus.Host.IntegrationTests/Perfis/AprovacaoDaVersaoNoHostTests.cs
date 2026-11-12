@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -12,10 +11,6 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>A aprovação da versão do perfil pela API: quem decide, em que ordem, e o que cada recusa deixa gravado.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     public AprovacaoDaVersaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -49,10 +44,7 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
         Envio vigente = await PerfilVigenteAsync(diogo, Catalogo);
         await SemearConcessaoAsync(Diogo, vigente.PerfilId, EscopoDaConcessao.DaInstituicao());
         await SemearConcessaoAsync(Betina, vigente.PerfilId, EscopoDaConcessao.DaInstituicao());
-        Envio versao = await CriarVersaoAsync(betina, vigente.PerfilId, Nome(), Catalogo);
-        await ConfirmarEnvioAsync(betina, versao);
-        await InjetarResultadoAsync(versao.DocumentoId, VeredictoDaVerificacao.Verificado);
-        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(betina, vigente.PerfilId) == "verificado", "o documento não foi verificado");
+        Envio versao = await VersaoVerificadaAsync(betina, vigente.PerfilId);
         (await PerfilAsync(diogo, vigente.PerfilId)).GetProperty("versaoPendente").GetProperty("criadorTemConcessao").GetBoolean().Should().BeTrue();
 
         await AprovarAsync(diogo, versao, EtapaGestao);
@@ -66,7 +58,7 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
-        using HttpClient isabella = await GestoraComAmbasAsync();
+        using HttpClient isabella = await GestorComAmbasAsync();
         Envio vigente = await PerfilVigenteAsync(diogo, Consultar);
         Envio versao = await PendenteVerificadaAsync(diogo, vigente.PerfilId, Consultar, Sensivel);
         await AprovarAsync(isabella, versao, EtapaGestao);
@@ -101,16 +93,13 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
         Envio vigente = await PerfilVigenteAsync(diogo, Consultar);
         Envio versao = await PendenteVerificadaAsync(diogo, vigente.PerfilId, Consultar, Sensivel);
 
-        JsonElement aposAGestao = await AprovarAsync(isabella, versao, EtapaGestao);
-        JsonElement pendente = aposAGestao.GetProperty("versaoPendente");
-        pendente.GetProperty("etapaAtual").GetString().Should().Be(EtapaProtecao);
-        pendente.GetProperty("decisoes").GetArrayLength().Should().Be(1);
+        JsonElement pendente = (await AprovarAsync(isabella, versao, EtapaGestao)).GetProperty("versaoPendente");
+        (pendente.GetProperty("etapaAtual").GetString(), pendente.GetProperty("decisoes").GetArrayLength()).Should().Be((EtapaProtecao, 1));
         await AprovarAsync(marlene, versao, EtapaProtecao);
 
         (await TemVigenteComVersaoAsync(diogo, vigente.PerfilId, versao.VersaoId)).Should().BeTrue();
-        DecisaoGravada[] trilha = await DecisoesAsync(versao.VersaoId);
-        trilha.Select(d => d.Sub).Should().Equal(Isabella.Sub.ToString(), Marlene.Sub.ToString());
-        trilha.Select(d => d.Resultado).Should().OnlyContain(r => r == "Aprovado");
+        (await DecisoesAsync(versao.VersaoId)).Select(d => (d.Sub, d.Resultado))
+            .Should().Equal((Isabella.Sub.ToString(), "Aprovado"), (Marlene.Sub.ToString(), "Aprovado"));
     }
 
     [Fact(DisplayName = "A versão sem acréscimo protegido exige uma aprovação, a da gestão")]
@@ -173,5 +162,16 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
         using HttpResponseMessage recusa = await RecusarBrutoAsync(isabella, versao, EtapaGestao, "   ");
 
         await ConferirRecusaDoPerfilAsync(recusa, HttpStatusCode.UnprocessableEntity, "motivo_invalido");
+    }
+
+    // A versão criada pela pessoa, com o documento enviado e verificado.
+    private async Task<Envio> VersaoVerificadaAsync(HttpClient criador, Guid perfilId)
+    {
+        Envio versao = await CriarVersaoAsync(criador, perfilId, Nome(), Catalogo);
+        await ConfirmarEnvioAsync(criador, versao);
+        await InjetarResultadoAsync(versao.DocumentoId, VeredictoDaVerificacao.Verificado);
+        await AguardarAsync(async () => await SituacaoDoDocumentoAsync(criador, perfilId) == "verificado", "o documento não foi verificado");
+
+        return versao;
     }
 }

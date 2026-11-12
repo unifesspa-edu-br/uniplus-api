@@ -63,15 +63,15 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        // O banco confere o que o agregado já garante: a decisão é gravada inteira ou não é.
+        // O banco confere o que o agregado já garante: a decisão, com a governança que a tomou, é gravada inteira ou não é.
         builder.ToTable("revisao_itens", tabela => tabela.HasCheckConstraint(
             "ck_revisao_itens_decisao_completa",
-            "(resultado IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL)"
-            + " OR (resultado IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)"));
+            "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL)"
+            + " OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)"));
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id).ValueGeneratedNever();
 
-        builder.Property(i => i.Decide).HasConversion(GovernancaConverter).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(i => i.DecididoComo).HasConversion(GovernancaConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.DecididoPorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(i => i.DecididoPorSub).HasMaxLength(IdentidadeMaxLength);

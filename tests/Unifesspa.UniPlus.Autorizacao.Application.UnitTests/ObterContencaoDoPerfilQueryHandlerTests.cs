@@ -29,26 +29,23 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);
 
         resultado.Value!.Select(r => r.Tipo).Should().BeEquivalentTo("suspensao", "retomada", ContencaoMapping.TipoDaDecisao);
-        RegistroDaContencaoDto decisao = resultado.Value!.Single(r => r.Tipo == ContencaoMapping.TipoDaDecisao);
-        decisao.Etapa.Should().Be("gestao_de_acessos");
-        decisao.Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.Sub, PerfisDeTeste.ProtecaoDeDados.Nome));
-        decisao.DecisorTemConcessao.Should().BeTrue();
-        RegistroDaContencaoDto retomada = resultado.Value!.Single(r => r.Tipo == "retomada");
-        retomada.Ator.Should().Be("sistema");
-        retomada.Origem.Should().Be("decisao_da_etapa");
-        retomada.Pessoa.Should().BeNull();
+        resultado.Value!.Single(r => r.Tipo == ContencaoMapping.TipoDaDecisao).Should().Match<RegistroDaContencaoDto>(d =>
+            d.Etapa == "gestao_de_acessos" && d.DecisorTemConcessao == true
+            && d.Pessoa == new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.Sub, PerfisDeTeste.ProtecaoDeDados.Nome));
+        resultado.Value!.Single(r => r.Tipo == "retomada").Should().Match<RegistroDaContencaoDto>(r =>
+            r.Ator == "sistema" && r.Origem == "decisao_da_etapa" && r.Pessoa == null);
         cenario.Verificador.Gravados.Should().ContainSingle();
     }
 
     [Fact(DisplayName = "A suspensão por token sem nome traz o emissor e o sub de quem agiu, com o nome nulo")]
     public async Task Obter_SuspensaoSemNome_TrazEmissorESub()
     {
-        Perfil perfil = Suspenso(new Identidade(PerfisDeTeste.Gestora.Emissor, PerfisDeTeste.Gestora.Sub, null));
+        Perfil perfil = Suspenso(new Identidade(PerfisDeTeste.Gestor.Emissor, PerfisDeTeste.Gestor.Sub, null));
         CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Manter]);
 
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);
 
-        resultado.Value!.Single().Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.Gestora.Emissor, PerfisDeTeste.Gestora.Sub, null));
+        resultado.Value!.Single().Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.Gestor.Emissor, PerfisDeTeste.Gestor.Sub, null));
     }
 
     [Fact(DisplayName = "Quem aprova pela proteção de dados também lê a trilha")]
@@ -88,7 +85,7 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
     private static Perfil Suspenso(Identidade? autor = null)
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", "Descrição válida.", [Consultar], new DoublesDePerfis.CatalogoDeTeste());
-        perfil.Suspender(autor ?? PerfisDeTeste.Gestora, EtapaDaVersao.GestaoDeAcessos, Motivo, PerfisDeTeste.Instante, new DoublesDePerfis.CatalogoDeTeste());
+        perfil.Suspender(autor ?? PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos, Motivo, PerfisDeTeste.Instante, new DoublesDePerfis.CatalogoDeTeste());
 
         return perfil;
     }

@@ -20,9 +20,6 @@ public sealed class MigracaoDaConcessao : EntityBase
     /// <summary>O acréscimo que a migração traria para a concessão é pessoal, identificador ou sensível.</summary>
     public bool ExigeProtecaoDeDados { get; private set; }
 
-    /// <summary>Por que a proteção de dados não decide a concessão; nulo quando decide ou o acréscimo não a exige.</summary>
-    public string? Dispensa { get; private set; }
-
     public DateTimeOffset AtualizadaEm { get; private set; }
 
     // Construtor de materialização do EF Core.
@@ -42,10 +39,9 @@ public sealed class MigracaoDaConcessao : EntityBase
             AtualizadaEm = instante,
         };
 
-    internal void Mover(SituacaoDaMigracao situacao, string? dispensa, DateTimeOffset instante)
+    internal void Mover(SituacaoDaMigracao situacao, DateTimeOffset instante)
     {
         Situacao = situacao;
-        Dispensa = dispensa;
         AtualizadaEm = instante;
     }
 }

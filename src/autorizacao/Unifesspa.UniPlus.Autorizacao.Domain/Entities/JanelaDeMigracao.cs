@@ -130,16 +130,16 @@ public sealed partial class JanelaDeMigracao : EntityBase
 
     // A linha da concessão: criada na primeira situação e movida nas seguintes.
     internal void Registrar(
-        Guid concessaoId, SituacaoDaMigracao situacao, bool exigeProtecaoDeDados, string? dispensa, DateTimeOffset instante)
+        Guid concessaoId, SituacaoDaMigracao situacao, bool exigeProtecaoDeDados, DateTimeOffset instante)
     {
         if (LinhaDe(concessaoId) is { } linha)
         {
-            linha.Mover(situacao, dispensa, instante);
+            linha.Mover(situacao, instante);
             return;
         }
 
         MigracaoDaConcessao nova = MigracaoDaConcessao.Criar(Id, PerfilId, concessaoId, situacao, exigeProtecaoDeDados, instante);
-        nova.Mover(situacao, dispensa, instante);
+        nova.Mover(situacao, instante);
         _migracoes.Add(nova);
     }
 

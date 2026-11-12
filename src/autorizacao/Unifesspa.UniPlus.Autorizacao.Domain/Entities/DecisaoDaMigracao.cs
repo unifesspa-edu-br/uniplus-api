@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
 /// Decisão sobre uma concessão da janela de migração, de uma pessoa ou do sistema. Só se acrescenta, nunca se altera: é
-/// evidência forense (ADR-0063), com quem decidiu, a etapa, a dispensa aplicada, a composição avaliada e se quem decidiu
+/// evidência forense (ADR-0063), com quem decidiu, a etapa, a composição avaliada e se quem decidiu
 /// tem o perfil, que é o risco que a ADR-0157 aceita. O decisor humano e o sistema ficam em ramos separados.
 /// </summary>
 public sealed class DecisaoDaMigracao : IForensicEntity
@@ -43,8 +43,6 @@ public sealed class DecisaoDaMigracao : IForensicEntity
 
     public bool? DecisorTemConcessao { get; private set; }
 
-    public string? Dispensa { get; private set; }
-
     public Guid VersaoAvaliadaId { get; private set; }
 
     public string[] ComposicaoAvaliada { get; private set; } = [];
@@ -70,7 +68,6 @@ public sealed class DecisaoDaMigracao : IForensicEntity
         nova.Etapa = decisao.Etapa;
         nova.Resultado = decisao.Resultado;
         nova.Ator = AtorDaMigracao.Humano;
-        nova.Dispensa = decisao.Dispensa;
         nova.DecisorEmissor = decisao.Autoria.Pessoa.Emissor;
         nova.DecisorSub = decisao.Autoria.Pessoa.Sub;
         nova.DecisorNome = decisao.Autoria.Pessoa.Nome;

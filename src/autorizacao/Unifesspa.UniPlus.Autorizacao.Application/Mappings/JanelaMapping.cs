@@ -28,9 +28,7 @@ public static class JanelaMapping
             janela.PerfilId,
             janela.NumeroDaVersaoNova,
             perfil.Versoes.First(v => v.Id == janela.VersaoAlvoId).Numero,
-            janela.AbertaEm,
-            janela.Prazo,
-            janela.EncerradaEm,
+            janela.AbertaEm, janela.Prazo, janela.EncerradaEm,
             Situacao(janela, contexto.Agora, janela.Pendencias(contexto.Concessoes, contexto.Agora)),
             janela.Forma?.ToCodigo(),
             janela.LoteDaGestao is not null,
@@ -58,14 +56,12 @@ public static class JanelaMapping
         return new ItemDaJanelaDto(
             concessao.Id,
             concessao.BeneficiarioNome,
-            concessao.EscopoTipo.ToCodigo(),
-            concessao.UnidadeId,
+            concessao.EscopoTipo.ToCodigo(), concessao.UnidadeId,
             concessao.ValidaAte,
             perfil.Versoes.FirstOrDefault(v => v.Id == concessao.VersaoId)?.Numero,
             composicao.Acrescimo,
             linha?.ExigeProtecaoDeDados ?? composicao.ExigeProtecaoDeDados,
             linha?.Situacao.ToCodigo() ?? AguardandoLote,
-            linha?.Dispensa,
             leitor is not null && concessao.Beneficiario == leitor);
     }
 }

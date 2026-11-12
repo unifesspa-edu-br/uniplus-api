@@ -21,7 +21,6 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
 {
     private const int IdentidadeMaxLength = 255;
     private const int CodigoMaxLength = 40;
-    private const int DispensaMaxLength = 80;
 
     private const string Gestao = EtapaDaMigracaoCodigo.GestaoDeAcessos;
     private const string Protecao = EtapaDaMigracaoCodigo.ProtecaoDeDados;
@@ -62,7 +61,6 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.DecisorSub).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(d => d.Dispensa).HasMaxLength(DispensaMaxLength);
         builder.Property(d => d.ComposicaoAvaliada).IsRequired();
         builder.Property(d => d.AcrescimoAvaliado).IsRequired();
         builder.Property(d => d.Prazo).IsRequired();
@@ -105,9 +103,6 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         tabela.HasCheckConstraint(
             "ck_decisoes_da_migracao_envio",
             $"(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('{Gestao}', '{Protecao}'))");
-        tabela.HasCheckConstraint(
-            "ck_decisoes_da_migracao_dispensa",
-            $"dispensa IS NULL OR dispensa = '{MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados}'");
         tabela.HasCheckConstraint("ck_decisoes_da_migracao_ramo", $"({RamoHumano()}) OR ({RamoDoSistema()})");
     }
 

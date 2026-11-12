@@ -14,7 +14,7 @@ public sealed record PerfilAvaliado
     /// <summary>Valor canônico da sensibilidade mais alta entre as permissões do perfil.</summary>
     public string Sensibilidade { get; }
 
-    /// <summary>A sensibilidade é pessoal ou sensível, e a proteção de dados também aprova.</summary>
+    /// <summary>A sensibilidade é pessoal ou sensível, e o Representante do controlador também aprova.</summary>
     public bool ExigeAprovacaoDeProtecaoDeDados { get; }
 
     /// <summary>Papel de governança do perfil; nulo nos perfis comuns.</summary>
@@ -44,15 +44,14 @@ public sealed record PerfilAvaliado
 }
 
 /// <summary>O que o handler sabe do mundo e o agregado precisa para decidir a aprovação.</summary>
-/// <param name="BeneficiarioJaTemProtecaoDeDados">O beneficiário tem hoje concessão ativa do perfil da proteção de dados.</param>
-public sealed record ContextoDaAprovacao(bool BeneficiarioJaTemProtecaoDeDados);
+/// <param name="HaRepresentanteVigente">
+/// Alguém tem hoje concessão vigente do perfil de Representante do controlador, lido sob a trava do papel.
+/// </param>
+public sealed record ContextoDaAprovacao(bool HaRepresentanteVigente);
 
 /// <summary>Os motivos pelos quais a segunda aprovação deixa de ser exigida, gravados na decisão do gestor.</summary>
 public static class MotivosDeDispensa
 {
-    /// <summary>Não há proteção de dados que possa aprovar a própria designação.</summary>
+    /// <summary>Designação do primeiro Representante do controlador: não há outro que possa aprová-la (ADR-0162).</summary>
     public const string DesignacaoDeProtecaoDeDados = "designacao_de_protecao_de_dados";
-
-    /// <summary>O beneficiário já tem o perfil de proteção de dados: a aprovação do gestor conclui o pedido (ADR-0152).</summary>
-    public const string BeneficiarioJaTemProtecaoDeDados = "beneficiario_ja_tem_protecao_de_dados";
 }

@@ -32,7 +32,7 @@ public sealed class PerfilContencaoTests
         resultado.IsSuccess.Should().BeTrue();
         perfil.SuspensaoAberta!.Motivo.Should().Be(Motivo);
         perfil.SuspensaoAberta.Papel.Should().Be(EtapaDaVersao.GestaoDeAcessos);
-        perfil.SuspensaoAberta.SuspensaPor.Should().Be(PerfisDeTeste.Gestora);
+        perfil.SuspensaoAberta.SuspensaPor.Should().Be(PerfisDeTeste.Gestor);
         EventoDaContencao evento = perfil.Eventos.Single();
         evento.Tipo.Should().Be(TipoDoEventoDaContencao.Suspensao);
         evento.VersaoVigenteId.Should().Be(perfil.VersaoVigente!.Id);
@@ -83,7 +83,7 @@ public sealed class PerfilContencaoTests
         Perfil comum = Comum();
 
         Codigo(PerfisDeTeste.Desativar(governanca, _catalogo)).Should().Be(PerfilErrorCodes.GovernancaImutavel);
-        Codigo(comum.Desativar(PerfisDeTeste.Gestora, null, Agora, _catalogo)).Should().Be(PerfilErrorCodes.MotivoInvalido);
+        Codigo(comum.Desativar(PerfisDeTeste.Gestor, null, Agora, _catalogo)).Should().Be(PerfilErrorCodes.MotivoInvalido);
         comum.Ativo.Should().BeTrue();
     }
 
@@ -109,9 +109,9 @@ public sealed class PerfilContencaoTests
         PerfisDeTeste.Desativar(perfil, _catalogo);
         Perfil ativo = Comum();
 
-        Codigo(perfil.Reativar(PerfisDeTeste.Gestora, Motivo, Agora, _catalogo)).Should().Be(PerfilErrorCodes.ReativacaoPorQuemDesativou);
+        Codigo(perfil.Reativar(PerfisDeTeste.Gestor, Motivo, Agora, _catalogo)).Should().Be(PerfilErrorCodes.ReativacaoPorQuemDesativou);
         perfil.Ativo.Should().BeFalse();
-        ativo.Reativar(PerfisDeTeste.Gestora, Motivo, Agora, _catalogo).IsSuccess.Should().BeTrue();
+        ativo.Reativar(PerfisDeTeste.Gestor, Motivo, Agora, _catalogo).IsSuccess.Should().BeTrue();
         ativo.Eventos.Should().BeEmpty();
     }
 
@@ -147,10 +147,7 @@ public sealed class PerfilContencaoTests
     {
         Perfil perfil = Protegido();
         Suspender(perfil, Motivo);
-        (Identidade, EtapaDaVersao) gestao = (PerfisDeTeste.ProtecaoDeDados, EtapaDaVersao.GestaoDeAcessos);
-        (Identidade, EtapaDaVersao) protecao = (Leandro, EtapaDaVersao.ProtecaoDeDados);
-        (Identidade, EtapaDaVersao) primeira = gestaoPrimeiro ? gestao : protecao;
-        (Identidade, EtapaDaVersao) segunda = gestaoPrimeiro ? protecao : gestao;
+        ((Identidade, EtapaDaVersao) primeira, (Identidade, EtapaDaVersao) segunda) = OrdemDasEtapas(gestaoPrimeiro);
 
         Decidir(perfil, primeira.Item1, primeira.Item2).IsSuccess.Should().BeTrue();
         perfil.SuspensaoAberta.Should().NotBeNull();
@@ -158,8 +155,7 @@ public sealed class PerfilContencaoTests
         Decidir(perfil, segunda.Item1, segunda.Item2).IsSuccess.Should().BeTrue();
 
         perfil.SuspensaoAberta.Should().BeNull();
-        perfil.Suspensoes.Single().Decisoes.Should().HaveCount(2);
-        perfil.Suspensoes.Single().Decisoes.Should().OnlyContain(d => d.PerfilProtegidoNaDecisao);
+        perfil.Suspensoes.Single().Decisoes.Should().HaveCount(2).And.OnlyContain(d => d.PerfilProtegidoNaDecisao);
     }
 
     [Fact(DisplayName = "Quem suspendeu não decide a retomada")]
@@ -168,7 +164,7 @@ public sealed class PerfilContencaoTests
         Perfil perfil = Comum();
         Suspender(perfil, Motivo);
 
-        Codigo(Decidir(perfil, PerfisDeTeste.Gestora, EtapaDaVersao.GestaoDeAcessos)).Should().Be(PerfilErrorCodes.RetomadaPorQuemSuspendeu);
+        Codigo(Decidir(perfil, PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos)).Should().Be(PerfilErrorCodes.RetomadaPorQuemSuspendeu);
         perfil.SuspensaoAberta.Should().NotBeNull();
     }
 
@@ -268,19 +264,7 @@ public sealed class PerfilContencaoTests
         Decidir(perfil, Leandro, EtapaDaVersao.ProtecaoDeDados);
         PerfisDeTeste.Desativar(perfil, _catalogo);
 
-        SuspensaoDoPerfil suspensao = perfil.Suspensoes.Single();
-        int[] posicoes =
-        [
-            suspensao.OrdinalLocal,
-            perfil.Eventos[0].OrdinalLocal,
-            suspensao.Decisoes[0].OrdinalLocal,
-            suspensao.Decisoes[1].OrdinalLocal,
-            perfil.Eventos[1].OrdinalLocal,
-            perfil.Desativacoes.Single().OrdinalLocal,
-            perfil.Eventos[2].OrdinalLocal,
-        ];
-
-        posicoes.Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
+        PosicoesDaTrilha(perfil).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
     }
 
     [Fact(DisplayName = "As etapas exigidas: a gestão sempre, a proteção de dados só no perfil protegido")]
@@ -302,10 +286,31 @@ public sealed class PerfilContencaoTests
     private Perfil Protegido() => PerfisDeTeste.Vigente("Analista de dados", Descricao, [Consultar, CatalogoMutavelDeTeste.Dados], _catalogo);
 
     private Result Suspender(Perfil perfil, string? motivo) =>
-        perfil.Suspender(PerfisDeTeste.Gestora, EtapaDaVersao.GestaoDeAcessos, motivo, Agora, _catalogo);
+        perfil.Suspender(PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos, motivo, Agora, _catalogo);
 
     private Result Decidir(Perfil perfil, Identidade decisor, EtapaDaVersao etapa, string? motivo = Motivo) =>
         perfil.DecidirRetomada(new ContextoDaRetomada(decisor, DecisorTemConcessao: true, etapa, motivo, _catalogo, Agora));
 
     private static string Codigo(Result resultado) => resultado.Errors.Single().Error.Code;
+
+    // A gestão de acessos e a proteção de dados, na ordem pedida.
+    private static ((Identidade, EtapaDaVersao) Primeira, (Identidade, EtapaDaVersao) Segunda) OrdemDasEtapas(bool gestaoPrimeiro)
+    {
+        (Identidade, EtapaDaVersao) gestao = (PerfisDeTeste.ProtecaoDeDados, EtapaDaVersao.GestaoDeAcessos);
+        (Identidade, EtapaDaVersao) protecao = (Leandro, EtapaDaVersao.ProtecaoDeDados);
+
+        return gestaoPrimeiro ? (gestao, protecao) : (protecao, gestao);
+    }
+
+    // As posições locais da trilha, na ordem em que os fatos aconteceram.
+    private static int[] PosicoesDaTrilha(Perfil perfil)
+    {
+        SuspensaoDoPerfil suspensao = perfil.Suspensoes.Single();
+
+        return
+        [
+            suspensao.OrdinalLocal, perfil.Eventos[0].OrdinalLocal, suspensao.Decisoes[0].OrdinalLocal, suspensao.Decisoes[1].OrdinalLocal,
+            perfil.Eventos[1].OrdinalLocal, perfil.Desativacoes.Single().OrdinalLocal, perfil.Eventos[2].OrdinalLocal,
+        ];
+    }
 }

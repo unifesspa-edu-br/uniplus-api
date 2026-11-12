@@ -7951,7 +7951,6 @@
           "acrescimo",
           "exigeProtecaoDeDados",
           "situacao",
-          "dispensa",
           "ehDoLeitor"
         ],
         "type": "object",
@@ -8001,12 +8000,6 @@
           },
           "situacao": {
             "type": "string"
-          },
-          "dispensa": {
-            "type": [
-              "null",
-              "string"
-            ]
           },
           "ehDoLeitor": {
             "type": "boolean"

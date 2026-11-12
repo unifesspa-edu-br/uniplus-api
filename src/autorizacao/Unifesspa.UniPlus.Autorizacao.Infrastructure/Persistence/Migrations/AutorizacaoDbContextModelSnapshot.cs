@@ -392,11 +392,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("decisor_tem_concessao");
 
-                    b.Property<string>("Dispensa")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("dispensa");
-
                     b.Property<string>("EnvioEtapa")
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
@@ -467,8 +462,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("decisoes_da_migracao", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_decisoes_da_migracao_dispensa", "dispensa IS NULL OR dispensa = 'beneficiario_ja_tem_protecao_de_dados'");
-
                             t.HasCheckConstraint("ck_decisoes_da_migracao_envio", "(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('gestao_de_acessos', 'protecao_de_dados'))");
 
                             t.HasCheckConstraint("ck_decisoes_da_migracao_lote_de_origem", "(lote_de_origem_id IS NULL) = (lote_de_origem_etapa IS NULL) AND (lote_de_origem_etapa IS NULL OR lote_de_origem_etapa = 'gestao_de_acessos')");
@@ -1233,11 +1226,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Decide")
-                        .IsRequired()
+                    b.Property<string>("DecididoComo")
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("decide");
+                        .HasColumnName("decidido_como");
 
                     b.Property<DateTimeOffset?>("DecididoEm")
                         .HasColumnType("timestamp with time zone")
@@ -1289,7 +1281,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("revisao_itens", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_revisao_itens_decisao_completa", "(resultado IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
+                            t.HasCheckConstraint("ck_revisao_itens_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
                         });
                 });
 
@@ -1671,11 +1663,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Dispensa")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)")
-                        .HasColumnName("dispensa");
-
                     b.Property<bool>("ExigeProtecaoDeDados")
                         .HasColumnType("boolean")
                         .HasColumnName("exige_protecao_de_dados");
@@ -1719,8 +1706,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.ToTable("migracoes_da_concessao", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_migracoes_da_concessao_dispensa", "dispensa IS NULL OR dispensa = 'beneficiario_ja_tem_protecao_de_dados'");
-
                             t.HasCheckConstraint("ck_migracoes_da_concessao_situacao", "situacao IN ('retida', 'aguardando_protecao_de_dados', 'migrada', 'recusada', 'nao_migrada', 'fora_da_lista')");
                         });
                 });
@@ -1935,7 +1920,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                             Id = new Guid("019a0000-0000-7000-8000-000000000001"),
                             Ativo = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Opera as concessões de acesso e mantém os perfis de acesso.",
+                            Descricao = "Opera as concessões de acesso, mantém os perfis de acesso e publica o termo de responsabilidade.",
                             Governanca = "gestor-de-acessos",
                             Nome = "Gestor de acessos"
                         },
@@ -1944,9 +1929,9 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                             Id = new Guid("019a0000-0000-7000-8000-000000000002"),
                             Ativo = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Descricao = "Aprova a concessão de acesso a dado pessoal ou sensível.",
-                            Governanca = "protecao-de-dados",
-                            Nome = "Encarregado(a) pelo tratamento de dados"
+                            Descricao = "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.",
+                            Governanca = "representante-do-controlador",
+                            Nome = "Representante do controlador"
                         });
                 });
 
@@ -3056,6 +3041,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                                 },
                                 new
                                 {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000001"),
+                                    Codigo = "autorizacao:termos:publicar"
+                                },
+                                new
+                                {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
                                     Codigo = "autorizacao:concessoes:administrar"
                                 },
@@ -3078,6 +3068,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                                 {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
                                     Codigo = "autorizacao:revisoes:conduzir"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
+                                    Codigo = "configuracao:protecao-do-catalogo:aprovar"
                                 });
                         });
 

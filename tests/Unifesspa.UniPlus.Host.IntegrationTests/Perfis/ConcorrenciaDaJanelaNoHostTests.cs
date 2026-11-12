@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -24,13 +23,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// A ordem das travas da janela de migração com operações concorrentes de verdade: a transação do teste segura a trava,
 /// o banco registra cada operação parada nela e a liberação decide quem segue primeiro. Em nenhuma das ordens o banco
-/// aponta deadlock, e o que a operação seguinte lê é o que a anterior confirmou.
+/// aponta deadlock, e o que a operação seguinte lê é o que a anterior confirmou. A janela não toma a trava do papel de
+/// Representante do controlador, porque nunca concede nem revoga o perfil dele (ADR-0162).
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
 {
     private static readonly TimeSpan DepoisDoPrazo = TimeSpan.FromHours(73);
@@ -49,22 +45,14 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         long deadlocks = await DeadlocksAsync();
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
 
-        Task<HttpResponseMessage> revogacao = EnviarAsync(
-            administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Leandro]}/revogacao",
-            new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email });
-        await trava.AguardarBloqueioAsync();
-        Task<HttpResponseMessage> lote = EnviarLoteAsync(
-            gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]);
-        await trava.AguardarBloqueioAsync(2);
-        await trava.ConfirmarAsync();
+        (Task<HttpResponseMessage> revogacao, Task<HttpResponseMessage> lote) = await EmFilaAsync(
+            trava, () => RevogarAsync(administrador, cenario.Concessoes[Leandro], Leandro.Email), () => EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]));
 
         using HttpResponseMessage respostaDaRevogacao = await revogacao;
-        using HttpResponseMessage respostaDoLote = await lote;
-        JsonElement janela = await CorpoAsync(respostaDoLote, HttpStatusCode.OK);
+        JsonElement janela = await CorpoAsync(await lote, HttpStatusCode.OK);
         SituacaoDe(janela, cenario.Concessoes[Betina]).Should().Be("aguardando_protecao_de_dados");
         janela.GetProperty("itens").EnumerateArray().Should().NotContain(i => i.GetProperty("concessaoId").GetGuid() == cenario.Concessoes[Leandro]);
-        (await ContarLotesAsync()).Should().Be(1);
-        (await DeadlocksAsync()).Should().Be(deadlocks);
+        (await ContarLotesAsync(), await DeadlocksAsync()).Should().Be((1, deadlocks));
     }
 
     [Fact(DisplayName = "A etapa da proteção de dados que espera a trava e atravessa o prazo encontra a janela encerrada e não decide")]
@@ -74,18 +62,15 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         Guid concessao = cenario.Concessoes[Leandro];
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        using HttpResponseMessage lote = await EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(concessao, "migrar")]);
-        SituacaoDe(await CorpoAsync(lote, HttpStatusCode.OK), concessao).Should().Be("aguardando_protecao_de_dados");
+        SituacaoDe(await CorpoAsync(await Lote(gestao, cenario), HttpStatusCode.OK), concessao).Should().Be("aguardando_protecao_de_dados");
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(concessao);
 
-        Task<HttpResponseMessage> etapa = EnviarAsync(
-            protecao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
+        Task<HttpResponseMessage> etapa = EnviarAsync(protecao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(concessao, "migrar") } });
         await trava.AguardarBloqueioAsync();
         Relogio.Avancar(DepoisDoPrazo);
         await trava.ConfirmarAsync();
 
-        using HttpResponseMessage resposta = await etapa;
-        await ConferirRecusaDaMigracaoAsync(resposta, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
+        await ConferirRecusaDaMigracaoAsync(await etapa, HttpStatusCode.UnprocessableEntity, "prazo_encerrado");
         SituacaoDe(await JanelaAsync(gestao, cenario.PerfilId), concessao).Should().Be("nao_migrada");
     }
 
@@ -99,111 +84,40 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         using HttpClient gestor = await GestorAsync();
         long deadlocks = await DeadlocksAsync();
         await using TransacaoRetidaDeTeste trava = await TravarPerfilAsync(cenario.PerfilId);
+        Func<Task<HttpResponseMessage>> remocao = () => RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]);
+        Func<Task<HttpResponseMessage>> lote = () => Lote(gestao, cenario);
 
-        Task<HttpResponseMessage> primeira = loteAntes ? Lote(gestao, cenario) : RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]);
-        await trava.AguardarBloqueioAsync();
-        Task<HttpResponseMessage> segunda = loteAntes ? RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]) : Lote(gestao, cenario);
-        await trava.AguardarBloqueioAsync(2);
-        await trava.ConfirmarAsync();
+        (Task<HttpResponseMessage> primeira, Task<HttpResponseMessage> segunda) = await EmFilaAsync(trava, loteAntes ? lote : remocao, loteAntes ? remocao : lote);
 
-        using HttpResponseMessage resposta1 = await primeira;
-        using HttpResponseMessage resposta2 = await segunda;
-        resposta1.StatusCode.Should().Be(HttpStatusCode.OK, await resposta1.Content.ReadAsStringAsync());
-        resposta2.StatusCode.Should().Be(HttpStatusCode.OK, await resposta2.Content.ReadAsStringAsync());
-        (await ContarLotesAsync()).Should().Be(1);
-        (await DeadlocksAsync()).Should().Be(deadlocks);
+        (await Task.WhenAll(primeira, segunda)).Should().OnlyContain(static r => r.StatusCode == HttpStatusCode.OK);
+        (await ContarLotesAsync(), await DeadlocksAsync()).Should().Be((1, deadlocks));
     }
 
-    [Fact(DisplayName = "A concessão da proteção de dados criada antes do lote vale como dispensa da etapa")]
-    public async Task GovernancaCriada_AntesDoLote_DispensaAProtecaoDeDados()
+    [Fact(DisplayName = "Na janela aberta, a concessão de quem é Representante do controlador aguarda a etapa de proteção de dados: a migração não tem dispensa")]
+    public async Task Lote_BeneficiarioRepresentante_AguardaAProtecaoDeDados()
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.RepresentanteDoControlador, Leandro.Email);
         using HttpClient gestao = await GestaoAsync();
-        await using TransacaoRetidaDeTeste criacao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await ConcederNaTransacaoAsync(criacao, Leandro);
 
-        Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await criacao.AguardarBloqueioAsync();
-        await criacao.ConfirmarAsync();
+        using HttpResponseMessage resposta = await Lote(gestao, cenario);
 
-        using HttpResponseMessage resposta = await lote;
-        JsonElement item = ItemDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]);
-        item.GetProperty("situacao").GetString().Should().Be("migrada");
-        item.GetProperty("dispensa").ValueKind.Should().Be(JsonValueKind.String);
-    }
-
-    [Fact(DisplayName = "A concessão da proteção de dados revogada antes do lote tira a dispensa e a etapa volta a ser exigida")]
-    public async Task GovernancaRevogada_AntesDoLote_ExigeAProtecaoDeDados()
-    {
-        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.ProtecaoDeDados, Leandro.Email);
-        using HttpClient gestao = await GestaoAsync();
-        await using TransacaoRetidaDeTeste revogacao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await revogacao.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
-            "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR SHARE", PerfisDeSistema.ProtecaoDeDadosId);
-        await revogacao.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
-            "UPDATE autorizacao.concessoes SET revogada_em = now(), revogada_por_emissor = 'e', revogada_por_sub = 's', motivo_revogacao = 'teste' "
-            + "WHERE perfil_id = {0} AND beneficiario_sub = {1}",
-            PerfisDeSistema.ProtecaoDeDadosId,
-            Leandro.Sub.ToString());
-
-        Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await revogacao.AguardarBloqueioAsync();
-        await revogacao.ConfirmarAsync();
-
-        using HttpResponseMessage resposta = await lote;
         JsonElement item = ItemDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]);
         item.GetProperty("situacao").GetString().Should().Be("aguardando_protecao_de_dados");
-        item.GetProperty("dispensa").ValueKind.Should().Be(JsonValueKind.Null);
+        item.TryGetProperty("dispensa", out _).Should().BeFalse("a migração deixou de ter dispensa");
     }
 
-    [Fact(DisplayName = "O lote que trava primeiro não vê a concessão da proteção de dados criada depois, que espera a trava do perfil")]
-    public async Task Lote_TravaPrimeiro_NaoVeAGovernancaCriadaDepois()
+    [Fact(DisplayName = "A janela não toma a trava do papel de Representante: o lote não espera quem segura o perfil dele")]
+    public async Task Lote_NaoEsperaATravaDoPapelDoRepresentante()
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         using HttpClient gestao = await GestaoAsync();
-        long deadlocks = await DeadlocksAsync();
-        await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
+        await using TransacaoRetidaDeTeste papel = await TravarPerfilAsync(PerfisDeSistema.RepresentanteDoControladorId);
 
-        Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await trava.AguardarBloqueioAsync();
-        Task<Guid> criacao = ConcessoesDeTeste.ConcederGovernancaAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.ProtecaoDeDados, Leandro.Email);
-        await trava.AguardarBloqueioAsync(2);
-        await trava.ConfirmarAsync();
+        using HttpResponseMessage resposta = await Lote(gestao, cenario).WaitAsync(TimeSpan.FromSeconds(30));
 
-        using HttpResponseMessage resposta = await lote;
-        await criacao;
-        JsonElement item = ItemDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]);
-        item.GetProperty("situacao").GetString().Should().Be("aguardando_protecao_de_dados");
-        (await DeadlocksAsync()).Should().Be(deadlocks);
-    }
-
-    [Fact(DisplayName = "O lote que trava primeiro mantém a dispensa mesmo com a concessão da proteção de dados revogada depois")]
-    public async Task Lote_TravaPrimeiro_MantemADispensaDaGovernanciaRevogadaDepois()
-    {
-        JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
-        Guid governanca = await ConcessoesDeTeste.ConcederGovernancaAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.ProtecaoDeDados, Leandro.Email);
-        using HttpClient gestao = await GestaoAsync();
-        using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
-        long deadlocks = await DeadlocksAsync();
-        await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
-
-        Task<HttpResponseMessage> lote = Lote(gestao, cenario);
-        await trava.AguardarBloqueioAsync();
-        Task<HttpResponseMessage> revogacao = EnviarAsync(
-            administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{governanca}/revogacao",
-            new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email });
-        await trava.AguardarBloqueioAsync(2);
-        await trava.ConfirmarAsync();
-
-        using HttpResponseMessage resposta = await lote;
-        using HttpResponseMessage respostaDaRevogacao = await revogacao;
-        JsonElement item = ItemDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]);
-        item.GetProperty("dispensa").ValueKind.Should().Be(JsonValueKind.String);
-        respostaDaRevogacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await respostaDaRevogacao.Content.ReadAsStringAsync());
-        (await DeadlocksAsync()).Should().Be(deadlocks);
+        SituacaoDe(await CorpoAsync(resposta, HttpStatusCode.OK), cenario.Concessoes[Leandro]).Should().Be("aguardando_protecao_de_dados");
+        await papel.ConfirmarAsync();
     }
 
     [Fact(DisplayName = "A segunda instância da rotina pula enquanto a primeira mantém a trava, e a execução seguinte assume")]
@@ -211,18 +125,8 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         Relogio.Avancar(DepoisDoPrazo);
-        IAsyncDisposable? primeira = await ObterATravaDaRotinaAsync();
-        int pulada;
-        try
-        {
-            primeira.Should().NotBeNull();
-            pulada = await ProcessarJanelasAsync();
-        }
-        finally
-        {
-            await primeira!.DisposeAsync();
-        }
 
+        int pulada = await ProcessarComATravaDaRotinaRetidaAsync();
         int seguinte = await ProcessarJanelasAsync();
 
         pulada.Should().Be(0);
@@ -236,26 +140,17 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         Relogio.Avancar(TimeSpan.FromHours(25));
-        await ExecutarSqlAsync(
-            "CREATE FUNCTION autorizacao.falha_de_teste() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'falha de teste'; END $$");
-        await ExecutarSqlAsync(
-            "CREATE TRIGGER falha_de_teste BEFORE UPDATE ON autorizacao.janelas_de_migracao FOR EACH ROW EXECUTE FUNCTION autorizacao.falha_de_teste()");
-        int comFalha;
-        try
-        {
-            comFalha = await ProcessarJanelasAsync();
-            (await AvisoGravadoEmAsync(cenario.PerfilId, true)).Should().BeNull();
-        }
-        finally
-        {
-            await ExecutarSqlAsync("DROP TRIGGER IF EXISTS falha_de_teste ON autorizacao.janelas_de_migracao");
-            await ExecutarSqlAsync("DROP FUNCTION IF EXISTS autorizacao.falha_de_teste()");
-        }
 
+        int comFalha = await ComGatilhoAsync(
+            "janelas_de_migracao", "RAISE EXCEPTION 'falha de teste';", async () =>
+            {
+                int processadas = await ProcessarJanelasAsync();
+                (await AvisoGravadoEmAsync(cenario.PerfilId, true)).Should().BeNull();
+                return processadas;
+            });
         int seguinte = await ProcessarJanelasAsync();
 
-        comFalha.Should().Be(0);
-        seguinte.Should().BeGreaterThanOrEqualTo(1);
+        (comFalha, seguinte >= 1).Should().Be((0, true));
         (await AvisoGravadoEmAsync(cenario.PerfilId, true)).Should().NotBeNull();
     }
 
@@ -279,26 +174,12 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         using HttpClient gestao = await GestaoAsync();
         string chave = Guid.NewGuid().ToString();
-        // O gatilho descarta a revogação da concessão que o lote recusa: a gravação amarrada ao xmin não encontra a linha na versão lida.
-        await ExecutarSqlAsync(
-            "CREATE FUNCTION autorizacao.descarta_de_teste() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$");
-        await ExecutarSqlAsync(
-            "CREATE TRIGGER descarta_de_teste BEFORE UPDATE ON autorizacao.concessoes FOR EACH ROW EXECUTE FUNCTION autorizacao.descarta_de_teste()");
-        HttpStatusCode comConflito;
-        try
-        {
-            using HttpResponseMessage conflito = await EnviarLoteAsync(
-                gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "recusar")], confirmacaoDeExclusao: true, chave: chave);
-            comConflito = conflito.StatusCode;
-        }
-        finally
-        {
-            await ExecutarSqlAsync("DROP TRIGGER IF EXISTS descarta_de_teste ON autorizacao.concessoes");
-            await ExecutarSqlAsync("DROP FUNCTION IF EXISTS autorizacao.descarta_de_teste()");
-        }
-
-        using HttpResponseMessage reenvio = await EnviarLoteAsync(
+        Func<Task<HttpResponseMessage>> recusar = () => EnviarLoteAsync(
             gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "recusar")], confirmacaoDeExclusao: true, chave: chave);
+
+        // O gatilho descarta a revogação da concessão que o lote recusa: a gravação amarrada ao xmin não encontra a linha na versão lida.
+        HttpStatusCode comConflito = await ComGatilhoAsync("concessoes", "RETURN NULL;", async () => (await recusar()).StatusCode);
+        using HttpResponseMessage reenvio = await recusar();
 
         comConflito.Should().Be(HttpStatusCode.Conflict);
         reenvio.StatusCode.Should().Be(HttpStatusCode.OK, await reenvio.Content.ReadAsStringAsync());
@@ -325,23 +206,49 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         return trava;
     }
 
-    // A criação da concessão da proteção de dados como a produção a faz: trava o perfil de governança em modo
-    // compartilhado, e a gravação só vale quando a transação do teste confirma.
-    private static async Task ConcederNaTransacaoAsync(TransacaoRetidaDeTeste transacao, Persona pessoa)
+    private static Task<HttpResponseMessage> RevogarAsync(HttpClient administrador, Guid concessaoId, string email) =>
+        EnviarAsync(administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = "A pessoa deixou a função.", confirmacaoEmail = email });
+
+    // As duas operações param na trava retida, na ordem pedida, e seguem quando a transação do teste confirma.
+    private static async Task<(Task<HttpResponseMessage> Primeira, Task<HttpResponseMessage> Segunda)> EmFilaAsync(
+        TransacaoRetidaDeTeste trava, Func<Task<HttpResponseMessage>> primeira, Func<Task<HttpResponseMessage>> segunda)
     {
-        IConcessaoRepository concessoes = transacao.Servicos.GetRequiredService<IConcessaoRepository>();
-        Perfil perfil = (await concessoes.ObterParaConcederAsync(PerfisDeSistema.ProtecaoDeDadosId))!;
-        Result<Concessao> concessao = Concessao.Conceder(
-            new Identidade(TestAuthHandler.DefaultIssuer, pessoa.Sub.ToString()),
-            perfil,
-            EscopoDaConcessao.DaInstituicao(),
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            new Identidade(TestAuthHandler.DefaultIssuer, "concessao.de.teste"),
-            transacao.Servicos.GetRequiredService<TimeProvider>().GetUtcNow(),
-            transacao.Servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
-            beneficiarioEmail: pessoa.Email);
-        await concessoes.AdicionarAsync(concessao.Value!);
-        await transacao.Servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        Task<HttpResponseMessage> antes = primeira();
+        await trava.AguardarBloqueioAsync();
+        Task<HttpResponseMessage> depois = segunda();
+        await trava.AguardarBloqueioAsync(2);
+        await trava.ConfirmarAsync();
+        return (antes, depois);
+    }
+
+    // Roda a operação com um gatilho BEFORE UPDATE de teste na tabela, que executa o corpo pedido, e o remove depois.
+    private async Task<T> ComGatilhoAsync<T>(string tabela, string corpo, Func<Task<T>> operacao)
+    {
+        await ExecutarSqlAsync($"CREATE FUNCTION autorizacao.gatilho_de_teste() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN {corpo} END $$");
+        await ExecutarSqlAsync($"CREATE TRIGGER gatilho_de_teste BEFORE UPDATE ON autorizacao.{tabela} FOR EACH ROW EXECUTE FUNCTION autorizacao.gatilho_de_teste()");
+        try
+        {
+            return await operacao();
+        }
+        finally
+        {
+            await ExecutarSqlAsync($"DROP TRIGGER IF EXISTS gatilho_de_teste ON autorizacao.{tabela}");
+            await ExecutarSqlAsync("DROP FUNCTION IF EXISTS autorizacao.gatilho_de_teste()");
+        }
+    }
+
+    private async Task<int> ProcessarComATravaDaRotinaRetidaAsync()
+    {
+        IAsyncDisposable? primeira = await ObterATravaDaRotinaAsync();
+        primeira.Should().NotBeNull();
+        try
+        {
+            return await ProcessarJanelasAsync();
+        }
+        finally
+        {
+            await primeira!.DisposeAsync();
+        }
     }
 
     private async Task<IAsyncDisposable?> ObterATravaDaRotinaAsync()

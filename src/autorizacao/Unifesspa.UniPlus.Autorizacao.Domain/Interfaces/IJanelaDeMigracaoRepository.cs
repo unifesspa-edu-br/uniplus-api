@@ -32,15 +32,6 @@ public interface IJanelaDeMigracaoRepository
     /// </summary>
     Task<IReadOnlyList<Concessao>> ObterConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Trava o perfil de governança da proteção de dados e todas as concessões ativas dele, em ordem de id, até o fim da
-    /// transação: a dispensa da segunda etapa se lê delas, e a criação e a revogação concorrentes esperam a trava.
-    /// </summary>
-    Task TravarProtecaoDeDadosAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>Quem tem concessão ativa do perfil da proteção de dados no instante.</summary>
-    Task<IReadOnlyCollection<Identidade>> ListarTitularesDaProtecaoDeDadosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default);
-
     /// <summary>As concessões do perfil que a janela alcança, sem rastrear nem travar: a leitura da tela.</summary>
     Task<IReadOnlyList<Concessao>> ListarConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default);
 
