@@ -20,7 +20,7 @@ A POC da issue #2045 validou essa direção na versão do MinIO do projeto, com 
 ## Drivers da decisão
 
 - A API não conhece o conteúdo dos arquivos: nem memória proporcional ao arquivo, nem acesso a dado sensível.
-- Cada arquivo tem cifra individual, como pede o parecer da encarregada de dados de 13/10/2026.
+- Cada arquivo tem cifra individual, como pede o parecer do Encarregado de dados de 13/10/2026.
 - O candidato abre e baixa os próprios arquivos sem a API intermediar o conteúdo.
 - Falha fechada: sem a chave, o armazenamento não entrega nem grava conteúdo.
 - Nenhum arquivo confirmado fica sem veredicto, e nenhum é recusado só porque a verificação estava fora do ar.
@@ -90,7 +90,7 @@ O log de auditoria do MinIO (audit webhook) vai ao coletor de logs e registra ca
 
 **Emenda da ADR-0121.** A emenda 2 deixa de valer para o arquivo do candidato: o conteúdo não é cifrado pela aplicação, e a cifra individual do parecer é a chave de dados por objeto do SSE-KMS. A cifra de campo da ADR-0121 continua como está.
 
-**Cifra individual.** O parecer da encarregada de dados de 13/10/2026 pede cifra individual. A chave de dados por objeto atende a esse pedido: o mesmo conteúdo não fica igual no bucket, e não há acesso ao conteúdo sem a chave. A encarregada aprovou a solução (repasse do líder técnico, 22/10/2026).
+**Cifra individual.** O parecer do Encarregado de dados de 13/10/2026 pede cifra individual. A chave de dados por objeto atende a esse pedido: o mesmo conteúdo não fica igual no bucket, e não há acesso ao conteúdo sem a chave. O Encarregado de dados aprovou a solução (repasse do líder técnico, 22/10/2026).
 
 ### Transportes descartados
 
