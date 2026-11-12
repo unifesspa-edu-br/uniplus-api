@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -58,13 +59,13 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "A fase só começa a contar como iniciada quando a janela publicada começou")]
     public async Task Iniciadas_ContaPelaJanelaPublicada()
     {
-        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela da fase");
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela da fase", Abertura);
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         FasesIniciadasDoProcesso leitor = new(context);
 
-        FasesIniciadas antes = await leitor.ObterAsync(processoId, fase.Inicio!.Value.AddDays(-1));
-        FasesIniciadas depois = await leitor.ObterAsync(processoId, fase.Inicio!.Value.AddDays(1));
-        FasesIniciadas semProcesso = await leitor.ObterAsync(Guid.CreateVersion7(), fase.Inicio!.Value.AddDays(1));
+        FasesIniciadas antes = await leitor.ObterAsync(processoId, DateTimeOffset.UtcNow);
+        FasesIniciadas depois = await leitor.ObterAsync(processoId, Abertura.AddDays(1));
+        FasesIniciadas semProcesso = await leitor.ObterAsync(Guid.CreateVersion7(), Abertura.AddDays(1));
 
         antes.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse();
         depois.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
@@ -74,10 +75,10 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "O ato do item que a fase declara faz a fase contar como iniciada antes da janela")]
     public async Task Iniciadas_ContaPeloAtoDoItemDaFase()
     {
-        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS ato da fase");
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS ato da fase", Abertura);
         await SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaFase(fase, fase.Produtos.Single()));
 
-        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
     }
@@ -85,10 +86,10 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "O ato de uma etapa faz a fase que a contém contar como iniciada")]
     public async Task Iniciadas_ContaPeloAtoDaEtapaDaFase()
     {
-        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS ato da etapa");
+        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS ato da etapa", Abertura);
         await SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaEtapa(etapa, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
-        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
     }
@@ -96,42 +97,63 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "O ato de um item de outra fase com o mesmo tipo não inicia a fase")]
     public async Task Iniciadas_AtoDeOutraFaseNaoIniciaAFase()
     {
-        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS ato de outra fase");
-        (_, FaseCronograma faseDeOutroProcesso, _) = await PublicadoAsync("PS outra fase");
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS ato de outra fase", Abertura);
+        (_, FaseCronograma faseDeOutroProcesso, _) = await PublicadoAsync("PS outra fase", Abertura);
         IdentidadeDoItemDoEdital deOutraFase = IdentidadeDoItemDoEdital.DaFase(faseDeOutroProcesso, fase.Produtos.Single());
         await SemearAtoAsync(processoId, deOutraFase);
 
-        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A avaliação já lançada numa etapa da fase faz a fase contar como iniciada")]
-    public async Task Iniciadas_ContaPelaAvaliacaoLancadaNaEtapa()
+    [Fact(DisplayName = "A importação de notas do ENEM numa etapa da fase faz a fase contar como iniciada")]
+    public async Task Iniciadas_ContaPelaImportacaoDeNotasNaEtapa()
     {
-        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS avaliacao da etapa");
-        (Guid outroProcessoId, FaseCronograma outraFase, _) = await PublicadoAsync("PS avaliacao de outra etapa");
-        await SemearAvaliacaoAsync(etapa.Id);
+        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS avaliacao da etapa", Abertura);
+        (Guid outroProcessoId, FaseCronograma outraFase, _) = await PublicadoAsync("PS avaliacao de outra etapa", Abertura);
+        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow);
 
-        FasesIniciadas iniciadas = await IniciadasAsync(processoId, fase.Inicio!.Value.AddDays(-30));
-        FasesIniciadas deOutroProcesso = await IniciadasAsync(outroProcessoId, outraFase.Inicio!.Value.AddDays(-30));
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+        FasesIniciadas deOutroProcesso = await IniciadasAsync(outroProcessoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
         deOutroProcesso.Contem(outraFase.FaseCanonicaOrigemId).Should().BeFalse();
     }
 
-    // As chaves estrangeiras do lote e da inscrição ficam fora da semeadura: o que se verifica é só a leitura.
-    private async Task SemearAvaliacaoAsync(Guid etapaId)
+    private async Task SemearImportacaoDeNotasAsync(Guid processoId, Guid etapaId, DateTimeOffset importadoEm)
     {
         await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
-        await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction transacao = await semeadura.Database.BeginTransactionAsync();
-        await semeadura.Database.ExecuteSqlRawAsync("SET LOCAL session_replication_role = replica");
-        await semeadura.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            INSERT INTO selecao.avaliacoes_da_etapa (id, lote_id, etapa_processo_id, inscricao_id, oferta_curso_id, grupo_area_enem_codigo, situacao, nota)
-            VALUES ({Guid.CreateVersion7()}, {Guid.CreateVersion7()}, {etapaId}, {Guid.CreateVersion7()}, {Guid.CreateVersion7()}, 'TECNOLOGICA', 1, 600.5)
-            """);
-        await transacao.CommitAsync();
+        Guid versaoId = await semeadura.VersoesConfiguracao.Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).FirstAsync();
+        semeadura.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
+            processoId, etapaId, "2026", "INEP_ENEM_RETORNO", "v1", new string('b', 64), new string('c', 64), "sub-admin", importadoEm, 0,
+            versaoId, new ResultadoDoCruzamento([], [], [], []), []));
+        await semeadura.SaveChangesAsync();
+    }
+
+    private async Task SemearInscricaoRecebidaAsync(Guid processoId, DateTimeOffset criadaEm)
+    {
+        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        semeadura.Inscricoes.Add(InscricaoSubmetida(processoId, criadaEm));
+        await semeadura.SaveChangesAsync();
+    }
+
+    private static InscricaoRecord InscricaoSubmetida(Guid processoId, DateTimeOffset criadaEm)
+    {
+        Guid id = Guid.CreateVersion7();
+        return new InscricaoRecord
+        {
+            Id = id,
+            ProcessoSeletivoId = processoId,
+            CpfIndice = id.ToByteArray(),
+            Sub = $"sub-{id:N}",
+            EmissorToken = "https://issuer",
+            Situacao = SituacaoInscricao.Submetida,
+            VersaoFormularioId = Guid.CreateVersion7(),
+            NumeroInscricao = $"UNI-{id.ToString("N")[^8..]}",
+            Revisao = 1,
+            CreatedAt = criadaEm,
+        };
     }
 
     [Fact(DisplayName = "A versão de vigência futura não vale: a unidade da fase é a da versão que já vige")]
@@ -197,19 +219,89 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue("a janela abriu enquanto a versão que a previa vigia");
     }
 
+    [Fact(DisplayName = "A versão de vigência futura não entra como evidência: a janela dela, já no passado, não inicia a fase")]
+    public async Task Iniciadas_JanelaDeVersaoDeVigenciaFutura_NaoConta()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela de versao futura", Abertura);
+        await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), JanelaNoPassado);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeFalse("a sucessora ainda não vige");
+    }
+
+    [Fact(DisplayName = "A inscrição recebida inicia só a fase que a recebeu, e não as outras que também coletam")]
+    public async Task Iniciadas_InscricaoIniciaSoAFaseQueARecebeu()
+    {
+        (Guid processoId, FaseCronograma primeira, _) = await PublicadoAsync("PS inscricao em uma fase", Abertura);
+        Guid segundaOrigem = Guid.CreateVersion7();
+        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AcrescentaFaseQueColeta(envelope, segundaOrigem));
+        await SemearInscricaoRecebidaAsync(processoId, DateTimeOffset.UtcNow);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(primeira.FaseCanonicaOrigemId).Should().BeTrue();
+        iniciadas.Contem(segundaOrigem).Should().BeFalse("a inscrição foi recebida na primeira fase que coleta");
+    }
+
+    [Fact(DisplayName = "A importação de notas conta para a fase a que a etapa pertencia na versão vigente quando aconteceu")]
+    public async Task Iniciadas_ImportacaoContaParaAFaseDaEtapaNaVersaoDaEpoca()
+    {
+        (Guid processoId, FaseCronograma primeira, EtapaProcesso etapa) = await PublicadoAsync("PS etapa movida", Abertura);
+        Guid segundaOrigem = Guid.CreateVersion7();
+        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), envelope => MoveAEtapaParaNovaFase(envelope, segundaOrigem));
+        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow.AddDays(10));
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow.AddDays(60));
+
+        iniciadas.Contem(primeira.FaseCanonicaOrigemId).Should().BeTrue("a etapa era da primeira fase quando as notas foram importadas");
+        iniciadas.Contem(segundaOrigem).Should().BeFalse("a etapa só passou à segunda fase depois da importação");
+    }
+
+    private static void JanelaNoPassado(JsonObject fase)
+    {
+        fase["inicio"] = "2020-01-01T00:00:00+00:00";
+        fase["fim"] = "2020-01-31T00:00:00+00:00";
+    }
+
+    // A fase nova nasce com a janela no futuro, para só a inscrição ou a importação poderem iniciá-la.
+    private static JsonObject FaseNovaComAJanelaNoFuturo(JsonObject envelope, Guid origemId)
+    {
+        JsonArray fases = (JsonArray)envelope["cronogramaFases"]!["fases"]!;
+        JsonObject nova = JsonNode.Parse(fases[0]!.ToJsonString())!.AsObject();
+        nova["id"] = Guid.CreateVersion7();
+        nova["faseCanonicaOrigemId"] = origemId;
+        nova["codigo"] = "SEGUNDA_FASE";
+        AdiaAJanela(nova);
+        fases.Add(nova);
+        return nova;
+    }
+
+    private static void AcrescentaFaseQueColeta(JsonObject envelope, Guid origemId) =>
+        FaseNovaComAJanelaNoFuturo(envelope, origemId)["coletaInscricao"] = true;
+
+    private static void MoveAEtapaParaNovaFase(JsonObject envelope, Guid origemId)
+    {
+        FaseNovaComAJanelaNoFuturo(envelope, origemId)["coletaInscricao"] = false;
+        envelope["etapas"]!.AsArray()[0]!["faseCodigo"] = "SEGUNDA_FASE";
+    }
+
     private static void AdiaAJanela(JsonObject fase)
     {
         fase["inicio"] = "2045-01-01T00:00:00+00:00";
         fase["fim"] = "2045-01-31T00:00:00+00:00";
     }
 
-    private async Task SucederAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraAFase)
+    private Task SucederAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraAFase) =>
+        SucederNoEnvelopeAsync(processoId, vigenteAPartirDe, envelope => alteraAFase((JsonObject)envelope["cronogramaFases"]!["fases"]![0]!));
+
+    private async Task SucederNoEnvelopeAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraOEnvelope)
     {
         await using SelecaoDbContext context = _fixture.CreateDbContext();
         VersaoConfiguracao anterior = await context.VersoesConfiguracao
             .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).FirstAsync();
         JsonObject envelope = JsonNode.Parse(anterior.ConfiguracaoCongelada)!.AsObject();
-        alteraAFase((JsonObject)envelope["cronogramaFases"]!["fases"]![0]!);
+        alteraOEnvelope(envelope);
         context.VersoesConfiguracao.Add(VersaoConfiguracao.Suceder(
             anterior, Encoding.UTF8.GetBytes(envelope.ToJsonString()), anterior.SchemaVersion, anterior.AlgoritmoHash,
             Guid.CreateVersion7(), anterior.AtoCriadorHash, anterior.AtoCriadorId, "plataforma-admin", vigenteAPartirDe));

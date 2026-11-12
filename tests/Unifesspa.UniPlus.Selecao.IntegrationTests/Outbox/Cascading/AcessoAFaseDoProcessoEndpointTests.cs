@@ -242,15 +242,15 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
         return request;
     }
 
-    private Task<HttpResponseMessage> SendAdminAsync(string rota, object corpo)
+    private async Task<HttpResponseMessage> SendAdminAsync(string rota, object corpo)
     {
         HttpClient client = _fixture.Factory.CreateClient();
-        HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative)) { Content = JsonContent.Create(corpo) };
+        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative)) { Content = JsonContent.Create(corpo) };
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
         request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
 
-        return client.SendAsync(request);
+        return await client.SendAsync(request);
     }
 
     private static object CorpoDoAto(Guid documentoId) => new
