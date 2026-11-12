@@ -5,9 +5,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
-using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -18,54 +16,35 @@ public static class RevogarItemDaRevisaoCommandHandler
 {
     public static async Task<Result> Handle(
         RevogarItemDaRevisaoCommand command,
-        IRevisaoDeAcessosRepository revisoes,
+        PreparoDaDecisaoDoItem preparo,
         IConcessaoRepository concessoes,
         IVerificadorDeAcesso verificador,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
-        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(revisoes);
-        ArgumentNullException.ThrowIfNull(concessoes);
-        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(preparo);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Result<DecisaoDoItem> preparada = await DecisaoDoItem
-            .PrepararAsync(command.RevisaoId, command.ItemId, revisoes, concessoes, verificador, IdentidadeDoToken.De(userContext), cancellationToken)
+        Result<DecisaoDoItem> preparada = await preparo
+            .PrepararAsync(command.RevisaoId, command.ItemId, verificador, IdentidadeDoToken.De(userContext), cancellationToken)
             .ConfigureAwait(false);
-        if (preparada.IsFailure)
-        {
-            return Result.Failure(preparada.Error!);
-        }
 
-        (RevisaoDeAcessos revisao, ItemDaRevisao item, Concessao concessao, Identidade decisor) = preparada.Value!;
-        DateTimeOffset agora = timeProvider.GetUtcNow();
+        return preparada.IsFailure
+            ? Result.Failure(preparada.Error!)
+            : await RevogarAsync(preparada.Value!, command.Motivo, concessoes, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
+    private static async Task<Result> RevogarAsync(
+        DecisaoDoItem d, string? motivo, IConcessaoRepository concessoes, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         Result revogacao = await RevogacaoDaConcessao
             .AplicarAsync(
-                concessao, agora, () => revisao.Revogar(item.Id, concessao, decisor, command.Motivo, agora), concessoes, unitOfWork, cancellationToken)
+                d.Concessao, d.Agora, () => d.Revisao.Revogar(d.Item.Id, d.Concessao, d.Decisor, motivo, d.Agora), concessoes, unitOfWork, cancellationToken)
             .ConfigureAwait(false);
-        if (revogacao.IsFailure)
-        {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return revogacao;
-        }
 
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
-        {
-            // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119).
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result.Failure(RevisaoHandlerErros.ConflitoDeConcorrencia());
-        }
-
-        return Result.Success();
+        return await GravacaoDoItem.GravarAsync(revogacao, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 }

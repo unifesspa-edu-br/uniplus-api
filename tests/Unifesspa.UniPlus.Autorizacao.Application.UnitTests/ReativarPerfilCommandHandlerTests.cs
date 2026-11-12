@@ -32,7 +32,7 @@ public sealed class ReativarPerfilCommandHandlerTests
     {
         Perfil perfil = PerfilComum();
         PerfisDeTeste.Desativar(perfil, new CatalogoDeTeste());
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, []);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, []);
 
         Result resultado = await Reativar(cenario, perfil.Id);
 
@@ -83,7 +83,7 @@ public sealed class ReativarPerfilCommandHandlerTests
     public async Task Desativar_PerfilComPendente_MantemAPendente()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], new CatalogoDeTeste());
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, []);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, []);
 
         Result resultado = await DesativarPerfilCommandHandler.Handle(
             new DesativarPerfilCommand(perfil.Id, PerfisDeTeste.MotivoDaContencao), cenario.Ativacao, CancellationToken.None);
@@ -99,7 +99,7 @@ public sealed class ReativarPerfilCommandHandlerTests
     public async Task Desativar_SemMotivo_Recusa()
     {
         Perfil perfil = PerfilComum();
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, []);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, []);
 
         Result resultado = await DesativarPerfilCommandHandler.Handle(
             new DesativarPerfilCommand(perfil.Id, null), cenario.Ativacao, CancellationToken.None);

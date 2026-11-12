@@ -73,34 +73,33 @@ public static class ConcessoesDeTeste
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
         IConcessaoRepository concessoes = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
+        return await concessoes.ObterNaoRevogadaIgualAsync(beneficiario, perfilId, alcance) is { } existente
+            ? existente.Id
+            : await GravarNovaAsync(scope.ServiceProvider, beneficiario, perfilId, alcance, (validaAte, email ?? EmailDeTeste));
+    }
 
-        Concessao? existente = await concessoes.ObterNaoRevogadaIgualAsync(beneficiario, perfilId, alcance);
-        if (existente is not null)
-        {
-            return existente.Id;
-        }
+    private static async Task<Guid> GravarNovaAsync(
+        IServiceProvider servicos, Identidade beneficiario, Guid perfilId, EscopoDaConcessao alcance, (DateTimeOffset? ValidaAte, string Email) dados)
+    {
+        Concessao concessao = await NovaAsync(servicos, beneficiario, perfilId, alcance, dados);
+        await servicos.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
+        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        return concessao.Id;
+    }
 
-        Perfil perfil = await concessoes.ObterParaConcederAsync(perfilId)
+    private static async Task<Concessao> NovaAsync(
+        IServiceProvider servicos, Identidade beneficiario, Guid perfilId, EscopoDaConcessao alcance, (DateTimeOffset? ValidaAte, string Email) dados)
+    {
+        Perfil perfil = await servicos.GetRequiredService<IConcessaoRepository>().ObterParaConcederAsync(perfilId)
             ?? throw new InvalidOperationException($"O perfil {perfilId} não existe.");
         Result<Concessao> concessao = Concessao.Conceder(
-            beneficiario,
-            perfil,
-            alcance,
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            ConcedidaPor,
-            scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow(),
-            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
-            validaAte,
-            email ?? EmailDeTeste);
-        if (concessao.IsFailure)
-        {
-            throw new InvalidOperationException(string.Join("; ", concessao.Errors.Select(e => e.Error.Message)));
-        }
+            beneficiario, perfil, alcance, new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()), ConcedidaPor,
+            servicos.GetRequiredService<TimeProvider>().GetUtcNow(), servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
+            dados.ValidaAte, dados.Email);
 
-        await concessoes.AdicionarAsync(concessao.Value!);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
-
-        return concessao.Value!.Id;
+        return concessao.IsSuccess
+            ? concessao.Value!
+            : throw new InvalidOperationException(string.Join("; ", concessao.Errors.Select(e => e.Error.Message)));
     }
 
     /// <summary>Apaga todas as concessões da pessoa, para o teste começar de uma pessoa sem acesso algum.</summary>
@@ -120,8 +119,8 @@ public static class ConcessoesDeTeste
         await ConcederAsync(services, sub, await CriarPerfilAsync(services, permissoes));
 
     /// <summary>
-    /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos ou o da
-    /// proteção de dados.
+    /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos ou o do
+    /// Representante do controlador.
     /// </summary>
     public static Task<Guid> ConcederGovernancaAsync(
         IServiceProvider services, string sub, TipoDeGovernanca governanca, string? email = null) =>
@@ -130,6 +129,6 @@ public static class ConcessoesDeTeste
             sub,
             governanca == TipoDeGovernanca.GestorDeAcessos
                 ? PerfisDeSistema.GestorDeAcessosId
-                : PerfisDeSistema.ProtecaoDeDadosId,
+                : PerfisDeSistema.RepresentanteDoControladorId,
             email: email);
 }

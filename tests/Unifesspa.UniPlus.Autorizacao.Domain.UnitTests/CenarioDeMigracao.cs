@@ -20,7 +20,6 @@ internal sealed class CenarioDeMigracao
 
     private readonly CatalogoMutavelDeTeste _catalogo = new();
     private readonly List<Concessao> _concessoes = [];
-    private readonly HashSet<Identidade> _comProtecao = [];
 
     public CenarioDeMigracao(bool protegido)
     {
@@ -59,8 +58,6 @@ internal sealed class CenarioDeMigracao
         return concessao;
     }
 
-    public void TemProtecaoDeDados(Identidade pessoa) => _comProtecao.Add(pessoa);
-
     /// <summary>Põe a versão 2 em vigor e abre a janela no instante da abertura.</summary>
     public JanelaDeMigracao Abrir()
     {
@@ -77,7 +74,7 @@ internal sealed class CenarioDeMigracao
         Dictionary<Guid, IReadOnlyList<string>> composicoes = _concessoes.ToDictionary(
             static c => c.Id, c => (IReadOnlyList<string>)(c.VersaoId == VersaoNova.Id ? alvo : [Consultar]));
 
-        return new ContextoDaMigracao(agora, _concessoes, composicoes, alvo, _comProtecao, _catalogo, Perfil.Versoes);
+        return new ContextoDaMigracao(agora, _concessoes, composicoes, alvo, _catalogo, Perfil.Versoes);
     }
 
     public static AutoriaDaVersao Autoria(Identidade pessoa) => PerfisDeTeste.Autoria(pessoa);

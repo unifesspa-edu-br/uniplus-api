@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// As decisões sobre as concessões da janela de migração: o lote da gestão, a retida, a etapa da proteção de dados e o
+/// As decisões sobre as concessões da janela de migração: o lote da gestão, a retida, a etapa de proteção de dados e o
 /// encerramento manual. A permissão é conferida aqui, antes da trava; a regra vive na janela, e aqui se traduz o pedido,
 /// se roda sob as travas de <see cref="MigracaoSobreOPerfil"/> e se devolve a janela com os avisos da gravação.
 /// </summary>
@@ -45,7 +45,7 @@ public sealed class DecisoesDaJanela
 
         return ExecutarAsync(
             perfilId,
-            new Etapa(EtapaDaVersao.GestaoDeAcessos, TravaProtecao: true),
+            EtapaDaVersao.GestaoDeAcessos,
             verificador,
             (j, autoria) => j.Janela.EnviarLote(pedido, autoria, j.Contexto),
             OperacaoNaJanela.Lote,
@@ -61,7 +61,7 @@ public sealed class DecisoesDaJanela
 
         return ExecutarAsync(
             perfilId,
-            new Etapa(EtapaDaVersao.GestaoDeAcessos, TravaProtecao: true),
+            EtapaDaVersao.GestaoDeAcessos,
             verificador,
             (j, autoria) => j.Janela.DecidirRetida(pedido, autoria, j.Contexto),
             OperacaoNaJanela.Retida,
@@ -77,7 +77,7 @@ public sealed class DecisoesDaJanela
 
         return ExecutarAsync(
             perfilId,
-            new Etapa(EtapaDaVersao.ProtecaoDeDados, TravaProtecao: false),
+            EtapaDaVersao.ProtecaoDeDados,
             verificador,
             (j, autoria) => j.Janela.DecidirEtapaDaProtecao(pedido, autoria, j.Contexto),
             OperacaoNaJanela.EtapaDaProtecao,
@@ -91,7 +91,7 @@ public sealed class DecisoesDaJanela
 
         return ExecutarAsync(
             perfilId,
-            new Etapa(EtapaDaVersao.GestaoDeAcessos, TravaProtecao: false),
+            EtapaDaVersao.GestaoDeAcessos,
             verificador,
             (j, autoria) => j.Janela.EncerrarManualmente(new EncerramentoManual(autoria, dados.Motivo), dados.ConfirmacaoDeExclusao, j.Contexto),
             OperacaoNaJanela.Encerramento,
@@ -130,14 +130,14 @@ public sealed class DecisoesDaJanela
 
     private async Task<GravacaoDaOperacao<JanelaDeMigracaoDto>> ExecutarAsync(
         Guid perfilId,
-        Etapa etapa,
+        EtapaDaVersao etapa,
         IVerificadorDeAcesso verificador,
         Func<JanelaDaOperacao, AutoriaDaVersao, Result> transicao,
         OperacaoNaJanela operacao,
         CancellationToken cancellationToken)
     {
         Result<AutoriaDaVersao> autorizada = await _autorizacao
-            .AutorizarAsync(perfilId, etapa.Permissao, verificador, cancellationToken)
+            .AutorizarAsync(perfilId, etapa, verificador, cancellationToken)
             .ConfigureAwait(false);
         if (autorizada.IsFailure)
         {
@@ -145,13 +145,8 @@ public sealed class DecisoesDaJanela
         }
 
         AutoriaDaVersao autoria = autorizada.Value!;
-
         return await _migracao
-            .ExecutarAsync(
-                perfilId,
-                etapa.TravaProtecao,
-                j => DecidirAsync(j, autoria, transicao, operacao, cancellationToken),
-                cancellationToken)
+            .ExecutarAsync(perfilId, j => DecidirAsync(j, autoria, transicao, operacao, cancellationToken), cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -174,6 +169,4 @@ public sealed class DecisoesDaJanela
 
         return new DesfechoDaOperacao<JanelaDeMigracaoDto>(Result<JanelaDeMigracaoDto>.Success(dto), Avisos: avisos);
     }
-
-    private sealed record Etapa(EtapaDaVersao Permissao, bool TravaProtecao);
 }

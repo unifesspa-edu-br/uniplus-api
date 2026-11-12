@@ -6,8 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
 /// Lê do banco o que a janela não vê sozinha e monta o contexto da migração: as concessões do perfil que ela alcança,
-/// o que cada uma dá hoje, a composição da versão-alvo e quem tem o perfil da proteção de dados. Quem chama já tem o
-/// perfil e a janela travados, e as concessões são travadas aqui, em ordem de id. O instante do contexto é lido
+/// o que cada uma dá hoje e a composição da versão-alvo. Quem chama já tem o perfil e a janela travados, e as concessões são travadas aqui, em ordem de id. O instante do contexto é lido
 /// depois da última trava, o único ponto em que a operação o lê.
 /// </summary>
 public sealed class LeitorDaMigracao
@@ -59,10 +58,7 @@ public sealed class LeitorDaMigracao
         IReadOnlyDictionary<Guid, IReadOnlyList<string>> composicoes = await _janelas
             .ObterComposicoesAsync([.. concessoes.Select(static c => c.Id)], agora, cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyCollection<Identidade> comProtecao = await _janelas
-            .ListarTitularesDaProtecaoDeDadosAsync(agora, cancellationToken)
-            .ConfigureAwait(false);
 
-        return new ContextoDaMigracao(agora, concessoes, composicoes, perfil.Versoes.First(v => v.Id == janela.VersaoAlvoId).Codigos(), comProtecao, _catalogo, perfil.Versoes);
+        return new ContextoDaMigracao(agora, concessoes, composicoes, perfil.Versoes.First(v => v.Id == janela.VersaoAlvoId).Codigos(), _catalogo, perfil.Versoes);
     }
 }

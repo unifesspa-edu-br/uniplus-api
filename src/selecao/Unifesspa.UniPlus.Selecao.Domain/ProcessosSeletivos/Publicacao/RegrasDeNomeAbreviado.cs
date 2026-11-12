@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// Cada semântica distinta de abreviação recebe um identificador NOVO — o significado do
-/// identificador vigente hoje nunca muda. Se o(a) Encarregado(a) pelo tratamento de dados ou o P.O.
+/// identificador vigente hoje nunca muda. Se a proteção de dados ou o P.O.
 /// divergirem de qualquer regra abaixo, a resposta é um rótulo novo, nunca uma reinterpretação
 /// deste.
 /// </remarks>
@@ -44,20 +44,20 @@ public static class RegrasDeNomeAbreviado
 
         if (!EhConhecida(identificador))
         {
-            return Result<string>.Failure(new DomainError(
-                "RegrasDeNomeAbreviado.IdentificadorDesconhecido",
-                $"O identificador de regra de abreviação '{identificador}' não é conhecido."));
+            return Result<string>.Failure(IdentificadorDesconhecido(identificador));
         }
 
         // Sem separador, o Split quebra em qualquer espaço Unicode e colapsa as repetições.
         string[] tokens = nome.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
         return tokens.Length == 0
-            ? Result<string>.Failure(new DomainError(
-                "RegrasDeNomeAbreviado.NomeEmBranco",
-                "O nome a abreviar não pode ser vazio ou só espaços."))
+            ? Result<string>.Failure(new DomainError("RegrasDeNomeAbreviado.NomeEmBranco", "O nome a abreviar não pode ser vazio ou só espaços."))
             : Result<string>.Success(AbreviarTokens(tokens));
     }
+
+    private static DomainError IdentificadorDesconhecido(string identificador) => new(
+        "RegrasDeNomeAbreviado.IdentificadorDesconhecido",
+        $"O identificador de regra de abreviação '{identificador}' não é conhecido.");
 
     // Palavra única e sobrenome sem nome antes viram só a inicial: o nome por extenso abriria a
     // mesma exposição que o nome completo.
@@ -71,12 +71,15 @@ public static class RegrasDeNomeAbreviado
         // O sobrenome é o último token que não é partícula, e não tokens[^1]: em "Maria Silva de"
         // o sobrenome é "Silva". As partículas depois dele são descartadas.
         int indiceSobrenome = UltimoIndiceNaoParticula(tokens);
-        if (indiceSobrenome < 0)
-        {
-            // Só partículas: o último token fica por extenso para não devolver texto vazio.
-            return $"{Iniciais(tokens[..^1])} {tokens[^1]}";
-        }
 
+        // Só partículas: o último token fica por extenso para não devolver texto vazio.
+        return indiceSobrenome < 0
+            ? $"{Iniciais(tokens[..^1])} {tokens[^1]}"
+            : AbreviarComSobrenome(tokens, indiceSobrenome);
+    }
+
+    private static string AbreviarComSobrenome(string[] tokens, int indiceSobrenome)
+    {
         string sobrenome = tokens[indiceSobrenome];
         string[] antesDoSobrenome = tokens[..indiceSobrenome];
         string[] nomesProprios = [.. antesDoSobrenome.Where(static t => !EhParticula(t))];

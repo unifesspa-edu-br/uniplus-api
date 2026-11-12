@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 public sealed class JanelaDeMigracaoPautaTests
 {
     private static readonly Identidade Diogo = PerfisDeTeste.Autor;
-    private static readonly Identidade Betina = PerfisDeTeste.Gestora;
+    private static readonly Identidade Betina = PerfisDeTeste.Gestor;
     private static readonly Identidade Marlene = PerfisDeTeste.ProtecaoDeDados;
     private static readonly Identidade Leandro = CenarioDeMigracao.Leandro;
     private static readonly DateTimeOffset Agora = CenarioDeMigracao.Abertura.AddHours(1);

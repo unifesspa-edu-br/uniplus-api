@@ -4,9 +4,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
-/// O que uma decisão da janela faz a uma concessão: a migra para a versão-alvo, a revoga, a deixa esperando a proteção de
-/// dados ou a retém, e grava a linha da concessão e a decisão da trilha com o que foi avaliado. O mesmo efeito vale para
-/// o lote, para a retida e para a etapa da proteção de dados.
+/// O que uma decisão da janela faz a uma concessão: a migra para a versão-alvo, a revoga, a deixa esperando a etapa de
+/// proteção de dados ou a retém, e grava a linha da concessão e a decisão da trilha com o que foi avaliado. O mesmo efeito
+/// vale para o lote, para a retida e para a etapa de proteção de dados.
 /// </summary>
 internal sealed class EfeitosDaDecisaoDaMigracao
 {
@@ -28,40 +28,33 @@ internal sealed class EfeitosDaDecisaoDaMigracao
     {
         ComposicaoDoLote composicao = _contexto.ComposicaoDe(concessao);
 
-        _janela.Registrar(concessao.Id, SituacaoDaMigracao.Retida, composicao.ExigeProtecaoDeDados, null, _contexto.Agora);
+        _janela.Registrar(concessao.Id, SituacaoDaMigracao.Retida, composicao.ExigeProtecaoDeDados, _contexto.Agora);
         _janela.Acrescentar(DecisaoDaMigracao.DoSistema(_janela, concessao.Id, ResultadoDaMigracao.Reter, composicao, _contexto.Agora));
     }
 
     /// <summary>
     /// A decisão da gestão de acessos, do lote ou da retida. Migrar a concessão cujo acréscimo é protegido a deixa
-    /// aguardando a proteção de dados, salvo se o beneficiário já tem o perfil dela.
+    /// aguardando o Representante do controlador, inclusive quando o beneficiário é Representante (ADR-0162).
     /// </summary>
     public void DaGestao(Concessao concessao, ResultadoDaMigracao resultado, LoteDaMigracao? envio)
     {
         ComposicaoDoLote composicao = _contexto.ComposicaoDe(concessao);
-        string? dispensa = DispensaDe(concessao, composicao);
 
         if (resultado == ResultadoDaMigracao.Recusar)
         {
             Recusar(concessao, composicao, EtapaDaMigracao.GestaoDeAcessos, envio);
         }
-        else if (composicao.ExigeProtecaoDeDados && dispensa is null)
+        else if (composicao.ExigeProtecaoDeDados)
         {
             Aguardar(concessao, composicao, envio);
         }
         else
         {
-            Migrar(concessao, composicao, new DecisaoHumana(EtapaDaMigracao.GestaoDeAcessos, resultado, _autoria, envio, dispensa));
+            Migrar(concessao, composicao, new DecisaoHumana(EtapaDaMigracao.GestaoDeAcessos, resultado, _autoria, envio));
         }
     }
 
-    // Quem já tem o perfil da proteção de dados dispensa a segunda etapa do acréscimo protegido.
-    private string? DispensaDe(Concessao concessao, ComposicaoDoLote composicao) =>
-        composicao.ExigeProtecaoDeDados && _contexto.TemProtecaoDeDados(concessao.Beneficiario)
-            ? MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados
-            : null;
-
-    /// <summary>A decisão da proteção de dados: migrar leva à versão-alvo de agora; recusar revoga na hora.</summary>
+    /// <summary>A decisão do Representante do controlador: migrar leva à versão-alvo de agora; recusar revoga na hora.</summary>
     public void DaProtecao(Concessao concessao, ResultadoDaMigracao resultado, LoteDaMigracao envio)
     {
         ComposicaoDoLote composicao = _contexto.ComposicaoDe(concessao);
@@ -72,7 +65,7 @@ internal sealed class EfeitosDaDecisaoDaMigracao
         }
         else
         {
-            Migrar(concessao, composicao, new DecisaoHumana(EtapaDaMigracao.ProtecaoDeDados, resultado, _autoria, envio, null));
+            Migrar(concessao, composicao, new DecisaoHumana(EtapaDaMigracao.ProtecaoDeDados, resultado, _autoria, envio));
         }
     }
 
@@ -85,7 +78,7 @@ internal sealed class EfeitosDaDecisaoDaMigracao
     private void Recusar(Concessao concessao, ComposicaoDoLote composicao, EtapaDaMigracao etapa, LoteDaMigracao? envio)
     {
         concessao.RevogarPelaMigracao(_janela.Id, MotivoDaRecusa, _contexto.Agora);
-        Gravar(concessao, SituacaoDaMigracao.Recusada, composicao, new DecisaoHumana(etapa, ResultadoDaMigracao.Recusar, _autoria, envio, null));
+        Gravar(concessao, SituacaoDaMigracao.Recusada, composicao, new DecisaoHumana(etapa, ResultadoDaMigracao.Recusar, _autoria, envio));
     }
 
     private void Aguardar(Concessao concessao, ComposicaoDoLote composicao, LoteDaMigracao? envio) =>
@@ -93,11 +86,11 @@ internal sealed class EfeitosDaDecisaoDaMigracao
             concessao,
             SituacaoDaMigracao.AguardandoProtecaoDeDados,
             composicao,
-            new DecisaoHumana(EtapaDaMigracao.GestaoDeAcessos, ResultadoDaMigracao.Migrar, _autoria, envio, null));
+            new DecisaoHumana(EtapaDaMigracao.GestaoDeAcessos, ResultadoDaMigracao.Migrar, _autoria, envio));
 
     private void Gravar(Concessao concessao, SituacaoDaMigracao situacao, ComposicaoDoLote composicao, DecisaoHumana decisao)
     {
-        _janela.Registrar(concessao.Id, situacao, composicao.ExigeProtecaoDeDados, decisao.Dispensa, _contexto.Agora);
+        _janela.Registrar(concessao.Id, situacao, composicao.ExigeProtecaoDeDados, _contexto.Agora);
         _janela.Acrescentar(DecisaoDaMigracao.Humana(_janela, concessao.Id, decisao, composicao, _contexto.Agora));
     }
 }

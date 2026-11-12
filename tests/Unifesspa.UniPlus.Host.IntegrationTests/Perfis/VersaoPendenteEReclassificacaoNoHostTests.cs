@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -20,10 +19,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// troca de catálogo, a versão de remoção, a governança, que só ganha divergência, e a retomada do perfil suspenso.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoNoHostTestBase
 {
     public VersaoPendenteEReclassificacaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -86,7 +81,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
 
         (await DivergenciasAsync()).Should().BeGreaterThan(divergencias);
         (await AvisosDeDivergenciaAsync()).Should().BeGreaterThan(avisos);
-        (await PermissoesAsync(Marlene, PerfisDeSistema.ProtecaoDeDadosId)).Should().Contain(AprovarProtecaoDeDados);
+        (await PermissoesAsync(Marlene, PerfisDeSistema.RepresentanteDoControladorId)).Should().Contain(AprovarProtecaoDeDados);
     }
 
     [Fact(DisplayName = "A reclassificação de permissão dos perfis de governança não grava reclassificação nem base para eles")]
@@ -100,7 +95,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
         await SubirAClasseAsync(codigo);
 
         (await DivergenciasDeClasseAsync(codigo)).Should().BeGreaterThan(divergencias, "a troca de catálogo precisa ter sido processada");
-        foreach (Guid perfil in new[] { PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.ProtecaoDeDadosId })
+        foreach (Guid perfil in new[] { PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.RepresentanteDoControladorId })
         {
             (await ReclassificacoesAsync(perfil)).Should().Be(0);
             (await BasesAsync(perfil)).Should().Be(0);

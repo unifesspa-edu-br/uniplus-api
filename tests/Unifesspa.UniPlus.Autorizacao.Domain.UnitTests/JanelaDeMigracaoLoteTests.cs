@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class JanelaDeMigracaoLoteTests
 {
     private static readonly Identidade Diogo = PerfisDeTeste.Autor;
-    private static readonly Identidade Betina = PerfisDeTeste.Gestora;
+    private static readonly Identidade Betina = PerfisDeTeste.Gestor;
     private static readonly Identidade Marlene = PerfisDeTeste.ProtecaoDeDados;
     private static readonly Identidade Leandro = CenarioDeMigracao.Leandro;
     private static readonly Identidade Isabella = CenarioDeMigracao.Isabella;
@@ -55,22 +55,21 @@ public sealed class JanelaDeMigracaoLoteTests
     public void EnviarLote_MigraERecusa()
     {
         var cenario = new CenarioDeMigracao(protegido: false);
-        Concessao paraMigrar = cenario.Conceder(Leandro);
-        Concessao paraRecusar = cenario.Conceder(Isabella);
-        JanelaDeMigracao janela = cenario.Abrir();
+        (Concessao paraMigrar, Concessao paraRecusar, JanelaDeMigracao janela) = MigrarERecusar(cenario);
 
-        Result resultado = janela.EnviarLote(
-            CenarioDeMigracao.Lote(true, (paraMigrar, ResultadoDaMigracao.Migrar), (paraRecusar, ResultadoDaMigracao.Recusar)),
-            CenarioDeMigracao.Autoria(Diogo),
-            cenario.Contexto(Agora));
-
-        resultado.IsSuccess.Should().BeTrue();
         paraMigrar.VersaoId.Should().Be(cenario.VersaoNova!.Id);
         paraRecusar.RevogadaEm.Should().Be(Agora);
         paraRecusar.RevogadaPelaJanelaId.Should().Be(janela.Id);
         paraRecusar.MotivoRevogacao.Should().Be("recusado na migração");
         janela.LinhaDe(paraMigrar.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Migrada);
         janela.LinhaDe(paraRecusar.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Recusada);
+    }
+
+    [Fact(DisplayName = "O lote que decide todas as concessões registra quem decidiu e conclui a janela")]
+    public void EnviarLote_TodasDecididas_ConcluiAJanela()
+    {
+        (_, _, JanelaDeMigracao janela) = MigrarERecusar(new CenarioDeMigracao(protegido: false));
+
         janela.Decisoes.Should().OnlyContain(d => d.Decisor == Diogo && d.Ator == AtorDaMigracao.Humano && d.LoteDeOrigemId == janela.LoteDaGestao!.Id);
         janela.Encerrada.Should().BeTrue();
         janela.Forma.Should().Be(FormaDoEncerramento.Concluida);
@@ -82,13 +81,8 @@ public sealed class JanelaDeMigracaoLoteTests
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao daCeps = cenario.Conceder(Diogo, Guid.NewGuid());
         Concessao daCtic = cenario.Conceder(Diogo, Guid.NewGuid());
-        Concessao deLeandro = cenario.Conceder(Leandro);
-        JanelaDeMigracao janela = cenario.Abrir();
+        JanelaDeMigracao janela = AbrirELote(cenario, cenario.Conceder(Leandro));
 
-        Result resultado = janela.EnviarLote(
-            CenarioDeMigracao.Lote(false, (deLeandro, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora));
-
-        resultado.IsSuccess.Should().BeTrue();
         janela.LinhaDe(daCeps.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Retida);
         janela.LinhaDe(daCtic.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Retida);
         janela.Decisoes.Where(d => d.ConcessaoId == daCeps.Id).Should().ContainSingle()
@@ -102,19 +96,28 @@ public sealed class JanelaDeMigracaoLoteTests
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao deDiogo = cenario.Conceder(Diogo);
         Concessao deLeandro = cenario.Conceder(Leandro);
-        JanelaDeMigracao janela = cenario.Abrir();
-        janela.EnviarLote(CenarioDeMigracao.Lote(false, (deLeandro, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora));
+        JanelaDeMigracao janela = AbrirELote(cenario, deLeandro);
 
-        Result resultado = janela.DecidirRetida(
-            new PedidoDaRetida(deDiogo.Id, ResultadoDaMigracao.Migrar, false), CenarioDeMigracao.Autoria(Betina), cenario.Contexto(Agora));
+        DecidirRetida(janela, cenario, deDiogo).IsSuccess.Should().BeTrue();
 
-        resultado.IsSuccess.Should().BeTrue();
         deDiogo.VersaoId.Should().Be(cenario.VersaoNova!.Id);
         janela.LinhaDe(deLeandro.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Migrada);
-        DecisaoDaMigracao ultima = janela.Decisoes[^1];
-        ultima.Decisor.Should().Be(Betina);
-        ultima.EnvioId.Should().BeNull();
+        janela.Decisoes[^1].Decisor.Should().Be(Betina);
+        janela.Decisoes[^1].EnvioId.Should().BeNull();
         janela.Encerrada.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A retida com acréscimo protegido aguarda a etapa de proteção de dados, sem dispensa para nenhum beneficiário")]
+    public void DecidirRetida_Protegida_AguardaAProtecao()
+    {
+        var cenario = new CenarioDeMigracao(protegido: true);
+        Concessao deDiogo = cenario.Conceder(Diogo);
+        JanelaDeMigracao janela = AbrirELote(cenario, cenario.Conceder(Leandro));
+
+        DecidirRetida(janela, cenario, deDiogo).IsSuccess.Should().BeTrue();
+
+        janela.LinhaDe(deDiogo.Id)!.Situacao.Should().Be(SituacaoDaMigracao.AguardandoProtecaoDeDados);
+        deDiogo.VersaoId.Should().Be(cenario.VersaoAntiga.Id);
     }
 
     [Fact(DisplayName = "Ninguém decide a própria concessão retida")]
@@ -141,31 +144,36 @@ public sealed class JanelaDeMigracaoLoteTests
             .Should().Equal(MigracaoErrorCodes.LoteNaoEnviado);
     }
 
-    [Fact(DisplayName = "O lote incompleto, repetido, com decisão inválida ou de outro perfil não é enviado e nada muda")]
-    public void EnviarLote_Invalido_NaoGravaNada()
+    [Fact(DisplayName = "O lote incompleto, repetido ou de outro perfil não é enviado e nada muda")]
+    public void EnviarLote_IncompletoOuRepetido_NaoGravaNada()
     {
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao primeira = cenario.Conceder(Leandro);
         Concessao segunda = cenario.Conceder(Isabella);
         JanelaDeMigracao janela = cenario.Abrir();
-        ContextoDaMigracao contexto = cenario.Contexto(Agora);
-        AutoriaDaVersao quem = CenarioDeMigracao.Autoria(Diogo);
 
-        Codigos(janela.EnviarLote(CenarioDeMigracao.Lote(false, (primeira, ResultadoDaMigracao.Migrar)), quem, contexto))
+        CodigosDoLote(janela, cenario, CenarioDeMigracao.Lote(false, (primeira, ResultadoDaMigracao.Migrar)))
             .Should().Equal(MigracaoErrorCodes.LoteIncompleto);
-        Codigos(janela.EnviarLote(CenarioDeMigracao.Lote(true, (primeira, ResultadoDaMigracao.Migrar), (primeira, ResultadoDaMigracao.Migrar), (segunda, ResultadoDaMigracao.Migrar)), quem, contexto))
+        CodigosDoLote(janela, cenario, CenarioDeMigracao.Lote(true, (primeira, ResultadoDaMigracao.Migrar), (primeira, ResultadoDaMigracao.Migrar), (segunda, ResultadoDaMigracao.Migrar)))
             .Should().Equal(MigracaoErrorCodes.LoteInvalido);
-        Codigos(janela.EnviarLote(new PedidoDoLote([new ItemDoLote(Guid.NewGuid(), ResultadoDaMigracao.Migrar)], true), quem, contexto))
+        CodigosDoLote(janela, cenario, new PedidoDoLote([new ItemDoLote(Guid.NewGuid(), ResultadoDaMigracao.Migrar)], true))
             .Should().Equal(MigracaoErrorCodes.LoteInvalido);
-        Codigos(janela.EnviarLote(new PedidoDoLote([new ItemDoLote(primeira.Id, ResultadoDaMigracao.Reter), new ItemDoLote(segunda.Id, null)], true), quem, contexto))
-            .Should().Equal(MigracaoErrorCodes.LoteInvalido);
-        Codigos(janela.EnviarLote(CenarioDeMigracao.Lote(false, (primeira, ResultadoDaMigracao.Migrar), (segunda, ResultadoDaMigracao.Recusar)), quem, contexto))
-            .Should().Equal(MigracaoErrorCodes.ExclusaoNaoConfirmada);
+        NadaGravado(janela, cenario, primeira);
+    }
 
-        janela.Lotes.Should().BeEmpty();
-        janela.Migracoes.Should().BeEmpty();
-        janela.Decisoes.Should().BeEmpty();
-        primeira.VersaoId.Should().Be(cenario.VersaoAntiga.Id);
+    [Fact(DisplayName = "O lote com decisão inválida ou sem confirmar a exclusão não é enviado e nada muda")]
+    public void EnviarLote_DecisaoInvalidaOuSemConfirmacao_NaoGravaNada()
+    {
+        var cenario = new CenarioDeMigracao(protegido: false);
+        Concessao primeira = cenario.Conceder(Leandro);
+        Concessao segunda = cenario.Conceder(Isabella);
+        JanelaDeMigracao janela = cenario.Abrir();
+
+        CodigosDoLote(janela, cenario, new PedidoDoLote([new ItemDoLote(primeira.Id, ResultadoDaMigracao.Reter), new ItemDoLote(segunda.Id, null)], true))
+            .Should().Equal(MigracaoErrorCodes.LoteInvalido);
+        CodigosDoLote(janela, cenario, CenarioDeMigracao.Lote(false, (primeira, ResultadoDaMigracao.Migrar), (segunda, ResultadoDaMigracao.Recusar)))
+            .Should().Equal(MigracaoErrorCodes.ExclusaoNaoConfirmada);
+        NadaGravado(janela, cenario, primeira);
     }
 
     [Fact(DisplayName = "Decidir a própria concessão no lote é recusado, e o segundo lote também")]
@@ -189,14 +197,7 @@ public sealed class JanelaDeMigracaoLoteTests
     public void EnviarLote_Protegido_AguardaProtecao()
     {
         var cenario = new CenarioDeMigracao(protegido: true);
-        Concessao paraMigrar = cenario.Conceder(Leandro);
-        Concessao paraRecusar = cenario.Conceder(Isabella);
-        JanelaDeMigracao janela = cenario.Abrir();
-
-        janela.EnviarLote(
-            CenarioDeMigracao.Lote(true, (paraMigrar, ResultadoDaMigracao.Migrar), (paraRecusar, ResultadoDaMigracao.Recusar)),
-            CenarioDeMigracao.Autoria(Diogo),
-            cenario.Contexto(Agora));
+        (Concessao paraMigrar, Concessao paraRecusar, JanelaDeMigracao janela) = MigrarERecusar(cenario);
 
         janela.LinhaDe(paraMigrar.Id)!.Situacao.Should().Be(SituacaoDaMigracao.AguardandoProtecaoDeDados);
         paraMigrar.VersaoId.Should().Be(cenario.VersaoAntiga.Id);
@@ -206,30 +207,30 @@ public sealed class JanelaDeMigracaoLoteTests
         janela.Encerrada.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "A proteção de dados migra ou recusa a concessão que aguarda, e a mesma pessoa não decide as duas etapas")]
-    public void DecidirEtapaDaProtecao_MigraRecusaEConferePessoa()
+    [Fact(DisplayName = "A mesma pessoa não decide as duas etapas, a recusa exige a confirmação e o envio vazio é recusado")]
+    public void DecidirEtapaDaProtecao_ConferePessoaEConfirmacao()
     {
         var cenario = new CenarioDeMigracao(protegido: true);
-        Concessao paraMigrar = cenario.Conceder(Leandro);
-        Concessao paraRecusar = cenario.Conceder(Isabella);
-        JanelaDeMigracao janela = cenario.Abrir();
-        janela.EnviarLote(
-            CenarioDeMigracao.Lote(false, (paraMigrar, ResultadoDaMigracao.Migrar), (paraRecusar, ResultadoDaMigracao.Migrar)),
-            CenarioDeMigracao.Autoria(Diogo),
-            cenario.Contexto(Agora));
-        PedidoDaEtapaDaProtecao pedido = new(
-            [new ItemDoLote(paraMigrar.Id, ResultadoDaMigracao.Migrar), new ItemDoLote(paraRecusar.Id, ResultadoDaMigracao.Recusar)], true);
+        (JanelaDeMigracao janela, PedidoDaEtapaDaProtecao pedido) = AguardandoAProtecao(cenario);
 
         Codigos(janela.DecidirEtapaDaProtecao(pedido, CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora)))
             .Should().Equal(MigracaoErrorCodes.MesmaPessoaNasDuasEtapas);
         Codigos(janela.DecidirEtapaDaProtecao(pedido with { ConfirmouExclusao = false }, CenarioDeMigracao.Autoria(Marlene), cenario.Contexto(Agora)))
             .Should().Equal(MigracaoErrorCodes.ExclusaoNaoConfirmada);
+        Codigos(janela.DecidirEtapaDaProtecao(new([], false), CenarioDeMigracao.Autoria(Marlene), cenario.Contexto(Agora)))
+            .Should().Equal(MigracaoErrorCodes.LoteInvalido);
+    }
 
-        Result resultado = janela.DecidirEtapaDaProtecao(pedido, CenarioDeMigracao.Autoria(Marlene), cenario.Contexto(Agora));
+    [Fact(DisplayName = "A etapa de proteção de dados migra ou recusa a concessão que aguarda e conclui a janela")]
+    public void DecidirEtapaDaProtecao_MigraERecusa()
+    {
+        var cenario = new CenarioDeMigracao(protegido: true);
+        (JanelaDeMigracao janela, PedidoDaEtapaDaProtecao pedido) = AguardandoAProtecao(cenario);
 
-        resultado.IsSuccess.Should().BeTrue();
-        paraMigrar.VersaoId.Should().Be(cenario.VersaoNova!.Id);
-        paraRecusar.RevogadaPelaJanelaId.Should().Be(janela.Id);
+        janela.DecidirEtapaDaProtecao(pedido, CenarioDeMigracao.Autoria(Marlene), cenario.Contexto(Agora)).IsSuccess.Should().BeTrue();
+
+        cenario.Concessoes[0].VersaoId.Should().Be(cenario.VersaoNova!.Id);
+        cenario.Concessoes[1].RevogadaPelaJanelaId.Should().Be(janela.Id);
         janela.Lotes.Should().HaveCount(2).And.Contain(l => l.Etapa == EtapaDaMigracao.ProtecaoDeDados && l.Quantidade == 2);
         janela.Decisoes.Where(d => d.Etapa == EtapaDaMigracao.ProtecaoDeDados).Should().OnlyContain(d => d.EnvioId != null && d.Decisor == Marlene);
         janela.Encerrada.Should().BeTrue();
@@ -244,37 +245,25 @@ public sealed class JanelaDeMigracaoLoteTests
         Concessao jaDecidida = cenario.Conceder(Isabella);
         JanelaDeMigracao janela = cenario.Abrir();
         janela.EnviarLote(
-            CenarioDeMigracao.Lote(true, (paraMigrar, ResultadoDaMigracao.Migrar), (jaDecidida, ResultadoDaMigracao.Recusar)),
-            CenarioDeMigracao.Autoria(Diogo),
-            cenario.Contexto(Agora));
-        AutoriaDaVersao marlene = CenarioDeMigracao.Autoria(Marlene);
+            CenarioDeMigracao.Lote(true, (paraMigrar, ResultadoDaMigracao.Migrar), (jaDecidida, ResultadoDaMigracao.Recusar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora));
 
-        Codigos(janela.DecidirEtapaDaProtecao(new([new ItemDoLote(jaDecidida.Id, ResultadoDaMigracao.Migrar)], false), marlene, cenario.Contexto(Agora)))
-            .Should().Equal(MigracaoErrorCodes.ConcessaoJaDecidida);
-        Codigos(janela.DecidirEtapaDaProtecao(new([new ItemDoLote(retida.Id, ResultadoDaMigracao.Migrar)], false), marlene, cenario.Contexto(Agora)))
-            .Should().Equal(MigracaoErrorCodes.ConcessaoForaDaEtapa);
-        Codigos(janela.DecidirEtapaDaProtecao(new([new ItemDoLote(Guid.NewGuid(), ResultadoDaMigracao.Migrar)], false), marlene, cenario.Contexto(Agora)))
-            .Should().Equal(MigracaoErrorCodes.LoteInvalido);
-        Codigos(janela.DecidirEtapaDaProtecao(new([], false), marlene, cenario.Contexto(Agora)))
-            .Should().Equal(MigracaoErrorCodes.LoteInvalido);
+        CodigosDaEtapa(janela, cenario, jaDecidida.Id).Should().Equal(MigracaoErrorCodes.ConcessaoJaDecidida);
+        CodigosDaEtapa(janela, cenario, retida.Id).Should().Equal(MigracaoErrorCodes.ConcessaoForaDaEtapa);
+        CodigosDaEtapa(janela, cenario, Guid.NewGuid()).Should().Equal(MigracaoErrorCodes.LoteInvalido);
         Codigos(janela.DecidirRetida(new PedidoDaRetida(paraMigrar.Id, ResultadoDaMigracao.Migrar, false), CenarioDeMigracao.Autoria(Betina), cenario.Contexto(Agora)))
             .Should().Equal(MigracaoErrorCodes.ConcessaoForaDaEtapa);
     }
 
-    [Fact(DisplayName = "Quem já tem o perfil da proteção de dados migra só pela gestão, com a dispensa na trilha")]
-    public void EnviarLote_BeneficiarioComProtecao_Dispensa()
+    [Fact(DisplayName = "O lote com acréscimo protegido não dispensa a segunda etapa para nenhum beneficiário, nem para quem é Representante")]
+    public void EnviarLote_Protegido_SemDispensaParaNinguem()
     {
         var cenario = new CenarioDeMigracao(protegido: true);
-        Concessao deLeandro = cenario.Conceder(Leandro);
-        cenario.TemProtecaoDeDados(Leandro);
-        JanelaDeMigracao janela = cenario.Abrir();
+        Concessao deMarlene = cenario.Conceder(Marlene);
+        JanelaDeMigracao janela = AbrirELote(cenario, deMarlene);
 
-        janela.EnviarLote(CenarioDeMigracao.Lote(false, (deLeandro, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora));
-
-        janela.LinhaDe(deLeandro.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Migrada);
-        janela.LinhaDe(deLeandro.Id)!.Dispensa.Should().Be(MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados);
-        janela.Decisoes.Single().Dispensa.Should().Be(MotivosDeDispensa.BeneficiarioJaTemProtecaoDeDados);
-        deLeandro.VersaoId.Should().Be(cenario.VersaoNova!.Id);
+        janela.LinhaDe(deMarlene.Id)!.Situacao.Should().Be(SituacaoDaMigracao.AguardandoProtecaoDeDados);
+        janela.Decisoes.Single().Resultado.Should().Be(ResultadoDaMigracao.Migrar);
+        deMarlene.VersaoId.Should().Be(cenario.VersaoAntiga.Id);
     }
 
     [Fact(DisplayName = "Registrar o lote de uma pessoa grava se ela tinha concessão do perfil naquele instante")]
@@ -292,4 +281,59 @@ public sealed class JanelaDeMigracaoLoteTests
     }
 
     private static string[] Codigos(Result resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
+
+    private static string[] CodigosDoLote(JanelaDeMigracao janela, CenarioDeMigracao cenario, PedidoDoLote lote) =>
+        Codigos(janela.EnviarLote(lote, CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora)));
+
+    private static string[] CodigosDaEtapa(JanelaDeMigracao janela, CenarioDeMigracao cenario, Guid concessaoId) =>
+        Codigos(janela.DecidirEtapaDaProtecao(
+            new([new ItemDoLote(concessaoId, ResultadoDaMigracao.Migrar)], false), CenarioDeMigracao.Autoria(Marlene), cenario.Contexto(Agora)));
+
+    private static void NadaGravado(JanelaDeMigracao janela, CenarioDeMigracao cenario, Concessao concessao)
+    {
+        janela.Lotes.Should().BeEmpty();
+        janela.Migracoes.Should().BeEmpty();
+        janela.Decisoes.Should().BeEmpty();
+        concessao.VersaoId.Should().Be(cenario.VersaoAntiga.Id);
+    }
+
+    // Leandro migra e Isabella é recusada, num lote de Diogo que confirma a exclusão.
+    private static (Concessao ParaMigrar, Concessao ParaRecusar, JanelaDeMigracao Janela) MigrarERecusar(CenarioDeMigracao cenario)
+    {
+        Concessao paraMigrar = cenario.Conceder(Leandro);
+        Concessao paraRecusar = cenario.Conceder(Isabella);
+        JanelaDeMigracao janela = cenario.Abrir();
+
+        janela.EnviarLote(
+            CenarioDeMigracao.Lote(true, (paraMigrar, ResultadoDaMigracao.Migrar), (paraRecusar, ResultadoDaMigracao.Recusar)),
+            CenarioDeMigracao.Autoria(Diogo),
+            cenario.Contexto(Agora)).IsSuccess.Should().BeTrue();
+
+        return (paraMigrar, paraRecusar, janela);
+    }
+
+    // Abre a janela e envia, como Diogo, o lote que migra a concessão.
+    private static JanelaDeMigracao AbrirELote(CenarioDeMigracao cenario, Concessao paraMigrar)
+    {
+        JanelaDeMigracao janela = cenario.Abrir();
+        janela.EnviarLote(CenarioDeMigracao.Lote(false, (paraMigrar, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora))
+            .IsSuccess.Should().BeTrue();
+
+        return janela;
+    }
+
+    private static Result DecidirRetida(JanelaDeMigracao janela, CenarioDeMigracao cenario, Concessao retida) =>
+        janela.DecidirRetida(new PedidoDaRetida(retida.Id, ResultadoDaMigracao.Migrar, false), CenarioDeMigracao.Autoria(Betina), cenario.Contexto(Agora));
+
+    // Leandro e Isabella aguardam a etapa de proteção de dados; o pedido migra Leandro e recusa Isabella.
+    private static (JanelaDeMigracao Janela, PedidoDaEtapaDaProtecao Pedido) AguardandoAProtecao(CenarioDeMigracao cenario)
+    {
+        Concessao paraMigrar = cenario.Conceder(Leandro);
+        Concessao paraRecusar = cenario.Conceder(Isabella);
+        JanelaDeMigracao janela = cenario.Abrir();
+        janela.EnviarLote(
+            CenarioDeMigracao.Lote(false, (paraMigrar, ResultadoDaMigracao.Migrar), (paraRecusar, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora));
+
+        return (janela, new([new ItemDoLote(paraMigrar.Id, ResultadoDaMigracao.Migrar), new ItemDoLote(paraRecusar.Id, ResultadoDaMigracao.Recusar)], true));
+    }
 }

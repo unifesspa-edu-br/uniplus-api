@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -14,10 +13,6 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 /// <summary>Os perfis de governança carregam as permissões da aprovação e não recebem nenhuma das operações novas.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class GovernancaDaAprovacaoNoHostTests : AprovacaoDaVersaoNoHostTestBase
 {
     private const string AprovarFuncionalDoPerfil = "autorizacao:perfis:aprovar-funcional";
@@ -35,7 +30,7 @@ public sealed class GovernancaDaAprovacaoNoHostTests : AprovacaoDaVersaoNoHostTe
         AutorizacaoDbContext db = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
 
         string[] gestor = await CodigosAsync(db, PerfisDeSistema.GestorDeAcessosId);
-        string[] protecao = await CodigosAsync(db, PerfisDeSistema.ProtecaoDeDadosId);
+        string[] protecao = await CodigosAsync(db, PerfisDeSistema.RepresentanteDoControladorId);
 
         gestor.Should().Contain(AprovarFuncionalDoPerfil).And.NotContain(AprovarProtecaoDoPerfil);
         protecao.Should().Contain(AprovarProtecaoDoPerfil).And.NotContain(AprovarFuncionalDoPerfil);
@@ -45,13 +40,13 @@ public sealed class GovernancaDaAprovacaoNoHostTests : AprovacaoDaVersaoNoHostTe
     public async Task OperacoesNoPerfilDeGovernanca_Recusadas()
     {
         await ResetarAsync();
-        using HttpClient gestora = await GestoraComAmbasAsync();
+        using HttpClient gestor = await GestorComAmbasAsync();
         using HttpClient diogo = await GestorAsync();
         Envio alvo = new(PerfisDeSistema.GestorDeAcessosId, Guid.NewGuid(), Guid.NewGuid(), string.Empty);
 
         using HttpResponseMessage remocao = await RemoverBrutoAsync(diogo, alvo.PerfilId, [AprovarFuncionalDoPerfil]);
-        using HttpResponseMessage aprovacao = await AprovarBrutoAsync(gestora, alvo, EtapaGestao);
-        using HttpResponseMessage recusa = await RecusarBrutoAsync(gestora, alvo, EtapaGestao);
+        using HttpResponseMessage aprovacao = await AprovarBrutoAsync(gestor, alvo, EtapaGestao);
+        using HttpResponseMessage recusa = await RecusarBrutoAsync(gestor, alvo, EtapaGestao);
         using HttpResponseMessage cancelamento = await CancelarBrutoAsync(diogo, alvo);
 
         foreach (HttpResponseMessage resposta in new[] { remocao, aprovacao, recusa, cancelamento })

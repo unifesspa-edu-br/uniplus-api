@@ -29,7 +29,7 @@ internal static class RevisaoHandlerErros
 
     public static DomainError DecisorNaoDecideOItem() =>
         new(RevisaoErrorCodes.DecisorNaoDecideOItem,
-            "O item cabe à outra governança: a proteção de dados decide os acessos comuns, e os gestores de acessos, os da proteção de dados.");
+            "O item cabe à outra governança: o Representante do controlador decide os acessos de quem não é Representante, e os gestores de acessos, os de quem é Representante no instante da decisão.");
 
     public static DomainError ConflitoDeConcorrencia() =>
         new(RevisaoErrorCodes.ConflitoDeConcorrencia,

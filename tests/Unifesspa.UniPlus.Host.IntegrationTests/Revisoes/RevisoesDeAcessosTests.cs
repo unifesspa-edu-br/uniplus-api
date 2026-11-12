@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Revisoes;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -18,25 +17,22 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// A revisão periódica dos acessos pelo host real (ADR-0152). Marlene é da proteção de dados e conduz a revisão; Diogo,
+/// A revisão periódica dos acessos pelo host real (ADR-0152). Marlene é Representante do controlador e conduz a revisão; Diogo,
 /// Isabella e Betina são gestores de acessos; Leandro tem o acesso sensível a rever.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 {
     private const string RotaDasRevisoes = "/api/autorizacao/revisoes";
     private const string Motivo = "O atendimento do edital terminou.";
+    private const string Representante = "representante-do-controlador";
 
     public RevisoesDeAcessosTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {
     }
 
-    [Fact(DisplayName = "A revisão traz só os acessos pessoais ou sensíveis, manda os da proteção de dados aos gestores e abre uma por vez")]
+    [Fact(DisplayName = "A revisão traz só os acessos pessoais ou sensíveis e manda os dos Representantes aos gestores")]
     public async Task Abrir_TrazSoPessoaisOuSensiveis()
     {
         await ResetarAsync();
@@ -44,57 +40,57 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         await SemearConcessaoAsync(Leandro, await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(unidade));
         await SemearConcessaoAsync(Betina, await SemearPerfilInternoAsync(), EscopoDaConcessao.DaUnidade(unidade));
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
-        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
 
         (_, JsonElement revisao) = await AbrirAsync(marlene);
 
         ItensDe(revisao, Betina).Should().BeEmpty("o perfil só interno não entra");
-        ItemDe(revisao, Leandro).GetProperty("decide").GetString().Should().Be("protecao-de-dados");
-        ItemDe(revisao, Leandro).GetProperty("situacao").GetString().Should().Be("pendente");
+        (ItemDe(revisao, Leandro).GetProperty("decide").GetString(), ItemDe(revisao, Leandro).GetProperty("situacao").GetString()).Should().Be((Representante, "pendente"));
         ItemDe(revisao, Marlene).GetProperty("decide").GetString().Should().Be("gestor-de-acessos");
-        ItemDe(revisao, Diogo).GetProperty("decide").GetString().Should().Be("protecao-de-dados");
+        ItemDe(revisao, Diogo).GetProperty("decide").GetString().Should().Be(Representante);
         revisao.GetProperty("situacao").GetString().Should().Be("em_andamento");
-
-        await ConferirErroAsync(
-            await EnviarAsync(marlene, HttpMethod.Post, RotaDasRevisoes), HttpStatusCode.Conflict, "revisao.ja_ha_em_andamento");
-        using HttpClient leandro = Cliente(Leandro);
-        (await leandro.GetAsync(new Uri(RotaDasRevisoes, UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await EnviarAsync(diogo, HttpMethod.Post, RotaDasRevisoes)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "Revogar na revisão encerra o acesso na próxima requisição e entra na trilha da concessão")]
-    public async Task Revogar_EncerraOAcessoERegistraNaTrilha()
+    [Fact(DisplayName = "Só uma revisão fica em andamento, e só o Representante do controlador a abre")]
+    public async Task Abrir_UmaPorVezESoPeloRepresentante()
     {
         await ResetarAsync();
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        using HttpClient isabella = await ClienteComPermissoesAsync(Isabella, AprovarFuncional);
-        using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
-        (_, JsonElement revisao) = await AbrirAsync(marlene);
-        Guid revisaoId = revisao.GetProperty("id").GetGuid();
-        JsonElement item = ItemDe(revisao, Diogo);
-        Guid itemId = item.GetProperty("id").GetGuid();
-        Guid concessaoId = item.GetProperty("concessaoId").GetGuid();
+        await AbrirAsync(marlene);
+
+        await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, RotaDasRevisoes), HttpStatusCode.Conflict, "revisao.ja_ha_em_andamento");
+        (await Cliente(Leandro).GetAsync(new Uri(RotaDasRevisoes, UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await EnviarAsync(diogo, HttpMethod.Post, RotaDasRevisoes)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "Revogar na revisão exige o motivo e encerra o acesso na próxima requisição")]
+    public async Task Revogar_EncerraOAcesso()
+    {
+        (Guid revisaoId, JsonElement item, HttpClient marlene) = await RevisaoComTresGestoresAsync();
+        using HttpClient diogo = Cliente(Diogo);
+        string rota = $"{RotaDasRevisoes}/{revisaoId}/itens/{item.GetProperty("id").GetGuid()}/revogacao";
         (await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
 
-        await ConferirErroAsync(
-            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{itemId}/revogacao", new { motivo = " " }),
-            HttpStatusCode.UnprocessableEntity,
-            "concessao.motivo_invalido");
-        (await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{itemId}/revogacao", new { motivo = Motivo }))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, rota, new { motivo = " " }), HttpStatusCode.UnprocessableEntity, "concessao.motivo_invalido");
+        (await EnviarAsync(marlene, HttpMethod.Post, rota, new { motivo = Motivo })).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        JsonElement depois = await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}");
-        ItemDe(depois, Diogo).GetProperty("situacao").GetString().Should().Be("revogada");
-        ItemDe(depois, Diogo).GetProperty("decididoPor").GetProperty("sub").GetString().Should().Be(Marlene.Sub.ToString());
-        JsonElement trilha = await LerAsync(isabella, $"/api/autorizacao/concessoes/{concessaoId}/trilha");
-        string[] tipos = [.. trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!)];
-        tipos.Should().Contain(["revogada", "revisao_revogada"]);
-        await ConferirErroAsync(
-            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{itemId}/confirmacao"),
-            HttpStatusCode.Conflict,
-            "revisao.item_ja_decidido");
+        JsonElement depois = ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Diogo);
+        (depois.GetProperty("situacao").GetString(), depois.GetProperty("decididoPor").GetProperty("sub").GetString()).Should().Be(("revogada", Marlene.Sub.ToString()));
+    }
+
+    [Fact(DisplayName = "A revogação na revisão entra na trilha da concessão, e o item decidido não se decide de novo")]
+    public async Task Revogar_RegistraNaTrilha()
+    {
+        (Guid revisaoId, JsonElement item, HttpClient marlene) = await RevisaoComTresGestoresAsync();
+        string rota = $"{RotaDasRevisoes}/{revisaoId}/itens/{item.GetProperty("id").GetGuid()}";
+
+        (await EnviarAsync(marlene, HttpMethod.Post, $"{rota}/revogacao", new { motivo = Motivo })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        JsonElement trilha = await LerAsync(Cliente(Isabella), $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha");
+        trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()!).Should().Contain(["revogada", "revisao_revogada"]);
+        await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{rota}/confirmacao"), HttpStatusCode.Conflict, "revisao.item_ja_decidido");
     }
 
     [Fact(DisplayName = "Revogar o penúltimo gestor pela revisão é recusado e o item segue pendente")]
@@ -116,8 +112,8 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         (await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    [Fact(DisplayName = "O item da proteção de dados só é decidido pelos gestores, e a confirmação entra na trilha sem encerrar o acesso")]
-    public async Task ItemDaProtecaoDeDados_SoOsGestoresDecidem()
+    [Fact(DisplayName = "O item do Representante só é decidido pelos gestores, e a confirmação entra na trilha sem encerrar o acesso")]
+    public async Task ItemDoRepresentante_SoOsGestoresDecidem()
     {
         await ResetarAsync();
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
@@ -133,28 +129,23 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should().Contain("revisao_confirmada").And.NotContain("revogada");
     }
 
-    [Fact(DisplayName = "O gestor de acessos não decide o item que cabe à proteção de dados, e a concessão segue ativa")]
+    [Fact(DisplayName = "O gestor de acessos não decide o item que cabe ao Representante do controlador, e a concessão segue ativa")]
     public async Task ItemComum_GestorNaoDecide()
     {
         await ResetarAsync();
-        Guid unidade = await SemearUnidadeAsync();
-        await SemearConcessaoAsync(Leandro, await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(unidade));
+        await SemearConcessaoAsync(Leandro, await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
         string rotaDoItem = $"{RotaDasRevisoes}/{revisaoId}/itens/{ItemDe(revisao, Leandro).GetProperty("id").GetGuid()}";
 
-        await ConferirErroAsync(
-            await EnviarAsync(diogo, HttpMethod.Post, $"{rotaDoItem}/confirmacao"), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
-        await ConferirErroAsync(
-            await EnviarAsync(diogo, HttpMethod.Post, $"{rotaDoItem}/revogacao", new { motivo = Motivo }),
-            HttpStatusCode.UnprocessableEntity,
-            "revisao.decisor_nao_decide_o_item");
+        await ConferirErroAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{rotaDoItem}/confirmacao"), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
+        await ConferirErroAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{rotaDoItem}/revogacao", new { motivo = Motivo }), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
 
         JsonElement item = ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Leandro);
         item.GetProperty("situacao").GetString().Should().Be("pendente");
-        JsonElement trilha = await LerAsync(diogo, $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha");
-        trilha.EnumerateArray().Select(e => e.GetProperty("tipo").GetString()).Should().NotContain("revogada");
+        (await LerAsync(diogo, $"/api/autorizacao/concessoes/{item.GetProperty("concessaoId").GetGuid()}/trilha")).EnumerateArray()
+            .Select(e => e.GetProperty("tipo").GetString()).Should().NotContain("revogada");
     }
 
     [Fact(DisplayName = "Abrir a revisão sem conduzir registra a negativa de conduzir, e não a permissão de rever")]
@@ -190,13 +181,12 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
             .Should().BeEquivalentTo([("autorizacao:revisoes:rever-protecao-de-dados", ResultadoDoAcesso.Negado, (Guid?)revisaoId)]);
     }
 
-    [Fact(DisplayName = "O acesso comum de quem é da proteção de dados é revisto pelos gestores, e a proteção de dados não o decide")]
-    public async Task AcessoComumDaProtecaoDeDados_VaiParaOsGestores()
+    [Fact(DisplayName = "O acesso comum de quem é Representante é revisto pelos gestores, e o próprio Representante não o decide")]
+    public async Task AcessoComumDoRepresentante_VaiParaOsGestores()
     {
         await ResetarAsync();
-        Guid unidade = await SemearUnidadeAsync();
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Marlene.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(unidade));
+            Fixture.Factory.Services, Marlene.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
@@ -205,7 +195,6 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         itens.Should().HaveCount(2).And.OnlyContain(i => i.GetProperty("decide").GetString() == "gestor-de-acessos");
         JsonElement comum = itens.Single(i => i.GetProperty("perfil").GetProperty("nome").GetString()!.StartsWith("Análise", StringComparison.Ordinal));
         string rota = $"{RotaDasRevisoes}/{revisaoId}/itens/{comum.GetProperty("id").GetGuid()}/confirmacao";
-
         await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, rota), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
         (await EnviarAsync(diogo, HttpMethod.Post, rota)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -236,44 +225,52 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
         (Guid revisaoId, _) = await AbrirAsync(marlene);
 
         await ConferirErroAsync(
-            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{Guid.NewGuid()}/itens/{Guid.NewGuid()}/confirmacao"),
-            HttpStatusCode.NotFound,
-            "revisao.nao_encontrada");
+            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{Guid.NewGuid()}/itens/{Guid.NewGuid()}/confirmacao"), HttpStatusCode.NotFound, "revisao.nao_encontrada");
         await ConferirErroAsync(
-            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{Guid.NewGuid()}/revogacao", new { motivo = Motivo }),
-            HttpStatusCode.NotFound,
-            "revisao.item_nao_encontrado");
+            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{Guid.NewGuid()}/revogacao", new { motivo = Motivo }), HttpStatusCode.NotFound, "revisao.item_nao_encontrado");
         await ConferirErroAsync(
-            await marlene.GetAsync(new Uri($"{RotaDasRevisoes}/{Guid.NewGuid()}", UriKind.Relative)),
-            HttpStatusCode.NotFound,
-            "revisao.nao_encontrada");
+            await marlene.GetAsync(new Uri($"{RotaDasRevisoes}/{Guid.NewGuid()}", UriKind.Relative)), HttpStatusCode.NotFound, "revisao.nao_encontrada");
     }
 
     [Fact(DisplayName = "Concessão encerrada fora da revisão deixa de ser pendente e não aceita decisão")]
     public async Task ConcessaoEncerradaForaDaRevisao_NaoPedeDecisao()
     {
         await ResetarAsync();
-        Guid unidade = await SemearUnidadeAsync();
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(unidade));
+            Fixture.Factory.Services, Leandro.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
-        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
         (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
-        int pendentes = revisao.GetProperty("pendentes").GetInt32();
         JsonElement item = ItemDe(revisao, Leandro);
 
-        Guid concessaoId = item.GetProperty("concessaoId").GetGuid();
-        (await EnviarAsync(diogo, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste }))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await RevogarForaDaRevisaoAsync(item.GetProperty("concessaoId").GetGuid());
 
         JsonElement depois = await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}");
         ItemDe(depois, Leandro).GetProperty("situacao").GetString().Should().Be("concessao_encerrada");
-        depois.GetProperty("pendentes").GetInt32().Should().Be(pendentes - 1);
+        depois.GetProperty("pendentes").GetInt32().Should().Be(revisao.GetProperty("pendentes").GetInt32() - 1);
         await ConferirErroAsync(
-            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{item.GetProperty("id").GetGuid()}/confirmacao"),
-            HttpStatusCode.Conflict,
-            "revisao.concessao_nao_ativa");
+            await EnviarAsync(marlene, HttpMethod.Post, $"{RotaDasRevisoes}/{revisaoId}/itens/{item.GetProperty("id").GetGuid()}/confirmacao"), HttpStatusCode.Conflict, "revisao.concessao_nao_ativa");
+    }
+
+    // A revisão aberta por Marlene com Diogo, Isabella e Betina gestores, e o item da concessão de gestor de Diogo.
+    private async Task<(Guid RevisaoId, JsonElement ItemDeDiogo, HttpClient Marlene)> RevisaoComTresGestoresAsync()
+    {
+        await ResetarAsync();
+        HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
+        foreach (Persona gestor in new[] { Diogo, Isabella, Betina })
+        {
+            await ClienteComPermissoesAsync(gestor, AprovarFuncional);
+        }
+
+        (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
+        return (revisaoId, ItemDe(revisao, Diogo), marlene);
+    }
+
+    private async Task RevogarForaDaRevisaoAsync(Guid concessaoId)
+    {
+        using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
+        await ClienteComPermissoesAsync(Betina, AprovarFuncional);
+        (await EnviarAsync(diogo, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste }))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     private static JsonElement[] ItensDe(JsonElement revisao, Persona persona) =>

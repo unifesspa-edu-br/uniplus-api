@@ -205,11 +205,6 @@ internal static class DoublesDePerfis
         public Task<IReadOnlyList<Concessao>> ObterConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Concessao>>([]);
 
-        public Task TravarProtecaoDeDadosAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-
-        public Task<IReadOnlyCollection<Identidade>> ListarTitularesDaProtecaoDeDadosAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyCollection<Identidade>>([]);
-
         public Task<IReadOnlyList<Concessao>> ListarConcessoesDaJanelaAsync(Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Concessao>>([]);
 

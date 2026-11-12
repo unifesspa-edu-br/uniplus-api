@@ -29,7 +29,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task Suspender_PelaGestao_GravaEAvisaOsOutros()
     {
         Perfil perfil = Comum();
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, [Manter], titulares: [Rebeca, Betina]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter], titulares: [Rebeca, Betina]);
 
         GravacaoDaOperacao<bool> gravacao = await Suspender(cenario, perfil);
 
@@ -45,7 +45,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task Suspender_TokenSemNome_GuardaNomeNulo()
     {
         Perfil perfil = Comum();
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, [Manter]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter]);
 
         await Suspender(cenario, perfil);
 
@@ -94,7 +94,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task Suspender_JaSuspenso_Recusa()
     {
         Perfil perfil = Comum();
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, [Manter], titulares: [Rebeca]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter], titulares: [Rebeca]);
         await Suspender(cenario, perfil);
 
         GravacaoDaOperacao<bool> segunda = await Suspender(cenario, perfil);
@@ -108,7 +108,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task Suspender_SemMotivo_Recusa()
     {
         Perfil perfil = Comum();
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, [Manter]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter]);
 
         GravacaoDaOperacao<bool> gravacao = await cenario.Contencao.SuspenderAsync(perfil.Id, " ", cenario.Verificador, CancellationToken.None);
 
@@ -119,7 +119,7 @@ public sealed class ContencaoPorSuspensaoTests
     [Fact(DisplayName = "Suspender o perfil que não existe devolve não encontrado")]
     public async Task Suspender_PerfilInexistente_NaoEncontrado()
     {
-        CenarioDaGovernancaDaVersao cenario = new(Comum(), PerfisDeTeste.Gestora, [Manter]);
+        CenarioDaGovernancaDaVersao cenario = new(Comum(), PerfisDeTeste.Gestor, [Manter]);
 
         GravacaoDaOperacao<bool> gravacao = await cenario.Contencao.SuspenderAsync(Guid.NewGuid(), Motivo, cenario.Verificador, CancellationToken.None);
 
@@ -130,7 +130,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task HandlerDaSuspensao_DevolveRespostaEMensagens()
     {
         Perfil perfil = Comum();
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, [Manter], titulares: [Rebeca]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter], titulares: [Rebeca]);
         SuspenderPerfilCommand comando = new(perfil.Id, Motivo);
 
         (Result ok, IEnumerable<object> avisos) = await ContencaoPorSuspensaoCommandHandler.Handle(comando, cenario.Contencao, cenario.Verificador, CancellationToken.None);
@@ -214,7 +214,7 @@ public sealed class ContencaoPorSuspensaoTests
     public async Task Retomar_PorQuemSuspendeu_Recusa()
     {
         Perfil perfil = SuspensoPor(Comum());
-        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestora, [Manter]);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Gestor, [Manter]);
 
         Result<RetomadaDaSuspensaoDto> resultado = await Retomar(cenario, perfil, EtapaGestao);
 
@@ -261,7 +261,7 @@ public sealed class ContencaoPorSuspensaoTests
     private static Perfil SuspensoPor(Perfil perfil)
     {
         perfil.Suspender(
-            PerfisDeTeste.Gestora, EtapaDaVersao.GestaoDeAcessos, Motivo, PerfisDeTeste.Instante, new DoublesDePerfis.CatalogoDeTeste());
+            PerfisDeTeste.Gestor, EtapaDaVersao.GestaoDeAcessos, Motivo, PerfisDeTeste.Instante, new DoublesDePerfis.CatalogoDeTeste());
 
         return perfil;
     }

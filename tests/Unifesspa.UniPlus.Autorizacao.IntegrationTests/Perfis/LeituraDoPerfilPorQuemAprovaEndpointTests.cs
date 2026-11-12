@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -15,10 +14,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// acessos; a manutenção continua só de quem mantém perfis.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class LeituraDoPerfilPorQuemAprovaEndpointTests : PerfilEndpointTestBase
 {
     public LeituraDoPerfilPorQuemAprovaEndpointTests(AutorizacaoEndpointFixture fixture)
@@ -29,7 +24,7 @@ public sealed class LeituraDoPerfilPorQuemAprovaEndpointTests : PerfilEndpointTe
     // O perfil de governança da proteção de dados aprova versões de perfil e não mantém perfis.
     private async Task<HttpClient> ClienteDaProtecaoDeDadosAsync(string sub)
     {
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.ProtecaoDeDados);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.RepresentanteDoControlador);
 
         return Cliente(sub);
     }

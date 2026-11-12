@@ -63,33 +63,6 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
             .ConfigureAwait(false);
     }
 
-    public async Task TravarProtecaoDeDadosAsync(CancellationToken cancellationToken = default)
-    {
-        Guid perfilId = PerfisDeSistema.ProtecaoDeDadosId;
-        await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.perfis WHERE id = {{0}} FOR UPDATE",
-            [perfilId],
-            cancellationToken).ConfigureAwait(false);
-        await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE perfil_id = {{0}} AND revogada_em IS NULL ORDER BY id FOR UPDATE",
-            [perfilId],
-            cancellationToken).ConfigureAwait(false);
-    }
-
-    public async Task<IReadOnlyCollection<Identidade>> ListarTitularesDaProtecaoDeDadosAsync(
-        DateTimeOffset agora, CancellationToken cancellationToken = default)
-    {
-        Guid perfilId = PerfisDeSistema.ProtecaoDeDadosId;
-        var titulares = await _context.Concessoes.AsNoTracking()
-            .Where(c => c.PerfilId == perfilId && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora))
-            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub })
-            .Distinct()
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return [.. titulares.Select(static t => new Identidade(t.BeneficiarioEmissor, t.BeneficiarioSub))];
-    }
-
     public async Task<IReadOnlyList<Concessao>> ListarConcessoesDaJanelaAsync(
         Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default) =>
         await _context.Concessoes.AsNoTracking()

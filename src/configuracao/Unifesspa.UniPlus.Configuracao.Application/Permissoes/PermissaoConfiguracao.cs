@@ -219,7 +219,8 @@ public enum PermissaoConfiguracao
     [Permissao(
         "configuracao:protecao-do-catalogo:aprovar",
         "Aprovar a proteção de dados do catálogo",
-        "Aprova ou nega a classificação, a finalidade e a hipótese legal de cada tipo de documento e de cada fato do catálogo, e recebe o aviso das solicitações e dos aceites.",
-        ClassificacaoDeProtecao.Interno)]
+        "Aprova ou nega, pelo Representante do controlador, a classificação, a finalidade e a hipótese legal de cada tipo de documento e de cada fato do catálogo, e recebe o aviso das solicitações e dos aceites.",
+        ClassificacaoDeProtecao.Interno,
+        ReservadaAGovernanca = true)]
     ProtecaoDoCatalogoAprovar = 26,
 }

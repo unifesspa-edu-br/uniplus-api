@@ -21,19 +21,50 @@ public sealed class RevisaoDeAcessosTests
     private static readonly Identidade Leandro = new(Emissor, "leandro.viana");
     private static readonly FakeCatalogo Catalogo = new();
 
-    [Fact(DisplayName = "A proteção de dados decide os itens comuns, e os gestores decidem os acessos de quem é da proteção de dados")]
-    public void Abrir_DefineQuemDecideCadaItem()
+    [Fact(DisplayName = "A abertura cria um item pendente por concessão, sem fixar quem decide")]
+    public void Abrir_NaoFixaQuemDecide()
     {
-        RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(
-            Marlene,
-            [
-                new ConcessaoARever(Guid.NewGuid(), false),
-                new ConcessaoARever(Guid.NewGuid(), true),
-            ],
-            Agora);
+        Guid repetida = Guid.NewGuid();
 
-        revisao.Itens.Select(i => i.Decide).Should().Equal(TipoDeGovernanca.ProtecaoDeDados, TipoDeGovernanca.GestorDeAcessos);
-        revisao.Itens.Should().OnlyContain(i => i.Pendente);
+        RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(Marlene, [repetida, Guid.NewGuid(), repetida], Agora);
+
+        revisao.Itens.Should().HaveCount(2);
+        revisao.Itens.Should().OnlyContain(i => i.Pendente && i.DecididoComo == null);
+    }
+
+    [Theory(DisplayName = "O Representante decide os itens comuns, e os gestores, os de quem é Representante no instante da decisão")]
+    [InlineData(false, TipoDeGovernanca.RepresentanteDoControlador)]
+    [InlineData(true, TipoDeGovernanca.GestorDeAcessos)]
+    public void QuemDecide_PelaCondicaoDoBeneficiario(bool beneficiarioERepresentante, TipoDeGovernanca esperado)
+    {
+        ItemDaRevisao.QuemDecide(beneficiarioERepresentante).Should().Be(esperado);
+        new DecisorDoItem(Marlene, beneficiarioERepresentante).Como.Should().Be(esperado);
+    }
+
+    [Theory(DisplayName = "A decisão grava a governança com que foi tomada, pela condição do beneficiário naquele instante")]
+    [InlineData(false, TipoDeGovernanca.RepresentanteDoControlador)]
+    [InlineData(true, TipoDeGovernanca.GestorDeAcessos)]
+    public void Decidir_GravaAGovernancaDaDecisao(bool beneficiarioERepresentante, TipoDeGovernanca esperado)
+    {
+        (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
+
+        revisao.Confirmar(revisao.Itens[0].Id, concessao, new DecisorDoItem(Marlene, beneficiarioERepresentante), Agora);
+
+        revisao.Itens[0].DecididoComo.Should().Be(esperado);
+    }
+
+    [Fact(DisplayName = "A designação concedida durante a revisão aberta passa o item aos gestores a partir dali")]
+    public void Decidir_DesignacaoDuranteARevisao_MudaODecisor()
+    {
+        (RevisaoDeAcessos revisao, Concessao antes) = RevisaoComUmItem();
+        Concessao depois = Concedida();
+        RevisaoDeAcessos outra = RevisaoDeAcessos.Abrir(Marlene, [depois.Id], Agora);
+
+        revisao.Confirmar(revisao.Itens[0].Id, antes, MarleneDecide(false), Agora);
+        outra.Confirmar(outra.Itens[0].Id, depois, MarleneDecide(true), Agora);
+
+        revisao.Itens[0].DecididoComo.Should().Be(TipoDeGovernanca.RepresentanteDoControlador);
+        outra.Itens[0].DecididoComo.Should().Be(TipoDeGovernanca.GestorDeAcessos);
     }
 
     [Fact(DisplayName = "A revisão aberta sem nenhum item já nasce concluída")]
@@ -52,9 +83,9 @@ public sealed class RevisaoDeAcessosTests
         Concessao pendente = Concedida();
         RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(
             Marlene,
-            new[] { decidida, encerrada, pendente }.Select(c => new ConcessaoARever(c.Id, false)),
+            new[] { decidida, encerrada, pendente }.Select(c => c.Id),
             Agora);
-        revisao.Confirmar(revisao.Itens[0].Id, decidida, Marlene, Agora);
+        revisao.Confirmar(revisao.Itens[0].Id, decidida, MarleneDecide(false), Agora);
 
         revisao.EstaEmAndamento(new HashSet<Guid> { pendente.Id }).Should().BeTrue();
         revisao.EstaEmAndamento(new HashSet<Guid> { decidida.Id }).Should().BeFalse("o item decidido não conta");
@@ -66,7 +97,7 @@ public sealed class RevisaoDeAcessosTests
     {
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
 
-        Result resultado = revisao.Confirmar(revisao.Itens[0].Id, concessao, Marlene, Agora);
+        Result resultado = revisao.Confirmar(revisao.Itens[0].Id, concessao, MarleneDecide(false), Agora);
 
         resultado.IsSuccess.Should().BeTrue();
         concessao.EstaAtiva(Agora).Should().BeTrue();
@@ -80,7 +111,7 @@ public sealed class RevisaoDeAcessosTests
     {
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
 
-        Result resultado = revisao.Revogar(revisao.Itens[0].Id, concessao, Marlene, Motivo, Agora);
+        Result resultado = revisao.Revogar(revisao.Itens[0].Id, concessao, MarleneDecide(false), Motivo, Agora);
 
         resultado.IsSuccess.Should().BeTrue();
         concessao.EstaAtiva(Agora).Should().BeFalse();
@@ -95,7 +126,7 @@ public sealed class RevisaoDeAcessosTests
     {
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
 
-        Result resultado = revisao.Revogar(revisao.Itens[0].Id, concessao, Marlene, motivo, Agora);
+        Result resultado = revisao.Revogar(revisao.Itens[0].Id, concessao, MarleneDecide(false), motivo, Agora);
 
         CodigosDaRecusa(resultado).Should().Equal(ConcessaoErrorCodes.MotivoInvalido);
         revisao.Itens[0].Pendente.Should().BeTrue();
@@ -106,9 +137,9 @@ public sealed class RevisaoDeAcessosTests
     public void Decidir_ItemJaDecidido_Recusa()
     {
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
-        revisao.Confirmar(revisao.Itens[0].Id, concessao, Marlene, Agora);
+        revisao.Confirmar(revisao.Itens[0].Id, concessao, MarleneDecide(false), Agora);
 
-        CodigosDaRecusa(revisao.Revogar(revisao.Itens[0].Id, concessao, Marlene, Motivo, Agora))
+        CodigosDaRecusa(revisao.Revogar(revisao.Itens[0].Id, concessao, MarleneDecide(false), Motivo, Agora))
             .Should().Equal(RevisaoErrorCodes.ItemJaDecidido);
         concessao.EstaAtiva(Agora).Should().BeTrue();
     }
@@ -119,7 +150,7 @@ public sealed class RevisaoDeAcessosTests
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
         concessao.Revogar(Diogo, Motivo, Agora);
 
-        CodigosDaRecusa(revisao.Confirmar(revisao.Itens[0].Id, concessao, Marlene, Agora))
+        CodigosDaRecusa(revisao.Confirmar(revisao.Itens[0].Id, concessao, MarleneDecide(false), Agora))
             .Should().Equal(RevisaoErrorCodes.ConcessaoNaoAtiva);
     }
 
@@ -128,15 +159,17 @@ public sealed class RevisaoDeAcessosTests
     {
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
 
-        CodigosDaRecusa(revisao.Confirmar(revisao.Itens[0].Id, concessao, Leandro, Agora))
+        CodigosDaRecusa(revisao.Confirmar(revisao.Itens[0].Id, concessao, new DecisorDoItem(Leandro, false), Agora))
             .Should().Equal(RevisaoErrorCodes.DecisorEBeneficiario);
     }
 
     private static (RevisaoDeAcessos Revisao, Concessao Concessao) RevisaoComUmItem()
     {
         Concessao concessao = Concedida();
-        return (RevisaoDeAcessos.Abrir(Marlene, [new ConcessaoARever(concessao.Id, false)], Agora), concessao);
+        return (RevisaoDeAcessos.Abrir(Marlene, [concessao.Id], Agora), concessao);
     }
+
+    private static DecisorDoItem MarleneDecide(bool beneficiarioERepresentante) => new(Marlene, beneficiarioERepresentante);
 
     private static Concessao Concedida() =>
         Concessao.Conceder(

@@ -87,19 +87,24 @@ public sealed partial class JanelaDeMigracao
         ArgumentNullException.ThrowIfNull(contexto);
 
         string? motivo = MotivosDaVersao.Normalizar(encerramento.Motivo);
-        if (motivo is null)
+        if (RecusaDoEncerramento(motivo, confirmouExclusao) is { } recusa)
         {
-            return Result.Failure(MigracaoErros.MotivoInvalido(MotivoMaxLength));
-        }
-
-        if (!confirmouExclusao)
-        {
-            return Result.Failure(MigracaoErros.ExclusaoNaoConfirmada());
+            return Result.Failure(recusa);
         }
 
         Materializar(contexto, FormaDoEncerramento.Manual, encerramento with { Motivo = motivo });
 
         return Result.Success();
+    }
+
+    private static DomainError? RecusaDoEncerramento(string? motivo, bool confirmouExclusao)
+    {
+        if (motivo is null)
+        {
+            return MigracaoErros.MotivoInvalido(MotivoMaxLength);
+        }
+
+        return confirmouExclusao ? null : MigracaoErros.ExclusaoNaoConfirmada();
     }
 
     internal void RegistrarDoSistema(
@@ -110,7 +115,7 @@ public sealed partial class JanelaDeMigracao
             : contexto.ComposicaoDe(concessao);
         ResultadoDaMigracao resultado = situacao == SituacaoDaMigracao.ForaDaLista ? ResultadoDaMigracao.ForaDaLista : ResultadoDaMigracao.NaoMigrada;
 
-        Registrar(concessaoId, situacao, composicao.ExigeProtecaoDeDados, null, instante);
+        Registrar(concessaoId, situacao, composicao.ExigeProtecaoDeDados, instante);
         Acrescentar(DecisaoDaMigracao.DoSistema(this, concessaoId, resultado, composicao, instante));
     }
 

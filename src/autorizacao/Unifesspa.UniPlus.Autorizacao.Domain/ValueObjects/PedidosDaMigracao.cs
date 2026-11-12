@@ -12,14 +12,13 @@ public sealed record PedidoDoLote(IReadOnlyList<ItemDoLote> Itens, bool Confirmo
 /// <summary>A decisão sobre a concessão retida, que outra pessoa toma depois do lote.</summary>
 public sealed record PedidoDaRetida(Guid ConcessaoId, ResultadoDaMigracao? Decisao, bool ConfirmouExclusao);
 
-/// <summary>A remessa da proteção de dados: uma ou várias concessões que aguardam a etapa dela.</summary>
+/// <summary>A remessa do Representante do controlador: uma ou várias concessões que aguardam a etapa de proteção de dados.</summary>
 public sealed record PedidoDaEtapaDaProtecao(IReadOnlyList<ItemDoLote> Itens, bool ConfirmouExclusao);
 
 /// <summary>O que uma pessoa decidiu sobre uma concessão e em que etapa, para a trilha.</summary>
 /// <param name="Envio">O envio que produziu a decisão; nulo na decisão da retida.</param>
-/// <param name="Dispensa">Por que a proteção de dados não decide a concessão, quando a gestão migrou sem ela.</param>
 public sealed record DecisaoHumana(
-    EtapaDaMigracao Etapa, ResultadoDaMigracao Resultado, AutoriaDaVersao Autoria, LoteDaMigracao? Envio, string? Dispensa);
+    EtapaDaMigracao Etapa, ResultadoDaMigracao Resultado, AutoriaDaVersao Autoria, LoteDaMigracao? Envio);
 
 /// <summary>Quem encerra a janela antes do prazo e por quê.</summary>
 public sealed record EncerramentoManual(AutoriaDaVersao Autoria, string? Motivo);

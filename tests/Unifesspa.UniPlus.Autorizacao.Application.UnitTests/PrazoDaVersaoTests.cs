@@ -101,7 +101,7 @@ public sealed class PrazoDaVersaoTests
         Perfil perfil = CenarioDaGovernancaDaVersao.PendenteVerificada([Consultar]);
         Guid versaoId = versaoExistente ? perfil.VersaoPendente!.Id : Guid.NewGuid();
         CenarioDaGovernancaDaVersao cenario = new(
-            perfil, PerfisDeTeste.Gestora, [], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo));
+            perfil, PerfisDeTeste.Gestor, [], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo));
 
         GravacaoDaOperacao<PerfilDto> gravacao = await cenario.Cancelamento.CancelarAsync(
             perfil.Id, versaoId, "Motivo qualquer.", cenario.Verificador, CancellationToken.None);
@@ -115,7 +115,7 @@ public sealed class PrazoDaVersaoTests
     {
         Perfil perfil = CenarioDaGovernancaDaVersao.PendenteVerificada([Consultar]);
         CenarioDaGovernancaDaVersao cenario = new(
-            perfil, PerfisDeTeste.Gestora, [CenarioDaGovernancaDaVersao.Gestao], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo));
+            perfil, PerfisDeTeste.Gestor, [CenarioDaGovernancaDaVersao.Gestao], relogio: new CenarioDaGovernancaDaVersao.RelogioFixo(Prazo));
         DecisaoSolicitada decisao = new(perfil.Id, perfil.VersaoPendente!.Id, "gestao_de_acessos", ResultadoDaDecisao.Aprovado, null);
 
         GravacaoDaOperacao<PerfilDto> primeira = await cenario.Aprovacoes.DecidirAsync(decisao, cenario.Verificador, CancellationToken.None);

@@ -25,6 +25,7 @@ public sealed class RevogarConcessaoCommandHandlerTests
         Result resultado = await RevogarConcessaoCommandHandler.Handle(
             new RevogarConcessaoCommand(Guid.NewGuid(), "Mudou de função."),
             new RepositorioIntocavel(),
+            new PapelIntocavel(),
             new UnidadeDeTrabalhoIntocavel(),
             new Usuario(emissor, sub),
             TimeProvider.System,
@@ -57,6 +58,20 @@ public sealed class RevogarConcessaoCommandHandlerTests
     {
         public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void DescartarAlteracoesNaoSalvas() => throw new InvalidOperationException();
+    }
+
+    private sealed class PapelIntocavel : IPapelDoRepresentante
+    {
+        public Task TravarAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+
+        public Task<bool> HaOutroVigenteAsync(Identidade? exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
+
+        public Task<IReadOnlySet<Identidade>> ListarVigentesAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
+
+        public Task<bool> EVigenteAsync(Identidade pessoa, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException();
     }
 
     private sealed class RepositorioIntocavel : IConcessaoRepository

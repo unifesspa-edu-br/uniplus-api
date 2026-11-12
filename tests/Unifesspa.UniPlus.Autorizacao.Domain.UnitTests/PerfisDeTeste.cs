@@ -20,13 +20,13 @@ public static class PerfisDeTeste
 
     public static readonly Identidade Autor = new("https://idp.test/realms/unifesspa", "diogo.souza", "Diogo Souza");
 
-    public static readonly Identidade Gestora = new("https://idp.test/realms/unifesspa", "betina.neves", "Betina Neves");
+    public static readonly Identidade Gestor = new("https://idp.test/realms/unifesspa", "betina.neves", "Betina Neves");
 
     public static readonly Identidade ProtecaoDeDados = new("https://idp.test/realms/unifesspa", "marlene.campos", "Marlene Campos");
 
     public static readonly AutoriaDaVersao AutoriaDoAutor = Autoria(Autor);
 
-    public static readonly AutoriaDaVersao AutoriaDaGestora = Autoria(Gestora);
+    public static readonly AutoriaDaVersao AutoriaDoGestor = Autoria(Gestor);
 
     public static readonly AutoriaDaVersao AutoriaDaProtecaoDeDados = Autoria(ProtecaoDeDados);
 
@@ -36,15 +36,15 @@ public static class PerfisDeTeste
 
     public const string MotivoDaContencao = "Uso indevido apontado pela gestão.";
 
-    /// <summary>Desativa o perfil como a gestora, com o motivo padrão.</summary>
+    /// <summary>Desativa o perfil como o gestor, com o motivo padrão.</summary>
     public static Result Desativar(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
-        return perfil.Desativar(Gestora, MotivoDaContencao, Instante, catalogo);
+        return perfil.Desativar(Gestor, MotivoDaContencao, Instante, catalogo);
     }
 
-    /// <summary>Reativa o perfil como outra pessoa que não a gestora, com o motivo padrão.</summary>
+    /// <summary>Reativa o perfil como outra pessoa que não o gestor, com o motivo padrão.</summary>
     public static Result Reativar(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
     {
         ArgumentNullException.ThrowIfNull(perfil);
@@ -120,20 +120,18 @@ public static class PerfisDeTeste
         ArgumentNullException.ThrowIfNull(permissoes);
 
         string[] desejadas = [.. permissoes];
-        string[] retiradas = [.. perfil.ComposicaoEmVigor.Except(desejadas)];
-        List<TrocaDeVigencia> trocas = [];
-        if (retiradas.Length > 0)
-        {
-            trocas.Add(perfil.Remover(new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDaGestora, Instante), catalogo).Troca!);
-        }
+        TrocaDeVigencia? remocao = Retirar(perfil, [.. perfil.ComposicaoEmVigor.Except(desejadas)], catalogo);
+        TrocaDeVigencia? acrescimo = desejadas.Except(perfil.ComposicaoEmVigor).Any()
+            ? NovaVersaoVigente(perfil, desejadas, catalogo).Troca!
+            : null;
 
-        if (desejadas.Except(perfil.ComposicaoEmVigor).Any())
-        {
-            trocas.Add(NovaVersaoVigente(perfil, desejadas, catalogo).Troca!);
-        }
-
-        return trocas;
+        return [.. new[] { remocao, acrescimo }.OfType<TrocaDeVigencia>()];
     }
+
+    private static TrocaDeVigencia? Retirar(Perfil perfil, string[] retiradas, ICatalogoDePermissoesConsultavel catalogo) =>
+        retiradas.Length == 0
+            ? null
+            : perfil.Remover(new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDoGestor, Instante), catalogo).Troca!;
 
     /// <summary>
     /// Leva a versão pendente do perfil à vigência pelo caminho real: o envio e a verificação do documento, a aprovação
@@ -147,7 +145,7 @@ public static class PerfisDeTeste
         DocumentoDaVersao documento = Garantir(perfil.ConfirmarDocumento(versao.Id, "etag-de-teste", Instante));
         perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), Instante);
 
-        DesfechoDaVersao desfecho = Decidir(perfil, versao, EtapaDaVersao.GestaoDeAcessos, AutoriaDaGestora, catalogo);
+        DesfechoDaVersao desfecho = Decidir(perfil, versao, EtapaDaVersao.GestaoDeAcessos, AutoriaDoGestor, catalogo);
 
         return versao.Pendente
             ? Decidir(perfil, versao, EtapaDaVersao.ProtecaoDeDados, AutoriaDaProtecaoDeDados, catalogo)

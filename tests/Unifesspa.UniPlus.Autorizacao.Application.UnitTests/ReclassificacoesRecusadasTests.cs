@@ -37,7 +37,7 @@ public sealed class ReclassificacoesRecusadasTests
     public async Task Fila_SemPermissao_RecusaPelaEtapa(string etapa, string permissaoDaEtapa, string permissaoDeOutraEtapa)
     {
         IReclassificacaoRepository repositorio = Substitute.For<IReclassificacaoRepository>();
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [permissaoDeOutraEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [permissaoDeOutraEtapa]);
 
         Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>> fila = await ListarFila(etapa, verificador, repositorio);
 
@@ -51,7 +51,7 @@ public sealed class ReclassificacoesRecusadasTests
     [InlineData("protecao_de_dados", Protecao)]
     public async Task Fila_ComPermissao_Lista(string etapa, string permissaoDaEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [permissaoDaEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [permissaoDaEtapa]);
 
         Result<IReadOnlyList<ItemDaFilaDeReclassificacoesDto>> fila = await ListarFila(etapa, verificador, new ReclassificacoesNaMemoria());
 
@@ -91,7 +91,7 @@ public sealed class ReclassificacoesRecusadasTests
     {
         IReclassificacaoRepository repositorio = Substitute.For<IReclassificacaoRepository>();
 
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<IReadOnlyList<DivergenciaDaGovernancaDto>> divergencias = await ListarDivergencias(verificador, repositorio);
 
@@ -103,7 +103,7 @@ public sealed class ReclassificacoesRecusadasTests
     [Fact(DisplayName = "As divergências da governança são listadas a quem aprova pela proteção de dados")]
     public async Task Divergencias_ComPermissao_Lista()
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Protecao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Protecao]);
 
         Result<IReadOnlyList<DivergenciaDaGovernancaDto>> divergencias = await ListarDivergencias(verificador, new ReclassificacoesNaMemoria());
 
@@ -112,7 +112,7 @@ public sealed class ReclassificacoesRecusadasTests
     }
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
-        new(PerfisDeTeste.Gestora.Sub, permissao, ResourceTipos.Operacao, null, resultado);
+        new(PerfisDeTeste.Gestor.Sub, permissao, ResourceTipos.Operacao, null, resultado);
 
     private static IVerificadorDeAcesso SemAutor()
     {

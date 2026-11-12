@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -13,10 +12,6 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 /// quem lê, a recusa de acesso e a ausência de dado pessoal.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
 {
     private const string RotaDaFila = "/api/autorizacao/janelas-de-migracao";
@@ -94,7 +89,7 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
     public async Task Protecao_QuemDecidiuAGestao_NaoEncontraAMesmaConcessao()
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
-        using HttpClient ambas = await GestoraComAmbasAsync();
+        using HttpClient ambas = await GestorComAmbasAsync();
         using HttpResponseMessage lote = await EnviarLoteAsync(ambas, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
         await CorpoAsync(lote, HttpStatusCode.OK);
         using HttpClient marlene = await ProtecaoAsync();
@@ -108,13 +103,7 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta comOutra = await AbrirJanelaAsync(Leandro, Marlene);
         JanelaAberta soAPropria = await AbrirJanelaAsync(Marlene);
-        using HttpClient gestao = await GestaoAsync();
-        foreach (JanelaAberta janela in new[] { comOutra, soAPropria })
-        {
-            using HttpResponseMessage lote = await EnviarLoteAsync(
-                gestao, janela.PerfilId, [.. janela.Concessoes.Values.Select(id => Decisao(id, "migrar"))]);
-            await CorpoAsync(lote, HttpStatusCode.OK);
-        }
+        await MigrarTudoNaGestaoAsync(comOutra, soAPropria);
 
         using HttpClient marlene = await ProtecaoAsync();
         JsonElement fila = await FilaAsync(marlene, EtapaProtecao);
@@ -135,10 +124,7 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
         Relogio.Avancar(TimeSpan.FromHours(2));
         (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(2);
 
-        using HttpResponseMessage revogacao = await EnviarAsync(
-            diogo, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Betina]}/revogacao",
-            new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Betina.Email });
-        revogacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await RevogarAsync(diogo, cenario.Concessoes[Betina], Betina.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(1);
         (await JanelaAsync(diogo, cenario.PerfilId)).GetProperty("situacao").GetString().Should().Be("aberta");
@@ -206,4 +192,18 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
 
     private static JsonElement ItemDoPerfil(JsonElement fila, Guid perfilId) =>
         fila.EnumerateArray().Single(i => i.GetProperty("perfilId").GetGuid() == perfilId);
+
+    private static Task<HttpResponseMessage> RevogarAsync(HttpClient quem, Guid concessaoId, string email) =>
+        EnviarAsync(quem, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = "A pessoa deixou a função.", confirmacaoEmail = email });
+
+    // A gestão envia, em cada janela, o lote que migra todas as concessões.
+    private async Task MigrarTudoNaGestaoAsync(params JanelaAberta[] janelas)
+    {
+        using HttpClient gestao = await GestaoAsync();
+        foreach (JanelaAberta janela in janelas)
+        {
+            using HttpResponseMessage lote = await EnviarLoteAsync(gestao, janela.PerfilId, [.. janela.Concessoes.Values.Select(id => Decisao(id, "migrar"))]);
+            await CorpoAsync(lote, HttpStatusCode.OK);
+        }
+    }
 }

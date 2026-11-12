@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -11,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -24,10 +25,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// a manutenção é exercida por um POST e a consulta por um GET.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 {
     private const string Leandro = "leandro.viana";
@@ -65,8 +62,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     [MemberData(nameof(Permissoes))]
     public async Task ComPermissao_Passa(PermissaoConfiguracao permissao)
     {
-        Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, permissao.Codigo);
-        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
+        Guid perfil = await ConcederAsync(permissao);
 
         using HttpResponseMessage resposta = await EnviarAsync(Leandro, permissao);
 
@@ -80,6 +76,21 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         {
             decisoes.Should().BeEmpty(codigo);
         }
+    }
+
+    // A permissão reservada à governança só chega pelo perfil de Representante do controlador; as demais, por perfil comum.
+    private async Task<Guid> ConcederAsync(PermissaoConfiguracao permissao)
+    {
+        IServiceProvider servicos = _fixture.Factory.Services;
+        if (CatalogoDePermissoes<PermissaoConfiguracao>.Obter(permissao).ReservadaAGovernanca)
+        {
+            await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Leandro, TipoDeGovernanca.RepresentanteDoControlador);
+            return PerfisDeSistema.RepresentanteDoControladorId;
+        }
+
+        Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(servicos, permissao.Codigo);
+        await ConcessoesDeTeste.ConcederAsync(servicos, Leandro, perfil);
+        return perfil;
     }
 
     [Theory(DisplayName = "O administrador da plataforma sem concessão e a permissão de outro cadastro respondem 403")]
@@ -117,22 +128,25 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(
             consulta ? HttpMethod.Get : HttpMethod.Post,
-            new Uri($"/api/configuracao/admin/{permissao.Resource}", UriKind.Relative));
-        if (!consulta)
+            new Uri($"/api/configuracao/admin/{permissao.Resource}", UriKind.Relative))
         {
-            request.Content = JsonContent.Create(new { });
-        }
-
+            Content = consulta ? null : JsonContent.Create(new { }),
+        };
         if (sub is not null)
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
-            if (papel is not null)
-            {
-                request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
-            }
+            Autenticar(request, sub, papel);
         }
 
         return await client.SendAsync(request);
+    }
+
+    private static void Autenticar(HttpRequestMessage request, string sub, string? papel)
+    {
+        request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+        if (papel is not null)
+        {
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
+        }
     }
 }

@@ -55,7 +55,7 @@ public sealed class ObterJanelaDoPerfilQueryHandlerTests
     [Fact(DisplayName = "A leitura da janela de um perfil inexistente é não encontrada")]
     public async Task Obter_PerfilInexistente_NaoEncontrado()
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<JanelaDeMigracaoDto> resultado = await Obter(verificador, new PerfisNaMemoria());
 
@@ -68,7 +68,7 @@ public sealed class ObterJanelaDoPerfilQueryHandlerTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", ["a:b:c"], new CatalogoDeTeste());
 
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<JanelaDeMigracaoDto> resultado = await Obter(verificador, new PerfisNaMemoria(perfil), perfil.Id);
 
@@ -81,7 +81,7 @@ public sealed class ObterJanelaDoPerfilQueryHandlerTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", ["a:b:c"], new CatalogoDeTeste());
         JanelaDeMigracao janela = JanelaDeMigracao.Abrir(perfil.Id, perfil.Versoes[^1], DateTimeOffset.UtcNow);
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestora.Sub, [Gestao]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [Gestao]);
 
         Result<JanelaDeMigracaoDto> resultado = await Obter(verificador, new PerfisNaMemoria(perfil), perfil.Id, new JanelasNaMemoria(ultima: janela));
 
@@ -90,7 +90,7 @@ public sealed class ObterJanelaDoPerfilQueryHandlerTests
     }
 
     private static TrilhaDeAcesso GestaoPermitidaSobre(Guid perfilId) =>
-        new(PerfisDeTeste.Gestora.Sub, Gestao, ResourceTiposAutorizacao.Perfil, perfilId, ResultadoDoAcesso.Permitido);
+        new(PerfisDeTeste.Gestor.Sub, Gestao, ResourceTiposAutorizacao.Perfil, perfilId, ResultadoDoAcesso.Permitido);
 
     private static Task<Result<JanelaDeMigracaoDto>> Obter(IVerificadorDeAcesso verificador, IPerfilRepository perfis, Guid? perfilId = null, JanelasNaMemoria? janelasNaMemoria = null)
     {
@@ -99,6 +99,6 @@ public sealed class ObterJanelaDoPerfilQueryHandlerTests
 
         return ObterJanelaDoPerfilQueryHandler.Handle(
             new ObterJanelaDoPerfilQuery(perfilId ?? PerfilId), verificador, perfis,
-            new LeituraDaJanela(janelas, leitor, TimeProvider.System), new Usuario(PerfisDeTeste.Gestora), CancellationToken.None);
+            new LeituraDaJanela(janelas, leitor, TimeProvider.System), new Usuario(PerfisDeTeste.Gestor), CancellationToken.None);
     }
 }

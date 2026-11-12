@@ -20,7 +20,7 @@ public sealed class PedidoDeConcessaoVersaoTests
     private static readonly DateTimeOffset Troca = Agora.AddHours(2);
     private static readonly FakeCatalogo Catalogo = new();
     private static readonly FakeDominios Dominios = new();
-    private static readonly ContextoDaAprovacao Contexto = new(BeneficiarioJaTemProtecaoDeDados: false);
+    private static readonly ContextoDaAprovacao Contexto = new(HaRepresentanteVigente: false);
     private static readonly PessoaNoToken Betina = Pessoa("betina.neves", "Betina Marina Valentina das Neves", "betina-dasneves81@uniplus-test.local");
     private static readonly PessoaNoToken Leandro = Pessoa("leandro.viana", "Leandro Caleb Viana", "leandro-viana84@uniplus-test.local");
     private static readonly Identidade Diogo = new(Emissor, "diogo.souza");

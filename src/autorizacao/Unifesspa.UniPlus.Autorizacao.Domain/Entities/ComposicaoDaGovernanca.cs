@@ -19,11 +19,13 @@ public static class ComposicaoDaGovernanca
         new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:perfis:manter"),
         new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:permissoes:consultar-catalogo"),
         new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:revisoes:rever-protecao-de-dados"),
-        new(PerfisDeSistema.ProtecaoDeDadosId, "autorizacao:concessoes:administrar"),
-        new(PerfisDeSistema.ProtecaoDeDadosId, "autorizacao:pedidos:aprovar-protecao-de-dados"),
-        new(PerfisDeSistema.ProtecaoDeDadosId, "autorizacao:perfis:aprovar-protecao-de-dados"),
-        new(PerfisDeSistema.ProtecaoDeDadosId, "autorizacao:permissoes:consultar-catalogo"),
-        new(PerfisDeSistema.ProtecaoDeDadosId, "autorizacao:revisoes:conduzir"),
+        new(PerfisDeSistema.GestorDeAcessosId, "autorizacao:termos:publicar"),
+        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:concessoes:administrar"),
+        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:pedidos:aprovar-protecao-de-dados"),
+        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:perfis:aprovar-protecao-de-dados"),
+        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:permissoes:consultar-catalogo"),
+        new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:revisoes:conduzir"),
+        new(PerfisDeSistema.RepresentanteDoControladorId, "configuracao:protecao-do-catalogo:aprovar"),
     ];
 
     /// <summary>Os códigos que o perfil de governança deve reunir.</summary>
