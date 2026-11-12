@@ -12,6 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 internal static class FasesNoEnvelope
 {
+    /// <summary>Uma etapa da fase, com a janela própria que o envelope declara.</summary>
+    internal sealed record EtapaDaFase(Guid Id, string Nome, DateTimeOffset? Inicio, DateTimeOffset? Fim);
+
     internal sealed record Fase(
         Guid Id,
         Guid OrigemId,
@@ -20,7 +23,7 @@ internal static class FasesNoEnvelope
         DateTimeOffset? Inicio,
         DateTimeOffset? Fim,
         bool ColetaInscricao,
-        IReadOnlyList<Guid> Etapas);
+        IReadOnlyList<EtapaDaFase> Etapas);
 
     internal static IReadOnlyList<Fase> Das(string? congelado) =>
         Envelope(congelado) is { } envelope ? Das(envelope) : [];
@@ -50,9 +53,11 @@ internal static class FasesNoEnvelope
 
     private static List<Fase> Das(JsonObject envelope)
     {
-        List<(Guid Id, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
+        List<(EtapaDaFase Etapa, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
             .OfType<JsonObject>()
-            .Select(static e => (Id: GuidDe(e["id"]) ?? Guid.Empty, FaseCodigo: TextoDe(e["faseCodigo"])))];
+            .Select(static e => (
+                new EtapaDaFase(GuidDe(e["id"]) ?? Guid.Empty, TextoDe(e["nome"]) ?? string.Empty, InstanteDe(e["inicio"]), InstanteDe(e["fim"])),
+                TextoDe(e["faseCodigo"])))];
 
         return [.. ((envelope["cronogramaFases"] as JsonObject)?["fases"] as JsonArray ?? [])
             .OfType<JsonObject>()
@@ -60,7 +65,7 @@ internal static class FasesNoEnvelope
             .Where(static f => f.Id != Guid.Empty)];
     }
 
-    private static Fase LerFase(JsonObject f, List<(Guid Id, string? FaseCodigo)> etapas) => new(
+    private static Fase LerFase(JsonObject f, List<(EtapaDaFase Etapa, string? FaseCodigo)> etapas) => new(
         GuidDe(f["id"]) ?? Guid.Empty,
         GuidDe(f["faseCanonicaOrigemId"]) ?? Guid.Empty,
         TextoDe(f["codigo"]) ?? string.Empty,
@@ -68,7 +73,7 @@ internal static class FasesNoEnvelope
         InstanteDe(f["inicio"]),
         InstanteDe(f["fim"]),
         f["coletaInscricao"] is JsonValue coleta && coleta.TryGetValue(out bool coletaInscricao) && coletaInscricao,
-        [.. etapas.Where(e => string.Equals(e.FaseCodigo, TextoDe(f["codigo"]), StringComparison.Ordinal)).Select(static e => e.Id)]);
+        [.. etapas.Where(e => string.Equals(e.FaseCodigo, TextoDe(f["codigo"]), StringComparison.Ordinal)).Select(static e => e.Etapa)]);
 
     private static JsonObject? Envelope(string? congelado)
     {
