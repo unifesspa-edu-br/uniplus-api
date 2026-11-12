@@ -343,6 +343,100 @@ public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSe
         await semeadura.SaveChangesAsync();
     }
 
+    [Fact(DisplayName = "A fase encerrada conta como iniciada e não sai do cronograma")]
+    public async Task Iniciadas_FaseEncerrada_ContaENaoSai()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS fase encerrada", Abertura);
+        await SucederAsync(processoId, DateTimeOffset.UtcNow, JanelaNoPassado);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+        iniciadas.RecusaDaRemocao([])!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+    }
+
+    [Fact(DisplayName = "A fase iniciada só pelo primeiro ato, com a janela ainda futura, não sai do cronograma")]
+    public async Task Remocao_FaseIniciadaSoPeloAto_Recusa()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS remocao pelo ato", Abertura);
+        await SemearAtoAsync(processoId, IdentidadeDoItemDoEdital.DaFase(fase, fase.Produtos.Single()));
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.RecusaDaRemocao([])!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+    }
+
+    [Fact(DisplayName = "A fase que ainda não começou pode sair do cronograma")]
+    public async Task Remocao_FaseNaoIniciada_NaoRecusa()
+    {
+        (Guid processoId, _, _) = await PublicadoAsync("PS remocao de fase por comecar", Abertura);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.RecusaDaRemocao([]).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A remoção é conferida contra a versão vigente, e não contra a de vigência futura")]
+    public async Task Remocao_VersaoDeVigenciaFutura_NaoLivraAFase()
+    {
+        (Guid processoId, _, _) = await PublicadoAsync("PS remocao e versao futura");
+        await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.RecusaDaRemocao([])!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+    }
+
+    [Fact(DisplayName = "A fase iniciada que a versão vigente já não traz não conta como removida")]
+    public async Task Remocao_FaseJaForaDaVersaoVigente_NaoRecusa()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS fase fora da vigente");
+        await SucederAsync(processoId, DateTimeOffset.UtcNow, f =>
+        {
+            f["faseCanonicaOrigemId"] = Guid.CreateVersion7();
+            AdiaAJanela(f);
+        });
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+        iniciadas.RecusaDaRemocao([]).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A janela de uma etapa inicia a fase que a contém, ainda que a janela da fase seja futura")]
+    public async Task Iniciadas_ContaPelaJanelaDaEtapa()
+    {
+        (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela da etapa", Abertura);
+        await SucederNoEnvelopeAsync(
+            processoId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A geração do envio ao INEP numa etapa inicia a fase que a contém")]
+    public async Task Iniciadas_ContaPeloEnvioAoInep()
+    {
+        (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS envio ao INEP", Abertura);
+        (Guid outroProcessoId, FaseCronograma outraFase, _) = await PublicadoAsync("PS sem envio ao INEP", Abertura);
+        await SemearEnvioAoInepAsync(processoId, etapa.Id);
+
+        FasesIniciadas iniciadas = await IniciadasAsync(processoId, DateTimeOffset.UtcNow);
+        FasesIniciadas deOutroProcesso = await IniciadasAsync(outroProcessoId, DateTimeOffset.UtcNow);
+
+        iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
+        deOutroProcesso.Contem(outraFase.FaseCanonicaOrigemId).Should().BeFalse();
+    }
+
+    private async Task SemearEnvioAoInepAsync(Guid processoId, Guid etapaId)
+    {
+        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        semeadura.GeracoesDeEnvioAoInep.Add(GeracaoDeEnvioAoInep.Registrar(
+            processoId, etapaId, "2026", "INEP_ENEM_ENVIO", "v1", new string('d', 64), "sub-admin", DateTimeOffset.UtcNow, 0));
+        await semeadura.SaveChangesAsync();
+    }
+
     private async Task<(Guid ProcessoId, FaseCronograma Fase, EtapaProcesso Etapa)> PublicadoAsync(string nome, DateTimeOffset? inicioDaFase = null)
     {
         ProcessoSeletivoPublicacaoSeeder.Resultado resultado = await ProcessoSeletivoPublicacaoSeeder.PublicarAsync(_fixture, nome, inicioDaFase);

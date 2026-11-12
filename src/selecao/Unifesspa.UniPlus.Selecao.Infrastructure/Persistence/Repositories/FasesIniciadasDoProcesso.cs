@@ -24,12 +24,20 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
         IReadOnlyList<VersaoDasFases> versoes = await VersoesVigentesAsync(processoId, agora, cancellationToken).ConfigureAwait(false);
         HashSet<Guid> iniciadas = InicioDasFases.Origens(versoes, agora, await FatosAsync(processoId, agora, cancellationToken).ConfigureAwait(false));
 
-        return new FasesIniciadas([.. versoes
+        return new FasesIniciadas(UnidadesPublicadas(versoes, iniciadas), CodigosNaVersaoVigente(versoes, iniciadas));
+    }
+
+    private static IEnumerable<KeyValuePair<Guid, Guid?>> UnidadesPublicadas(IReadOnlyList<VersaoDasFases> versoes, HashSet<Guid> iniciadas) =>
+        versoes
             .SelectMany(static v => v.Fases)
             .GroupBy(static f => f.OrigemId)
             .Where(g => iniciadas.Contains(g.Key))
-            .Select(static g => KeyValuePair.Create(g.Key, g.First().Unidade))]);
-    }
+            .Select(static g => KeyValuePair.Create(g.Key, g.First().Unidade));
+
+    private static IEnumerable<KeyValuePair<Guid, string>> CodigosNaVersaoVigente(IReadOnlyList<VersaoDasFases> versoes, HashSet<Guid> iniciadas) =>
+        (versoes.Count > 0 ? versoes[0].Fases : [])
+            .Where(f => iniciadas.Contains(f.OrigemId))
+            .Select(static f => KeyValuePair.Create(f.OrigemId, f.Codigo));
 
     private async Task<IReadOnlyList<VersaoDasFases>> VersoesVigentesAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken)
     {
@@ -49,7 +57,20 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
     private async Task<Fatos> FatosAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken) => new(
         await AtosAsync(processoId, agora, cancellationToken).ConfigureAwait(false),
         await ExecucoesDeEtapaAsync(processoId, cancellationToken).ConfigureAwait(false),
-        await InscricoesAsync(processoId, cancellationToken).ConfigureAwait(false));
+        await InscricoesAsync(processoId, cancellationToken).ConfigureAwait(false),
+        await EnviosAoInepAsync(processoId, cancellationToken).ConfigureAwait(false));
+
+    private async Task<IReadOnlyList<EnvioAoInepDaEtapa>> EnviosAoInepAsync(Guid processoId, CancellationToken cancellationToken)
+    {
+        var envios = await _context.GeracoesDeEnvioAoInep
+            .AsNoTracking()
+            .Where(g => g.ProcessoSeletivoId == processoId)
+            .Select(g => new { g.EtapaProcessoId, g.GeradoEm })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. envios.Select(static g => new EnvioAoInepDaEtapa(g.EtapaProcessoId, g.GeradoEm))];
+    }
 
     // A inscrição recebida é a que saiu do rascunho; o instante é o da criação, o único que o registro guarda de forma estável.
     private async Task<IReadOnlyList<DateTimeOffset>> InscricoesAsync(Guid processoId, CancellationToken cancellationToken) =>

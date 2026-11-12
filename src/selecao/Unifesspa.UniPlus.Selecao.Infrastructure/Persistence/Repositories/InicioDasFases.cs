@@ -15,22 +15,29 @@ internal static class InicioDasFases
     internal sealed record Fatos(
         IReadOnlyList<(string Item, DateTimeOffset Instante)> Atos,
         IReadOnlyList<ImportacaoNaEtapa> Importacoes,
-        IReadOnlyList<DateTimeOffset> Inscricoes);
+        IReadOnlyList<DateTimeOffset> Inscricoes,
+        IReadOnlyList<EnvioAoInepDaEtapa> Envios);
 
     /// <summary>A importação de notas numa etapa: o lote guarda a versão divulgada contra a qual executou.</summary>
     internal sealed record ImportacaoNaEtapa(Guid EtapaId, Guid VersaoId, DateTimeOffset Instante);
+
+    /// <summary>A geração do envio ao INEP numa etapa: o registro não guarda a versão, vale a vigente no instante.</summary>
+    internal sealed record EnvioAoInepDaEtapa(Guid EtapaId, DateTimeOffset Instante);
 
     // As versões chegam da mais vigente para a mais antiga.
     internal static HashSet<Guid> Origens(IReadOnlyList<VersaoDasFases> versoes, DateTimeOffset agora, Fatos fatos) =>
     [
         .. versoes.SelectMany(v => v.Fases.Where(f => JanelaAbriu(f, v.SubstituidaEm, agora)).Select(static f => f.OrigemId)),
+        .. fatos.Envios.SelectMany(e => FasesDaEtapaEm(versoes, e.EtapaId, e.Instante)).Select(static f => f.OrigemId),
         .. fatos.Atos.SelectMany(a => FasesDoAto(versoes, a.Item, a.Instante)),
-        .. fatos.Importacoes.SelectMany(i => FasesDaImportacao(versoes, i).Where(f => f.Etapas.Contains(i.EtapaId))).Select(static f => f.OrigemId),
+        .. fatos.Importacoes.SelectMany(i => FasesDaImportacao(versoes, i).Where(f => f.Etapas.Any(e => e.Id == i.EtapaId))).Select(static f => f.OrigemId),
         .. fatos.Inscricoes.Select(i => FaseQueRecebeu(versoes, i)).OfType<FasesNoEnvelope.Fase>().Select(static f => f.OrigemId),
     ];
 
+    // A janela de qualquer etapa inicia a fase que a contém, como a da própria fase.
     private static bool JanelaAbriu(FasesNoEnvelope.Fase fase, DateTimeOffset? substituidaEm, DateTimeOffset agora) =>
-        AbriuAntes(fase.Inicio, substituidaEm, agora) || AbriuAntes(fase.Fim, substituidaEm, agora);
+        AbriuAntes(fase.Inicio, substituidaEm, agora) || AbriuAntes(fase.Fim, substituidaEm, agora)
+        || fase.Etapas.Any(e => AbriuAntes(e.Inicio, substituidaEm, agora) || AbriuAntes(e.Fim, substituidaEm, agora));
 
     private static bool AbriuAntes(DateTimeOffset? instante, DateTimeOffset? substituidaEm, DateTimeOffset agora) =>
         instante <= agora && (substituidaEm is null || instante < substituidaEm);
@@ -39,7 +46,7 @@ internal static class InicioDasFases
     // versão, porque a origem é estável; o da etapa vale para a fase a que a etapa pertencia quando o ato foi registrado.
     private static IEnumerable<Guid> FasesDoAto(IReadOnlyList<VersaoDasFases> versoes, string item, DateTimeOffset instante) =>
         versoes.SelectMany(static v => v.Fases).Where(f => DoLugar(item, $"fase:{f.OrigemId:D}")).Concat(
-            FasesDaVersaoEm(versoes, instante).Where(f => f.Etapas.Any(e => DoLugar(item, $"etapa:{e:D}")))).Select(static f => f.OrigemId);
+            FasesDaVersaoEm(versoes, instante).Where(f => f.Etapas.Any(e => DoLugar(item, $"etapa:{e.Id:D}")))).Select(static f => f.OrigemId);
 
     // A importação executa contra a versão divulgada que o lote fixou, que pode ser anterior a uma retificação já fechada e
     // ainda não divulgada; só se essa versão não estiver entre as vigentes vale a versão vigente no instante da importação.
@@ -53,6 +60,9 @@ internal static class InicioDasFases
         List<FasesNoEnvelope.Fase> coletam = [.. FasesDaVersaoEm(versoes, instante).Where(static f => f.ColetaInscricao)];
         return coletam.FirstOrDefault(f => f.Inicio <= instante && (f.Fim is null || instante <= f.Fim)) ?? (coletam.Count > 0 ? coletam[0] : null);
     }
+
+    private static IEnumerable<FasesNoEnvelope.Fase> FasesDaEtapaEm(IReadOnlyList<VersaoDasFases> versoes, Guid etapaId, DateTimeOffset instante) =>
+        FasesDaVersaoEm(versoes, instante).Where(f => f.Etapas.Any(e => e.Id == etapaId));
 
     // A versão vigente no instante é a de maior vigência já iniciada nele; antes da primeira vigência vale a mais antiga.
     private static IReadOnlyList<FasesNoEnvelope.Fase> FasesDaVersaoEm(IReadOnlyList<VersaoDasFases> versoes, DateTimeOffset instante) =>
