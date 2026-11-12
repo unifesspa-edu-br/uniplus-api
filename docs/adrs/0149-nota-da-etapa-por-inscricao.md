@@ -98,3 +98,14 @@ As notas ficam sem cifra individual. O parecer do Encarregado de dados de 13/10/
 - [ADR-0148](0148-leiautes-versionados-dos-arquivos-do-inep.md): leiautes dos arquivos de notas.
 - [ADR-0150](0150-parametros-de-avaliacao-da-etapa.md): forma de avaliação e regra de consolidação da etapa.
 - Issues #1602 (importação das notas do ENEM), #1046 (dupla correção) e #55 (lançamento manual).
+
+## Emenda 1 (2026-11-12) — origem decisão de recurso, precedência e leitura do lançamento vigente
+
+A decisão permanece: a nota é apurada por inscrição, a partir de lançamentos acrescentados e nunca apagados, qualquer que seja a origem. A ADR já admite o avaliador como origem, o critério como item e a correção como lançamento que substitui. Esta emenda decide só o que ela não dizia.
+
+- **Origem decisão de recurso.** Passa a haver a origem **decisão de recurso**: o lançamento é do **componente consolidado** (a nota que a consolidação produziu), e não de um corretor individual, e **não tem lote**. A forma física da origem é da issue do lançamento genérico, sem coluna nula e sem tabela de efeito.
+- **Precedência.** O lançamento de recurso **prevalece** sobre a consolidação original do mesmo componente. Entre ciclos do mesmo item, vale o **maior** lançamento de recurso por componente: o recurso nunca piora o item contestado.
+- **Leitura do lançamento vigente.** O lançamento vigente de um componente é o de recurso, quando houver, e a leitura **não exige lote vigente**. A avaliação por oferta é reapurada a partir dos lançamentos vigentes pelos pesos da oferta, e **não é filha do lote**.
+- **Escala e casas decimais** seguem a UNI-REQ-0175 e são da implementação.
+
+Nenhum outro trecho desta ADR muda: a regra do lote vigente do ENEM continua valendo para os lançamentos que vêm de lote.
