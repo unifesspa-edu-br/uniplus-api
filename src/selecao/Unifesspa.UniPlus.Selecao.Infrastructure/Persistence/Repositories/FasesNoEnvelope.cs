@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 internal static class FasesNoEnvelope
 {
     /// <summary>Uma etapa da fase, com a janela própria que o envelope declara.</summary>
-    internal sealed record EtapaDaFase(Guid Id, DateTimeOffset? Inicio, DateTimeOffset? Fim);
+    internal sealed record EtapaDaFase(Guid Id, string Nome, DateTimeOffset? Inicio, DateTimeOffset? Fim);
 
     internal sealed record Fase(
         Guid Id,
@@ -56,7 +56,7 @@ internal static class FasesNoEnvelope
         List<(EtapaDaFase Etapa, string? FaseCodigo)> etapas = [.. (envelope["etapas"] as JsonArray ?? [])
             .OfType<JsonObject>()
             .Select(static e => (
-                new EtapaDaFase(GuidDe(e["id"]) ?? Guid.Empty, InstanteDe(e["inicio"]), InstanteDe(e["fim"])),
+                new EtapaDaFase(GuidDe(e["id"]) ?? Guid.Empty, TextoDe(e["nome"]) ?? string.Empty, InstanteDe(e["inicio"]), InstanteDe(e["fim"])),
                 TextoDe(e["faseCodigo"])))];
 
         return [.. ((envelope["cronogramaFases"] as JsonObject)?["fases"] as JsonArray ?? [])

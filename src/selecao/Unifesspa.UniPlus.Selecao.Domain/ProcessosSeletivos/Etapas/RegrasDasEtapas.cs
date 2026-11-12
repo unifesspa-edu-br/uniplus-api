@@ -65,6 +65,14 @@ internal static class RegrasDasEtapas
         return violacoes;
     }
 
+    /// <summary>A substituição das etapas, recusando antes a remoção de uma etapa que já começou.</summary>
+    internal static Result Planejar(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas, FasesIniciadas iniciadas)
+    {
+        ArgumentNullException.ThrowIfNull(iniciadas);
+
+        return iniciadas.RecusaDaRemocaoDaEtapa(etapas) is { } recusa ? Result.Failure(recusa) : ConferirSubstituicao(estado, etapas);
+    }
+
     /// <summary>
     /// As recusas de trocar o conjunto de etapas, na ordem em que orientam quem edita. Uma lista vazia
     /// é válida: o processo sem prova (classificação importada) não tem etapa.

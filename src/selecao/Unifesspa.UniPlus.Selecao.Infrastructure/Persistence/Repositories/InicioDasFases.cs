@@ -34,10 +34,26 @@ internal static class InicioDasFases
         .. fatos.Inscricoes.Select(i => FaseQueRecebeu(versoes, i)).OfType<FasesNoEnvelope.Fase>().Select(static f => f.OrigemId),
     ];
 
+    /// <summary>
+    /// Quais etapas começaram, pela identidade da etapa: a janela própria já abriu enquanto a versão que a declarava vigia, ou
+    /// a etapa tem ato, importação de notas ou envio ao INEP próprios. A etapa encerrada conta, e a abertura de uma etapa não
+    /// inicia as outras da mesma fase. A etapa sem janela só começa por um registro.
+    /// </summary>
+    internal static HashSet<Guid> Etapas(IReadOnlyList<VersaoDasFases> versoes, DateTimeOffset agora, Fatos fatos) =>
+    [
+        .. versoes.SelectMany(v => v.Fases.SelectMany(static f => f.Etapas).Where(e => JanelaAbriu(e.Inicio, e.Fim, v.SubstituidaEm, agora)).Select(static e => e.Id)),
+        .. fatos.Atos.SelectMany(a => versoes.SelectMany(static v => v.Fases).SelectMany(static f => f.Etapas).Where(e => DoLugar(a.Item, $"etapa:{e.Id:D}")).Select(static e => e.Id)),
+        .. fatos.Importacoes.Select(static i => i.EtapaId),
+        .. fatos.Envios.Select(static e => e.EtapaId),
+    ];
+
     // A janela de qualquer etapa inicia a fase que a contém, como a da própria fase.
     private static bool JanelaAbriu(FasesNoEnvelope.Fase fase, DateTimeOffset? substituidaEm, DateTimeOffset agora) =>
-        AbriuAntes(fase.Inicio, substituidaEm, agora) || AbriuAntes(fase.Fim, substituidaEm, agora)
-        || fase.Etapas.Any(e => AbriuAntes(e.Inicio, substituidaEm, agora) || AbriuAntes(e.Fim, substituidaEm, agora));
+        JanelaAbriu(fase.Inicio, fase.Fim, substituidaEm, agora)
+        || fase.Etapas.Any(e => JanelaAbriu(e.Inicio, e.Fim, substituidaEm, agora));
+
+    private static bool JanelaAbriu(DateTimeOffset? inicio, DateTimeOffset? fim, DateTimeOffset? substituidaEm, DateTimeOffset agora) =>
+        AbriuAntes(inicio, substituidaEm, agora) || AbriuAntes(fim, substituidaEm, agora);
 
     private static bool AbriuAntes(DateTimeOffset? instante, DateTimeOffset? substituidaEm, DateTimeOffset agora) =>
         instante <= agora && (substituidaEm is null || instante < substituidaEm);

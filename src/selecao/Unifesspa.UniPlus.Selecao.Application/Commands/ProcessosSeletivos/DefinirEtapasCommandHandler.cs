@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -32,12 +33,14 @@ public static class DefinirEtapasCommandHandler
         IRegraCatalogoReader regraCatalogoReader,
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
         IRegistroCodecsEnvelope registroCodecs,
+        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
         TimeProvider timeProvider,
         ISelecaoUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
@@ -58,12 +61,15 @@ public static class DefinirEtapasCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
+        FasesIniciadas iniciadas = await FasesIniciadasNaEdicao
+            .ObterAsync(processo, fasesIniciadasDoProcesso, timeProvider, cancellationToken).ConfigureAwait(false);
         DefinicaoDasEtapas definicao = new(
             command,
             processo,
             new CadastrosDasEtapas(tipoEtapaReader, tipoBancaReader, regraCatalogoReader),
             new AtosConsultadosNaEdicao(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider),
-            unitOfWork);
+            unitOfWork,
+            iniciadas);
         Result definida = await definicao.DefinirAsync(cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {

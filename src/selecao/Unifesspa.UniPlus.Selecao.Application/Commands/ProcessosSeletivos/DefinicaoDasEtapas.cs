@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -18,7 +19,8 @@ internal sealed class DefinicaoDasEtapas(
     ProcessoSeletivo processo,
     CadastrosDasEtapas cadastros,
     AtosConsultadosNaEdicao atos,
-    ISelecaoUnitOfWork unitOfWork)
+    ISelecaoUnitOfWork unitOfWork,
+    FasesIniciadas iniciadas)
 {
     public async Task<Result> DefinirAsync(CancellationToken cancellationToken)
     {
@@ -71,7 +73,7 @@ internal sealed class DefinicaoDasEtapas(
 
         // O fechamento do ciclo acumula uma violação por matéria aberta, cada uma com o campo que a
         // localiza; propagar o lote preserva esses campos.
-        Result definidas = processo.DefinirEtapas(etapas.Value!, command.Precondicao);
+        Result definidas = processo.DefinirEtapas(etapas.Value!, command.Precondicao, iniciadas);
         return definidas.IsFailure ? Result.ValidationFailure(definidas.Errors) : definidas;
     }
 

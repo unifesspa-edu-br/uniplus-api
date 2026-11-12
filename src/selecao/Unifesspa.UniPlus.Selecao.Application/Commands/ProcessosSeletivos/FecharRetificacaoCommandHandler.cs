@@ -378,7 +378,7 @@ public static class FecharRetificacaoCommandHandler
         FasesIniciadas iniciadas = await fasesIniciadasDoProcesso
             .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
-        return iniciadas.RecusaDaAlteracao(processo.CronogramaFases) is { } recusa
+        return (iniciadas.RecusaDaAlteracao(processo.CronogramaFases) ?? iniciadas.RecusaDaRemocaoDaEtapa(processo.Etapas)) is { } recusa
             ? Result<VersaoConfiguracao>.Failure(recusa)
             : processo.FecharRetificacao(pedido, versaoAtual, precondicao);
     }

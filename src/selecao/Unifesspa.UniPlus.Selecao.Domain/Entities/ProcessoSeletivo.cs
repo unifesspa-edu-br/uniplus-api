@@ -217,12 +217,12 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     }
 
     /// <summary>Substitui as etapas pontuadas. O caráter e o peso definem o divisor da média; a <c>Ordem</c> é só apresentação.</summary>
-    public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas, PrecondicaoIfMatch precondicao)
+    public Result DefinirEtapas(IReadOnlyList<EtapaProcesso> etapas, PrecondicaoIfMatch precondicao, FasesIniciadas? iniciadas = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
         return Editar(precondicao,
-            () => RegrasDasEtapas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), etapas).Com(etapas),
+            () => RegrasDasEtapas.Planejar(EstadoDaConfiguracao.De(this), etapas, iniciadas ?? FasesIniciadas.Nenhuma).Com(etapas),
             novas => Substituir(_etapas, novas));
     }
 

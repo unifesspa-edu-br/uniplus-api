@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static ConformidadeLegalGateTests;
+
 public sealed class DefinirEtapasCommandHandlerTests
 {
     private static readonly Guid TipoProvaObjetivaOrigemId = new("019fee1e-7000-7000-8000-000000000001");
@@ -740,7 +742,8 @@ public sealed class DefinirEtapasCommandHandlerTests
         ITipoBancaReader? tipoBancaReader = null,
         IRegraCatalogoReader? regraCatalogoReader = null,
         ITipoAtoPublicadoReader? tipoAtoPublicadoReader = null,
-        IRegistroCodecsEnvelope? registroCodecs = null) =>
+        IRegistroCodecsEnvelope? registroCodecs = null,
+        IFasesIniciadasDoProcesso? fasesIniciadas = null) =>
         DefinirEtapasCommandHandler.Handle(
             command,
             repository,
@@ -749,6 +752,7 @@ public sealed class DefinirEtapasCommandHandlerTests
             regraCatalogoReader ?? Substitute.For<IRegraCatalogoReader>(),
             tipoAtoPublicadoReader ?? Substitute.For<ITipoAtoPublicadoReader>(),
             registroCodecs ?? Substitute.For<IRegistroCodecsEnvelope>(),
+            fasesIniciadas ?? FasesIniciadasDeTeste.Nenhuma(),
             TimeProvider.System,
             unitOfWork,
             CancellationToken.None);
@@ -893,6 +897,31 @@ public sealed class DefinirEtapasCommandHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Na retificação, trocar a etapa iniciada por outra recusa a remoção dela; a etapa que não começou sai")]
+    public async Task Handle_RetificacaoQueRemoveEtapaIniciada_Recusa()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
+        processo.AbrirRetificacao(
+            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora)
+            .IsSuccess.Should().BeTrue();
+        EtapaProcesso publicada = processo.Etapas.Single();
+        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
+        repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        DefinirEtapasCommand command = new(
+            processo.Id,
+            [new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2, FaseCodigo: publicada.FaseCodigo, Produtos: [], Bancas: [], Recursos: [])],
+            PrecondicaoIfMatch.Curinga);
+        FasesIniciadas iniciada = new([], etapas: [new EtapaIniciada(publicada.Id, publicada.Nome, NaVersaoVigente: true)]);
+
+        Result<MutacaoAceita> recusada = await Executar(
+            command, repository, Substitute.For<ISelecaoUnitOfWork>(), ReaderPadrao(), fasesIniciadas: FasesIniciadasDeTeste.Com(iniciada));
+        Result<MutacaoAceita> aceita = await Executar(
+            command, repository, Substitute.For<ISelecaoUnitOfWork>(), ReaderPadrao());
+
+        recusada.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("FaseCronograma.EtapaIniciadaNaoSaiDoCronograma");
+        aceita.IsSuccess.Should().BeTrue(aceita.Error?.Message);
     }
 
     [Fact(DisplayName = "Handle com etapas válidas persiste e retorna sucesso (CA-02)")]

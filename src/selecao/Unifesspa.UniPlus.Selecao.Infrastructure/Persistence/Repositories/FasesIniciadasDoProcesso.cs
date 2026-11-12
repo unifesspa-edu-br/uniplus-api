@@ -22,9 +22,11 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
     public async Task<FasesIniciadas> ObterAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<VersaoDasFases> versoes = await VersoesVigentesAsync(processoId, agora, cancellationToken).ConfigureAwait(false);
-        HashSet<Guid> iniciadas = InicioDasFases.Origens(versoes, agora, await FatosAsync(processoId, agora, cancellationToken).ConfigureAwait(false));
+        Fatos fatos = await FatosAsync(processoId, agora, cancellationToken).ConfigureAwait(false);
+        HashSet<Guid> iniciadas = InicioDasFases.Origens(versoes, agora, fatos);
 
-        return new FasesIniciadas(UnidadesPublicadas(versoes, iniciadas), CodigosNaVersaoVigente(versoes, iniciadas));
+        return new FasesIniciadas(
+            UnidadesPublicadas(versoes, iniciadas), CodigosNaVersaoVigente(versoes, iniciadas), EtapasIniciadas(versoes, InicioDasFases.Etapas(versoes, agora, fatos)));
     }
 
     private static IEnumerable<KeyValuePair<Guid, Guid?>> UnidadesPublicadas(IReadOnlyList<VersaoDasFases> versoes, HashSet<Guid> iniciadas) =>
@@ -38,6 +40,15 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
         (versoes.Count > 0 ? versoes[0].Fases : [])
             .Where(f => iniciadas.Contains(f.OrigemId))
             .Select(static f => KeyValuePair.Create(f.OrigemId, f.Codigo));
+
+    // A etapa se identifica pelo id, estável entre as versões; o nome é o da versão mais vigente em que ela aparece.
+    private static IEnumerable<EtapaIniciada> EtapasIniciadas(IReadOnlyList<VersaoDasFases> versoes, HashSet<Guid> iniciadas) =>
+        versoes
+            .SelectMany(static v => v.Fases)
+            .SelectMany(static f => f.Etapas)
+            .Where(e => iniciadas.Contains(e.Id))
+            .GroupBy(static e => e.Id)
+            .Select(g => new EtapaIniciada(g.Key, g.First().Nome, versoes.Count > 0 && versoes[0].Fases.Any(f => f.Etapas.Any(e => e.Id == g.Key))));
 
     private async Task<IReadOnlyList<VersaoDasFases>> VersoesVigentesAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken)
     {

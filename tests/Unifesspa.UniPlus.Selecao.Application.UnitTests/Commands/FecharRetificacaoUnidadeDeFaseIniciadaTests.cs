@@ -76,6 +76,19 @@ public sealed class FecharRetificacaoUnidadeDeFaseIniciadaTests
         resposta.Error?.Code.Should().NotBe("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
     }
 
+    [Fact(DisplayName = "Fechar a retificação recusa a remoção de uma etapa que começou depois da edição")]
+    public async Task Fechar_EtapaIniciadaRemovidaDoRascunho_Recusa()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoComRetificacaoAberta();
+        FasesIniciadas iniciadas = new([], etapas: [new EtapaIniciada(Guid.CreateVersion7(), "Heteroidentificação", NaVersaoVigente: true)]);
+
+        (Result resposta, IEnumerable<object> eventos) = await FecharAsync(processo, versaoAtual, iniciadas);
+
+        resposta.Error!.Code.Should().Be("FaseCronograma.EtapaIniciadaNaoSaiDoCronograma");
+        eventos.Should().BeEmpty();
+        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
+    }
+
     private static FasesIniciadas FaseIniciadaForaDoRascunho()
     {
         Guid origem = Guid.CreateVersion7();

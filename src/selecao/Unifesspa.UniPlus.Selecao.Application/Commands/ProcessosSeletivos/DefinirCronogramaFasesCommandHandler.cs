@@ -54,10 +54,8 @@ public static class DefinirCronogramaFasesCommandHandler
             faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader);
         AtosConsultadosNaEdicao atos = new(
             tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider);
-        FasesIniciadas iniciadas = processo.Rascunho is null
-            ? FasesIniciadas.Nenhuma
-            : await fasesIniciadasDoProcesso
-                .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        FasesIniciadas iniciadas = await FasesIniciadasNaEdicao
+            .ObterAsync(processo, fasesIniciadasDoProcesso, timeProvider, cancellationToken).ConfigureAwait(false);
         Result definida = await DefinirAsync(
                 processo, command, new MontagemDasFases(processo, cadastros, atos), (precedenciaFaseReader, iniciadas), cancellationToken)
             .ConfigureAwait(false);
