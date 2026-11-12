@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -27,6 +28,9 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         : base(fixture)
     {
     }
+
+    /// <summary>O corpo da decisão que libera todas as concessões na etapa de proteção de dados.</summary>
+    private static object LiberarTodasNaProtecao => new { etapa = EtapaProtecao, resultado = ResultadoDaLiberacaoCodigo.Liberada, todas = true };
 
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();
 
@@ -52,7 +56,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
 
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEquivalentTo(Consultar, Sensivel);
         (await PermissoesAsync(Betina, perfil.Perfil)).Should().Equal(Consultar);
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Sensivel)).Should().Be("liberacao");
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Sensivel)).Should().Be(OrigemDaBaseCodigo.Liberacao);
     }
 
     [Fact(DisplayName = "A mudança de escopo é liberada pela gestão de acessos, sem a proteção de dados")]
@@ -82,7 +86,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         await LiberarAsync(Marlene, EtapaProtecao, perfil.Perfil, descida);
 
         (await PermissoesAsync(Leandro, perfil.Perfil)).Should().Equal(Consultar);
-        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("liberacao");
+        (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be(OrigemDaBaseCodigo.Liberacao);
         (await FilaDaProtecaoAsync()).Should().NotContain(descida.ToString());
     }
 
@@ -200,7 +204,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         await SubirAClasseAsync();
         Guid existente = await ReclassificacaoAsync(perfil.Perfil, Sensivel);
         using HttpClient semPermissao = Cliente(Betina);
-        object corpo = new { etapa = EtapaProtecao, resultado = "liberada", todas = true };
+        object corpo = LiberarTodasNaProtecao;
 
         foreach (Guid id in new[] { existente, Guid.NewGuid() })
         {
@@ -212,25 +216,34 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         }
     }
 
+    [Fact(DisplayName = "Quem tem só a gestão de acessos é recusado na etapa de proteção de dados da subida de classe")]
+    public async Task Acesso_SoAGestao_RecusadaNaEtapaDeProtecao()
+    {
+        Cenario perfil = await CenarioAsync([Sensivel], Leandro);
+        await SubirAClasseAsync();
+        Guid reclassificacao = await ReclassificacaoAsync(perfil.Perfil, Sensivel);
+        using HttpClient gestao = await GestorAsync();
+        await LerODocumentoAsync(perfil.Perfil, Diogo);
+
+        using HttpResponseMessage resposta = await EnviarAsync(
+            gestao, HttpMethod.Post, $"{RotaReclassificacoes}/{reclassificacao}/decisoes", LiberarTodasNaProtecao);
+
+        await ConferirRecusaDaReclassificacaoAsync(resposta, HttpStatusCode.Forbidden, "sem_permissao_na_etapa");
+        (await LiberacoesAsync(reclassificacao)).Should().Be(0);
+        (await PermissoesAsync(Leandro, perfil.Perfil)).Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "A trilha da recusa registra a reclassificação recebida como recurso, igual para o id que existe e o que não existe")]
     public async Task Trilha_DaRecusa_RegistraOIdRecebido()
     {
         Cenario perfil = await CenarioAsync([Sensivel], Leandro);
         await SubirAClasseAsync();
         Guid existente = await ReclassificacaoAsync(perfil.Perfil, Sensivel);
-        Guid inexistente = Guid.NewGuid();
         using HttpClient semPermissao = Cliente(Betina);
-        object corpo = new { etapa = EtapaProtecao, resultado = "liberada", todas = true };
 
-        foreach (Guid id in new[] { existente, inexistente })
+        foreach (Guid id in new[] { existente, Guid.NewGuid() })
         {
-            int antes = Registro.Registrados.Count;
-            using HttpResponseMessage resposta = await EnviarAsync(semPermissao, HttpMethod.Post, $"{RotaReclassificacoes}/{id}/decisoes", corpo);
-
-            resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-            RegistroDecisaoAcesso[] registrados = [.. Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Betina.Sub.ToString())];
-            registrados.Should().NotBeEmpty();
-            registrados.Should().OnlyContain(r => r.ResourceTipo == "reclassificacao-de-permissao" && r.ResourceId == id && r.Resultado == ResultadoDoAcesso.Negado);
+            await ConferirTrilhaDaRecusaAsync(semPermissao, id);
         }
     }
 
@@ -257,9 +270,22 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
         using HttpClient protecao = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
 
         using HttpResponseMessage resposta = await EnviarAsync(
-            protecao, HttpMethod.Post, $"{RotaReclassificacoes}/{reclassificacao}/decisoes", new { etapa = EtapaProtecao, resultado = "liberada", todas = true });
+            protecao, HttpMethod.Post, $"{RotaReclassificacoes}/{reclassificacao}/decisoes", LiberarTodasNaProtecao);
 
         await ConferirRecusaDaReclassificacaoAsync(resposta, HttpStatusCode.UnprocessableEntity, "documento_nao_lido");
+    }
+
+    /// <summary>Tenta decidir a reclassificação sem a permissão da etapa e confere que a trilha registra só a negação com o id recebido.</summary>
+    private async Task ConferirTrilhaDaRecusaAsync(HttpClient semPermissao, Guid id)
+    {
+        int antes = Registro.Registrados.Count;
+        using HttpResponseMessage resposta = await EnviarAsync(
+            semPermissao, HttpMethod.Post, $"{RotaReclassificacoes}/{id}/decisoes", LiberarTodasNaProtecao);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        RegistroDecisaoAcesso[] registrados = [.. Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Betina.Sub.ToString())];
+        registrados.Should().NotBeEmpty();
+        registrados.Should().OnlyContain(r => r.ResourceTipo == "reclassificacao-de-permissao" && r.ResourceId == id && r.Resultado == ResultadoDoAcesso.Negado);
     }
 
     /// <summary>Recua a concessão uma hora e fecha a vigência meia hora depois, como a que venceu sem ser revogada.</summary>

@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Authorization.Catalogo;
+
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -15,6 +17,17 @@ public sealed class ConferenciaDoCatalogoTests
 {
     private static readonly DateTimeOffset Agora = PerfisDeTeste.Instante;
     private static readonly Guid Catalogo = Guid.CreateVersion7();
+
+    /// <summary>As permissões de decisão protegida: só o perfil de proteção de dados as reúne.</summary>
+    private static readonly PermissaoAutorizacao[] DecisoesProtegidas =
+    [
+        PermissaoAutorizacao.PerfisAprovarProtecaoDeDados,
+        PermissaoAutorizacao.PedidosAprovarProtecaoDeDados,
+        PermissaoAutorizacao.RevisoesConduzir,
+    ];
+
+    private static string[] CodigosDasDecisoesProtegidas =>
+        [.. DecisoesProtegidas.Select(static p => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(p).Codigo)];
 
     private static LinhaDoRetratoDoCatalogo Linha(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade = false) =>
         new(codigo, "autorizacao", classificacao, deUnidade, false);
@@ -107,5 +120,23 @@ public sealed class ConferenciaDoCatalogoTests
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().HaveCount(6);
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.ProtecaoDeDadosId).Should().HaveCount(5);
         ComposicaoDaGovernanca.CodigosDe(Guid.NewGuid()).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de proteção de dados e não no do gestor de acessos")]
+    public void Composicao_DecisoesProtegidas_SoNaProtecaoDeDados()
+    {
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.ProtecaoDeDadosId).Should().Contain(CodigosDasDecisoesProtegidas);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().NotContain(CodigosDasDecisoesProtegidas);
+    }
+
+    [Fact(DisplayName = "Toda aprovação de proteção de dados da composição é decisão protegida e só um perfil a reúne")]
+    public void Composicao_AprovacoesDeProtecao_SaoDecisoesProtegidasExclusivas()
+    {
+        string sufixo = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados).Codigo.Split(':')[^1];
+
+        ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo.EndsWith(':' + sufixo, StringComparison.Ordinal))
+            .Select(static p => p.Codigo).Should().OnlyContain(c => CodigosDasDecisoesProtegidas.Contains(c));
+        ComposicaoDaGovernanca.Esperada.Where(p => CodigosDasDecisoesProtegidas.Contains(p.Codigo))
+            .Should().OnlyContain(static p => p.PerfilId == PerfisDeSistema.ProtecaoDeDadosId);
     }
 }
