@@ -252,7 +252,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST "$API/api/autorizacao/instalaca
    `/acessos/fila-do-gestor`.
 3. Repetir a instalação responde `422 instalacao.ja_ha_gestor`. É o comportamento esperado.
 
-A partir daqui, as demais concessões (inclusive a da encarregada de dados) seguem o fluxo de pedido e
+A partir daqui, as demais concessões (inclusive as do Representante do controlador e do Encarregado de dados, conforme a ADR-0162) seguem o fluxo de pedido e
 aprovação da ADR-0152, pela tela da Configuração. O `admin` volta a ser só `admin`: o papel
 `uniplus-instalacao` não concede nada fora da instalação e pode ser retirado do usuário.
 

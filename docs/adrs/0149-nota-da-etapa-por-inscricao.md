@@ -55,7 +55,7 @@ Na etapa do ENEM, vale o lote mais recente de cada processo, etapa e edição, p
 
 O arquivo importado não é guardado, só o hash dele, porque traz nome e CPF de todos os candidatos. Do retorno do INEP, entram as notas, a situação de cada prova e o nº de inscrição no ENEM, este para conferência com o INEP num recurso.
 
-As notas ficam sem cifra individual. O parecer da encarregada de dados de 13/10/2026 exige cifra individual para dado pessoal sensível, e a nota é dado pessoal, mas não sensível. A proteção da nota está no acesso restrito e na regra de que a nota não vai para log, e a classificação ordena e filtra por ela no banco.
+As notas ficam sem cifra individual. O parecer do Encarregado de dados de 13/10/2026 exige cifra individual para dado pessoal sensível, e a nota é dado pessoal, mas não sensível. A proteção da nota está no acesso restrito e na regra de que a nota não vai para log, e a classificação ordena e filtra por ela no banco.
 
 ## Consequências
 

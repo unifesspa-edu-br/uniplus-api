@@ -60,7 +60,7 @@
 
 > **Observação LGPD:** os campos de raça, deficiência, sexo biológico, identidade de gênero e orientação sexual
 > são dados pessoais sensíveis (LGPD, art. 5º, II). A coleta de cada um deve ter finalidade e base legal explícitas
-> e está sujeita a validação da Encarregada de Proteção de Dados (DPO) — princípio da minimização.
+> e está sujeita a validação do Encarregado de Proteção de Dados — princípio da minimização.
 >
 > Requisitos relacionados: UNI-REQ-0017, UNI-REQ-0032, UNI-REQ-0031, UNI-REQ-0034, UNI-REQ-0035, UNI-REQ-0036, UNI-REQ-0050.
 

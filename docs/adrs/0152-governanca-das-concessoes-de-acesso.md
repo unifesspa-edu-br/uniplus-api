@@ -4,7 +4,7 @@ date: "2026-10-28"
 decision-makers:
   - "Tech Lead (CTIC)"
 consulted:
-  - "Encarregada de Proteção de Dados (DPO) — a confirmar"
+  - "Encarregado de Proteção de Dados — a confirmar"
 informed:
   - "Equipe Uni+"
 ---
@@ -15,40 +15,40 @@ informed:
 
 O modelo de autorização decide por concessão efetiva ([ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md)). As concessões chegariam por vínculo de grupo do provedor de identidade, que a [ADR-0083](0083-grupos-oidc-governados-pela-aplicacao.md) propunha e esta decisão supera, ou por concessão excepcional, temporária e com escopo ([ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md)). Cada permissão do catálogo declara a sua sensibilidade.
 
-Nenhuma dessas decisões define **quem concede**. Hoje, na prática, o acesso inteiro é um único papel administrativo atribuído no provedor de identidade, sem pedido, sem aprovação e sem registro de quem decidiu. Com o primeiro processo seletivo real, servidores de unidades diferentes vão precisar de acesso a dados pessoais e sensíveis de candidatos (deficiência, saúde, autodeclarações, renda). O parecer da encarregada de dados de 13/10/2026 exige acesso restrito por padrão a esses dados.
+Nenhuma dessas decisões define **quem concede**. Hoje, na prática, o acesso inteiro é um único papel administrativo atribuído no provedor de identidade, sem pedido, sem aprovação e sem registro de quem decidiu. Com o primeiro processo seletivo real, servidores de unidades diferentes vão precisar de acesso a dados pessoais e sensíveis de candidatos (deficiência, saúde, autodeclarações, renda). O parecer do Encarregado de dados de 13/10/2026 exige acesso restrito por padrão a esses dados.
 
-O problema é definir quem pede, quem aprova e quem revoga uma concessão, de modo que o acesso a dado pessoal tenha justificativa funcional e de proteção de dados, sem transformar a encarregada, que é uma pessoa só, em gargalo da operação.
+O problema é definir quem pede, quem aprova e quem revoga uma concessão, de modo que o acesso a dado pessoal tenha justificativa funcional e de proteção de dados, sem transformar o Encarregado de dados, que é uma pessoa só, em gargalo da operação.
 
 ## Drivers da decisão
 
 - **Segregação de funções:** quem fiscaliza o acesso não deve ser quem o concede no dia a dia, e ninguém aprova o próprio pedido.
 - **Proteção de dados:** acesso a dado pessoal ou sensível exige finalidade, base legal e minimização conferidas por quem responde por elas (LGPD, art. 41).
-- **Continuidade:** pedidos sem dado pessoal não podem depender da disponibilidade da encarregada.
+- **Continuidade:** pedidos sem dado pessoal não podem depender da disponibilidade do Encarregado de dados.
 - **Retirada de acesso nunca espera fila.**
 - **Rastreabilidade:** todo pedido, aprovação, recusa e revogação fica na trilha de auditoria ([ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md)).
 
 ## Opções consideradas
 
 - **A**: Atribuição direta no provedor de identidade por quem administra a plataforma, sem pedido nem aprovação no Uni+.
-- **B**: A encarregada de dados opera todas as concessões.
-- **C**: Pedido e aprovação no Uni+, com aprovação do gestor de acessos para toda concessão e segunda aprovação da encarregada quando há dado pessoal ou sensível.
+- **B**: O Encarregado de dados opera todas as concessões.
+- **C**: Pedido e aprovação no Uni+, com aprovação do gestor de acessos para toda concessão e segunda aprovação do Encarregado de dados quando há dado pessoal ou sensível.
 
 ## Resultado da decisão
 
-**Escolhida:** "C — pedido e aprovação no Uni+, com dupla aprovação para dado pessoal", porque separa a adequação funcional da adequação à proteção de dados, põe cada uma com quem responde por ela e limita a fila da encarregada ao que de fato envolve dado pessoal.
+**Escolhida:** "C — pedido e aprovação no Uni+, com dupla aprovação para dado pessoal", porque separa a adequação funcional da adequação à proteção de dados, põe cada uma com quem responde por ela e limita a fila do Encarregado de dados ao que de fato envolve dado pessoal.
 
-**Papéis.** O **gestor de acessos** mantém os perfis e aprova a adequação funcional: a pessoa precisa daquele acesso para o trabalho na unidade. A **encarregada de dados** aprova a adequação à proteção de dados (finalidade, base legal e minimização), faz a revisão periódica de quem tem acesso a dado pessoal ou sensível e consulta a trilha.
+**Papéis.** O **gestor de acessos** mantém os perfis e aprova a adequação funcional: a pessoa precisa daquele acesso para o trabalho na unidade. O **Encarregado de dados** aprova a adequação à proteção de dados (finalidade, base legal e minimização), faz a revisão periódica de quem tem acesso a dado pessoal ou sensível e consulta a trilha.
 
-**Permissão é código, perfil é dado.** O catálogo em código ([ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)) declara só permissões: o que se pode fazer, em qual módulo e sobre qual recurso, com código, nome, descrição e os requisitos da operação. Nenhum membro do catálogo representa perfil, cargo, papel ou unidade. O perfil é um conjunto nomeado de permissões, montado e mantido pelo gestor de acessos no Uni+, e muda sem nova versão do sistema. A mudança no perfil vale para todas as concessões dele; por isso, acrescentar a um perfil uma permissão de sensibilidade pessoal ou sensível passa também pela aprovação da encarregada, como um pedido.
+**Permissão é código, perfil é dado.** O catálogo em código ([ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md)) declara só permissões: o que se pode fazer, em qual módulo e sobre qual recurso, com código, nome, descrição e os requisitos da operação. Nenhum membro do catálogo representa perfil, cargo, papel ou unidade. O perfil é um conjunto nomeado de permissões, montado e mantido pelo gestor de acessos no Uni+, e muda sem nova versão do sistema. A mudança no perfil vale para todas as concessões dele; por isso, acrescentar a um perfil uma permissão de sensibilidade pessoal ou sensível passa também pela aprovação do Encarregado de dados, como um pedido.
 
-**Fluxo.** Toda concessão começa por um pedido e passa pelo gestor de acessos. Quando o perfil ou a concessão inclui permissão de sensibilidade pessoal ou sensível, segue para a encarregada, sempre depois do gestor. A concessão só passa a valer na decisão de acesso depois da última aprovação exigida.
+**Fluxo.** Toda concessão começa por um pedido e passa pelo gestor de acessos. Quando o perfil ou a concessão inclui permissão de sensibilidade pessoal ou sensível, segue para o Encarregado de dados, sempre depois do gestor. A concessão só passa a valer na decisão de acesso depois da última aprovação exigida.
 
 **Regras:**
 
-- O pedido pode ser feito para si ou para outra pessoa, como a coordenação de uma unidade que pede acesso para um servidor da equipe. Ninguém aprova pedido em que é solicitante ou beneficiário, e o gestor que aprova não é a encarregada que aprova.
+- O pedido pode ser feito para si ou para outra pessoa, como a coordenação de uma unidade que pede acesso para um servidor da equipe. Ninguém aprova pedido em que é solicitante ou beneficiário, e o gestor que aprova não é o Encarregado de dados que aprova.
 - A instituição mantém no mínimo dois gestores de acessos ativos. O sistema recusa remover ou desativar o penúltimo.
-- Pedido em que a encarregada é a beneficiária passa só pela aprovação do gestor de acessos, porque a finalidade é a própria função dela. Pedido que ela faz para outra pessoa e que inclui permissão pessoal ou sensível espera a substituição formal dela nessa aprovação, porque ela não aprova o pedido que fez. O acesso a dados de candidatos para atender um caso (direitos do titular, incidente) é concessão com escopo e validade. A revisão periódica dos acessos dela fica com os gestores, e a trilha marca essas concessões como aprovadas sem segunda aprovação por serem da encarregada.
-- Revogar não exige aprovação: o gestor de acessos ou a encarregada retiram um acesso a qualquer momento, com efeito imediato na decisão de acesso: enquanto não houver o cache da [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md), a decisão lê as concessões gravadas a cada requisição; quando houver, a marca de revogação versionada daquela ADR o invalida a cada revogação. O mínimo de dois gestores é conferido também na revogação.
+- Pedido em que o Encarregado de dados é o beneficiário passa só pela aprovação do gestor de acessos, porque a finalidade é a própria função do Encarregado. Pedido que ele faz para outra pessoa e que inclui permissão pessoal ou sensível espera a substituição formal do Encarregado nessa aprovação, porque ele não aprova o pedido que fez. O acesso a dados de candidatos para atender um caso (direitos do titular, incidente) é concessão com escopo e validade. A revisão periódica dos acessos do Encarregado fica com os gestores, e a trilha marca essas concessões como aprovadas sem segunda aprovação por serem do Encarregado de dados.
+- Revogar não exige aprovação: o gestor de acessos ou o Encarregado de dados retiram um acesso a qualquer momento, com efeito imediato na decisão de acesso: enquanto não houver o cache da [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md), a decisão lê as concessões gravadas a cada requisição; quando houver, a marca de revogação versionada daquela ADR o invalida a cada revogação. O mínimo de dois gestores é conferido também na revogação.
 - O dono de um recurso institucional, como o processo seletivo, é sempre uma unidade, nunca uma pessoa, porque a pessoa pode ser substituída. O escopo da concessão é a unidade, e quem atua sobre o recurso o faz por concessão naquela unidade, não por tê-lo criado.
 - O escopo de uma concessão é uma unidade ou, para o cadastro de alcance institucional (campi, motivos, catálogos), a própria instituição. A concessão numa unidade não se estende às unidades abaixo dela na hierarquia ([ADR-0079](0079-hierarquia-institucional-sem-heranca-de-permissao.md)). A concessão excepcional da [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) mantém os escopos mais restritos dela (processo, chamada ou tipo de recurso).
 - Concessão não se edita: para mudar o perfil ou o escopo, revoga-se a concessão e faz-se um pedido novo.
@@ -71,7 +71,7 @@ Durante a transição, os papéis que o token já carrega continuam valendo até
 - prende o código à instalação iniciada, com os mesmos gestores e o mesmo documento, aceita poucas tentativas e vale uma única vez. Iniciar de novo cancela a pendência anterior da mesma pessoa, e esgotar as tentativas ou o prazo obriga a recomeçar;
 - registra na trilha quem executou, quando, o envio do código, as tentativas, a confirmação, os gestores instalados e o documento, sem gravar o código.
 
-O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutura. Todas as demais concessões, inclusive o papel da encarregada e os novos gestores de acessos, seguem o fluxo deste documento a partir da instalação. A concessão do papel de gestor de acessos exige o documento de designação anexado ao pedido; nas demais concessões, o anexo é opcional.
+O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutura. Todas as demais concessões, inclusive o papel do Encarregado de dados e os novos gestores de acessos, seguem o fluxo deste documento a partir da instalação. A concessão do papel de gestor de acessos exige o documento de designação anexado ao pedido; nas demais concessões, o anexo é opcional.
 
 **Aprovação da concessão e aprovação da operação.** A dupla aprovação desta decisão aprova a **concessão**, antes de ela valer: a decisão de acesso só enxerga concessões já aprovadas. Ela não se confunde com a aprovação de uma **operação** em sessão delegada ([ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md)), que acontece a cada execução da operação.
 
@@ -80,14 +80,14 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 ### Positivas
 
 - O acesso a dado pessoal passa a ter duas justificativas registradas, a funcional e a de proteção de dados.
-- A encarregada recebe só os pedidos que envolvem dado pessoal, já validados do ponto de vista funcional.
+- O Encarregado de dados recebe só os pedidos que envolvem dado pessoal, já validados do ponto de vista funcional.
 - A trilha responde quem pediu, quem aprovou, quando e por quê, para toda concessão.
 
 ### Negativas
 
 - Conceder acesso a dado pessoal fica mais lento: depende de duas pessoas.
 - Com só dois gestores ativos, o pedido de um em favor do outro espera um terceiro gestor, porque nenhum dos dois pode aprová-lo.
-- Enquanto não houver substituição formal da encarregada, a ausência dela paralisa os pedidos com dado pessoal ou sensível.
+- Enquanto não houver substituição formal do Encarregado de dados, a ausência dele paralisa os pedidos com dado pessoal ou sensível.
 - O Uni+ precisa de fluxo de pedido e aprovação, filas por aprovador e telas de administração de acesso.
 
 ### Neutras
@@ -97,7 +97,7 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 ## Confirmação
 
 - Teste da regra de pessoas distintas: pedido aprovado pelo solicitante, pelo beneficiário ou pela mesma pessoa nas duas etapas é recusado.
-- Teste da dupla aprovação: concessão com permissão pessoal ou sensível não vale na decisão de acesso com uma só aprovação, salvo o pedido em que a encarregada é a beneficiária.
+- Teste da dupla aprovação: concessão com permissão pessoal ou sensível não vale na decisão de acesso com uma só aprovação, salvo o pedido em que o Encarregado de dados é o beneficiário.
 - Teste do mínimo de gestores: desativar o penúltimo gestor ativo é recusado.
 - Teste da revogação: concessão revogada deixa de valer na próxima decisão de acesso.
 - Teste da fonte: no módulo já migrado para concessões gravadas, permissão é negada quando a única origem é um papel no token.
@@ -111,15 +111,15 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 - Bom, porque não exige nada novo no Uni+.
 - Ruim, porque não registra pedido nem justificativa, e a proteção de dados nunca é conferida.
 
-### B — Encarregada opera todas as concessões
+### B — Encarregado de dados opera todas as concessões
 
 - Bom, porque toda concessão passa por quem responde pela proteção de dados.
 - Ruim, porque quem fiscaliza passa a conceder, e uma pessoa só vira gargalo de toda a operação, inclusive do que não tem dado pessoal.
 
 ### C — Dupla aprovação para dado pessoal
 
-- Bom, porque cada aprovação confere o que o aprovador sabe avaliar, e a fila da encarregada fica restrita ao necessário.
-- Ruim, porque exige fluxo e telas próprios, e a ausência da encarregada precisa de substituição formal.
+- Bom, porque cada aprovação confere o que o aprovador sabe avaliar, e a fila do Encarregado de dados fica restrita ao necessário.
+- Ruim, porque exige fluxo e telas próprios, e a ausência do Encarregado de dados precisa de substituição formal.
 
 ## Mais informações
 
@@ -129,9 +129,10 @@ O papel de instalação é atribuído a poucas pessoas da equipe de infraestrutu
 - [ADR-0084](0084-concessao-excepcional-e-atuacao-institucional-server-side.md) — concessão excepcional com escopo e validade.
 - [ADR-0085](0085-cache-e-revogacao-diferenciados-por-sensibilidade.md) — revogação com efeito imediato.
 - [ADR-0086](0086-trilha-de-auditoria-com-hmac-e-cofre.md) — trilha de auditoria.
-- Parecer da encarregada de dados de 13/10/2026 sobre proteção dos dados da inscrição.
-- **Pendente:** confirmação da encarregada sobre o papel e definição da substituição formal nas ausências dela.
+- Parecer do Encarregado de dados de 13/10/2026 sobre proteção dos dados da inscrição.
+- **Pendente:** confirmação do Encarregado de dados sobre o papel e definição da substituição formal nas ausências dele.
 - **Pendente:** prazo de guarda dos documentos de designação, conforme a tabela de temporalidade.
 - **Pendente:** multifator. O modelo de autorização prevê que uma permissão exija multifator, mas a força da autenticação ainda não é lida do token, e o provedor de identidade não tem fluxo que obrigue o segundo fator. Até isso existir, nenhuma permissão pode exigir multifator, porque seria sempre recusada. Também falta verificar se a verificação em duas etapas do gov.br chega ao token do provedor institucional. A instalação não usa o multifator do provedor de identidade: o segundo fator dela é o código enviado ao e-mail institucional de quem executa.
 - **Pendente:** recuperação quando os gestores ativos registrados não podem mais atuar (desligamento, perda da conta): a instalação só vale sem gestor ativo, e nenhum deles aprova o substituto.
 - **Pendente:** o Uni+ ainda não envia e-mail. A confirmação da instalação depende dessa capacidade, que também atende às comunicações com o candidato.
+- Emendada pela [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md): a segunda aprovação, a revisão periódica e a revogação pela proteção de dados passam ao Representante do controlador; o Encarregado de dados consulta, se manifesta e solicita providências, sem decidir; a dispensa do pedido em que o beneficiário já exerce a proteção de dados deixa de existir; o beneficiário de pedido protegido aceita o termo de responsabilidade antes do gestor; e a mesma pessoa não acumula Representante e Encarregado.

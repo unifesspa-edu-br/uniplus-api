@@ -4,7 +4,7 @@ date: "2026-06-02"
 decision-makers:
   - "Tech Lead (CTIC)"
 consulted:
-  - "Encarregada de Proteção de Dados (DPO) — validada pelo Parecer Técnico 002/2026 (08/06/2026)"
+  - "Encarregado de Proteção de Dados — validada pelo Parecer Técnico 002/2026 (08/06/2026)"
 informed:
   - "Equipe Uni+"
 ---
@@ -91,13 +91,13 @@ Invariantes da preferência:
 
 - Ancora na [ADR-0081](0081-lgpd-by-design-dto-por-permissao.md): esta é a classificação específica do nome social/civil dentro do controle de proteção por projeção.
 - Base legal e normativa: Decreto 8.727/2016; Constituição art. 1º, III; LGPD (Lei 13.709/2018).
-- Validada pela **Encarregada de Proteção de Dados (DPO)** da instituição — Parecer Técnico 002/2026 (08/06/2026): nome social confirmado como dado público quando preferido; nome civil como dado pessoal protegido (art. 7º II/III e art. 23 LGPD; Decreto 8.727/2016).
+- Validada pelo **Encarregado de Proteção de Dados** da instituição — Parecer Técnico 002/2026 (08/06/2026): nome social confirmado como dado público quando preferido; nome civil como dado pessoal protegido (art. 7º II/III e art. 23 LGPD; Decreto 8.727/2016).
 
 ## Emenda 1 (2026-08-11) — exceção justificada ao nome completo e piso técnico do default (UNI-REQ-0050)
 
 Esta emenda reconcilia a ADR com o vocabulário de divulgação pública que a Story #563 (UNI-REQ-0050) implementou
 e que já está em `main` (`ConfiguracaoDivulgacao`, `RegrasDeNomeAbreviado`). O enunciado original desta ADR vedava
-o nome completo em listas públicas sem ressalva alguma. O Parecer Técnico 002/2026 da Encarregada de Proteção de
+o nome completo em listas públicas sem ressalva alguma. O Parecer Técnico 002/2026 do Encarregado de Proteção de
 Dados — a mesma fonte que valida esta ADR — é mais específico: no §4 ("Da divulgação de listas públicas"), recomenda
 número de inscrição + nome abreviado como o mais adequado, e admite a exceção apenas "caso exista norma específica
 do processo seletivo que imponha divulgação nominal", recomendando nesse caso "que seja adotada a forma menos
@@ -132,7 +132,7 @@ A exceção do nome completo **não é uma escolha livre de conveniência admini
 **norma específica daquele processo seletivo** que imponha a identificação nominal (Parecer 002/2026, §4) —
 condição que a justificativa registra. O caso concreto que motivou o registro do vocabulário, citado literalmente
 na Story #563: processos do tipo PSIQ (Indígena/Quilombola), em que a divulgação nominal "pode ser necessária por
-acessibilidade e identificação cultural" — apontado pelo P.O., com a orientação-padrão da DPO permanecendo a
+acessibilidade e identificação cultural" — apontado pelo P.O., com a orientação-padrão do Encarregado de Proteção de Dados permanecendo a
 minimização para os demais casos.
 
 **Lacuna registrada, não resolvida por esta emenda.** `ConfiguracaoDivulgacao.Criar` valida apenas a **forma** da
@@ -200,7 +200,7 @@ para nome social nos pontos de identificação) não muda.
 
 - Implementação: `ConfiguracaoDivulgacao` (`Selecao.Domain/Entities`) e `RegrasDeNomeAbreviado`
   (`Selecao.Domain/Services`) — issue #563 (UNI-REQ-0050).
-- Fonte primária da exceção: Parecer Técnico 002/2026 da Encarregada de Proteção de Dados,
+- Fonte primária da exceção: Parecer Técnico 002/2026 do Encarregado de Proteção de Dados,
   `uniplus-developers/docs/lgpd/2º_PARECER_TECNICO-_PROTECAO_DE_DADOS_assinado.pdf`, §4 "Da divulgação de listas
   públicas" — "[...] caso exista norma específica do processo seletivo que imponha divulgação nominal,
   recomenda-se que seja adotada a forma menos invasiva possível, evitando-se exposição integral do nome civil."

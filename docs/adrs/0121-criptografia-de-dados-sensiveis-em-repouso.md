@@ -5,7 +5,7 @@ decision-makers:
   - "Tech Lead (CTIC)"
 consulted:
   - "Segurança da Informação"
-  - "DPO (Josiene Campos)"
+  - "Encarregado de Proteção de Dados"
 informed:
   - "Equipe de desenvolvimento (uniplus-api)"
 ---
@@ -255,8 +255,8 @@ perde dado nem exige processo de restore dedicado.
 
 ## Decisões tomadas em 28/07 (fecham as questões originalmente em aberto)
 
-A versão original desta ADR deixou quatro perguntas em aberto para Segurança da Informação e o
-DPO. Revisão com o responsável técnico do projeto fechou as quatro:
+A versão original desta ADR deixou quatro perguntas em aberto para Segurança da Informação e
+o Encarregado de Proteção de Dados. Revisão com o responsável técnico do projeto fechou as quatro:
 
 1. **Busca por igualdade sobre CPF** — sim, é a regra, não a exceção: praticamente todo módulo
    do sistema acaba precisando dela em algum ponto (ex.: Habilitação, no Ingresso, consultando
@@ -344,7 +344,7 @@ inscrições com o mesmo CPF no mesmo certame sem decifrar a coluna cifrada inte
 - Implementação: `src/shared/Unifesspa.UniPlus.Infrastructure.Core/Cryptography/IUniPlusBlindIndexService.cs`,
   `LocalHmacBlindIndexService.cs`, `VaultTransitBlindIndexService.cs` — issue #1856.
 - Guia de configuração: `docs/guia-config-cifragem.md`, seção "Índice cego (`IUniPlusBlindIndexService`)".
-- A manifestação formal da Encarregada de Proteção de Dados sobre o uso do índice cego para CPF
+- A manifestação formal do Encarregado de Proteção de Dados sobre o uso do índice cego para CPF
   (memorando de 2026-10-09) é anexada a esta emenda quando chegar.
 
 ## Emenda 2 (2026-10-21) — cifra do arquivo enviado pelo candidato
@@ -353,7 +353,7 @@ O documento que o candidato envia para atender uma exigência da inscrição (is
 no caso do laudo, sensível. O conteúdo selado no armazenamento é cifrado com a chave de dado sensível que
 a Seleção já tem (`uniplus-selecao-sensiveis-aesgcm`), por uma porta da Application implementada na
 Infrastructure. Não há chave por arquivo, nem chave nova no Vault: a cifra individual que o parecer da
-encarregada de dados de 13/10/2026 pede é a do envelope autenticado de cada arquivo. O SHA-256 do
+Encarregado de dados de 13/10/2026 pede é a do envelope autenticado de cada arquivo. O SHA-256 do
 conteúdo em claro, gravado na confirmação, é conferido ao decifrar, e o objeto trocado por outro registro
 não abre. A verificação do antivírus acontece antes, com o conteúdo ainda em claro na memória, e o objeto
 do envio, em claro, é apagado na confirmação. O nome original do arquivo não é guardado.
@@ -363,6 +363,6 @@ do envio, em claro, é apagado na confirmação. O nome original do arquivo não
 Se a [ADR-0146](0146-cifra-e-verificacao-dos-arquivos-do-candidato-no-armazenamento.md) for aceita, a emenda 2
 deixa de valer: o conteúdo do arquivo enviado pelo candidato não é cifrado pela aplicação nem lido pela API. A
 cifra fica no MinIO (SSE-KMS, chave do KES guardada no Vault), com uma chave de dados por objeto, que é a cifra
-individual do parecer da encarregada de dados de 13/10/2026, aprovada por ela. A verificação do antivírus
+individual do parecer do Encarregado de dados de 13/10/2026, aprovada por ele. A verificação do antivírus
 passa a um verificador que lê direto do armazenamento. O restante desta ADR, a cifra de campo na fronteira do
 repositório e o índice cego, não muda.
