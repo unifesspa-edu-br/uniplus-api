@@ -105,20 +105,6 @@ jobs:
       - name: Verificar pacotes proibidos
         run: bash tools/forbidden-deps/check.sh
 
-  tamanho-de-arquivo:
-    name: Tamanho de arquivo
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Verificar limite de linhas por arquivo
-        run: bash tools/tamanho-de-arquivo/check.sh
-
   dev-up:
     name: Ambiente local (scripts de subida)
     runs-on: ubuntu-latest

@@ -322,14 +322,10 @@ public static class ObterProcessoSeletivoQueryHandler
 
 **Logging automático:** o `WolverineLoggingMiddleware` registra entrada/saída do handler com tempo de execução, removendo a necessidade de qualquer behavior de pipeline em código de aplicação. Logs específicos de domínio dentro do handler seguem o padrão `[LoggerMessage]` source generator (.NET 6+): a classe é `partial`, o método é `private static partial void Log{Acao}` decorado com `[LoggerMessage(Level = ..., Message = "...")]`, e o `ILogger` entra como primeiro parâmetro do método. Chamadas diretas a `logger.LogInformation(...)` etc. são bloqueadas pelo analisador `CA1848` (com `TreatWarningsAsErrors`) — o source generator evita avaliação de argumentos quando o log level está desativado, elimina boxing de value types e parseia o template uma única vez na compilação.
 
-#### Tamanho de arquivo
-
-A regra de tamanho de arquivo (400 linhas físicas, testes incluídos) está em [§ Métricas de qualidade](#métricas-de-qualidade). O job `tamanho-de-arquivo` do CI roda `bash tools/tamanho-de-arquivo/check.sh` e, por enquanto, mede só os `*.cs` de `src/` (fora `Migrations/`, `obj/`, `bin/`, `*.g.cs`, `*.Designer.cs` e `*ModelSnapshot.cs`): ele **ainda não mede `tests/`, mas a regra vale para os testes**, e a revisão a cobra. O job recusa arquivo novo de `src/` acima do limite. Os arquivos de `src/` que ainda excedem o limite constam em `tools/tamanho-de-arquivo/excecoes.txt`: a lista **só diminui** — arquivo dela que cresce é recusado, toda redução tem de ser registrada nela e arquivo que cai para 400 linhas ou menos deve sair dela (`--atualizar` faz as duas coisas). A lista é dívida a pagar, não autorização: o CI aceita arquivo dela que não cresce (e, se diminuir, pede a lista atualizada), mas a regra pede que arquivo de código alterado pelo PR, fora os gerados, termine com até 400 linhas.
-
 ### 3. Testar
 
 ```bash
-# Compilar: só os avisos de métrica da ADR-0155 são admitidos
+# Compilar: só os avisos das métricas de qualidade (MA0051, S104, S107, S3776, S1541) são admitidos
 dotnet build
 
 # Testes unitários
@@ -454,6 +450,77 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 | Strings user-facing | pt-BR | `"Inscrição realizada com sucesso"` |
 | Mensagens de erro da API | pt-BR | `"CPF já cadastrado neste processo"` |
 
+### Código que se explica
+
+O código é a primeira documentação. Quem lê um método precisa entender o que ele faz pelo nome e pelo corpo, sem depender de comentário. Antes de escrever um comentário, tente dizer a mesma coisa no próprio código.
+
+**Nomes expressivos e semânticos.** O nome diz o que a coisa é ou faz no domínio, não como é feita.
+
+| Evite | Prefira | Por quê |
+|---|---|---|
+| `ProcessarDados()`, `Executar()` | `HomologarInscricoes()` | o verbo e o objeto dizem a intenção |
+| `lista`, `dados`, `aux`, `temp`, `obj` | `inscricoesHomologadas` | a variável diz o que guarda |
+| `bool flag`, `bool status` | `EstaVigente`, `PodeRecorrer` | booleano se lê como pergunta |
+| `int tipo` com números mágicos | `enum SituacaoDoPedido` | o valor tem nome |
+| `qtdInscCand` | `quantidadeDeInscricoesDoCandidato` | abreviação só se for do domínio (CPF, ENEM) |
+
+**C# idiomático.** Use a linguagem e a biblioteca padrão em vez de código feito à mão:
+
+- `switch` de expressão e pattern matching (`is null`, `is { Situacao: SituacaoDoPedido.Pendente }`) no lugar de cadeias de `if`;
+- `record` para valor imutável;
+- `ArgumentNullException.ThrowIfNull` e retorno antecipado (guard clause) no lugar de `if` aninhado;
+- LINQ quando deixa a intenção mais clara, e laço quando a consulta esconde efeito colateral ou está em caminho quente;
+- nullable reference types levados a sério: sem `!` para calar o compilador.
+
+**Extraia em vez de comentar.** Um bloco que precisa de comentário para dizer o que faz vira um método com esse nome, ou uma variável explicativa:
+
+```csharp
+// Evite: o comentário repete a condição
+// Verifica se o período já terminou e se ainda não houve decisão
+if (agora > periodo.Fim && pedido.DecididoEm is null) { … }
+
+// Prefira: o nome diz o quê
+if (periodo.EncerradoEm(agora) && pedido.EstaPendente) { … }
+```
+
+#### Comentários
+
+Comentário explica o **porquê** que o código não consegue mostrar:
+
+- a regra de negócio por trás de uma decisão, com o `UNI-REQ` correspondente;
+- o motivo de uma escolha que parece estranha;
+- uma limitação externa, como comportamento de biblioteca, banco ou provedor;
+- um cuidado de concorrência, segurança ou LGPD.
+
+```csharp
+// Ordena também pelo Id: duas inscrições podem ter o mesmo instante, e a paginação
+// por keyset precisa de ordem total para não repetir nem pular linhas.
+.OrderBy(i => i.RecebidaEm).ThenBy(i => i.Id)
+```
+
+Não se comenta o que o código já diz. O comentário também não conta histórico ("antes era assim", "corrigido no PR tal") — o git conta —, e código comentado não fica no repositório. Comentário desatualizado é defeito: ao mudar o código, revise o comentário ao lado. Comentário dentro do método conta na MA0051 ([§ Métricas de qualidade](#métricas-de-qualidade)), mais um motivo para extrair em vez de explicar.
+
+#### Documentação XML
+
+Documentar com XML (`///`) os tipos e membros públicos é boa prática, principalmente o que outro módulo ou camada consome: contratos, abstrações de `shared`, agregados e serviços de domínio. A documentação diz o que o nome não diz:
+
+- **propósito:** para que o tipo ou o método existe;
+- **contrato:** o que exige (pré-condições), o que garante e o que devolve na falha;
+- **exceções:** `<exception>`, quando o método lança;
+- **unidade e formato:** fuso, moeda, unidade de medida.
+
+```csharp
+/// <summary>
+/// Concede o perfil a partir de um pedido já aprovado, presa à versão do perfil aprovada no pedido.
+/// </summary>
+/// <returns>
+/// Falha <c>PedidoErrors.NaoAprovado</c> quando o pedido ainda não foi aprovado.
+/// </returns>
+public Result<Concessao> Conceder(PedidoDeConcessao pedido, DateTimeOffset agora)
+```
+
+Documentação que só repete o nome não acrescenta nada: `/// <summary>Obtém o pedido.</summary>` em `ObterPedido` não diz mais que o nome, e fica de fora. Membro privado e teste se explicam pelo nome; documentação neles é exceção, para o porquê não óbvio. A documentação XML acima do método não conta na MA0051, e nenhum comentário conta na S104.
+
 ### Formatação e o filtro CA1515
 
 O comando de formatação deste repositório é sempre:
@@ -532,34 +599,76 @@ Regras essenciais (mais detalhes no guia):
 
 ### Métricas de qualidade
 
-As métricas abaixo valem para todo código que o PR cria ou altera, de produção e de teste. A revisão as cobra; o analisador e o CI são sinais auxiliares, não a medida.
+As métricas abaixo valem para todo código que o PR cria ou altera, de produção e de teste. Cada uma é medida por um analisador de mercado que roda em toda build ([ADR-0161](docs/adrs/0161-metricas-medidas-pelos-analisadores.md)), e **o número que vale é o do aviso do analisador**: não há contagem paralela. O texto abaixo explica como cada um conta, para você prever o aviso antes de compilar. A revisão cobra os limites no código novo ou alterado e julga as duas regras que nenhum analisador mede (5 e 6).
 
-| # | Regra | Limite |
-|---|---|---|
-| 1 | Linhas físicas por método | 15 |
-| 2 | Linhas físicas por arquivo | 400 |
-| 3 | Parâmetros por método ou construtor | 7 |
-| 4 | Complexidade cognitiva / ciclomática por método | 15 / 10 |
-| 5 | Supressão de aviso do analisador | proibida |
-| 6 | Código escrito só para caber na métrica | reprovado |
+| # | Regra | Limite | Analisador | Produção | Testes |
+|---|---|---|---|---|---|
+| 1 | Linhas por método | 15 | MA0051 (Meziantou) | sim | sim |
+| 2 | Linhas com código por arquivo | 400 | S104 (Sonar) | sim | sim |
+| 3 | Parâmetros por método ou construtor | 7 | S107 (Sonar) | sim | sim |
+| 4 | Complexidade cognitiva por método | 15 | S3776 (Sonar) | sim | sim |
+| 4 | Complexidade ciclomática por método | 10 | S1541 (Sonar) | sim | não roda em projeto de teste |
+| 5 | Supressão de aviso do analisador | proibida | revisão ([ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md)) | sim | sim |
+| 6 | Código escrito só para caber na métrica | reprovado | revisão | sim | sim |
 
-**1. Método: até 15 linhas físicas.** Conta-se da linha da assinatura (a primeira linha da declaração, depois dos atributos) até a linha da chave final, inclusive, com linhas em branco, comentários e linhas só com chave. Só ficam fora os atributos e a documentação XML (`///`) que estão acima da assinatura; comentário de qualquer tipo dentro do corpo conta. Vale para todo método, construtor, acessor com corpo, função local e lambda de várias linhas: de produção e de teste, inclusive cada `[Fact]` e cada `[Theory]`. Método de corpo de expressão (`=>`) conta da assinatura até o `;` final. Fica fora só a configuração do EF Core: classes `IEntityTypeConfiguration<T>`, `Migrations/` e o `*ModelSnapshot.cs`. Configuração longa se divide por assunto, e o arquivo da `IEntityTypeConfiguration<T>`, escrito à mão, continua sujeito ao limite de 400 linhas; migrations e snapshot, gerados, ficam fora também do limite de arquivo.
+Os limites ficam no `.editorconfig` (MA0051) e no `SonarLint.xml` (regras do Sonar). Mudar um limite exige mudar a ADR-0161 e o arquivo de configuração no mesmo PR.
 
-A S138 do SonarAnalyzer (`SonarLint.xml`, `max=15`) **não é a medida**: ela conta só as linhas de código do corpo, sem a assinatura, as linhas em branco e os comentários, e não mede projetos de teste. Um método de 24 linhas físicas pode passar na S138 sem aviso e está fora da regra. Use a S138 como alerta precoce; o que vale é a contagem física.
+**1. Método: até 15 linhas pela MA0051.** A MA0051 conta as linhas do corpo: da linha da chave de abertura até a linha da chave de fechamento, menos uma. Com a chave em linha própria, padrão do projeto, isso dá as linhas entre as chaves mais uma.
 
-**2. Arquivo: até 400 linhas físicas.** Todas as linhas do arquivo contam (comentários, documentação XML, `using` e linhas em branco), e a última linha conta mesmo sem quebra no fim. Vale para todo arquivo de código do repositório: `src/`, `tests/` (inclusive auxiliares, fixtures e bases de teste) e qualquer outro diretório (ferramentas, scripts). Contratos e baselines gerados, como os de `contracts/`, não são código. Ficam fora só os arquivos gerados: `Migrations/`, `*.g.cs`, `*.Designer.cs` e `*ModelSnapshot.cs` (e `obj/`/`bin/`). O job `tamanho-de-arquivo` do CI ainda mede só `src/` (ver [§ Tamanho de arquivo](#tamanho-de-arquivo)).
+- **Contam:** toda linha dentro do corpo, inclusive linha em branco, comentário de qualquer tipo (`//`, `/* */`, `///`) e linha só com chave de bloco interno.
+- **Não contam:** a assinatura (mesmo quebrada em várias linhas), os atributos e a documentação XML acima do método.
+- **Corpo de expressão (`=>`):** contam as linhas depois da linha do `=>`; um método de uma linha só conta 0.
+- **O que é medido:** método, construtor, acessor de propriedade (`get`/`set` com corpo) e função local. Lambda e método anônimo contam dentro do método que os contém. A função local conta no método e é medida também sozinha.
+- **Onde vale:** produção e teste, inclusive cada `[Fact]` e cada `[Theory]`. Ficam fora só a configuração do EF Core (as classes `IEntityTypeConfiguration<T>` e os mapeamentos de tipo próprio, todos nas pastas `Persistence/Configurations/`) e as migrations, desligadas por glob no `.editorconfig`: mapeamento longo se divide por assunto, e a revisão cobra.
 
-**3. Parâmetros: até 7** por método, função local, lambda, construtor (inclusive construtor primário) ou delegate. `CancellationToken` conta. A S107 mede este limite como sinal auxiliar.
+Exemplo: a MA0051 conta **8** linhas neste teste. São as 7 linhas entre as chaves, com as duas em branco e o comentário, mais a da chave final. Atributo e assinatura não entram.
 
-**4. Complexidade: cognitiva até 15 (S3776) e ciclomática até 10 (S1541)**, por método, com a medida do SonarAnalyzer.
+```csharp
+[Fact]
+public void Aprovar_PedidoPendente_RegistraQuemDecidiu()
+{
+    var pedido = PedidoDeConcessaoFake.Pendente();
 
-**5. Supressão de aviso: proibida** ([ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md)). Não se usa `[SuppressMessage]`, `GlobalSuppressions.cs`, `#pragma warning disable` nem `<NoWarn>` para calar aviso: o aviso se corrige no código. Quando o analisador revela design ruim (por exemplo, `bool?` usado como três estados), o design é refeito (um `enum` com os três estados). Continua permitido desligar no `.editorconfig`, com comentário justificando, uma regra que não se aplica ao projeto inteiro ou a uma camada inteira (código com o mesmo papel, como testes, controllers ou configuração do EF, selecionado por glob de caminho): é decisão de projeto, não supressão por símbolo. Seção que isenta um arquivo ou um tipo específico, e não uma camada inteira, é supressão disfarçada e também é proibida.
+    // Quem aprova precisa ser outra pessoa: o pedido recusa autoaprovação.
+    var resultado = pedido.Aprovar(Aprovador, Agora);
 
-**6. Código feito só para caber na métrica é reprovado**, mesmo dentro dos limites: método-ponte que só repassa a chamada, sobrecarga ou serviço que só repassa, estado fatiado sem sentido (campos ou classes criados só para dividir um método), parâmetros agrupados num objeto artificial que não existe no domínio, vista ou cópia da entidade e coleção viva exposta. A divisão segue responsabilidade, conforme SOLID, Clean Code e as recomendações da comunidade .NET.
+    resultado.IsSuccess.Should().BeTrue();
+    pedido.DecididoPor.Should().Be(Aprovador);
+}
+```
+
+**2. Arquivo: até 400 linhas com código pela S104.**
+
+- **Contam:** as linhas com código, inclusive `using`, `namespace`, declarações e linhas só com chave.
+- **Não contam:** linhas em branco e linhas só de comentário (`//`, `/* */`, `///`). Um arquivo de 460 linhas com 70 delas em branco ou de documentação tem 390 linhas com código e está dentro do limite.
+- **Onde vale:** todo `.cs` de `src/` e `tests/`, inclusive a configuração do EF escrita à mão, auxiliares, fixtures e bases de teste.
+- **Ficam fora:** as migrations e o snapshot (desligados por glob) e o código gerado (`*.g.cs`, `*.Designer.cs`), que o analisador já ignora.
+
+**3. Parâmetros: até 7** por método, construtor (inclusive o primário) ou função local, pela S107. `CancellationToken` conta.
+
+**4. Complexidade: cognitiva até 15 pela S3776 e ciclomática até 10 pela S1541**, por método. O Sonar não roda a S1541 em projeto de teste; ali vale a S3776.
+
+**5. Supressão de aviso: proibida** ([ADR-0160](docs/adrs/0160-supressao-de-aviso-do-analisador-proibida.md)).
+
+- **Proibido:** calar aviso com `[SuppressMessage]`, `GlobalSuppressions.cs`, `#pragma warning disable` ou `<NoWarn>`. O aviso se corrige no código.
+- **Design ruim se refaz:** quando o analisador revela design ruim, o design é refeito. Por exemplo, um `bool?` usado como três estados vira um `enum` com os três estados.
+- **Permitido:** desligar no `.editorconfig`, com comentário justificando, uma regra que não se aplica ao projeto inteiro ou a uma camada inteira. Camada é código com o mesmo papel, como testes, controllers ou configuração do EF, selecionado por glob de caminho. Isso é decisão de projeto, não supressão por símbolo.
+- **Supressão disfarçada:** seção que isenta um arquivo ou um tipo específico, e não uma camada inteira, também é proibida.
+
+**6. Código feito só para caber na métrica é reprovado**, mesmo dentro dos limites. Exemplos:
+
+- método-ponte que só repassa a chamada;
+- sobrecarga ou serviço que só repassa;
+- estado fatiado sem sentido: campos ou classes criados só para dividir um método;
+- parâmetros agrupados num objeto artificial que não existe no domínio;
+- vista ou cópia da entidade;
+- coleção viva exposta.
+
+A divisão segue responsabilidade, conforme SOLID, Clean Code e as recomendações da comunidade .NET. Juntar linhas para enganar a contagem (duas instruções na mesma linha, encadeamento artificial) também é reprovado: o `dotnet format` e a revisão desfazem.
 
 #### Exemplo
 
-Divisão correta: o handler orquestra, e a regra fica no agregado, num método com responsabilidade e nome de domínio. Cada método tem até 15 linhas físicas.
+Divisão correta: o handler orquestra, e a regra fica no agregado, num método com responsabilidade e nome de domínio. A MA0051 conta 11 linhas no `Handle` e 10 no `Aprovar`.
 
 ```csharp
 public async Task<Result> Handle(AprovarPedidoCommand command, CancellationToken cancellationToken)
@@ -601,10 +710,30 @@ private Task<Result> HandleInterno(AprovarPedidoCommand command, CancellationTok
     => ExecutarParte1(new ContextoDoHandle(command, cancellationToken)); // objeto artificial
 ```
 
+#### Ver os avisos
+
+`dotnet build` mostra os avisos das cinco regras, e cada build grava o relatório SARIF de cada projeto em `artifacts/analise/`. Para ver só as métricas:
+
+```bash
+dotnet build UniPlus.slnx -c Release 2>&1 | grep -E "warning (MA0051|S104|S107|S3776|S1541)" | sort -u
+```
+
 #### Dívida existente e CI
 
-O CI **não barra** a dívida antiga: a severidade de S138, S107, S3776 e S1541 continua aviso ([ADR-0155](docs/adrs/0155-analisadores-de-qualidade-na-build.md)), o job de tamanho ainda não mede `tests/` e a lista `tools/tamanho-de-arquivo/excecoes.txt` continua. As regras valem para o que o PR cria ou altera: método novo ou alterado cumpre os limites, e arquivo sujeito à regra (todo arquivo de código, fora os gerados) que o PR cria ou altera termina com até 400 linhas (se já passava, o PR o divide por assunto). A dívida é paga por módulo, cada um com sua issue; quando um módulo zera a dívida, o CI passa a barrar aquele módulo.
+O CI **não barra** a dívida antiga. As cinco regras são aviso (`WarningsNotAsErrors` no `Directory.Build.props`) e valem para o que o PR cria ou altera:
 
+- método novo ou alterado cumpre os limites;
+- arquivo que o PR cria ou altera termina com até 400 linhas com código; se já passava, o PR o divide por assunto.
+
+A dívida é paga por módulo, cada um com sua issue. Quando um módulo zera, os projetos dele (de `src/` e de teste, que têm o mesmo prefixo de nome) saem do `WarningsNotAsErrors` no `Directory.Build.props`. Com o `TreatWarningsAsErrors`, os avisos das cinco regras passam a erro, e o CI barra aquele módulo:
+
+```xml
+<!-- Módulo Seleção sem dívida de métricas: o CI barra. -->
+<MetricasBarradas Condition="$(MSBuildProjectName.StartsWith('Unifesspa.UniPlus.Selecao.'))">true</MetricasBarradas>
+<WarningsNotAsErrors Condition="'$(MetricasBarradas)' != 'true'">$(WarningsNotAsErrors);MA0051;S104;S3776;S1541;S107</WarningsNotAsErrors>
+```
+
+Uma seção do `.editorconfig` com `severity = error` não basta: o `WarningsNotAsErrors` rebaixa o diagnóstico a aviso de novo.
 ---
 
 ## Segurança
@@ -735,7 +864,7 @@ Complementa os Quality gates acima (verificações de CI automáticas) com higie
 - [ ] Branch **rebaseada** sobre a `main` mais recente
 - [ ] Commits "WIP" / "ajustes do PR" foram **squashados** via `git rebase -i`
 - [ ] PR vinculado à issue com `Closes #N` na descrição
-- [ ] Métricas de qualidade cumpridas no código criado ou alterado, inclusive testes, sem supressão de aviso ([§ Métricas de qualidade](#métricas-de-qualidade)) — o CI ainda não as barra
+- [ ] Nenhum aviso novo de MA0051, S104, S107, S3776 ou S1541 no código criado ou alterado, inclusive testes, e nenhuma supressão de aviso ([§ Métricas de qualidade](#métricas-de-qualidade)) — o CI ainda não os barra
 
 ---
 
@@ -745,7 +874,7 @@ Todo PR passa por revisão humana. O revisor verifica:
 
 1. **Segurança** — PII, injection, OWASP, LGPD
 2. **Arquitetura** — Clean Architecture, SOLID, acoplamento entre módulos
-3. **Qualidade** — legibilidade, complexidade, duplicação e as [métricas de qualidade](#métricas-de-qualidade) contadas em linhas físicas
+3. **Qualidade** — legibilidade, complexidade, duplicação e as [métricas de qualidade](#métricas-de-qualidade), pelos avisos dos analisadores
 4. **Testes** — cobertura, casos de borda, assertions significativas
 5. **Domínio** — regras de negócio corretas, conformidade legal
 

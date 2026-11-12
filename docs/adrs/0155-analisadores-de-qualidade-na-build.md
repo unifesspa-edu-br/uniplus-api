@@ -38,6 +38,8 @@ As quatro métricas são avisos (`WarningsNotAsErrors`) até as ocorrências aca
 A licença SSAL v1.0 do Sonar não é aprovada pela OSI. A adoção é uma exceção deliberada à preferência do projeto por licenças OSI, porque o uso é só de análise do próprio código.
 
 > **Emenda (2026-11-11) — a S138 é sinal auxiliar.** A S138 continua na build como aviso, mas não é a medida do limite de linhas por método, e a consequência "toda build mede linhas por método" passa a ler-se "toda build avisa pela S138, que é parcial": a [ADR-0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md), emendada na mesma data, conta linhas físicas e inclui os testes. A emenda à ADR-0117 feita aqui admite os avisos das quatro métricas na build; não admite suprimi-los, conforme a [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md).
+>
+> **Emenda (2026-11-12) — a MA0051 mede o tamanho de método e a S104, o de arquivo.** Pela [ADR-0161](0161-metricas-medidas-pelos-analisadores.md), o dono do tamanho de método passa a ser a MA0051, que roda também em projeto de teste, e a S138 fica desligada; o limite de arquivo passa à S104, e o gate próprio de tamanho de arquivo sai. O número que vale é o do aviso. As métricas em aviso passam a ser MA0051, S104, S3776, S1541 e S107. O que esta ADR e a emenda anterior dizem sobre a S138 deixa de valer para o tamanho de método, que passa à MA0051, inclusive em projeto de teste.
 
 ## Consequências
 
