@@ -213,3 +213,16 @@ A chave é parte do endereço público e não muda depois de publicada, por isso
 ### 1.5 — Fora da emenda
 
 Controle de assinatura digital. A cópia preserva o arquivo byte a byte, o que mantém válida a assinatura feita fora do sistema; o Uni+ não assina nem verifica.
+
+## Emenda 2 (2026-11-12) — documento preparado é privado, e a leitura pública só existe depois da divulgação efetivada
+
+A separação em dois armazenamentos, o endereço derivado do conteúdo, os cabeçalhos no objeto e a leitura do acervo só pela borda seguem como decididos. Mudam o momento em que o documento entra no acervo público e o que se lê antes dele.
+
+**Trechos substituídos.** Em "O objeto público nasce na publicação, não na confirmação", a cópia deixa de ser encadeada ao registro bem-sucedido do ato. Como a publicação vale na divulgação e o registro no `Publicacoes` é auditoria posterior ([ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), emenda 1), a condição para o documento entrar no acervo público passa a ser a **divulgação efetivada** ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md), emenda 2). A cópia é efeito posterior da divulgação, com estado por efeito, reprocessamento e alerta ([ADR-0108](0108-registro-do-ato-por-mensagem-duravel.md), emenda 2). A confirmação "nada antes do ato" lê-se, daqui em diante, como "nada antes da divulgação efetivada".
+
+- **Documento preparado em armazenamento privado.** O documento do ato, antes de divulgado, fica no armazenamento privado, sem acesso anônimo, e a consulta nesse período é só administrativa, por quem tem permissão.
+- **Leitura pública só depois da divulgação efetivada.** O download direto pelo acervo, o `Publicacoes` e o cache só servem o documento depois dela. Antes, o contrato público não oferece endereço algum.
+- **Acesso anônimo negado ao preparado e ao recusado.** O documento preparado e o do ato recusado por versão defasada (ADR-0133, emenda 2) nunca estão no acervo público, e o acesso anônimo a eles é negado.
+- **Documento das decisões do recurso.** O documento que reúne as decisões de uma janela de recurso ([ADR-0158](0158-recurso-quem-recorre-ciclo-banca-e-decisoes.md)) é **arquivado** no armazenamento privado, à parte dos documentos do candidato, e nunca vai ao acervo público nem é enviado ao candidato.
+
+Nenhum outro trecho desta ADR muda.
