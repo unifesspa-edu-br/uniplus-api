@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.RegistrosDeAcesso;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -21,15 +20,13 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Com o registro de acesso indisponível, a operação protegida responde 503 com o código próprio e o dado não é entregue.
-/// Diogo Souza é gestor de acessos.
+/// Diogo Souza é gestor de acessos; Cecília Moura é Encarregada de dados, e cada leitura dela é recusada sem o registro.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class FalhaAoRegistrarAcessoTests
 {
+    private const string Falha = "uniplus.autorizacao.registro_de_acesso.falha_ao_gravar";
+
     private readonly AutorizacaoEndpointFixture _fixture;
 
     public FalhaAoRegistrarAcessoTests(AutorizacaoEndpointFixture fixture) => _fixture = fixture;
@@ -38,42 +35,45 @@ public sealed class FalhaAoRegistrarAcessoTests
     public async Task Acesso_RegistroIndisponivel_503()
     {
         await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, "diogo.souza", TipoDeGovernanca.GestorDeAcessos);
-        await using WebApplicationFactory<HostAssemblyMarker> comFalha = _fixture.Factory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IRegistroOperacionalRestrito>();
-                services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
-            }));
-        using HttpClient diogo = comFalha.CreateClient();
-        diogo.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        diogo.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "diogo.souza");
-        diogo.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "diogo.souza");
-        diogo.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
+        await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistroQueFalha();
+        using HttpClient diogo = Cliente(comFalha, "diogo.souza");
 
         using HttpResponseMessage resposta = await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative));
 
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, corpo);
-        corpo.Should().Contain("uniplus.autorizacao.registro_de_acesso.falha_ao_gravar").And.NotContain("banco fora");
+        corpo.Should().Contain(Falha).And.NotContain("banco fora");
+    }
+
+    [Theory(DisplayName = "Com o registro indisponível, cada leitura do Encarregado de dados responde 503 sem entregar o dado")]
+    [InlineData("/api/autorizacao/pedidos-de-concessao?fila=todos")]
+    [InlineData("/api/autorizacao/concessoes")]
+    [InlineData("/api/autorizacao/instalacoes/tentativas-sem-pendencia")]
+    [InlineData("/api/autorizacao/revisoes")]
+    [InlineData("/api/autorizacao/perfis")]
+    [InlineData("/api/autorizacao/governanca/divergencias")]
+    [InlineData("/api/configuracao/admin/protecao-do-catalogo")]
+    [InlineData("/api/configuracao/admin/protecao-do-catalogo/decisoes")]
+    public async Task LeituraDoEncarregado_RegistroIndisponivel_503(string rota)
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, "cecilia.moura");
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, "cecilia.moura", TipoDeGovernanca.EncarregadoDeDados);
+        await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistroQueFalha();
+        using HttpClient cecilia = Cliente(comFalha, "cecilia.moura");
+
+        using HttpResponseMessage resposta = await cecilia.GetAsync(new Uri(rota, UriKind.Relative));
+
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, corpo);
+        corpo.Should().Contain(Falha).And.NotContain("\"items\"");
     }
 
     [Fact(DisplayName = "Com o registro indisponível, o pedido inexistente pedido sem permissão responde 503, como o existente")]
     public async Task PedidoInexistente_RegistroIndisponivel_503()
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, "paulo.nogueira");
-        await using WebApplicationFactory<HostAssemblyMarker> comFalha = _fixture.Factory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IRegistroOperacionalRestrito>();
-                services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
-            }));
-        using HttpClient paulo = comFalha.CreateClient();
-        paulo.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        paulo.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, "paulo.nogueira");
-        paulo.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "paulo.nogueira");
-        paulo.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
+        await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistroQueFalha();
+        using HttpClient paulo = Cliente(comFalha, "paulo.nogueira");
         string pedido = $"/api/autorizacao/pedidos-de-concessao/{Guid.CreateVersion7()}";
 
         using HttpResponseMessage leitura = await paulo.GetAsync(new Uri(pedido, UriKind.Relative));
@@ -81,10 +81,26 @@ public sealed class FalhaAoRegistrarAcessoTests
         using HttpResponseMessage aprovacao = await Enviar(paulo, $"{pedido}/aprovacoes", new { });
         using HttpResponseMessage recusa = await Enviar(paulo, $"{pedido}/recusa", new { motivo = "Sem justificativa de acesso." });
 
-        foreach (HttpResponseMessage resposta in new[] { leitura, anexo, aprovacao, recusa })
-        {
-            resposta.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable, await resposta.Content.ReadAsStringAsync());
-        }
+        new[] { leitura, anexo, aprovacao, recusa }.Select(static r => r.StatusCode).Should().OnlyContain(static s => s == HttpStatusCode.ServiceUnavailable);
+    }
+
+    private WebApplicationFactory<HostAssemblyMarker> ComRegistroQueFalha() =>
+        _fixture.Factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IRegistroOperacionalRestrito>();
+                services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
+            }));
+
+    private static HttpClient Cliente(WebApplicationFactory<HostAssemblyMarker> fabrica, string sub)
+    {
+        HttpClient client = fabrica.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
+
+        return client;
     }
 
     private static async Task<HttpResponseMessage> Enviar(HttpClient client, string rota, object corpo)

@@ -126,19 +126,11 @@ public sealed class TiposDocumentoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        Result<Guid> resultado = await _commandBus
-            .Send(command, cancellationToken)
-            .ConfigureAwait(false);
+        Result<Guid> resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
 
-        if (resultado.IsSuccess)
-        {
-            return CreatedAtAction(
-                nameof(ObterPorId),
-                new { id = resultado.Value },
-                resultado.Value);
-        }
-
-        return resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess
+            ? CreatedAtAction(nameof(ObterPorId), new { id = resultado.Value }, resultado.Value)
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>Atualiza um tipo de documento existente. Exige a permissão de manutenção.</summary>
@@ -161,17 +153,10 @@ public sealed class TiposDocumentoController : ControllerBase
 
         if (id != command.Id)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id divergente",
-                Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return IdDivergente();
         }
 
-        Result resultado = await _commandBus
-            .Send(command, cancellationToken)
-            .ConfigureAwait(false);
+        Result resultado = await _commandBus.Send(command, cancellationToken).ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
@@ -204,16 +189,20 @@ public sealed class TiposDocumentoController : ControllerBase
     }
 
     /// <summary>
-    /// Todos os atos registrados da proteção de dados do tipo — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. O tipo de documento não tem permissão de consulta administrativa (a leitura é pública), então exige a permissão de manutenção.
+    /// Todos os atos registrados da proteção de dados do tipo — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. O tipo de documento não tem permissão de consulta administrativa (a leitura é pública), então exige a permissão de manutenção ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503.
     /// </summary>
     [HttpGet("admin/tipos-documento/{id:guid}/protecao/atos")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.TiposDocumentoManter,
+        ResourceTipo = ResourceTiposConfiguracao.TipoDocumento,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
     [VendorMediaType(Resource = "protecao-do-catalogo-ato", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
     {
         IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus
@@ -238,4 +227,12 @@ public sealed class TiposDocumentoController : ControllerBase
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
+
+    private BadRequestObjectResult IdDivergente() =>
+        BadRequest(new ProblemDetails
+        {
+            Title = "Id divergente",
+            Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
+            Status = StatusCodes.Status400BadRequest,
+        });
 }

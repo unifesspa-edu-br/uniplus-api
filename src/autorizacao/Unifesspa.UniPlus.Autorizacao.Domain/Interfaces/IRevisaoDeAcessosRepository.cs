@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -19,6 +20,9 @@ public sealed record ResumoDaRevisao(RevisaoDeAcessos Revisao, int TotalDeItens,
     public Guid Id { get; init; } = Revisao.Id;
 }
 
+/// <summary>O filtro da listagem das revisões: o instante que decide a situação e, opcionalmente, a situação pedida.</summary>
+public sealed record FiltroDeRevisoes(DateTimeOffset Agora, SituacaoDaRevisao? Situacao = null);
+
 /// <summary>Repositório das revisões periódicas dos acessos.</summary>
 public interface IRevisaoDeAcessosRepository : IRepository<RevisaoDeAcessos>
 {
@@ -30,10 +34,10 @@ public interface IRevisaoDeAcessosRepository : IRepository<RevisaoDeAcessos>
 
     /// <summary>
     /// Lista as revisões paginadas por cursor keyset bidirecional (ADR-0026 + ADR-0089), ordenadas por <c>Id</c>, sem
-    /// rastreamento.
+    /// rastreamento. A situação pedida filtra antes da paginação, para a página ter só revisões dela.
     /// </summary>
     Task<(IReadOnlyList<ResumoDaRevisao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        DateTimeOffset agora,
+        FiltroDeRevisoes filtro,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

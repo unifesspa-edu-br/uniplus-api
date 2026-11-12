@@ -25,21 +25,16 @@ internal sealed record DecisaoDaEtapa(PedidoDeConcessao Pedido, Perfil Perfil, P
         Identidade? decisor,
         CancellationToken cancellationToken)
     {
-        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (acesso is null)
-        {
-            return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.IdentidadeIncompleta());
-        }
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Decisao, pedidoId, cancellationToken).ConfigureAwait(false);
 
         // A recusa por autor não identificado não é de autorização: nenhum acesso ocorreu, e nada se registra.
-        if (decisor is null)
+        if (acesso is null || decisor is null)
         {
-            return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.AutorNaoIdentificado());
+            return Result<DecisaoDaEtapa>.Failure(
+                acesso is null ? PedidoHandlerErros.IdentidadeIncompleta() : PedidoHandlerErros.AutorNaoIdentificado());
         }
 
         PreparoDaDecisao preparo = new(pedidos, concessoes, verificador, catalogo, acesso, decisor);
-
         return acesso.Aprova
             ? await preparo.CarregarAsync(pedidoId, cancellationToken).ConfigureAwait(false)
             : await preparo.NegarAsync(pedidoId, cancellationToken).ConfigureAwait(false);

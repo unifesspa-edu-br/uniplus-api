@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Quem pode revisar a reclassificação: a proteção de dados decide a etapa dela e a gestão de acessos a sua, e qualquer das
-/// duas lê o detalhe. A permissão é conferida antes de qualquer leitura de concessão, e o desfecho que governou vai para a
+/// duas lê o detalhe, assim como quem só consulta as versões. A permissão é conferida antes de qualquer leitura de concessão, e o desfecho que governou vai para a
 /// trilha de acesso, permitido ou negado.
 /// </summary>
 public sealed class AutorizacaoDaReclassificacao
@@ -49,20 +49,17 @@ public sealed class AutorizacaoDaReclassificacao
             ? Result<AutoriaDaVersao>.Success(autoria)
             : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
 
-    /// <summary>Quem lê o detalhe: quem decide alguma das duas etapas. Devolve a identidade, ou a recusa.</summary>
+    /// <summary>
+    /// Quem lê o detalhe: quem decide alguma das duas etapas ou quem consulta as versões, sem decidir. Devolve a
+    /// identidade, ou a recusa.
+    /// </summary>
     public async Task<Result<Identidade?>> AutorizarLeituraAsync(
         Guid reclassificacaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(verificador);
+        AcessoAvaliado acesso = await AcessoDaVersao.AvaliarLeituraDaReclassificacaoAsync(verificador, reclassificacaoId, cancellationToken).ConfigureAwait(false);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, reclassificacaoId, cancellationToken, ResourceTiposAutorizacao.Reclassificacao).ConfigureAwait(false);
-        if (acesso is null)
-        {
-            return Result<Identidade?>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
-        }
-
-        await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-
-        return acesso.Aprova ? Result<Identidade?>.Success(_autoria.Autor) : Result<Identidade?>.Failure(ReclassificacaoErros.SemPermissaoNaEtapa());
+        return acesso.Recusa(ReclassificacaoErros.SemPermissaoNaEtapa) is { } recusa
+            ? Result<Identidade?>.Failure(recusa)
+            : Result<Identidade?>.Success(_autoria.Autor);
     }
 }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Authorization;
@@ -50,7 +49,8 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
 
     /// <summary>
     /// Lista os tipos de documento e fatos cuja proteção ainda não foi aprovada, com a situação de cada um. Quem
-    /// aprova vê os dois cadastros; quem só mantém um cadastro vê o dele. O acesso é decidido pela permissão de
+    /// aprova ou consulta a proteção vê os dois cadastros; quem só mantém um cadastro vê o dele. A leitura de quem aprova
+    /// ou consulta é registrada antes da resposta (sem o registro, 503). O acesso é decidido pela permissão de
     /// cada cadastro, e não por um único atributo, porque a lista alcança os dois.
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo")]
@@ -60,6 +60,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar([FromQuery] string? situacao, CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<ItemDaProtecaoDoCatalogoDto>> resultado = await _queryBus
@@ -71,13 +72,17 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
 
     /// <summary>
     /// As decisões que a proteção de dados registrou — aprovação, ajuste recomendado e reprovação —, paginadas por
-    /// cursor opaco bidirecional (ADR-0026 + ADR-0094), das mais recentes para as mais antigas. Quem aprova vê todas;
+    /// cursor opaco bidirecional (ADR-0026 + ADR-0094), das mais recentes para as mais antigas. Quem aprova ou consulta a
+    /// proteção de dados do catálogo vê todas, e a leitura é registrada antes da resposta (sem o registro, 503);
     /// <c>minhas=true</c> restringe às de quem consulta. Os filtros <c>ato</c> (repetível), <c>cadastro</c>,
     /// <c>de</c> e <c>ate</c> (datas, inclusive) e <c>busca</c> (nome ou código do item, sem distinguir maiúsculas
     /// nem acentos) se combinam.
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/decisoes")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ProtecaoDoCatalogoAprovar,
+        ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
     [VendorMediaType(Resource = "protecao-do-catalogo-decisao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<DecisaoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -86,60 +91,41 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarDecisoes(
         [FromCursor(DecisoesResourceTag, RequireSortKey = true)] PageRequest page,
-        [FromQuery(Name = "ato")]
-        [Description("Decisão: APROVACAO, AJUSTE_RECOMENDADO ou REPROVACAO. Repetível; sem o parâmetro, as três.")]
-        string[]? ato,
-        [FromQuery(Name = "cadastro")]
-        [Description("Cadastro do item: TIPO_DOCUMENTO ou FATO.")]
-        string? cadastro,
-        [FromQuery(Name = "de")]
-        [Description("Data inicial da decisão, inclusive (AAAA-MM-DD), no fuso de Belém.")]
-        DateOnly? de,
-        [FromQuery(Name = "ate")]
-        [Description("Data final da decisão, inclusive (AAAA-MM-DD), no fuso de Belém.")]
-        DateOnly? ate,
-        [FromQuery(Name = "busca")]
-        [Description("Trecho do nome ou do código do item. Insensível a caixa e a acentuação. Até 200 caracteres.")]
-        string? busca,
-        [FromQuery(Name = "minhas")]
-        [Description("Quando verdadeiro, só as decisões de quem consulta.")]
-        bool minhas = false,
+        [FromQuery] FiltroDasDecisoesDaProtecaoRequest filtro,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(filtro);
 
-        Result<ListarDecisoesDaProtecaoResult> resultado = await _queryBus
-            .Send(
-                new ListarDecisoesDaProtecaoQuery(
-                    ato ?? [], cadastro, de, ate, busca, minhas, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-                cancellationToken)
-            .ConfigureAwait(false);
+        Result<ListarDecisoesDaProtecaoResult> resultado = await _queryBus.Send(filtro.ParaConsulta(page), cancellationToken).ConfigureAwait(false);
 
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        return await this.OkPaginatedOrdenadoAsync(
-            resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, DecisoesResourceTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? resultado.ToActionResult(_mapper)
+            : await this.OkPaginatedOrdenadoAsync(
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, DecisoesResourceTag,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// O item da fila com o que a proteção de dados precisa ver para decidir, em qualquer situação da aprovação, e
-    /// todos os atos registrados do item em ordem cronológica. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar, sem abrir a consulta
-    /// aos cadastros.
+    /// todos os atos registrados do item em ordem cronológica. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar ou pela de consultar a proteção de
+    /// dados do catálogo, sem abrir a consulta aos cadastros. A leitura é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ProtecaoDoCatalogoAprovar,
+        ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
     [VendorMediaType(Resource = "protecao-do-catalogo-detalhe", Versions = [1])]
     [ProducesResponseType(typeof(DetalheDaProtecaoDoCatalogoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ObterDetalhe(string cadastro, Guid id, CancellationToken cancellationToken)
     {
         CadastroDaProtecaoDoCatalogo origem = string.Equals(cadastro, "fatos", StringComparison.OrdinalIgnoreCase) ? CadastroDaProtecaoDoCatalogo.Fato : CadastroDaProtecaoDoCatalogo.TipoDocumento;

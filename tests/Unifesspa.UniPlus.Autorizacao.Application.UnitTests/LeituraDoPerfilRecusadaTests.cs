@@ -20,6 +20,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovern
 
 public sealed class LeituraDoPerfilRecusadaTests
 {
+    private const string ConsultarVersoes = "autorizacao:perfis:consultar-versoes";
+
     private static readonly CatalogoDaAplicacao Catalogo = new([]);
 
     [Fact(DisplayName = "A listagem recusada não consulta os perfis")]
@@ -53,7 +55,7 @@ public sealed class LeituraDoPerfilRecusadaTests
     }
 
     private static IEnumerable<TrilhaDeAcesso> Negativas(string resourceTipo, Guid? resourceId) =>
-        new[] { Manter, Gestao, Protecao }.Select(p => new TrilhaDeAcesso(PerfisDeTeste.Autor.Sub, p, resourceTipo, resourceId, ResultadoDoAcesso.Negado));
+        new[] { Manter, Gestao, Protecao, ConsultarVersoes }.Select(p => new TrilhaDeAcesso(PerfisDeTeste.Autor.Sub, p, resourceTipo, resourceId, ResultadoDoAcesso.Negado));
 
     private static DetalheDoPerfil Detalhe(IPerfilRepository perfis, IJanelaDeMigracaoRepository janelasDoBanco)
     {

@@ -9,6 +9,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Revisoes;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
@@ -67,7 +69,11 @@ public sealed class RevisoesDeAcessosController : ControllerBase
             : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>Lista as revisões, paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
+    /// <summary>
+    /// Lista as revisões, paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089), com o filtro opcional
+    /// <c>situacao</c> (<c>em_andamento</c> ou <c>concluida</c>), aplicado antes da paginação. Lê quem conduz, quem revê ou quem
+    /// consulta as revisões; cada revisão exibida é registrada antes da resposta (sem o registro, 503).
+    /// </summary>
     [HttpGet("revisoes")]
     [VendorMediaType(Resource = "revisao-de-acessos", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<RevisaoResumoDto>), StatusCodes.Status200OK)]
@@ -76,25 +82,24 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    public async Task<IActionResult> Listar([FromCursor(ResourceTag)] PageRequest page, CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> Listar(
+        [FromCursor(ResourceTag)] PageRequest page,
+        [FromQuery] string? situacao = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        Result<ListarRevisoesResult> resultado = await _queryBus
-            .Send(new ListarRevisoesQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
-            .ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
+        Result<ListarRevisoesQuery> consulta = Consulta(page, situacao);
+        Result<ListarRevisoesResult> resultado = consulta.IsFailure
+            ? Result<ListarRevisoesResult>.ValidationFailure(consulta.Errors)
+            : await _queryBus.Send(consulta.Value!, cancellationToken).ConfigureAwait(false);
 
-        return await this.OkPaginatedAsync(
-            resultado.Value!.Items,
-            resultado.Value.AnteriorAfterId,
-            resultado.Value.ProximoAfterId,
-            page,
-            ResourceTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? resultado.ToActionResult(_mapper)
+            : await this.OkPaginatedAsync(
+                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTag,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Lê a revisão com os itens: concessão, quem decide, resultado, decisor e data.</summary>
@@ -105,6 +110,7 @@ public sealed class RevisoesDeAcessosController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
     {
         Result<RevisaoDeAcessosDto> resultado = await _queryBus
@@ -158,5 +164,15 @@ public sealed class RevisoesDeAcessosController : ControllerBase
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    // Sem situação, todas; a situação é em_andamento ou concluida, e outra recebe 400.
+    private static Result<ListarRevisoesQuery> Consulta(PageRequest page, string? situacao)
+    {
+        SituacaoDaRevisao? lida = SituacaoDaRevisaoCodigo.DoCodigo(situacao);
+
+        return lida is null && !string.IsNullOrWhiteSpace(situacao)
+            ? Result<ListarRevisoesQuery>.Failure(new DomainError(RevisaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use em_andamento ou concluida."))
+            : Result<ListarRevisoesQuery>.Success(new ListarRevisoesQuery(page.AfterId, page.Limit, page.Direction, lida));
     }
 }

@@ -27,7 +27,7 @@ public static class AprovarPedidoDeConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(pedidos);
         ArgumentNullException.ThrowIfNull(previa);
 
-        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, false, command.Id, cancellationToken).ConfigureAwait(false);
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Decisao, command.Id, cancellationToken).ConfigureAwait(false);
         if (acesso is { Aprova: true } && await pedidos.ObterPerfilIdAsync(command.Id, cancellationToken).ConfigureAwait(false) is { } perfilId)
         {
             await previa.GarantirAsync(perfilId, cancellationToken).ConfigureAwait(false);

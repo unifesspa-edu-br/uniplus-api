@@ -13,8 +13,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O acesso ao catálogo é avaliado sem registrar, e as negativas só entram na trilha quando nenhuma das três permissões
-/// autoriza o pedido. O token que não identifica o solicitante é identidade incompleta, e não falta de permissão.
+/// O acesso ao catálogo é avaliado sem registrar, e as negativas só entram na trilha quando nenhuma das quatro permissões
+/// autoriza o pedido. O token que não identifica o solicitante é identidade incompleta, e não falta de permissão. Quem só
+/// consulta a proteção do catálogo vê os dois cadastros, mas não mantém nenhum, e a leitura dele é registrada.
 /// </summary>
 public sealed class AcessoAoCatalogoDeProtecaoTests
 {
@@ -27,12 +28,12 @@ public sealed class AcessoAoCatalogoDeProtecaoTests
 
         Result<AcessoAoCatalogoDeProtecao> acesso = await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, default);
 
-        (acesso.Value.ManterTipos, acesso.Value.ManterFatos, acesso.Value.Aprovar).Should().Be((false, false, true));
+        (acesso.Value.ManterTipos, acesso.Value.ManterFatos, acesso.Value.Aprovar, acesso.Value.Consultar).Should().Be((false, false, true, false));
         await _verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
     }
 
-    [Fact(DisplayName = "Sem nenhuma das três permissões, as três negativas vão ao desfecho do pedido")]
-    public async Task SemNenhuma_RegistraAsTresNegativas()
+    [Fact(DisplayName = "Sem nenhuma das quatro permissões, as quatro negativas vão ao desfecho do pedido")]
+    public async Task SemNenhuma_RegistraAsQuatroNegativas()
     {
         Avaliar();
 
@@ -40,22 +41,20 @@ public sealed class AcessoAoCatalogoDeProtecaoTests
 
         acesso.Value!.Algum.Should().BeFalse();
         await _verificador.Received(1).RegistrarDesfechoAsync(
-            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Count == 3 && d.All(x => x is DecisaoNegada)),
+            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d => d.Count == 4 && d.All(x => x is DecisaoNegada)),
             IntencaoDoRegistro.Pedido,
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "As três negativas do catálogo geram um registro cada, ainda que as permissões sejam de dado interno")]
+    [Fact(DisplayName = "As quatro negativas do catálogo geram um registro cada, ainda que algumas permissões sejam de dado interno")]
     public async Task SemNenhuma_GeraUmRegistroPorNegativa()
     {
         Avaliar();
-        IReadOnlyCollection<DecisaoDeAcesso>? entregues = null;
-        _verificador.RegistrarDesfechoAsync(Arg.Do<IReadOnlyCollection<DecisaoDeAcesso>>(d => entregues = d), IntencaoDoRegistro.Pedido, Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+        List<RegistroDecisaoAcesso> registros = Registros();
 
         await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, default);
 
-        PoliticaDeRegistroDeAcesso.Desfecho(entregues!, IntencaoDoRegistro.Pedido).Should().HaveCount(3);
+        registros.Should().HaveCount(4);
     }
 
     [Fact(DisplayName = "Token sem sujeito recusa com identidade incompleta, e não com falta de permissão")]
@@ -67,6 +66,44 @@ public sealed class AcessoAoCatalogoDeProtecaoTests
 
         acesso.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.IdentidadeIncompleta);
         await _verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
+    }
+
+    [Theory(DisplayName = "A leitura da fila grava a permissão pessoal que a autorizou, e não grava a de manter um cadastro, que é interna")]
+    [InlineData("configuracao:protecao-do-catalogo:consultar", true)]
+    [InlineData("configuracao:protecao-do-catalogo:aprovar", true)]
+    [InlineData("configuracao:tipos-documento:manter", false)]
+    public async Task RegistrarLeitura_GravaSoAPermissaoPessoal(string permitida, bool grava)
+    {
+        Avaliar(permitida);
+        AcessoAoCatalogoDeProtecao acesso = (await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, default)).Value;
+        List<RegistroDecisaoAcesso> registros = Registros();
+
+        await acesso.RegistrarLeituraAsync(_verificador, default);
+
+        registros.Select(static r => r.Permissao).Should().Equal(grava ? [permitida] : []);
+    }
+
+    [Fact(DisplayName = "Quem só consulta a proteção vê os dois cadastros sem manter nenhum nem aprovar")]
+    public async Task Consultar_VeOsDoisCadastrosSemManter()
+    {
+        Avaliar(PermissaoConfiguracao.ProtecaoDoCatalogoConsultar.Codigo);
+
+        AcessoAoCatalogoDeProtecao acesso = (await AcessoAoCatalogoDeProtecao.VerificarAsync(_verificador, default)).Value;
+
+        (acesso.VeOsDoisCadastros, acesso.ManterTipos, acesso.ManterFatos, acesso.Aprovar, acesso.Algum).Should().Be((true, false, false, false, true));
+    }
+
+    // O que a política de registro manda gravar de cada desfecho que o acesso entrega ao verificador.
+    private List<RegistroDecisaoAcesso> Registros()
+    {
+        List<RegistroDecisaoAcesso> registros = [];
+        _verificador.RegistrarDesfechoAsync(
+                Arg.Do<IReadOnlyCollection<DecisaoDeAcesso>>(d => registros.AddRange(PoliticaDeRegistroDeAcesso.Desfecho(d, IntencaoDoRegistro.Pedido))),
+                IntencaoDoRegistro.Pedido,
+                Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        return registros;
     }
 
     private void Avaliar(params string[] permitidas) =>

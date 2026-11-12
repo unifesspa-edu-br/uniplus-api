@@ -29,6 +29,7 @@ public sealed record RevisaoDeAcessosDto(
 /// </param>
 /// <param name="Situacao"><c>pendente</c>, <c>confirmada</c>, <c>revogada</c> ou <c>concessao_encerrada</c> (sem decisão, porque a concessão terminou fora da revisão).</param>
 /// <param name="DecididoPor">Quem decidiu; nulo enquanto o item não foi decidido.</param>
+/// <param name="EhDoLeitor">A concessão do item é de quem lê, que não pode decidi-lo.</param>
 public sealed record ItemDaRevisaoDto(
     Guid Id,
     Guid ConcessaoId,
@@ -39,7 +40,8 @@ public sealed record ItemDaRevisaoDto(
     string Decide,
     string Situacao,
     IdentidadeDto? DecididoPor,
-    DateTimeOffset? DecididoEm);
+    DateTimeOffset? DecididoEm,
+    bool EhDoLeitor);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/revisoes/{id}/itens/{item}/revogacao</c>.</summary>
 /// <param name="Motivo">Obrigatório; fica na trilha da concessão.</param>

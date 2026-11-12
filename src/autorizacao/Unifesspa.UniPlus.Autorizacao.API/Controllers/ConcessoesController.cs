@@ -26,9 +26,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// Não há rota de criação nem de edição: a concessão nasce do pedido aprovado e da instalação, e
-/// não se edita. Toda operação, inclusive a leitura, exige <c>autorizacao:concessoes:administrar</c>
-/// pelo ponto de decisão único: quem não se autenticou recebe <c>401</c> da própria pipeline; quem
-/// se autenticou sem a concessão recebe <c>403</c> do <c>[ExigePermissao]</c>.
+/// não se edita. A leitura exige <c>autorizacao:concessoes:administrar</c> ou
+/// <c>autorizacao:concessoes:consultar</c>, e a revogação só a primeira, pelo ponto de decisão
+/// único: quem não se autenticou recebe <c>401</c> da própria pipeline; quem se autenticou sem a
+/// concessão recebe <c>403</c> do <c>[ExigePermissao]</c>. Toda leitura é registrada antes da
+/// resposta; sem o registro, é recusada com <c>503</c>.
 /// </remarks>
 [ApiController]
 [Authorize]
@@ -57,7 +59,10 @@ public sealed class ConcessoesController : ControllerBase
     /// recusado.
     /// </summary>
     [HttpGet("concessoes")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
+    [ExigePermissao<PermissaoAutorizacao>(
+        PermissaoAutorizacao.ConcessoesAdministrar,
+        ResourceTipo = ResourceTiposAutorizacao.Concessao,
+        OuPermissao = PermissaoAutorizacao.ConcessoesConsultar)]
     [VendorMediaType(Resource = "concessao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<ConcessaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -66,6 +71,7 @@ public sealed class ConcessoesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery] string? pessoa = null,
@@ -77,43 +83,31 @@ public sealed class ConcessoesController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        pessoa = string.IsNullOrWhiteSpace(pessoa) ? null : pessoa.Trim();
-        emissor = string.IsNullOrWhiteSpace(emissor) ? null : emissor.Trim();
-
-        if ((pessoa is null) != (emissor is null))
+        Result<ListarConcessoesQuery> consulta = Consulta(page, pessoa, emissor, unidade, perfil, situacao);
+        if (consulta.IsFailure)
         {
-            return Recusar(ConcessaoErrorCodes.FiltroDePessoaInvalido, "A pessoa é identificada pelo par emissor e pessoa (sub); informe os dois.");
+            return consulta.ToActionResult(_mapper);
         }
 
-        SituacaoDaConcessao? situacaoLida = LerSituacao(situacao);
-        if (situacaoLida is null)
-        {
-            return Recusar(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use ativa, revogada, vencida ou todas.");
-        }
-
-        ListarConcessoesResult resultado = await _queryBus.Send(
-            new ListarConcessoesQuery(
-                emissor, pessoa, unidade, perfil, situacaoLida.Value, page.AfterId, page.Limit, page.Direction),
-            cancellationToken).ConfigureAwait(false);
+        ListarConcessoesResult resultado = await _queryBus.Send(consulta.Value!, cancellationToken).ConfigureAwait(false);
 
         return await this.OkPaginatedAsync(
-            resultado.Items,
-            resultado.AnteriorAfterId,
-            resultado.ProximoAfterId,
-            page,
-            ResourceTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Obtém uma concessão pelo Id. Retorna 404 quando inexistente.</summary>
     [HttpGet("concessoes/{id:guid}")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
+    [ExigePermissao<PermissaoAutorizacao>(
+        PermissaoAutorizacao.ConcessoesAdministrar,
+        ResourceTipo = ResourceTiposAutorizacao.Concessao,
+        OuPermissao = PermissaoAutorizacao.ConcessoesConsultar)]
     [VendorMediaType(Resource = "concessao", Versions = [1])]
     [ProducesResponseType(typeof(ConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
         Result<ConcessaoDto> resultado = await _queryBus
@@ -125,13 +119,17 @@ public sealed class ConcessoesController : ControllerBase
 
     /// <summary>Trilha da concessão: eventos em ordem cronológica, montados na leitura.</summary>
     [HttpGet("concessoes/{id:guid}/trilha")]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Concessao)]
+    [ExigePermissao<PermissaoAutorizacao>(
+        PermissaoAutorizacao.ConcessoesAdministrar,
+        ResourceTipo = ResourceTiposAutorizacao.Concessao,
+        OuPermissao = PermissaoAutorizacao.ConcessoesConsultar)]
     [VendorMediaType(Resource = "trilha-da-concessao", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<EventoDaTrilhaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Trilha(Guid id, CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<EventoDaTrilhaDto>> resultado = await _queryBus
@@ -169,6 +167,23 @@ public sealed class ConcessoesController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
+    // A pessoa é o par emissor e sub, nunca CPF, e um sem o outro é recusado; a situação é uma das quatro conhecidas.
+    private static Result<ListarConcessoesQuery> Consulta(
+        PageRequest page, string? pessoa, string? emissor, Guid? unidade, Guid? perfil, string? situacao)
+    {
+        (pessoa, emissor) = (Aparado(pessoa), Aparado(emissor));
+        if ((pessoa is null) != (emissor is null))
+        {
+            return Recusa(ConcessaoErrorCodes.FiltroDePessoaInvalido, "A pessoa é identificada pelo par emissor e pessoa (sub); informe os dois.");
+        }
+
+        return LerSituacao(situacao) is { } lida
+            ? Result<ListarConcessoesQuery>.Success(new(emissor, pessoa, unidade, perfil, lida, page.AfterId, page.Limit, page.Direction))
+            : Recusa(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use ativa, revogada, vencida ou todas.");
+    }
+
+    private static string? Aparado(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();
+
     private static SituacaoDaConcessao? LerSituacao(string? texto) =>
         string.IsNullOrWhiteSpace(texto)
             ? SituacaoDaConcessao.Ativa
@@ -181,6 +196,6 @@ public sealed class ConcessoesController : ControllerBase
                 _ => null,
             };
 
-    private IActionResult Recusar(string codigo, string mensagem) =>
-        Result.Failure(new DomainError(codigo, mensagem)).ToActionResult(_mapper);
+    private static Result<ListarConcessoesQuery> Recusa(string codigo, string mensagem) =>
+        Result<ListarConcessoesQuery>.Failure(new DomainError(codigo, mensagem));
 }

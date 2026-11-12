@@ -277,16 +277,20 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
-    /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro.
+    /// Todos os atos registrados da proteção de dados do fato — solicitação, decisão e aceite —, em ordem cronológica, com o nome de quem agiu. Exige a permissão de consultar o cadastro ou a de consultar a proteção de dados do catálogo. A leitura é registrada antes da resposta; sem o registro, é recusada com 503.
     /// </summary>
     [HttpGet("admin/fatos-candidato/{id:guid}/protecao/atos")]
-    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoConsultar, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.FatosCandidatoConsultar,
+        ResourceTipo = ResourceTiposConfiguracao.FatoCandidato,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
     [VendorMediaType(Resource = "protecao-do-catalogo-ato", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<AtoDaProtecaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarAtosDaProtecao(Guid id, CancellationToken cancellationToken)
     {
         IReadOnlyList<AtoDaProtecaoDto>? atos = await _queryBus

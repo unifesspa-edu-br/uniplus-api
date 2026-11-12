@@ -7,7 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Quem vê o pedido: as partes (o solicitante e o beneficiário, este também pelo e-mail verificado antes de aceitar) e
-/// quem decide uma das etapas ou administra concessões. Para os demais, o pedido não se distingue do inexistente.
+/// quem decide uma das etapas, administra concessões ou consulta os pedidos. Para os demais, o pedido não se distingue do
+/// inexistente.
 /// </summary>
 internal static class VisibilidadeDoPedido
 {
@@ -16,11 +17,11 @@ internal static class VisibilidadeDoPedido
     /// falha do registro: quem é recusado tem a mesma resposta nos dois casos.
     /// </summary>
     public static Task RegistrarInexistenteAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
-        AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: true, cancellationToken);
+        AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, FinalidadeDoAcesso.Leitura, cancellationToken);
 
     /// <summary>
     /// Confere a visibilidade, ou devolve o erro que a borda responde: 401 para a identidade incompleta, 404 para
-    /// quem não vê.
+    /// quem não vê. Quem não é parte tem a leitura registrada pela permissão que a deu ou, se nenhuma deu, pelas negativas.
     /// </summary>
     public static async Task<DomainError?> ConferirAsync(
         PedidoDeConcessao pedido, PessoaNoToken pessoa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
@@ -30,15 +31,12 @@ internal static class VisibilidadeDoPedido
             return null;
         }
 
-        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: true, pedido.Id, cancellationToken)
-            .ConfigureAwait(false);
-
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Leitura, pedido.Id, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {
             return PedidoHandlerErros.IdentidadeIncompleta();
         }
 
-        // Grava a permissão que deu a visibilidade ou, se nenhuma deu, as negativas.
         await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
 
         return acesso.VeTodos ? null : PedidoHandlerErros.NaoEncontrado();

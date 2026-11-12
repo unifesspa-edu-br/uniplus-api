@@ -25,6 +25,7 @@ public sealed class DocumentosDasVersoesTests
     private const string Descricao = "Descrição válida.";
     private const string Manter = "autorizacao:perfis:manter";
     private const string AprovarProtecaoDeDados = "autorizacao:perfis:aprovar-protecao-de-dados";
+    private const string ConsultarVersoes = "autorizacao:perfis:consultar-versoes";
 
     private static readonly CatalogoDeTeste Catalogo = new();
 
@@ -98,11 +99,13 @@ public sealed class DocumentosDasVersoesTests
         resposta.IsSuccess.Should().BeTrue();
         resposta.Value!.Situacao.Should().Be("em_verificacao");
         PedidoDeVerificacaoDeArquivo pedido = mensagens.Should().ContainSingle().Subject.Should().BeOfType<PedidoDeVerificacaoDeArquivo>().Subject;
-        DocumentoDaVersao documento = perfil.VersaoPendente.Documento!;
-        pedido.ArquivoId.Should().Be(documento.Id);
-        pedido.ChaveDeEnvio.Should().Be(documento.ChaveDeEnvio);
+        DevePedirAVerificacaoDo(pedido, perfil.VersaoPendente.Documento!);
+    }
+
+    private static void DevePedirAVerificacaoDo(PedidoDeVerificacaoDeArquivo pedido, DocumentoDaVersao documento)
+    {
+        (pedido.ArquivoId, pedido.ChaveDeEnvio, pedido.ChaveDefinitiva).Should().Be((documento.Id, documento.ChaveDeEnvio, documento.ChaveDefinitiva));
         pedido.ETag.Should().Be("\"etag-1\"");
-        pedido.ChaveDefinitiva.Should().Be(documento.ChaveDefinitiva);
         pedido.TamanhoMaximoBytes.Should().Be(PerfisDeTeste.TamanhoDoDocumento);
         pedido.Destino.Should().Be(DestinoDoResultado.Autorizacao);
     }
@@ -166,7 +169,7 @@ public sealed class DocumentosDasVersoesTests
         TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(SobreOPerfil(AprovarProtecaoDeDados, perfil.Id, ResultadoDoAcesso.Permitido));
     }
 
-    [Fact(DisplayName = "Sem nenhuma das duas permissões a leitura do documento é recusada, sem URL nem acesso gravado")]
+    [Fact(DisplayName = "Sem nenhuma das permissões de leitura o documento é recusado, sem URL nem acesso gravado")]
     public async Task Ler_SemPermissao_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
@@ -176,7 +179,9 @@ public sealed class DocumentosDasVersoesTests
 
         resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
         TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(
-            SobreOPerfil(Manter, perfil.Id, ResultadoDoAcesso.Negado), SobreOPerfil(AprovarProtecaoDeDados, perfil.Id, ResultadoDoAcesso.Negado));
+            SobreOPerfil(Manter, perfil.Id, ResultadoDoAcesso.Negado),
+            SobreOPerfil(AprovarProtecaoDeDados, perfil.Id, ResultadoDoAcesso.Negado),
+            SobreOPerfil(ConsultarVersoes, perfil.Id, ResultadoDoAcesso.Negado));
         cenario.Armazenamento.ChavesDeLeitura.Should().BeEmpty();
         cenario.Perfis.Leituras.Should().BeEmpty();
     }

@@ -4,77 +4,80 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary>
-/// O que o solicitante da requisição pode fazer no fluxo dos pedidos: decidir cada etapa e administrar concessões.
-/// Cada capacidade é avaliada pelo ponto de decisão único, por permissão do catálogo, sem registrar: quem usa o
-/// resultado grava o que governou o desfecho (<see cref="RegistrarAsync"/> e <see cref="RegistrarDoDesfechoAsync"/>), para
-/// que a trilha traga a decisão real e não uma negativa falsa de uma permissão que a pessoa nem precisava ter.
+/// O que o solicitante da requisição pode fazer no fluxo dos pedidos: decidir cada etapa, administrar concessões e
+/// consultar os pedidos sem decidir, como o Encarregado de dados. Cada capacidade é avaliada pelo ponto de decisão único,
+/// por permissão do catálogo, sem registrar: quem usa o resultado grava o que governou o desfecho
+/// (<see cref="RegistrarAsync"/> e <see cref="RegistrarDoDesfechoAsync"/>), para que a trilha traga a decisão real e não
+/// uma negativa falsa de uma permissão que a pessoa nem precisava ter.
 /// </summary>
 internal sealed record AcessoDoAprovador(
     DecisaoDeAcesso DecisaoFuncional,
     DecisaoDeAcesso DecisaoProtecaoDeDados,
-    DecisaoDeAcesso? DecisaoAdministrar)
+    DecisaoDeAcesso? DecisaoAdministrar,
+    DecisaoDeAcesso? DecisaoConsultar)
 {
-    private static readonly PermissionRequirement PermissaoFuncional =
-        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.PedidosAprovarFuncional).Requisito;
+    private static readonly PermissionRequirement PermissaoFuncional = Requisito(PermissaoAutorizacao.PedidosAprovarFuncional);
 
-    private static readonly PermissionRequirement PermissaoProtecaoDeDados =
-        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.PedidosAprovarProtecaoDeDados).Requisito;
+    private static readonly PermissionRequirement PermissaoProtecaoDeDados = Requisito(PermissaoAutorizacao.PedidosAprovarProtecaoDeDados);
 
-    private static readonly PermissionRequirement PermissaoAdministrar =
-        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.ConcessoesAdministrar).Requisito;
+    private static readonly PermissionRequirement PermissaoAdministrar = Requisito(PermissaoAutorizacao.ConcessoesAdministrar);
+
+    private static readonly PermissionRequirement PermissaoConsultar = Requisito(PermissaoAutorizacao.PedidosConsultar);
 
     /// <summary>Decide a etapa do gestor de acessos.</summary>
-    public bool Funcional => Permitida(DecisaoFuncional);
+    public bool Funcional => DecisaoFuncional is DecisaoPermitida;
 
     /// <summary>Decide a etapa da proteção de dados.</summary>
-    public bool ProtecaoDeDados => Permitida(DecisaoProtecaoDeDados);
+    public bool ProtecaoDeDados => DecisaoProtecaoDeDados is DecisaoPermitida;
 
     /// <summary>Administra concessões.</summary>
-    public bool Administrar => Permitida(DecisaoAdministrar);
+    public bool Administrar => DecisaoAdministrar is DecisaoPermitida;
+
+    /// <summary>Consulta os pedidos sem decidir nenhuma etapa.</summary>
+    public bool Consulta => DecisaoConsultar is DecisaoPermitida;
 
     /// <summary>Decide alguma das duas etapas.</summary>
     public bool Aprova => Funcional || ProtecaoDeDados;
 
-    /// <summary>Vê o pedido de qualquer pessoa: decide uma etapa ou administra concessões.</summary>
-    public bool VeTodos => Aprova || Administrar;
+    /// <summary>Vê o pedido de qualquer pessoa: decide uma etapa, administra concessões ou consulta os pedidos.</summary>
+    public bool VeTodos => Aprova || Administrar || Consulta;
+
+    private DecisaoDeAcesso[] Avaliadas =>
+        [DecisaoFuncional, DecisaoProtecaoDeDados, .. new[] { DecisaoAdministrar, DecisaoConsultar }.OfType<DecisaoDeAcesso>()];
 
     /// <summary>A permissão da etapa que o pedido aguarda.</summary>
-    public bool Decide(Domain.Enums.EtapaDoPedido etapa) =>
-        etapa == Domain.Enums.EtapaDoPedido.Gestor ? Funcional : ProtecaoDeDados;
+    public bool Decide(EtapaDoPedido etapa) => etapa == EtapaDoPedido.Gestor ? Funcional : ProtecaoDeDados;
 
     /// <summary>A decisão da permissão da etapa que o pedido aguarda.</summary>
-    public DecisaoDeAcesso DecisaoDaEtapa(Domain.Enums.EtapaDoPedido etapa) =>
-        etapa == Domain.Enums.EtapaDoPedido.Gestor ? DecisaoFuncional : DecisaoProtecaoDeDados;
+    public DecisaoDeAcesso DecisaoDaEtapa(EtapaDoPedido etapa) =>
+        etapa == EtapaDoPedido.Gestor ? DecisaoFuncional : DecisaoProtecaoDeDados;
 
     /// <summary>
     /// Consulta o que a requisição pode, sem registrar. Nulo quando o token não identifica o solicitante por completo: a
     /// borda responde 401, e nenhuma interpretação de acesso se faz antes disso.
     /// </summary>
-    /// <param name="incluirAdministrar">Só a leitura de pedido alheio precisa saber se administra concessões.</param>
+    /// <param name="finalidade">Para que se consulta: define quais permissões entram na avaliação.</param>
     /// <param name="pedidoId">O pedido acessado, quando a consulta é sobre um; a trilha então nomeia o pedido.</param>
     public static async Task<AcessoDoAprovador?> ConsultarAsync(
-        IVerificadorDeAcesso verificador, bool incluirAdministrar, Guid? pedidoId, CancellationToken cancellationToken)
+        IVerificadorDeAcesso verificador, FinalidadeDoAcesso finalidade, Guid? pedidoId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        ResourceContext? ResourceDe(PermissionRequirement permissao) => pedidoId is { } id
-            ? ResourceContext.From(ResourceTiposAutorizacao.Pedido, permissao.Sensibilidade, resourceId: id).Value
-            : null;
-
-        DecisaoDeAcesso funcional = await verificador.AvaliarAsync(PermissaoFuncional, ResourceDe(PermissaoFuncional), cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso funcional = await AvaliarAsync(verificador, PermissaoFuncional, pedidoId, cancellationToken).ConfigureAwait(false);
         if (funcional is SemSujeito)
         {
             return null;
         }
 
-        DecisaoDeAcesso protecao = await verificador.AvaliarAsync(PermissaoProtecaoDeDados, ResourceDe(PermissaoProtecaoDeDados), cancellationToken).ConfigureAwait(false);
-        DecisaoDeAcesso? administrar = incluirAdministrar
-            ? await verificador.AvaliarAsync(PermissaoAdministrar, ResourceDe(PermissaoAdministrar), cancellationToken).ConfigureAwait(false)
-            : null;
-
-        return new AcessoDoAprovador(funcional, protecao, administrar);
+        return new AcessoDoAprovador(
+            funcional,
+            await AvaliarAsync(verificador, PermissaoProtecaoDeDados, pedidoId, cancellationToken).ConfigureAwait(false),
+            finalidade == FinalidadeDoAcesso.Leitura ? await AvaliarAsync(verificador, PermissaoAdministrar, pedidoId, cancellationToken).ConfigureAwait(false) : null,
+            finalidade == FinalidadeDoAcesso.Decisao ? null : await AvaliarAsync(verificador, PermissaoConsultar, pedidoId, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -83,12 +86,11 @@ internal sealed record AcessoDoAprovador(
     /// de quem não tem a permissão. Quem tem a permissão errou o link, e nada se registra.
     /// </summary>
     public static async Task RegistrarNegativasDoInexistenteAsync(
-        IVerificadorDeAcesso verificador, bool incluirAdministrar, CancellationToken cancellationToken)
+        IVerificadorDeAcesso verificador, FinalidadeDoAcesso finalidade, CancellationToken cancellationToken)
     {
-        AcessoDoAprovador? acesso = await ConsultarAsync(verificador, incluirAdministrar, pedidoId: null, cancellationToken)
-            .ConfigureAwait(false);
+        AcessoDoAprovador? acesso = await ConsultarAsync(verificador, finalidade, pedidoId: null, cancellationToken).ConfigureAwait(false);
 
-        if (acesso is { VeTodos: false })
+        if (acesso is not null && !acesso.Ve(finalidade))
         {
             await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
         }
@@ -113,32 +115,41 @@ internal sealed record AcessoDoAprovador(
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        DecisaoDeAcesso[] todas = [DecisaoFuncional, DecisaoProtecaoDeDados, .. DecisaoAdministrar is null ? [] : new[] { DecisaoAdministrar }];
-
-        return verificador.RegistrarDesfechoAsync(todas, IntencaoDoRegistro.Aprovador, cancellationToken);
+        return verificador.RegistrarDesfechoAsync(Avaliadas, IntencaoDoRegistro.Aprovador, cancellationToken);
     }
 
     /// <summary>
-    /// Se a pessoa lista a fila, registrando a decisão que governa: a da fila pedida, ou o desfecho quando a fila é
-    /// de qualquer etapa.
+    /// Autoriza a fila, registrando a decisão que governa: a da etapa da fila pedida, que só quem decide a etapa lista, ou
+    /// o desfecho quando a fila é a de todos, que quem consulta os pedidos também lista. Devolve a decisão permitida que
+    /// governou, da qual sai o registro de cada pedido exibido, ou nulo quando a fila é recusada.
     /// </summary>
-    public async Task<bool> PodeListarAsync(IVerificadorDeAcesso verificador, Domain.Interfaces.FilaDePedidos fila, CancellationToken cancellationToken)
+    public async Task<DecisaoPermitida?> AutorizarFilaAsync(IVerificadorDeAcesso verificador, FilaDePedidos fila, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        switch (fila)
+        DecisaoDeAcesso[] governantes = fila switch
         {
-            case Domain.Interfaces.FilaDePedidos.Gestor:
-                await RegistrarAsync(verificador, DecisaoFuncional, cancellationToken).ConfigureAwait(false);
-                return Funcional;
-            case Domain.Interfaces.FilaDePedidos.ProtecaoDeDados:
-                await RegistrarAsync(verificador, DecisaoProtecaoDeDados, cancellationToken).ConfigureAwait(false);
-                return ProtecaoDeDados;
-            default:
-                await RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-                return Aprova;
-        }
+            FilaDePedidos.Gestor => [DecisaoFuncional],
+            FilaDePedidos.ProtecaoDeDados => [DecisaoProtecaoDeDados],
+            _ => Avaliadas,
+        };
+        await verificador.RegistrarDesfechoAsync(governantes, IntencaoDoRegistro.Aprovador, cancellationToken).ConfigureAwait(false);
+
+        return governantes.OfType<DecisaoPermitida>().FirstOrDefault();
     }
 
-    private static bool Permitida(DecisaoDeAcesso? decisao) => decisao is DecisaoPermitida;
+    private bool Ve(FinalidadeDoAcesso finalidade) => finalidade == FinalidadeDoAcesso.Decisao ? Aprova : VeTodos;
+
+    private static Task<DecisaoDeAcesso> AvaliarAsync(
+        IVerificadorDeAcesso verificador, PermissionRequirement permissao, Guid? pedidoId, CancellationToken cancellationToken)
+    {
+        ResourceContext? resource = pedidoId is { } id
+            ? ResourceContext.From(ResourceTiposAutorizacao.Pedido, permissao.Sensibilidade, resourceId: id).Value
+            : null;
+
+        return verificador.AvaliarAsync(permissao, resource, cancellationToken);
+    }
+
+    private static PermissionRequirement Requisito(PermissaoAutorizacao permissao) =>
+        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Requisito;
 }

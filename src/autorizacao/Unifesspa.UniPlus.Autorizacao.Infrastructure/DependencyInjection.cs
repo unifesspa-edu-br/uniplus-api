@@ -65,6 +65,7 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddScoped<IConcessaoRepository, ConcessaoRepository>();
         services.AddScoped<IJanelaDeMigracaoRepository, JanelaDeMigracaoRepository>();
         services.AddScoped<IPapelDoRepresentante, PapelDoRepresentante>();
+        services.AddScoped<IIncompatibilidadeDosPapeis, IncompatibilidadeDosPapeisNoBanco>();
         services.AddScoped<IInstalacaoRepository, InstalacaoRepository>();
         services.AddScoped<IConcessoesAtivasDoSujeito, ConcessoesAtivasDoSujeito>();
         services.AddScoped<ITitularesDaPermissao, TitularesDaPermissao>();

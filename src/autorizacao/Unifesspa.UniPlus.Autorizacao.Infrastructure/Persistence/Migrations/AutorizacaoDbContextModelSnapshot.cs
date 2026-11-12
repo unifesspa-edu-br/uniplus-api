@@ -1932,6 +1932,15 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                             Descricao = "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.",
                             Governanca = "representante-do-controlador",
                             Nome = "Representante do controlador"
+                        },
+                        new
+                        {
+                            Id = new Guid("019a0000-0000-7000-8000-000000000003"),
+                            Ativo = true,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Descricao = "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, janela de migração e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.",
+                            Governanca = "encarregado-de-dados",
+                            Nome = "Encarregado de dados"
                         });
                 });
 
@@ -3073,6 +3082,46 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                                 {
                                     PerfilId = new Guid("019a0000-0000-7000-8000-000000000002"),
                                     Codigo = "configuracao:protecao-do-catalogo:aprovar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "autorizacao:concessoes:consultar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "autorizacao:pedidos:consultar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "autorizacao:perfis:consultar-versoes"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "autorizacao:permissoes:consultar-catalogo"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "autorizacao:providencias:solicitar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "autorizacao:revisoes:consultar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "configuracao:protecao-do-catalogo:consultar"
+                                },
+                                new
+                                {
+                                    PerfilId = new Guid("019a0000-0000-7000-8000-000000000003"),
+                                    Codigo = "configuracao:protecao-do-catalogo:manifestar"
                                 });
                         });
 

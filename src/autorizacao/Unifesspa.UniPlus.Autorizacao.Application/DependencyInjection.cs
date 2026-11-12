@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
@@ -31,8 +33,9 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddValidatorsFromAssembly(typeof(AutorizacaoApplicationServiceRegistration).Assembly);
 
         AdicionarEventosDaOrigem(services);
-        AdicionarAvisosDoPedido(services);
+        AdicionarFluxoDoPedido(services);
         AdicionarDecisoesDaGovernanca(services);
+        AdicionarInstalacao(services);
         AdicionarMetricasDaGovernanca(services);
 
         AdicionarVersoesDoPerfil(services);
@@ -48,10 +51,13 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
     }
 
-    private static void AdicionarAvisosDoPedido(IServiceCollection services)
+    private static void AdicionarFluxoDoPedido(IServiceCollection services)
     {
         services.AddScoped<AvisosDoPedido>();
         services.AddScoped<AvisoDePedidoDevolvido>();
+        services.AddScoped<ConferenciaDoNovoPedido>();
+        services.AddScoped<GravacaoDoNovoPedido>();
+        services.AddScoped<AceiteDoPedido>();
     }
 
     private static void AdicionarDecisoesDaGovernanca(IServiceCollection services)
@@ -59,9 +65,16 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<ConcessaoDoPedidoAprovado>();
         services.AddScoped<GravacaoDaDecisaoDoPedido>();
         services.AddScoped<AprovacaoDoPedido>();
+        services.AddScoped<TravasDaRevogacao>();
         services.AddScoped<PreparoDaDecisaoDoItem>();
         services.AddScoped<LeituraDaRevisao>();
         services.AddScoped<AberturaDaRevisao>();
+    }
+
+    private static void AdicionarInstalacao(IServiceCollection services)
+    {
+        services.AddScoped<TentativaDeConfirmacao>();
+        services.AddScoped<ConcessaoDosGestores>();
     }
 
     private static void AdicionarMetricasDaGovernanca(IServiceCollection services)

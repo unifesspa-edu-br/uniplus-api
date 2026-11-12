@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 
 /// <summary>Perfil de acesso como a API o expõe.</summary>
 /// <param name="Nome">O nome corrente: o da versão vigente ou, sem vigente, o da pendente.</param>
-/// <param name="Governanca">Papel de governança do perfil de sistema; nulo nos perfis comuns.</param>
+/// <param name="Governanca">Papel de governança do perfil de sistema (<c>gestor-de-acessos</c>, <c>representante-do-controlador</c> ou <c>encarregado-de-dados</c>); nulo nos perfis comuns.</param>
 /// <param name="Sensibilidade">A mais alta entre as permissões da composição em vigor (sem vigente, da pendente), derivada do catálogo.</param>
 /// <param name="ComposicaoEmVigor">O que decide acesso hoje; nulo no perfil comum sem versão vigente.</param>
 /// <param name="VersaoPendente">A versão que espera a aprovação; nula quando não há.</param>

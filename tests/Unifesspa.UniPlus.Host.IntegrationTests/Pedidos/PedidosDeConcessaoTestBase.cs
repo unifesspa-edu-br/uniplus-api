@@ -46,6 +46,9 @@ public abstract class PedidosDeConcessaoTestBase
 
     internal static readonly byte[] Pdf = [.. "%PDF-1.7 documento de designacao de teste"u8];
 
+    private static readonly Guid[] PerfisDeGovernanca =
+        [PerfisDeSistema.GestorDeAcessosId, PerfisDeSistema.RepresentanteDoControladorId, PerfisDeSistema.EncarregadoDeDadosId];
+
     internal static readonly Persona Diogo = new("diogo.souza", "Diogo Bruno Filipe Souza", "diogo.bruno.souza@uniplus-test.local");
     internal static readonly Persona Isabella = new("isabella.figueiredo", "Isabella Priscila Figueiredo", "isabellapriscilafigueiredo@uniplus-test.local");
     internal static readonly Persona Marlene = new("marlene.martins", "Marlene Marcia Emily Martins", "marlenemarciamartins@uniplus-test.local");
@@ -200,10 +203,7 @@ public abstract class PedidosDeConcessaoTestBase
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexos");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedidos_de_concessao");
         await ApagarFatosDasConcessoesAsync();
-        await ExecutarSqlAsync(
-            "DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id IN ({0}, {1})",
-            PerfisDeSistema.GestorDeAcessosId,
-            PerfisDeSistema.RepresentanteDoControladorId);
+        await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id = ANY({0})", PerfisDeGovernanca);
         await ExpirarVersoesVencidasDeTestesAnterioresAsync();
     }
 

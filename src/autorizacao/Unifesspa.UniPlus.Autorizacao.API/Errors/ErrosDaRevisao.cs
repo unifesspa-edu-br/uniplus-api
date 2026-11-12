@@ -20,6 +20,7 @@ internal static class ErrosDaRevisao
         new(RevisaoErrorCodes.ConcessaoNaoAtiva, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.revisao.concessao_nao_ativa", "A concessão do item já não está ativa")),
         new(RevisaoErrorCodes.DecisorEBeneficiario, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.revisao.decisor_e_beneficiario", "Ninguém decide o item da própria concessão")),
         new(RevisaoErrorCodes.DecisorNaoDecideOItem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.revisao.decisor_nao_decide_o_item", "O item cabe à outra governança")),
+        new(RevisaoErrorCodes.FiltroDeSituacaoInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.revisao.filtro_de_situacao_invalido", "Situação do filtro de revisões inválida")),
     ];
 
     private static KeyValuePair<string, DomainErrorMapping>[] Acesso() =>

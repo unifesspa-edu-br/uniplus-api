@@ -126,15 +126,37 @@ public sealed class ConferenciaDoCatalogoTests
     {
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().HaveCount(7);
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.RepresentanteDoControladorId).Should().HaveCount(6);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Should().HaveCount(8);
         ComposicaoDaGovernanca.CodigosDe(Guid.NewGuid()).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de Representante do controlador e não no do gestor de acessos")]
+    [Fact(DisplayName = "As permissões de decisão protegida estão no perfil de Representante do controlador e não no do gestor nem no do Encarregado")]
     public void Composicao_DecisoesProtegidas_SoNoRepresentante()
     {
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.RepresentanteDoControladorId).Should().Contain(CodigosDasDecisoesProtegidas);
         ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.GestorDeAcessosId).Should().NotContain(CodigosDasDecisoesProtegidas);
+        ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Should().NotContain(CodigosDasDecisoesProtegidas);
     }
+
+    [Fact(DisplayName = "O Encarregado de dados não reúne decisão, revogação nem administração de concessões")]
+    public void Composicao_Encarregado_SoConsultaManifestaESolicita()
+    {
+        IReadOnlyList<string> codigos = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId);
+
+        codigos.Should().NotContain(c => c.Contains(":aprovar", StringComparison.Ordinal) || c.EndsWith(":conduzir", StringComparison.Ordinal));
+        codigos.Should().NotContain(["autorizacao:concessoes:administrar", "autorizacao:perfis:manter", "autorizacao:revisoes:rever-protecao-de-dados"]);
+        codigos.Should().Contain(["autorizacao:permissoes:consultar-catalogo", "configuracao:protecao-do-catalogo:manifestar", "autorizacao:providencias:solicitar"]);
+    }
+
+    [Theory(DisplayName = "A governança admite qualquer permissão da autorização e, de outro módulo, só a reservada")]
+    [InlineData("autorizacao", false, true)]
+    [InlineData("autorizacao", true, true)]
+    [InlineData("configuracao", true, true)]
+    [InlineData("configuracao", false, false)]
+    [InlineData("selecao", false, false)]
+    public void Composicao_Admite_ReservadaDeOutroModulo(string modulo, bool reservada, bool admite) =>
+        ComposicaoDaGovernanca.Admite(new LinhaDoRetratoDoCatalogo(modulo + ":a:b", modulo, ClassificacaoDeProtecao.Pessoal, false, reservada))
+            .Should().Be(admite);
 
     [Fact(DisplayName = "A publicação do termo de responsabilidade é só do gestor de acessos")]
     public void Composicao_PublicacaoDoTermo_SoNoGestor()

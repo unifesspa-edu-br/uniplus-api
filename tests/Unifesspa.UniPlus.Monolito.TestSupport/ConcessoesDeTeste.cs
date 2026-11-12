@@ -119,16 +119,17 @@ public static class ConcessoesDeTeste
         await ConcederAsync(services, sub, await CriarPerfilAsync(services, permissoes));
 
     /// <summary>
-    /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos ou o do
-    /// Representante do controlador.
+    /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos, o do
+    /// Representante do controlador ou o do Encarregado de dados.
     /// </summary>
     public static Task<Guid> ConcederGovernancaAsync(
         IServiceProvider services, string sub, TipoDeGovernanca governanca, string? email = null) =>
-        ConcederAsync(
-            services,
-            sub,
-            governanca == TipoDeGovernanca.GestorDeAcessos
-                ? PerfisDeSistema.GestorDeAcessosId
-                : PerfisDeSistema.RepresentanteDoControladorId,
-            email: email);
+        ConcederAsync(services, sub, PerfilDe(governanca), email: email);
+
+    private static Guid PerfilDe(TipoDeGovernanca governanca) => governanca switch
+    {
+        TipoDeGovernanca.GestorDeAcessos => PerfisDeSistema.GestorDeAcessosId,
+        TipoDeGovernanca.RepresentanteDoControlador => PerfisDeSistema.RepresentanteDoControladorId,
+        _ => PerfisDeSistema.EncarregadoDeDadosId,
+    };
 }

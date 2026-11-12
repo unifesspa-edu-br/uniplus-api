@@ -34,6 +34,7 @@ internal static class ErrosDoPedido
         new(PedidoErrorCodes.MesmoDecisorNasDuasEtapas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.mesmo_decisor_nas_duas_etapas", "A mesma pessoa não decide as duas etapas")),
         new(PedidoErrorCodes.MotivoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.motivo_invalido", "Motivo da recusa inválido")),
         new(PedidoErrorCodes.JaTemConcessao, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.ja_tem_concessao", "O beneficiário já tem concessão ativa igual")),
+        new(PedidoErrorCodes.PapeisIncompativeis, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.papeis_incompativeis", "O beneficiário já exerce papel incompatível")),
         new(PedidoErrorCodes.PrazoVencido, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.prazo_vencido", "O prazo da concessão venceu antes da aprovação", RecusaAposGravacao: true)),
         new(PedidoErrorCodes.ValidadeInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.validade_invalida", "Fim da vigência inválido")),
         new(PedidoErrorCodes.PerfilAlterado, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.perfil_alterado", "O perfil mudou depois da aprovação do gestor", RecusaAposGravacao: true)),

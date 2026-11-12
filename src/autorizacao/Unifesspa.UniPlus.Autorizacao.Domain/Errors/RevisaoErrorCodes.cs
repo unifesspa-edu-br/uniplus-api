@@ -17,4 +17,5 @@ public static class RevisaoErrorCodes
     public const string IdentidadeIncompleta = "Revisao.IdentidadeIncompleta";
     public const string AutorNaoIdentificado = "Revisao.AutorNaoIdentificado";
     public const string ConflitoDeConcorrencia = "Revisao.ConflitoDeConcorrencia";
+    public const string FiltroDeSituacaoInvalido = "Revisao.FiltroDeSituacaoInvalido";
 }

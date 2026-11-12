@@ -177,17 +177,22 @@ public sealed class InstalacaoController : ControllerBase
 
     /// <summary>
     /// Trilha da instalação: quem executou, o documento, o envio do código, as tentativas e a confirmação, sem o
-    /// código. Vale também para a instalação cancelada ou expirada, que não gerou concessão.
+    /// código. Vale também para a instalação cancelada ou expirada, que não gerou concessão. Lê quem administra ou quem
+    /// consulta as concessões, e a leitura é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("instalacoes/{id:guid}/trilha")]
     [Authorize]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Instalacao)]
+    [ExigePermissao<PermissaoAutorizacao>(
+        PermissaoAutorizacao.ConcessoesAdministrar,
+        ResourceTipo = ResourceTiposAutorizacao.Instalacao,
+        OuPermissao = PermissaoAutorizacao.ConcessoesConsultar)]
     [VendorMediaType(Resource = "trilha-da-instalacao", Versions = [1])]
     [ProducesResponseType(typeof(IReadOnlyList<EventoDaTrilhaDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Trilha(Guid id, CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<EventoDaTrilhaDto>> resultado = await _queryBus
@@ -199,11 +204,15 @@ public sealed class InstalacaoController : ControllerBase
 
     /// <summary>
     /// Tentativas de confirmar a instalação de quem não tinha instalação aguardando código, paginadas por cursor
-    /// opaco bidirecional (ADR-0026 + ADR-0089). A trilha de uma instalação não as alcança.
+    /// opaco bidirecional (ADR-0026 + ADR-0089). A trilha de uma instalação não as alcança. Lê quem administra ou quem
+    /// consulta as concessões, e a leitura é registrada antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("instalacoes/tentativas-sem-pendencia")]
     [Authorize]
-    [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar, ResourceTipo = ResourceTiposAutorizacao.Instalacao)]
+    [ExigePermissao<PermissaoAutorizacao>(
+        PermissaoAutorizacao.ConcessoesAdministrar,
+        ResourceTipo = ResourceTiposAutorizacao.Instalacao,
+        OuPermissao = PermissaoAutorizacao.ConcessoesConsultar)]
     [VendorMediaType(Resource = "tentativa-de-instalacao", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<TentativaDeInstalacaoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -211,6 +220,7 @@ public sealed class InstalacaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ListarTentativasSemPendencia(
         [FromCursor(ResourceTag)] PageRequest page,
         CancellationToken cancellationToken)
