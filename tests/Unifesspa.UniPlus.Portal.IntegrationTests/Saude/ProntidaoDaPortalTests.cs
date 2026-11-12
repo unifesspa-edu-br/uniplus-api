@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Portal.IntegrationTests.Saude;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
