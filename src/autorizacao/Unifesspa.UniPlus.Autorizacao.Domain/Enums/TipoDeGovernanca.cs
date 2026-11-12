@@ -14,6 +14,12 @@ public enum TipoDeGovernanca
     /// a janela de migração e a proteção do catálogo (ADR-0162).
     /// </summary>
     RepresentanteDoControlador = 2,
+
+    /// <summary>
+    /// Acompanha o tratamento de dados pessoais na gestão de acessos: consulta, registra manifestação técnica e solicita
+    /// providências, sem aprovar, recusar nem revogar (ADR-0162).
+    /// </summary>
+    EncarregadoDeDados = 3,
 }
 
 /// <summary>Código textual canônico de <see cref="TipoDeGovernanca"/>, o valor gravado e exposto.</summary>
@@ -21,11 +27,13 @@ public static class TipoDeGovernancaCodigo
 {
     public const string GestorDeAcessos = "gestor-de-acessos";
     public const string RepresentanteDoControlador = "representante-do-controlador";
+    public const string EncarregadoDeDados = "encarregado-de-dados";
 
     public static string ToCodigo(this TipoDeGovernanca tipo) => tipo switch
     {
         TipoDeGovernanca.GestorDeAcessos => GestorDeAcessos,
         TipoDeGovernanca.RepresentanteDoControlador => RepresentanteDoControlador,
+        TipoDeGovernanca.EncarregadoDeDados => EncarregadoDeDados,
         _ => throw new ArgumentOutOfRangeException(nameof(tipo), tipo, null),
     };
 
@@ -33,6 +41,7 @@ public static class TipoDeGovernancaCodigo
     {
         GestorDeAcessos => TipoDeGovernanca.GestorDeAcessos,
         RepresentanteDoControlador => TipoDeGovernanca.RepresentanteDoControlador,
+        EncarregadoDeDados => TipoDeGovernanca.EncarregadoDeDados,
         _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, null),
     };
 }

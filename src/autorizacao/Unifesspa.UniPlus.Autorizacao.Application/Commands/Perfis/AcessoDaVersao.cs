@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>
 /// O que o solicitante pode fazer na governança das versões de um perfil: decidir cada etapa da aprovação, manter perfis
-/// e ler o documento. Cada capacidade é avaliada pelo ponto de decisão único, sem registrar: quem usa o resultado grava
+/// e ler o perfil, o documento, a janela, a contenção, a reclassificação e as divergências, o que quem só consulta as
+/// versões, como o Encarregado de dados, também faz, sem decidir. Cada capacidade é avaliada pelo ponto de decisão único, sem registrar: quem usa o resultado grava
 /// a decisão que governou o desfecho, para que a trilha traga a real e não uma negativa de uma permissão que a pessoa nem
 /// precisava ter.
 /// </summary>
@@ -20,6 +21,8 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
         Requisito(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados);
 
     private static readonly PermissionRequirement PermissaoDeManter = Requisito(PermissaoAutorizacao.PerfisManter);
+
+    private static readonly PermissionRequirement PermissaoDeConsultar = Requisito(PermissaoAutorizacao.PerfisConsultarVersoes);
 
     /// <summary>Decide a etapa da gestão de acessos.</summary>
     public bool Gestao => DecisaoDaGestao is DecisaoPermitida;
@@ -73,45 +76,38 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
     }
 
     /// <summary>
-    /// Se a pessoa lê o documento da versão: quem mantém perfis ou quem aprova pela proteção de dados. Registra o desfecho
-    /// de uma só vez, as permissões que habilitaram ou, se nenhuma habilitou, as negativas.
+    /// Se a pessoa lê o documento da versão: quem mantém perfis, quem aprova pela proteção de dados ou quem consulta as
+    /// versões. Registra o desfecho de uma só vez, as permissões que habilitaram ou, se nenhuma habilitou, as negativas.
     /// </summary>
-    public static async Task<AcessoAvaliado> AvaliarLeituraDoDocumentoAsync(
-        IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        DecisaoDeAcesso manter = await AvaliarAsync(verificador, PermissaoDeManter, perfilId, cancellationToken).ConfigureAwait(false);
-        if (manter is SemSujeito)
-        {
-            return AcessoAvaliado.SemAutorIdentificado;
-        }
-
-        DecisaoDeAcesso protecao = await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, perfilId, cancellationToken).ConfigureAwait(false);
-
-        return await RegistrarODesfechoAsync(verificador, [manter, protecao], cancellationToken).ConfigureAwait(false);
-    }
+    public static Task<AcessoAvaliado> AvaliarLeituraDoDocumentoAsync(
+        IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken) =>
+        AvaliarLeituraAsync(verificador, perfilId, ResourceTiposAutorizacao.Perfil, [PermissaoDeManter, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
 
     /// <summary>
-    /// Se a pessoa lê o perfil ou a janela de migração dele: quem mantém perfis ou aprova por qualquer das etapas. Sem
-    /// <paramref name="perfilId"/>, a leitura é da coleção. Registra o desfecho de uma só vez, as permissões que habilitaram
-    /// ou, se nenhuma habilitou, as negativas.
+    /// Se a pessoa lê a trilha da contenção do perfil: quem mantém perfis, quem aprova pela proteção de dados ou quem
+    /// consulta as versões. Registra o desfecho de uma só vez; a suspensão e a retomada continuam só de quem decide.
     /// </summary>
-    public static async Task<AcessoAvaliado> AvaliarLeituraDoPerfilAsync(IVerificadorDeAcesso verificador, Guid? perfilId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
+    public static Task<AcessoAvaliado> AvaliarLeituraDaContencaoAsync(
+        IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken) =>
+        AvaliarLeituraAsync(verificador, perfilId, ResourceTiposAutorizacao.Perfil, [PermissaoDeManter, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
 
-        DecisaoDeAcesso manter = await AvaliarAsync(verificador, PermissaoDeManter, perfilId, cancellationToken).ConfigureAwait(false);
-        if (manter is SemSujeito)
-        {
-            return AcessoAvaliado.SemAutorIdentificado;
-        }
+    /// <summary>
+    /// Se a pessoa lê o perfil ou a janela de migração dele: quem mantém perfis, aprova por qualquer das etapas ou consulta
+    /// as versões. Sem <paramref name="perfilId"/>, a leitura é da coleção. Registra o desfecho de uma só vez, as
+    /// permissões que habilitaram ou, se nenhuma habilitou, as negativas.
+    /// </summary>
+    public static Task<AcessoAvaliado> AvaliarLeituraDoPerfilAsync(IVerificadorDeAcesso verificador, Guid? perfilId, CancellationToken cancellationToken) =>
+        AvaliarLeituraAsync(
+            verificador, perfilId, ResourceTiposAutorizacao.Perfil, [PermissaoDeManter, PermissaoDaGestao, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
 
-        DecisaoDeAcesso gestao = await AvaliarAsync(verificador, PermissaoDaGestao, perfilId, cancellationToken).ConfigureAwait(false);
-        DecisaoDeAcesso protecao = await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, perfilId, cancellationToken).ConfigureAwait(false);
-
-        return await RegistrarODesfechoAsync(verificador, [manter, gestao, protecao], cancellationToken).ConfigureAwait(false);
-    }
+    /// <summary>
+    /// Se a pessoa lê o detalhe da reclassificação: quem decide alguma das duas etapas ou quem consulta as versões. A
+    /// trilha registra a reclassificação recebida como recurso.
+    /// </summary>
+    public static Task<AcessoAvaliado> AvaliarLeituraDaReclassificacaoAsync(
+        IVerificadorDeAcesso verificador, Guid reclassificacaoId, CancellationToken cancellationToken) =>
+        AvaliarLeituraAsync(
+            verificador, reclassificacaoId, ResourceTiposAutorizacao.Reclassificacao, [PermissaoDaGestao, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
 
     /// <summary>
     /// Se a pessoa lista a fila da etapa: a permissão da etapa governa, e a decisão dela vai para a trilha.
@@ -130,23 +126,12 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
     }
 
     /// <summary>
-    /// Se a pessoa vê as divergências da governança: quem mantém perfis ou aprova pela proteção de dados. Registra o
-    /// desfecho de uma só vez.
+    /// Se a pessoa vê as divergências da governança: quem mantém perfis, aprova pela proteção de dados ou consulta as
+    /// versões. Registra o desfecho de uma só vez.
     /// </summary>
-    public static async Task<AcessoAvaliado> AvaliarVisaoDaGovernancaAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        DecisaoDeAcesso manter = await AvaliarAsync(verificador, PermissaoDeManter, null, cancellationToken).ConfigureAwait(false);
-        if (manter is SemSujeito)
-        {
-            return AcessoAvaliado.SemAutorIdentificado;
-        }
-
-        DecisaoDeAcesso protecao = await AvaliarAsync(verificador, PermissaoDaProtecaoDeDados, null, cancellationToken).ConfigureAwait(false);
-
-        return await RegistrarODesfechoAsync(verificador, [manter, protecao], cancellationToken).ConfigureAwait(false);
-    }
+    public static Task<AcessoAvaliado> AvaliarVisaoDaGovernancaAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        AvaliarLeituraAsync(
+            verificador, null, ResourceTiposAutorizacao.Perfil, [PermissaoDeManter, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
 
     /// <summary>Registra a decisão que governou o desfecho, permitida ou negada.</summary>
     public static Task RegistrarAsync(IVerificadorDeAcesso verificador, DecisaoDeAcesso decisao, CancellationToken cancellationToken)
@@ -167,9 +152,33 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
         return verificador.RegistrarDesfechoAsync([DecisaoDaGestao, DecisaoDaProtecaoDeDados], IntencaoDoRegistro.Aprovador, cancellationToken);
     }
 
+    /// <summary>
+    /// Avalia as permissões que dão a leitura, na ordem dada, e registra o desfecho de uma só vez; o acesso é permitido
+    /// quando alguma delas habilitou. O token que não identifica a pessoa responde antes de qualquer registro.
+    /// </summary>
+    private static async Task<AcessoAvaliado> AvaliarLeituraAsync(
+        IVerificadorDeAcesso verificador,
+        Guid? recursoId,
+        string tipoDoRecurso,
+        PermissionRequirement[] permissoes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        List<DecisaoDeAcesso> decisoes = [];
+        foreach (PermissionRequirement permissao in permissoes)
+        {
+            decisoes.Add(await AvaliarAsync(verificador, permissao, recursoId, cancellationToken, tipoDoRecurso).ConfigureAwait(false));
+        }
+
+        return decisoes.Exists(static d => d is SemSujeito)
+            ? AcessoAvaliado.SemAutorIdentificado
+            : await RegistrarODesfechoAsync(verificador, decisoes, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Registra o desfecho das decisões de uma só vez; o acesso é permitido quando alguma delas habilitou.</summary>
     private static async Task<AcessoAvaliado> RegistrarODesfechoAsync(
-        IVerificadorDeAcesso verificador, DecisaoDeAcesso[] decisoes, CancellationToken cancellationToken)
+        IVerificadorDeAcesso verificador, IReadOnlyCollection<DecisaoDeAcesso> decisoes, CancellationToken cancellationToken)
     {
         await verificador.RegistrarDesfechoAsync(decisoes, IntencaoDoRegistro.Aprovador, cancellationToken).ConfigureAwait(false);
 

@@ -12,7 +12,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
-/// O fluxo dos pedidos consulta o acesso sem registrar, e quem usa o resultado grava a decisão que governou o desfecho. Diogo Souza é gestor de acessos (só a etapa funcional); Paulo Nogueira não tem permissão alguma.
+/// O fluxo dos pedidos consulta o acesso sem registrar, e quem usa o resultado grava a decisão que governou o desfecho.
+/// Diogo Souza é gestor de acessos (só a etapa funcional); Paulo Nogueira não tem permissão alguma; Cecília Moura é
+/// Encarregada de dados (só a consulta dos pedidos).
 /// </summary>
 public sealed class AcessoDoAprovadorTests
 {
@@ -25,7 +27,7 @@ public sealed class AcessoDoAprovadorTests
     {
         VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional]);
 
-        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: true, pedidoId: null, default);
+        AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Leitura, pedidoId: null, default);
 
         acesso!.Funcional.Should().BeTrue();
         acesso.ProtecaoDeDados.Should().BeFalse();
@@ -41,7 +43,7 @@ public sealed class AcessoDoAprovadorTests
 
         foreach (Guid pedido in new[] { primeiro, segundo })
         {
-            AcessoDoAprovador acesso = (await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: true, pedido, default))!;
+            AcessoDoAprovador acesso = (await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Leitura, pedido, default))!;
             await acesso.RegistrarDoDesfechoAsync(verificador, default);
         }
 
@@ -55,10 +57,10 @@ public sealed class AcessoDoAprovadorTests
     {
         VerificadorDeTeste verificador = new("paulo.nogueira", permitidas: []);
 
-        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: true, default);
+        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, FinalidadeDoAcesso.Leitura, default);
 
         IReadOnlyCollection<RegistroDecisaoAcesso> gravados = verificador.Gravados.Should().ContainSingle().Subject;
-        gravados.Should().HaveCount(3).And.OnlyContain(r => !r.Permitido && r.ResourceId == null);
+        gravados.Should().HaveCount(4).And.OnlyContain(r => !r.Permitido && r.ResourceId == null);
     }
 
     [Fact(DisplayName = "Pedido inexistente pedido por quem tem a permissão de ver não grava nada")]
@@ -66,7 +68,7 @@ public sealed class AcessoDoAprovadorTests
     {
         VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional]);
 
-        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, incluirAdministrar: true, default);
+        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, FinalidadeDoAcesso.Leitura, default);
 
         verificador.Gravados.Should().BeEmpty();
     }
@@ -99,11 +101,11 @@ public sealed class AcessoDoAprovadorTests
     public async Task FilaDeOutraEtapa_GravaANegativaDaFilaPedida()
     {
         VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional]);
-        AcessoDoAprovador acesso = (await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId: null, default))!;
+        AcessoDoAprovador acesso = (await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Fila, pedidoId: null, default))!;
 
-        bool pode = await acesso.PodeListarAsync(verificador, FilaDePedidos.ProtecaoDeDados, default);
+        DecisaoPermitida? governante = await acesso.AutorizarFilaAsync(verificador, FilaDePedidos.ProtecaoDeDados, default);
 
-        pode.Should().BeFalse();
+        governante.Should().BeNull();
         RegistroDecisaoAcesso gravado = verificador.Gravados.Should().ContainSingle().Subject.Should().ContainSingle().Subject;
         gravado.Permissao.Should().Be(Protecao);
         gravado.Permitido.Should().BeFalse();
@@ -113,11 +115,11 @@ public sealed class AcessoDoAprovadorTests
     public async Task FilaDaPropriaEtapa_GravaAPermitida()
     {
         VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional]);
-        AcessoDoAprovador acesso = (await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId: null, default))!;
+        AcessoDoAprovador acesso = (await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Fila, pedidoId: null, default))!;
 
-        bool pode = await acesso.PodeListarAsync(verificador, FilaDePedidos.Gestor, default);
+        DecisaoPermitida? governante = await acesso.AutorizarFilaAsync(verificador, FilaDePedidos.Gestor, default);
 
-        pode.Should().BeTrue();
+        governante.Should().NotBeNull();
         RegistroDecisaoAcesso gravado = verificador.Gravados.Should().ContainSingle().Subject.Should().ContainSingle().Subject;
         gravado.Permissao.Should().Be(Funcional);
         gravado.Permitido.Should().BeTrue();
@@ -129,8 +131,8 @@ public sealed class AcessoDoAprovadorTests
         VerificadorDeTeste comUma = new("diogo.souza", permitidas: [Funcional]);
         VerificadorDeTeste semNenhuma = new("paulo.nogueira", permitidas: []);
 
-        await (await AcessoDoAprovador.ConsultarAsync(comUma, incluirAdministrar: false, pedidoId: null, default))!.RegistrarDoDesfechoAsync(comUma, default);
-        await (await AcessoDoAprovador.ConsultarAsync(semNenhuma, incluirAdministrar: false, pedidoId: null, default))!.RegistrarDoDesfechoAsync(semNenhuma, default);
+        await (await AcessoDoAprovador.ConsultarAsync(comUma, FinalidadeDoAcesso.Decisao, pedidoId: null, default))!.RegistrarDoDesfechoAsync(comUma, default);
+        await (await AcessoDoAprovador.ConsultarAsync(semNenhuma, FinalidadeDoAcesso.Decisao, pedidoId: null, default))!.RegistrarDoDesfechoAsync(semNenhuma, default);
 
         comUma.Gravados.Should().ContainSingle().Subject.Should().ContainSingle().Which.Permitido.Should().BeTrue();
         semNenhuma.Gravados.Should().ContainSingle().Subject.Should().HaveCount(2).And.OnlyContain(r => !r.Permitido);
@@ -141,7 +143,7 @@ public sealed class AcessoDoAprovadorTests
     {
         VerificadorDeTeste verificador = new("diogo.souza", permitidas: [Funcional, Protecao]);
 
-        await (await AcessoDoAprovador.ConsultarAsync(verificador, incluirAdministrar: false, pedidoId: null, default))!
+        await (await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Decisao, pedidoId: null, default))!
             .RegistrarDoDesfechoAsync(verificador, default);
 
         verificador.Gravados.Should().ContainSingle().Subject.Select(static r => r.Permissao).Should().BeEquivalentTo([Funcional, Protecao]);

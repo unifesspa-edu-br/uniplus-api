@@ -151,6 +151,7 @@ public sealed class VersoesDoPerfilController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Ler(Guid id, Guid versaoId, CancellationToken cancellationToken)
     {
         Result<LeituraDoDocumentoDaVersaoDto> resultado = await _commandBus

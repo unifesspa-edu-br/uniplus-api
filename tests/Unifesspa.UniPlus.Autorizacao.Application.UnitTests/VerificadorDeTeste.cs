@@ -45,7 +45,11 @@ internal sealed class VerificadorDeTeste(string sub, string[] permitidas) : IVer
     public Task<ResultadoDoAcesso> PodeAsync(PermissionRequirement requisito, ResourceContext? resource = null, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
+    // O que o verificador real gravaria: um registro por resource exibido, a partir da decisão permitida de origem.
     public Task RegistrarParaCadaAsync(
-        DecisaoPermitida permitida, string resourceTipo, IReadOnlyCollection<Guid> resourceIds, bool resourceEhInscricao = false, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
+        DecisaoPermitida permitida, string resourceTipo, IReadOnlyCollection<Guid> resourceIds, bool resourceEhInscricao = false, CancellationToken cancellationToken = default)
+    {
+        Gravados.Add(PoliticaDeRegistroDeAcesso.PorResource(permitida, resourceTipo, resourceIds, resourceEhInscricao));
+        return Task.CompletedTask;
+    }
 }

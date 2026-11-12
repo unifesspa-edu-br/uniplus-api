@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
@@ -62,82 +63,33 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken)
             .ConfigureAwait(false);
-        if (revisao is null)
-        {
-            return null;
-        }
 
-        Guid[] concessaoIds = [.. revisao.Itens.Select(i => i.ConcessaoId)];
-        var concessoes = await (
-                from c in _context.Concessoes.AsNoTracking()
-                join p in _context.Perfis.AsNoTracking() on c.PerfilId equals p.Id
-                where concessaoIds.Contains(c.Id)
-                select new { Concessao = c, PerfilNome = p.Nome })
-            .ToDictionaryAsync(x => x.Concessao.Id, cancellationToken)
-            .ConfigureAwait(false);
-
-        // O perfil e a concessão existem sempre, pelas chaves estrangeiras.
-        IReadOnlyList<ItemDaRevisaoComConcessao> itens =
-        [
-            .. revisao.Itens
-                .OrderBy(i => i.Id)
-                .Select(i => new ItemDaRevisaoComConcessao(
-                    i,
-                    concessoes[i.ConcessaoId].Concessao,
-                    concessoes[i.ConcessaoId].PerfilNome,
-                    concessoes[i.ConcessaoId].Concessao.EstaAtiva(agora))),
-        ];
-
-        return new RevisaoDetalhada(revisao, itens);
+        return revisao is null ? null : new RevisaoDetalhada(revisao, await ItensComConcessaoAsync(revisao, agora, cancellationToken).ConfigureAwait(false));
     }
 
     public async Task<(IReadOnlyList<ResumoDaRevisao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
-        DateTimeOffset agora,
+        FiltroDeRevisoes filtro,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken = default)
     {
-        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
-        CursorKeysetPage<RevisaoDeAcessos> page = await CursorKeyset
-            .ApplyAsync(_context.Revisoes.AsNoTracking(), afterId, limit, direction, cancellationToken)
-            .ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(filtro);
 
-        Guid[] ids = [.. page.Items.Select(r => r.Id)];
-        var contagens = await (
-                from i in _context.ItensDasRevisoes.AsNoTracking()
-                join c in _context.Concessoes.AsNoTracking() on i.ConcessaoId equals c.Id
-                where ids.Contains(i.RevisaoId)
-                group new { i, c } by i.RevisaoId into g
-                select new
-                {
-                    RevisaoId = g.Key,
-                    Total = g.Count(),
-                    Pendentes = g.Count(x => x.i.Resultado == null
-                        && x.c.RevogadaEm == null
-                        && (x.c.ValidaAte == null || x.c.ValidaAte > agora)),
-                })
-            .ToDictionaryAsync(x => x.RevisaoId, cancellationToken)
+        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia o que o filtro da situação deixou.
+        CursorKeysetPage<RevisaoDeAcessos> page = await CursorKeyset
+            .ApplyAsync(NaSituacao(filtro), afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
+        Dictionary<Guid, (int Total, int Pendentes)> contagens = await ContarItensAsync([.. page.Items.Select(r => r.Id)], filtro.Agora, cancellationToken).ConfigureAwait(false);
 
         IReadOnlyList<ResumoDaRevisao> resumos =
-        [
-            .. page.Items.Select(r => contagens.TryGetValue(r.Id, out var c)
-                ? new ResumoDaRevisao(r, c.Total, c.Pendentes)
-                : new ResumoDaRevisao(r, 0, 0)),
-        ];
+            [.. page.Items.Select(r => contagens.TryGetValue(r.Id, out (int Total, int Pendentes) c) ? new ResumoDaRevisao(r, c.Total, c.Pendentes) : new ResumoDaRevisao(r, 0, 0))];
 
         return (resumos, page.PrevAfterId, page.NextAfterId);
     }
 
-    public async Task<bool> ExisteEmAndamentoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
-        await (
-                from i in _context.ItensDasRevisoes.AsNoTracking()
-                join c in _context.Concessoes.AsNoTracking() on i.ConcessaoId equals c.Id
-                where i.Resultado == null && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)
-                select i.Id)
-            .AnyAsync(cancellationToken)
-            .ConfigureAwait(false);
+    public Task<bool> ExisteEmAndamentoAsync(DateTimeOffset agora, CancellationToken cancellationToken = default) =>
+        ItensPendentes(agora).AnyAsync(cancellationToken);
 
     public Task TravarAberturaAsync(CancellationToken cancellationToken = default) =>
         _context.Database.ExecuteSqlRawAsync(
@@ -182,4 +134,55 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
             .ThenBy(i => i.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    // A revisão em andamento tem item pendente; a concluída, nenhum.
+    private IQueryable<RevisaoDeAcessos> NaSituacao(FiltroDeRevisoes filtro)
+    {
+        IQueryable<RevisaoDeAcessos> revisoes = _context.Revisoes.AsNoTracking();
+        IQueryable<Guid> comPendente = ItensPendentes(filtro.Agora).Select(i => i.RevisaoId);
+
+        return filtro.Situacao switch
+        {
+            SituacaoDaRevisao.EmAndamento => revisoes.Where(r => comPendente.Contains(r.Id)),
+            SituacaoDaRevisao.Concluida => revisoes.Where(r => !comPendente.Contains(r.Id)),
+            _ => revisoes,
+        };
+    }
+
+    /// <summary>Os itens sem decisão sobre concessão ainda ativa no instante.</summary>
+    private IQueryable<ItemDaRevisao> ItensPendentes(DateTimeOffset agora) =>
+        from i in _context.ItensDasRevisoes.AsNoTracking()
+        join c in _context.Concessoes.AsNoTracking() on i.ConcessaoId equals c.Id
+        where i.Resultado == null && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)
+        select i;
+
+    private async Task<Dictionary<Guid, (int Total, int Pendentes)>> ContarItensAsync(Guid[] ids, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        var contagens = await (
+                from i in _context.ItensDasRevisoes.AsNoTracking()
+                join c in _context.Concessoes.AsNoTracking() on i.ConcessaoId equals c.Id
+                where ids.Contains(i.RevisaoId)
+                group new { i, c } by i.RevisaoId into g
+                select new { RevisaoId = g.Key, Total = g.Count(), Pendentes = g.Count(x => x.i.Resultado == null && x.c.RevogadaEm == null && (x.c.ValidaAte == null || x.c.ValidaAte > agora)) })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return contagens.ToDictionary(static x => x.RevisaoId, static x => (x.Total, x.Pendentes));
+    }
+
+    // O perfil e a concessão existem sempre, pelas chaves estrangeiras.
+    private async Task<IReadOnlyList<ItemDaRevisaoComConcessao>> ItensComConcessaoAsync(RevisaoDeAcessos revisao, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        Guid[] concessaoIds = [.. revisao.Itens.Select(i => i.ConcessaoId)];
+        var concessoes = await (
+                from c in _context.Concessoes.AsNoTracking()
+                join p in _context.Perfis.AsNoTracking() on c.PerfilId equals p.Id
+                where concessaoIds.Contains(c.Id)
+                select new { Concessao = c, PerfilNome = p.Nome })
+            .ToDictionaryAsync(x => x.Concessao.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. revisao.Itens.OrderBy(i => i.Id).Select(i => new ItemDaRevisaoComConcessao(
+            i, concessoes[i.ConcessaoId].Concessao, concessoes[i.ConcessaoId].PerfilNome, concessoes[i.ConcessaoId].Concessao.EstaAtiva(agora)))];
+    }
 }

@@ -60,12 +60,13 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
             new[] { Caroline, "leandro.viana@unifesspa.edu.br" }, Tipo(laudo), Tipo(comprovante), Fato(fato));
 
         resposta.Value.Should().Be(new SolicitacaoDaProtecaoDto(2, 1));
-        new[] { laudo.Aprovacao, comprovante.Aprovacao, fato.Aprovacao }.Should().OnlyContain(a =>
-            a.Situacao == SituacaoDaAprovacao.Solicitada && a.SolicitadaPor == Isabella && a.SolicitadaEm == Agora);
-        mensagens.Should().AllBeOfType<EnviarEmail>().Which.Select(m => m.Destinatario)
-            .Should().BeEquivalentTo(Caroline, "leandro.viana@unifesspa.edu.br");
+        DevemEstarSolicitadas(laudo.Aprovacao, comprovante.Aprovacao, fato.Aprovacao);
+        mensagens.Should().AllBeOfType<EnviarEmail>().Which.Select(m => m.Destinatario).Should().BeEquivalentTo(Caroline, "leandro.viana@unifesspa.edu.br");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
+
+    private static void DevemEstarSolicitadas(params AprovacaoDaProtecao[] aprovacoes) =>
+        aprovacoes.Should().OnlyContain(a => a.Situacao == SituacaoDaAprovacao.Solicitada && a.SolicitadaPor == Isabella && a.SolicitadaEm == Agora);
 
     [Fact(DisplayName = "O e-mail da solicitação não leva nome de pessoa nem nome de item")]
     public async Task Handle_EmailSemDadoPessoal()
@@ -198,14 +199,27 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
             [PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo]);
     }
 
-    [Fact(DisplayName = "Sem nenhuma das três permissões, as três negativas são registradas uma vez só")]
-    public async Task Handle_SemNenhumaPermissao_RegistraAsTresNegativasUmaVez()
+    [Fact(DisplayName = "Sem nenhuma das quatro permissões do catálogo, as quatro negativas são registradas uma vez só")]
+    public async Task Handle_SemNenhumaPermissao_RegistraAsQuatroNegativasUmaVez()
     {
         IVerificadorDeAcesso verificador = VerificadorCom();
 
         await EnviarAsync(verificador, new[] { Caroline });
 
-        NegativasRegistradas(verificador).Should().HaveCount(3);
+        NegativasRegistradas(verificador).Should().HaveCount(4);
+    }
+
+    [Fact(DisplayName = "Quem só consulta a proteção do catálogo não solicita: a recusa grava as negativas dos dois cadastros")]
+    public async Task Handle_SoConsulta_Recusa()
+    {
+        IVerificadorDeAcesso verificador = VerificadorCom(PermissaoConfiguracao.ProtecaoDoCatalogoConsultar);
+
+        (Result<SolicitacaoDaProtecaoDto> resposta, _) = await EnviarAsync(verificador, new[] { Caroline }, Tipo(NovoTipo()));
+
+        resposta.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo);
+        NegativasRegistradas(verificador).Should().BeEquivalentTo(
+            PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo);
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     private static IEnumerable<string> NegativasRegistradas(IVerificadorDeAcesso verificador) =>
@@ -224,14 +238,10 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeTipo(pendente);
 
         (Result<SolicitacaoDaProtecaoDto> resposta, IEnumerable<object> mensagens) = await EnviarAsync(
-            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline },
-            Tipo(pendente), Tipo(jaSolicitado), new ItemParaSolicitarDto("TIPO_DOCUMENTO", Guid.NewGuid()));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter), new[] { Caroline }, Tipo(pendente), Tipo(jaSolicitado), new ItemParaSolicitarDto("TIPO_DOCUMENTO", Guid.NewGuid()));
 
         resposta.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
-        [
-            ("itens[1].id", ProtecaoDoCatalogoErrorCodes.ItemNaoPendente),
-            ("itens[2].id", ProtecaoDoCatalogoErrorCodes.ItemNaoPendente),
-        ]);
+            [("itens[1].id", ProtecaoDoCatalogoErrorCodes.ItemNaoPendente), ("itens[2].id", ProtecaoDoCatalogoErrorCodes.ItemNaoPendente)]);
         mensagens.Should().BeEmpty();
         pendente.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Pendente);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -295,27 +305,22 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         PendentesDeFato(fato);
 
         await EnviarAsync(
-            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter),
-            new[] { Caroline }, Tipo(laudo), Tipo(comprovante), Fato(fato));
+            VerificadorCom(PermissaoConfiguracao.TiposDocumentoManter, PermissaoConfiguracao.FatosCandidatoManter), new[] { Caroline }, Tipo(laudo), Tipo(comprovante), Fato(fato));
 
-        IEnumerable<AtoDaProtecaoDoCatalogo> registrados = _atos.ReceivedCalls()
-            .Where(c => c.GetMethodInfo().Name == nameof(IAtoDaProtecaoDoCatalogoRepository.Adicionar))
-            .Select(c => (AtoDaProtecaoDoCatalogo)c.GetArguments()[0]!);
-        registrados.Should().HaveCount(3).And.OnlyContain(a =>
-            a.Ato == AtoDaProtecao.Solicitacao
-            && a.AtorSub == Isabella
-            && a.AtorEmissor == Emissor
-            && a.AtorNome == "Isabella Figueiredo"
-            && a.Instante == Agora
-            && a.Justificativa == null
-            && a.ClassificacaoRecomendada == null);
+        AtoDaProtecaoDoCatalogo[] registrados = AtosRegistrados();
+        registrados.Should().HaveCount(3).And.OnlyContain(static a => EhASolicitacaoDaIsabella(a));
         registrados.Select(a => (a.Cadastro, a.ItemId, a.ItemCodigo)).Should().BeEquivalentTo(
-        [
-            (CadastroDoCatalogo.TipoDocumento, laudo.Id, "LAUDO_MEDICO_COMPLEMENTAR"),
-            (CadastroDoCatalogo.TipoDocumento, comprovante.Id, "COMPROVANTE_RESIDENCIA"),
-            (CadastroDoCatalogo.Fato, fato.Id, "TEM_RENDA"),
-        ]);
+            [(CadastroDoCatalogo.TipoDocumento, laudo.Id, "LAUDO_MEDICO_COMPLEMENTAR"), (CadastroDoCatalogo.TipoDocumento, comprovante.Id, "COMPROVANTE_RESIDENCIA"), (CadastroDoCatalogo.Fato, fato.Id, "TEM_RENDA")]);
     }
+
+    private AtoDaProtecaoDoCatalogo[] AtosRegistrados() =>
+        [.. _atos.ReceivedCalls()
+            .Where(static c => c.GetMethodInfo().Name == nameof(IAtoDaProtecaoDoCatalogoRepository.Adicionar))
+            .Select(static c => (AtoDaProtecaoDoCatalogo)c.GetArguments()[0]!)];
+
+    private static bool EhASolicitacaoDaIsabella(AtoDaProtecaoDoCatalogo ato) =>
+        (ato.Ato, ato.AtorSub, ato.AtorEmissor, ato.AtorNome, ato.Instante) == (AtoDaProtecao.Solicitacao, Isabella, Emissor, "Isabella Figueiredo", Agora)
+        && ato.Justificativa is null && ato.ClassificacaoRecomendada is null;
 
     [Fact(DisplayName = "A solicitação recusada não registra ato")]
     public async Task Handle_Recusada_NaoRegistraAto()

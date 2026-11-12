@@ -26,7 +26,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// que o gestor de acessos e, para o perfil de dado pessoal ou sensível, a proteção de dados aprovam.
 /// </summary>
 /// <remarks>
-/// Qualquer pessoa autenticada pede: pedir não dá acesso, o filtro é a aprovação. As rotas de decisão exigem só
+/// Qualquer pessoa autenticada pede: pedir não dá acesso, o filtro é a aprovação. Quem consulta os pedidos, como o
+/// Encarregado de dados, lê sem decidir: as filas de cada etapa continuam de quem a decide. As rotas de decisão exigem só
 /// autenticação, porque o handler descobre a etapa pela situação do pedido e confere a permissão dela pelo ponto de
 /// decisão único: sem a da etapa e com a da outra a recusa é de etapa, sem nenhuma das duas é <c>403</c>, e a
 /// identidade incompleta é <c>401</c>. O pedido que a pessoa não pode ver responde <c>404</c>.
@@ -41,6 +42,9 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 {
     private const string ResourceTag = "pedidos-de-concessao";
     private const string PerfisParaPedidoTag = "perfis-para-pedido";
+
+    private static readonly Dictionary<string, SituacaoDoPedido> Situacoes =
+        Enum.GetValues<SituacaoDoPedido>().ToDictionary(static s => s.ToCodigo(), StringComparer.Ordinal);
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -84,8 +88,9 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// <summary>
     /// Lista os pedidos, paginados por cursor opaco bidirecional (ADR-0026 + ADR-0089). <c>fila=gestor</c> e
     /// <c>fila=protecao_de_dados</c> são as filas dos aprovadores e exigem a permissão da etapa; <c>fila=todos</c> lista os
-    /// pedidos em qualquer situação e exige a permissão de uma das duas etapas; <c>fila=meus</c>, o padrão, são os
-    /// pedidos de quem pergunta.
+    /// pedidos em qualquer situação e exige a permissão de uma das duas etapas ou a de consultar os pedidos; <c>fila=meus</c>,
+    /// o padrão, são os pedidos de quem pergunta. Nas filas, cada pedido exibido é registrado antes da resposta; sem o
+    /// registro, a leitura é recusada com 503.
     /// </summary>
     [HttpGet("pedidos-de-concessao")]
     [VendorMediaType(Resource = "pedido-de-concessao", Versions = [1])]
@@ -95,6 +100,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery] string? fila = null,
@@ -103,46 +109,17 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        FilaDePedidos? filaLida = LerFila(fila);
-        if (filaLida is null)
+        Result<ListarPedidosDeConcessaoQuery> consulta = Consulta(page, fila, situacao);
+        if (consulta.IsFailure)
         {
-            return Recusar(PedidoErrorCodes.FilaInvalida, "Fila inválida. Use meus, gestor, protecao_de_dados ou todos.");
+            return consulta.ToActionResult(_mapper);
         }
 
-        // A âncora do cursor é o par (instante, Id) e o instante chega como texto: decodificar o wire é do boundary, e um
-        // cursor adulterado vira 400 em vez de 500.
-        if (page.AfterSortKey is { } ancora
-            && !DateTimeOffset.TryParse(ancora, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
-        {
-            return Recusar(PedidoErrorCodes.CursorInvalido, "O cursor informado é inválido.");
-        }
-
-        SituacaoDoPedido? situacaoLida = null;
-        if (!string.IsNullOrWhiteSpace(situacao))
-        {
-            if (!TentarLerSituacao(situacao, out SituacaoDoPedido lida))
-            {
-                return Recusar(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_documento, aguardando_beneficiario, aguardando_gestor, aguardando_protecao_de_dados, aprovado, recusado ou cancelado.");
-            }
-
-            situacaoLida = lida;
-        }
-
-        Result<ListarPedidosDeConcessaoResult> resultado = await _queryBus.Send(
-            new ListarPedidosDeConcessaoQuery(filaLida.Value, situacaoLida, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
-            cancellationToken).ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        return await this.OkPaginatedOrdenadoAsync(
-            resultado.Value!.Items,
-            resultado.Value.Anterior,
-            resultado.Value.Proximo,
-            page,
-            ResourceTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        Result<ListarPedidosDeConcessaoResult> resultado = await _queryBus.Send(consulta.Value!, cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? resultado.ToActionResult(_mapper)
+            : await this.OkPaginatedOrdenadoAsync(
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -167,27 +144,25 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         Result<ListarPerfisParaPedirResult> resultado = await _queryBus
             .Send(new ListarPerfisParaPedirQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
 
-        return await this.OkPaginatedAsync(
-            resultado.Value!.Items,
-            resultado.Value.AnteriorAfterId,
-            resultado.Value.ProximoAfterId,
-            page,
-            PerfisParaPedidoTag,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return resultado.IsFailure
+            ? resultado.ToActionResult(_mapper)
+            : await this.OkPaginatedAsync(
+                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, PerfisParaPedidoTag,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Lê o pedido: só as partes e quem decide uma etapa ou administra concessões o veem; os demais recebem 404.</summary>
+    /// <summary>
+    /// Lê o pedido: só as partes e quem decide uma etapa, administra concessões ou consulta os pedidos o veem; os demais
+    /// recebem 404. A leitura de quem não é parte é registrada antes da resposta (sem o registro, 503).
+    /// </summary>
     [HttpGet("pedidos-de-concessao/{id:guid}")]
     [VendorMediaType(Resource = "pedido-de-concessao", Versions = [1])]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken)
     {
         Result<PedidoDeConcessaoDto> resultado = await _queryBus
@@ -204,6 +179,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Trilha(Guid id, CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<EventoDaTrilhaDto>> resultado = await _queryBus
@@ -292,6 +268,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> LerAnexo(Guid id, Guid anexoId, CancellationToken cancellationToken)
     {
         Result<LeituraDoAnexoDto> resultado = await _commandBus
@@ -384,21 +361,40 @@ public sealed class PedidosDeConcessaoController : ControllerBase
                 _ => null,
             };
 
-    // Só o vocabulário publicado vale: o nome do membro do enum não é contrato.
-    private static bool TentarLerSituacao(string texto, out SituacaoDoPedido situacao)
+    // A âncora do cursor é o par (instante, Id) e o instante chega como texto: decodificar o wire é do boundary, e um
+    // cursor adulterado vira 400 em vez de 500.
+    private static Result<ListarPedidosDeConcessaoQuery> Consulta(PageRequest page, string? fila, string? situacao)
     {
-        try
+        if (LerFila(fila) is not { } filaLida)
         {
-            situacao = SituacaoDoPedidoCodigo.FromCodigo(texto.Trim().ToLowerInvariant());
-            return true;
+            return Recusa(PedidoErrorCodes.FilaInvalida, "Fila inválida. Use meus, gestor, protecao_de_dados ou todos.");
         }
-        catch (ArgumentOutOfRangeException)
+
+        if (page.AfterSortKey is { } ancora && !DateTimeOffset.TryParse(ancora, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
         {
-            situacao = default;
-            return false;
+            return Recusa(PedidoErrorCodes.CursorInvalido, "O cursor informado é inválido.");
         }
+
+        return TentarLerSituacao(situacao, out SituacaoDoPedido? lida)
+            ? Result<ListarPedidosDeConcessaoQuery>.Success(new(filaLida, lida, page.AfterSortKey, page.AfterId, page.Limit, page.Direction))
+            : Recusa(PedidoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use aguardando_documento, aguardando_beneficiario, aguardando_gestor, aguardando_protecao_de_dados, aprovado, recusado ou cancelado.");
     }
 
-    private IActionResult Recusar(string codigo, string mensagem) =>
-        Result.Failure(new DomainError(codigo, mensagem)).ToActionResult(_mapper);
+    // Só o vocabulário publicado vale: o nome do membro do enum não é contrato. Sem situação, a lista não filtra.
+    private static bool TentarLerSituacao(string? texto, out SituacaoDoPedido? situacao)
+    {
+        situacao = null;
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return true;
+        }
+
+        bool conhecida = Situacoes.TryGetValue(texto.Trim().ToLowerInvariant(), out SituacaoDoPedido lida);
+        situacao = conhecida ? lida : null;
+
+        return conhecida;
+    }
+
+    private static Result<ListarPedidosDeConcessaoQuery> Recusa(string codigo, string mensagem) =>
+        Result<ListarPedidosDeConcessaoQuery>.Failure(new DomainError(codigo, mensagem));
 }

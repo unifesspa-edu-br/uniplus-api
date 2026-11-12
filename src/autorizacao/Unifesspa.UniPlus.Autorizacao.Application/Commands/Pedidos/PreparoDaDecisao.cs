@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -29,7 +30,7 @@ internal sealed record PreparoDaDecisao(
         }
         else
         {
-            await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(Verificador, incluirAdministrar: false, cancellationToken)
+            await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(Verificador, FinalidadeDoAcesso.Decisao, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -56,17 +57,8 @@ internal sealed record PreparoDaDecisao(
     private async Task<Result<DecisaoDaEtapa>> ConferirEtapaAsync(
         PedidoDeConcessao pedido, Perfil perfil, CancellationToken cancellationToken)
     {
-        // A permissão que governa é a da etapa que o pedido aguarda, permitida ou negada.
-        if (pedido.EtapaAtual is { } etapa)
-        {
-            await AcessoDoAprovador.RegistrarAsync(Verificador, Acesso.DecisaoDaEtapa(etapa), cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            await Acesso.RegistrarDoDesfechoAsync(Verificador, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (pedido.EtapaAtual is { } etapaAtual && !Acesso.Decide(etapaAtual))
+        await RegistrarQuemGovernaAsync(pedido.EtapaAtual, cancellationToken).ConfigureAwait(false);
+        if (pedido.EtapaAtual is { } etapa && !Acesso.Decide(etapa))
         {
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.EtapaInvalida());
         }
@@ -75,4 +67,10 @@ internal sealed record PreparoDaDecisao(
 
         return Result<DecisaoDaEtapa>.Success(new DecisaoDaEtapa(pedido, perfil, PerfilMapping.Avaliar(perfil, Catalogo), Decisor));
     }
+
+    // A permissão que governa é a da etapa que o pedido aguarda, permitida ou negada; sem etapa, o desfecho das duas.
+    private Task RegistrarQuemGovernaAsync(EtapaDoPedido? etapa, CancellationToken cancellationToken) =>
+        etapa is { } aguardada
+            ? AcessoDoAprovador.RegistrarAsync(Verificador, Acesso.DecisaoDaEtapa(aguardada), cancellationToken)
+            : Acesso.RegistrarDoDesfechoAsync(Verificador, cancellationToken);
 }

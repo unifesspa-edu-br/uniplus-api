@@ -39,6 +39,11 @@ internal static class PedidoHandlerErros
         new(PedidoErrorCodes.JaTemConcessao,
             "O beneficiário já tem concessão ativa deste perfil neste escopo.");
 
+    // O texto não nomeia o papel que o beneficiário já exerce: quem pede para outra pessoa não precisa sabê-lo.
+    public static DomainError PapeisIncompativeis() =>
+        new(PedidoErrorCodes.PapeisIncompativeis,
+            "Uma mesma pessoa não pode ter, ao mesmo tempo, concessões vigentes de Representante do controlador e de Encarregado de dados. O beneficiário tem concessão vigente do outro papel; ela precisa ser revogada ou vencer antes desta designação.");
+
     public static DomainError AnexoNaoVerificado() =>
         new(PedidoErrorCodes.AnexoNaoVerificado, "O anexo só se lê depois de verificado.");
 

@@ -46,6 +46,7 @@ public sealed class JanelaDeMigracaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Obter(Guid id, CancellationToken cancellationToken) =>
         Resposta(await _queryBus.Send(new ObterJanelaDoPerfilQuery(id), cancellationToken).ConfigureAwait(false));
 

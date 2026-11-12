@@ -9,8 +9,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// <summary>Mapeamento da <see cref="RevisaoDeAcessos"/> para os DTOs e para os eventos da trilha da concessão.</summary>
 public static class RevisaoMapping
 {
-    public const string EmAndamento = "em_andamento";
-    public const string Concluida = "concluida";
+    public const string EmAndamento = SituacaoDaRevisaoCodigo.EmAndamento;
+    public const string Concluida = SituacaoDaRevisaoCodigo.Concluida;
 
     public static RevisaoResumoDto ToResumo(ResumoDaRevisao resumo)
     {
@@ -25,7 +25,8 @@ public static class RevisaoMapping
 
     /// <param name="detalhada">A revisão com os itens.</param>
     /// <param name="representantes">Quem é Representante do controlador no instante da leitura, de que depende quem decide o item pendente.</param>
-    public static RevisaoDeAcessosDto ToDto(RevisaoDetalhada detalhada, IReadOnlySet<Identidade> representantes)
+    /// <param name="leitor">Quem lê, para marcar os itens da concessão dele; nulo quando o token não o identifica.</param>
+    public static RevisaoDeAcessosDto ToDto(RevisaoDetalhada detalhada, IReadOnlySet<Identidade> representantes, Identidade? leitor)
     {
         ArgumentNullException.ThrowIfNull(detalhada);
         ArgumentNullException.ThrowIfNull(representantes);
@@ -37,7 +38,7 @@ public static class RevisaoMapping
         return new RevisaoDeAcessosDto(
             r.Id, r.AbertaEm, new IdentidadeDto(r.AbertaPorEmissor, r.AbertaPorSub, r.AbertaPorNome),
             Situacao(pendentes), detalhada.Itens.Count, pendentes,
-            [.. detalhada.Itens.Select(i => ToDto(i, representantes))]);
+            [.. detalhada.Itens.Select(i => ToDto(i, representantes, leitor))]);
     }
 
     public static EventoDaTrilhaDto ToEvento(ItemDaRevisao item)
@@ -63,11 +64,10 @@ public static class RevisaoMapping
         item.DecididoComo
         ?? ItemDaRevisao.QuemDecide(representantes.Contains(new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub)));
 
-    private static ItemDaRevisaoDto ToDto(ItemDaRevisaoComConcessao item, IReadOnlySet<Identidade> representantes)
+    private static ItemDaRevisaoDto ToDto(ItemDaRevisaoComConcessao item, IReadOnlySet<Identidade> representantes, Identidade? leitor)
     {
         Concessao c = item.Concessao;
         ItemDaRevisao i = item.Item;
-
         return new ItemDaRevisaoDto(
             i.Id,
             c.Id,
@@ -78,6 +78,10 @@ public static class RevisaoMapping
             QuemDecide(i, c, representantes).ToCodigo(),
             Situacao(item),
             i.DecididoPor is { } p ? new IdentidadeDto(p.Emissor, p.Sub, p.Nome) : null,
-            i.DecididoEm);
+            i.DecididoEm,
+            EhDoLeitor(c, leitor));
     }
+
+    private static bool EhDoLeitor(Concessao concessao, Identidade? leitor) =>
+        leitor is not null && leitor == new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub);
 }

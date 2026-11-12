@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -12,28 +13,36 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// incompleta responde antes de tudo.
 /// </summary>
 /// <remarks>
-/// A ordem de travas é única: a revisão, o papel de Representante do controlador e a concessão. A condição de
-/// Representante do beneficiário é lida depois delas, no instante da decisão, e não muda até o fim da transação: todo
-/// caminho que concede ou revoga a concessão de Representante toma a mesma trava do papel (ADR-0162).
+/// A ordem de travas é única: a revisão, o papel de Representante do controlador, a pessoa do beneficiário, quando a
+/// concessão é de perfil de governança, e a concessão. A condição de Representante do beneficiário é lida depois delas,
+/// no instante da decisão, e não muda até o fim da transação: todo caminho que concede ou revoga a concessão de
+/// Representante toma a mesma trava do papel (ADR-0162). Quem só consulta as revisões é recusado antes de qualquer trava.
 /// </remarks>
 public sealed class PreparoDaDecisaoDoItem
 {
     private readonly IRevisaoDeAcessosRepository _revisoes;
     private readonly IConcessaoRepository _concessoes;
     private readonly IPapelDoRepresentante _papel;
+    private readonly IIncompatibilidadeDosPapeis _papeis;
     private readonly TimeProvider _clock;
 
     public PreparoDaDecisaoDoItem(
-        IRevisaoDeAcessosRepository revisoes, IConcessaoRepository concessoes, IPapelDoRepresentante papel, TimeProvider clock)
+        IRevisaoDeAcessosRepository revisoes,
+        IConcessaoRepository concessoes,
+        IPapelDoRepresentante papel,
+        IIncompatibilidadeDosPapeis papeis,
+        TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(revisoes);
         ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(papel);
+        ArgumentNullException.ThrowIfNull(papeis);
         ArgumentNullException.ThrowIfNull(clock);
 
         _revisoes = revisoes;
         _concessoes = concessoes;
         _papel = papel;
+        _papeis = papeis;
         _clock = clock;
     }
 
@@ -51,7 +60,7 @@ public sealed class PreparoDaDecisaoDoItem
             return await RecusarAsync(acesso, verificador, RevisaoHandlerErros.AutorNaoIdentificado(), cancellationToken).ConfigureAwait(false);
         }
 
-        return acesso.Le
+        return acesso.DecideAlgum
             ? await CarregarAsync(new Pedido(revisaoId, itemId, verificador, acesso, decisor), cancellationToken).ConfigureAwait(false)
             : await RecusarAsync(acesso, verificador, RevisaoHandlerErros.SemPermissao(), cancellationToken).ConfigureAwait(false);
     }
@@ -59,7 +68,7 @@ public sealed class PreparoDaDecisaoDoItem
     private static async Task<Result<DecisaoDoItem>> RecusarAsync(
         AcessoDaRevisao acesso, IVerificadorDeAcesso verificador, DomainError recusa, CancellationToken cancellationToken)
     {
-        await acesso.RegistrarAsync(verificador, cancellationToken).ConfigureAwait(false);
+        await acesso.RegistrarDaDecisaoAsync(verificador, cancellationToken).ConfigureAwait(false);
 
         return Result<DecisaoDoItem>.Failure(recusa);
     }
@@ -74,12 +83,25 @@ public sealed class PreparoDaDecisaoDoItem
             return await RecusarAsync(pedido.Acesso, pedido.Verificador, recusa, cancellationToken).ConfigureAwait(false);
         }
 
-        await _papel.TravarAsync(cancellationToken).ConfigureAwait(false);
-        Concessao? concessao = await _concessoes.ObterParaAlterarAsync(item.ConcessaoId, cancellationToken).ConfigureAwait(false);
+        Concessao? concessao = await TravarConcessaoAsync(item.ConcessaoId, cancellationToken).ConfigureAwait(false);
 
         return concessao is null
             ? await RecusarAsync(pedido.Acesso, pedido.Verificador, RevisaoHandlerErros.ItemNaoEncontrado(), cancellationToken).ConfigureAwait(false)
             : await ConferirQuemDecideAsync(pedido, new ItemCarregado(revisao, item, concessao), cancellationToken).ConfigureAwait(false);
+    }
+
+    // O beneficiário de uma concessão não muda: a leitura sem trava basta para saber que pessoa travar.
+    private async Task<Concessao?> TravarConcessaoAsync(Guid concessaoId, CancellationToken cancellationToken)
+    {
+        await _papel.TravarAsync(cancellationToken).ConfigureAwait(false);
+        if (await _concessoes.ObterComPerfilAsync(concessaoId, cancellationToken).ConfigureAwait(false) is not { } lida)
+        {
+            return null;
+        }
+
+        await _papeis.TravarBeneficiarioAsync(lida.Concessao, cancellationToken).ConfigureAwait(false);
+
+        return await _concessoes.ObterParaAlterarAsync(concessaoId, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<DecisaoDoItem>> ConferirQuemDecideAsync(Pedido pedido, ItemCarregado carregado, CancellationToken cancellationToken)

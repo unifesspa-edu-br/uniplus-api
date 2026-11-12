@@ -23,8 +23,8 @@ public sealed class LeituraDaRevisao
         _papel = papel;
     }
 
-    /// <summary>A revisão no instante; nula quando não existe.</summary>
-    public async Task<RevisaoDeAcessosDto?> LerAsync(Guid revisaoId, DateTimeOffset agora, CancellationToken cancellationToken)
+    /// <summary>A revisão no instante, com os itens da concessão de quem lê marcados; nula quando não existe.</summary>
+    public async Task<RevisaoDeAcessosDto?> LerAsync(Guid revisaoId, DateTimeOffset agora, Identidade? leitor, CancellationToken cancellationToken)
     {
         RevisaoDetalhada? detalhada = await _revisoes.ObterDetalhadaAsync(revisaoId, agora, cancellationToken).ConfigureAwait(false);
         if (detalhada is null)
@@ -33,6 +33,6 @@ public sealed class LeituraDaRevisao
         }
 
         IReadOnlySet<Identidade> representantes = await _papel.ListarVigentesAsync(agora, cancellationToken).ConfigureAwait(false);
-        return RevisaoMapping.ToDto(detalhada, representantes);
+        return RevisaoMapping.ToDto(detalhada, representantes, leitor);
     }
 }

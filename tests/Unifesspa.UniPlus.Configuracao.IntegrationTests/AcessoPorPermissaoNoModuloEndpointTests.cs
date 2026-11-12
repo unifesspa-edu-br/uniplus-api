@@ -34,12 +34,15 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     public AcessoPorPermissaoNoModuloEndpointTests(ConfiguracaoEndpointFixture fixture) => _fixture = fixture;
 
+    // A matriz lista só as permissões que têm endpoint: manifestar entra no catálogo antes do endpoint, que a #2366 cria.
+    private static readonly PermissaoConfiguracao[] SemEndpoint = [PermissaoConfiguracao.ProtecaoDoCatalogoManifestar];
+
     public static TheoryData<PermissaoConfiguracao> Permissoes
     {
         get
         {
             TheoryData<PermissaoConfiguracao> dados = [];
-            foreach (PermissaoConfiguracao permissao in Enum.GetValues<PermissaoConfiguracao>())
+            foreach (PermissaoConfiguracao permissao in Enum.GetValues<PermissaoConfiguracao>().Except(SemEndpoint))
             {
                 dados.Add(permissao);
             }
@@ -78,14 +81,16 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         }
     }
 
-    // A permissão reservada à governança só chega pelo perfil de Representante do controlador; as demais, por perfil comum.
+    // A permissão reservada à governança só chega pelo perfil de governança que a reúne: a aprovação, pelo de Representante
+    // do controlador, e a consulta, pelo de Encarregado de dados. As demais, por perfil comum.
     private async Task<Guid> ConcederAsync(PermissaoConfiguracao permissao)
     {
         IServiceProvider servicos = _fixture.Factory.Services;
         if (CatalogoDePermissoes<PermissaoConfiguracao>.Obter(permissao).ReservadaAGovernanca)
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Leandro, TipoDeGovernanca.RepresentanteDoControlador);
-            return PerfisDeSistema.RepresentanteDoControladorId;
+            bool doEncarregado = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Contains(permissao.Codigo);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Leandro, doEncarregado ? TipoDeGovernanca.EncarregadoDeDados : TipoDeGovernanca.RepresentanteDoControlador);
+            return doEncarregado ? PerfisDeSistema.EncarregadoDeDadosId : PerfisDeSistema.RepresentanteDoControladorId;
         }
 
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(servicos, permissao.Codigo);

@@ -10,29 +10,57 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// A concessão que nasce da última aprovação exigida do pedido, sem gravar: quem chama grava, junto do pedido. A concessão
 /// nova se constrói e valida antes de qualquer mudança: se ela falhar, nada fica para gravar.
 /// </summary>
+/// <remarks>
+/// No perfil de governança, a pessoa do beneficiário se trava depois do pedido e antes da concessão, na ordem única de
+/// travas, e a incompatibilidade dos papéis se confere sob a trava: duas designações cruzadas da mesma pessoa, como
+/// Representante do controlador e como Encarregado de dados, não leem ambas que ela não tem o outro papel. Com o pedido
+/// travado, o beneficiário lido é o definitivo (ADR-0162).
+/// </remarks>
 public sealed class ConcessaoDoPedidoAprovado
 {
     private readonly IConcessaoRepository _concessoes;
     private readonly ICatalogoDePermissoesConsultavel _catalogo;
+    private readonly IIncompatibilidadeDosPapeis _papeis;
 
-    public ConcessaoDoPedidoAprovado(IConcessaoRepository concessoes, ICatalogoDePermissoesConsultavel catalogo)
+    public ConcessaoDoPedidoAprovado(
+        IConcessaoRepository concessoes, ICatalogoDePermissoesConsultavel catalogo, IIncompatibilidadeDosPapeis papeis)
     {
         ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(papeis);
 
         _concessoes = concessoes;
         _catalogo = catalogo;
+        _papeis = papeis;
     }
 
     internal async Task<Result> ConcederAsync(DecisaoDaEtapa decisao, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         PedidoDeConcessao pedido = decisao.Pedido;
+        if (await TemPapelIncompativelAsync(decisao, agora, cancellationToken).ConfigureAwait(false))
+        {
+            return Result.Failure(PedidoHandlerErros.PapeisIncompativeis());
+        }
+
         Concessao? igual = await _concessoes
             .ObterNaoRevogadaIgualAsync(pedido.Beneficiario!, decisao.Perfil.Id, pedido.Escopo, cancellationToken)
             .ConfigureAwait(false);
         return igual?.EstaAtiva(agora) == true
             ? Result.Failure(PedidoHandlerErros.JaTemConcessao())
             : await RegistrarAsync(decisao, igual, agora, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<bool> TemPapelIncompativelAsync(DecisaoDaEtapa decisao, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        if (!PerfisDeSistema.EhDeGovernanca(decisao.Perfil.Id))
+        {
+            return false;
+        }
+
+        Identidade beneficiario = decisao.Pedido.Beneficiario!;
+        await _papeis.TravarAsync([beneficiario], cancellationToken).ConfigureAwait(false);
+
+        return await _papeis.TemPapelIncompativelAsync(beneficiario, decisao.Perfil.Id, agora, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result> RegistrarAsync(DecisaoDaEtapa decisao, Concessao? igual, DateTimeOffset agora, CancellationToken cancellationToken)

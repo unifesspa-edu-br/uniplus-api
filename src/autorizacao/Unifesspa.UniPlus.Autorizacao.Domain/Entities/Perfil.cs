@@ -50,8 +50,9 @@ public sealed partial class Perfil : EntityBase
     public TipoDeGovernanca? Governanca { get; private set; }
 
     /// <summary>
-    /// Só o perfil comum admite concessão com prazo: uma concessão de gestor que vencesse sozinha furaria o mínimo de
-    /// dois gestores, que só a revogação confere, e a proteção de dados segue a mesma regra.
+    /// Só o perfil de gestor de acessos não admite concessão com prazo: uma concessão de gestor que vencesse sozinha
+    /// furaria o mínimo de dois gestores, que só a revogação confere. O Representante do controlador e o Encarregado de
+    /// dados podem ser designados por prazo, e a concessão vencida deixa de valer para toda regra.
     /// </summary>
     public bool AdmitePrazo => AdmitePrazoCom(Governanca);
 
@@ -90,7 +91,7 @@ public sealed partial class Perfil : EntityBase
             : VersaoVigente?.Codigos() ?? [];
 
     /// <summary>A regra de <see cref="AdmitePrazo"/> a partir do papel de governança, para o retrato avaliado do perfil.</summary>
-    public static bool AdmitePrazoCom(TipoDeGovernanca? governanca) => governanca is null;
+    public static bool AdmitePrazoCom(TipoDeGovernanca? governanca) => governanca is not TipoDeGovernanca.GestorDeAcessos;
 
     // Construtor de materialização do EF Core.
     private Perfil()

@@ -102,4 +102,54 @@ public enum PermissaoAutorizacao
         ClassificacaoDeProtecao.Interno,
         ReservadaAGovernanca = true)]
     TermosPublicar = 10,
+
+    /// <summary>Consultar, como Encarregado de dados, os pedidos de concessão, sem decidir nenhuma etapa.</summary>
+    [Permissao(
+        "autorizacao:pedidos:consultar",
+        "Consultar os pedidos de concessão",
+        "Consulta o histórico de todos os pedidos de concessão, o detalhe, a trilha e os anexos de cada um, com o nome e o e-mail de quem pede e de quem recebe o acesso, sem decidir nenhuma etapa.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
+        ReservadaAGovernanca = true)]
+    PedidosConsultar = 11,
+
+    /// <summary>Consultar, como Encarregado de dados, as concessões de acesso, sem revogar.</summary>
+    [Permissao(
+        "autorizacao:concessoes:consultar",
+        "Consultar as concessões de acesso",
+        "Consulta as concessões, a trilha de cada uma e a da instalação, o que expõe quem tem acesso a quê, por pessoa, sem revogar.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
+        ReservadaAGovernanca = true)]
+    ConcessoesConsultar = 12,
+
+    /// <summary>Consultar, como Encarregado de dados, as revisões periódicas dos acessos, sem abrir revisão nem decidir item.</summary>
+    [Permissao(
+        "autorizacao:revisoes:consultar",
+        "Consultar as revisões periódicas dos acessos",
+        "Consulta as revisões e os itens de cada uma, com quem tem acesso a dado pessoal ou sensível e quem decidiu cada item, sem abrir revisão nem decidir item.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
+        ReservadaAGovernanca = true)]
+    RevisoesConsultar = 13,
+
+    /// <summary>Consultar, como Encarregado de dados, os perfis e as versões de perfil, sem decidir.</summary>
+    [Permissao(
+        "autorizacao:perfis:consultar-versoes",
+        "Consultar os perfis e as versões de perfil",
+        "Consulta os perfis, as versões, os documentos instituidores, as decisões e quem as tomou, a janela de migração, a contenção, as reclassificações e as divergências da governança, sem decidir.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
+        ReservadaAGovernanca = true)]
+    PerfisConsultarVersoes = 14,
+
+    /// <summary>Solicitar, como Encarregado de dados, providência sobre uma concessão.</summary>
+    [Permissao(
+        "autorizacao:providencias:solicitar",
+        "Solicitar providência sobre uma concessão",
+        "Pede, com fundamento, a retirada ou a revisão de uma concessão de acesso, dirigida aos gestores de acessos e aos Representantes do controlador.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
+        ReservadaAGovernanca = true)]
+    ProvidenciasSolicitar = 15,
 }

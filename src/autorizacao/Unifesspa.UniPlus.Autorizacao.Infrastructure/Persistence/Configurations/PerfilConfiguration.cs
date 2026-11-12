@@ -36,6 +36,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
     // Perfis de sistema, com identificador fixo para que as migrations seguintes os alcancem.
     private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
     private static readonly Guid RepresentanteDoControladorId = PerfisDeSistema.RepresentanteDoControladorId;
+    private static readonly Guid EncarregadoDeDadosId = PerfisDeSistema.EncarregadoDeDadosId;
     private static readonly DateTimeOffset CargaInicial = new(2026, 10, 28, 0, 0, 0, TimeSpan.Zero);
 
     // A contenção é evidência: o perfil não se exclui, e nenhum registro dela some em cascata.
@@ -131,6 +132,15 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
                 Descricao = "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.",
                 Ativo = true,
                 Governanca = (TipoDeGovernanca?)TipoDeGovernanca.RepresentanteDoControlador,
+                CreatedAt = CargaInicial,
+            },
+            new
+            {
+                Id = EncarregadoDeDadosId,
+                Nome = "Encarregado de dados",
+                Descricao = "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, janela de migração e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.",
+                Ativo = true,
+                Governanca = (TipoDeGovernanca?)TipoDeGovernanca.EncarregadoDeDados,
                 CreatedAt = CargaInicial,
             });
     }

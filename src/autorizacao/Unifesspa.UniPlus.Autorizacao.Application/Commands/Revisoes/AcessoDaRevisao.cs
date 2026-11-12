@@ -8,18 +8,19 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>
 /// O que o solicitante da requisição pode fazer na revisão dos acessos: conduzi-la como Representante do controlador e
-/// decidir os itens dela, ou rever como gestor de acessos os itens de quem é Representante. Cada capacidade é avaliada pelo ponto de
-/// decisão único, por permissão do catálogo, sem registrar: quem usa o resultado grava a decisão que governou o desfecho
-/// (<see cref="RegistrarAsync"/>), para que a trilha traga a decisão real e não a de uma permissão que a operação não
-/// exigia.
+/// decidir os itens dela, rever como gestor de acessos os itens de quem é Representante, ou só consultar, como o
+/// Encarregado de dados. Cada capacidade é avaliada pelo ponto de decisão único, por permissão do catálogo, sem registrar:
+/// quem usa o resultado grava a decisão que governou o desfecho, para que a trilha traga a decisão real e não a de uma
+/// permissão que a operação não exigia. A consulta só lê: nunca abre revisão nem decide item.
 /// </summary>
-internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoDeAcesso DecisaoReverProtecaoDeDados)
+internal sealed record AcessoDaRevisao(
+    DecisaoDeAcesso DecisaoConduzir, DecisaoDeAcesso DecisaoReverProtecaoDeDados, DecisaoDeAcesso DecisaoConsultar)
 {
-    private static readonly PermissionRequirement PermissaoConduzir =
-        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.RevisoesConduzir).Requisito;
+    private static readonly PermissionRequirement PermissaoConduzir = Requisito(PermissaoAutorizacao.RevisoesConduzir);
 
-    private static readonly PermissionRequirement PermissaoReverProtecaoDeDados =
-        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.RevisoesReverProtecaoDeDados).Requisito;
+    private static readonly PermissionRequirement PermissaoReverProtecaoDeDados = Requisito(PermissaoAutorizacao.RevisoesReverProtecaoDeDados);
+
+    private static readonly PermissionRequirement PermissaoConsultar = Requisito(PermissaoAutorizacao.RevisoesConsultar);
 
     /// <summary>Conduz a revisão como Representante do controlador.</summary>
     public bool Conduz => DecisaoConduzir is DecisaoPermitida;
@@ -27,8 +28,19 @@ internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoD
     /// <summary>Revê como gestor de acessos os itens de quem é Representante.</summary>
     public bool ReveProtecaoDeDados => DecisaoReverProtecaoDeDados is DecisaoPermitida;
 
-    /// <summary>Lê as revisões: quem conduz ou quem revê.</summary>
-    public bool Le => Conduz || ReveProtecaoDeDados;
+    /// <summary>Consulta as revisões sem abrir nem decidir.</summary>
+    public bool Consulta => DecisaoConsultar is DecisaoPermitida;
+
+    /// <summary>Decide itens de alguma governança: quem conduz ou quem revê.</summary>
+    public bool DecideAlgum => Conduz || ReveProtecaoDeDados;
+
+    /// <summary>Lê as revisões: quem decide algum item ou quem consulta.</summary>
+    public bool Le => DecideAlgum || Consulta;
+
+    /// <summary>A decisão permitida que deu a leitura, da qual sai o registro de cada revisão exibida; nula sem leitura.</summary>
+    public DecisaoPermitida? Leitura => DasDecisoesDeLeitura.OfType<DecisaoPermitida>().FirstOrDefault();
+
+    private DecisaoDeAcesso[] DasDecisoesDeLeitura => [DecisaoConduzir, DecisaoReverProtecaoDeDados, DecisaoConsultar];
 
     /// <summary>A permissão de quem decide o item: o Representante decide os comuns, e os gestores, os de quem é Representante.</summary>
     public bool Decide(TipoDeGovernanca quemDecide) =>
@@ -53,15 +65,33 @@ internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoD
         return conduzir is SemSujeito
             ? null
             : new AcessoDaRevisao(
-                conduzir, await AvaliarAsync(verificador, PermissaoReverProtecaoDeDados, revisaoId, cancellationToken).ConfigureAwait(false));
+                conduzir,
+                await AvaliarAsync(verificador, PermissaoReverProtecaoDeDados, revisaoId, cancellationToken).ConfigureAwait(false),
+                await AvaliarAsync(verificador, PermissaoConsultar, revisaoId, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
-    /// Registra o desfecho das duas permissões: as que habilitaram ou, se nenhuma habilitou, as negativas. É o caso da
-    /// leitura e do pedido que ainda não sabe qual governança o governa.
+    /// Registra o desfecho da leitura: as permissões que a habilitaram ou, se nenhuma habilitou, as negativas das três.
     /// </summary>
-    public Task RegistrarAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+    public Task RegistrarLeituraAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        RegistrarAsync(verificador, DasDecisoesDeLeitura, cancellationToken);
+
+    /// <summary>
+    /// Registra o desfecho do pedido de decidir um item que ainda não sabe qual governança o governa: as permissões de
+    /// decidir que o habilitaram ou, se nenhuma habilitou, as negativas delas. A consulta não governa decisão nenhuma e
+    /// não entra.
+    /// </summary>
+    public Task RegistrarDaDecisaoAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
         RegistrarAsync(verificador, [DecisaoConduzir, DecisaoReverProtecaoDeDados], cancellationToken);
+
+    /// <summary>Registra o desfecho da decisão que governou a operação, permitida ou negada.</summary>
+    public static Task RegistrarAsync(
+        IVerificadorDeAcesso verificador, IReadOnlyCollection<DecisaoDeAcesso> decisoes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        return verificador.RegistrarDesfechoAsync(decisoes, IntencaoDoRegistro.Aprovador, cancellationToken);
+    }
 
     private static Task<DecisaoDeAcesso> AvaliarAsync(
         IVerificadorDeAcesso verificador, PermissionRequirement permissao, Guid? revisaoId, CancellationToken cancellationToken)
@@ -73,12 +103,6 @@ internal sealed record AcessoDaRevisao(DecisaoDeAcesso DecisaoConduzir, DecisaoD
         return verificador.AvaliarAsync(permissao, recurso, cancellationToken);
     }
 
-    /// <summary>Registra o desfecho da decisão que governou a operação, permitida ou negada.</summary>
-    public static Task RegistrarAsync(
-        IVerificadorDeAcesso verificador, IReadOnlyCollection<DecisaoDeAcesso> decisoes, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        return verificador.RegistrarDesfechoAsync(decisoes, IntencaoDoRegistro.Aprovador, cancellationToken);
-    }
+    private static PermissionRequirement Requisito(PermissaoAutorizacao permissao) =>
+        CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Requisito;
 }

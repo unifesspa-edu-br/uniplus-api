@@ -26,20 +26,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAuthorizationFilter, IExigeAutorizacaoAlemDoLogin
     where TPermissao : struct, Enum
 {
-    private readonly ResourceContext? _resource;
+    private readonly string? _resourceTipo;
 
     /// <summary>Cria a exigência.</summary>
     /// <param name="permissao">Permissão exigida, do enum <typeparamref name="TPermissao"/>.</param>
     public ExigePermissaoAttribute(object permissao)
     {
-        if (permissao is not TPermissao tipada)
-        {
-            throw new ArgumentException(
-                $"A permissão deve ser um {typeof(TPermissao).Name}, e não {permissao?.GetType().Name ?? "nulo"}.",
-                nameof(permissao));
-        }
-
-        Definicao = CatalogoDePermissoes<TPermissao>.Obter(tipada);
+        Definicao = Obter(permissao, nameof(permissao));
     }
 
     /// <summary>
@@ -48,75 +41,119 @@ public sealed class ExigePermissaoAttribute<TPermissao> : Attribute, IAsyncAutho
     /// </summary>
     public string? ResourceTipo
     {
-        get => _resource?.ResourceTipo;
-        init => _resource = value is null ? null : ConstruirResource(value);
+        get => _resourceTipo;
+        init
+        {
+            if (value is not null)
+            {
+                _ = ConstruirResource(value, Definicao);
+            }
+
+            _resourceTipo = value;
+        }
     }
 
     /// <summary>
     /// Permissão alternativa, do mesmo enum, que basta quando o solicitante a tem em ao menos
     /// uma unidade. Serve à leitura de apoio de quem configura algo na sua unidade e consulta um
-    /// cadastro institucional, sem receber a escrita institucional.
+    /// cadastro institucional, sem receber a escrita institucional. Não se combina com
+    /// <see cref="OuPermissao"/>.
     /// </summary>
     public object? OuEmAlgumaUnidade
     {
-        get => Alternativa?.Codigo;
+        get => AlternativaEmUnidade?.Codigo;
         init
         {
-            if (value is not TPermissao tipada)
-            {
-                throw new ArgumentException(
-                    $"A permissão deve ser um {typeof(TPermissao).Name}, e não {value?.GetType().Name ?? "nulo"}.",
-                    nameof(value));
-            }
+            ExigirUmaSoAlternativa();
+            AlternativaEmUnidade = Obter(value, nameof(value));
+        }
+    }
 
-            Alternativa = CatalogoDePermissoes<TPermissao>.Obter(tipada);
+    /// <summary>
+    /// Permissão alternativa, do mesmo enum, avaliada sobre o mesmo resource quando a principal nega. Serve à consulta
+    /// de quem lê sem decidir, como o Encarregado de dados, na rota que a permissão de administrar também serve. O
+    /// registro grava a que autorizou ou, se nenhuma autorizou, as duas negativas. Não se combina com
+    /// <see cref="OuEmAlgumaUnidade"/>.
+    /// </summary>
+    public object? OuPermissao
+    {
+        get => AlternativaNoResource?.Codigo;
+        init
+        {
+            ExigirUmaSoAlternativa();
+            AlternativaNoResource = Obter(value, nameof(value));
         }
     }
 
     /// <summary>Definição da permissão exigida.</summary>
     internal DefinicaoDePermissao Definicao { get; }
 
-    private DefinicaoDePermissao? Alternativa { get; init; }
+    private DefinicaoDePermissao? AlternativaEmUnidade { get; init; }
 
-    private ResourceContext ConstruirResource(string tipo)
-    {
-        Result<ResourceContext> resource = ResourceContext.From(tipo, Definicao.Requisito.Sensibilidade);
+    private DefinicaoDePermissao? AlternativaNoResource { get; init; }
 
-        return resource.Value
-            ?? throw new ArgumentException(resource.Error!.Message, nameof(tipo));
-    }
-
-    /// <inheritdoc />
+    /// <summary>
+    /// Avalia sem registrar para gravar só o que governou o desfecho: a negativa da principal não é registrada quando a
+    /// alternativa permite. O impedimento por inscrição não é negativa, e a alternativa não o supera.
+    /// </summary>
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         IVerificadorDeAcesso acesso = context.HttpContext.RequestServices.GetRequiredService<IVerificadorDeAcesso>();
-
         CancellationToken cancellationToken = context.HttpContext.RequestAborted;
 
-        // Avalia sem registrar para gravar só o que governou o desfecho: a negativa da principal não é registrada
-        // quando a alternativa permite.
-        DecisaoDeAcesso principal = await acesso.AvaliarAsync(Definicao.Requisito, _resource, cancellationToken).ConfigureAwait(false);
+        DecisaoDeAcesso principal = await acesso.AvaliarAsync(Definicao.Requisito, ResourceDe(Definicao), cancellationToken).ConfigureAwait(false);
         List<DecisaoDeAcesso> decisoes = [principal];
-        ResultadoDoAcesso resultado = principal.Resultado;
-
-        // O impedimento por inscrição vale em qualquer unidade: a alternativa não o supera.
-        if (resultado == ResultadoDoAcesso.Negado && Alternativa is not null)
+        if (principal.Resultado == ResultadoDoAcesso.Negado)
         {
-            IReadOnlyList<DecisaoDeAcesso> alternativas = await acesso
-                .AvaliarEmAlgumaUnidadeAsync(Alternativa.Requisito, cancellationToken)
-                .ConfigureAwait(false);
-            decisoes.AddRange(alternativas);
-
-            // Sem unidade que permita, vale o desfecho da última avaliada.
-            resultado = alternativas.Any(static d => d is DecisaoPermitida)
-                ? ResultadoDoAcesso.Permitido
-                : alternativas.Count > 0 ? alternativas[^1].Resultado : resultado;
+            decisoes.AddRange(await AvaliarAlternativaAsync(acesso, cancellationToken).ConfigureAwait(false));
         }
 
         await acesso.RegistrarDesfechoAsync(decisoes, IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
-
-        context.Result = RespostaDoAcesso.Para(resultado, static () => new ForbidResult());
+        context.Result = RespostaDoAcesso.Para(Desfecho(decisoes), static () => new ForbidResult());
     }
+
+    private async Task<IReadOnlyList<DecisaoDeAcesso>> AvaliarAlternativaAsync(IVerificadorDeAcesso acesso, CancellationToken cancellationToken)
+    {
+        if (AlternativaEmUnidade is not null)
+        {
+            return await acesso.AvaliarEmAlgumaUnidadeAsync(AlternativaEmUnidade.Requisito, cancellationToken).ConfigureAwait(false);
+        }
+
+        return AlternativaNoResource is null
+            ? []
+            : [await acesso.AvaliarAsync(AlternativaNoResource.Requisito, ResourceDe(AlternativaNoResource), cancellationToken).ConfigureAwait(false)];
+    }
+
+    // Alguma permitida autoriza; sem nenhuma, vale o desfecho da última avaliada.
+    private static ResultadoDoAcesso Desfecho(List<DecisaoDeAcesso> decisoes) =>
+        decisoes.Exists(static d => d is DecisaoPermitida) ? ResultadoDoAcesso.Permitido : decisoes[^1].Resultado;
+
+    // Cada permissão leva ao resource a própria sensibilidade, para que a decisão e o registro da alternativa tragam a
+    // classe dela, e não a da principal.
+    private ResourceContext? ResourceDe(DefinicaoDePermissao definicao) =>
+        _resourceTipo is null ? null : ConstruirResource(_resourceTipo, definicao);
+
+    private static ResourceContext ConstruirResource(string tipo, DefinicaoDePermissao definicao)
+    {
+        Result<ResourceContext> resource = ResourceContext.From(tipo, definicao.Requisito.Sensibilidade);
+
+        return resource.Value
+            ?? throw new ArgumentException(resource.Error!.Message, nameof(tipo));
+    }
+
+    private void ExigirUmaSoAlternativa()
+    {
+        if (AlternativaEmUnidade is not null || AlternativaNoResource is not null)
+        {
+            throw new InvalidOperationException("A exigência aceita uma só alternativa: em alguma unidade ou outra permissão.");
+        }
+    }
+
+    private static DefinicaoDePermissao Obter(object? permissao, string parametro) =>
+        permissao is TPermissao tipada
+            ? CatalogoDePermissoes<TPermissao>.Obter(tipada)
+            : throw new ArgumentException(
+                $"A permissão deve ser um {typeof(TPermissao).Name}, e não {permissao?.GetType().Name ?? "nulo"}.", parametro);
 }

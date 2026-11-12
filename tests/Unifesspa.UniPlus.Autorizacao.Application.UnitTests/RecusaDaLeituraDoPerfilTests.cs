@@ -13,6 +13,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovern
 
 public sealed class RecusaDaLeituraDoPerfilTests
 {
+    private const string ConsultarVersoes = "autorizacao:perfis:consultar-versoes";
+
     private static readonly Guid PerfilId = Guid.CreateVersion7();
 
     [Fact(DisplayName = "Quem aprova pela proteção de dados lê a coleção e a trilha registra a permissão que governou")]
@@ -49,7 +51,7 @@ public sealed class RecusaDaLeituraDoPerfilTests
         TrilhaDeAcesso.Do(verificador).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Sem nenhuma das três permissões a leitura é recusada e a trilha registra as negativas sobre o perfil")]
+    [Fact(DisplayName = "Sem nenhuma das quatro permissões a leitura é recusada e a trilha registra as negativas sobre o perfil")]
     public async Task Conferir_SemPermissao_RecusaERegistraAsNegativas()
     {
         VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.Sub, []);
@@ -58,7 +60,7 @@ public sealed class RecusaDaLeituraDoPerfilTests
 
         recusa!.Code.Should().Be(PerfilErrorCodes.LeituraNegada);
         TrilhaDeAcesso.Do(verificador).Should().BeEquivalentTo(
-            new[] { Manter, Gestao, Protecao }.Select(p => SobreOPerfil(PerfisDeTeste.Autor.Sub, p, ResultadoDoAcesso.Negado)));
+            new[] { Manter, Gestao, Protecao, ConsultarVersoes }.Select(p => SobreOPerfil(PerfisDeTeste.Autor.Sub, p, ResultadoDoAcesso.Negado)));
     }
 
     private static TrilhaDeAcesso SobreOPerfil(string ator, string permissao, ResultadoDoAcesso resultado) =>

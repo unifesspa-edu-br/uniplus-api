@@ -129,6 +129,7 @@ public sealed class ContencaoDoPerfilController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ObterTrilha(Guid id, CancellationToken cancellationToken)
     {
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await _queryBus

@@ -9,7 +9,10 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Handler da leitura da trilha da contenção: confere a permissão, registra o desfecho e devolve os registros em ordem.</summary>
+/// <summary>
+/// Handler da leitura da trilha da contenção: confere a permissão de quem mantém perfis, aprova pela proteção de dados ou
+/// consulta as versões, registra o desfecho e devolve os registros em ordem.
+/// </summary>
 public static class ObterContencaoDoPerfilQueryHandler
 {
     public static async Task<Result<IReadOnlyList<RegistroDaContencaoDto>>> Handle(
@@ -34,16 +37,7 @@ public static class ObterContencaoDoPerfilQueryHandler
     private static Result<IReadOnlyList<RegistroDaContencaoDto>> Recusa(DomainError erro) =>
         Result<IReadOnlyList<RegistroDaContencaoDto>>.Failure(erro);
 
-    private static async Task<DomainError?> NegadoAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
-    {
-        AcessoDaContencao? acesso = await AcessoDaContencao.ConsultarAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
-        if (acesso is null)
-        {
-            return PerfilHandlerErros.AutorNaoIdentificado();
-        }
-
-        await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-
-        return acesso.Habilitado ? null : PerfilErros.SemPermissaoNaEtapa();
-    }
+    private static async Task<DomainError?> NegadoAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken) =>
+        (await AcessoDaVersao.AvaliarLeituraDaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false))
+            .Recusa(PerfilErros.SemPermissaoNaEtapa);
 }

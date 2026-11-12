@@ -220,7 +220,27 @@ public enum PermissaoConfiguracao
         "configuracao:protecao-do-catalogo:aprovar",
         "Aprovar a proteção de dados do catálogo",
         "Aprova ou nega, pelo Representante do controlador, a classificação, a finalidade e a hipótese legal de cada tipo de documento e de cada fato do catálogo, e recebe o aviso das solicitações e dos aceites.",
-        ClassificacaoDeProtecao.Interno,
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
         ReservadaAGovernanca = true)]
     ProtecaoDoCatalogoAprovar = 26,
+
+    /// <summary>Consultar, como Encarregado de dados, a proteção de dados do catálogo, sem decidir.</summary>
+    [Permissao(
+        "configuracao:protecao-do-catalogo:consultar",
+        "Consultar a proteção de dados do catálogo",
+        "Consulta a fila, o histórico das decisões e o detalhe da proteção de dados dos tipos de documento e dos fatos, e os atos de cada item, com o nome de quem agiu e as justificativas, sem decidir.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, II, combinado com o art. 23",
+        ReservadaAGovernanca = true)]
+    ProtecaoDoCatalogoConsultar = 27,
+
+    /// <summary>Manifestar-se, como Encarregado de dados, sobre a proteção de dados do catálogo, sem decidir.</summary>
+    [Permissao(
+        "configuracao:protecao-do-catalogo:manifestar",
+        "Manifestar-se sobre a proteção de dados do catálogo",
+        "Registra manifestação técnica sobre a classificação, a finalidade e a hipótese legal de um item com aprovação solicitada, sem decidir.",
+        ClassificacaoDeProtecao.Interno,
+        ReservadaAGovernanca = true)]
+    ProtecaoDoCatalogoManifestar = 28,
 }

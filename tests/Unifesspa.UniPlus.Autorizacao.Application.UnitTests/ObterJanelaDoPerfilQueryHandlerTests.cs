@@ -21,6 +21,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis
 
 public sealed class ObterJanelaDoPerfilQueryHandlerTests
 {
+    private const string ConsultarVersoes = "autorizacao:perfis:consultar-versoes";
+
     private static readonly Guid PerfilId = Guid.CreateVersion7();
 
     [Fact(DisplayName = "A leitura da janela recusa quem não pode ler o perfil sem consultá-lo e registra as negativas")]
@@ -34,7 +36,7 @@ public sealed class ObterJanelaDoPerfilQueryHandlerTests
         resultado.Error!.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
         perfis.ReceivedCalls().Should().BeEmpty();
         TrilhaDeAcesso.Do(verificador).Should().BeEquivalentTo(
-            new[] { Manter, Gestao, Protecao }.Select(p => new TrilhaDeAcesso(
+            new[] { Manter, Gestao, Protecao, ConsultarVersoes }.Select(p => new TrilhaDeAcesso(
                 PerfisDeTeste.Autor.Sub, p, ResourceTiposAutorizacao.Perfil, PerfilId, ResultadoDoAcesso.Negado)));
     }
 

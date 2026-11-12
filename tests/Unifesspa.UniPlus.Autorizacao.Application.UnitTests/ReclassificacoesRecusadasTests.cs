@@ -17,6 +17,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovern
 
 public sealed class ReclassificacoesRecusadasTests
 {
+    private const string ConsultarVersoes = "autorizacao:perfis:consultar-versoes";
+
     [Fact(DisplayName = "A fila de reclassificações recusa o token sem autor antes de consultar")]
     public async Task Fila_SemAutor_RecusaPeloToken()
     {
@@ -86,7 +88,7 @@ public sealed class ReclassificacoesRecusadasTests
         await verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
     }
 
-    [Fact(DisplayName = "As divergências da governança recusam quem não mantém perfis nem aprova pela proteção de dados")]
+    [Fact(DisplayName = "As divergências da governança recusam quem não mantém perfis, não aprova pela proteção de dados nem consulta as versões")]
     public async Task Divergencias_SemPermissao_Recusa()
     {
         IReclassificacaoRepository repositorio = Substitute.For<IReclassificacaoRepository>();
@@ -97,7 +99,7 @@ public sealed class ReclassificacoesRecusadasTests
 
         divergencias.Errors.Single().Error.Code.Should().Be(ReclassificacaoErrorCodes.SemPermissaoNaEtapa);
         repositorio.ReceivedCalls().Should().BeEmpty();
-        TrilhaDeAcesso.Do(verificador).Should().BeEquivalentTo([NaOperacao(Manter, ResultadoDoAcesso.Negado), NaOperacao(Protecao, ResultadoDoAcesso.Negado)]);
+        TrilhaDeAcesso.Do(verificador).Should().BeEquivalentTo([NaOperacao(Manter, ResultadoDoAcesso.Negado), NaOperacao(Protecao, ResultadoDoAcesso.Negado), NaOperacao(ConsultarVersoes, ResultadoDoAcesso.Negado)]);
     }
 
     [Fact(DisplayName = "As divergências da governança são listadas a quem aprova pela proteção de dados")]

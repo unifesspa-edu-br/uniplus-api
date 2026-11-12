@@ -57,7 +57,7 @@ public sealed class AberturaDaRevisao
         await _revisoes.AdicionarAsync(revisao, cancellationToken).ConfigureAwait(false);
         await _unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        RevisaoDeAcessosDto? dto = await _leitura.LerAsync(revisao.Id, agora, cancellationToken).ConfigureAwait(false);
+        RevisaoDeAcessosDto? dto = await _leitura.LerAsync(revisao.Id, agora, abertaPor, cancellationToken).ConfigureAwait(false);
         return Result<RevisaoDeAcessosDto>.Success(dto!);
     }
 

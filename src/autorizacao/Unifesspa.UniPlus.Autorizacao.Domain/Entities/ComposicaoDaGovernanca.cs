@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+
 /// <summary>Uma permissão que um perfil de governança reúne.</summary>
 public sealed record PermissaoDeGovernanca(Guid PerfilId, string Codigo);
 
@@ -10,6 +12,8 @@ public sealed record PermissaoDeGovernanca(Guid PerfilId, string Codigo);
 /// </summary>
 public static class ComposicaoDaGovernanca
 {
+    private const string ModuloDaAutorizacao = "autorizacao";
+
     /// <summary>As permissões de cada perfil de governança, na ordem da carga.</summary>
     public static IReadOnlyList<PermissaoDeGovernanca> Esperada { get; } =
     [
@@ -26,7 +30,27 @@ public static class ComposicaoDaGovernanca
         new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:permissoes:consultar-catalogo"),
         new(PerfisDeSistema.RepresentanteDoControladorId, "autorizacao:revisoes:conduzir"),
         new(PerfisDeSistema.RepresentanteDoControladorId, "configuracao:protecao-do-catalogo:aprovar"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:concessoes:consultar"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:pedidos:consultar"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:perfis:consultar-versoes"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:permissoes:consultar-catalogo"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:providencias:solicitar"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "autorizacao:revisoes:consultar"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:consultar"),
+        new(PerfisDeSistema.EncarregadoDeDadosId, "configuracao:protecao-do-catalogo:manifestar"),
     ];
+
+    /// <summary>
+    /// Se um perfil de governança pode reunir a permissão do catálogo: qualquer uma da autorização e, de outro módulo, só
+    /// a reservada à governança. Uma permissão comum de outro módulo chegaria a todos os titulares do papel sem passar pela
+    /// aprovação que os perfis comuns exigem.
+    /// </summary>
+    public static bool Admite(LinhaDoRetratoDoCatalogo permissao)
+    {
+        ArgumentNullException.ThrowIfNull(permissao);
+
+        return permissao.Modulo == ModuloDaAutorizacao || permissao.Reservada;
+    }
 
     /// <summary>Os códigos que o perfil de governança deve reunir.</summary>
     public static IReadOnlyList<string> CodigosDe(Guid perfilId) =>

@@ -18,7 +18,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos
 
 /// <summary>
 /// A revogação da concessão de Representante do controlador toma a trava do papel antes da trava da concessão, para não
-/// cruzar com a designação concorrente; a revogação de outro perfil não toca o papel (ADR-0162).
+/// cruzar com a designação concorrente; a revogação de outro perfil não toca o papel. A concessão de perfil de governança
+/// trava também a pessoa do beneficiário, entre o papel e a concessão, e a de perfil comum não (ADR-0162).
 /// </summary>
 public sealed class RevogacaoSobATravaDoPapelTests
 {
@@ -31,6 +32,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
 
     private readonly IConcessaoRepository _repositorio = Substitute.For<IConcessaoRepository>();
     private readonly IPapelDoRepresentante _papel = Substitute.For<IPapelDoRepresentante>();
+    private readonly IIncompatibilidadeDosPapeis _papeis = Substitute.For<IIncompatibilidadeDosPapeis>();
     private readonly IAutorizacaoUnitOfWork _unidade = Substitute.For<IAutorizacaoUnitOfWork>();
 
     [Fact(DisplayName = "A revogação do Representante trava o papel antes de travar a concessão")]
@@ -44,11 +46,27 @@ public sealed class RevogacaoSobATravaDoPapelTests
         Received.InOrder(() =>
         {
             _ = _papel.TravarAsync(Arg.Any<CancellationToken>());
+            _ = _papeis.TravarAsync(Arg.Is<IEnumerable<Identidade>>(p => p.Single() == Leandro), Arg.Any<CancellationToken>());
             _ = _repositorio.ObterParaAlterarAsync(concessao.Id, Arg.Any<CancellationToken>());
         });
     }
 
-    [Fact(DisplayName = "A revogação de concessão de perfil comum não toma a trava do papel")]
+    [Fact(DisplayName = "A revogação do Encarregado de dados trava a pessoa do beneficiário antes da concessão, sem o papel de Representante")]
+    public async Task Revogar_Encarregado_TravaAPessoaSemOPapel()
+    {
+        Concessao concessao = Preparar(PerfisDeSistema.EncarregadoDeDadosId);
+
+        (await RevogarAsync(concessao)).IsSuccess.Should().BeTrue();
+
+        await _papel.DidNotReceive().TravarAsync(Arg.Any<CancellationToken>());
+        Received.InOrder(() =>
+        {
+            _ = _papeis.TravarAsync(Arg.Is<IEnumerable<Identidade>>(p => p.Single() == Leandro), Arg.Any<CancellationToken>());
+            _ = _repositorio.ObterParaAlterarAsync(concessao.Id, Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact(DisplayName = "A revogação de concessão de perfil comum não toma a trava do papel nem a da pessoa")]
     public async Task Revogar_PerfilComum_NaoTravaOPapel()
     {
         Concessao concessao = Preparar(Guid.CreateVersion7());
@@ -56,6 +74,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
         (await RevogarAsync(concessao)).IsSuccess.Should().BeTrue();
 
         await _papel.DidNotReceive().TravarAsync(Arg.Any<CancellationToken>());
+        await _papeis.DidNotReceiveWithAnyArgs().TravarAsync(default!, default);
     }
 
     [Fact(DisplayName = "A concessão inexistente responde não encontrada sem tomar a trava do papel")]
@@ -82,7 +101,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
     private Task<Result> RevogarAsync(Concessao concessao, Guid? outroId = null) =>
         RevogarConcessaoCommandHandler.Handle(
             new RevogarConcessaoCommand(outroId ?? concessao.Id, Motivo, EmailDoBeneficiario),
-            _repositorio, _papel, _unidade, Autor(), TimeProvider.System, CancellationToken.None);
+            _repositorio, new TravasDaRevogacao(_repositorio, _papel, _papeis), _unidade, Autor(), TimeProvider.System, CancellationToken.None);
 
     private static IUserContext Autor()
     {
