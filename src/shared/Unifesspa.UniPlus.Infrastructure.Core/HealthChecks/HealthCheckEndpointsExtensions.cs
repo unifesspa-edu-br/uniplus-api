@@ -12,7 +12,7 @@ public static class HealthCheckEndpointsExtensions
     /// Mapeia as sondas de saúde, públicas porque o orquestrador as chama sem token. <c>/health/live</c> não avalia
     /// nenhuma verificação (200 enquanto o processo responde, sem reiniciar o pod quando uma dependência cai);
     /// <c>/health/ready</c> agrega as verificações marcadas com <see cref="HealthChecksServiceCollectionExtensions.ReadyTag"/>;
-    /// <c>/health</c> agrega todas.
+    /// <c>/health</c> agrega todas e lista o estado de cada uma.
     /// </summary>
     public static IEndpointRouteBuilder MapUniPlusHealthChecks(this IEndpointRouteBuilder endpoints)
     {
@@ -24,7 +24,8 @@ public static class HealthCheckEndpointsExtensions
         {
             Predicate = static h => h.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag),
         }).AllowAnonymous();
-        endpoints.MapHealthChecks("/health").AllowAnonymous();
+        endpoints.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = RelatorioDeSaudeWriter.Escrever })
+            .AllowAnonymous();
 
         return endpoints;
     }

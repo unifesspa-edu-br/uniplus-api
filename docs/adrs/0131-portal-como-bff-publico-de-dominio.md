@@ -220,7 +220,7 @@ Quando a Portal API passar a servir a inscrição, o movimento compatível com e
 
 ## Emenda 3 (2026-11-11) — o provedor de identidade sai da prontidão
 
-O critério da prontidão fica; muda o que ele conclui sobre o provedor de identidade. A indisponibilidade dele só inutiliza as rotas autenticadas, que recusam a requisição por conta própria, e tirá-lo da sonda é o que mantém atendendo as rotas públicas — retirá-lo de serviço derrubaria, juntas, todas as instâncias de todas as APIs. A verificação de descoberta OIDC deixa de integrar a prontidão e passa a reportar **degradado** (não reprovado) quando o provedor não responde: o estado segue visível no health completo, sem tirar o processo do balanceamento. Onde esta ADR diz que a prontidão inclui o provedor de identidade, vale esta emenda.
+O critério da prontidão fica; muda o que ele conclui sobre o provedor de identidade. A indisponibilidade dele só inutiliza as rotas autenticadas, que recusam a requisição por conta própria, e tirá-lo da sonda é o que mantém atendendo as rotas públicas — retirá-lo de serviço derrubaria, juntas, todas as instâncias de todas as APIs. A verificação de descoberta OIDC deixa de integrar a prontidão e passa a reportar **degradado** (não reprovado) quando o provedor não responde: o estado segue visível no health completo, sem tirar o processo do balanceamento. Onde esta ADR inclui o provedor de identidade na prontidão — no critério e na confirmação "incluindo as autenticadas" —, vale esta emenda: a rota autenticada inoperante por falha do provedor não reprova a sonda.
 
 ## Mais informações
 

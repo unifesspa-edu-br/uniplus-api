@@ -37,7 +37,7 @@ Regras técnicas:
 - **Erros padronizados via ProblemDetails (RFC 7807)** com `correlationId` para rastreabilidade.
 - **Versionamento via Asp.Versioning** — URL path `/api/v1/` para major versions e header `api-version` para minor.
 - **Geração de clientes** — clientes TypeScript gerados via NSwag ou Kiota a partir da spec.
-- **Health checks** via `Microsoft.Extensions.Diagnostics.HealthChecks` em `/health` (liveness) e `/health/ready` (readiness com checks de dependências: PostgreSQL, Kafka, Redis, MinIO, Keycloak).
+- **Health checks** via `Microsoft.Extensions.Diagnostics.HealthChecks` em `/health` (liveness) e `/health/ready` (readiness com checks de dependências: PostgreSQL, Kafka, Redis, MinIO; o Keycloak aparece como degradado no `/health`, fora da readiness, conforme a ADR-0131).
 - **Rate limiting nativo do .NET** com políticas por rota — proteção contra abuso em endpoints públicos (inscrição, consulta de resultado).
 - **Testes de contrato (Pact)** para garantir que a implementação não diverge da spec.
 
