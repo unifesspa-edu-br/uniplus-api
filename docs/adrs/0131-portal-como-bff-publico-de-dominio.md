@@ -218,6 +218,10 @@ Isso não revoga nem contradiz a decisão: o que ela proíbe é o Portal — ou 
 
 Quando a Portal API passar a servir a inscrição, o movimento compatível com esta decisão é o mesmo já previsto para a reversão da opção B: o Portal compõe o contrato de Seleção, nunca o envelope. Até lá, o frontend atravessa a fronteira de módulo que esta ADR reserva ao Portal — uma excepcionalidade que decorre de o Portal não cobrir ainda esta frente, não de nova decisão arquitetural.
 
+## Emenda 3 (2026-11-11) — o provedor de identidade sai da prontidão
+
+O critério da prontidão fica; muda o que ele conclui sobre o provedor de identidade. A indisponibilidade dele só inutiliza as rotas autenticadas, que recusam a requisição por conta própria, e tirá-lo da sonda é o que mantém atendendo as rotas públicas — retirá-lo de serviço derrubaria, juntas, todas as instâncias de todas as APIs. A verificação de descoberta OIDC deixa de integrar a prontidão e passa a reportar **degradado** (não reprovado) quando o provedor não responde: o estado segue visível no health completo, sem tirar o processo do balanceamento. Onde esta ADR diz que a prontidão inclui o provedor de identidade, vale esta emenda.
+
 ## Mais informações
 
 Gatilhos de reversão, para que a revisão desta decisão não dependa de impressão:

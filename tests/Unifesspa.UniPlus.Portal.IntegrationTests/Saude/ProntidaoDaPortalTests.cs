@@ -15,8 +15,9 @@ using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 /// <summary>
 /// A prontidão da Portal responde por quem ela serve (ADR-0131): entra o que alguma rota servida
-/// precisa para responder. Hoje as rotas são sessão, perfil e o ping; só o provedor de identidade
-/// é exercido por elas.
+/// precisa para responder. O provedor de identidade só afeta as rotas autenticadas, que já
+/// recusam a requisição sozinhas; retirá-lo da sonda mantém no ar as rotas públicas, e o estado
+/// dele segue visível no health completo.
 /// </summary>
 [Trait("Category", "Integration")]
 [SuppressMessage(
@@ -25,6 +26,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
     Justification = "xUnit IClassFixture<T> exige tipo de teste público.")]
 public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFactory>
 {
+    private const string VerificacaoDoProvedor = "oidc-discovery";
+
     private static readonly Uri Prontidao = new("/health/ready", UriKind.Relative);
 
     private readonly PortalProntidaoApiFactory _factory;
@@ -34,15 +37,26 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
         _factory = factory;
     }
 
-    [Fact(DisplayName = "Provedor de identidade fora do ar reprova a prontidão")]
-    public async Task Prontidao_ProvedorDeIdentidadeForaDoAr_Reprova()
+    [Fact(DisplayName = "Provedor de identidade fora do ar não reprova a prontidão")]
+    public async Task Prontidao_ProvedorDeIdentidadeForaDoAr_ContinuaApta()
     {
         _factory.ProvedorDeIdentidade.Status = HttpStatusCode.ServiceUnavailable;
         using HttpClient client = _factory.CreateClient();
 
         using HttpResponseMessage resposta = await client.GetAsync(Prontidao);
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "Provedor de identidade fora do ar aparece como degradado no health completo")]
+    public async Task HealthCompleto_ProvedorDeIdentidadeForaDoAr_ReportaDegradado()
+    {
+        _factory.ProvedorDeIdentidade.Status = HttpStatusCode.ServiceUnavailable;
+        HealthCheckService servico = _factory.Services.GetRequiredService<HealthCheckService>();
+
+        HealthReport relatorio = await servico.CheckHealthAsync(r => r.Name == VerificacaoDoProvedor);
+
+        relatorio.Entries[VerificacaoDoProvedor].Status.Should().Be(HealthStatus.Degraded);
     }
 
     [Fact(DisplayName = "Banco, cache e armazenamento fora do ar não reprovam a prontidão")]
@@ -61,8 +75,8 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
     /// depender dela — inclusive de origem consultada por rede, cuja indisponibilidade aparece na
     /// resposta do endpoint, e não aqui.
     /// </summary>
-    [Fact(DisplayName = "A sonda contém só a verificação do provedor de identidade")]
-    public void Prontidao_Inventario_SoProvedorDeIdentidade()
+    [Fact(DisplayName = "A sonda não contém verificação alguma")]
+    public void Prontidao_Inventario_Vazio()
     {
         HealthCheckServiceOptions opcoes = _factory.Services
             .GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value;
@@ -70,6 +84,6 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
         opcoes.Registrations
             .Where(r => r.Tags.Contains(HealthChecksServiceCollectionExtensions.ReadyTag))
             .Select(r => r.Name)
-            .Should().BeEquivalentTo(["oidc-discovery"]);
+            .Should().BeEmpty();
     }
 }
