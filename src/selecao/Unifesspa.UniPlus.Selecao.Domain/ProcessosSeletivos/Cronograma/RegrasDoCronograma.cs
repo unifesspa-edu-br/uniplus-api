@@ -43,6 +43,7 @@ internal static class RegrasDoCronograma
             [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
 
         recusa = iniciadas.RecusaDaAlteracao(fases)
+            ?? RecusaDaEtapaPodada(iniciadas, estado, antigasPorOrigem, novasPorOrigem)
             ?? RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem)
@@ -58,6 +59,20 @@ internal static class RegrasDoCronograma
         }
 
         return Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases, antigasPorOrigem, novasPorOrigem));
+    }
+
+    // A etapa da fase que sai vai junto na poda: se ela já começou, a remoção da fase a levaria sem que ninguém a conferisse.
+    private static DomainError? RecusaDaEtapaPodada(
+        FasesIniciadas iniciadas,
+        EstadoDaConfiguracao estado,
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem,
+        Dictionary<Guid, FaseCronograma> novasPorOrigem)
+    {
+        HashSet<string> codigosRemovidos = [.. antigasPorOrigem.Values
+            .Where(f => !novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
+            .Select(static f => f.Codigo)];
+
+        return iniciadas.RecusaDaRemocaoDaEtapa(estado.Etapas.Where(e => e.FaseCodigo is not { } codigo || !codigosRemovidos.Contains(codigo)));
     }
 
     // A conclusão do ciclo recursal roda sobre o conjunto candidato, não sobre o agregado
