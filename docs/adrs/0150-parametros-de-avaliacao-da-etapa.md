@@ -87,3 +87,13 @@ Os **itens de avaliação** da etapa (critérios, blocos) são componentes de no
 - [ADR-0149](0149-nota-da-etapa-por-inscricao.md): lançamentos e avaliação apurada.
 - [ADR-0123](0123-tipos-etapa-configuraveis.md), [ADR-0113](0113-fase-x-etapa-eixo-temporal-e-eixo-de-pontuacao.md), [ADR-0110](0110-retificacao-como-sessao-editorial.md) e [ADR-0013](0013-motor-de-classificacao-como-servicos-de-dominio-puros.md).
 - Issues #1622 (itens de avaliação da etapa) e #1046 (dupla correção).
+
+## Emenda 1 (2026-11-12) — correção independente obrigatória, procedimento de recurso e corretores da regra
+
+A decisão permanece: a etapa declara a forma de avaliação e a regra de consolidação, e os itens têm id estável. Esta emenda **prevalece sobre o texto que admite avaliação única na redação**, no parágrafo "O tipo de etapa não restringe a forma nem a regra".
+
+- **Sinalizador "exige correção independente".** O cadastro do tipo de etapa ganha o sinalizador "exige correção independente", ligado nos tipos redação, carta de intenção e provas discursivas (UNI-REQ-0175, UNI-REQ-0097). A publicação do edital **recusa a avaliação única** em etapa de tipo com o sinalizador. O sinalizador é o que a ADR já previa para o caso de o PO decidir que a correção independente é obrigatória; o tipo, nesses casos, restringe a regra, como já restringe o caráter.
+- **Tipo de regra "procedimento de recurso".** O rol de regras ganha o tipo **procedimento de recurso**, de lista fechada, versionado e congelado na publicação, como as demais regras. O edital o declara **por matéria do ciclo**, identificada pelo produtor (fase ou etapa), pelo tipo de decisão e por um alvo opcional.
+- **Corretores da regra de consolidação.** O número de **corretores distintos** é dado da versão da regra de consolidação: `CONSOLIDACAO-CORRECAO-INDEPENDENTE`, 3; `CONSOLIDACAO-AVALIACAO-UNICA`, 1; sem consolidação humana, 0.
+
+Nenhum outro trecho desta ADR muda.
