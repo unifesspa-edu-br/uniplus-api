@@ -35,11 +35,12 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
     {
         var versoes = await _context.Vigentes(processoId, agora)
             .AsNoTracking()
-            .Select(v => new { v.NumeroVersao, v.VigenteAPartirDe, v.ConfiguracaoCongelada })
+            .Select(v => new { v.Id, v.NumeroVersao, v.VigenteAPartirDe, v.ConfiguracaoCongelada })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return [.. versoes.Select(v => new VersaoDasFases(
+            v.Id,
             v.VigenteAPartirDe,
             versoes.FirstOrDefault(s => s.NumeroVersao == v.NumeroVersao + 1)?.VigenteAPartirDe,
             FasesNoEnvelope.Das(v.ConfiguracaoCongelada)))];
@@ -59,17 +60,17 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    // A importação das notas do ENEM numa etapa é execução dela: a avaliação nasce no lote, e o instante da importação é o da execução.
-    private async Task<IReadOnlyList<(Guid EtapaId, DateTimeOffset Instante)>> ExecucoesDeEtapaAsync(Guid processoId, CancellationToken cancellationToken)
+    // A importação das notas do ENEM numa etapa é execução dela: a avaliação nasce no lote, que guarda a versão e o instante da importação.
+    private async Task<IReadOnlyList<ImportacaoNaEtapa>> ExecucoesDeEtapaAsync(Guid processoId, CancellationToken cancellationToken)
     {
         var lotes = await _context.LotesDeNotasDoEnem
             .AsNoTracking()
             .Where(l => l.ProcessoSeletivoId == processoId)
-            .Select(l => new { l.EtapaProcessoId, l.ImportadoEm })
+            .Select(l => new { l.EtapaProcessoId, l.VersaoConfiguracaoId, l.ImportadoEm })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. lotes.Select(static l => (l.EtapaProcessoId, l.ImportadoEm))];
+        return [.. lotes.Select(static l => new ImportacaoNaEtapa(l.EtapaProcessoId, l.VersaoConfiguracaoId, l.ImportadoEm))];
     }
 
     private async Task<IReadOnlyList<(string Item, DateTimeOffset Instante)>> AtosAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken)
