@@ -101,7 +101,8 @@ public static class OidcAuthenticationConfiguration
         services.AddScoped<IRequiredUserContext>(sp =>
             new RequiredUserContext(sp.GetRequiredService<IUserContext>()));
 
-        services.AddHttpClient(nameof(OidcDiscoveryHealthCheck));
+        services.AddHttpClient(nameof(OidcDiscoveryHealthCheck))
+            .ConfigureHttpClient(static cliente => cliente.Timeout = OidcDiscoveryHealthCheck.LimiteDeEspera);
         services.AddHealthChecks()
             .AddCheck<OidcDiscoveryHealthCheck>(
                 name: "oidc-discovery",

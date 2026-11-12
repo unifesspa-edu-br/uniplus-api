@@ -16,6 +16,9 @@ using Microsoft.Extensions.Options;
 /// </summary>
 public sealed class OidcDiscoveryHealthCheck : IHealthCheck
 {
+    /// <summary>Espera máxima pelo provedor, para o health completo responder antes de qualquer timeout de sonda.</summary>
+    public static readonly TimeSpan LimiteDeEspera = TimeSpan.FromSeconds(2);
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptionsMonitor<AuthOptions> _authOptions;
 

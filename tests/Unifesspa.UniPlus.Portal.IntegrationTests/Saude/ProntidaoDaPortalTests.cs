@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Portal.IntegrationTests.Saude;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 
 /// <summary>
 /// A prontidão da Portal responde por quem ela serve (ADR-0131): entra o que alguma rota servida
@@ -60,6 +62,26 @@ public sealed class ProntidaoDaPortalTests : IClassFixture<PortalProntidaoApiFac
         using JsonDocument corpo = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         corpo.RootElement.GetProperty("verificacoes").GetProperty(VerificacaoDoProvedor).GetProperty("status")
             .GetString().Should().Be("Degraded");
+    }
+
+    [Fact(DisplayName = "Provedor de identidade sem resposta degrada o health completo dentro do limite de espera")]
+    public async Task HealthCompleto_ProvedorDeIdentidadeSemResposta_DegradaDentroDoLimite()
+    {
+        _factory.ProvedorDeIdentidade.Pendurado = true;
+        try
+        {
+            HealthCheckService servico = _factory.Services.GetRequiredService<HealthCheckService>();
+            Stopwatch cronometro = Stopwatch.StartNew();
+
+            HealthReport relatorio = await servico.CheckHealthAsync(r => r.Name == VerificacaoDoProvedor);
+
+            relatorio.Entries[VerificacaoDoProvedor].Status.Should().Be(HealthStatus.Degraded);
+            cronometro.Elapsed.Should().BeLessThan(OidcDiscoveryHealthCheck.LimiteDeEspera + TimeSpan.FromSeconds(2));
+        }
+        finally
+        {
+            _factory.ProvedorDeIdentidade.Pendurado = false;
+        }
     }
 
     [Fact(DisplayName = "Banco, cache e armazenamento fora do ar não reprovam a prontidão")]
