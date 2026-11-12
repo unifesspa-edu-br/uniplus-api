@@ -52,22 +52,29 @@ internal static class RegrasDoCronograma
             return Result<PlanoDoCronograma>.Failure(recusa);
         }
 
-        // A conclusão do ciclo recursal roda sobre o conjunto candidato, não sobre o agregado
-        // corrente, e acumula as violações: duas fases mal declaradas saem na mesma resposta.
+        if (RecusaDoCicloEDaJanelaDaEtapa(estado, fases) is { } recusaDoConjunto)
+        {
+            return recusaDoConjunto;
+        }
+
+        return Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases, antigasPorOrigem, novasPorOrigem));
+    }
+
+    // A conclusão do ciclo recursal roda sobre o conjunto candidato, não sobre o agregado
+    // corrente, e acumula as violações: duas fases mal declaradas saem na mesma resposta.
+    // A etapa acontece dentro da fase que a abriga, e a fase é quem se move depois: a janela da etapa é conferida
+    // contra o conjunto candidato, porque a etapa cuja fase está saindo sai junto na poda e não entra na conta.
+    private static Result<PlanoDoCronograma>? RecusaDoCicloEDaJanelaDaEtapa(EstadoDaConfiguracao estado, IReadOnlyList<FaseCronograma> fases)
+    {
         List<FieldError> violacoesDaConclusao = CicloRecursalDoCronograma.ConferirConclusaoDoCicloRecursal(fases);
         if (violacoesDaConclusao.Count > 0)
         {
             return Result<PlanoDoCronograma>.ValidationFailure(violacoesDaConclusao);
         }
 
-        // A etapa acontece dentro da fase que a abriga, e a fase é quem se move depois. Contra o
-        // conjunto candidato: a etapa cuja fase está saindo sai junto na poda e não entra na conta.
-        if (JanelaDaEtapaNaFase.ViolacaoDaJanelaDaEtapaNaFase(estado.Etapas, JanelaDaEtapaNaFase.FasesPorCodigo(fases)) is { } etapaForaDaFase)
-        {
-            return Result<PlanoDoCronograma>.Failure(etapaForaDaFase);
-        }
-
-        return Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases, antigasPorOrigem, novasPorOrigem));
+        return JanelaDaEtapaNaFase.ViolacaoDaJanelaDaEtapaNaFase(estado.Etapas, JanelaDaEtapaNaFase.FasesPorCodigo(fases)) is { } etapaForaDaFase
+            ? Result<PlanoDoCronograma>.Failure(etapaForaDaFase)
+            : null;
     }
 
     internal static void AplicarUnidadesVivas(IEnumerable<FaseCronograma> fases, IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)

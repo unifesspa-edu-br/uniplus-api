@@ -126,7 +126,6 @@ public static class FecharRetificacaoCommandHandler
         ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
         ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
@@ -135,9 +134,7 @@ public static class FecharRetificacaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return (Result.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado.")), []);
+            return (Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId)), []);
         }
 
         if (PrecondicoesDoFechamento.Recusa(command.Precondicao, processo) is { } recusa)
@@ -351,14 +348,8 @@ public static class FecharRetificacaoCommandHandler
                 fusoInstitucional, atorUsuarioSub, fatosDeModalidade, tiposDeAtoUnicos, cancellationToken)
             .ConfigureAwait(false);
 
-        FasesIniciadas iniciadas = await fasesIniciadasDoProcesso
-            .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        if (iniciadas.RecusaDaTroca(processo.CronogramaFases) is { } unidadeTrocada)
-        {
-            return (Result.Failure(unidadeTrocada), []);
-        }
-
-        Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(pedido, versaoAtual, command.Precondicao);
+        Result<VersaoConfiguracao> fechamento = await FecharComAUnidadeDaFaseConferidaAsync(
+            processo, pedido, versaoAtual, command.Precondicao, fasesIniciadasDoProcesso, timeProvider, cancellationToken).ConfigureAwait(false);
         if (fechamento.IsFailure)
         {
             return (Result.Failure(fechamento.Error!), []);
@@ -369,5 +360,26 @@ public static class FecharRetificacaoCommandHandler
                 new VersaoCongelada(processo, fechamento.Value!, command.Ato, tipoConferido, dados, documento, versaoAtual.AtoCriadorId, motivo),
                 processoSeletivoRepository, atoDoProcessoRepository, rascunhoDePublicacaoRepository, unitOfWork, timeProvider, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    // A fase pode ter começado depois da edição do cronograma: a unidade trocada é conferida contra o que a versão
+    // publicada tem no instante do fechamento.
+    private static async Task<Result<VersaoConfiguracao>> FecharComAUnidadeDaFaseConferidaAsync(
+        ProcessoSeletivo processo,
+        PedidoDeCongelamento pedido,
+        VersaoConfiguracao versaoAtual,
+        PrecondicaoIfMatch precondicao,
+        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
+
+        FasesIniciadas iniciadas = await fasesIniciadasDoProcesso
+            .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+
+        return iniciadas.RecusaDaTroca(processo.CronogramaFases) is { } unidadeTrocada
+            ? Result<VersaoConfiguracao>.Failure(unidadeTrocada)
+            : processo.FecharRetificacao(pedido, versaoAtual, precondicao);
     }
 }
