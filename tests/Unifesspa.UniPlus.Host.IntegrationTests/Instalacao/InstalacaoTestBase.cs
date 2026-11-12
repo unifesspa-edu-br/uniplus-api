@@ -232,12 +232,12 @@ public abstract partial class InstalacaoTestBase
         using HttpClient mailpit = new() { BaseAddress = Fixture.ApiDoMailpit };
         JsonElement lista = await mailpit.GetFromJsonAsync<JsonElement>("/api/v1/messages");
         List<JsonElement> completas = [];
-        IEnumerable<JsonElement> doDestinatario = lista.GetProperty("messages").EnumerateArray()
+        IEnumerable<string> idsDoDestinatario = lista.GetProperty("messages").EnumerateArray()
             .Where(resumo => resumo.GetProperty("To").EnumerateArray().Any(t => string.Equals(
-                t.GetProperty("Address").GetString(), destinatario.Email, StringComparison.OrdinalIgnoreCase)));
-        foreach (JsonElement resumo in doDestinatario)
+                t.GetProperty("Address").GetString(), destinatario.Email, StringComparison.OrdinalIgnoreCase)))
+            .Select(resumo => resumo.GetProperty("ID").GetString()!);
+        foreach (string idDaMensagem in idsDoDestinatario)
         {
-            string idDaMensagem = resumo.GetProperty("ID").GetString()!;
             completas.Add(await mailpit.GetFromJsonAsync<JsonElement>($"/api/v1/message/{idDaMensagem}"));
         }
 
