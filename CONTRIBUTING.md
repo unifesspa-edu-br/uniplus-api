@@ -521,6 +521,48 @@ public Result<Concessao> Conceder(PedidoDeConcessao pedido, DateTimeOffset agora
 
 Documentação que só repete o nome não acrescenta nada: `/// <summary>Obtém o pedido.</summary>` em `ObterPedido` não diz mais que o nome, e fica de fora. Membro privado e teste se explicam pelo nome; documentação neles é exceção, para o porquê não óbvio. A documentação XML acima do método não conta na MA0051, e nenhum comentário conta na S104.
 
+### Value objects no lugar de primitivos
+
+Conceito de domínio com significado próprio não trafega como `string`, `Guid`, `DateTimeOffset` ou `decimal` soltos. Um e-mail institucional, uma justificativa, um período de vigência ou uma nota têm regras e nome; o primitivo esconde as duas coisas e deixa o compilador aceitar um valor no lugar do outro. Modele o conceito como `record` (value object) e evite a obsessão por primitivos.
+
+**Agrupe só o que é coeso.** Um value object ou um objeto de parâmetro reúne dados que andam juntos e que, juntos, significam algo no domínio. É proibido criar um agrupamento artificial só para baixar a contagem de parâmetros: isso é código escrito para caber na métrica, que a [§ Métricas de qualidade](#métricas-de-qualidade) já recusa. Se um método recebe parâmetros demais e eles não formam um conceito, o problema é de responsabilidade, não de assinatura.
+
+**Validação conforme a [ADR-0125](docs/adrs/0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md).** O `record` carrega os dados; a validação fica acumulada num único `errors[]` no agregado. Um value object que valide algo contribui para o mesmo lote, sem fail-fast: a criação devolve todos os erros de uma vez, nunca só o primeiro.
+
+```csharp
+// Evite: primitivos soltos; e-mail, justificativa e validade sugerida não dizem o que são
+public static Result<PedidoDeConcessao> Criar(
+    PessoaNoToken solicitante, string? emailDoBeneficiario, Perfil perfil, EscopoDaConcessao escopo,
+    string? justificativa, IDominiosInstitucionais dominios, ICatalogoDePermissoesConsultavel catalogo,
+    DateTimeOffset instante, DateTimeOffset? validaAteSugerida = null)
+
+// Prefira: o que o solicitante declara no pedido é um conceito, e anda junto
+public sealed record DeclaracaoDoPedido(string? EmailDoBeneficiario, string? Justificativa, DateTimeOffset? ValidaAteSugerida)
+{
+    // Contribui para o lote do agregado; não interrompe no primeiro erro
+    public void Validar(IDominiosInstitucionais dominios, DateTimeOffset instante, List<DomainError> errors) { … }
+}
+
+public static Result<PedidoDeConcessao> Criar(
+    PessoaNoToken solicitante, Perfil perfil, EscopoDaConcessao escopo, DeclaracaoDoPedido declaracao,
+    IDominiosInstitucionais dominios, ICatalogoDePermissoesConsultavel catalogo, DateTimeOffset instante)
+{
+    List<DomainError> errors = [];
+    declaracao.Validar(dominios, instante, errors);
+    // … demais invariantes do agregado acumulam no mesmo errors[]
+    return errors.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(errors) : …;
+}
+```
+
+```csharp
+// Contra-exemplo: agrupamento artificial, só para a assinatura caber em 7 parâmetros.
+// Serviços, catálogo e instante não formam um conceito de domínio com o perfil.
+public sealed record ContextoDoCriar(Perfil Perfil, IDominiosInstitucionais Dominios,
+    ICatalogoDePermissoesConsultavel Catalogo, DateTimeOffset Instante);
+```
+
+**Builder só nos testes.** No domínio não se usa builder: ele tira do compilador a garantia de que os dados obrigatórios foram informados e espalha as invariantes entre o builder e o agregado. A construção de domínio passa pela fábrica (`Criar`), com parâmetros obrigatórios e validação acumulada. Nos testes de cenário, use Test Data Builders com padrões válidos e métodos expressivos no lugar de atalhos de montagem repetidos (ver [§ Convenções de teste](#convenções-de-teste)). Os testes da própria fábrica continuam chamando a fábrica diretamente, porque ela é o alvo do teste.
+
 ### Formatação e o filtro CA1515
 
 O comando de formatação deste repositório é sempre:
@@ -781,7 +823,8 @@ Uma seção do `.editorconfig` com `severity = error` não basta: o `WarningsNot
 public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 {
     // Arrange
-    var candidato = CandidatoBuilder.ComNota(8.5m).ComBonus(0.20m).Build();
+    // Test Data Builder: padrões válidos, só o que importa ao cenário aparece
+    var candidato = new CandidatoBuilder().ComNota(8.5m).ComBonus(0.20m).Build();
 
     // Act
     var resultado = candidato.CalcularNotaFinal();
@@ -791,6 +834,7 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 }
 ```
 
+- Montar cenários com **Test Data Builders** (padrões válidos, métodos expressivos) em vez de repetir a chamada à fábrica em cada teste; o builder vive só no projeto de testes e chama a fábrica de domínio. Os testes da própria fábrica a chamam diretamente — ver [§ Value objects no lugar de primitivos](#value-objects-no-lugar-de-primitivos)
 - Usar **Bogus** para dados de teste (nomes, CPFs, endereços fictícios)
 - Usar **Testcontainers** para testes de integração (PostgreSQL, Redis, Kafka)
 - Nunca usar dados reais de candidatos em testes
@@ -864,6 +908,7 @@ Complementa os Quality gates acima (verificações de CI automáticas) com higie
 - [ ] Branch **rebaseada** sobre a `main` mais recente
 - [ ] Commits "WIP" / "ajustes do PR" foram **squashados** via `git rebase -i`
 - [ ] PR vinculado à issue com `Closes #N` na descrição
+- [ ] Conceitos de domínio modelados como value objects, sem primitivos soltos nem agrupamento artificial para caber na métrica, e builder só nos testes ([§ Value objects no lugar de primitivos](#value-objects-no-lugar-de-primitivos))
 - [ ] Nenhum aviso novo de MA0051, S104, S107, S3776 ou S1541 no código criado ou alterado, inclusive testes, e nenhuma supressão de aviso ([§ Métricas de qualidade](#métricas-de-qualidade)) — o CI ainda não os barra
 
 ---
