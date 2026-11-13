@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Apoio;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -18,7 +19,8 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos
 /// <summary>
 /// A revogação da concessão de Representante do controlador toma a trava do papel antes da trava da concessão, para não
 /// cruzar com a designação concorrente; a revogação de outro perfil não toca o papel. A concessão de perfil de governança
-/// trava também a pessoa do beneficiário, entre o papel e a concessão, e a de perfil comum não (ADR-0162).
+/// trava também a pessoa do beneficiário, entre o papel e a concessão, e a de perfil comum não (ADR-0162). Sob a trava do
+/// papel, a revogação da única designação vigente é recusada e nada é gravado (UNI-REQ-0394).
 /// </summary>
 public sealed class RevogacaoSobATravaDoPapelTests
 {
@@ -38,6 +40,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
     public async Task Revogar_Representante_TravaOPapelAntesDaConcessao()
     {
         Concessao concessao = Preparar(PerfisDeSistema.RepresentanteDoControladorId);
+        _papel.HaOutroVigenteAsync(Leandro, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>()).Returns(true);
 
         Result resultado = await RevogarAsync(concessao);
 
@@ -47,7 +50,27 @@ public sealed class RevogacaoSobATravaDoPapelTests
             _ = _papel.TravarAsync(Arg.Any<CancellationToken>());
             _ = _papeis.TravarAsync(Arg.Is<IEnumerable<Identidade>>(p => p.Single() == Leandro), Arg.Any<CancellationToken>());
             _ = _repositorio.ObterParaAlterarAsync(concessao.Id, Arg.Any<CancellationToken>());
+            _ = _papel.HaOutroVigenteAsync(Leandro, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+            _ = _unidade.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         });
+    }
+
+    [Fact(DisplayName = "A revogação da única designação vigente de Representante é recusada sob a trava do papel, e nada é gravado")]
+    public async Task Revogar_UnicoRepresentante_RecusaSemGravar()
+    {
+        Concessao concessao = Preparar(PerfisDeSistema.RepresentanteDoControladorId);
+
+        Result resultado = await RevogarAsync(concessao);
+
+        resultado.Error!.Code.Should().Be(ConcessaoErrorCodes.UltimoRepresentante);
+        Received.InOrder(() =>
+        {
+            _ = _papel.TravarAsync(Arg.Any<CancellationToken>());
+            _ = _papel.HaOutroVigenteAsync(Leandro, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+            _unidade.DescartarAlteracoesNaoSalvas();
+        });
+        await _unidade.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _repositorio.DidNotReceive().TravarGovernancaParaEscritaAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A revogação do Encarregado de dados trava a pessoa do beneficiário antes da concessão, sem o papel de Representante")]
@@ -98,7 +121,8 @@ public sealed class RevogacaoSobATravaDoPapelTests
     private Task<Result> RevogarAsync(Concessao concessao, Guid? outroId = null) =>
         RevogarConcessaoCommandHandler.Handle(
             new RevogarConcessaoCommand(outroId ?? concessao.Id, Motivo, EmailDoBeneficiario),
-            _repositorio, new TravasDaRevogacao(_repositorio, _papel, _papeis), _unidade, Autor(), TimeProvider.System, CancellationToken.None);
+            new RevogacaoDaConcessao(_repositorio, _papel, _unidade), new TravasDaRevogacao(_repositorio, _papel, _papeis), _unidade, Autor(), TimeProvider.System,
+            CancellationToken.None);
 
     private static IUserContext Autor()
     {

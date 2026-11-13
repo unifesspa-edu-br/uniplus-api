@@ -74,6 +74,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<GravacaoDaDecisaoDoPedido>();
         services.AddScoped<AprovacaoDoPedido>();
         services.AddScoped<TravasDaRevogacao>();
+        services.AddScoped<RevogacaoDaConcessao>();
         services.AddScoped<PreparoDaDecisaoDoItem>();
         services.AddScoped<LeituraDaRevisao>();
         services.AddScoped<AberturaDaRevisao>();

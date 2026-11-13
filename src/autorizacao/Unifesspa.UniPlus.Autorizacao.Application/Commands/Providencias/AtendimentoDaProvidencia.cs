@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -11,8 +10,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// O atendimento pela revogação vinculada (UNI-REQ-0376), que segue a revogação comum: as mesmas travas, na ordem da
 /// ADR-0162 (papel de Representante, pessoa do beneficiário e a concessão para alterar), a conferência do e-mail do
-/// beneficiário e o mínimo de dois gestores de acessos. A providência é lida depois da trava da concessão, e a revogação e
-/// o desfecho são gravados juntos, ou nenhum dos dois (ADR-0164).
+/// beneficiário, o mínimo de dois gestores de acessos e a regra do último Representante do controlador (UNI-REQ-0394). A
+/// providência é lida depois da trava da concessão, e a revogação e o desfecho são gravados juntos, ou nenhum dos dois
+/// (ADR-0164).
 /// </summary>
 public sealed class AtendimentoDaProvidencia
 {
@@ -20,7 +20,7 @@ public sealed class AtendimentoDaProvidencia
     private readonly IConcessaoRepository _concessoes;
     private readonly TravasDaRevogacao _travas;
     private readonly GravacaoDaProvidencia _gravacao;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly RevogacaoDaConcessao _revogacao;
     private readonly TimeProvider _clock;
 
     public AtendimentoDaProvidencia(
@@ -28,21 +28,21 @@ public sealed class AtendimentoDaProvidencia
         IConcessaoRepository concessoes,
         TravasDaRevogacao travas,
         GravacaoDaProvidencia gravacao,
-        IAutorizacaoUnitOfWork unitOfWork,
+        RevogacaoDaConcessao revogacao,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(providencias);
         ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(travas);
         ArgumentNullException.ThrowIfNull(gravacao);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(revogacao);
         ArgumentNullException.ThrowIfNull(clock);
 
         _providencias = providencias;
         _concessoes = concessoes;
         _travas = travas;
         _gravacao = gravacao;
-        _unitOfWork = unitOfWork;
+        _revogacao = revogacao;
         _clock = clock;
     }
 
@@ -55,9 +55,8 @@ public sealed class AtendimentoDaProvidencia
         }
 
         AtoDoAgente ato = new(quemAtende, _clock.GetUtcNow());
-        Result atendida = await RevogacaoDaConcessao
-            .AplicarAsync(
-                lida.Alvo.Concessao, ato.Instante, () => lida.Providencia.Atender(lida.Alvo.Concessao, ato, command.Declaracao), _concessoes, _unitOfWork, cancellationToken)
+        Result atendida = await _revogacao
+            .AplicarAsync(lida.Alvo.Concessao, ato.Instante, () => lida.Providencia.Atender(lida.Alvo.Concessao, ato, command.Declaracao), cancellationToken)
             .ConfigureAwait(false);
 
         return await _gravacao.GravarAsync(atendida, lida, ato, cancellationToken).ConfigureAwait(false);

@@ -16,6 +16,7 @@ internal static class ErrosDaConcessao
         new(ConcessaoErrorCodes.NaoEncontrada, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.autorizacao.concessao.nao_encontrada", "Concessão de acesso não encontrada")),
         new(ConcessaoErrorCodes.JaRevogada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.ja_revogada", "Concessão de acesso já revogada")),
         new(ConcessaoErrorCodes.MinimoDeGestores, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.minimo_de_gestores", "A revogação deixaria menos de dois gestores de acessos")),
+        new(ConcessaoErrorCodes.UltimoRepresentante, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.ultimo_representante", "A revogação deixaria a instituição sem Representante do controlador")),
         new(ConcessaoErrorCodes.ConfirmacaoDivergente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.concessao.confirmacao_divergente", "O e-mail informado não é o do beneficiário da concessão")),
         new(ConcessaoErrorCodes.FiltroDePessoaInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.concessao.filtro_de_pessoa_invalido", "Filtro de pessoa das concessões inválido")),
         new(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, new DomainErrorMapping(StatusCodes.Status400BadRequest, "uniplus.autorizacao.concessao.filtro_de_situacao_invalido", "Situação do filtro de concessões inválida")),

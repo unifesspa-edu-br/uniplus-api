@@ -214,7 +214,8 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// <summary>
     /// Aprova a etapa que o pedido aguarda. A concessão nasce na última aprovação exigida. Ninguém decide pedido em
     /// que é parte, e quem decidiu como gestor não decide na etapa de proteção de dados. O corpo é opcional: o gestor
-    /// informa nele o fim da vigência da concessão (<c>validaAte</c>); sem corpo, a concessão não tem prazo.
+    /// informa nele o fim da vigência da concessão (<c>validaAte</c>); sem corpo, a concessão não tem prazo. Os perfis de
+    /// gestor de acessos e de Representante do controlador não admitem prazo.
     /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/aprovacoes")]
     [RequiresIdempotencyKey]

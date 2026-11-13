@@ -15,7 +15,7 @@ public sealed partial class PedidoDeConcessao
     /// fixa em seguida, por <see cref="FixarTermo"/>.
     /// </summary>
     /// <param name="partes">Quem pede e a quem o pedido se destina.</param>
-    /// <param name="declaracao">Justificativa, validade sugerida e intenção de anexar documento; o perfil de gestor de acessos não admite prazo.</param>
+    /// <param name="declaracao">Justificativa, validade sugerida e intenção de anexar documento; os perfis de gestor de acessos e de Representante do controlador não admitem prazo.</param>
     public static Result<PedidoDeConcessao> Criar(
         PartesDoPedido partes,
         Perfil perfil,

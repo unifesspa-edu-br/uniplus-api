@@ -9,6 +9,7 @@ public static class ConcessaoErrorCodes
     public const string NaoEncontrada = "Concessao.NaoEncontrada";
     public const string JaRevogada = "Concessao.JaRevogada";
     public const string MinimoDeGestores = "Concessao.MinimoDeGestores";
+    public const string UltimoRepresentante = "Concessao.UltimoRepresentante";
     public const string MotivoInvalido = "Concessao.MotivoInvalido";
     public const string PerfilInativo = "Concessao.PerfilInativo";
     public const string Duplicada = "Concessao.Duplicada";

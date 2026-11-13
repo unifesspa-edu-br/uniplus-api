@@ -18,7 +18,7 @@ public sealed partial class PedidoDeConcessao
     /// <remarks>
     /// <para>
     /// O fim da vigência é definido pelo gestor, na etapa dele; o Representante não o informa e a concessão herda o que o
-    /// gestor gravou.
+    /// gestor gravou. No perfil que não admite prazo, o prazo gravado antes da regra recusa a segunda etapa.
     /// </para>
     /// <para>
     /// O perfil que mudou entre as etapas, ou o prazo que venceu antes da segunda etapa, devolve o pedido ao gestor e
@@ -98,18 +98,31 @@ public sealed partial class PedidoDeConcessao
         return erros;
     }
 
-    private static void ConferirValidadeDaEtapa(AprovacaoNaEtapa aprovacao, List<FieldError> erros)
+    private void ConferirValidadeDaEtapa(AprovacaoNaEtapa aprovacao, List<FieldError> erros)
     {
         if (aprovacao.Etapa == EtapaDoPedido.Gestor)
         {
             ConferirValidade(aprovacao.ValidaAte, aprovacao.Perfil.AdmitePrazo, aprovacao.Instante, "validaAte", erros);
         }
-        else if (aprovacao.ValidaAte is not null)
+        else if (RecusaDaValidadeNaSegundaEtapa(aprovacao) is { } recusa)
         {
-            erros.Add(new("validaAte", new DomainError(
-                PedidoErrorCodes.ValidadeInvalida,
-                "O fim da vigência é definido pelo gestor de acessos, na etapa dele.")));
+            erros.Add(recusa);
         }
+    }
+
+    // Na segunda etapa o Representante não informa prazo. O pedido de perfil que não admite prazo e já traz o do gestor,
+    // gravado antes de o perfil de Representante deixar de admiti-lo (UNI-REQ-0200), é recusado aqui, antes de virar
+    // concessão: nada é gravado, e o pedido segue para ser recusado.
+    private FieldError? RecusaDaValidadeNaSegundaEtapa(AprovacaoNaEtapa aprovacao)
+    {
+        if (aprovacao.ValidaAte is not null)
+        {
+            return new("validaAte", new DomainError(PedidoErrorCodes.ValidadeInvalida, "O fim da vigência é definido pelo gestor de acessos, na etapa dele."));
+        }
+
+        return ValidaAte is not null && !aprovacao.Perfil.AdmitePrazo
+            ? new("validaAte", new DomainError(PedidoErrorCodes.ValidadeInvalida, MensagensDoPrazo.PerfilSemPrazo))
+            : null;
     }
 
     private List<FieldError> ErrosDaRecusa(Identidade decisor, EtapaDoPedido etapa, string? motivoNormalizado)

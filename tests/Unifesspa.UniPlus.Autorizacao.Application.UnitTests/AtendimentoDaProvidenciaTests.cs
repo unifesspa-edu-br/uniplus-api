@@ -16,7 +16,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O caso de uso do atendimento: as travas da revogação comum antes da leitura da providência, a conferência do e-mail
-/// do beneficiário e o mínimo de dois gestores de acessos (UNI-REQ-0376 com UNI-REQ-0186).
+/// do beneficiário, o mínimo de dois gestores de acessos e a regra do último Representante do controlador (UNI-REQ-0376
+/// com UNI-REQ-0186 e UNI-REQ-0394).
 /// </summary>
 public sealed class AtendimentoDaProvidenciaTests
 {
@@ -64,6 +65,38 @@ public sealed class AtendimentoDaProvidenciaTests
         (resposta.Error!.Code, mensagens.Count()).Should().Be((ConcessaoErrorCodes.MinimoDeGestores, 0));
         await _cenario.Concessoes.Received(1).TravarGovernancaParaEscritaAsync(Arg.Any<CancellationToken>());
         await _cenario.Unidade.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O atendimento sobre a única designação vigente de Representante é recusado sob a trava do papel, sem desfecho gravado")]
+    public async Task Atender_UltimoRepresentante_Recusa()
+    {
+        Concessao designacao = DesignacaoDoRepresentante.De(ProvidenciaBuilder.Leandro.Identidade, ProvidenciaBuilder.Leandro.Email, ProvidenciaBuilder.Agora);
+        Providencia providencia = _cenario.ComProvidencia(_construtor.SobreA(designacao), static b => b.Aberta());
+
+        (Result<ProvidenciaDto> resposta, IEnumerable<object> mensagens) = await AtenderAsync(providencia.Id, ProvidenciaBuilder.Leandro.Email);
+
+        (resposta.Error!.Code, mensagens.Count()).Should().Be((ConcessaoErrorCodes.UltimoRepresentante, 0));
+        Received.InOrder(() =>
+        {
+            _ = _cenario.Papel.TravarAsync(Arg.Any<CancellationToken>());
+            _ = _cenario.Concessoes.ObterParaAlterarAsync(designacao.Id, Arg.Any<CancellationToken>());
+            _ = _cenario.Papel.HaOutroVigenteAsync(ProvidenciaBuilder.Leandro.Identidade, Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+        });
+        _cenario.Unidade.Received().DescartarAlteracoesNaoSalvas();
+        await _cenario.Unidade.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Com outra pessoa vigente no papel, o atendimento revoga a designação de Representante e grava")]
+    public async Task Atender_RepresentanteComOutroVigente_Revoga()
+    {
+        Concessao designacao = DesignacaoDoRepresentante.De(ProvidenciaBuilder.Leandro.Identidade, ProvidenciaBuilder.Leandro.Email, ProvidenciaBuilder.Agora);
+        Providencia providencia = _cenario.ComProvidencia(_construtor.SobreA(designacao), static b => b.Aberta());
+        _cenario.Papel.HaOutroVigenteAsync(default, default, default).ReturnsForAnyArgs(true);
+
+        (Result<ProvidenciaDto> resposta, _) = await AtenderAsync(providencia.Id, ProvidenciaBuilder.Leandro.Email);
+
+        (resposta.Value!.Situacao, designacao.RevogadaEm is not null).Should().Be(("atendida", true));
+        await _cenario.Unidade.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A providência inexistente responde não encontrada, sem tomar as travas da revogação")]
