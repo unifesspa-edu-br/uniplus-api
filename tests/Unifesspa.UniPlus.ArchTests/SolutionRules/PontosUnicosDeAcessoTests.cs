@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
+using ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
 using ArchUnitNET.Loader;
 
@@ -45,25 +46,32 @@ public sealed class PontosUnicosDeAcessoTests
     public void SelecaoMontaResourceSoNoAcesso()
     {
         const string Selecao = @"^Unifesspa\.UniPlus\.Selecao(\.|$)";
-        Types().That().ResideInNamespaceMatching(Selecao).And().CallAny(MethodMembers().That().HaveNameStartingWith("From(").And().AreDeclaredIn(typeof(ResourceContext)))
-            .GetObjects(Arquitetura).Should().NotBeEmpty("as fábricas do acesso chamam ResourceContext.From");
+        MethodMember[] fabricas = [.. MethodMembers().That().HaveNameStartingWith("From(").And().AreDeclaredIn(typeof(ResourceContext)).GetObjects(Arquitetura)];
+        fabricas.Should().NotBeEmpty("as fábricas do acesso chamam ResourceContext.From");
+
+        Types().That().ResideInNamespaceMatching(Selecao).And().CallAny(fabricas).GetObjects(Arquitetura)
+            .Should().NotBeEmpty("as fábricas do acesso chamam ResourceContext.From");
 
         Violacoes(
             Types().That().ResideInNamespaceMatching(Selecao).And().DoNotHaveFullNameMatching(@"\.(AcessoAoProcesso|AcessoAInscricao)(\+|$)")
-                .Should().NotCallAny(MethodMembers().That().HaveNameStartingWith("From(").And().AreDeclaredIn(typeof(ResourceContext))))
+                .Should().NotCallAny(fabricas))
             .Should().BeEmpty("a Seleção monta o resource pelas fábricas do acesso");
     }
 
     [Fact(DisplayName = "Só os endpoints técnicos autorizados mapeiam rota por EndpointRouteBuilderExtensions")]
     public void RotasSemControllerSoEmEndpointsTecnicos()
     {
-        Types().That().CallAny(MapDeRota()).GetObjects(Arquitetura).Select(static t => t.FullName).Should().Contain(static n => n.EndsWith("Profile.ProfileEndpointsExtensions", StringComparison.Ordinal), "os endpoints técnicos chamam Map*");
+        MethodMember[] mapeamentos = [.. MapDeRota().GetObjects(Arquitetura)];
+        mapeamentos.Should().NotBeEmpty("sem método Map* carregado, a conferência passaria vazia");
+
+        Types().That().CallAny(mapeamentos).GetObjects(Arquitetura).Select(static t => t.FullName)
+            .Should().Contain(static n => n.EndsWith("Profile.ProfileEndpointsExtensions", StringComparison.Ordinal), "os endpoints técnicos chamam Map*");
 
         // Um endpoint técnico novo que atenda à ADR-0036 entra nesta lista, no mesmo PR, com a justificativa.
         Violacoes(
             Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.").And().DoNotHaveFullNameMatching(
                     @"^Unifesspa\.UniPlus\.Infrastructure\.Core\.(HealthChecks\.HealthCheckEndpointsExtensions|Profile\.ProfileEndpointsExtensions)(\+|$)")
-                .Should().NotCallAny(MapDeRota()))
+                .Should().NotCallAny(mapeamentos))
             .Should().BeEmpty("rota de negócio é controller MVC (ADR-0036)");
     }
 
@@ -76,7 +84,7 @@ public sealed class PontosUnicosDeAcessoTests
             "Unifesspa.UniPlus.Infrastructure.Core.Authorization.AutorizacaoServiceCollectionExtensions",
         }.Any(tipo => nome == tipo || nome.StartsWith(tipo + "+", StringComparison.Ordinal));
 
-    private static ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers.GivenMethodMembersConjunction MapDeRota() =>
+    private static GivenMethodMembersConjunction MapDeRota() =>
         MethodMembers().That().HaveNameStartingWith("Map(")
             .Or().HaveNameStartingWith("MapGet(")
             .Or().HaveNameStartingWith("MapPost(").Or().HaveNameStartingWith("MapPut(").Or().HaveNameStartingWith("MapDelete(")
