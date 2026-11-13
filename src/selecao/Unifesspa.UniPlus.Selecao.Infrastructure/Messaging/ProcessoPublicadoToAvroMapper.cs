@@ -18,6 +18,13 @@ using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado
 /// </remarks>
 public static class ProcessoPublicadoToAvroMapper
 {
+    /// <summary>
+    /// Com <c>logicalType=timestamp-millis</c>, o Apache.Avro espera <see cref="DateTime"/> e o serializer o converte
+    /// para <see cref="long"/> (ms desde o epoch Unix UTC); <c>UtcDateTime</c> garante <c>Kind=Utc</c>, e as frações
+    /// de milissegundo são truncadas. O <c>SnapshotPublicacaoId</c> é, desde a ADR-0104, o identificador da
+    /// <c>VersaoConfiguracao</c> congelada na publicação: o nome do campo, no evento e no schema Avro, é o histórico
+    /// que a fila durável já carrega.
+    /// </summary>
     public static ProcessoPublicadoAvro ToAvro(ProcessoPublicadoEvent evt)
     {
         ArgumentNullException.ThrowIfNull(evt);
@@ -25,15 +32,9 @@ public static class ProcessoPublicadoToAvroMapper
         return new ProcessoPublicadoAvro
         {
             EventId = evt.EventId.ToString(),
-            // Apache.Avro com logicalType=timestamp-millis espera DateTime; o serializer
-            // converte para long (ms desde epoch Unix UTC) automaticamente. UtcDateTime
-            // garante Kind=Utc — Apache.Avro arredonda truncando frações de ms.
             OccurredOn = evt.OccurredOn.UtcDateTime,
             ProcessoSeletivoId = evt.ProcessoSeletivoId.ToString(),
             EditalId = evt.EditalId.ToString(),
-            // Desde a ADR-0104, o identificador é o da VersaoConfiguracao congelada
-            // na publicação; o nome do campo (aqui e no evento) é o histórico, que
-            // o schema Avro e a fila durável já carregam.
             SnapshotPublicacaoId = evt.SnapshotPublicacaoId.ToString(),
             HashConfiguracao = evt.HashConfiguracao,
             HashEdital = evt.HashEdital,

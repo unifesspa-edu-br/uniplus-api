@@ -5,7 +5,6 @@
 namespace unifesspa.uniplus.selecao.events;
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 using global::Avro;
@@ -39,19 +38,23 @@ using ProcessoPublicadoEvent = Unifesspa.UniPlus.Selecao.Domain.Events.ProcessoP
 /// Apicurio via schema-id no envelope da mensagem — não dependem deste assembly.
 /// </para>
 /// </remarks>
-[SuppressMessage(
-    "Naming",
-    "CA1707:Identifiers should not contain underscores",
-    Justification = "Namespace lowercase exigido pelo binding Apache.Avro NET (precisa casar com 'namespace' do .avsc).")]
-[SuppressMessage(
-    "Naming",
-    "CA1300:Specify MessageBoxOptions",
-    Justification = "False positive — atributo aplicável a UI; classe é POCO de mensagem.")]
 public sealed class ProcessoPublicado : ISpecificRecord
 {
     public const string SchemaResourceName = "Unifesspa.UniPlus.Selecao.Domain.Events.Schemas.ProcessoPublicado.avsc";
 
     private static readonly Lazy<Schema> SchemaInstance = new(LoadSchemaFromDomainAssembly);
+
+    // Indexado pela posição do campo no schema: a mesma ordem de Get.
+    private static readonly Action<ProcessoPublicado, object>[] EscritoresDosCampos =
+    [
+        static (registro, valor) => registro.EventId = (string)valor,
+        static (registro, valor) => registro.OccurredOn = (DateTime)valor,
+        static (registro, valor) => registro.ProcessoSeletivoId = (string)valor,
+        static (registro, valor) => registro.EditalId = (string)valor,
+        static (registro, valor) => registro.SnapshotPublicacaoId = (string)valor,
+        static (registro, valor) => registro.HashConfiguracao = (string)valor,
+        static (registro, valor) => registro.HashEdital = (string)valor,
+    ];
 
     /// <summary>Schema Avro carregado do embedded resource em Selecao.Domain.</summary>
     public static Schema AvroSchema => SchemaInstance.Value;
@@ -100,32 +103,12 @@ public sealed class ProcessoPublicado : ISpecificRecord
     /// <inheritdoc />
     public void Put(int fieldPos, object fieldValue)
     {
-        switch (fieldPos)
+        if (fieldPos < 0 || fieldPos >= EscritoresDosCampos.Length)
         {
-            case 0:
-                EventId = (string)fieldValue;
-                break;
-            case 1:
-                OccurredOn = (DateTime)fieldValue;
-                break;
-            case 2:
-                ProcessoSeletivoId = (string)fieldValue;
-                break;
-            case 3:
-                EditalId = (string)fieldValue;
-                break;
-            case 4:
-                SnapshotPublicacaoId = (string)fieldValue;
-                break;
-            case 5:
-                HashConfiguracao = (string)fieldValue;
-                break;
-            case 6:
-                HashEdital = (string)fieldValue;
-                break;
-            default:
-                throw new AvroRuntimeException($"Posição de campo inválida em ProcessoPublicado.Put: {fieldPos}");
+            throw new AvroRuntimeException($"Posição de campo inválida em ProcessoPublicado.Put: {fieldPos}");
         }
+
+        EscritoresDosCampos[fieldPos](this, fieldValue);
     }
 
     private static Schema LoadSchemaFromDomainAssembly()
