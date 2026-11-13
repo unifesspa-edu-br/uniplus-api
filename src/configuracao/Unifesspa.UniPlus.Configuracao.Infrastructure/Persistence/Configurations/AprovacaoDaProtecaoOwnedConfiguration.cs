@@ -68,12 +68,13 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
 
         aprovacao.Property(a => a.ManifestadaEm).HasColumnName("protecao_manifestada_em");
         aprovacao.Property(a => a.ManifestacaoDesfavoravelVigente).HasColumnName("protecao_manifestacao_desfavoravel").IsRequired();
+        aprovacao.Property(a => a.ManifestacoesNoCiclo).HasColumnName("protecao_manifestacoes_no_ciclo").IsRequired();
     }
 
     /// <summary>
     /// Os CHECKs do circuito na tabela do dono: a situação pertence ao vocabulário, o item com ajuste recomendado
-    /// carrega a classificação recomendada, o reprovado carrega a justificativa, o ciclo começa em 1 e a manifestação
-    /// desfavorável vigente tem o instante da manifestação.
+    /// carrega a classificação recomendada, o reprovado carrega a justificativa, o ciclo começa em 1, a manifestação
+    /// desfavorável vigente tem o instante da manifestação, e o instante existe se e só se o ciclo contou manifestação.
     /// </summary>
     public static void ConfigurarChecks<TEntity>(TableBuilder<TEntity> table, string tabela)
         where TEntity : class
@@ -92,5 +93,8 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
         table.HasCheckConstraint(
             $"ck_{tabela}_protecao_desfavoravel_manifestada",
             "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
+        table.HasCheckConstraint(
+            $"ck_{tabela}_protecao_manifestacoes_contadas",
+            "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
     }
 }

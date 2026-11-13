@@ -792,6 +792,7 @@ configuracao.rol_de_fatos_candidato.protecao_decidida_em: Interno
 configuracao.rol_de_fatos_candidato.protecao_decidida_por: Pessoal
 configuracao.rol_de_fatos_candidato.protecao_justificativa: Interno
 configuracao.rol_de_fatos_candidato.protecao_manifestacao_desfavoravel: Interno
+configuracao.rol_de_fatos_candidato.protecao_manifestacoes_no_ciclo: Interno
 configuracao.rol_de_fatos_candidato.protecao_manifestada_em: Interno
 configuracao.rol_de_fatos_candidato.protecao_recomendada: Interno
 configuracao.rol_de_fatos_candidato.protecao_situacao: Interno
@@ -871,6 +872,7 @@ configuracao.tipo_documento.protecao_decidida_em: Interno
 configuracao.tipo_documento.protecao_decidida_por: Pessoal
 configuracao.tipo_documento.protecao_justificativa: Interno
 configuracao.tipo_documento.protecao_manifestacao_desfavoravel: Interno
+configuracao.tipo_documento.protecao_manifestacoes_no_ciclo: Interno
 configuracao.tipo_documento.protecao_manifestada_em: Interno
 configuracao.tipo_documento.protecao_recomendada: Interno
 configuracao.tipo_documento.protecao_situacao: Interno

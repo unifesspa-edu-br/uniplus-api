@@ -111,7 +111,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.OwnsOne(f => f.Aprovacao, aprovacao =>
         {
             AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
-            aprovacao.HasData(FatoCandidatoSeed.Itens.Select(item => new { FatoCandidatoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false }));
+            aprovacao.HasData(FatoCandidatoSeed.Itens.Select(item => new { FatoCandidatoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false, ManifestacoesNoCiclo = 0 }));
         });
         builder.Navigation(f => f.Aprovacao).IsRequired();
 

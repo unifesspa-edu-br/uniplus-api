@@ -104,7 +104,7 @@ public sealed class AtoDaProtecaoDoCatalogo : IForensicEntity
     /// </summary>
     /// <exception cref="InvalidOperationException">
     /// Se a aprovação ou o ajuste diante de manifestação desfavorável vigente não traz justificativa: a regra é conferida
-    /// antes, por <see cref="DecisaoFundamentada.ConferirDiante"/>, e o banco a recusa também.
+    /// antes, por <see cref="DecisaoFundamentada.Conferir"/>, e o banco a recusa também.
     /// </exception>
     public static AtoDaProtecaoDoCatalogo RegistrarDecisao(
         RetratoDoItemDaProtecao item, DecisaoFundamentada decisao, AtorDoAto ator, DateTimeOffset instante)

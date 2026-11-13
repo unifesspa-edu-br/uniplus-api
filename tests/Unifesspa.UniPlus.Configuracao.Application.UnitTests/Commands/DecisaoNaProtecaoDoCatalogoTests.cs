@@ -76,6 +76,20 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
     }
 
+    [Fact(DisplayName = "O ajuste sem justificativa, diante de manifestação desfavorável e com a classificação atual, sai com as duas recusas, sem mudar nem gravar")]
+    public async Task DianteDeDesfavoravel_AjusteIgualAAtual_AcumulaAsDuasRecusas()
+    {
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", "INTERNO");
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
+            ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao, ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
+        laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+        _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
     [Fact(DisplayName = "Com justificativa, a aprovação diante de manifestação desfavorável é gravada e o ato o registra")]
     public async Task DianteDeDesfavoravel_ComJustificativa_Aprova()
     {

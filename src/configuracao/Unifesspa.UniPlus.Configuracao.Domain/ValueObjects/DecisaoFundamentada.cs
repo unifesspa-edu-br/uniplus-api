@@ -18,6 +18,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record DecisaoFundamentada(
     AtoDaProtecao Ato, ClassificacaoDeProtecao? ClassificacaoRecomendada, Fundamentacao? Justificativa)
 {
+    private static readonly FieldError JustificativaExigida = new("justificativa", new DomainError(
+        ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao,
+        "Há manifestação técnica desfavorável vigente: aprovar ou recomendar ajuste exige a justificativa."));
+
     /// <summary>
     /// Aprovação ou ajuste sem justificativa: a decisão que a manifestação desfavorável vigente não admite.
     /// </summary>
@@ -25,23 +29,29 @@ public sealed record DecisaoFundamentada(
         (Ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.AjusteRecomendado) && Justificativa is null;
 
     /// <summary>
-    /// Confere a regra da justificativa contra o circuito do item, antes de qualquer transição (UNI-REQ-0374): aprovar
-    /// ou recomendar ajuste em item em solicitação com manifestação desfavorável vigente exige a justificativa, e a
-    /// falta dela é recusada no campo <c>justificativa</c>. Fora de solicitação não confere: a transição do circuito
-    /// recusa a decisão com o código próprio.
+    /// Confere a decisão contra o item antes de qualquer transição, com as recusas num único lote (ADR-0125): aprovar ou
+    /// recomendar ajuste em item em solicitação com manifestação desfavorável vigente exige a justificativa (UNI-REQ-0374),
+    /// recusada no campo <c>justificativa</c>; e a classificação recomendada pelo ajuste precisa caber na
+    /// <paramref name="protecao"/> do item. Fora de solicitação a regra da justificativa não confere: a transição do
+    /// circuito recusa a decisão com o código próprio.
     /// </summary>
-    public Result ConferirDiante(AprovacaoDaProtecao circuito)
+    public Result Conferir(AprovacaoDaProtecao circuito, ProtecaoDeDados protecao)
     {
         ArgumentNullException.ThrowIfNull(circuito);
 
-        bool recusada = circuito.Situacao == SituacaoDaAprovacao.Solicitada
-            && circuito.ManifestacaoDesfavoravelVigente
-            && FaltaJustificativaDianteDeManifestacaoDesfavoravel;
+        List<FieldError> erros = FaltaAJustificativaQueAManifestacaoExige(circuito) ? [JustificativaExigida] : [];
+        if (Ato == AtoDaProtecao.AjusteRecomendado)
+        {
+            erros.AddRange(AprovacaoDaProtecao.ConferirRecomendacao(
+                ClassificacaoRecomendada ?? ClassificacaoDeProtecao.Nenhuma, protecao.Classificacao, protecao.Hipotese).Errors);
+        }
 
-        return recusada
-            ? Result.ValidationFailure([new FieldError("justificativa", new DomainError(
-                ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao,
-                "Há manifestação técnica desfavorável vigente: aprovar ou recomendar ajuste exige a justificativa."))])
-            : Result.Success();
+        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
+
+    // A regra só vale para o item em solicitação: fora dela, a transição do circuito recusa a decisão.
+    private bool FaltaAJustificativaQueAManifestacaoExige(AprovacaoDaProtecao circuito) =>
+        circuito.Situacao == SituacaoDaAprovacao.Solicitada
+        && circuito.ManifestacaoDesfavoravelVigente
+        && FaltaJustificativaDianteDeManifestacaoDesfavoravel;
 }

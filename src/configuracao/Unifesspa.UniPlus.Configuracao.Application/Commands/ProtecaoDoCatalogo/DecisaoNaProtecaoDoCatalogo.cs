@@ -78,9 +78,10 @@ public sealed class DecisaoNaProtecaoDoCatalogo
         return decidida;
     }
 
-    // A decisão vale sobre a proteção que o aprovador conferiu, e só com a justificativa que a manifestação exige.
+    // A decisão vale sobre a proteção que o aprovador conferiu; contra ela, a justificativa que a manifestação exige e a
+    // classificação recomendada saem juntas no lote, antes de qualquer mudança no item.
     private static Result Conferir(IItemSobAprovacao item, PedidoDeDecisao pedido) =>
         item.Protecao == pedido.ProtecaoConferida
-            ? pedido.Decisao.ConferirDiante(item.Aprovacao)
+            ? pedido.Decisao.Conferir(item.Aprovacao, item.Protecao)
             : Result.Failure(ProtecaoMudou);
 }

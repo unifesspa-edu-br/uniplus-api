@@ -78,6 +78,13 @@ public sealed class AprovacaoDaProtecao
     /// </summary>
     public bool ManifestacaoDesfavoravelVigente { get; private set; }
 
+    /// <summary>
+    /// Quantos eventos de manifestação técnica (registros e substituições) o ciclo recebeu. Cada manifestação o avança,
+    /// então toda manifestação muda a linha do item e disputa o token de concorrência da decisão, mesmo quando o
+    /// instante e o indicador desfavorável não mudam (relógio repetido, nova manifestação adequada) (ADR-0163, ADR-0119).
+    /// </summary>
+    public int ManifestacoesNoCiclo { get; private set; }
+
     /// <summary>Só o item aprovado pode ser usado na configuração e na publicação de processo seletivo.</summary>
     public bool EstaAprovada => Situacao == SituacaoDaAprovacao.Aprovada;
 
@@ -173,12 +180,13 @@ public sealed class AprovacaoDaProtecao
     }
 
     /// <summary>
-    /// A manifestação técnica registrada no ciclo: o instante dela e se, depois dela, há manifestação desfavorável
-    /// vigente. Só <see cref="ManifestacoesDoCiclo"/> chama, depois de conferir o ciclo e a situação; a mudança na linha
+    /// A manifestação técnica registrada no ciclo: mais um evento contado, o instante dele e se, depois dele, há
+    /// manifestação desfavorável vigente. Só <see cref="ManifestacoesDoCiclo"/> chama, depois de conferir o ciclo e a situação; a mudança na linha
     /// do item é o que faz a manifestação disputar o controle de concorrência da decisão (ADR-0163).
     /// </summary>
     internal void RegistrarManifestacao(bool desfavoravelVigente, DateTimeOffset em)
     {
+        ManifestacoesNoCiclo++;
         ManifestadaEm = em;
         ManifestacaoDesfavoravelVigente = desfavoravelVigente;
     }
@@ -235,6 +243,7 @@ public sealed class AprovacaoDaProtecao
         AceitaPor = null;
         ManifestadaEm = null;
         ManifestacaoDesfavoravelVigente = false;
+        ManifestacoesNoCiclo = 0;
     }
 
     // A justificativa é conferida antes da situação, como o pedido a confere antes de ler o item (ADR-0125).

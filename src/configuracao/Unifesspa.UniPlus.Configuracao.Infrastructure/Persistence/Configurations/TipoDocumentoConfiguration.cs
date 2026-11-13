@@ -108,7 +108,7 @@ public sealed class TipoDocumentoConfiguration
         builder.OwnsOne(t => t.Aprovacao, aprovacao =>
         {
             AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
-            aprovacao.HasData(TipoDocumentoSeed.Itens.Select(item => new { TipoDocumentoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false }));
+            aprovacao.HasData(TipoDocumentoSeed.Itens.Select(item => new { TipoDocumentoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false, ManifestacoesNoCiclo = 0 }));
         });
         builder.Navigation(t => t.Aprovacao).IsRequired();
 

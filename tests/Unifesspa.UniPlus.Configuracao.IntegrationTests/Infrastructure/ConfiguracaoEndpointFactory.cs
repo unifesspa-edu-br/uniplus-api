@@ -1,23 +1,21 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// API UniPlus com Wolverine e Postgres, em que o administrador anônimo dos testes tem a concessão
-/// de todas as permissões do módulo Configuração.
+/// de todas as permissões do módulo Configuração, e o relógio é o <see cref="RelogioDeTeste"/>, que o teste congela
+/// quando precisa de escritas no mesmo instante.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "WebApplicationFactory<T> derivative usado como estado de fixture.")]
 public sealed class ConfiguracaoEndpointFactory : MonolitoApiFactory
 {
+    internal RelogioDeTeste Relogio { get; } = new();
+
     public ConfiguracaoEndpointFactory(string connectionString)
         : base(connectionString, wolverineEnabled: true)
     {
@@ -33,6 +31,11 @@ public sealed class ConfiguracaoEndpointFactory : MonolitoApiFactory
         {
             services.AdicionarAdministradorInstitucionalDeTeste<PermissaoConfiguracao>();
             services.AdicionarRegistroDeDecisoesDeTeste();
+
+            // Instância, e não fábrica: o codegen do Wolverine resolve singleton registrado por instância sem
+            // localização de serviço.
+            services.AddSingleton(Relogio);
+            services.AddSingleton<TimeProvider>(Relogio);
         });
     }
 }

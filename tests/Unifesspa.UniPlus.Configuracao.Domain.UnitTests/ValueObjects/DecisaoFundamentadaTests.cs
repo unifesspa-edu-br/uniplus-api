@@ -23,44 +23,85 @@ public sealed class DecisaoFundamentadaTests
     [Theory(DisplayName = "Aprovar ou recomendar ajuste sem justificativa diante de manifestação desfavorável é recusado no campo justificativa")]
     [InlineData(AtoDaProtecao.Aprovacao)]
     [InlineData(AtoDaProtecao.AjusteRecomendado)]
-    public void ConferirDiante_SemJustificativaDianteDeDesfavoravel_Recusa(AtoDaProtecao ato)
+    public void Conferir_SemJustificativaDianteDeDesfavoravel_Recusa(AtoDaProtecao ato)
     {
-        Result resultado = Decisao(ato, null).ConferirDiante(CircuitoComManifestacao(Inadequada()));
+        TipoDocumento tipo = ComManifestacao(Inadequada());
+
+        Result resultado = Decisao(ato, null).Conferir(tipo.Aprovacao, tipo.Protecao);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
             e.Field == "justificativa" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao);
     }
 
+    [Fact(DisplayName = "O ajuste sem justificativa diante de manifestação desfavorável e com a classificação atual sai com as duas recusas no lote")]
+    public void Conferir_AjusteSemJustificativaEIgualAAtual_AcumulaAsDuasRecusas()
+    {
+        TipoDocumento tipo = ComManifestacao(Inadequada());
+        DecisaoFundamentada ajuste = new(AtoDaProtecao.AjusteRecomendado, tipo.ClassificacaoProtecao, null);
+
+        Result resultado = ajuste.Conferir(tipo.Aprovacao, tipo.Protecao);
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
+        [
+            ("justificativa", ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao),
+            ("classificacaoRecomendada", ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual),
+        ]);
+    }
+
+    [Fact(DisplayName = "Sem manifestação, o ajuste com a classificação atual é recusado só pela recomendação")]
+    public void Conferir_AjusteIgualAAtualSemManifestacao_RecusaARecomendacao()
+    {
+        TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
+
+        Result resultado = new DecisaoFundamentada(AtoDaProtecao.AjusteRecomendado, tipo.ClassificacaoProtecao, null).Conferir(tipo.Aprovacao, tipo.Protecao);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoIgualAAtual);
+    }
+
     [Theory(DisplayName = "Com justificativa, aprovar ou recomendar ajuste diante de manifestação desfavorável é aceito")]
     [InlineData(AtoDaProtecao.Aprovacao)]
     [InlineData(AtoDaProtecao.AjusteRecomendado)]
-    public void ConferirDiante_ComJustificativa_Aceita(AtoDaProtecao ato) =>
-        Decisao(ato, Justificativa).ConferirDiante(CircuitoComManifestacao(RecomendaAjuste())).IsSuccess.Should().BeTrue();
-
-    [Fact(DisplayName = "Sem manifestação, ou só com manifestação adequada, a aprovação sem justificativa é aceita")]
-    public void ConferirDiante_SemDesfavoravel_Aceita()
+    public void Conferir_ComJustificativa_Aceita(AtoDaProtecao ato)
     {
-        DecisaoFundamentada aprovacao = Decisao(AtoDaProtecao.Aprovacao, null);
+        TipoDocumento tipo = ComManifestacao(RecomendaAjuste());
 
-        aprovacao.ConferirDiante(new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build().Aprovacao).IsSuccess.Should().BeTrue();
-        aprovacao.ConferirDiante(CircuitoComManifestacao(Adequada())).IsSuccess.Should().BeTrue();
+        Decisao(ato, Justificativa).Conferir(tipo.Aprovacao, tipo.Protecao).IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A reprovação não passa por esta regra: a justificativa dela é obrigatória sempre")]
-    public void ConferirDiante_Reprovacao_NaoConfere() =>
-        Decisao(AtoDaProtecao.Reprovacao, null).ConferirDiante(CircuitoComManifestacao(Inadequada())).IsSuccess.Should().BeTrue();
+    [Fact(DisplayName = "Sem manifestação, ou só com manifestação adequada, a aprovação sem justificativa é aceita")]
+    public void Conferir_SemDesfavoravel_Aceita()
+    {
+        DecisaoFundamentada aprovacao = Decisao(AtoDaProtecao.Aprovacao, null);
+        TipoDocumento semManifestacao = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
+        TipoDocumento adequada = ComManifestacao(Adequada());
 
-    [Fact(DisplayName = "Fora de solicitação a regra não confere: a transição do circuito recusa a decisão")]
-    public void ConferirDiante_ForaDeSolicitacao_NaoConfere() =>
-        Decisao(AtoDaProtecao.Aprovacao, null).ConferirDiante(new TipoDocumentoNaAprovacaoBuilder().Build().Aprovacao).IsSuccess.Should().BeTrue();
+        aprovacao.Conferir(semManifestacao.Aprovacao, semManifestacao.Protecao).IsSuccess.Should().BeTrue();
+        aprovacao.Conferir(adequada.Aprovacao, adequada.Protecao).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A reprovação não passa pela regra da justificativa diante da manifestação: a dela é obrigatória sempre")]
+    public void Conferir_Reprovacao_NaoConfere()
+    {
+        TipoDocumento tipo = ComManifestacao(Inadequada());
+
+        Decisao(AtoDaProtecao.Reprovacao, null).Conferir(tipo.Aprovacao, tipo.Protecao).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Fora de solicitação a regra da justificativa não confere: a transição do circuito recusa a decisão")]
+    public void Conferir_ForaDeSolicitacao_NaoConfere()
+    {
+        TipoDocumento pendente = new TipoDocumentoNaAprovacaoBuilder().Build();
+
+        Decisao(AtoDaProtecao.Aprovacao, null).Conferir(pendente.Aprovacao, pendente.Protecao).IsSuccess.Should().BeTrue();
+    }
 
     private static DecisaoFundamentada Decisao(AtoDaProtecao ato, Fundamentacao? justificativa) =>
         new(ato, ato == AtoDaProtecao.AjusteRecomendado ? ClassificacaoDeProtecao.Sensivel : null, justificativa);
 
-    private static AprovacaoDaProtecao CircuitoComManifestacao(ConteudoDaManifestacao conteudo)
+    private static TipoDocumento ComManifestacao(ConteudoDaManifestacao conteudo)
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
         Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, conteudo, Kevin, TipoDocumentoNaAprovacaoBuilder.Segunda.AddHours(2));
-        return tipo.Aprovacao;
+        return tipo;
     }
 }

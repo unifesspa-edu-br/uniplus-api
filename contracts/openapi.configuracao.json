@@ -9528,6 +9528,103 @@
         ]
       }
     },
+    "/api/configuracao/admin/protecao-do-catalogo/{cadastro}/{id}/manifestacoes": {
+      "get": {
+        "tags": [
+          "ProtecaoDoCatalogo"
+        ],
+        "parameters": [
+          {
+            "name": "cadastro",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^(tipos-documento|fatos)$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.protecao-do-catalogo-manifestacao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ManifestacaoDaProtecaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/admin/protecao-do-catalogo/solicitacoes": {
       "post": {
         "tags": [
@@ -9630,6 +9727,128 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-uniplus-idempotent": true
+      }
+    },
+    "/api/configuracao/admin/protecao-do-catalogo/manifestacoes": {
+      "post": {
+        "tags": [
+          "ProtecaoDoCatalogo"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Chave opaca (1-255 ASCII printable, sem \u0027,\u0027 ou \u0027;\u0027) para retry seguro do comando. Replay com mesma key \u002B mesmo body retorna response cacheada (ADR-0027).",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[\\x21-\\x2B\\x2D-\\x3A\\x3C-\\x7E]\u002B$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarManifestacaoDaProtecaoRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarManifestacaoDaProtecaoRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarManifestacaoDaProtecaoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -14435,16 +14654,23 @@
       "AprovacaoDaProtecaoDto": {
         "required": [
           "situacao",
+          "ciclo",
           "solicitadaEm",
           "decididaEm",
           "classificacaoRecomendada",
           "justificativa",
-          "aceitaEm"
+          "aceitaEm",
+          "manifestadaEm",
+          "manifestacaoDesfavoravel"
         ],
         "type": "object",
         "properties": {
           "situacao": {
             "type": "string"
+          },
+          "ciclo": {
+            "type": "integer",
+            "format": "int32"
           },
           "solicitadaEm": {
             "type": [
@@ -14478,6 +14704,16 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "manifestadaEm": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "manifestacaoDesfavoravel": {
+            "type": "boolean"
           }
         }
       },
@@ -14501,11 +14737,13 @@
           "ato",
           "instante",
           "atorNome",
+          "ciclo",
           "classificacaoProtecao",
           "hipoteseLegal",
           "finalidadeTratamento",
           "classificacaoRecomendada",
-          "justificativa"
+          "justificativa",
+          "dianteDeManifestacaoDesfavoravel"
         ],
         "type": "object",
         "properties": {
@@ -14521,6 +14759,10 @@
               "null",
               "string"
             ]
+          },
+          "ciclo": {
+            "type": "integer",
+            "format": "int32"
           },
           "classificacaoProtecao": {
             "type": "string"
@@ -14542,6 +14784,9 @@
               "null",
               "string"
             ]
+          },
+          "dianteDeManifestacaoDesfavoravel": {
+            "type": "boolean"
           }
         }
       },
@@ -17360,11 +17605,13 @@
           "ato",
           "instante",
           "atorNome",
+          "ciclo",
           "classificacaoProtecao",
           "hipoteseLegal",
           "finalidadeTratamento",
           "classificacaoRecomendada",
-          "justificativa"
+          "justificativa",
+          "dianteDeManifestacaoDesfavoravel"
         ],
         "type": "object",
         "properties": {
@@ -17394,6 +17641,10 @@
               "string"
             ]
           },
+          "ciclo": {
+            "type": "integer",
+            "format": "int32"
+          },
           "classificacaoProtecao": {
             "type": "string"
           },
@@ -17414,6 +17665,9 @@
               "null",
               "string"
             ]
+          },
+          "dianteDeManifestacaoDesfavoravel": {
+            "type": "boolean"
           }
         }
       },
@@ -17529,7 +17783,8 @@
           "aprovacao",
           "fato",
           "tipoDocumento",
-          "atos"
+          "atos",
+          "manifestacoesVigentes"
         ],
         "type": "object",
         "properties": {
@@ -17588,6 +17843,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AtoDaProtecaoDto"
+            }
+          },
+          "manifestacoesVigentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManifestacaoDaProtecaoDto"
             }
           }
         }
@@ -19404,6 +19665,58 @@
           }
         }
       },
+      "ManifestacaoDaProtecaoDto": {
+        "required": [
+          "id",
+          "ciclo",
+          "parecer",
+          "texto",
+          "autorNome",
+          "instante",
+          "substituiId",
+          "situacao"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ciclo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parecer": {
+            "type": "string"
+          },
+          "texto": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "autorNome": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instante": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "substituiId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "situacao": {
+            "type": "string"
+          }
+        }
+      },
       "ModalidadeDto": {
         "required": [
           "id",
@@ -20247,6 +20560,55 @@
             "additionalProperties": {
               "type": "string"
             }
+          }
+        }
+      },
+      "RegistrarManifestacaoDaProtecaoRequest": {
+        "required": [
+          "cadastro",
+          "itemId",
+          "ciclo",
+          "parecer"
+        ],
+        "type": "object",
+        "properties": {
+          "cadastro": {
+            "enum": [
+              "TIPO_DOCUMENTO",
+              "FATO"
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ciclo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "parecer": {
+            "enum": [
+              "ADEQUADA",
+              "RECOMENDA_AJUSTE",
+              "INADEQUADA"
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "texto": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
