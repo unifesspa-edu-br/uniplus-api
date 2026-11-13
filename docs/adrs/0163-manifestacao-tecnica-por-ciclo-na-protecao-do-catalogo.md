@@ -52,13 +52,13 @@ O circuito de aprovação do item passa a ter um número de ciclo, que começa e
 
 ### Estado do circuito na linha do item
 
-A gravação da manifestação altera, na mesma transação, o circuito de aprovação do item: o instante da última manifestação do ciclo e se há manifestação desfavorável vigente, calculado sobre as vigentes depois do evento. Como o circuito é gravado na linha do item, a mudança passa pelo mesmo token de concorrência otimista que a decisão, o aceite e a edição usam. Por isso:
+A gravação da manifestação altera, na mesma transação, o circuito de aprovação do item: quantas manifestações o ciclo recebeu, o instante da última e se há manifestação desfavorável vigente, calculado sobre as vigentes depois do evento. A contagem avança a cada evento, então toda manifestação muda a linha do item, mesmo quando o relógio repete o instante e o indicador não muda. Como o circuito é gravado na linha do item, a mudança passa pelo mesmo token de concorrência otimista que a decisão, o aceite e a edição usam. Por isso:
 
 - a decisão lida antes de uma manifestação gravada responde conflito e, relida, enxerga a manifestação;
 - a manifestação lida antes de uma decisão gravada responde conflito e, relida, encontra o item fora de solicitação;
 - duas manifestações concorrentes, da mesma pessoa ou de pessoas diferentes, são serializadas da mesma forma, e a refeita coexiste com a outra ou a substitui.
 
-O reinício do circuito zera o instante e o indicador junto com o avanço do ciclo. A manifestação não muda a situação da aprovação nem a proteção do item.
+O reinício do circuito zera a contagem, o instante e o indicador junto com o avanço do ciclo. A manifestação não muda a situação da aprovação nem a proteção do item.
 
 ### Decisão diante de manifestação desfavorável
 

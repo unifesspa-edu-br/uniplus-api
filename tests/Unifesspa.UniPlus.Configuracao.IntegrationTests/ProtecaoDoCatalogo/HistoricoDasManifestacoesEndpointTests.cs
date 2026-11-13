@@ -113,6 +113,7 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
         JsonElement detalhe = await DetalheAsync(client, "TIPO_DOCUMENTO", id);
         return await Enviar(client, HttpMethod.Put, $"{Tipos}/{id}", Isabella, new
         {
+            id,
             codigo = detalhe.GetProperty("codigo").GetString(),
             nome = $"{Marca()} Laudo médico",
             categoria = "SAUDE",

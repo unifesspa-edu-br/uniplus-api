@@ -102,6 +102,25 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
             .Should().Be((2, true));
     }
 
+    [Theory(DisplayName = "Duas manifestações concorrentes no mesmo instante e com o mesmo indicador desfavorável se serializam: a segunda perde com 409")]
+    [InlineData("TIPO_DOCUMENTO")]
+    [InlineData("FATO")]
+    public async Task ManifestacoesNoMesmoInstanteEComOMesmoIndicador(string cadastro)
+    {
+        using HttpClient client = Fixture.Factory.CreateClient();
+        Guid id = await PrepararAsync(client, cadastro);
+        using IDisposable congelado = ((ConfiguracaoEndpointFactory)Fixture.Factory).Relogio.Congelar();
+        (await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA")).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        // Nem o instante nem o indicador mudam: só a contagem do ciclo faz a linha do item mudar e entrar na fila.
+        (HttpResponseMessage doKevin, HttpResponseMessage daLucia) = await CorridaAsync(cadastro, id,
+            () => ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA", "Reitero: o dado é sensível."),
+            () => ManifestarAsync(client, Lucia, cadastro, id, "INADEQUADA"));
+
+        doKevin.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await DeveSerConflitoComNovaTentativaAsync(daLucia);
+    }
+
     [Theory(DisplayName = "Controle: a manifestação gravada sem tocar a linha do item deixaria passar a aprovação ou o ajuste sem justificativa")]
     [InlineData("TIPO_DOCUMENTO", "APROVAR", null)]
     [InlineData("FATO", "APROVAR", null)]

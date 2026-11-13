@@ -65,6 +65,19 @@ public sealed class ManifestacoesDoCicloTests
         tipo.Aprovacao.ManifestadaEm.Should().Be(Instante.AddMinutes(1));
     }
 
+    [Fact(DisplayName = "Toda manifestação muda o circuito, mesmo no mesmo instante e com o mesmo indicador: o ciclo conta cada evento")]
+    public void Registrar_MesmoInstanteEMesmoIndicador_AindaMudaOCircuito()
+    {
+        TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
+        ManifestacaoDaProtecaoDoCatalogo primeira = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Kevin, Instante).Value!;
+        (DateTimeOffset?, bool, int) depoisDaPrimeira = (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacaoDesfavoravelVigente, tipo.Aprovacao.ManifestacoesNoCiclo);
+
+        Do(tipo, primeira).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Adequada(), Lucia, Instante);
+
+        (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacaoDesfavoravelVigente, tipo.Aprovacao.ManifestacoesNoCiclo)
+            .Should().NotBe(depoisDaPrimeira).And.Be((Instante, false, 2));
+    }
+
     [Fact(DisplayName = "As manifestações de pessoas diferentes coexistem, e uma desfavorável vigente basta para o indicador")]
     public void Registrar_PessoasDiferentes_Coexistem()
     {

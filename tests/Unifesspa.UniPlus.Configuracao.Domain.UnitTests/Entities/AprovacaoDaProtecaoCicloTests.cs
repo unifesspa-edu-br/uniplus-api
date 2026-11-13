@@ -52,6 +52,7 @@ public sealed class AprovacaoDaProtecaoCicloTests
             Ciclo = new CicloDaAprovacao(2),
             ManifestadaEm = (DateTimeOffset?)null,
             ManifestacaoDesfavoravelVigente = false,
+            ManifestacoesNoCiclo = 0,
         });
     }
 

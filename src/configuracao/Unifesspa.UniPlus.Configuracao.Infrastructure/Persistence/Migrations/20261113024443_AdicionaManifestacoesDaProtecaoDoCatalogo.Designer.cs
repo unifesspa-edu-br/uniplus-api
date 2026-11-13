@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ConfiguracaoDbContext))]
-    [Migration("20261113015548_AdicionaManifestacoesDaProtecaoDoCatalogo")]
+    [Migration("20261113024443_AdicionaManifestacoesDaProtecaoDoCatalogo")]
     partial class AdicionaManifestacoesDaProtecaoDoCatalogo
     {
         /// <inheritdoc />
@@ -1313,6 +1313,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_manifestacoes_contadas", "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
@@ -4915,6 +4917,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tipo_documento_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_manifestacoes_contadas", "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+
                             t.HasCheckConstraint("ck_tipo_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
                             t.HasCheckConstraint("ck_tipo_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
@@ -6440,6 +6444,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasColumnType("boolean")
                                 .HasColumnName("protecao_manifestacao_desfavoravel");
 
+                            b1.Property<int>("ManifestacoesNoCiclo")
+                                .HasColumnType("integer")
+                                .HasColumnName("protecao_manifestacoes_no_ciclo");
+
                             b1.Property<DateTimeOffset?>("ManifestadaEm")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("protecao_manifestada_em");
@@ -6473,6 +6481,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000001"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6480,6 +6489,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000002"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6487,6 +6497,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000003"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6494,6 +6505,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000004"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6501,6 +6513,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000005"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6508,6 +6521,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000006"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6515,6 +6529,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000007"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6522,6 +6537,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000008"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6529,6 +6545,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000009"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6536,6 +6553,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000010"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6543,6 +6561,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000011"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6550,6 +6569,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000012"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6557,6 +6577,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000013"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6564,6 +6585,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000014"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6571,6 +6593,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000015"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6578,6 +6601,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000016"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6585,6 +6609,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000017"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6592,6 +6617,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000018"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6599,6 +6625,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000019"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6606,6 +6633,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000020"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6613,6 +6641,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000021"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6620,6 +6649,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000022"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6627,6 +6657,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000023"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6634,6 +6665,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000024"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6641,6 +6673,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000025"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6648,6 +6681,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000026"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6655,6 +6689,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000027"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6662,6 +6697,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000028"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6669,6 +6705,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000029"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6676,6 +6713,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000030"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6683,6 +6721,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000031"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6690,6 +6729,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6697,6 +6737,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000056"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6704,6 +6745,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000033"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6711,6 +6753,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000051"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6718,6 +6761,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000052"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6725,6 +6769,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000036"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6732,6 +6777,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000037"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6739,6 +6785,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000057"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6746,6 +6793,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6753,6 +6801,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6760,6 +6809,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000038"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6767,6 +6817,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000039"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6774,6 +6825,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000040"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6781,6 +6833,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000041"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6788,6 +6841,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000042"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6795,6 +6849,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000043"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6802,6 +6857,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000044"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6809,6 +6865,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000045"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6816,6 +6873,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000046"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6823,6 +6881,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000047"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6830,6 +6889,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000048"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6837,6 +6897,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000049"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6844,6 +6905,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000050"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6851,6 +6913,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000054"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6858,6 +6921,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000055"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6865,6 +6929,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000053"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -6872,6 +6937,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000060"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 });
                         });
@@ -7170,6 +7236,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasColumnType("boolean")
                                 .HasColumnName("protecao_manifestacao_desfavoravel");
 
+                            b1.Property<int>("ManifestacoesNoCiclo")
+                                .HasColumnType("integer")
+                                .HasColumnName("protecao_manifestacoes_no_ciclo");
+
                             b1.Property<DateTimeOffset?>("ManifestadaEm")
                                 .HasColumnType("timestamp with time zone")
                                 .HasColumnName("protecao_manifestada_em");
@@ -7203,6 +7273,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000001"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7210,6 +7281,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000002"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7217,6 +7289,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000003"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7224,6 +7297,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000004"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7231,6 +7305,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000005"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7238,6 +7313,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000006"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7245,6 +7321,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000007"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7252,6 +7329,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000008"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7259,6 +7337,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000009"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7266,6 +7345,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000010"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7273,6 +7353,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000011"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7280,6 +7361,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000012"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7287,6 +7369,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000013"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7294,6 +7377,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000014"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7301,6 +7385,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000015"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7308,6 +7393,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000016"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7315,6 +7401,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000017"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7322,6 +7409,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000018"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7329,6 +7417,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000019"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7336,6 +7425,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000020"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7343,6 +7433,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000021"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7350,6 +7441,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000022"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7357,6 +7449,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000023"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7364,6 +7457,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000024"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7371,6 +7465,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000025"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7378,6 +7473,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000026"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7385,6 +7481,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000027"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7392,6 +7489,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000028"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7399,6 +7497,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000029"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7406,6 +7505,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000030"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7413,6 +7513,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000031"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7420,6 +7521,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000032"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7427,6 +7529,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000033"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7434,6 +7537,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000034"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7441,6 +7545,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000035"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7448,6 +7553,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000036"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7455,6 +7561,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000037"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7462,6 +7569,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000038"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7469,6 +7577,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000039"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7476,6 +7585,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000040"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7483,6 +7593,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000041"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7490,6 +7601,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000042"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7497,6 +7609,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000043"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7504,6 +7617,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000044"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7511,6 +7625,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000045"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7518,6 +7633,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000046"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7525,6 +7641,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000047"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7532,6 +7649,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000048"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7539,6 +7657,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000049"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7546,6 +7665,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000050"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7553,6 +7673,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000051"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7560,6 +7681,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000052"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7567,6 +7689,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000053"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7574,6 +7697,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000054"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7581,6 +7705,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000055"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7588,6 +7713,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000056"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7595,6 +7721,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000057"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7602,6 +7729,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000058"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7609,6 +7737,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000059"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7616,6 +7745,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000060"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7623,6 +7753,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000061"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7630,6 +7761,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000062"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7637,6 +7769,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000063"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7644,6 +7777,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000064"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7651,6 +7785,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000065"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7658,6 +7793,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000066"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7665,6 +7801,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000067"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7672,6 +7809,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000068"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7679,6 +7817,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000069"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7686,6 +7825,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000070"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7693,6 +7833,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000071"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7700,6 +7841,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000072"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7707,6 +7849,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000073"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7714,6 +7857,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000074"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7721,6 +7865,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000075"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7728,6 +7873,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000076"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7735,6 +7881,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000077"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7742,6 +7889,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000078"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7749,6 +7897,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000079"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7756,6 +7905,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000080"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7763,6 +7913,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000081"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7770,6 +7921,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000082"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7777,6 +7929,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000083"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7784,6 +7937,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000084"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7791,6 +7945,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000085"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7798,6 +7953,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000086"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7805,6 +7961,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000087"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7812,6 +7969,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000088"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7819,6 +7977,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000089"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7826,6 +7985,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000090"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7833,6 +7993,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000091"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 },
                                 new
@@ -7840,6 +8001,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000092"),
                                     Ciclo = 1,
                                     ManifestacaoDesfavoravelVigente = false,
+                                    ManifestacoesNoCiclo = 0,
                                     Situacao = "PENDENTE"
                                 });
                         });
