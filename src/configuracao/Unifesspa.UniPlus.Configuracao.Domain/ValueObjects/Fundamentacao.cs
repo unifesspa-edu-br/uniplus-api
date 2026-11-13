@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record Fundamentacao
 {
-    /// <summary>Tamanho máximo do texto, em caracteres, também o das colunas que o guardam.</summary>
+    /// <summary>Tamanho máximo do texto, em caracteres (runas Unicode), também o das colunas que o guardam.</summary>
     public const int MaxLength = 2000;
 
     private Fundamentacao(string valor) => Valor = valor;
@@ -42,7 +42,7 @@ public sealed record Fundamentacao
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(valor);
 
-        return valor.Length <= MaxLength && valor.Trim().Length == valor.Length
+        return Caracteres(valor) <= MaxLength && valor.Trim().Length == valor.Length
             ? new Fundamentacao(valor)
             : throw new ArgumentException("Fundamentação fora da forma gravada.", nameof(valor));
     }
@@ -50,7 +50,11 @@ public sealed record Fundamentacao
     private static DomainError? Recusa(string? aparado, bool obrigatoria, RecusasDaFundamentacao recusas) => aparado switch
     {
         null when obrigatoria => new(recusas.Obrigatoria, recusas.MensagemObrigatoria),
-        { Length: > MaxLength } => new(recusas.MuitoLonga, $"{recusas.Rotulo} tem no máximo {MaxLength} caracteres."),
+        not null when Caracteres(aparado) > MaxLength => new(recusas.MuitoLonga, $"{recusas.Rotulo} tem no máximo {MaxLength} caracteres."),
         _ => null,
     };
+
+    // O limite conta caracteres, como a coluna varchar do banco, e não unidades UTF-16: o caractere fora do plano
+    // básico (um emoji, por exemplo) conta 1, e não 2.
+    private static int Caracteres(string texto) => texto.EnumerateRunes().Count();
 }

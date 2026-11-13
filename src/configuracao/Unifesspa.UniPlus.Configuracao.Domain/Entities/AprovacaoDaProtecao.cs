@@ -8,12 +8,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): o item nasce
-/// pendente, o administrador o envia numa solicitação, a proteção de dados o aprova, recomenda o ajuste da
-/// classificação ou o reprova com a justificativa, e o administrador aceita a recomendação do ajuste ou edita o item.
-/// Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a hipótese legal ou a
-/// finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou reprovado também o reinicia, seja
-/// qual for o campo. O reinício de item já solicitado abre um novo ciclo, que encerra as manifestações técnicas do
-/// anterior (ADR-0163).
+/// pendente, o administrador do cadastro o envia numa solicitação, o Representante do controlador o aprova, recomenda o
+/// ajuste da classificação ou o reprova com a justificativa, e o administrador do cadastro aceita a recomendação do
+/// ajuste ou edita o item. Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a
+/// hipótese legal ou a finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou reprovado
+/// também o reinicia, seja qual for o campo. O reinício de item já solicitado abre um novo ciclo, que encerra as
+/// manifestações técnicas do anterior (ADR-0163).
 /// </summary>
 /// <remarks>
 /// Mutável por dentro do dono, que o mapeia na própria tabela: a transição é sempre um método
@@ -31,7 +31,7 @@ public sealed class AprovacaoDaProtecao
 
     private static readonly FieldError RecomendacaoForaDaHipotese = RecusaDaRecomendacao(
         ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal,
-        "A hipótese legal do item não cabe na classificação recomendada: o administrador não poderia aceitá-la. "
+        "A hipótese legal do item não cabe na classificação recomendada: o administrador do cadastro não poderia aceitá-la. "
         + "Recomende uma classificação que a hipótese admita.");
 
     private static readonly DomainError AceiteDeItemReprovado = new(
@@ -40,7 +40,7 @@ public sealed class AprovacaoDaProtecao
 
     private static readonly DomainError SemRecomendacao = new(
         ProtecaoDoCatalogoErrorCodes.SemRecomendacaoParaAceitar,
-        "Só o item com ajuste recomendado pela proteção de dados tem recomendação a aceitar.");
+        "Só o item com ajuste recomendado pelo Representante do controlador tem recomendação a aceitar.");
 
     public SituacaoDaAprovacao Situacao { get; private set; } = SituacaoDaAprovacao.Pendente;
 
@@ -55,7 +55,10 @@ public sealed class AprovacaoDaProtecao
 
     public string? DecididaPor { get; private set; }
 
-    /// <summary>A classificação que a proteção de dados indicou ao recomendar o ajuste; guardada também depois do aceite.</summary>
+    /// <summary>
+    /// A classificação que o Representante do controlador indicou ao recomendar o ajuste; guardada também depois do
+    /// aceite.
+    /// </summary>
     public ClassificacaoDeProtecao? ClassificacaoRecomendada { get; private set; }
 
     /// <summary>

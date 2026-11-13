@@ -45,7 +45,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         (await UltimoAtoAsync(client, cadastro, id)).GetProperty("dianteDeManifestacaoDesfavoravel").GetBoolean().Should().BeTrue();
     }
 
-    [Theory(DisplayName = "A manifestação de ajuste gravada antes vence o ajuste sem justificativa; relido, o ajuste exige a justificativa e o administrador aceita sem ela")]
+    [Theory(DisplayName = "A manifestação de ajuste gravada antes vence o ajuste sem justificativa; relido, o ajuste exige a justificativa e o administrador do cadastro aceita sem ela")]
     [InlineData("TIPO_DOCUMENTO")]
     [InlineData("FATO")]
     public async Task ManifestacaoAntesDoAjuste(string cadastro)
@@ -63,7 +63,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         (await AceitarAsync(client, cadastro, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    [Theory(DisplayName = "O ajuste gravado antes vence a manifestação, que relida encontra o item fora de solicitação; o administrador aceita sem justificativa")]
+    [Theory(DisplayName = "O ajuste gravado antes vence a manifestação, que refeita encontra o item já decidido; o administrador do cadastro aceita sem justificativa")]
     [InlineData("TIPO_DOCUMENTO")]
     [InlineData("FATO")]
     public async Task AjusteAntesDaManifestacao(string cadastro)
@@ -77,7 +77,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
 
         ajuste.StatusCode.Should().Be(HttpStatusCode.NoContent);
         await DeveSerConflitoComNovaTentativaAsync(manifestacao);
-        (await CodigoAsync(await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA"))).Should().EndWith(".item_fora_de_solicitacao");
+        (await CodigoAsync(await ManifestarAsync(client, Kevin, cadastro, id, "INADEQUADA"))).Should().EndWith(".decisao_ja_tomada");
         (await AceitarAsync(client, cadastro, id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await DetalheAsync(client, cadastro, id)).GetProperty("aprovacao").GetProperty("ciclo").GetInt32().Should().Be(1);
     }

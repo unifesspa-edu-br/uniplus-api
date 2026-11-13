@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// A decisão da proteção de dados sobre um item com os seus fundamentos: o ato (aprovação, ajuste recomendado ou
-/// reprovação), a classificação recomendada no ajuste e a justificativa.
+/// A decisão do Representante do controlador sobre um item com os seus fundamentos: o ato (aprovação, ajuste
+/// recomendado ou reprovação), a classificação recomendada no ajuste e a justificativa.
 /// </summary>
 /// <param name="Ato">Aprovação, ajuste recomendado ou reprovação.</param>
 /// <param name="ClassificacaoRecomendada">A classificação que o ajuste recomenda; nula nas demais decisões.</param>

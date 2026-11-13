@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,10 +27,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class TiposDocumentoController : ControllerBase
 {
     private const string ResourceTag = "tipos-documento";
@@ -162,8 +156,8 @@ public sealed class TiposDocumentoController : ControllerBase
     }
 
     /// <summary>
-    /// Aceita a classificação que a proteção de dados recomendou ao negar o tipo: ele fica aprovado com ela,
-    /// sem nova solicitação, e a proteção de dados é avisada. Exige a permissão de manutenção.
+    /// Aceita a classificação que o Representante do controlador recomendou no ajuste do tipo: ele fica aprovado com ela,
+    /// sem nova solicitação, e os Representantes do controlador são avisados. Exige a permissão de manutenção.
     /// </summary>
     [HttpPost("admin/tipos-documento/{id:guid}/aceite-da-recomendacao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.TiposDocumentoManter, ResourceTipo = ResourceTiposConfiguracao.TipoDocumento)]
@@ -210,6 +204,33 @@ public sealed class TiposDocumentoController : ControllerBase
             .ConfigureAwait(false);
 
         return atos is null ? NotFound() : Ok(atos);
+    }
+
+    /// <summary>
+    /// Todas as manifestações técnicas sobre a proteção de dados do tipo de documento, de todos os ciclos, com o texto, o nome
+    /// de quem se manifestou e a situação de cada uma: vigente, substituída ou encerrada (UNI-REQ-0374). Quem mantém o cadastro de tipos de documento as lê sem poder se manifestar nem decidir; o Encarregado de dados, pela permissão de consultar a proteção de dados.
+    /// A leitura é registrada antes da resposta conforme a classe da permissão que a autorizou; sem o registro, é
+    /// recusada com 503.
+    /// </summary>
+    [HttpGet("admin/tipos-documento/{id:guid}/protecao/manifestacoes")]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.TiposDocumentoManter,
+        ResourceTipo = ResourceTiposConfiguracao.TipoDocumento,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-manifestacao", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> ListarManifestacoesDaProtecao(Guid id, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
+            .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.TipoDocumento, id), cancellationToken)
+            .ConfigureAwait(false);
+
+        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
     }
 
     /// <summary>Remove (soft-delete) um tipo de documento. Exige a permissão de manutenção.</summary>

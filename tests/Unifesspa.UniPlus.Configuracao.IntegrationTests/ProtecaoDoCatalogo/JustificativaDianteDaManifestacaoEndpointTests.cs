@@ -9,7 +9,8 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// A decisão diante de manifestação técnica desfavorável vigente pelo host real (UNI-REQ-0374): aprovar ou recomendar
-/// ajuste exige a justificativa, registrada no ato; o administrador aceita a recomendação sem nova justificativa.
+/// ajuste exige a justificativa, registrada no ato; o administrador do cadastro aceita a recomendação sem nova
+/// justificativa.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 public sealed class JustificativaDianteDaManifestacaoEndpointTests : ManifestacaoDaProtecaoTestBase
@@ -41,7 +42,7 @@ public sealed class JustificativaDianteDaManifestacaoEndpointTests : Manifestaca
             .Should().Be(("APROVACAO", Justificativa, true));
     }
 
-    [Theory(DisplayName = "O ajuste diante de manifestação desfavorável exige a justificativa, e o administrador aceita sem nova justificativa")]
+    [Theory(DisplayName = "O ajuste diante de manifestação desfavorável exige a justificativa, e o administrador do cadastro aceita sem nova justificativa")]
     [InlineData("TIPO_DOCUMENTO")]
     [InlineData("FATO")]
     public async Task Ajuste_DianteDeDesfavoravel_EAceite(string cadastro)

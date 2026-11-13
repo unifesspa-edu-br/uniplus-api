@@ -135,7 +135,7 @@ public sealed class SolicitacaoDaProtecaoDoCatalogo
     }
 
     // Só o destinatário válido conta. Quem aprova recebe o aviso da decisão; quem se manifesta, o da manifestação, uma
-    // vez por pessoa: quem já é avisado como aprovador não recebe um segundo e-mail.
+    // vez por pessoa: quem já é avisado como Representante do controlador não recebe um segundo e-mail.
     private async Task<Result<IReadOnlyList<EnviarEmail>>> AvisosAsync(IReadOnlyList<IItemSobAprovacao> itens, CancellationToken cancellationToken)
     {
         SolicitacaoDaProtecaoDto resumo = Resumo(itens);

@@ -57,7 +57,7 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
         (aprovacao.Justificativa, aprovacao.Ciclo.Numero, aprovacao.DianteDeManifestacaoDesfavoravel).Should().Be((Justificativa, 2, false));
     }
 
-    [Fact(DisplayName = "A Encarregada lê o histórico com a situação de cada evento, e a leitura é registrada pela permissão de consultar")]
+    [Fact(DisplayName = "O Encarregado de dados lê o histórico com a situação de cada evento, e a leitura é registrada pela permissão de consultar")]
     public async Task Historico_LidoPelaEncarregada()
     {
         Guid id = await DoisCiclosAsync();

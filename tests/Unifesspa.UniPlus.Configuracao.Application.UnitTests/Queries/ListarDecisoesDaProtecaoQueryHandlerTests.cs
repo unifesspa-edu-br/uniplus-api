@@ -17,7 +17,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.CatalogoDeProtecaoDeTeste;
 
-/// <summary>A lista das decisões da proteção de dados confere os critérios antes de ler e entrega o registro sem a identidade de quem agiu.</summary>
+/// <summary>
+/// A lista das decisões do Representante do controlador confere os critérios antes de ler e entrega o registro sem a
+/// identidade de quem agiu.
+/// </summary>
 public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
 {
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();

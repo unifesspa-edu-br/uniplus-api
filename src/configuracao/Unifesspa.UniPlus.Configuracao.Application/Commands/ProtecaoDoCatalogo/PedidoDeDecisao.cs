@@ -9,12 +9,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A decisão pedida, conferida na forma antes de qualquer leitura do item (ADR-0125): o item, a decisão com os seus
-/// fundamentos e a proteção que o aprovador conferiu. Todas as recusas de forma saem num único lote.
+/// fundamentos, a proteção que o Representante do controlador conferiu e o que ele leu do circuito. Todas as recusas de
+/// forma saem num único lote.
 /// </summary>
 /// <param name="Item">O cadastro e o identificador do item.</param>
 /// <param name="Decisao">A decisão, a classificação recomendada (só no ajuste) e a justificativa.</param>
-/// <param name="ProtecaoConferida">A proteção que o aprovador viu; a decisão sobre outra responde conflito.</param>
-public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada Decisao, ProtecaoDeDados ProtecaoConferida)
+/// <param name="ProtecaoConferida">A proteção que o Representante do controlador viu; a decisão sobre outra responde conflito.</param>
+/// <param name="Lida">O ciclo e a contagem de manifestações lidos; a decisão sobre outro estado responde conflito.</param>
+public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada Decisao, ProtecaoDeDados ProtecaoConferida, LeituraDoCircuito Lida)
 {
     private const string Aprovar = DecisoesDaProtecaoDoCatalogo.Aprovar;
     private const string RecomendarAjuste = DecisoesDaProtecaoDoCatalogo.RecomendarAjuste;
@@ -33,8 +35,8 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
 
     /// <summary>
     /// O pedido conferido, ou o lote das recusas: cadastro e decisão fora do vocabulário, classificação recomendada
-    /// ausente no ajuste ou presente nas demais decisões, justificativa ausente na reprovação ou longa demais, e proteção
-    /// conferida ausente ou fora do vocabulário.
+    /// ausente no ajuste ou presente nas demais decisões, justificativa ausente na reprovação ou longa demais, proteção
+    /// conferida ausente ou fora do vocabulário, e ciclo ou contagem de manifestações lidos ausentes ou inválidos.
     /// </summary>
     public static Result<PedidoDeDecisao> Ler(DecidirProtecaoDoCatalogoCommand command)
     {
@@ -44,10 +46,11 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
         ItemDaProtecao? item = ItemDaProtecao.Ler(command.Cadastro, command.ItemId, erros);
         DecisaoFundamentada? decisao = LerDecisao(command, erros);
         ProtecaoDeDados? conferida = LerProtecaoConferida(command, erros);
+        LeituraDoCircuito? lida = LeituraDoCircuito.Ler(command.Ciclo, command.ManifestacoesNoCiclo, erros);
 
         return erros.Count > 0
             ? Result<PedidoDeDecisao>.ValidationFailure(erros)
-            : Result<PedidoDeDecisao>.Success(new PedidoDeDecisao(item!.Value, decisao!, conferida!.Value));
+            : Result<PedidoDeDecisao>.Success(new PedidoDeDecisao(item!.Value, decisao!, conferida!.Value, lida!.Value));
     }
 
     private static DecisaoFundamentada? LerDecisao(DecidirProtecaoDoCatalogoCommand command, List<FieldError> erros)
@@ -114,7 +117,7 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
         {
             erros.Add(new(campo, new DomainError(
                 ProtecaoDoCatalogoErrorCodes.ProtecaoConferidaInvalida,
-                "A decisão exige a proteção que o aprovador conferiu — classificação, hipótese legal e finalidade —, dentro do vocabulário fechado.")));
+                "A decisão exige a proteção que o Representante do controlador conferiu — classificação, hipótese legal e finalidade —, dentro do vocabulário fechado.")));
         }
     }
 }

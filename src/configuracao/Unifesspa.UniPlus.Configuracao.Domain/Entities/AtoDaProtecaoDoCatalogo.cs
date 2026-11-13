@@ -8,8 +8,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// <summary>
 /// Um ato do circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): a
 /// solicitação, a aprovação, o ajuste recomendado, a reprovação e o aceite da recomendação. Só se acrescenta, nunca se
-/// altera nem se apaga: é evidência forense (ADR-0063) de que a proteção de dados exerceu a sua decisão, e sobrevive à
-/// edição do item, que reinicia o circuito corrente (<see cref="AprovacaoDaProtecao"/>) mas não este registro.
+/// altera nem se apaga: é evidência forense (ADR-0063) de que o Representante do controlador exerceu a sua decisão, e
+/// sobrevive à edição do item, que reinicia o circuito corrente (<see cref="AprovacaoDaProtecao"/>) mas não este
+/// registro.
 /// </summary>
 /// <remarks>
 /// O item não é referenciado por chave estrangeira: ele pode ser desativado ou removido, e o registro continua.
@@ -99,7 +100,7 @@ public sealed class AtoDaProtecaoDoCatalogo : IForensicEntity
     }
 
     /// <summary>
-    /// Registra a decisão com a proteção que o aprovador conferiu, a classificação recomendada (só no ajuste), a
+    /// Registra a decisão com a proteção que o Representante do controlador conferiu, a classificação recomendada (só no ajuste), a
     /// justificativa, o ciclo e se havia manifestação desfavorável vigente.
     /// </summary>
     /// <exception cref="InvalidOperationException">

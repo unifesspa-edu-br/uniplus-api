@@ -8,13 +8,13 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Aplica a decisão da proteção de dados ao tipo de documento ou ao fato e registra o ato, na mesma transação. A
-/// decisão vale sobre a proteção que o aprovador conferiu e enxerga a manifestação desfavorável vigente pela linha do
-/// item, a mesma que o token de concorrência protege (ADR-0163).
+/// Aplica a decisão do Representante do controlador ao tipo de documento ou ao fato e registra o ato, na mesma
+/// transação. A decisão vale sobre a proteção que o Representante do controlador conferiu e enxerga a manifestação desfavorável vigente
+/// pela linha do item, a mesma que o token de concorrência protege (ADR-0163).
 /// </summary>
 public sealed class DecisaoNaProtecaoDoCatalogo
 {
-    // O item foi editado depois de o aprovador vê-lo: decidir sobre a proteção vigente decidiria sobre o que ele não viu.
+    // O item foi editado depois de o Representante do controlador vê-lo: decidir sobre a proteção vigente decidiria sobre o que ele não viu.
     // Repetir a mesma decisão nunca dá certo, então não é o conflito de concorrência que se tenta de novo.
     private static readonly DomainError ProtecaoMudou = new(
         ProtecaoDoCatalogoErrorCodes.ProtecaoMudou,
@@ -40,8 +40,8 @@ public sealed class DecisaoNaProtecaoDoCatalogo
     }
 
     /// <summary>
-    /// Decide e grava. Falha com o não encontrado do cadastro, <c>ProtecaoMudou</c>, a justificativa exigida pela
-    /// manifestação desfavorável, a recusa da transição do item ou o conflito de concorrência.
+    /// Decide e grava. Falha com o não encontrado do cadastro, <c>ProtecaoMudou</c>, <c>ManifestacaoNaoLida</c>, a
+    /// justificativa exigida pela manifestação desfavorável, a recusa da transição do item ou o conflito de concorrência.
     /// </summary>
     public async Task<Result> DecidirAsync(PedidoDeDecisao pedido, AtorDoAto ator, CancellationToken cancellationToken)
     {
@@ -78,10 +78,17 @@ public sealed class DecisaoNaProtecaoDoCatalogo
         return decidida;
     }
 
-    // A decisão vale sobre a proteção que o aprovador conferiu; contra ela, a justificativa que a manifestação exige e a
-    // classificação recomendada saem juntas no lote, antes de qualquer mudança no item.
-    private static Result Conferir(IItemSobAprovacao item, PedidoDeDecisao pedido) =>
-        item.Protecao == pedido.ProtecaoConferida
-            ? pedido.Decisao.Conferir(item.Aprovacao, item.Protecao)
-            : Result.Failure(ProtecaoMudou);
+    // A decisão vale sobre a proteção e o circuito que o Representante do controlador leu: a proteção editada e a
+    // manifestação registrada depois da leitura saem juntas no lote de conflitos; sem conflito, a justificativa que a
+    // manifestação exige e a classificação recomendada saem juntas no lote de recusas, antes de qualquer mudança no item.
+    private static Result Conferir(IItemSobAprovacao item, PedidoDeDecisao pedido)
+    {
+        List<FieldError> conflitos = [.. pedido.Lida.ConferirCom(item.Aprovacao).Errors];
+        if (item.Protecao != pedido.ProtecaoConferida)
+        {
+            conflitos.Insert(0, new FieldError(null, ProtecaoMudou));
+        }
+
+        return conflitos.Count > 0 ? Result.ValidationFailure(conflitos) : pedido.Decisao.Conferir(item.Aprovacao, item.Protecao);
+    }
 }

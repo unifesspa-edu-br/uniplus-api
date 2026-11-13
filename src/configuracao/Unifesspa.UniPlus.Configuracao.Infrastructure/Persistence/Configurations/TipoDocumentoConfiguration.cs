@@ -112,8 +112,9 @@ public sealed class TipoDocumentoConfiguration
         });
         builder.Navigation(t => t.Aprovacao).IsRequired();
 
-        // Concorrência otimista pela coluna de sistema xmin (como o fato): a decisão da proteção de dados e o aceite
-        // não gravam por cima de uma edição concorrente que devolveu o tipo a pendente com outra classificação.
+        // Concorrência otimista pela coluna de sistema xmin (como o fato): a decisão do Representante do controlador e
+        // o aceite não gravam por cima de uma edição concorrente que devolveu o tipo a pendente com outra
+        // classificação.
         builder.Property<uint>("Version").IsRowVersion();
 
         // Auditoria (IAuditableEntity)
@@ -144,7 +145,7 @@ public sealed class TipoDocumentoConfiguration
     /// <remarks>
     /// O cadastro é administrado e semeado ao mesmo tempo, então as duas escritas
     /// disputam as mesmas linhas: editar um item desta lista faz o EF gerar um
-    /// <c>UpdateData</c> que sobrescreve o que o administrador tiver mudado no tipo
+    /// <c>UpdateData</c> que sobrescreve o que o administrador do cadastro tiver mudado no tipo
     /// semeado. É o mesmo trade-off já aceito em <c>CategoriaDocumentoConfiguration</c>
     /// e <c>PrecedenciaFaseConfiguration</c>, e o que faz o catálogo de tipos de documento existir desde a
     /// migração, sem ato operacional pós-deploy.

@@ -47,18 +47,25 @@ O circuito de aprovação do item passa a ter um número de ciclo, que começa e
 - A manifestação só é registrada em item com aprovação solicitada, por quem tem `configuracao:protecao-do-catalogo:manifestar` (UNI-REQ-0373).
 - Quem se manifesta informa o ciclo que leu. Ciclo diferente do atual é recusado com conflito sem nova tentativa automática: o item foi reiniciado, e talvez solicitado de novo, depois de lido, e a manifestação falaria do que não foi visto.
 - Cada gravação é um evento só acrescentado, com o item, o ciclo, o parecer, o texto, quem se manifestou (emissor, `sub` e nome no instante) e o instante. A substituição é um evento novo que aponta para a manifestação vigente da mesma pessoa no mesmo ciclo; a anterior não é alterada. Vigente é a manifestação do ciclo atual que nenhum evento substituiu; a de ciclo encerrado é lida como encerrada.
-- O texto tem até 2.000 caracteres, o mesmo limite da justificativa da decisão, e é obrigatório nos pareceres recomenda ajuste e inadequada.
+- O texto tem até 2.000 caracteres, contados como caracteres Unicode e não como unidades UTF-16 (um emoji conta um), o mesmo limite e a mesma contagem da justificativa da decisão, e é obrigatório nos pareceres recomenda ajuste e inadequada.
 - O banco garante uma única cadeia por pessoa e ciclo: no máximo uma manifestação inicial (sem substituída) por item, ciclo e pessoa, e no máximo uma substituição de cada manifestação.
 
 ### Estado do circuito na linha do item
 
 A gravação da manifestação altera, na mesma transação, o circuito de aprovação do item: quantas manifestações o ciclo recebeu, o instante da última e se há manifestação desfavorável vigente, calculado sobre as vigentes depois do evento. A contagem avança a cada evento, então toda manifestação muda a linha do item, mesmo quando o relógio repete o instante e o indicador não muda. Como o circuito é gravado na linha do item, a mudança passa pelo mesmo token de concorrência otimista que a decisão, o aceite e a edição usam. Por isso:
 
-- a decisão lida antes de uma manifestação gravada responde conflito e, relida, enxerga a manifestação;
-- a manifestação lida antes de uma decisão gravada responde conflito e, relida, encontra o item fora de solicitação;
+- a decisão processada durante a gravação de uma manifestação responde conflito e, relida, enxerga a manifestação;
+- a manifestação processada durante a gravação de uma decisão responde conflito e, refeita, é recusada porque o item já foi decidido;
 - duas manifestações concorrentes, da mesma pessoa ou de pessoas diferentes, são serializadas da mesma forma, e a refeita coexiste com a outra ou a substitui.
 
 O reinício do circuito zera a contagem, o instante e o indicador junto com o avanço do ciclo. A manifestação não muda a situação da aprovação nem a proteção do item.
+
+### Leitura de quem age
+
+A disputa não termina na requisição: vale também a leitura que quem age fez na tela (UNI-REQ-0374).
+
+- A decisão leva, junto com a proteção conferida, o ciclo e a contagem de manifestações que o Representante do controlador leu. Se o ciclo ou a contagem gravados diferem, houve manifestação (ou reinício) depois da leitura, e a decisão é recusada por conflito sem nova tentativa automática: ele precisa reler o item. A proteção editada e a manifestação não lida saem no mesmo lote de conflitos.
+- A manifestação leva o ciclo lido. No mesmo ciclo, o item que já não está em solicitação porque foi decidido depois da leitura recusa a manifestação por conflito sem nova tentativa automática; o item que ainda não foi solicitado nesse ciclo continua recusado como fora de solicitação.
 
 ### Decisão diante de manifestação desfavorável
 
@@ -73,7 +80,7 @@ A solicitação avisa, além de quem aprova, quem tem a permissão de se manifes
 
 ### Consultas
 
-Quem aprova ou consulta a proteção do catálogo de tipos de documento e de fatos do candidato lê as manifestações vigentes no detalhe do item e o histórico de todos os eventos de manifestação do item, de todos os ciclos, com a situação derivada na leitura (vigente, substituída ou encerrada). As leituras passam pelo registro de acesso das permissões de classe pessoal ([ADR-0153](0153-projecao-por-protecao.md)).
+Quem aprova ou consulta a proteção do catálogo de tipos de documento e de fatos do candidato lê as manifestações vigentes no detalhe do item e o histórico de todos os eventos de manifestação do item, de todos os ciclos, com a situação derivada na leitura (vigente, substituída ou encerrada). O administrador do cadastro lê o mesmo histórico, com os textos e as substituídas, no histórico do item que administra (UNI-REQ-0205, UNI-REQ-0374), pela permissão de manter os tipos de documento ou de consultar os fatos do candidato, sem poder se manifestar nem decidir. As leituras passam pelo registro de acesso conforme a classe da permissão que as autoriza ([ADR-0153](0153-projecao-por-protecao.md)).
 
 ## Consequências
 

@@ -42,7 +42,7 @@ internal static class AvisosDaProtecaoDoCatalogo
         string abertura =
             $"Há itens do catálogo de tipos de documento e de fatos do candidato com a aprovação da proteção de dados solicitada: {Itens(tiposDeDocumento, fatos)}.";
         const string chamada =
-            "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato se quiser registrar manifestação técnica sobre cada um; a decisão cabe a quem aprova.";
+            "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato se quiser registrar manifestação técnica sobre cada um; a decisão cabe ao Representante do controlador.";
 
         return Montar(
             destinatarios,
@@ -55,11 +55,11 @@ internal static class AvisosDaProtecaoDoCatalogo
     public static IReadOnlyList<EnviarEmail> DoAceite(
         IReadOnlyList<string> destinatarios, string cadastro, string nome, string codigo, ClassificacaoDeProtecao classificacao)
     {
-        string aviso = $"A recomendação da proteção de dados foi aceita: o {cadastro} {nome} ({codigo}) está aprovado como {Rotulo(classificacao)}.";
+        string aviso = $"A recomendação do Representante do controlador foi aceita: o {cadastro} {nome} ({codigo}) está aprovado como {Rotulo(classificacao)}.";
 
         return Montar(
             destinatarios,
-            "Recomendação da proteção de dados aceita no catálogo de tipos de documento e de fatos do candidato",
+            "Recomendação do Representante do controlador aceita no catálogo de tipos de documento e de fatos do candidato",
             aviso,
             $"<p>{WebUtility.HtmlEncode(aviso)}</p>",
             "catalogo.protecao.aceite");
