@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Regras.Entradas;
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 /// <summary>
 /// Uma condição da pré-condição de um fato coletado — a tripla
@@ -39,7 +40,7 @@ public sealed record LimiteDeDataInput(string Ancora, DateOnly? Data = null, int
 /// O envio que a simulação supõe: o instante e a zona, no identificador IANA, em que se conta o dia
 /// dele — o mesmo que o formulário renderizável publica em <c>fusoDoEnvio</c>.
 /// </summary>
-public sealed record EnvioSimuladoInput(DateTimeOffset Instante, string Fuso);
+public sealed record EnvioSimuladoInput([property: JsonRequired] DateTimeOffset Instante, string Fuso);
 
 /// <summary>
 /// Um grupo de opções permitidas e a condição, sobre respostas anteriores, em que ele vale; sem

@@ -16,12 +16,13 @@ Specs OpenAPI 3.1 versionados como **fonte de verdade do contrato V1** da `unipl
 
 ## Como o spec é gerado
 
-O pipeline `AddUniPlusOpenApi("modulo", config)` (ver `Infrastructure.Core/OpenApi/`) registra três transformers que formatam o documento em runtime:
+O pipeline `AddUniPlusOpenApi("modulo", config)` (ver `Infrastructure.Core/OpenApi/`) registra os transformers que formatam o documento em runtime:
 
 1. `UniPlusInfoTransformer` — title pt-BR, contact CTIC, license MIT, servers Produção/Homologação, `info.version = 1.0.0`.
 2. `UniPlusOperationTransformer` — adiciona header `Idempotency-Key` em endpoints com `[RequiresIdempotencyKey]`; coage respostas 4xx/5xx para `application/problem+json` (RFC 9457, ADR-0023).
 3. `UniPlusSchemaTransformer` — aplica pattern `^\d{11}$` + nota PII a propriedades `cpf`.
 4. `BearerSecuritySchemeDocumentTransformer` — declara o esquema `bearerAuth` (HTTP Bearer, formato JWT) em `components.securitySchemes`; o `AuthorizationOperationTransformer` referencia esse esquema em cada operação protegida, na mesma passagem em que adiciona o `401`/`403`.
+5. `InstanteSchemaTransformer` — publica todo instante (`DateTimeOffset`, anulável, em lista ou em dicionário) como `type: string` + `format: date-time`: o conversor JSON do instante é próprio, e sem ele o gerador omite o `type` e o schema do item.
 
 Endpoint runtime: `GET /openapi/{modulo}.json`.
 

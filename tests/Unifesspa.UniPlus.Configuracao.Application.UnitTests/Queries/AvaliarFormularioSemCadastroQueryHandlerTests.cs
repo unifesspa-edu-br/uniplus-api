@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// A avaliação sem cadastro das regras de um formulário renderizável: a recusa da ocorrência sem
-/// identidade própria no grupo e a do envio simulado numa zona que o ambiente não reconhece ou sem
-/// instante. O resultado da avaliação é conferido pelo corpus de casos.
+/// identidade própria no grupo e a do envio simulado numa zona que o ambiente não reconhece ou no primeiro
+/// instante do calendário. O resultado da avaliação é conferido pelo corpus de casos.
 /// </summary>
 public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
 {
@@ -49,12 +49,11 @@ public sealed class AvaliarFormularioSemCadastroQueryHandlerTests
         });
     }
 
-    [Fact(DisplayName = "Envio simulado sem instante é recusado no instante, sem estourar a conta dos limites")]
-    public void Handle_EnvioSemInstante_Recusa()
+    [Fact(DisplayName = "Envio simulado no primeiro instante do calendário é recusado no instante, sem estourar a conta dos limites")]
+    public void Handle_EnvioNoPrimeiroInstanteDoCalendario_Recusa()
     {
-        // O corpo sem "instante" no envio: o desserializador deixa o instante no primeiro do calendário.
         string corpo = "{\"regras\": " + JsonSerializer.Serialize(RegrasComFaixaDeData, JsonSerializerOptions.Web)
-            + ", \"envio\": {\"fuso\": \"America/Belem\"}}";
+            + ", \"envio\": {\"instante\": \"0001-01-01T00:00:00Z\", \"fuso\": \"America/Belem\"}}";
         AvaliacaoSemCadastroInput simulacao = JsonSerializer.Deserialize<AvaliacaoSemCadastroInput>(corpo, JsonSerializerOptions.Web)!;
 
         Result<AvaliacaoPortavel> resultado = AvaliarFormularioSemCadastroQueryHandler.Handle(new AvaliarFormularioSemCadastroQuery(simulacao));
