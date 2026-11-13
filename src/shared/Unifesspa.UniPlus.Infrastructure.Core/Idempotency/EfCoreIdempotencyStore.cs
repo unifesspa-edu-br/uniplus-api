@@ -46,51 +46,23 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
                 cancellationToken)
             .ConfigureAwait(false);
 
-        if (entry is null)
+        if (entry is null || await DescartarSeExpiradaAsync(entry, cancellationToken).ConfigureAwait(false))
             return new IdempotencyLookupResult(IdempotencyOutcome.Miss, null);
 
-        // Entry expirada conta como miss, mas precisa ser DELETADA antes de
-        // retornar — caso contrário a UNIQUE em (scope, endpoint, key) bloqueia
-        // o próximo TryReserve do cliente (UNIQUE violation), resultando em 409
-        // espúrio para uma request que deveria ser tratada como nova.
-        // ExecuteDelete com filtro Id+ExpiresAt é seguro contra concorrência:
-        // outra request que detecte o mesmo expirado vence o DELETE, a perdedora
-        // vê 0 rows e segue normal.
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-        if (entry.ExpiresAt <= now)
-        {
-            await _db.Set<IdempotencyEntry>()
-                .Where(e => e.Id == entry.Id && e.ExpiresAt <= now)
-                .ExecuteDeleteAsync(cancellationToken)
-                .ConfigureAwait(false);
-            return new IdempotencyLookupResult(IdempotencyOutcome.Miss, null);
-        }
-
-        if (entry.Status == IdempotencyStatus.Processing)
-            return new IdempotencyLookupResult(IdempotencyOutcome.Processing, entry);
-
-        if (!string.Equals(entry.BodyHash, bodyHash, StringComparison.Ordinal))
-            return new IdempotencyLookupResult(IdempotencyOutcome.HitMismatch, entry);
-
-        return new IdempotencyLookupResult(IdempotencyOutcome.HitMatch, entry);
+        return Classificar(entry, bodyHash);
     }
 
+    /// <summary>
+    /// Reserva a chave numa transação curta própria. Só a violação UNIQUE (corrida com outra request) sinaliza
+    /// reserva concorrente; outros <see cref="DbUpdateException"/> (FK, disco cheio, lock timeout) propagam para a
+    /// infra de logs e o cliente recebe 5xx, em vez de serem mascarados como 409 ProcessingConflict.
+    /// </summary>
     public async Task<bool> TryReserveAsync(
         string scope, string endpoint, string idempotencyKey, string bodyHash,
         DateTimeOffset expiresAt,
         CancellationToken cancellationToken)
     {
-        IdempotencyEntry entry = new()
-        {
-            Scope = scope,
-            Endpoint = endpoint,
-            IdempotencyKey = idempotencyKey,
-            BodyHash = bodyHash,
-            Status = IdempotencyStatus.Processing,
-            ExpiresAt = expiresAt,
-            CreatedAt = _timeProvider.GetUtcNow(),
-        };
-
+        IdempotencyEntry entry = NovaReserva(scope, endpoint, idempotencyKey, bodyHash, expiresAt);
         _db.Set<IdempotencyEntry>().Add(entry);
 
         try
@@ -100,15 +72,17 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
         }
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
-            // Apenas violação UNIQUE (race com outra request) sinaliza
-            // "reserva concorrente" — outros DbUpdateException (FK, disco
-            // cheio, lock timeout) propagam para a infra de logs e cliente
-            // recebe 5xx, ao invés de serem mascarados como 409 ProcessingConflict.
             _db.Set<IdempotencyEntry>().Entry(entry).State = EntityState.Detached;
             return false;
         }
     }
 
+    /// <summary>
+    /// Conclui a reserva com um UPDATE atômico, sem carregar nem rastrear a entry: evita commitar estado fantasma do
+    /// request scope (o ChangeTracker pode ter outras entities pendentes do controller). O filtro por
+    /// <c>Status == Processing</c> é idempotente: chamada dupla não sobrescreve entry já concluída, e o UPDATE que
+    /// não alcança nenhuma linha (concluída por concorrente ou expirada antes) não é erro.
+    /// </summary>
     public async Task CompleteAsync(
         string scope, string endpoint, string idempotencyKey,
         int responseStatus, string? responseHeadersJson, byte[] responseBodyCipher,
@@ -116,12 +90,7 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
     {
         ArgumentNullException.ThrowIfNull(responseBodyCipher);
 
-        // ExecuteUpdate emite UPDATE atômico sem carregar/rastrear a entry —
-        // evita commitar estado fantasma do request scope (ChangeTracker poderia
-        // ter outras entities pendentes do controller). Filtro por
-        // Status == Processing é idempotente: chamada dupla não sobrescreve
-        // entry já Completed (segunda chamada simplesmente atualiza 0 rows).
-        int updated = await _db.Set<IdempotencyEntry>()
+        await _db.Set<IdempotencyEntry>()
             .Where(e => e.Scope == scope
                 && e.Endpoint == endpoint
                 && e.IdempotencyKey == idempotencyKey
@@ -133,13 +102,6 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
                 .SetProperty(e => e.ResponseBodyCipher, responseBodyCipher),
                 cancellationToken)
             .ConfigureAwait(false);
-
-        if (updated == 0)
-        {
-            // Não é erro: entry pode já ter sido Completed por concorrente
-            // (raro, exigiria duas reservations idênticas mas a UNIQUE
-            // impede) ou TTL-expirada antes do Complete. Log noop.
-        }
     }
 
     public async Task DeleteAsync(
@@ -153,6 +115,47 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
             .ExecuteDeleteAsync(cancellationToken)
             .ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Entry expirada conta como miss, mas precisa ser DELETADA antes de retornar: sem isso a UNIQUE em
+    /// (scope, endpoint, key) bloquearia o próximo TryReserve do cliente, dando 409 espúrio a uma request que deveria
+    /// ser tratada como nova. O DELETE filtrado por Id e ExpiresAt é seguro contra concorrência: a request que perde
+    /// a corrida vê 0 linhas e segue normal.
+    /// </summary>
+    private async Task<bool> DescartarSeExpiradaAsync(IdempotencyEntry entry, CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        if (entry.ExpiresAt > now)
+            return false;
+
+        await _db.Set<IdempotencyEntry>()
+            .Where(e => e.Id == entry.Id && e.ExpiresAt <= now)
+            .ExecuteDeleteAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return true;
+    }
+
+    private static IdempotencyLookupResult Classificar(IdempotencyEntry entry, string bodyHash)
+    {
+        if (entry.Status == IdempotencyStatus.Processing)
+            return new IdempotencyLookupResult(IdempotencyOutcome.Processing, entry);
+
+        return string.Equals(entry.BodyHash, bodyHash, StringComparison.Ordinal)
+            ? new IdempotencyLookupResult(IdempotencyOutcome.HitMatch, entry)
+            : new IdempotencyLookupResult(IdempotencyOutcome.HitMismatch, entry);
+    }
+
+    private IdempotencyEntry NovaReserva(
+        string scope, string endpoint, string idempotencyKey, string bodyHash, DateTimeOffset expiresAt) => new()
+    {
+        Scope = scope,
+        Endpoint = endpoint,
+        IdempotencyKey = idempotencyKey,
+        BodyHash = bodyHash,
+        Status = IdempotencyStatus.Processing,
+        ExpiresAt = expiresAt,
+        CreatedAt = _timeProvider.GetUtcNow(),
+    };
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException pg && pg.SqlState == PostgresUniqueViolationSqlState;

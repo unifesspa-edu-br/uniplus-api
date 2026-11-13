@@ -56,45 +56,57 @@ public sealed class CursorEncoder
 
     public async Task<CursorDecodeResult> TryDecodeAsync(string token, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(token))
-            return CursorDecodeResult.Invalid();
-
-        byte[] ciphertext;
-        try
-        {
-            ciphertext = Base64Url.DecodeFromChars(token);
-        }
-        catch (FormatException)
-        {
-            return CursorDecodeResult.Invalid();
-        }
-
-        byte[] plaintext;
-        try
-        {
-            plaintext = await _encryption.DecryptAsync(_keyName, ciphertext, cancellationToken).ConfigureAwait(false);
-        }
-        catch (EncryptionFailureException)
-        {
-            return CursorDecodeResult.Invalid();
-        }
-
-        CursorPayload? payload;
-        try
-        {
-            payload = JsonSerializer.Deserialize<CursorPayload>(plaintext, PayloadJsonOptions);
-        }
-        catch (JsonException)
-        {
-            return CursorDecodeResult.Invalid();
-        }
+        byte[]? plaintext = await DecifrarAsync(token, cancellationToken).ConfigureAwait(false);
+        CursorPayload? payload = plaintext is null ? null : LerPayload(plaintext);
 
         if (payload is null || string.IsNullOrEmpty(payload.After) || string.IsNullOrEmpty(payload.ResourceTag))
             return CursorDecodeResult.Invalid();
 
-        if (payload.ExpiresAt <= _timeProvider.GetUtcNow())
-            return CursorDecodeResult.Expired(payload);
+        return payload.ExpiresAt <= _timeProvider.GetUtcNow()
+            ? CursorDecodeResult.Expired(payload)
+            : CursorDecodeResult.Success(payload);
+    }
 
-        return CursorDecodeResult.Success(payload);
+    private async Task<byte[]?> DecifrarAsync(string token, CancellationToken cancellationToken)
+    {
+        byte[]? ciphertext = DecodificarBase64Url(token);
+        if (ciphertext is null)
+            return null;
+
+        try
+        {
+            return await _encryption.DecryptAsync(_keyName, ciphertext, cancellationToken).ConfigureAwait(false);
+        }
+        catch (EncryptionFailureException)
+        {
+            return null;
+        }
+    }
+
+    private static byte[]? DecodificarBase64Url(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        try
+        {
+            return Base64Url.DecodeFromChars(token);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
+    private static CursorPayload? LerPayload(byte[] plaintext)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<CursorPayload>(plaintext, PayloadJsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }
