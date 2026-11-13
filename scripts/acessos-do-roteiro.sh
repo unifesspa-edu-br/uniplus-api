@@ -110,20 +110,34 @@ enviar_documento_do_perfil() {
         "$(jq -nc --arg etag "${etag//\"/}" '{etag: $etag}')" >/dev/null
 }
 
+# O segundo gestor aprova a versão depois do verificador. $1=perfil $2=versão $3=nome
+aprovar_versao_do_perfil() {
+    aguardar_documento_do_perfil "$1" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")"
+    como "a aprovação da versão do perfil '$3' por ${LISTA_DE_GESTORES[1]}" "$(token_de "${LISTA_DE_GESTORES[1]}" "$SENHA_GESTORES")" POST \
+        "/api/autorizacao/perfis/$1/versoes/$2/aprovacao" '{"etapa": "gestao_de_acessos"}' >/dev/null
+}
+
+# Retoma a versão pendente que uma execução interrompida deixou com o documento já enviado. $1=perfil $2=nome
+retomar_versao_pendente() {
+    local pendente
+    pendente=$(como "a leitura do perfil '$2'" "$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")" GET "/api/autorizacao/perfis/$1" \
+        | jq -c '.versaoPendente // empty')
+    case "$(jq -r '.situacaoDoDocumento // empty' <<< "$pendente")" in
+        em_verificacao | verificado) aprovar_versao_do_perfil "$1" "$(jq -r '.versaoId' <<< "$pendente")" "$2" ;;
+        *) fail "o perfil '$2' existe sem versão em vigor e sem documento enviado. Cancele a versão pendente na tela de perfis ou recrie a base." ;;
+    esac
+}
+
 # Cria o perfil e o põe em vigor; devolve o id. $1=nome $2=permissões (JSON)
 criar_perfil_do_roteiro() {
-    local nome="$1" permissoes="$2" criador aprovador envio perfil versao
+    local nome="$1" permissoes="$2" criador envio perfil
     criador=$(token_de "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES")
-    aprovador=$(token_de "${LISTA_DE_GESTORES[1]}" "$SENHA_GESTORES")
     envio=$(como "a criação do perfil '$nome' por ${LISTA_DE_GESTORES[0]}" "$criador" POST "/api/autorizacao/perfis" \
         "$(jq -nc --arg n "$nome" --argjson p "$permissoes" --argjson t "$(stat -c%s "$PDF_DO_PERFIL")" \
             '{nome: $n, descricao: "Permissões que o roteiro local de processo de teste usa.", permissoes: $p, protocolo: "ROTEIRO-LOCAL-0001/2026", tamanhoDoDocumento: $t}')")
     enviar_documento_do_perfil "$envio" "$criador"
     perfil=$(jq -r '.perfilId' <<< "$envio")
-    versao=$(jq -r '.versaoId' <<< "$envio")
-    aguardar_documento_do_perfil "$perfil" "$criador"
-    como "a aprovação da versão do perfil '$nome' por ${LISTA_DE_GESTORES[1]}" "$aprovador" POST \
-        "/api/autorizacao/perfis/$perfil/versoes/$versao/aprovacao" '{"etapa": "gestao_de_acessos"}' >/dev/null
+    aprovar_versao_do_perfil "$perfil" "$(jq -r '.versaoId' <<< "$envio")" "$nome"
     printf '%s\n' "$perfil"
 }
 
@@ -134,10 +148,11 @@ perfil_do_roteiro() {
         | jq -c --arg n "$nome" 'first(.[] | select(.nome == $n)) // empty')
     if [ -z "$listado" ]; then
         criar_perfil_do_roteiro "$nome" "$2"
-    elif jq -e '.ativo and .temVersaoVigente' <<< "$listado" >/dev/null; then
-        jq -r '.id' <<< "$listado"
+    elif ! jq -e '.ativo' <<< "$listado" >/dev/null; then
+        fail "o perfil '$nome' existe, mas está desativado. Reative-o na tela de perfis ou recrie a base."
     else
-        fail "o perfil '$nome' existe, mas não está ativo ou não tem versão em vigor. Decida a versão pendente na tela de perfis ou recrie a base."
+        jq -e '.temVersaoVigente' <<< "$listado" >/dev/null || retomar_versao_pendente "$(jq -r '.id' <<< "$listado")" "$nome"
+        jq -r '.id' <<< "$listado"
     fi
 }
 
@@ -176,6 +191,8 @@ garantir_perfil() {
     [ "${#LISTA_DE_GESTORES[@]}" -eq 2 ] || fail "GESTORES deve ter exatamente dois gestores de acessos (recebido: '$GESTORES')."
     log "Concedendo a $ADMIN_USER o perfil '$nome' $escopo"
     perfil=$(perfil_do_roteiro "$nome" "$permissoes")
+    # A espera pelo verificador pode passar da validade do token do executor.
+    TOKEN=$(token_de "$ADMIN_USER" "$ADMIN_PASS")
     pedir_e_aprovar "$perfil" "$unidade" "$nome"
     executor_tem_perfil "$nome" "$unidade" || fail "o pedido foi aprovado, mas GET /api/profile/me de $ADMIN_USER não mostra o perfil '$nome' $escopo."
     ok "perfil '$nome' concedido $escopo"
