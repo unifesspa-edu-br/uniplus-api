@@ -31,14 +31,17 @@ public sealed class RevogacaoDaConcessaoTests
     private readonly IPapelDoRepresentante _papel = Substitute.For<IPapelDoRepresentante>();
     private readonly IAutorizacaoUnitOfWork _unidade = Substitute.For<IAutorizacaoUnitOfWork>();
 
-    [Fact(DisplayName = "A revogação que o agregado recusa volta sem consultar o papel nem descartar")]
-    public async Task Aplicar_RevogacaoRecusada_NaoConfereNada()
+    // A conta do papel se lê antes de revogar, porque depois a designação já não está ativa; a leitura não grava nada, e
+    // a recusa do agregado prevalece sobre a do último Representante, que aqui também valeria.
+    [Fact(DisplayName = "A revogação que o agregado recusa devolve a recusa dele, mesmo com o papel já lido, sem descartar nem travar os gestores")]
+    public async Task Aplicar_RevogacaoRecusada_DevolveARecusaDoAgregado()
     {
         Concessao designacao = DesignacaoDoRepresentante.De(Isabella, null, Agora);
 
         Result resultado = await AplicarAsync(designacao, motivo: " ");
 
         resultado.Errors.Single().Error.Code.Should().Be(ConcessaoErrorCodes.MotivoInvalido);
+        await _papel.Received(1).HaOutroVigenteAsync(Isabella, Agora, Arg.Any<CancellationToken>());
         _unidade.DidNotReceive().DescartarAlteracoesNaoSalvas();
         await _concessoes.DidNotReceive().TravarGovernancaParaEscritaAsync(Arg.Any<CancellationToken>());
     }
