@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Cobertura de <see cref="RegraRecursoFase.Criar"/>: as invariantes puras que a entidade
 /// prova sozinha — a referência por símbolo e as unidades declaráveis no prazo de
 /// interposição (UNI-REQ-0113). A resolução contra o catálogo vivo (existe, TipoRegra
-/// correto, hash bate) é do handler — ver <c>DefinirCronogramaFasesCommandHandlerTests</c>;
+/// correto, hash bate) é do handler — ver <c>DefinirCronogramaFasesAncoraDoRecursoTests</c>;
 /// a exigência da convenção de contagem é invariante do processo, não desta entidade.
 /// </summary>
 public sealed class RegraRecursoFaseTests

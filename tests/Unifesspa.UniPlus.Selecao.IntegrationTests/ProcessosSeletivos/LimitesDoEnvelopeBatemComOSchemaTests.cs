@@ -78,7 +78,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // media faseCodigo contra o teto do NOME da etapa, e isso passou porque aquele teto
         // batia com a coluna do nome — a tabela confere constante contra coluna, nunca que o
         // call site pegou a constante da coluna que vai receber o valor. Quem prende esse
-        // segundo erro é o teste de recusa por campo, em EnvelopeCodecRecusaTests.
+        // segundo erro é o teste de recusa por campo, em EnvelopeCodecRecusaEtapasTests.
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(EtapaProcesso), nameof(EtapaProcesso.FaseCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaEtapa), nameof(ProdutoDaEtapa.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Codigo)),

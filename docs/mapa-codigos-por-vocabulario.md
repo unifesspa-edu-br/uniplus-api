@@ -228,7 +228,7 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Selecao.IntegrationTests/ProcessosSeletivos/ProdutosDaFaseReconciliacaoPersistenciaTests.cs` | ato (cadastro) | 43,63,64,81,106,124,125,160,161,175 | manter |
 | `Selecao.IntegrationTests/ProcessosSeletivos/ProdutosDaFaseReconciliacaoPersistenciaTests.cs` | fase-HOMOLOGACAO | 200 | renomear |
 | `Selecao.IntegrationTests/ProcessosSeletivos/SemLiteralDeTipoDeAtoTests.cs` | ato (cadastro) | 157 | manter |
-| `Selecao.IntegrationTests/ProcessosSeletivos/EnvelopeCodecRecusaTests.cs` | finalidade-HABILITACAO | 2030 | manter (ponto em aberto) |
+| `Selecao.IntegrationTests/ProcessosSeletivos/EnvelopeCodecRecusaDerivacaoETiposDeAtoTests.cs` | finalidade-HABILITACAO | 87 | manter (ponto em aberto) |
 | `Selecao.IntegrationTests/ProcessosSeletivos/EnvelopeCodecRoundTripTests.cs` | finalidade-HABILITACAO | 98 | manter (ponto em aberto) |
 | `Selecao.IntegrationTests/Outbox/Cascading/DadosDoAtoDeTeste.cs` | ato (cadastro) | 15 | manter |
 | `Selecao.IntegrationTests/Outbox/Cascading/CronogramaFasesJanelaComOffsetEndpointTests.cs` | fase-HOMOLOGACAO | 65 | renomear |
