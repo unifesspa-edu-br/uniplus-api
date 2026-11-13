@@ -7,6 +7,8 @@ using DotNet.Testcontainers.Containers;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Host.IntegrationTests.Email;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -23,18 +25,11 @@ public sealed class MonolitoDaInstalacaoFixture : MonolitoPostgresFixtureBase<Mo
     public const string BucketDeEnvio = "uniplus-candidato-envio";
     public const string BucketDefinitivo = "uniplus-candidato-definitivo";
 
-    private const ushort PortaSmtp = 1025;
-    private const ushort PortaHttp = 8025;
-
     private readonly MinioContainerFixture _minio = new();
 
-    private readonly IContainer _mailpit = new ContainerBuilder("axllent/mailpit:v1.27")
-        .WithPortBinding(PortaSmtp, true)
-        .WithPortBinding(PortaHttp, true)
-        .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(PortaHttp).ForPath("/readyz")))
-        .Build();
+    private readonly IContainer _mailpit = MailpitDeTeste.Criar();
 
-    public Uri ApiDoMailpit => new($"http://{_mailpit.Hostname}:{_mailpit.GetMappedPublicPort(PortaHttp)}");
+    public Uri ApiDoMailpit => new($"http://{_mailpit.Hostname}:{_mailpit.GetMappedPublicPort(MailpitDeTeste.PortaHttp)}");
 
     public string EnderecoDoMinio => _minio.Endpoint;
 
@@ -63,13 +58,7 @@ public sealed class MonolitoDaInstalacaoFixture : MonolitoPostgresFixtureBase<Mo
         await _provisionamento.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (_bucketsProvisionados)
-            {
-                return;
-            }
-
-            await CriarBucketsAsync().ConfigureAwait(false);
-            _bucketsProvisionados = true;
+            _bucketsProvisionados = _bucketsProvisionados || await CriarBucketsAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -77,7 +66,7 @@ public sealed class MonolitoDaInstalacaoFixture : MonolitoPostgresFixtureBase<Mo
         }
     }
 
-    private async Task CriarBucketsAsync()
+    private async Task<bool> CriarBucketsAsync()
     {
         // A credencial geral cria o bucket; a da API, que só opera sobre os objetos, nunca o cria.
         using IServiceScope scope = Factory.Services.CreateScope();
@@ -88,6 +77,8 @@ public sealed class MonolitoDaInstalacaoFixture : MonolitoPostgresFixtureBase<Mo
             await storage.UploadAsync(bucket, "provisionamento", vazio, "application/octet-stream").ConfigureAwait(false);
             await storage.RemoverAsync(bucket, "provisionamento").ConfigureAwait(false);
         }
+
+        return true;
     }
 
     protected override async Task EncerrarDependenciasAsync()
@@ -109,7 +100,7 @@ public sealed class MonolitoDaInstalacaoFixture : MonolitoPostgresFixtureBase<Mo
     }
 
     protected override MonolitoDaInstalacaoApiFactory CreateFactory(string connectionString) =>
-        new(connectionString, _mailpit.Hostname, _mailpit.GetMappedPublicPort(PortaSmtp), _minio.Endpoint);
+        new(connectionString, _mailpit.Hostname, _mailpit.GetMappedPublicPort(MailpitDeTeste.PortaSmtp), _minio.Endpoint);
 }
 
 [SuppressMessage(
