@@ -8,6 +8,8 @@ using Cryptography;
 
 using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>
 /// Codifica e decodifica cursores opacos AES-GCM (ADR-0026): JSON do
 /// <see cref="CursorPayload"/> cifrado via <see cref="IUniPlusEncryptionService"/>
@@ -49,7 +51,8 @@ public sealed class CursorEncoder
     {
         ArgumentNullException.ThrowIfNull(payload);
 
-        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(payload, PayloadJsonOptions);
+        byte[] plaintext = JsonSerializer.SerializeToUtf8Bytes(
+            payload with { ExpiresAt = payload.ExpiresAt.TruncadoEmMicrossegundos() }, PayloadJsonOptions);
         byte[] ciphertext = await _encryption.EncryptAsync(_keyName, plaintext, cancellationToken).ConfigureAwait(false);
         return Base64Url.EncodeToString(ciphertext);
     }
