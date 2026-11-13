@@ -33,10 +33,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// permanece no Program.cs. Mantém o módulo extraível: um serviço próprio
 /// chamaria este mesmo método.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Design",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelo composition root (host do monólito modular) fora deste assembly.")]
 public static class SelecaoModuleRegistration
 {
     public static IServiceCollection AddSelecaoModule(
@@ -46,59 +42,73 @@ public static class SelecaoModuleRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers
-        // Uni+ (info, operation, schema). Spec exposto em /openapi/selecao.json.
+        RegistrarContratoHttp(services, configuration);
+        services.AddIdempotency<SelecaoDbContext, SelecaoApiAssemblyMarker>(configuration);
+        RegistrarPermissoesEConferenciaDoDto(services);
+        RegistrarAplicacaoEPersistencia(services);
+        RegistrarRemocaoDeArquivosPendentes(services, configuration);
+        RegistrarReconciliacaoDaVerificacao(services, configuration);
+        RegistrarAtosDoProcesso(services, configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// OpenAPI 3.1 (ADR-0030): documento nomeado por módulo, com os transformers Uni+, exposto em
+    /// <c>/openapi/selecao.json</c>. Os erros de domínio do módulo são consumidos pelo <c>AddDomainErrorMapper</c>,
+    /// registrado uma vez no host via <c>IEnumerable&lt;IDomainErrorRegistration&gt;</c>. O HATEOAS Level 1 (ADR-0029)
+    /// tem um builder de <c>_links</c> por recurso, singleton porque encapsula só um <c>LinkGenerator</c> (também
+    /// singleton) e é função pura.
+    /// </summary>
+    private static void RegistrarContratoHttp(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddUniPlusOpenApi(SelecaoApiAssemblyMarker.ModuleName, configuration);
-
-        // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
-        // uma vez no host via IEnumerable<IDomainErrorRegistration>).
         services.AddSingleton<IDomainErrorRegistration, SelecaoDomainErrorRegistration>();
-
-        // HATEOAS Level 1 (ADR-0029) — builder de _links por recurso. Singleton
-        // porque encapsula apenas um LinkGenerator (também singleton); função pura.
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<MotivoDeDecisaoDto>, MotivoDeDecisaoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<RegraCatalogoDto>, RegraCatalogoLinksBuilder>();
+    }
 
-        // Idempotency-Key (ADR-0027) — store EF adjacente ao SelecaoDbContext, filter
-        // global que se ativa apenas em endpoints com [RequiresIdempotencyKey].
-        services.AddIdempotency<SelecaoDbContext, SelecaoApiAssemblyMarker>(configuration);
-
-        // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
-        // conferido aqui, na subida.
+    /// <summary>
+    /// O enum de permissões do módulo entra no catálogo da aplicação e é conferido na subida (ADR-0151). O DTO
+    /// administrativo declara a classificação de cada propriedade lida da coluna, e a subida confere que nenhuma fica
+    /// abaixo da classificação do modelo (ADR-0153).
+    /// </summary>
+    private static void RegistrarPermissoesEConferenciaDoDto(IServiceCollection services)
+    {
         services.AddCatalogoDePermissoes<PermissaoSelecao>();
-
-        // O DTO administrativo declara a classificação de cada propriedade lida da coluna; a subida confere
-        // que nenhuma fica abaixo da classificação do modelo (ADR-0153).
         services.TryAddEnumerable(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService, ConferenciaDoDtoAdministrativoNaSubida>());
+    }
 
+    /// <summary>
+    /// O <c>AddSelecaoInfrastructure</c> resolve a connection string pelo <c>IConfiguration</c> injetado no factory do
+    /// <c>AddDbContext</c>, simétrico ao <c>UseWolverineOutboxCascading</c>, que também lê tarde: test hosts podem
+    /// sobrescrever por env var ou <c>InMemoryCollection</c> sem re-registrar o DbContext. As migrations EF Core do
+    /// módulo rodam no <c>StartAsync</c> do host por <c>IHostedService</c>, filtrável pelas test factories que sobem o
+    /// pipeline HTTP sem Postgres real (ver <c>ApiFactoryBase</c>).
+    /// </summary>
+    /// <remarks>
+    /// Invariante: este registro precede <c>UseWolverineOutboxCascading</c> e <c>AddWolverineMessaging</c> no
+    /// Program.cs. Com <c>HostOptions.ServicesStartConcurrently = false</c> (padrão), os hosted services iniciam em
+    /// sequência na ordem de registro, e o <c>MigrationHostedService</c> aplica o schema EF do domínio ANTES de o
+    /// <c>WolverineRuntime</c> aceitar o primeiro envelope cascading, evitando 42P01 em handlers que tocam tabelas do
+    /// módulo. O <c>MigrationBeforeWolverineRuntimeOrderTests</c> trava a ordem nos três entry points.
+    /// </remarks>
+    private static void RegistrarAplicacaoEPersistencia(IServiceCollection services)
+    {
         services.AddSelecaoApplication();
-        // AddSelecaoInfrastructure resolve a connection string via IConfiguration
-        // injetada no factory do AddDbContext (issue #204) — simetria com
-        // UseWolverineOutboxCascading que já fazia leitura lazy. Test hosts
-        // (CascadingApiFactory) podem sobrescrever via env var ou InMemoryCollection
-        // sem precisar re-registrar o DbContext.
         services.AddSelecaoInfrastructure();
-
-        // Migrations EF Core do módulo Selecao aplicadas no host StartAsync via
-        // IHostedService (issue #344). Como hosted service, o registro é filtrável
-        // por test factories que sobem o pipeline HTTP sem Postgres real (ver
-        // ApiFactoryBase). Idempotente.
-        //
-        // INVARIANTE (#419): este registro precede UseWolverineOutboxCascading +
-        // AddWolverineMessaging no Program.cs. HostOptions.ServicesStartConcurrently=false
-        // (default) garante que IHostedService inicia sequencialmente na ordem de
-        // registro — então MigrationHostedService aplica o schema EF do domínio ANTES
-        // do WolverineRuntime aceitar o primeiro envelope cascading, evitando 42P01 em
-        // handlers que tocam tabelas do módulo. Fitness test em
-        // tests/Unifesspa.UniPlus.ArchTests/Hosting/MigrationBeforeWolverineRuntimeOrderTests
-        // trava regressão de ordem nos 3 entry points (Selecao/Ingresso/Portal).
         services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
+    }
 
-        // Rotina periódica que remove os envios de arquivo pendentes vencidos. Registrada depois
-        // das migrations e com a primeira execução um intervalo após a partida; os hosts de teste
-        // a removem pelo tipo base (ApiFactoryBase). A seção é opcional — sem ela vale o padrão.
+    /// <summary>
+    /// Rotina periódica que remove os envios de arquivo pendentes vencidos. Registrada depois das migrations e com a
+    /// primeira execução um intervalo após a partida; os hosts de teste a removem pelo tipo base (<c>ApiFactoryBase</c>).
+    /// A seção é opcional: sem ela vale o padrão.
+    /// </summary>
+    private static void RegistrarRemocaoDeArquivosPendentes(IServiceCollection services, IConfiguration configuration)
+    {
         services.TryAddSingleton(TimeProvider.System);
         services.AddOptions<RemocaoDeArquivosPendentesOptions>()
             .Bind(configuration.GetSection(RemocaoDeArquivosPendentesOptions.SectionName))
@@ -108,7 +118,10 @@ public static class SelecaoModuleRegistration
                 $"{RemocaoDeArquivosPendentesOptions.SectionName}:Intervalo deve ficar entre {RemocaoDeArquivosPendentesOptions.IntervaloMinimo} e {RemocaoDeArquivosPendentesOptions.IntervaloMaximo}.")
             .ValidateOnStart();
         services.AddHostedService<RemocaoDeArquivosPendentesVencidosHostedService>();
+    }
 
+    private static void RegistrarReconciliacaoDaVerificacao(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddOptions<ReconciliacaoDaVerificacaoOptions>()
             .Bind(configuration.GetSection(ReconciliacaoDaVerificacaoOptions.SectionName))
             .Validate(
@@ -119,14 +132,15 @@ public static class SelecaoModuleRegistration
                 $"{ReconciliacaoDaVerificacaoOptions.SectionName}: Prazo de pelo menos {ReconciliacaoDaVerificacaoOptions.PrazoMinimo} e PrazoMaximo não menor que ele, Intervalo de pelo menos {ReconciliacaoDaVerificacaoOptions.IntervaloMinimo} e TamanhoDoLote positivo.")
             .ValidateOnStart();
         services.AddHostedService<ReconciliacaoDaVerificacaoHostedService>();
+    }
 
+    private static void RegistrarAtosDoProcesso(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddOptions<AtosDoProcessoOptions>()
             .Bind(configuration.GetSection(AtosDoProcessoOptions.SectionName))
             .Validate(
                 static options => options.LimiarDePendencia >= AtosDoProcessoOptions.LimiarMinimo,
                 $"{AtosDoProcessoOptions.SectionName}:LimiarDePendencia deve ser de pelo menos {AtosDoProcessoOptions.LimiarMinimo}.")
             .ValidateOnStart();
-
-        return services;
     }
 }
