@@ -846,6 +846,7 @@ public void CalcularNotaFinal_ComBonusRegional_DeveAplicarBonusSobreTotal()
 - Usar **Bogus** para dados de teste (nomes, CPFs, endereços fictícios)
 - Usar **Testcontainers** para testes de integração (PostgreSQL, Redis, Kafka)
 - Nunca usar dados reais de candidatos em testes
+- Testes de arquitetura usam só regras declarativas do **ArchUnitNET** (e reflexão sobre assinaturas onde ele não alcança); nada de regex sobre o fonte, leitor de IL próprio ou árvore do Roslyn no teste — ver [orientação para revisão](orientacao-para-revisao.md), que também lista o que é conferido só na revisão
 
 ---
 
@@ -926,7 +927,7 @@ Complementa os Quality gates acima (verificações de CI automáticas) com higie
 Todo PR passa por revisão humana. O revisor verifica:
 
 1. **Segurança** — PII, injection, OWASP, LGPD
-2. **Arquitetura** — Clean Architecture, SOLID, acoplamento entre módulos
+2. **Arquitetura** — Clean Architecture, SOLID, acoplamento entre módulos; a técnica dos testes de arquitetura e os itens da [orientação para revisão](orientacao-para-revisao.md)
 3. **Qualidade** — legibilidade, complexidade, duplicação e as [métricas de qualidade](#métricas-de-qualidade), pelos avisos dos analisadores
 4. **Testes** — cobertura, casos de borda, assertions significativas
 5. **Domínio** — regras de negócio corretas, conformidade legal
