@@ -166,6 +166,14 @@ public abstract class PedidosDeConcessaoTestBase
         HttpClient solicitante, Guid perfilId, Guid? unidadeId, string? emailDoBeneficiario, string? justificativa = Justificativa) =>
         EnviarAsync(solicitante, HttpMethod.Post, Rota, new { beneficiarioEmail = emailDoBeneficiario, perfilId, unidadeId, justificativa });
 
+    /// <summary>
+    /// Revoga a concessão pelo endpoint, com o e-mail que confirma o beneficiário; o padrão é o que o apoio dos testes
+    /// grava nas concessões semeadas.
+    /// </summary>
+    internal static Task<HttpResponseMessage> RevogarAsync(
+        HttpClient cliente, Guid concessaoId, string motivo, string confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste) =>
+        EnviarAsync(cliente, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo, confirmacaoEmail });
+
     internal static async Task<Guid[]> ListarFilaAsync(HttpClient client, string fila, string? situacao = null)
     {
         string url = $"{Rota}?fila={fila}" + (situacao is null ? string.Empty : $"&situacao={situacao}");

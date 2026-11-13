@@ -16,6 +16,9 @@ using Wolverine.Tracking;
 /// <summary>Montagens comuns às suítes da aprovação, da remoção e dos avisos da versão do perfil pelo host real.</summary>
 public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTestBase
 {
+    /// <summary>O motivo das revogações feitas pelo endpoint nas suítes da janela e da reclassificação.</summary>
+    private protected const string MotivoDaRevogacao = "A pessoa deixou a função.";
+
     private protected AprovacaoDaVersaoNoHostTestBase(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
     {

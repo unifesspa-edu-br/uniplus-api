@@ -32,7 +32,6 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
 {
     private const string Analisar = "teste:atendimento:analisar";
     private const string Laudos = "teste:laudos:consultar";
-    private const string RotaDasConcessoes = "/api/autorizacao/concessoes";
     private const string MotivoDaRevogacao = "Revogação concorrente com a troca de versão.";
 
     public CorridasDaTrocaDeVersaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
@@ -45,8 +44,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     {
         (Guid perfil, Guid pedido) = await PedidoDoGestorAsync(Analisar, Laudos);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        await using TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar]);
+        await using TransacaoRetidaDeTeste troca = await TrocaRetidaAsync(perfil, Analisar);
 
         Task<HttpResponseMessage> aprovacao = EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes");
         await troca.AguardarBloqueioAsync();
@@ -64,8 +62,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     {
         (Guid perfil, Guid pedido) = await PedidoDoGestorAsync(Analisar);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        await using TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar, Laudos]);
+        await using TransacaoRetidaDeTeste troca = await TrocaRetidaAsync(perfil, Analisar, Laudos);
 
         Task<HttpResponseMessage> aprovacao = EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes");
         await troca.AguardarBloqueioAsync();
@@ -99,8 +96,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     {
         (Guid perfil, Guid unidade) = await PerfilEUnidadeAsync(Analisar);
         using HttpClient betina = Cliente(Betina);
-        await using TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar, Laudos]);
+        await using TransacaoRetidaDeTeste troca = await TrocaRetidaAsync(perfil, Analisar, Laudos);
 
         Task<HttpResponseMessage> criacao = CriarBrutoAsync(betina, perfil, unidade, null);
         await troca.AguardarBloqueioAsync();
@@ -136,10 +132,9 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     {
         (Guid perfil, Guid concessao) = await PerfilComConcessaoAsync();
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, Administrar);
-        await using TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar]);
+        await using TransacaoRetidaDeTeste troca = await TrocaRetidaAsync(perfil, Analisar);
 
-        Task<HttpResponseMessage> revogacao = RevogarPeloEndpointAsync(diogo, concessao);
+        Task<HttpResponseMessage> revogacao = RevogarAsync(diogo, concessao, MotivoDaRevogacao);
         await troca.AguardarBloqueioAsync();
         await troca.ConfirmarAsync();
 
@@ -177,12 +172,14 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         return (perfil, concessao);
     }
 
-    private static Task<HttpResponseMessage> RevogarPeloEndpointAsync(HttpClient cliente, Guid concessaoId) =>
-        EnviarAsync(
-            cliente,
-            HttpMethod.Post,
-            $"{RotaDasConcessoes}/{concessaoId}/revogacao",
-            new { motivo = MotivoDaRevogacao, confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
+    // A troca da composição fica parada na transação retida até o teste confirmar, segurando a trava do perfil.
+    private async Task<TransacaoRetidaDeTeste> TrocaRetidaAsync(Guid perfil, params string[] codigos)
+    {
+        TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
+        await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, codigos);
+
+        return troca;
+    }
 
     private static async Task RevogarNaTransacaoAsync(IServiceProvider servicos, Guid concessaoId)
     {

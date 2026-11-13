@@ -82,8 +82,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         Guid concessao = (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().Id;
         using HttpClient cecilia = await EncarregadaAsync();
 
-        using HttpResponseMessage resposta = await EnviarAsync(
-            cecilia, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessao}/revogacao", new { motivo = "Teste.", confirmacaoEmail = Leandro.Email }, Guid.NewGuid().ToString());
+        using HttpResponseMessage resposta = await RevogarAsync(cecilia, concessao, "Teste.", Leandro.Email);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().RevogadaEm.Should().BeNull();
