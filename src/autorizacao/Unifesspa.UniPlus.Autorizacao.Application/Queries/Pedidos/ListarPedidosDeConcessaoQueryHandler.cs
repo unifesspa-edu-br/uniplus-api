@@ -47,15 +47,15 @@ public static class ListarPedidosDeConcessaoQueryHandler
 
     /// <summary>
     /// A decisão permitida que governa a fila pedida. A lista de quem pergunta não exige permissão: é governada pela
-    /// leitura de quem é parte, nula sem a consulta dos pedidos. A fila recusada responde 403 e a identidade incompleta, 401.
+    /// leitura de quem é parte, nula sem a consulta dos pedidos. A fila recusada responde 403 e a identidade incompleta, 401,
+    /// também na lista de quem pergunta.
     /// </summary>
     private static async Task<Result<DecisaoPermitida?>> AutorizarFilaAsync(
         FilaDePedidos fila, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         if (fila == FilaDePedidos.Meus)
         {
-            return Result<DecisaoPermitida?>.Success(
-                await AcessoDoAprovador.GovernanteDaLeituraDaParteAsync(verificador, pedidoId: null, cancellationToken).ConfigureAwait(false));
+            return await AcessoDoAprovador.GovernanteDaLeituraDaParteAsync(verificador, pedidoId: null, cancellationToken).ConfigureAwait(false);
         }
 
         AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Fila, pedidoId: null, cancellationToken).ConfigureAwait(false);

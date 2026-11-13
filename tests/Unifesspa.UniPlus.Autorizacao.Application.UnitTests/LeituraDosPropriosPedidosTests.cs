@@ -4,12 +4,14 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -79,8 +81,46 @@ public sealed class LeituraDosPropriosPedidosTests
         verificador.Gravados.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Na fila dos próprios pedidos, a decisão sem sujeito recusa pela identidade incompleta, sem registro e sem pedido")]
+    public async Task FilaMeus_SemSujeito_IdentidadeIncompletaSemRegistro()
+    {
+        IVerificadorDeAcesso verificador = SemSujeitoNaDecisao();
+
+        Result<ListarPedidosDeConcessaoResult> pagina = await ListarMeusAsync(Cecilia, [Pedido(Cecilia)], verificador);
+
+        (pagina.Error?.Code, pagina.Value).Should().Be((PedidoErrorCodes.IdentidadeIncompleta, (ListarPedidosDeConcessaoResult?)null));
+        await NaoGravouAsync(verificador);
+    }
+
+    [Fact(DisplayName = "No pedido em que é parte, a decisão sem sujeito recusa pela identidade incompleta, sem registro")]
+    public async Task Parte_SemSujeito_IdentidadeIncompletaSemRegistro()
+    {
+        IVerificadorDeAcesso verificador = SemSujeitoNaDecisao();
+
+        DomainError? recusa = await VisibilidadeDoPedido.ConferirAsync(Pedido(Cecilia), Cecilia, verificador, CancellationToken.None);
+
+        recusa.Should().NotBeNull("sem sujeito não se sabe se a leitura exige registro, e o pedido não sai");
+        recusa!.Code.Should().Be(PedidoErrorCodes.IdentidadeIncompleta);
+        await NaoGravouAsync(verificador);
+    }
+
+    // O token identifica a pessoa (emissor e sub), mas a decisão não tem sujeito, como no token sem jti.
+    private static IVerificadorDeAcesso SemSujeitoNaDecisao()
+    {
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.AvaliarAsync(default!, default, default).ReturnsForAnyArgs(Task.FromResult<DecisaoDeAcesso>(SemSujeito.Instancia));
+
+        return verificador;
+    }
+
+    private static async Task NaoGravouAsync(IVerificadorDeAcesso verificador)
+    {
+        await verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
+        await verificador.DidNotReceiveWithAnyArgs().RegistrarParaCadaAsync(default!, default!, default!, default, default);
+    }
+
     private static Task<Result<ListarPedidosDeConcessaoResult>> ListarMeusAsync(
-        PessoaNoToken pessoa, PedidoDeConcessao[] pedidos, VerificadorDeTeste verificador)
+        PessoaNoToken pessoa, PedidoDeConcessao[] pedidos, IVerificadorDeAcesso verificador)
     {
         IPedidoDeConcessaoRepository repository = Substitute.For<IPedidoDeConcessaoRepository>();
         repository.ListarPaginadoAsync(default!, default, default, default, default, default)

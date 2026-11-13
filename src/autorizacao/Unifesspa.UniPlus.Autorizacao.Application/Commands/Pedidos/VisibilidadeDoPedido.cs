@@ -26,27 +26,23 @@ internal static class VisibilidadeDoPedido
     /// permissão que a deu ou, se nenhuma deu, pelas negativas.
     /// </summary>
     public static async Task<DomainError?> ConferirAsync(
-        PedidoDeConcessao pedido, PessoaNoToken pessoa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
-    {
-        if (pedido.EhParte(pessoa))
-        {
-            await RegistrarLeituraDaParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
-            return null;
-        }
-
-        return await ConferirQuemNaoEParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
-    }
+        PedidoDeConcessao pedido, PessoaNoToken pessoa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        pedido.EhParte(pessoa)
+            ? await ConferirParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false)
+            : await ConferirQuemNaoEParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
 
     // Sem a consulta dos pedidos, a parte lê por titularidade e nada se grava (issue #2389).
-    private static async Task RegistrarLeituraDaParteAsync(
+    private static async Task<DomainError?> ConferirParteAsync(
         PedidoDeConcessao pedido, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
-        DecisaoPermitida? governante = await AcessoDoAprovador
+        Result<DecisaoPermitida?> governante = await AcessoDoAprovador
             .GovernanteDaLeituraDaParteAsync(verificador, pedido.Id, cancellationToken).ConfigureAwait(false);
-        if (governante is not null)
+        if (governante is { IsSuccess: true, Value: { } permitida })
         {
-            await AcessoDoAprovador.RegistrarAsync(verificador, governante, cancellationToken).ConfigureAwait(false);
+            await AcessoDoAprovador.RegistrarAsync(verificador, permitida, cancellationToken).ConfigureAwait(false);
         }
+
+        return governante.Error;
     }
 
     private static async Task<DomainError?> ConferirQuemNaoEParteAsync(
