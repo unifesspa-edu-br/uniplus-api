@@ -29,6 +29,16 @@ public static class GeoClientRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        RegistrarOpcoes(services);
+        services.TryAddSingleton(TimeProvider.System);
+        RegistrarClienteDeAutenticacao(services);
+        RegistrarClienteDeConsulta(services);
+
+        return services;
+    }
+
+    private static void RegistrarOpcoes(IServiceCollection services)
+    {
         services.AddOptions<GeoOptions>()
             .BindConfiguration(GeoOptions.SectionName)
             .ValidateDataAnnotations()
@@ -36,13 +46,6 @@ public static class GeoClientRegistration
                 static opcoes => EnderecoHttpAbsoluto(opcoes.BaseUrl),
                 "Geo:BaseUrl precisa ser uma URI absoluta http ou https (ex.: http://geo-api:8080).")
             .ValidateOnStart();
-
-        services.TryAddSingleton(TimeProvider.System);
-
-        RegistrarClienteDeAutenticacao(services);
-        RegistrarClienteDeConsulta(services);
-
-        return services;
     }
 
     private static void RegistrarClienteDeAutenticacao(IServiceCollection services)
@@ -56,21 +59,22 @@ public static class GeoClientRegistration
         services.TryAddSingleton<GeoTokenProvider>();
     }
 
+    /// <summary>
+    /// Cliente gerado em tempo de compilação (mesmo padrão de <c>SigaaClientRegistration</c>): a variante que monta a
+    /// requisição por reflexão exige um pacote à parte e falha só na primeira chamada, em vez de na compilação.
+    /// Resiliência por fora e autenticação por dentro: cada nova tentativa reentra na autenticação e relê o token
+    /// vigente (mesma ordem de <c>SigaaClientRegistration</c>), e por isso as duas últimas chamadas não são encadeadas.
+    /// </summary>
     private static void RegistrarClienteDeConsulta(IServiceCollection services)
     {
         services.AddTransient<GeoAuthenticationHandler>();
         services.AddScoped<IConferenciaEnderecoGeo, ConferenciaEnderecoGeo>();
 
-        // Cliente gerado em tempo de compilação (mesmo padrão de SigaaClientRegistration) — a
-        // variante que monta a requisição por reflexão exige um pacote à parte e falha só na
-        // primeira chamada, em vez de na compilação.
         IHttpClientBuilder cliente = services.AddRefitGeneratedClient<IGeoApi>()
             .ConfigureHttpClient(ConfigurarEndereco)
             .ConfigurePrimaryHttpMessageHandler(SemSeguirRedirecionamento)
             .RedactLoggedHeaders(["Authorization"]);
 
-        // Resiliência por fora, autenticação por dentro: cada nova tentativa reentra na
-        // autenticação e relê o token vigente (mesma ordem de SigaaClientRegistration).
         cliente.AddResilienceHandler(PoliticaDeConsulta, ConfigurarResilienciaDaConsulta);
         cliente.AddHttpMessageHandler<GeoAuthenticationHandler>();
     }

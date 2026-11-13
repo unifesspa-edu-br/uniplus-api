@@ -46,27 +46,31 @@ public static class SigaaClientRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        IConfigurationSection secao = configuration.GetSection(SigaaOptions.SectionName);
+        return EstaConfigurado(configuration) ? RegistrarAcessoAoSigaa(services, configuration) : services;
+    }
 
-        if (string.IsNullOrWhiteSpace(secao[nameof(SigaaOptions.BaseUrl)]))
-        {
-            return services;
-        }
+    private static bool EstaConfigurado(IConfiguration configuration) =>
+        !string.IsNullOrWhiteSpace(configuration.GetSection(SigaaOptions.SectionName)[nameof(SigaaOptions.BaseUrl)]);
 
-        services.AddOptions<SigaaOptions>()
-            .Bind(secao)
-            .ValidateOnStart();
-
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IValidateOptions<SigaaOptions>, SigaaOptionsValidator>());
-
+    private static IServiceCollection RegistrarAcessoAoSigaa(IServiceCollection services, IConfiguration configuration)
+    {
+        RegistrarOpcoes(services, configuration);
         services.TryAddSingleton(TimeProvider.System);
-
         RegistrarClienteDeAutenticacao(services);
         RegistrarClienteDeConsulta(services);
         RegistrarSincronizacao(services, configuration);
 
         return services;
+    }
+
+    private static void RegistrarOpcoes(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<SigaaOptions>()
+            .Bind(configuration.GetSection(SigaaOptions.SectionName))
+            .ValidateOnStart();
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<SigaaOptions>, SigaaOptionsValidator>());
     }
 
     /// <summary>
@@ -106,31 +110,29 @@ public static class SigaaClientRegistration
     private static HttpMessageHandler SemSeguirRedirecionamento() =>
         new HttpClientHandler { AllowAutoRedirect = false };
 
+    /// <summary>
+    /// Usa o cliente gerado em tempo de compilação: a variante que monta a requisição por reflexão exige um pacote à
+    /// parte e resolve em tempo de execução o que o gerador já resolveu na compilação, falhando só na primeira chamada.
+    /// O cabeçalho de autorização é omitido do log: o registrador do cliente HTTP grava todos os cabeçalhos no nível
+    /// mais detalhado, e sem a omissão o token sai inteiro para o log assim que alguém aumentar o detalhamento.
+    /// </summary>
+    /// <remarks>
+    /// A ordem das duas últimas chamadas é a decisão de desenho mais importante deste registro, e é por isso que elas
+    /// não estão encadeadas: a cadeia de envio é montada de fora para dentro na ordem em que os manipuladores são
+    /// adicionados. Resiliência primeiro, portanto por fora; autenticação depois, por dentro. Assim cada nova tentativa
+    /// reentra na autenticação e relê o token vigente, em vez de reenviar N vezes um cabeçalho carimbado uma única vez
+    /// com um token vencido.
+    /// </remarks>
     private static void RegistrarClienteDeConsulta(IServiceCollection services)
     {
         services.AddTransient<SigaaAuthenticationHandler>();
         services.AddScoped<ISigaaVinculoDiscenteClient, SigaaVinculoDiscenteClient>();
 
-        // Usa o cliente gerado em tempo de compilação. A variante que monta a requisição
-        // por reflexão exige um pacote à parte e resolve em tempo de execução o que o
-        // gerador já resolveu na compilação — inclusive falhando só quando a primeira
-        // chamada acontece, em vez de na compilação.
         IHttpClientBuilder cliente = services.AddRefitGeneratedClient<ISigaaVinculoDiscenteApi>()
             .ConfigureHttpClient(ConfigurarEndereco)
             .ConfigurePrimaryHttpMessageHandler(SemSeguirRedirecionamento)
-
-            // O cabeçalho de autorização é omitido do log. O registrador do próprio
-            // cliente HTTP grava todos os cabeçalhos no nível mais detalhado e não
-            // esconde nada por conta própria — sem esta linha, o token sai inteiro para o
-            // log assim que alguém aumentar o detalhamento para investigar.
             .RedactLoggedHeaders(["Authorization"]);
 
-        // A ordem destas duas chamadas é a decisão de desenho mais importante deste
-        // registro, e é por isso que elas não estão encadeadas: a cadeia de envio é
-        // montada de fora para dentro na ordem em que os manipuladores são adicionados.
-        // Resiliência primeiro, portanto por fora; autenticação depois, por dentro. Assim
-        // cada nova tentativa reentra na autenticação e relê o token vigente, em vez de
-        // reenviar N vezes um cabeçalho carimbado uma única vez com um token vencido.
         cliente.AddResilienceHandler(PoliticaDeConsulta, ConfigurarResilienciaDaConsulta);
         cliente.AddHttpMessageHandler<SigaaAuthenticationHandler>();
     }
@@ -159,16 +161,16 @@ public static class SigaaClientRegistration
         services.AddScoped<OrquestradorDeSincronizacao>();
     }
 
+    /// <summary>
+    /// O tempo limite do próprio cliente envolve a cadeia inteira, retentativas incluídas. Precisa de folga sobre o
+    /// limite total da política: se fosse igual ou menor, o cancelamento observado viria daqui e o diagnóstico
+    /// apontaria o cliente quando a causa é a política.
+    /// </summary>
     private static void ConfigurarEndereco(IServiceProvider provedor, HttpClient cliente)
     {
         SigaaOptions opcoes = provedor.GetRequiredService<IOptions<SigaaOptions>>().Value;
 
         cliente.BaseAddress = new Uri(opcoes.BaseUrl, UriKind.Absolute);
-
-        // O tempo limite do próprio cliente envolve a cadeia inteira, retentativas
-        // incluídas. Precisa de folga sobre o limite total da política: se fosse igual ou
-        // menor, o cancelamento observado viria daqui e o diagnóstico apontaria o cliente
-        // quando a causa é a política.
         cliente.Timeout = TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos * 2);
     }
 
@@ -205,7 +207,8 @@ public static class SigaaClientRegistration
     ///
     /// A retentativa já respeita, por padrão da biblioteca, o intervalo que a origem pede
     /// quando responde que está sobrecarregada — não há nada a acrescentar para isso, só
-    /// a cautela de não desligar.
+    /// a cautela de não desligar. O relógio vem do contêiner: os testes trocam por um relógio controlado para
+    /// exercitar espera e expiração sem depender do tempo real.
     /// </remarks>
     private static void ConfigurarResilienciaDaConsulta(
         ResiliencePipelineBuilder<HttpResponseMessage> construtor,
@@ -213,29 +216,32 @@ public static class SigaaClientRegistration
     {
         SigaaOptions sigaa = LerOpcoes(contexto);
 
-        // Relógio vindo do contêiner: os testes trocam por um relógio controlado para
-        // exercitar espera e expiração sem depender do tempo real.
         construtor.TimeProvider = contexto.ServiceProvider.GetRequiredService<TimeProvider>();
-
         construtor
             .AddTimeout(TimeSpan.FromSeconds(sigaa.TimeoutTotalEmSegundos))
-            .AddRetry(new HttpRetryStrategyOptions
-            {
-                MaxRetryAttempts = sigaa.MaximoDeRetentativas,
-                Delay = TimeSpan.FromMilliseconds(sigaa.EsperaBaseEntreTentativasEmMilissegundos),
-                BackoffType = DelayBackoffType.Exponential,
-                UseJitter = true,
-                ShouldRetryAfterHeader = true,
-            })
-            .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
-            {
-                SamplingDuration = TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDoCorteEmSegundos),
-                MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarCorte,
-                FailureRatio = sigaa.ProporcaoDeFalhaParaAbrirCorte,
-                BreakDuration = TimeSpan.FromSeconds(sigaa.DuracaoDoCorteEmSegundos),
-            })
+            .AddRetry(Retentativa(sigaa))
+            .AddCircuitBreaker(CorteDeCircuito(sigaa))
             .AddTimeout(TimeSpan.FromSeconds(sigaa.TimeoutPorTentativaEmSegundos));
     }
+
+    private static HttpRetryStrategyOptions Retentativa(SigaaOptions sigaa) =>
+        new()
+        {
+            MaxRetryAttempts = sigaa.MaximoDeRetentativas,
+            Delay = TimeSpan.FromMilliseconds(sigaa.EsperaBaseEntreTentativasEmMilissegundos),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            ShouldRetryAfterHeader = true,
+        };
+
+    private static HttpCircuitBreakerStrategyOptions CorteDeCircuito(SigaaOptions sigaa) =>
+        new()
+        {
+            SamplingDuration = TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDoCorteEmSegundos),
+            MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarCorte,
+            FailureRatio = sigaa.ProporcaoDeFalhaParaAbrirCorte,
+            BreakDuration = TimeSpan.FromSeconds(sigaa.DuracaoDoCorteEmSegundos),
+        };
 
     private static SigaaOptions LerOpcoes(ResilienceHandlerContext contexto) =>
         contexto.ServiceProvider.GetRequiredService<IOptions<SigaaOptions>>().Value;
