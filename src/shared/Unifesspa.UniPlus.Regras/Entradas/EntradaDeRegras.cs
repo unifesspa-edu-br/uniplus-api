@@ -177,9 +177,9 @@ public static class EntradaDeRegras
 
     /// <summary>
     /// O envio que a simulação supõe; nulo quando ela não o informa. A zona é procurada na base de fusos
-    /// do ambiente, e a que ela não reconhece é recusada no fuso. O instante ausente — que chega como o
-    /// primeiro instante do calendário — e o que fica perto demais das pontas do calendário para os
-    /// limites da faixa de data se contarem dele são recusados no instante.
+    /// do ambiente, e a que ela não reconhece é recusada no fuso. O instante que fica perto demais das pontas
+    /// do calendário, como o primeiro dele, para os limites da faixa de data se contarem dele é recusado no
+    /// instante. A ausência do instante no corpo nem chega aqui: é recusada na leitura.
     /// </summary>
     public static Result<EnvioDasRespostas?> Envio(EnvioSimuladoInput? input)
     {

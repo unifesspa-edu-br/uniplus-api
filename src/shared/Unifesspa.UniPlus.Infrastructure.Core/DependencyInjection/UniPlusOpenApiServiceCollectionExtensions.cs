@@ -76,6 +76,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<PaginationOrphanSchemaDocumentTransformer>();
         services.TryAddSingleton<ProblemDetailsExtensionsDocumentTransformer>();
         services.TryAddSingleton<UniPlusSchemaTransformer>();
+        services.TryAddSingleton<InstanteSchemaTransformer>();
         return services;
     }
 
@@ -105,5 +106,6 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     private static void AdicionarTransformersDeSchema(OpenApiOptions options)
     {
         options.AddSchemaTransformer<UniPlusSchemaTransformer>();
+        options.AddSchemaTransformer<InstanteSchemaTransformer>();
     }
 }
