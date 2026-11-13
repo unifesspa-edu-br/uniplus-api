@@ -76,43 +76,7 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
             return new Dictionary<Guid, InscritoDoLote>();
         }
 
-        var inscricoes = await _context.Inscricoes
-            .AsNoTracking()
-            .Where(i => ids.Contains(i.Id))
-            .Select(i => new
-            {
-                i.Id,
-                i.NumeroInscricao,
-                i.VersaoFormularioId,
-                i.OfertaCursoId,
-                i.OfertaCursoSegundaOpcaoId,
-            })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<Guid, string> nomeDeExibicao = await NomeDeExibicaoDaInscricao
-            .LerAsync(_context.RespostasDaInscricao, ids, cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<Guid, string> cpfs = await CpfDaInscricao
-            .LerAsync(_context.RespostasDaInscricao.Where(r => ids.Contains(r.InscricaoId)), _encryption, cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<Guid, InscritoDoLote> resultado = [];
-        for (int i = 0; i < inscricoes.Count; i++)
-        {
-            var inscricao = inscricoes[i];
-            string? nome = nomeDeExibicao.GetValueOrDefault(inscricao.Id);
-            resultado[inscricao.Id] = new InscritoDoLote(
-                inscricao.NumeroInscricao,
-                nome,
-                Cpf.Mascarar(CpfDaInscricao.Exigir(cpfs, inscricao.Id)),
-                inscricao.VersaoFormularioId,
-                inscricao.OfertaCursoId,
-                inscricao.OfertaCursoSegundaOpcaoId);
-        }
-
-        return resultado;
+        return await MontarInscritosAsync(ids, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<string>>> ObterAusentesDoLoteAsync(
@@ -149,6 +113,30 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
         return contagens.ToDictionary(static c => c.LoteId, static c => c.Total);
     }
 
+    private async Task<IReadOnlyDictionary<Guid, InscritoDoLote>> MontarInscritosAsync(
+        Guid[] inscricaoIds, CancellationToken cancellationToken)
+    {
+        List<InscricaoDoLote> inscricoes = await ListarInscricoesAsync(inscricaoIds, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, string> nomesDeExibicao = await NomeDeExibicaoDaInscricao
+            .LerAsync(_context.RespostasDaInscricao, inscricaoIds, cancellationToken)
+            .ConfigureAwait(false);
+        Dictionary<Guid, string> cpfs = await CpfDaInscricao
+            .LerAsync(_context.RespostasDaInscricao.Where(r => inscricaoIds.Contains(r.InscricaoId)), _encryption, cancellationToken)
+            .ConfigureAwait(false);
+
+        return inscricoes.ToDictionary(
+            static i => i.Id,
+            i => i.ComoInscrito(nomesDeExibicao.GetValueOrDefault(i.Id), CpfDaInscricao.Exigir(cpfs, i.Id)));
+    }
+
+    private Task<List<InscricaoDoLote>> ListarInscricoesAsync(Guid[] inscricaoIds, CancellationToken cancellationToken) =>
+        _context.Inscricoes
+            .AsNoTracking()
+            .Where(i => inscricaoIds.Contains(i.Id))
+            .Select(i => new InscricaoDoLote(
+                i.Id, i.NumeroInscricao, i.VersaoFormularioId, i.OfertaCursoId, i.OfertaCursoSegundaOpcaoId))
+            .ToListAsync(cancellationToken);
+
     private static int IndiceDaArea(string codigo) => Array.IndexOf(OrdemDasAreas, codigo);
 
     /// <summary>Os lotes do escopo, sem rastreamento, do mais recente para o mais antigo.</summary>
@@ -160,4 +148,11 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
                 && l.EdicaoCodigo == edicaoCodigo)
             .OrderByDescending(l => l.ImportadoEm)
             .ThenByDescending(l => l.Id);
+
+    private sealed record InscricaoDoLote(
+        Guid Id, string? NumeroInscricao, Guid VersaoFormularioId, Guid? OfertaCursoId, Guid? OfertaCursoSegundaOpcaoId)
+    {
+        public InscritoDoLote ComoInscrito(string? nome, string cpf) =>
+            new(NumeroInscricao, nome, Cpf.Mascarar(cpf), VersaoFormularioId, OfertaCursoId, OfertaCursoSegundaOpcaoId);
+    }
 }

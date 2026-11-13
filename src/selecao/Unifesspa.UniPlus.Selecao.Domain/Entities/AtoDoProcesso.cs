@@ -103,29 +103,13 @@ public sealed class AtoDoProcesso : EntityBase
     public static Result ValidarCorrecao(Guid? atoCorrigidoId, string? motivoDaCorrecao)
     {
         bool temMotivo = !string.IsNullOrWhiteSpace(motivoDaCorrecao);
-        List<FieldError> erros = [];
+        FieldError[] erros =
+        [
+            .. new[] { ErroDoAtoCorrigido(atoCorrigidoId, temMotivo), ErroDoMotivoDaCorrecao(atoCorrigidoId, temMotivo) }
+                .OfType<FieldError>(),
+        ];
 
-        if (atoCorrigidoId == Guid.Empty)
-        {
-            erros.Add(new FieldError("atoCorrigidoId", new DomainError(
-                AtoDoProcessoErrorCodes.AtoCorrigidoInvalido,
-                "O ato corrigido informado é inválido.")));
-        }
-        else if (atoCorrigidoId is null && temMotivo)
-        {
-            erros.Add(new FieldError("atoCorrigidoId", new DomainError(
-                AtoDoProcessoErrorCodes.AtoCorrigidoObrigatorio,
-                "Informe o ato corrigido: o motivo da correção só existe junto dele.")));
-        }
-
-        if (atoCorrigidoId is not null && !temMotivo)
-        {
-            erros.Add(new FieldError("motivoDaCorrecao", new DomainError(
-                AtoDoProcessoErrorCodes.MotivoDaCorrecaoObrigatorio,
-                "O motivo da correção é obrigatório quando o ato corrige outro.")));
-        }
-
-        return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
+        return erros.Length > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
 
     /// <summary>
@@ -143,51 +127,7 @@ public sealed class AtoDoProcesso : EntityBase
             return Result<AtoDoProcesso>.ValidationFailure(correcao.Errors);
         }
 
-        GuardarIdentidade(novo);
-        GuardarTexto(novo.TipoCodigo, TipoCodigoMaxLength, nameof(novo.TipoCodigo));
-        GuardarTexto(novo.TipoNome, TipoNomeMaxLength, nameof(novo.TipoNome));
-        GuardarTexto(novo.Assinante, AssinanteMaxLength, nameof(novo.Assinante));
-        GuardarTexto(novo.UnidadeAdministradora, UnidadeAdministradoraMaxLength, nameof(novo.UnidadeAdministradora));
-        GuardarTexto(novo.IdentificadorLegivelDoProcesso, IdentificadorLegivelMaxLength, nameof(novo.IdentificadorLegivelDoProcesso));
-
-        // Texto opcional em branco é ausência, não erro: quem declara pode mandar o campo vazio.
-        novo = novo with
-        {
-            Numero = novo.Numero.EmBrancoViraNulo(),
-            PoliticaDeDivulgacaoConfirmadaPorSub = novo.PoliticaDeDivulgacaoConfirmadaPorSub.EmBrancoViraNulo(),
-            MotivoDaCorrecao = novo.MotivoDaCorrecao.EmBrancoViraNulo(),
-        };
-        GuardarTextoOpcional(novo.Numero, NumeroMaxLength, nameof(novo.Numero));
-        GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorSub, SubMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorSub));
-        GuardarAutocorrecao(novo);
-        GuardarDocumentos(novo);
-
-        AtoDoProcesso ato = new()
-        {
-            Id = novo.AtoId,
-            ProcessoSeletivoId = novo.ProcessoSeletivoId,
-            TipoCodigo = novo.TipoCodigo,
-            TipoNome = novo.TipoNome,
-            Numero = novo.Numero,
-            DataDoAto = novo.DataDoAto,
-            Assinante = novo.Assinante,
-            UnidadeAdministradora = novo.UnidadeAdministradora,
-            IdentificadorLegivelDoProcesso = novo.IdentificadorLegivelDoProcesso,
-            ItemDoEdital = novo.ItemDoEdital?.Chave,
-            DocumentoPrincipalId = novo.DocumentoPrincipalId,
-            AtoCorrigidoId = novo.AtoCorrigidoId,
-            MotivoDaCorrecao = novo.MotivoDaCorrecao,
-            PoliticaDeDivulgacaoConfirmadaEm = novo.PoliticaDeDivulgacaoConfirmadaPorSub is null ? null : clock.GetUtcNow(),
-            PoliticaDeDivulgacaoConfirmadaPorSub = novo.PoliticaDeDivulgacaoConfirmadaPorSub,
-            Situacao = SituacaoDoRegistroDoAto.Pendente,
-        };
-
-        for (int i = 0; i < novo.Anexos.Count; i++)
-        {
-            ato._anexos.Add(AnexoDoAtoDoProcesso.Criar(ato.Id, i, novo.Anexos[i].DocumentoAPublicarId, novo.Anexos[i].NomeDeExibicao));
-        }
-
-        return Result<AtoDoProcesso>.Success(ato);
+        return Result<AtoDoProcesso>.Success(AtoPendenteDe(ConferirDeclaracao(novo), clock));
     }
 
     /// <summary>
@@ -207,6 +147,110 @@ public sealed class AtoDoProcesso : EntityBase
         Situacao = SituacaoDoRegistroDoAto.Registrado;
         RegistradoEm = clock.GetUtcNow();
         return true;
+    }
+
+    private static FieldError? ErroDoAtoCorrigido(Guid? atoCorrigidoId, bool temMotivo) => (atoCorrigidoId, temMotivo) switch
+    {
+        (Guid id, _) when id == Guid.Empty => Violacao(
+            "atoCorrigidoId", AtoDoProcessoErrorCodes.AtoCorrigidoInvalido, "O ato corrigido informado é inválido."),
+        (null, true) => Violacao(
+            "atoCorrigidoId",
+            AtoDoProcessoErrorCodes.AtoCorrigidoObrigatorio,
+            "Informe o ato corrigido: o motivo da correção só existe junto dele."),
+        _ => null,
+    };
+
+    private static FieldError? ErroDoMotivoDaCorrecao(Guid? atoCorrigidoId, bool temMotivo) =>
+        atoCorrigidoId is not null && !temMotivo
+            ? Violacao(
+                "motivoDaCorrecao",
+                AtoDoProcessoErrorCodes.MotivoDaCorrecaoObrigatorio,
+                "O motivo da correção é obrigatório quando o ato corrige outro.")
+            : null;
+
+    private static FieldError Violacao(string campo, string codigo, string mensagem) =>
+        new(campo, new DomainError(codigo, mensagem));
+
+    private static NovoAtoDoProcesso ConferirDeclaracao(NovoAtoDoProcesso novo)
+    {
+        GuardarIdentidade(novo);
+        GuardarTextosObrigatorios(novo);
+
+        NovoAtoDoProcesso declarado = SemTextoOpcionalEmBranco(novo);
+        GuardarTextosOpcionais(declarado);
+        GuardarAutocorrecao(declarado);
+        GuardarDocumentos(declarado);
+
+        return declarado;
+    }
+
+    // Texto opcional em branco é ausência, não erro: quem declara pode mandar o campo vazio.
+    private static NovoAtoDoProcesso SemTextoOpcionalEmBranco(NovoAtoDoProcesso novo) => novo with
+    {
+        Numero = novo.Numero.EmBrancoViraNulo(),
+        PoliticaDeDivulgacaoConfirmadaPorSub = novo.PoliticaDeDivulgacaoConfirmadaPorSub.EmBrancoViraNulo(),
+        MotivoDaCorrecao = novo.MotivoDaCorrecao.EmBrancoViraNulo(),
+    };
+
+    private static AtoDoProcesso AtoPendenteDe(NovoAtoDoProcesso declarado, TimeProvider clock)
+    {
+        AtoDoProcesso ato = Declarar(declarado);
+        ato.VincularDocumentos(declarado);
+        ato.VincularCorrecao(declarado);
+        ato.ConfirmarPoliticaDeDivulgacao(declarado.PoliticaDeDivulgacaoConfirmadaPorSub, clock);
+
+        return ato;
+    }
+
+    private static AtoDoProcesso Declarar(NovoAtoDoProcesso declarado) => new()
+    {
+        Id = declarado.AtoId,
+        ProcessoSeletivoId = declarado.ProcessoSeletivoId,
+        TipoCodigo = declarado.TipoCodigo,
+        TipoNome = declarado.TipoNome,
+        Numero = declarado.Numero,
+        DataDoAto = declarado.DataDoAto,
+        Assinante = declarado.Assinante,
+        UnidadeAdministradora = declarado.UnidadeAdministradora,
+        IdentificadorLegivelDoProcesso = declarado.IdentificadorLegivelDoProcesso,
+        ItemDoEdital = declarado.ItemDoEdital?.Chave,
+        Situacao = SituacaoDoRegistroDoAto.Pendente,
+    };
+
+    private void VincularDocumentos(NovoAtoDoProcesso declarado)
+    {
+        DocumentoPrincipalId = declarado.DocumentoPrincipalId;
+        for (int i = 0; i < declarado.Anexos.Count; i++)
+        {
+            _anexos.Add(AnexoDoAtoDoProcesso.Criar(Id, i, declarado.Anexos[i].DocumentoAPublicarId, declarado.Anexos[i].NomeDeExibicao));
+        }
+    }
+
+    private void VincularCorrecao(NovoAtoDoProcesso declarado)
+    {
+        AtoCorrigidoId = declarado.AtoCorrigidoId;
+        MotivoDaCorrecao = declarado.MotivoDaCorrecao;
+    }
+
+    private void ConfirmarPoliticaDeDivulgacao(string? confirmadaPorSub, TimeProvider clock)
+    {
+        PoliticaDeDivulgacaoConfirmadaPorSub = confirmadaPorSub;
+        PoliticaDeDivulgacaoConfirmadaEm = confirmadaPorSub is null ? null : clock.GetUtcNow();
+    }
+
+    private static void GuardarTextosObrigatorios(NovoAtoDoProcesso novo)
+    {
+        GuardarTexto(novo.TipoCodigo, TipoCodigoMaxLength, nameof(novo.TipoCodigo));
+        GuardarTexto(novo.TipoNome, TipoNomeMaxLength, nameof(novo.TipoNome));
+        GuardarTexto(novo.Assinante, AssinanteMaxLength, nameof(novo.Assinante));
+        GuardarTexto(novo.UnidadeAdministradora, UnidadeAdministradoraMaxLength, nameof(novo.UnidadeAdministradora));
+        GuardarTexto(novo.IdentificadorLegivelDoProcesso, IdentificadorLegivelMaxLength, nameof(novo.IdentificadorLegivelDoProcesso));
+    }
+
+    private static void GuardarTextosOpcionais(NovoAtoDoProcesso novo)
+    {
+        GuardarTextoOpcional(novo.Numero, NumeroMaxLength, nameof(novo.Numero));
+        GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorSub, SubMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorSub));
     }
 
     private static void GuardarIdentidade(NovoAtoDoProcesso novo)
