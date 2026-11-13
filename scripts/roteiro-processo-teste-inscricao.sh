@@ -31,9 +31,15 @@
 #   processo só aceita mutação por retificação) → Publicar.
 #
 # Pré-requisitos: stack local do docker compose no ar, com uniplus-api,
-# keycloak e os demais serviços de infraestrutura (ver docker/README.md ou
-# CONTRIBUTING.md — não precisa dos *-web nem do openldap), jq, curl. Roda
-# contra o realm `unifesspa`.
+# keycloak, o verificador de arquivos e os demais serviços de infraestrutura,
+# e o serviço ambiente-init concluído, com os dois gestores de acessos
+# instalados (ver docker/README.md ou CONTRIBUTING.md — não precisa dos *-web
+# nem do openldap), jq, curl. Roda contra o realm `unifesspa`.
+#
+# O executor não recebe permissão do Keycloak: no início, o roteiro faz um
+# gestor conceder a ele os perfis de que precisa, pela API
+# (acessos-do-roteiro.sh). Numa segunda execução, as concessões são
+# reaproveitadas.
 #
 # Uso:
 #   scripts/roteiro-processo-teste-inscricao.sh
@@ -91,6 +97,10 @@ fail() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 idem() { cat /proc/sys/kernel/random/uuid; }
 
+# As concessões que o executor precisa, pedidas e aprovadas pela API.
+# shellcheck source=acessos-do-roteiro.sh
+source "$(dirname "${BASH_SOURCE[0]}")/acessos-do-roteiro.sh"
+
 # Falha alto quando um id de catálogo (criado ou reaproveitado via fallback
 # de busca) sai vazio, em vez de deixar "" descer em silêncio para o próximo
 # PUT/POST e estourar um 400/422 longe da causa real.
@@ -110,6 +120,7 @@ api() {
     payload=$(sed '$d' <<< "$resp")
     case "$http_code" in
         2??) echo "$payload" ;;
+        403) explicar_recusa_de_acesso "$method $path"; fail "$method $path → 403: $payload" ;;
         *) fail "$method $path → $http_code: $payload" ;;
     esac
 }
@@ -156,6 +167,9 @@ post_tolerante() {
         jq -r 'if type == "object" then (.id // "") else . end' <<< "$payload"
     elif [ "$http_code" = "409" ]; then
         echo ""
+    elif [ "$http_code" = "403" ]; then
+        explicar_recusa_de_acesso "POST $path"
+        fail "POST $path → 403: $payload"
     else
         fail "POST $path → $http_code: $payload"
     fi
@@ -858,8 +872,10 @@ main() {
     date --version >/dev/null 2>&1 || fail "precisa do GNU date (-d), não do date do BSD/macOS"
     [ -r /proc/sys/kernel/random/uuid ] || fail "precisa de /proc/sys/kernel/random/uuid (Linux)"
     obter_token
+    garantir_acesso_institucional
     setup_publicacoes
     setup_organizacao
+    garantir_acesso_na_unidade "$UNIDADE_ID"
     setup_configuracao
     criar_processo
     definir_algoritmo_contagem_prazo

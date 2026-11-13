@@ -281,8 +281,10 @@ main() {
     [ -r /proc/sys/kernel/random/uuid ] || fail "precisa de /proc/sys/kernel/random/uuid (Linux)"
     conferir_personas
     obter_token
+    garantir_acesso_institucional
     setup_publicacoes
     setup_organizacao
+    garantir_acesso_na_unidade "$UNIDADE_ID"
     setup_configuracao
     obter_fase_classificacao
     setup_ofertas_por_grupo
