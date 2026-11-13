@@ -21,7 +21,7 @@
 # responsabilidade.
 #
 # O perfil institucional cobre os cadastros (Publicações, Organização,
-# Configuração); o da unidade cobre a configuração e a publicação do processo e
+# Configuração) e o envio do catálogo à proteção de dados; o da unidade cobre a configuração e a publicação do processo e
 # só se concede depois que a unidade existe.
 #
 # Variáveis de ambiente opcionais, além das do roteiro:
@@ -45,7 +45,8 @@ PERMISSOES_INSTITUCIONAIS='[
     "configuracao:referencias-reserva-demografica:manter",
     "configuracao:condicoes-atendimento:manter", "configuracao:recursos-acessibilidade:manter",
     "configuracao:tipos-deficiencia:manter", "configuracao:base-legal-bonus-regional:manter",
-    "configuracao:calendarios-dias-uteis:manter", "configuracao:pesos-area-enem:manter"
+    "configuracao:calendarios-dias-uteis:manter", "configuracao:pesos-area-enem:manter",
+    "configuracao:fatos-candidato:manter", "configuracao:tipos-documento:manter"
 ]'
 PERFIL_DA_UNIDADE="Roteiro de teste — processo seletivo da unidade"
 PERMISSOES_DA_UNIDADE='["selecao:processos:configurar", "selecao:processos:publicar"]'

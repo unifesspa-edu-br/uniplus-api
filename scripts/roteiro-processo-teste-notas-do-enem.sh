@@ -282,6 +282,8 @@ main() {
     conferir_personas
     obter_token
     garantir_acesso_institucional
+    garantir_representantes
+    garantir_protecao_do_catalogo
     setup_publicacoes
     setup_organizacao
     garantir_acesso_na_unidade "$UNIDADE_ID"
