@@ -10,7 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A leitura das providências por quem administra concessões ou solicita providências: o detalhe e a fila, com a situação
-/// derivada no instante da leitura e cada providência exibida registrada antes de a resposta sair (ADR-0153).
+/// derivada no instante da leitura e cada providência exibida registrada antes de a resposta sair (ADR-0153). Sem a
+/// permissão no instante da leitura, o detalhe responde 403 e a fila sai vazia.
 /// </summary>
 public sealed class LeituraDaProvidencia
 {
@@ -34,9 +35,9 @@ public sealed class LeituraDaProvidencia
             return Result<ProvidenciaDto>.Failure(ProvidenciaHandlerErros.NaoEncontrada());
         }
 
-        await AcessoAProvidencia.RegistrarLeituraAsync(verificador, [id], cancellationToken).ConfigureAwait(false);
-
-        return Result<ProvidenciaDto>.Success(ProvidenciaMapping.ToDto(item, _clock.GetUtcNow(), leitor));
+        return (await AcessoAProvidencia.LiberarAsync(verificador, [item], cancellationToken).ConfigureAwait(false)).Count > 0
+            ? Result<ProvidenciaDto>.Success(ProvidenciaMapping.ToDto(item, _clock.GetUtcNow(), leitor))
+            : Result<ProvidenciaDto>.Failure(ProvidenciaHandlerErros.SemPermissao());
     }
 
     /// <param name="leitor">Quem lê, para dizer se está impedido de responder; nulo quando o token não o identifica.</param>
@@ -49,8 +50,11 @@ public sealed class LeituraDaProvidencia
             .ListarPaginadoAsync(filtro, query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
-        await AcessoAProvidencia.RegistrarLeituraAsync(verificador, [.. itens.Select(static i => i.Id)], cancellationToken).ConfigureAwait(false);
+        // A leitura negada não entrega item nem âncora: a página sai vazia, sem continuação.
+        IReadOnlyList<ProvidenciaComConcessao> visiveis = await AcessoAProvidencia.LiberarAsync(verificador, itens, cancellationToken).ConfigureAwait(false);
 
-        return new ListarProvidenciasResult([.. itens.Select(i => ProvidenciaMapping.ToResumo(i, agora, leitor))], anterior, proximo);
+        return visiveis.Count == 0
+            ? new ListarProvidenciasResult([], null, null)
+            : new ListarProvidenciasResult([.. visiveis.Select(i => ProvidenciaMapping.ToResumo(i, agora, leitor))], anterior, proximo);
     }
 }

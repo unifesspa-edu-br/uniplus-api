@@ -17,6 +17,7 @@ public static class ProvidenciaErrorCodes
     public const string SolicitanteNaoResponde = "Providencia.SolicitanteNaoResponde";
     public const string BeneficiarioNaoResponde = "Providencia.BeneficiarioNaoResponde";
     public const string AutorNaoIdentificado = "Providencia.AutorNaoIdentificado";
+    public const string SemPermissao = "Providencia.SemPermissao";
     public const string FiltroDeSituacaoInvalido = "Providencia.FiltroDeSituacaoInvalido";
     public const string ConflitoDeConcorrencia = "Providencia.ConflitoDeConcorrencia";
 }
