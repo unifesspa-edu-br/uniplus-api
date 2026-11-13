@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.RegistrosDeAcesso;
 
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -23,10 +24,11 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// A leitura dos próprios pedidos por quem tem a consulta dos pedidos só sai com o registro gravado: com o registro
-/// indisponível, a fila dos próprios pedidos, o detalhe, a trilha e o anexo respondem 503 sem o dado (UNI-REQ-0372). Quem
-/// não tem a consulta lê os próprios pedidos sem registro, e o registro indisponível não o afeta. Cecília Moura é o
-/// Encarregado de dados; Paulo Nogueira não tem permissão alguma. Cada um pediu um perfil comum para si mesmo.
+/// Toda leitura dos próprios pedidos só sai com o registro gravado: com o registro indisponível, a fila dos próprios
+/// pedidos, o detalhe, a trilha e o anexo respondem 503 sem o dado, para quem tem a consulta dos pedidos (UNI-REQ-0372) e
+/// para quem não a tem, que é registrado por titularidade (ADR-0166). A fila sem pedido não grava nada e responde mesmo
+/// com o registro indisponível. Cecília Moura é o Encarregado de dados; Paulo Nogueira não tem permissão alguma. Cada
+/// um pediu um perfil comum para si mesmo.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
@@ -50,23 +52,54 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
         await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Cecilia);
         await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Cecilia, TipoDeGovernanca.EncarregadoDeDados);
 
-        (HttpStatusCode status, string corpo, Guid pedido) = await LerOProprioPedidoComORegistroForaAsync(Cecilia, leitura);
+        (HttpStatusCode status, string corpo, Guid pedido) = await LerOProprioPedidoAsync(Cecilia, leitura, new RegistroQueFalha());
 
         status.Should().Be(HttpStatusCode.ServiceUnavailable, corpo);
         corpo.Should().Contain(Falha).And.NotContain(pedido.ToString());
     }
 
-    [Theory(DisplayName = "Com o registro indisponível, quem não tem a consulta lê os próprios pedidos como antes, sem registro")]
+    [Theory(DisplayName = "Com o registro indisponível, a leitura dos próprios pedidos por quem não tem a consulta responde 503 sem o pedido")]
     [InlineData(LeituraDoPedido.FilaDosProprios)]
     [InlineData(LeituraDoPedido.Detalhe)]
-    public async Task LeituraSemAConsulta_RegistroIndisponivel_200ComOPedido(LeituraDoPedido leitura)
+    [InlineData(LeituraDoPedido.Trilha)]
+    [InlineData(LeituraDoPedido.Anexo)]
+    public async Task LeituraSemAConsulta_RegistroIndisponivel_503SemOPedido(LeituraDoPedido leitura)
     {
         await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Paulo);
 
-        (HttpStatusCode status, string corpo, Guid pedido) = await LerOProprioPedidoComORegistroForaAsync(Paulo, leitura);
+        (HttpStatusCode status, string corpo, Guid pedido) = await LerOProprioPedidoAsync(Paulo, leitura, new RegistroQueFalha());
+
+        status.Should().Be(HttpStatusCode.ServiceUnavailable, corpo);
+        corpo.Should().Contain(Falha).And.NotContain(pedido.ToString());
+    }
+
+    [Fact(DisplayName = "Com o registro indisponível, a fila dos próprios pedidos sem pedido responde 200 vazia, sem depender do registro")]
+    public async Task FilaVaziaSemAConsulta_RegistroIndisponivel_200Vazia()
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Paulo);
+        await DescartarPedidosAsync(Paulo);
+
+        await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistro(new RegistroQueFalha());
+        using HttpClient cliente = Cliente(comFalha, Paulo);
+        using HttpResponseMessage resposta = await cliente.GetAsync(RotaDa(LeituraDoPedido.FilaDosProprios, Guid.Empty));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+    }
+
+    [Theory(DisplayName = "Quem não tem a consulta tem a leitura do próprio pedido gravada por titularidade, com o código da operação do titular")]
+    [InlineData(LeituraDoPedido.FilaDosProprios)]
+    [InlineData(LeituraDoPedido.Detalhe)]
+    public async Task LeituraSemAConsulta_GravaPorTitularidade(LeituraDoPedido leitura)
+    {
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Paulo);
+        RegistroQueGuarda registro = new();
+
+        (HttpStatusCode status, string corpo, Guid pedido) = await LerOProprioPedidoAsync(Paulo, leitura, registro);
 
         status.Should().Be(HttpStatusCode.OK, corpo);
-        corpo.Should().Contain(pedido.ToString());
+        RegistroDecisaoAcesso gravado = registro.Gravados.Should().ContainSingle(r => r.ResourceId == pedido).Subject;
+        (gravado.AtorSubject, gravado.Permissao, gravado.FonteGrant, gravado.GrantId, gravado.Permitido)
+            .Should().Be((Paulo, "autorizacao:pedidos:ler-proprios", "titularidade", (Guid?)null, true));
     }
 
     /// <summary>As leituras do pedido que quem é parte faz; o anexo pedido não existe, e a visibilidade vem antes dele.</summary>
@@ -79,14 +112,15 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
     }
 
     // O pedido sai antes e depois, para não sobrar aos outros testes da coleção.
-    private async Task<(HttpStatusCode Status, string Corpo, Guid Pedido)> LerOProprioPedidoComORegistroForaAsync(string sub, LeituraDoPedido leitura)
+    private async Task<(HttpStatusCode Status, string Corpo, Guid Pedido)> LerOProprioPedidoAsync(
+        string sub, LeituraDoPedido leitura, IRegistroOperacionalRestrito registro)
     {
         await DescartarPedidosAsync(sub);
         try
         {
             Guid pedido = await PedirParaSiMesmoAsync(sub);
-            await using WebApplicationFactory<HostAssemblyMarker> comFalha = ComRegistroQueFalha();
-            using HttpClient cliente = Cliente(comFalha, sub);
+            await using WebApplicationFactory<HostAssemblyMarker> fabrica = ComRegistro(registro);
+            using HttpClient cliente = Cliente(fabrica, sub);
             using HttpResponseMessage resposta = await cliente.GetAsync(RotaDa(leitura, pedido));
 
             return (resposta.StatusCode, await resposta.Content.ReadAsStringAsync(), pedido);
@@ -131,12 +165,12 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
             .ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_sub = {0}", sub);
     }
 
-    private WebApplicationFactory<HostAssemblyMarker> ComRegistroQueFalha() =>
+    private WebApplicationFactory<HostAssemblyMarker> ComRegistro(IRegistroOperacionalRestrito registro) =>
         _fixture.Factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IRegistroOperacionalRestrito>();
-                services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
+                services.AddSingleton<IRegistroOperacionalRestrito>(registro);
             }));
 
     private static HttpClient Cliente(WebApplicationFactory<HostAssemblyMarker> fabrica, string sub)
@@ -155,5 +189,20 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
     {
         public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken) =>
             throw new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("tópico fora"));
+    }
+
+    private sealed class RegistroQueGuarda : IRegistroOperacionalRestrito
+    {
+        public ConcurrentQueue<RegistroDecisaoAcesso> Gravados { get; } = new();
+
+        public Task RegistrarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken)
+        {
+            foreach (RegistroDecisaoAcesso registro in registros)
+            {
+                Gravados.Enqueue(registro);
+            }
+
+            return Task.CompletedTask;
+        }
     }
 }

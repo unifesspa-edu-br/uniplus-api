@@ -16,16 +16,27 @@ internal sealed class VerificadorDeTeste(string sub, string[] permitidas) : IVer
     public Task<DecisaoDeAcesso> AvaliarAsync(
         PermissionRequirement requisito, ResourceContext? resource = null, CancellationToken cancellationToken = default)
     {
-        ResourceContext alvo = resource ?? ResourceContext.From(ResourceTipos.Operacao, requisito.Sensibilidade).Value!;
-        AuthorizationSubject sujeito = AuthorizationSubject.From(
-            UsuarioRef.From("https://idp.exemplo/realms/unifesspa", sub).Value!, "jti-teste").Value!;
+        ResourceContext alvo = resource ?? DaOperacao(requisito);
         AuthorizationDecision decisao = permitidas.Contains(requisito.Permissao)
             ? AuthorizationDecision.Permitir(EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!)
             : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel);
-        AuthorizationRequestContext contexto = AuthorizationRequestContext.From("req-1", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!;
 
-        return Task.FromResult(DecisaoDeAcesso.Tomada(
-            requisito, alvo, RegistroDecisaoAcesso.De(sujeito, requisito, alvo, contexto, decisao)));
+        return Task.FromResult(DecisaoDeAcesso.Tomada(requisito, alvo, Registro(requisito, alvo, decisao)));
+    }
+
+    // O que o verificador real gravaria: a leitura da parte permitida pela titularidade, sem concessão, um registro por
+    // resource exibido.
+    public async Task<ResultadoDoAcesso> RegistrarLeituraPorTitularidadeAsync(
+        PermissionRequirement operacaoDoTitular, string resourceTipo, IReadOnlyCollection<Guid> resourceIds, CancellationToken cancellationToken = default)
+    {
+        ResourceContext alvo = DaOperacao(operacaoDoTitular);
+        AuthorizationDecision titularidade = AuthorizationDecision.Permitir(
+            EffectiveGrant.From(operacaoDoTitular.Permissao, FonteGrant.Titularidade).Value!);
+        DecisaoPermitida permitida = new(operacaoDoTitular, alvo, Registro(operacaoDoTitular, alvo, titularidade));
+
+        await RegistrarParaCadaAsync(permitida, resourceTipo, resourceIds, cancellationToken: cancellationToken);
+
+        return ResultadoDoAcesso.Permitido;
     }
 
     // O que o verificador real gravaria: a política de registro aplicada às decisões do desfecho.
@@ -52,4 +63,15 @@ internal sealed class VerificadorDeTeste(string sub, string[] permitidas) : IVer
         Gravados.Add(PoliticaDeRegistroDeAcesso.PorResource(permitida, resourceTipo, resourceIds, resourceEhInscricao));
         return Task.CompletedTask;
     }
+
+    private static ResourceContext DaOperacao(PermissionRequirement requisito) =>
+        ResourceContext.From(ResourceTipos.Operacao, requisito.Sensibilidade).Value!;
+
+    private RegistroDecisaoAcesso Registro(PermissionRequirement requisito, ResourceContext alvo, AuthorizationDecision decisao) =>
+        RegistroDecisaoAcesso.De(
+            AuthorizationSubject.From(UsuarioRef.From("https://idp.exemplo/realms/unifesspa", sub).Value!, "jti-teste").Value!,
+            requisito,
+            alvo,
+            AuthorizationRequestContext.From("req-1", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!,
+            decisao);
 }

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Authorization.Enums;
 
+using System.Collections.Frozen;
 using System.ComponentModel;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
@@ -20,26 +21,32 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </remarks>
 public static class ValoresCanonicos
 {
-    /// <summary>Valor canônico do motivo de negativa.</summary>
-    public static string De(MotivoNegativa motivo) => motivo switch
+    // O vocabulário de motivos cresce a cada verificação nova da decisão. Como é um mapeamento puro, fica numa tabela, e a
+    // tradução de qualquer motivo é uma busca só.
+    private static readonly FrozenDictionary<MotivoNegativa, string> Motivos = new Dictionary<MotivoNegativa, string>
     {
-        MotivoNegativa.MultifatorNaoSatisfeito => "multifator_nao_satisfeito",
-        MotivoNegativa.DuplaAprovacaoInvalida => "dupla_aprovacao_invalida",
-        MotivoNegativa.SemConcessaoAplicavel => "sem_concessao_aplicavel",
-        MotivoNegativa.ConcessaoExpirada => "concessao_expirada",
-        MotivoNegativa.FaseFechada => "fase_fechada",
-        MotivoNegativa.EstadoDoResourceIncompativel => "estado_do_resource_incompativel",
-        MotivoNegativa.EscopoDeAuditoriaInativo => "escopo_de_auditoria_inativo",
-        MotivoNegativa.EquipeInativaNoProcesso => "equipe_inativa_no_processo",
-        MotivoNegativa.AtribuicaoDocumentalInativa => "atribuicao_documental_inativa",
-        MotivoNegativa.BaseLegalAusente => "base_legal_ausente",
-        MotivoNegativa.ConformidadeLegalNaoValidada => "conformidade_legal_nao_validada",
-        MotivoNegativa.ContextoObrigatorioAusente => "contexto_obrigatorio_ausente",
-        MotivoNegativa.MecanismoRevogacaoDegradado => "mecanismo_revogacao_degradado",
-        MotivoNegativa.ImpedidoPorInscricaoNoProcesso => "impedido_por_inscricao_no_processo",
-        MotivoNegativa.ConcessaoEmUnidadeExigida => "concessao_em_unidade_exigida",
-        _ => throw new InvalidEnumArgumentException(nameof(motivo), (int)motivo, typeof(MotivoNegativa)),
-    };
+        [MotivoNegativa.MultifatorNaoSatisfeito] = "multifator_nao_satisfeito",
+        [MotivoNegativa.DuplaAprovacaoInvalida] = "dupla_aprovacao_invalida",
+        [MotivoNegativa.SemConcessaoAplicavel] = "sem_concessao_aplicavel",
+        [MotivoNegativa.ConcessaoExpirada] = "concessao_expirada",
+        [MotivoNegativa.FaseFechada] = "fase_fechada",
+        [MotivoNegativa.EstadoDoResourceIncompativel] = "estado_do_resource_incompativel",
+        [MotivoNegativa.EscopoDeAuditoriaInativo] = "escopo_de_auditoria_inativo",
+        [MotivoNegativa.EquipeInativaNoProcesso] = "equipe_inativa_no_processo",
+        [MotivoNegativa.AtribuicaoDocumentalInativa] = "atribuicao_documental_inativa",
+        [MotivoNegativa.BaseLegalAusente] = "base_legal_ausente",
+        [MotivoNegativa.ConformidadeLegalNaoValidada] = "conformidade_legal_nao_validada",
+        [MotivoNegativa.ContextoObrigatorioAusente] = "contexto_obrigatorio_ausente",
+        [MotivoNegativa.MecanismoRevogacaoDegradado] = "mecanismo_revogacao_degradado",
+        [MotivoNegativa.ImpedidoPorInscricaoNoProcesso] = "impedido_por_inscricao_no_processo",
+        [MotivoNegativa.ConcessaoEmUnidadeExigida] = "concessao_em_unidade_exigida",
+    }.ToFrozenDictionary();
+
+    /// <summary>Valor canônico do motivo de negativa.</summary>
+    public static string De(MotivoNegativa motivo) =>
+        Motivos.TryGetValue(motivo, out string? valor)
+            ? valor
+            : throw new InvalidEnumArgumentException(nameof(motivo), (int)motivo, typeof(MotivoNegativa));
 
     /// <summary>
     /// Valor canônico do resultado de uma decisão tomada. A identidade incompleta não é resultado de decisão: não há
@@ -53,12 +60,13 @@ public static class ValoresCanonicos
         _ => throw new InvalidEnumArgumentException(nameof(resultado), (int)resultado, typeof(ResultadoDoAcesso)),
     };
 
-    /// <summary>Valor canônico da fonte da concessão.</summary>
+    /// <summary>Valor canônico da fonte do acesso: a da concessão usada ou, na leitura da parte, a titularidade.</summary>
     public static string De(FonteGrant fonte) => fonte switch
     {
         FonteGrant.Concessao => "concessao",
         FonteGrant.OidcGroupBinding => "oidc_group_binding",
         FonteGrant.PermissaoExcecional => "permissao_excecional",
+        FonteGrant.Titularidade => "titularidade",
         _ => throw new InvalidEnumArgumentException(nameof(fonte), (int)fonte, typeof(FonteGrant)),
     };
 

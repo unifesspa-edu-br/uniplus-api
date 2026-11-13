@@ -57,7 +57,7 @@
           "format": "uuid"
         },
         "permissao": {
-          "description": "Código da permissão exigida.",
+          "description": "Código da permissão exigida, do catálogo de permissões. Na leitura que a parte faz do que é seu, com fonteGrant `titularidade`, é o código fixo da operação do titular, fora do catálogo de permissões e não concedível, como `autorizacao:pedidos:ler-proprios`.",
           "type": "string"
         },
         "resourceTipo": {
@@ -139,7 +139,7 @@
           ]
         },
         "fonteGrant": {
-          "description": "Fonte canônica da concessão usada; presente se, e somente se, o acesso foi permitido.",
+          "description": "Fonte canônica do acesso; presente se, e somente se, o acesso foi permitido. Com concessão: `concessao`, `oidc_group_binding` ou `permissao_excecional`. Na leitura que a parte faz do que é seu, sem concessão: `titularidade`, que só aparece no registro e não representa concessão; grantId, perfilId, versaoId e escopoUnidadeId ficam nulos.",
           "type": ["string", "null"]
         },
         "grantId": {

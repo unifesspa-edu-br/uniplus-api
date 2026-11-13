@@ -39,6 +39,10 @@ public sealed class VocabularioDaDecisaoTests
             .Should().OnlyHaveUniqueItems().And.AllSatisfy(
                 static valor => valor.Should().MatchRegex("^[a-z]+(_[a-z]+)*$"));
 
+    [Fact(DisplayName = "A leitura da parte sem concessão grava a fonte titularidade")]
+    public void FonteGrant_Titularidade_ValorCanonico() =>
+        ValoresCanonicos.De(FonteGrant.Titularidade).Should().Be("titularidade");
+
     [Fact(DisplayName = "Toda origem de requisição tem valor canônico")]
     public void OrigemRequisicao_TodasTemValorCanonico() =>
         Enum.GetValues<OrigemRequisicao>()

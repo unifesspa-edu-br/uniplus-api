@@ -7,7 +7,6 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
-using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -17,8 +16,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Handler da listagem. A fila de uma etapa exige a permissão dela, e a fila de todos, a de uma das duas etapas ou a de
 /// consultar os pedidos; a lista de quem pergunta exige só a identidade. Cada pedido exibido entra na trilha de acesso pela
 /// decisão permitida que governou a fila, antes de a página sair (ADR-0153). Na lista de quem pergunta, essa decisão é a
-/// da consulta dos pedidos, como a do Encarregado de dados (UNI-REQ-0372); sem ela, a lista sai sem registro. A mecânica
-/// de keyset vive no repositório.
+/// da consulta dos pedidos, como a do Encarregado de dados (UNI-REQ-0372); sem ela, cada pedido exibido é registrado por
+/// titularidade (ADR-0166). A página vazia não grava nada. A mecânica de keyset vive no repositório.
 /// </summary>
 public static class ListarPedidosDeConcessaoQueryHandler
 {
@@ -47,8 +46,8 @@ public static class ListarPedidosDeConcessaoQueryHandler
 
     /// <summary>
     /// A decisão permitida que governa a fila pedida. A lista de quem pergunta não exige permissão: é governada pela
-    /// leitura de quem é parte, nula sem a consulta dos pedidos. A fila recusada responde 403 e a identidade incompleta, 401,
-    /// também na lista de quem pergunta.
+    /// leitura de quem é parte, nula sem a consulta dos pedidos, quando a leitura se registra por titularidade. A fila
+    /// recusada responde 403 e a identidade incompleta, 401, também na lista de quem pergunta.
     /// </summary>
     private static async Task<Result<DecisaoPermitida?>> AutorizarFilaAsync(
         FilaDePedidos fila, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
@@ -80,15 +79,11 @@ public static class ListarPedidosDeConcessaoQueryHandler
             .ListarPaginadoAsync(filtro, query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
         PedidoResumoDto[] pedidos = [.. itens.Select(PedidoMapping.ToResumo)];
-        await RegistrarCadaPedidoAsync(verificador, governante, pedidos, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await AcessoDoAprovador
+            .RegistrarLeituraAsync(verificador, governante, [.. pedidos.Select(static p => p.Id)], cancellationToken).ConfigureAwait(false);
 
-        return Result<ListarPedidosDeConcessaoResult>.Success(new ListarPedidosDeConcessaoResult(pedidos, anterior, proximo));
+        return recusa is null
+            ? Result<ListarPedidosDeConcessaoResult>.Success(new ListarPedidosDeConcessaoResult(pedidos, anterior, proximo))
+            : Result<ListarPedidosDeConcessaoResult>.Failure(recusa);
     }
-
-    private static Task RegistrarCadaPedidoAsync(
-        IVerificadorDeAcesso verificador, DecisaoPermitida? governante, PedidoResumoDto[] pedidos, CancellationToken cancellationToken) =>
-        governante is null || pedidos.Length == 0
-            ? Task.CompletedTask
-            : verificador.RegistrarParaCadaAsync(
-                governante, ResourceTiposAutorizacao.Pedido, [.. pedidos.Select(static p => p.Id)], cancellationToken: cancellationToken);
 }

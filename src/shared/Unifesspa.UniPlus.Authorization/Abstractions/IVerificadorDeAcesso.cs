@@ -102,4 +102,28 @@ public interface IVerificadorDeAcesso
         IReadOnlyCollection<Guid> resourceIds,
         bool resourceEhInscricao = false,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Registra a leitura que a parte faz do que é seu, sem concessão, como a do próprio pedido de concessão (ADR-0166):
+    /// um registro permitido por resource exibido, com a fonte <see cref="Enums.FonteGrant.Titularidade"/>, o código da
+    /// operação do titular e os campos da concessão nulos, no mesmo lote atômico e com a mesma recusa de
+    /// <see cref="RegistrarParaCadaAsync"/>. Não decide nada: quem chama já conferiu que a pessoa é parte, e a
+    /// titularidade nunca autoriza no ponto de decisão. Sem resource exibido, nada se grava.
+    /// </summary>
+    /// <param name="operacaoDoTitular">
+    /// O código fixo da operação, fora do catálogo de permissões e não concedível, e a sensibilidade do dado lido.
+    /// </param>
+    /// <param name="resourceTipo">O tipo do resource de cada registro.</param>
+    /// <param name="resourceIds">Os ids dos resources exibidos, um registro por id.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>
+    /// <see cref="ResultadoDoAcesso.Permitido"/> com a leitura registrada, ou
+    /// <see cref="ResultadoDoAcesso.IdentidadeIncompleta"/> quando o token não identifica a pessoa, sem gravar nada.
+    /// </returns>
+    /// <exception cref="RegistroDeAcessoNaoGravadoException">O registro exigido não foi gravado.</exception>
+    Task<ResultadoDoAcesso> RegistrarLeituraPorTitularidadeAsync(
+        PermissionRequirement operacaoDoTitular,
+        string resourceTipo,
+        IReadOnlyCollection<Guid> resourceIds,
+        CancellationToken cancellationToken = default);
 }

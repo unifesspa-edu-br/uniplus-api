@@ -41,6 +41,25 @@ public sealed class SchemaDoRegistroDeAcessoTests
         resultado.IsValid.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O lote com o registro da leitura por titularidade valida contra o schema, sem propriedade não declarada")]
+    public void LoteComTitularidade_ValidaContraOSchema()
+    {
+        JsonArray lote = (JsonArray)JsonNode.Parse(RegistroDeAcessoKafka.ValorDoLote([PorTitularidade(Guid.CreateVersion7())]))!;
+        string[] declaradas = [.. PropriedadesDoSchema()["properties"]!.AsObject().Select(static p => p.Key)];
+
+        Schema.Evaluate(JsonSerializer.SerializeToElement(lote), Opcoes).IsValid.Should().BeTrue();
+        lote[0]!["registro"]!.AsObject().Select(static p => p.Key).Should().BeSubsetOf(declaradas);
+    }
+
+    [Fact(DisplayName = "A descrição de fonteGrant nomeia cada valor canônico da fonte, inclusive a titularidade")]
+    public void FonteGrant_DescricaoNomeiaCadaValorCanonico()
+    {
+        string descricao = PropriedadesDoSchema()["properties"]!["fonteGrant"]!["description"]!.GetValue<string>();
+
+        Enum.GetValues<FonteGrant>().Select(ValoresCanonicos.De)
+            .Should().AllSatisfy(valor => descricao.Should().Contain($"`{valor}`"));
+    }
+
     [Fact(DisplayName = "O schema recusa o registro sem um campo obrigatório")]
     public void RegistroSemCampoObrigatorio_NaoValida()
     {
@@ -95,4 +114,7 @@ public sealed class SchemaDoRegistroDeAcessoTests
 
         declarados.Should().BeEquivalentTo(canonicos);
     }
+
+    private static JsonObject PropriedadesDoSchema() =>
+        (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Contratos", "v1.schema.json")))!["$defs"]!["registro"]!;
 }

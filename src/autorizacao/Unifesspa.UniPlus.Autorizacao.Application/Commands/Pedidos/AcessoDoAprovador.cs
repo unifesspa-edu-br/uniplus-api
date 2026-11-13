@@ -12,8 +12,9 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// O que o solicitante da requisição pode fazer no fluxo dos pedidos: decidir cada etapa, administrar concessões e
 /// consultar os pedidos sem decidir, como o Encarregado de dados. Cada capacidade é avaliada pelo ponto de decisão único,
 /// por permissão do catálogo, sem registrar: quem usa o resultado grava o que governou o desfecho
-/// (<see cref="RegistrarAsync"/> e <see cref="RegistrarDoDesfechoAsync"/>), para que a trilha traga a decisão real e não
-/// uma negativa falsa de uma permissão que a pessoa nem precisava ter.
+/// (<see cref="RegistrarAsync"/>, <see cref="RegistrarDoDesfechoAsync"/> e, para os pedidos exibidos,
+/// <see cref="RegistrarLeituraAsync"/>), para que a trilha traga a decisão real e não uma negativa falsa de uma permissão
+/// que a pessoa nem precisava ter.
 /// </summary>
 internal sealed record AcessoDoAprovador(
     DecisaoDeAcesso DecisaoFuncional,
@@ -21,6 +22,13 @@ internal sealed record AcessoDoAprovador(
     DecisaoDeAcesso? DecisaoAdministrar,
     DecisaoDeAcesso? DecisaoConsultar)
 {
+    /// <summary>
+    /// O código que identifica no registro de acesso a leitura que a parte faz do próprio pedido sem a consulta dos
+    /// pedidos. Fica fora do catálogo de permissões: não entra em perfil, não se concede, não é aceito em pedido e não
+    /// decide nada (ADR-0166).
+    /// </summary>
+    internal const string CodigoDaLeituraPorTitularidade = "autorizacao:pedidos:ler-proprios";
+
     private static readonly PermissionRequirement PermissaoFuncional = Requisito(PermissaoAutorizacao.PedidosAprovarFuncional);
 
     private static readonly PermissionRequirement PermissaoProtecaoDeDados = Requisito(PermissaoAutorizacao.PedidosAprovarProtecaoDeDados);
@@ -28,6 +36,11 @@ internal sealed record AcessoDoAprovador(
     private static readonly PermissionRequirement PermissaoAdministrar = Requisito(PermissaoAutorizacao.ConcessoesAdministrar);
 
     private static readonly PermissionRequirement PermissaoConsultar = Requisito(PermissaoAutorizacao.PedidosConsultar);
+
+    // A leitura por titularidade tem a sensibilidade da consulta dos pedidos: a parte lê o nome, o e-mail, o texto livre
+    // e o anexo da outra parte, e o registro classifica o dado lido do mesmo modo nos dois caminhos.
+    private static readonly PermissionRequirement LeituraPorTitularidade =
+        PermissionRequirement.From(CodigoDaLeituraPorTitularidade, PermissaoConsultar.Sensibilidade).Value!;
 
     /// <summary>Decide a etapa do gestor de acessos.</summary>
     public bool Funcional => DecisaoFuncional is DecisaoPermitida;
@@ -99,10 +112,10 @@ internal sealed record AcessoDoAprovador(
 
     /// <summary>
     /// A decisão que governa a leitura de quem é parte do pedido, sem gravar: a da consulta dos pedidos, quando a pessoa a
-    /// tem, como o Encarregado de dados, para que a leitura dos próprios pedidos entre na trilha como as demais
-    /// (UNI-REQ-0372). Nula para quem não tem a consulta, que lê os próprios pedidos por titularidade, sem registro
-    /// (issue #2389). Sem sujeito na decisão, a falha é a identidade incompleta: a leitura não sai, porque não se sabe se
-    /// a pessoa tem a consulta e, portanto, se a leitura exige registro.
+    /// tem, como o Encarregado de dados, para que a leitura entre na trilha por ela (UNI-REQ-0372). Nula para quem não tem a
+    /// consulta, que lê os próprios pedidos por titularidade e tem a leitura registrada com essa origem (ADR-0166). A
+    /// pergunta é de capacidade: a negativa não se grava. Sem sujeito na decisão, a falha é a identidade incompleta, e a
+    /// leitura não sai, porque não se sabe por qual origem registrá-la.
     /// </summary>
     /// <param name="pedidoId">O pedido lido, ou nulo na fila dos próprios pedidos.</param>
     public static async Task<Result<DecisaoPermitida?>> GovernanteDaLeituraDaParteAsync(
@@ -115,6 +128,27 @@ internal sealed record AcessoDoAprovador(
         return consulta is SemSujeito
             ? Result<DecisaoPermitida?>.Failure(PedidoHandlerErros.IdentidadeIncompleta())
             : Result<DecisaoPermitida?>.Success(consulta as DecisaoPermitida);
+    }
+
+    /// <summary>
+    /// Registra, antes da entrega, a leitura de cada pedido exibido: pela decisão permitida que governou a leitura ou, sem
+    /// ela, por titularidade. Só a leitura de quem é parte chega sem decisão (<see cref="GovernanteDaLeituraDaParteAsync"/>):
+    /// as filas que exigem permissão são recusadas antes. Sem pedido exibido, nada se grava e o registro não é consultado.
+    /// </summary>
+    /// <returns>Nulo com a leitura registrada, ou a identidade incompleta quando o token não identifica a pessoa.</returns>
+    /// <exception cref="RegistroDeAcessoNaoGravadoException">O registro não foi gravado, e a leitura não sai.</exception>
+    public static async Task<DomainError?> RegistrarLeituraAsync(
+        IVerificadorDeAcesso verificador, DecisaoPermitida? governante, IReadOnlyCollection<Guid> pedidos, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(pedidos);
+
+        return (pedidos.Count, governante) switch
+        {
+            (0, _) => null,
+            (_, null) => await RegistrarPorTitularidadeAsync(verificador, pedidos, cancellationToken).ConfigureAwait(false),
+            (_, { } permitida) => await RegistrarPelaDecisaoAsync(verificador, permitida, pedidos, cancellationToken).ConfigureAwait(false),
+        };
     }
 
     /// <summary>
@@ -157,6 +191,24 @@ internal sealed record AcessoDoAprovador(
         await verificador.RegistrarDesfechoAsync(governantes, IntencaoDoRegistro.Aprovador, cancellationToken).ConfigureAwait(false);
 
         return governantes.OfType<DecisaoPermitida>().FirstOrDefault();
+    }
+
+    private static async Task<DomainError?> RegistrarPelaDecisaoAsync(
+        IVerificadorDeAcesso verificador, DecisaoPermitida governante, IReadOnlyCollection<Guid> pedidos, CancellationToken cancellationToken)
+    {
+        await verificador.RegistrarParaCadaAsync(
+            governante, ResourceTiposAutorizacao.Pedido, pedidos, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return null;
+    }
+
+    private static async Task<DomainError?> RegistrarPorTitularidadeAsync(
+        IVerificadorDeAcesso verificador, IReadOnlyCollection<Guid> pedidos, CancellationToken cancellationToken)
+    {
+        ResultadoDoAcesso registrada = await verificador.RegistrarLeituraPorTitularidadeAsync(
+            LeituraPorTitularidade, ResourceTiposAutorizacao.Pedido, pedidos, cancellationToken).ConfigureAwait(false);
+
+        return registrada == ResultadoDoAcesso.IdentidadeIncompleta ? PedidoHandlerErros.IdentidadeIncompleta() : null;
     }
 
     private bool Ve(FinalidadeDoAcesso finalidade) => finalidade == FinalidadeDoAcesso.Decisao ? Aprova : VeTodos;
