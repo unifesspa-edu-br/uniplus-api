@@ -25,7 +25,7 @@ public sealed class AvisosDaProvidenciaNoHostTests : ProvidenciasNoHostTestBase
     {
     }
 
-    [Fact(DisplayName = "A abertura avisa os gestores e a Representante, inclusive o gestor que solicitou, e não avisa o beneficiário que também é gestor")]
+    [Fact(DisplayName = "A abertura avisa os gestores e o Representante do controlador, inclusive o gestor que solicitou, e não avisa o beneficiário que também é gestor")]
     public async Task Abertura_AvisaAdministracaoMenosOBeneficiario()
     {
         Governanca g = await GovernancaAsync();

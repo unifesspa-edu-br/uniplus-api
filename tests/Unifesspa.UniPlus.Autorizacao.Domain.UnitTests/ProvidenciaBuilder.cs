@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
 /// Monta, pela fábrica do domínio, a providência que o teste precisa como pré-condição. Sem ajuste, Cecília Moura,
-/// Encarregada de dados com e-mail verificado, pede a retirada do acesso de Leandro Viana, cuja concessão está ativa e sem
+/// Encarregado de dados com e-mail verificado, pede a retirada do acesso de Leandro Viana, cuja concessão está ativa e sem
 /// prazo. Os testes da própria abertura chamam a fábrica direto.
 /// </summary>
 public sealed class ProvidenciaBuilder

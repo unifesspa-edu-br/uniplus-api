@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// Base das suítes da providência pelo host real, com transações reais. Cecília Moura é a Encarregada de dados que
+/// Base das suítes da providência pelo host real, com transações reais. Cecília Moura é o Encarregado de dados que
 /// solicita; Diogo, Isabella e Betina são gestores de acessos, e Marlene é Representante do controlador; Leandro é o
 /// beneficiário, com o e-mail dele gravado na concessão.
 /// </summary>
@@ -40,7 +40,7 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     {
     }
 
-    /// <summary>Reinicia o ambiente com três gestores de acessos, a Representante e a Encarregada, e devolve o cliente de cada um.</summary>
+    /// <summary>Reinicia o ambiente com três gestores de acessos, o Representante do controlador e o Encarregado de dados, e devolve o cliente de cada um.</summary>
     private protected async Task<Governanca> GovernancaAsync()
     {
         await ResetarAsync();
