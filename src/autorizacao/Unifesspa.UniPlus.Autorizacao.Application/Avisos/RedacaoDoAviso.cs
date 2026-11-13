@@ -18,6 +18,7 @@ internal static class RedacaoDoAviso
         .Concat(TextosDosAvisosDaContencao.Todos)
         .Concat(TextosDosAvisosDeReclassificacaoEDivergencia.Todos)
         .Concat(TextosDoAvisoDeTermoExigido.Todos)
+        .Concat(TextosDosAvisosDaProvidencia.Todos)
         .ToFrozenDictionary();
 
     public static string Assunto(TipoDeAviso tipo) => TextoDe(tipo).Assunto;

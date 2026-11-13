@@ -1,12 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.API.Errors;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
-[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, AutorizacaoDomainErrorRegistration>().")]
-internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistration
+/// <summary>O registro único dos erros de domínio do módulo Autorização, instanciado pelo contêiner como <see cref="IDomainErrorRegistration"/>.</summary>
+public sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
@@ -16,6 +13,7 @@ internal sealed class AutorizacaoDomainErrorRegistration : IDomainErrorRegistrat
         .. ErrosDoPedido.Mapeamentos(),
         .. ErrosDoTermo.Mapeamentos(),
         .. ErrosDaRevisao.Mapeamentos(),
+        .. ErrosDaProvidencia.Mapeamentos(),
         .. ErrosDaMigracao.Mapeamentos(),
         .. ErrosDaReclassificacao.Mapeamentos(),
     ];

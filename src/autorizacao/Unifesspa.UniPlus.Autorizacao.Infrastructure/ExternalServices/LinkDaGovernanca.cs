@@ -7,7 +7,8 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 /// <summary>
 /// Os links da governança de perfis na Configuração: <c>{endereço}/acessos/perfis/{id}</c> e
 /// <c>{endereço}/acessos/perfis/{id}/versoes/{versaoId}</c>, <c>{endereço}/acessos/perfis/{id}/janela</c>,
-/// <c>{endereço}/acessos/pedidos</c> e <c>{endereço}/acessos/pedidos/novo</c>.
+/// <c>{endereço}/acessos/pedidos</c>, <c>{endereço}/acessos/pedidos/novo</c> e
+/// <c>{endereço}/acessos/providencias/{id}</c>.
 /// </summary>
 public sealed class LinkDaGovernanca : ILinkDaGovernanca
 {
@@ -30,4 +31,6 @@ public sealed class LinkDaGovernanca : ILinkDaGovernanca
     public string DosPedidos() => $"{_base}/acessos/pedidos";
 
     public string DoNovoPedido() => $"{_base}/acessos/pedidos/novo";
+
+    public string DaProvidencia(Guid providenciaId) => $"{_base}/acessos/providencias/{providenciaId}";
 }

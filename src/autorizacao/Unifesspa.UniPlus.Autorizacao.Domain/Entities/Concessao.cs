@@ -27,7 +27,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class Concessao : EntityBase
 {
-    private const int MotivoMaxLength = 500;
+    /// <summary>Tamanho máximo do motivo da revogação, em caracteres (runas Unicode), também o da coluna que o guarda.</summary>
+    public const int MotivoMaxLength = 500;
 
     private readonly List<BaseDaPermissaoNaConcessao> _bases = [];
 
@@ -198,6 +199,16 @@ public sealed class Concessao : EntityBase
         BeneficiarioEmail is not null
         && string.Equals(BeneficiarioEmail, confirmacaoEmail?.Trim(), StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// A recusa da revogação pelo e-mail digitado que não confirma o beneficiário, no campo <c>confirmacaoEmail</c>; nula
+    /// quando confirma. É a mesma recusa em todo caminho que revoga a pedido de uma pessoa (UNI-REQ-0186).
+    /// </summary>
+    public FieldError? RecusaDaConfirmacao(string? confirmacaoEmail) =>
+        ConfirmaEmailDoBeneficiario(confirmacaoEmail)
+            ? null
+            : new FieldError("confirmacaoEmail", new DomainError(
+                ConcessaoErrorCodes.ConfirmacaoDivergente, "O e-mail informado não é o do beneficiário da concessão."));
+
     /// <summary>Ativa quando não foi revogada e a vigência, se houver, ainda não venceu.</summary>
     public bool EstaAtiva(DateTimeOffset agora) =>
         RevogadaEm is null && (ValidaAte is null || ValidaAte > agora);
@@ -357,9 +368,16 @@ public sealed class Concessao : EntityBase
             _ => "O perfil só pode ser concedido no escopo de uma unidade.",
         };
 
-    // O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena: sem esta
-    // recusa o valor só falharia ao gravar e responderia 500 em vez da validação de domínio.
-    private static string? NormalizarMotivo(string? motivo)
+    /// <summary>
+    /// O motivo aparado, ou nulo quando ausente, acima de <see cref="MotivoMaxLength"/> caracteres ou com o caractere nulo.
+    /// É também a regra do motivo da providência, porque no atendimento o mesmo texto vira o motivo da revogação.
+    /// </summary>
+    /// <remarks>
+    /// O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena: sem esta recusa o valor só falharia
+    /// ao gravar e responderia 500 em vez da validação de domínio. O tamanho conta caracteres, como a coluna, e não
+    /// unidades UTF-16.
+    /// </remarks>
+    internal static string? NormalizarMotivo(string? motivo)
     {
         if (string.IsNullOrWhiteSpace(motivo))
         {
@@ -368,7 +386,7 @@ public sealed class Concessao : EntityBase
 
         string normalizado = motivo.Trim();
 
-        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.Length > MotivoMaxLength
+        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.EnumerateRunes().Count() > MotivoMaxLength
             ? null
             : normalizado;
     }

@@ -85,6 +85,8 @@ internal static class DoublesDeAvisos
         public string DosPedidos() => "https://uniplus.test/configuracao/acessos/pedidos";
 
         public string DoNovoPedido() => "https://uniplus.test/configuracao/pedidos/novo";
+
+        public string DaProvidencia(Guid providenciaId) => $"https://uniplus.test/configuracao/acessos/providencias/{providenciaId}";
     }
 
     internal static MetricasDaGovernancaDePerfis MetricasDeTeste { get; } = new(TimeProvider.System);

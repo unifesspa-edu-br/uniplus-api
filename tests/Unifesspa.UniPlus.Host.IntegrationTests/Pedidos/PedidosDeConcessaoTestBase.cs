@@ -253,9 +253,13 @@ public abstract class PedidosDeConcessaoTestBase
         await ExecutarSqlAsync("DELETE FROM autorizacao.janelas_de_migracao");
     }
 
-    /// <summary>Apaga as liberações e as bases que apontam para as concessões, que as chaves estrangeiras não deixam para trás.</summary>
+    /// <summary>
+    /// Apaga as providências, as liberações e as bases que apontam para as concessões, que as chaves estrangeiras não
+    /// deixam para trás.
+    /// </summary>
     private protected async Task ApagarFatosDasConcessoesAsync()
     {
+        await ExecutarSqlAsync("DELETE FROM autorizacao.providencias");
         await ExecutarSqlAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao");
     }

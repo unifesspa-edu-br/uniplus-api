@@ -23,4 +23,7 @@ public interface ILinkDaGovernanca
 
     /// <summary>A tela para pedir um acesso.</summary>
     string DoNovoPedido();
+
+    /// <summary>A tela da providência sobre uma concessão.</summary>
+    string DaProvidencia(Guid providenciaId);
 }

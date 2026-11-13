@@ -101,16 +101,20 @@ public static class ConcessoesDeTeste
             .Construir();
     }
 
-    /// <summary>Apaga todas as concessões da pessoa, para o teste começar de uma pessoa sem acesso algum.</summary>
+    /// <summary>
+    /// Apaga todas as concessões da pessoa, para o teste começar de uma pessoa sem acesso algum, e antes as providências
+    /// solicitadas sobre elas, que a chave estrangeira não deixa para trás.
+    /// </summary>
     public static async Task RemoverDaPessoaAsync(IServiceProvider services, string sub)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(sub);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes
-            .Where(c => c.BeneficiarioEmissor == TestAuthHandler.DefaultIssuer && c.BeneficiarioSub == sub)
-            .ExecuteDeleteAsync();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        IQueryable<Concessao> daPessoa = db.Concessoes.Where(c => c.BeneficiarioEmissor == TestAuthHandler.DefaultIssuer && c.BeneficiarioSub == sub);
+        await db.Providencias.Where(p => daPessoa.Any(c => c.Id == p.ConcessaoId)).ExecuteDeleteAsync();
+        await daPessoa.ExecuteDeleteAsync();
     }
 
     /// <summary>Concede à pessoa um perfil novo que reúne as permissões, no escopo da instituição.</summary>

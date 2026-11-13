@@ -2063,6 +2063,124 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.ToTable("permissoes_implantadas", "autorizacao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Providencia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbertaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aberta_em");
+
+                    b.Property<Guid>("ConcessaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("concessao_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DesfechoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("desfecho_em");
+
+                    b.Property<string>("DesfechoPorEmissor")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("desfecho_por_emissor");
+
+                    b.Property<string>("DesfechoPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("desfecho_por_nome");
+
+                    b.Property<string>("DesfechoPorSub")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("desfecho_por_sub");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("estado");
+
+                    b.Property<string>("Fundamento")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("fundamento");
+
+                    b.Property<string>("MotivoDoDesfecho")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_do_desfecho");
+
+                    b.Property<string>("SolicitadaPorEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("solicitada_por_email");
+
+                    b.Property<string>("SolicitadaPorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("solicitada_por_emissor");
+
+                    b.Property<string>("SolicitadaPorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("solicitada_por_nome");
+
+                    b.Property<string>("SolicitadaPorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("solicitada_por_sub");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("tipo");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_providencias");
+
+                    b.HasIndex(new[] { "ConcessaoId" }, "ix_providencias_concessao")
+                        .HasDatabaseName("ix_providencias_concessao");
+
+                    b.HasIndex(new[] { "Estado", "Id" }, "ix_providencias_estado_id")
+                        .HasDatabaseName("ix_providencias_estado_id");
+
+                    b.HasIndex(new[] { "ConcessaoId" }, "ux_providencias_concessao_aberta")
+                        .IsUnique()
+                        .HasDatabaseName("ux_providencias_concessao_aberta")
+                        .HasFilter("estado = 'aberta'");
+
+                    b.ToTable("providencias", "autorizacao", t =>
+                        {
+                            t.HasCheckConstraint("ck_providencias_desfecho_completo", "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_sub IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_sub IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_providencias_estado", "estado IN ('aberta', 'respondida', 'atendida')");
+
+                            t.HasCheckConstraint("ck_providencias_fundamento", "char_length(fundamento) BETWEEN 10 AND 2000");
+
+                            t.HasCheckConstraint("ck_providencias_tipo", "tipo IN ('retirada', 'revisao')");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.RecalculoDaAprovacao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3409,6 +3527,16 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_permissoes_implantadas_implantacao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Providencia", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
+                        .WithMany()
+                        .HasForeignKey("ConcessaoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_providencias_concessoes_concessao_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.RecalculoDaAprovacao", b =>
