@@ -1,26 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ValueObjects;
 
 using Kernel.Results;
-
-using Queries.ProcessosSeletivos;
-
-using Services;
-
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Fecha a sessão editorial (ADR-0110): congela a versão N+1 <b>com a
@@ -47,319 +32,81 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// </remarks>
 public static class FecharRetificacaoCommandHandler
 {
-    public static Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
+    public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
         FecharRetificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        ISnapshotPublicacaoCanonicalizer canonicalizer,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        ISelecaoUnitOfWork unitOfWork,
-        IUserContext userContext,
-        ITipoAtoPublicadoReader tipoDeAtoReader,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
-        IModalidadeReader modalidadeReader,
-        ITipoDocumentoReader tipoDocumentoReader,
-        ITipoEtapaReader tipoEtapaReader,
-        ITipoDeficienciaReader tipoDeficienciaReader,
-        IRegraCatalogoReader regraCatalogoReader,
-        IFatoCandidatoReader fatoCandidatoReader,
-        ICalendarioVigenteReader calendarioVigenteReader,
-        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
-        IRegistroCodecsEnvelope registroCodecs,
-        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-
-        // A recópia das cópias do item altera o agregado rastreado antes dos gates seguintes; a
-        // recusa não devolve exceção, então o que ela mudou não pode ir para o banco.
-        return RecopiaAoCongelar.SemPersistirEmRecusaAsync(
-            unitOfWork,
-            () => Executar(command, processoSeletivoRepository, documentoAPublicarRepository, rascunhoDePublicacaoRepository, atoDoProcessoRepository, canonicalizer, resolvedorFuso, unitOfWork, userContext, tipoDeAtoReader, vagaDeLinhagemReader, obrigatoriedadeLegalRepository, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatoCandidatoReader, calendarioVigenteReader, unidadeResponsavelResolvedor, registroCodecs, fasesIniciadasDoProcesso, timeProvider, cancellationToken));
-    }
-
-    private static async Task<(Result Resposta, IEnumerable<object> Eventos)> Executar(
-        FecharRetificacaoCommand command,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IDocumentoAPublicarRepository documentoAPublicarRepository,
-        IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        ISnapshotPublicacaoCanonicalizer canonicalizer,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        ISelecaoUnitOfWork unitOfWork,
-        IUserContext userContext,
-        ITipoAtoPublicadoReader tipoDeAtoReader,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
-        IModalidadeReader modalidadeReader,
-        ITipoDocumentoReader tipoDocumentoReader,
-        ITipoEtapaReader tipoEtapaReader,
-        ITipoDeficienciaReader tipoDeficienciaReader,
-        IRegraCatalogoReader regraCatalogoReader,
-        IFatoCandidatoReader fatoCandidatoReader,
-        ICalendarioVigenteReader calendarioVigenteReader,
-        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
-        IRegistroCodecsEnvelope registroCodecs,
-        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
-        TimeProvider timeProvider,
+        ConferenciaDoAtoEDoDocumento atoEDocumento,
+        CongelamentoDaVersao congelamento,
+        LeituraDaBaseDaRetificacao leituraDaBase,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
-        ArgumentNullException.ThrowIfNull(canonicalizer);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(rascunhoDePublicacaoRepository);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
-        ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
-        ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
-        ArgumentNullException.ThrowIfNull(modalidadeReader);
-        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
-        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
-        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
-        ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
-        ArgumentNullException.ThrowIfNull(unidadeResponsavelResolvedor);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(atoEDocumento);
+        ArgumentNullException.ThrowIfNull(congelamento);
+        ArgumentNullException.ThrowIfNull(leituraDaBase);
 
-        ProcessoSeletivo? processo = await processoSeletivoRepository
+        Result<ProcessoSeletivo> obtido = await ObterParaFecharAsync(command, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
+        return obtido.IsFailure
+            ? (Result.Failure(obtido.Error!), [])
+            : await FecharAsync(obtido.Value!, command, atoEDocumento, congelamento, leituraDaBase, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<ProcessoSeletivo>> ObterParaFecharAsync(
+        FecharRetificacaoCommand command, IProcessoSeletivoRepository repositorio, CancellationToken cancellationToken)
+    {
+        ProcessoSeletivo? processo = await repositorio
             .ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return (Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId)), []);
+            return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        if (PrecondicoesDoFechamento.Recusa(command.Precondicao, processo) is { } recusa)
-        {
-            return (Result.Failure(recusa), []);
-        }
+        return PrecondicoesDoFechamento.Recusa(command.Precondicao, processo) is { } recusa
+            ? Result<ProcessoSeletivo>.Failure(recusa)
+            : Result<ProcessoSeletivo>.Success(processo);
+    }
 
-        Result<AtoEDocumentoConferidos> conferenciaDoAto = await ConferenciaDoAtoEDoDocumento
-            .ConferirAsync(
-                documentoAPublicarRepository, processoSeletivoRepository, tipoDeAtoReader, vagaDeLinhagemReader,
-                command.ProcessoSeletivoId, command.DocumentoEditalId, command.Ato, "no fechamento da retificação", cancellationToken)
+    private static async Task<(Result Resposta, IEnumerable<object> Eventos)> FecharAsync(
+        ProcessoSeletivo processo,
+        FecharRetificacaoCommand command,
+        ConferenciaDoAtoEDoDocumento atoEDocumento,
+        CongelamentoDaVersao congelamento,
+        LeituraDaBaseDaRetificacao leituraDaBase,
+        CancellationToken cancellationToken)
+    {
+        Result<AtoEDocumentoConferidos> ato = await atoEDocumento
+            .ConferirAsync(processo.Id, command.DocumentoEditalId, command.Ato, "no fechamento da retificação", cancellationToken)
             .ConfigureAwait(false);
-        if (conferenciaDoAto.IsFailure)
+        if (ato.IsFailure)
         {
-            return (Result.Failure(conferenciaDoAto.Error!), []);
+            return (Result.Failure(ato.Error!), []);
         }
 
-        (DocumentoAPublicar documento, TipoAtoPublicadoView tipoConferido, IReadOnlyList<Guid> atosDaLinhagem) = conferenciaDoAto.Value;
+        Result<BaseDaRetificacao> baseLida = await leituraDaBase.DaSessaoAbertaAsync(processo, cancellationToken).ConfigureAwait(false);
+        return baseLida.IsFailure
+            ? (Result.ValidationFailure(baseLida.Errors), [])
+            : await CongelarAsync(processo, command, ato.Value, baseLida.Value!, congelamento, leituraDaBase, cancellationToken).ConfigureAwait(false);
+    }
 
-        Result<VersaoConfiguracao> linhagem = await ConferenciaDaLinhagemRetificavel
-            .ConferirAsync(
-                processoSeletivoRepository, vagaDeLinhagemReader, atoDoProcessoRepository, registroCodecs,
-                processo, processo.Rascunho!.VersaoBaseId, cancellationToken)
-            .ConfigureAwait(false);
-        if (linhagem.IsFailure)
-        {
-            return (Result.ValidationFailure(linhagem.Errors), []);
-        }
+    private static Task<(Result Resposta, IEnumerable<object> Eventos)> CongelarAsync(
+        ProcessoSeletivo processo,
+        FecharRetificacaoCommand command,
+        AtoEDocumentoConferidos ato,
+        BaseDaRetificacao baseDaRetificacao,
+        CongelamentoDaVersao congelamento,
+        LeituraDaBaseDaRetificacao leituraDaBase,
+        CancellationToken cancellationToken)
+    {
+        EditalDeclarado edital = new(
+            command.Numero, command.PeriodoInscricaoInicio, command.PeriodoInscricaoFim, command.DocumentoEditalId, command.Anexos);
+        FechamentoDaSessao origem = new(baseDaRetificacao, processo.Rascunho!.FatosDasVersoesPublicadas);
 
-        VersaoConfiguracao versaoAtual = linhagem.Value!;
-
-        // O motivo é o do RASCUNHO — declarado na abertura e normalizado uma vez só. É o
-        // mesmo valor que o bloco `retificacao` do envelope congela e que viaja para o ato em
-        // Publicações; lê-lo de outra fonte faria os dois divergirem.
-        string motivo = processo.Rascunho.Motivo;
-
-        Result<CatalogoConferido> conferenciaDoCatalogo = await ConferenciaDoCatalogoEDaProtecao
-            .ConferirAsync(processo, fatoCandidatoReader, tipoDocumentoReader, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDoCatalogo.IsFailure)
-        {
-            return (Result.ValidationFailure(conferenciaDoCatalogo.Errors), []);
-        }
-
-        CatalogoConferido catalogo = conferenciaDoCatalogo.Value!;
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = catalogo.Fatos;
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo = catalogo.PorCodigo;
-        FatosDeModalidade fatosDeModalidade = catalogo.FatosDeModalidade;
-
-        Result<ProtecaoVigenteDoProcesso> recopia = await RecopiaAoCongelar
-            .RecopiarAsync(processo, catalogo, processo.Rascunho.FatosDasVersoesPublicadas.FatosJaColetados, await ProtecaoVigenteDasExigenciasDoProcesso.LerDaVersaoVigenteAsync(processoSeletivoRepository, registroCodecs, processo.Id, cancellationToken).ConfigureAwait(false), unidadeResponsavelResolvedor, cancellationToken)
-            .ConfigureAwait(false);
-        if (recopia.IsFailure)
-        {
-            return (Result.ValidationFailure(recopia.Errors), []);
-        }
-
-        ProtecaoVigenteDoProcesso protecaoDoProcesso = recopia.Value!;
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = protecaoDoProcesso.Exigencias;
-
-        // O gate de conformidade precede a canonicalização (ADR-0109 D5) — a retificação
-        // também congela uma versão append-only e vinculante.
-        if (ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)) is { } pendencia)
-        {
-            return (Result.Failure(pendencia), []);
-        }
-
-        // Cascata de remanejamento de cotas (UNI-REQ-0056) — cross-dimensão,
-        // fora do agregador genérico acima. Mesma antecipação da publicação (ADR-0109 D5).
-        if (CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)) is { } pendenciaCascata)
-        {
-            return (Result.Failure(pendenciaCascata), []);
-        }
-
-        // Antecipado: a conferência legal abaixo precisa do fuso para derivar o dia civil do
-        // início da inscrição. Falha aqui é defeito de instalação (500), não gate.
-        Result<TimeZoneInfo> fusoResult = resolvedorFuso.Resolver();
-        if (fusoResult.IsFailure)
-        {
-            return (Result.Failure(fusoResult.Error!), []);
-        }
-
-        TimeZoneInfo fusoInstitucional = fusoResult.Value!;
-
-        // Depois da resolução do fuso: a janela de isenção conta cinco dias corridos, e o quinto
-        // dia só se completa no último instante do dia no fuso institucional.
-        if (PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), fusoInstitucional) is { } pendenciaCronograma)
-        {
-            return (Result.Failure(pendenciaCronograma), []);
-        }
-
-        // O tipo que a versão vigente já congelou mantém a classificação dela: mudar o catálogo depois
-        // não alcança o processo já publicado, nem pela retificação.
-        Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> jaCongelados = CongelamentoDosTiposDeAto.DaVersao(registroCodecs, versaoAtual);
-        if (jaCongelados.IsFailure)
-        {
-            return (Result.Failure(jaCongelados.Error!), []);
-        }
-
-        Result<TiposDeAtoUnicosPorObjeto> tiposUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ConferirAsync(tipoDeAtoReader, atoDoProcessoRepository, processo, tipoConferido, atosDaLinhagem, timeProvider, fusoInstitucional, jaCongelados.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (tiposUnicos.IsFailure)
-        {
-            return (Result.Failure(tiposUnicos.Error!), []);
-        }
-
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = tiposUnicos.Value!;
-
-        Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> tiposDeAtoCongelados = CongelamentoDosTiposDeAto.Resolver(processo, tiposDeAtoUnicos);
-        if (tiposDeAtoCongelados.IsFailure)
-        {
-            return (Result.Failure(tiposDeAtoCongelados.Error!), []);
-        }
-
-        Result<IReadOnlyList<AnexoDoEdital>> conferenciaDosAnexos = await ConferenciaDosAnexosDoEdital
-            .ConferirAsync(documentoAPublicarRepository, command.ProcessoSeletivoId, command.Anexos, LeituraDoCertameEdital.AnexosDaVersao(versaoAtual, herdaOsDaVersao: command.Anexos is null), cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDosAnexos.IsFailure)
-        {
-            return (Result.Failure(conferenciaDosAnexos.Error!), []);
-        }
-
-        Result<DadosEdital> dadosResult = ResolucaoDoPeriodoDeInscricao.Resolver(
-            processo,
-            command.Numero,
-            command.PeriodoInscricaoInicio,
-            command.PeriodoInscricaoFim,
-            command.DocumentoEditalId,
-            conferenciaDosAnexos.Value!);
-        if (dadosResult.IsFailure)
-        {
-            return (Result.Failure(dadosResult.Error!), []);
-        }
-
-        DadosEdital dados = dadosResult.Value!;
-
-        Result<ResultadoConformidade> conformidadeLegal = await ConferenciaDeConformidadeLegal
-            .AvaliarAsync(obrigatoriedadeLegalRepository, processo, dados.DiaDeReferenciaLegal(fusoInstitucional), modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, fatosDeModalidade, cancellationToken)
-            .ConfigureAwait(false);
-        if (conformidadeLegal.IsFailure)
-        {
-            return (Result.Failure(conformidadeLegal.Error!), []);
-        }
-
-        // Terceira dimensão de conformidade (ADR-0109 D5): documentos
-        // exigidos, coerência da consequência de indeferimento e referência temporal de
-        // fatos. A canonicalização abaixo resolve dataReferenciaFatos internamente e LANÇA
-        // quando a política não resolve — sem este guard antes dela, um processo inválido
-        // vira exceção não tratada em vez do DomainError que o contrato HTTP promete.
-        if (ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), fatosDeModalidade, protecaoDasExigencias) is { } pendenciaPreCanonicalizacao)
-        {
-            return (Result.Failure(pendenciaPreCanonicalizacao), []);
-        }
-
-        Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadadosFatosResult =
-            ConferenciaDosFatosAoCongelar.Conferir(processo, catalogoPorCodigo);
-        if (metadadosFatosResult.IsFailure)
-        {
-            return (Result.Failure(metadadosFatosResult.Error!), []);
-        }
-
-        // UNI-REQ-0072: os valores que o candidato pode escolher para cada fato de
-        // seleção coletado — a configuração EDITADA pela sessão pode ter alterado a coleta.
-        Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> valoresSelecionaveisResult =
-            ResolvedorValoresSelecionaveisCongelados.Resolver(processo, catalogoPorCodigo);
-        if (valoresSelecionaveisResult.IsFailure)
-        {
-            return (Result.Failure(valoresSelecionaveisResult.Error!), []);
-        }
-
-        // O metadado dos fatos dos gatilhos e a operação dos agregados vêm do catálogo na hora de
-        // congelar: o fato já coletado por versão publicada não os troca (UNI-REQ-0144).
-        IReadOnlyList<DefinicaoAgregado> agregadosDosGrupos =
-            DefinicaoAvaliavelDoProcesso.AgregadosDosGrupos(processo.GruposColetados, catalogoPorCodigo);
-        if (ConferenciaDosEixosDosFatosColetados.Conferir(processo.Rascunho.FatosDasVersoesPublicadas, metadadosFatosResult.Value, agregadosDosGrupos) is { } eixoTrocado)
-        {
-            return (Result.Failure(eixoTrocado), []);
-        }
-
-        // Defesa para o item que chegou à configuração sem passar pela escrita, que já o conferiu.
-        if (processo.Rascunho.FatosDasVersoesPublicadas.PrimeiroItemComEixoTrocado(processo.FatosColetados, processo.GruposColetados) is { } itemTrocado)
-        {
-            return (Result.Failure(itemTrocado.ParaErro()), []);
-        }
-
-        // Os fatos que as regras citam e nenhum formulário pergunta saem com o rótulo e o tipo do
-        // catálogo, congelados na versão; o fato citado sem cadastro recusa aqui, antes de canonicalizar.
-        Result<DefinicaoAvaliavel> avaliavel = await ConferenciaDosMotivosAoCongelar.UltimosPortoesAsync(processoSeletivoRepository, processo, catalogoDeFatos, cancellationToken).ConfigureAwait(false);
-        if (avaliavel.IsFailure)
-        {
-            return (Result.ValidationFailure(avaliavel.Errors), []);
-        }
-
-        string atorUsuarioSub = userContext.UserId ?? "system";
-
-        PedidoDeCongelamento pedido = await MontagemDoCongelamento
-            .MontarAsync(
-                calendarioVigenteReader, canonicalizer, timeProvider,
-                new EntradaCanonicalizacao(
-                    processo, dados, documento.HashSha256!, fusoResult.Value!.Id,
-                    new RetificacaoInfo(versaoAtual.AtoCriadorId, motivo),
-                    conformidadeLegal.Value,
-                    metadadosFatosResult.Value,
-                    valoresSelecionaveisResult.Value,
-                    CalendarioDiasUteis: null,
-                    agregadosDosGrupos,
-                    ApresentacaoDosPressupostos: avaliavel.Value!.ApresentacaoDosPressupostos,
-                    TiposDeAtoCongelados: tiposDeAtoCongelados.Value,
-                    FatosDerivadosCongelados: protecaoDoProcesso.FatosDerivados),
-                fusoInstitucional, atorUsuarioSub, fatosDeModalidade, tiposDeAtoUnicos, cancellationToken)
-            .ConfigureAwait(false);
-
-        Result<VersaoConfiguracao> fechamento = await FecharComAUnidadeDaFaseConferidaAsync(
-            processo, pedido, versaoAtual, command.Precondicao, fasesIniciadasDoProcesso, timeProvider, cancellationToken).ConfigureAwait(false);
-        if (fechamento.IsFailure)
-        {
-            return (Result.Failure(fechamento.Error!), []);
-        }
-
-        return await GravacaoDaVersaoCongelada
-            .GravarAsync(
-                new VersaoCongelada(processo, fechamento.Value!, command.Ato, tipoConferido, dados, documento, versaoAtual.AtoCriadorId, motivo),
-                processoSeletivoRepository, atoDoProcessoRepository, rascunhoDePublicacaoRepository, unitOfWork, timeProvider, cancellationToken)
-            .ConfigureAwait(false);
+        return congelamento.CongelarAsync(
+            processo, edital, ato, origem,
+            pedido => FecharComAUnidadeDaFaseConferidaAsync(processo, pedido, baseDaRetificacao.VersaoVigente, command.Precondicao, leituraDaBase, cancellationToken),
+            cancellationToken);
     }
 
     // A fase pode ter começado depois da edição do cronograma: a unidade trocada é conferida contra o que a versão
@@ -369,17 +116,9 @@ public static class FecharRetificacaoCommandHandler
         PedidoDeCongelamento pedido,
         VersaoConfiguracao versaoAtual,
         PrecondicaoIfMatch precondicao,
-        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
-        TimeProvider timeProvider,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
-
-        FasesIniciadas iniciadas = await fasesIniciadasDoProcesso
-            .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-
-        return (iniciadas.RecusaDaAlteracao(processo.CronogramaFases) ?? iniciadas.RecusaDaRemocaoDaEtapa(processo.Etapas)) is { } recusa
+        LeituraDaBaseDaRetificacao leituraDaBase,
+        CancellationToken cancellationToken) =>
+        await leituraDaBase.RecusaPorFaseIniciadaAsync(processo, cancellationToken).ConfigureAwait(false) is { } recusa
             ? Result<VersaoConfiguracao>.Failure(recusa)
             : processo.FecharRetificacao(pedido, versaoAtual, precondicao);
-    }
 }

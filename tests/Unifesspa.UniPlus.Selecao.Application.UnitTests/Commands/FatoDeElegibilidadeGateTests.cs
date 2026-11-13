@@ -40,30 +40,12 @@ public sealed class FatoDeElegibilidadeGateTests
         ProcessoSeletivo processo = ProcessoQueAplicaOAcrescimo();
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
+        (Result resposta, IEnumerable<object> eventos) = await ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComCanonicalizer(canonicalizer)
+            .ComCatalogoDeFatos(CatalogoQueResolveNaHabilitacao())
+            .PublicarAsync(new PublicarProcessoSeletivoCommand(
                 processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CatalogoQueResolveNaHabilitacao(),
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()));
 
         resposta.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
         _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
@@ -75,82 +57,40 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
 
-        (Result resposta, IEnumerable<object> eventos) = await RetificarProcessoSeletivoCommandHandler.Handle(
-            new RetificarProcessoSeletivoCommand(
-                processo.Id, "Correção do prazo", "001/2026-R1",
-                null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            repositorio,
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CatalogoQueResolveNaHabilitacao(),
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await ServicosDoCatalogoQueResolveNaHabilitacao(processo, versaoAtual, canonicalizer)
+            .RetificarAsync(processo.Id);
 
-        resposta.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        eventos.Should().BeEmpty();
+        AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(resposta, eventos, canonicalizer);
     }
 
     [Fact(DisplayName = "Fechar a retificação recusa, antes de canonicalizar, o fato de elegibilidade que o catálogo só resolve na habilitação")]
     public async Task FecharRetificacao_FatoResolvidoNaHabilitacao_Recusa()
     {
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
-        processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora)
-            .IsSuccess.Should().BeTrue();
-        processo.DequeueDomainEvents();
+        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
 
-        (Result resposta, IEnumerable<object> eventos) = await FecharRetificacaoCommandHandler.Handle(
-            ComandoDeFechamentoDaRetificacao(processo.Id),
-            repositorio,
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CatalogoQueResolveNaHabilitacao(),
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            FasesIniciadasDeTeste.Nenhuma(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await ServicosDoCatalogoQueResolveNaHabilitacao(processo, versaoAtual, canonicalizer)
+            .FecharRetificacaoAsync(processo.Id);
 
+        AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(resposta, eventos, canonicalizer);
+        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
+    }
+
+    private static ServicosDoCongelamentoDeTeste ServicosDoCatalogoQueResolveNaHabilitacao(
+        ProcessoSeletivo processo, VersaoConfiguracao versaoAtual, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
+        ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComVersaoVigente(processo, versaoAtual)
+            .ComCanonicalizer(canonicalizer)
+            .ComCatalogoDeFatos(CatalogoQueResolveNaHabilitacao());
+
+    private static void AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(
+        Result resposta, IEnumerable<object> eventos, ISnapshotPublicacaoCanonicalizer canonicalizer)
+    {
         resposta.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao);
         _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         eventos.Should().BeEmpty();
-        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
     }
 
     /// <summary>
@@ -252,9 +192,6 @@ public sealed class FatoDeElegibilidadeGateTests
         contexto.UserId.Returns("user-sub-1");
         return contexto;
     }
-
-    private static FecharRetificacaoCommand ComandoDeFechamentoDaRetificacao(Guid processoId) =>
-        new(processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga);
 
     private static DadosDoAto NovoAto() => new(
         Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),

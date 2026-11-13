@@ -116,15 +116,12 @@ public sealed class FecharRetificacaoUnidadeDeFaseIniciadaTests
         IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
         repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
 
-        return FecharRetificacaoCommandHandler.Handle(
-            new FecharRetificacaoCommand(
-                processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga),
-            repositorio, RepositorioDeDocumento(processo.Id), Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(), CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(), UsuarioAutenticado(), TipoDeAtoReader(), Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(), CadastrosVivos.Modalidades(), CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(), Substitute.For<ICalendarioVigenteReader>(), ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(), FasesIniciadasDeTeste.Com(iniciadas), new RelogioFixo(Agora), CancellationToken.None);
+        return ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComRepositorio(repositorio)
+            .ComCanonicalizer(CanonicalizerSubstituto())
+            .ComCalendario(Substitute.For<ICalendarioVigenteReader>())
+            .ComFasesIniciadas(FasesIniciadasDeTeste.Com(iniciadas))
+            .FecharRetificacaoAsync(new FecharRetificacaoCommand(
+                processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga));
     }
 }

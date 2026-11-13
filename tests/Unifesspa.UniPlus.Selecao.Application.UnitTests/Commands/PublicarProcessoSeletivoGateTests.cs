@@ -57,92 +57,18 @@ public sealed class PublicarProcessoSeletivoGateTests
     [Fact(DisplayName = "Publicar_ProcessoNaoConforme_NaoCanonicaliza — o gate precede a projeção (CA-10)")]
     public async Task Publicar_ProcessoNaoConforme_NaoCanonicaliza()
     {
-        // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        // Cobra a taxa com um fundamento e não escolheu motivo: a recusa estrutural tem de vir antes da
-        // cobertura dos motivos, que é o último portão.
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-
-        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
-        documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>())
-            .Returns(documento);
-
         CanonicalizerEspiao canonicalizer = new();
-
-        IUserContext userContext = Substitute.For<IUserContext>();
-        userContext.UserId.Returns("teste");
-
-        // As conferências que precedem o gate no handler (tipo de ato, vaga de
-        // linhagem) têm de PASSAR — senão o teste provaria a recusa errada e o
-        // canonicalizador ficaria sem ser chamado por outro motivo.
-        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
-        tipoDeAtoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView(
-                Codigo: "EDITAL_ABERTURA",
-                Nome: "Edital de abertura",
-                CongelaConfiguracao: true,
-                UnicoPorObjeto: true,
-                EfeitoIrreversivel: false,
-                EhResultado: false));
-
-        IVagaDeLinhagemReader vagaDeLinhagemReader = Substitute.For<IVagaDeLinhagemReader>();
-
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                ProcessoSeletivoId: processo.Id,
-                Numero: "001/2026",
-                // Processo sem cronograma, portanto sem fase que colete inscrição: aqui o período
-                // continua vindo do ato, e não da fase (issue #1350).
-                PeriodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-                PeriodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-                DocumentoEditalId: documento.Id,
-                Ato: new DadosDoAto(
-                    Orgao: "CEPS",
-                    Serie: "EDITAL",
-                    Ano: 2026,
-                    DataPublicacao: new DateOnly(2026, 1, 1),
-                    Assinante: "Diretor do CEPS",
-                    TipoAtoCodigo: "EDITAL_ABERTURA")),
-            processoRepository,
-            documentoRepository,
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            userContext,
-            tipoDeAtoReader,
-            vagaDeLinhagemReader,
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            TimeProvider.System,
-            CancellationToken.None);
+        PublicacaoSobGate gate = new(ProcessoNaoConformeQueCobraTaxaSemMotivo(), canonicalizer, TipoDeAberturaDoEdital());
+        (Result resposta, IEnumerable<object> eventos) = await gate.PublicarAsync("EDITAL_ABERTURA", PeriodoDoAtoInicio, PeriodoDoAtoFim);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             "o contrato HTTP não muda — continua sendo o mesmo 422 de sempre");
-
-        await processoRepository.DidNotReceive().ListarMotivosEscolhidosAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await gate.Servicos.Repositorio.DidNotReceive().ListarMotivosEscolhidosAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         canonicalizer.FoiInvocado.Should().BeFalse(
             "um processo não conforme NÃO chega a ser canonicalizado (ADR-0109 D5). Sem o gate antecipado, a " +
             "projeção de uma dimensão obrigatória ausente lançaria (D8) e o 422 viraria 500.");
-
         eventos.Should().BeEmpty();
     }
 
@@ -198,66 +124,10 @@ public sealed class PublicarProcessoSeletivoGateTests
     {
         // O cronograma do builder declara RESULTADO_CLASSIFICACAO como produto; o ato desta publicação é do
         // mesmo tipo, que o catálogo declara único: duas declarações para uma única vaga.
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Tipo único");
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
-        documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
-
         CanonicalizerEspiao canonicalizer = new();
-        IUserContext userContext = Substitute.For<IUserContext>();
-        userContext.UserId.Returns("teste");
+        PublicacaoSobGate gate = new(ProcessoSeletivoConformeBuilder.Criar("PS Tipo único"), canonicalizer, TipoUnicoDeResultadoDaClassificacao());
 
-        TipoAtoPublicadoView tipo = new("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
-        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
-        tipoDeAtoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(tipo);
-        tipoDeAtoReader.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns([tipo]);
-
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
-                Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                ProcessoSeletivoId: processo.Id,
-                Numero: "001/2026",
-                PeriodoInscricaoInicio: null,
-                PeriodoInscricaoFim: null,
-                DocumentoEditalId: documento.Id,
-                Ato: new DadosDoAto(
-                    Orgao: "CEPS",
-                    Serie: "EDITAL",
-                    Ano: 2026,
-                    DataPublicacao: new DateOnly(2026, 1, 1),
-                    Assinante: "Diretor do CEPS",
-                    TipoAtoCodigo: "RESULTADO_CLASSIFICACAO")),
-            processoRepository,
-            documentoRepository,
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            userContext,
-            tipoDeAtoReader,
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            TimeProvider.System,
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await gate.PublicarAsync("RESULTADO_CLASSIFICACAO");
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez");
@@ -268,25 +138,40 @@ public sealed class PublicarProcessoSeletivoGateTests
     [Fact(DisplayName = "Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard — o gate B-03 também precede a canonicalização (ADR-0109 D5)")]
     public async Task Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard()
     {
-        ProcessoSeletivo processo = NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out _);
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-
-        IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
-        documentoRepository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>())
-            .Returns(documento);
-
         CanonicalizerQueResolveReferenciaTemporalFatos canonicalizer = new();
+        PublicacaoSobGate gate = new(NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out _), canonicalizer, TipoDeAberturaDoEdital());
 
-        IUserContext userContext = Substitute.For<IUserContext>();
-        userContext.UserId.Returns("teste");
+        (Result resposta, IEnumerable<object> eventos) = await gate.PublicarAsync("EDITAL_ABERTURA");
 
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
+        canonicalizer.FoiInvocado.Should().BeFalse(
+            "o guard B-03 (PendenciaPreCanonicalizacao) precede a canonicalização — sem ele, " +
+            "ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)) lançaria dentro do canonicalizador e a publicação " +
+            "devolveria 500 em vez do 422 nomeado.");
+        eventos.Should().BeEmpty();
+    }
+
+    private static readonly DateTimeOffset PeriodoDoAtoInicio = new(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3));
+    private static readonly DateTimeOffset PeriodoDoAtoFim = new(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3));
+
+    // Cobra a taxa com um fundamento e não escolheu motivo: a recusa estrutural tem de vir antes da
+    // cobertura dos motivos, que é o último portão. Sem cronograma, não há fase que colete inscrição:
+    // o período continua vindo do ato.
+    private static ProcessoSeletivo ProcessoNaoConformeQueCobraTaxaSemMotivo()
+    {
+        // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
+
+        return processo;
+    }
+
+    // As conferências que precedem o gate no handler (tipo de ato, vaga de linhagem) têm de PASSAR — senão o teste
+    // provaria a recusa errada e o canonicalizador ficaria sem ser chamado por outro motivo.
+    private static ITipoAtoPublicadoReader TipoDeAberturaDoEdital()
+    {
         ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
         tipoDeAtoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(new TipoAtoPublicadoView(
@@ -297,56 +182,92 @@ public sealed class PublicarProcessoSeletivoGateTests
                 EfeitoIrreversivel: false,
                 EhResultado: false));
 
-        IVagaDeLinhagemReader vagaDeLinhagemReader = Substitute.For<IVagaDeLinhagemReader>();
+        return tipoDeAtoReader;
+    }
 
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        obrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync(
-                Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns([]);
+    private static ITipoAtoPublicadoReader TipoUnicoDeResultadoDaClassificacao()
+    {
+        TipoAtoPublicadoView tipo = new("RESULTADO_CLASSIFICACAO", "Resultado da classificação", CongelaConfiguracao: true, UnicoPorObjeto: true, EfeitoIrreversivel: false, EhResultado: true);
+        ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
+        tipoDeAtoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(tipo);
+        tipoDeAtoReader.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([tipo]);
 
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                ProcessoSeletivoId: processo.Id,
+        return tipoDeAtoReader;
+    }
+
+    /// <summary>O processo, o documento do edital confirmado e as portas que a publicação lê, para o ato de abertura.</summary>
+    private sealed class PublicacaoSobGate
+    {
+        private readonly ProcessoSeletivo _processo;
+        private readonly DocumentoAPublicar _documento;
+
+        public PublicacaoSobGate(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer, ITipoAtoPublicadoReader tipoDeAtoReader)
+        {
+            _processo = processo;
+            _documento = DocumentoAPublicar.IniciarPendente(
+                processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+            _documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
+            Servicos = new ServicosDoCongelamentoDeTeste()
+                .ComRepositorio(RepositorioQueDevolve(processo))
+                .ComDocumentos(RepositorioDoDocumento(_documento))
+                .ComCanonicalizer(canonicalizer)
+                .ComUsuario(UsuarioDeTeste())
+                .ComTiposDeAto(tipoDeAtoReader)
+                .ComObrigatoriedadesLegais(ObrigatoriedadesSemRegraVigente())
+                .ComCatalogoDeFatos(Substitute.For<IFatoCandidatoReader>())
+                .ComCalendario(Substitute.For<ICalendarioVigenteReader>())
+                .ComRelogio(TimeProvider.System);
+        }
+
+        public ServicosDoCongelamentoDeTeste Servicos { get; }
+
+        public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync(
+            string tipoAtoCodigo, DateTimeOffset? periodoInicio = null, DateTimeOffset? periodoFim = null) =>
+            Servicos.PublicarAsync(new PublicarProcessoSeletivoCommand(
+                ProcessoSeletivoId: _processo.Id,
                 Numero: "001/2026",
-                PeriodoInscricaoInicio: null,
-                PeriodoInscricaoFim: null,
-                DocumentoEditalId: documento.Id,
+                PeriodoInscricaoInicio: periodoInicio,
+                PeriodoInscricaoFim: periodoFim,
+                DocumentoEditalId: _documento.Id,
                 Ato: new DadosDoAto(
                     Orgao: "CEPS",
                     Serie: "EDITAL",
                     Ano: 2026,
                     DataPublicacao: new DateOnly(2026, 1, 1),
                     Assinante: "Diretor do CEPS",
-                    TipoAtoCodigo: "EDITAL_ABERTURA")),
-            processoRepository,
-            documentoRepository,
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            userContext,
-            tipoDeAtoReader,
-            vagaDeLinhagemReader,
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            Substitute.For<IFatoCandidatoReader>(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            TimeProvider.System,
-            CancellationToken.None);
+                    TipoAtoCodigo: tipoAtoCodigo)));
 
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
+        private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)
+        {
+            IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
+            repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        canonicalizer.FoiInvocado.Should().BeFalse(
-            "o guard B-03 (PendenciaPreCanonicalizacao) precede a canonicalização — sem ele, " +
-            "ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)) lançaria dentro do canonicalizador e a publicação " +
-            "devolveria 500 em vez do 422 nomeado.");
+            return repositorio;
+        }
 
-        eventos.Should().BeEmpty();
+        private static IDocumentoAPublicarRepository RepositorioDoDocumento(DocumentoAPublicar documento)
+        {
+            IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
+            repositorio.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
+
+            return repositorio;
+        }
+
+        private static IUserContext UsuarioDeTeste()
+        {
+            IUserContext usuario = Substitute.For<IUserContext>();
+            usuario.UserId.Returns("teste");
+
+            return usuario;
+        }
+
+        private static IObrigatoriedadeLegalRepository ObrigatoriedadesSemRegraVigente()
+        {
+            IObrigatoriedadeLegalRepository repositorio = Substitute.For<IObrigatoriedadeLegalRepository>();
+            repositorio.ObterVigentesParaTipoProcessoAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([]);
+
+            return repositorio;
+        }
     }
 }

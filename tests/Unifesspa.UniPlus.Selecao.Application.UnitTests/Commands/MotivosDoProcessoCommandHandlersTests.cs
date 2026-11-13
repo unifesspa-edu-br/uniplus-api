@@ -166,8 +166,9 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         MotivoDeDecisao origem = Motivo();
         MotivoDoProcesso escolhido = Escolhido(origem);
 
-        Result resultado = await ConferenciaDosMotivosAoCongelar.ConferirAsync(
-            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]), processo, CancellationToken.None);
+        Result resultado = await new ConferenciaDosMotivosAoCongelar(
+            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]))
+            .ConferirAsync(processo, CancellationToken.None);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
         escolhido.Congelado.Should().BeFalse();
@@ -180,8 +181,9 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         MotivoDoProcesso escolhido = Escolhido(origem);
         origem.Desativar();
 
-        Result resultado = await ConferenciaDosMotivosAoCongelar.ConferirAsync(
-            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]), NovoProcesso(), CancellationToken.None);
+        Result resultado = await new ConferenciaDosMotivosAoCongelar(
+            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]))
+            .ConferirAsync(NovoProcesso(), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.MotivoDesativado);
     }
@@ -192,8 +194,9 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         MotivoDeDecisao origem = Motivo();
         MotivoDoProcesso escolhido = Escolhido(origem);
 
-        Result resultado = await ConferenciaDosMotivosAoCongelar.ConferirAsync(
-            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]), NovoProcesso(), CancellationToken.None);
+        Result resultado = await new ConferenciaDosMotivosAoCongelar(
+            MotivosDoProcessoDeTeste.Com([new MotivoEscolhidoComOrigem(escolhido, origem)]))
+            .ConferirAsync(NovoProcesso(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         escolhido.Congelado.Should().BeTrue();
@@ -206,8 +209,9 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
 
-        Result<DefinicaoAvaliavel> resultado = await ConferenciaDosMotivosAoCongelar.UltimosPortoesAsync(
-            MotivosDoProcessoDeTeste.Com([]), processo, [], CancellationToken.None);
+        Result<DefinicaoAvaliavel> resultado = await new ConferenciaDosMotivosAoCongelar(
+            MotivosDoProcessoDeTeste.Com([]))
+            .UltimosPortoesAsync(processo, [], CancellationToken.None);
 
         resultado.Errors.Should().HaveCount(2).And.OnlyContain(e => e.Error.Code == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
     }

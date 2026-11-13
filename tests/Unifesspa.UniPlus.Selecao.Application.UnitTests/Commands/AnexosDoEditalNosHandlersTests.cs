@@ -202,29 +202,10 @@ public sealed class AnexosDoEditalNosHandlersTests
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         IReadOnlyList<AnexoSolicitadoDoEdital>? anexos,
         IAtoDoProcessoRepository? atos = null) =>
-        PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: anexos),
-            RepositorioDoProcesso(processo),
-            documentos,
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            atos ?? Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            RepositorioCom(RegraQueAprova()),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        ServicosDoCongelamento(processo, documentos, canonicalizer)
+            .ComAtos(atos ?? Substitute.For<IAtoDoProcessoRepository>())
+            .PublicarAsync(new PublicarProcessoSeletivoCommand(
+                processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: anexos));
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync(
         ProcessoSeletivo processo,
@@ -233,33 +214,20 @@ public sealed class AnexosDoEditalNosHandlersTests
         IReadOnlyList<AnexoSolicitadoDoEdital>? anexos,
         params DocumentoAPublicar[] documentosDoProcesso)
     {
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(vigente);
+        ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamento(
+            processo, RepositorioDeDocumento(processo.Id, documentosDoProcesso), canonicalizer);
+        servicos.Repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(vigente);
 
-        return RetificarProcessoSeletivoCommandHandler.Handle(
-            new RetificarProcessoSeletivoCommand(
-                processo.Id, "Correção do prazo", "001/2026-R1", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: anexos),
-            repositorio,
-            RepositorioDeDocumento(processo.Id, documentosDoProcesso),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            RepositorioCom(RegraQueAprova()),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        return servicos.RetificarAsync(new RetificarProcessoSeletivoCommand(
+            processo.Id, "Correção do prazo", "001/2026-R1", null, null,
+            DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Anexos: anexos));
     }
+
+    private static ServicosDoCongelamentoDeTeste ServicosDoCongelamento(
+        ProcessoSeletivo processo, IDocumentoAPublicarRepository documentos, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
+        ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComDocumentos(documentos)
+            .ComCanonicalizer(canonicalizer)
+            .ComObrigatoriedadesLegais(RepositorioCom(RegraQueAprova()))
+            .ComCalendario(Substitute.For<ICalendarioVigenteReader>());
 }

@@ -46,6 +46,8 @@ internal sealed class CenarioDeRetificacaoPublicada
 
     public ProcessoSeletivo Processo => _handlers.Processo;
 
+    public ServicosDoCongelamentoDeTeste Servicos => _handlers.Servicos;
+
     /// <summary>A entrada que o handler entregou ao canonicalizador na última chamada.</summary>
     public EntradaCanonicalizacao? EntradaCanonicalizada { get; private set; }
 
@@ -76,21 +78,8 @@ internal sealed class CenarioDeRetificacaoPublicada
     public void ComUnidadesVivas(params UnidadeResponsavelSnapshot[] vivas) =>
         _handlers.Unidades = ResolvedorDeUnidadeDeTeste.Com(vivas);
 
-    /// <summary>
-    /// O processo passa a cobrar a taxa com um fundamento de isenção e não escolheu motivo algum.
-    /// Sob a sessão, pela edição; sem ela, direto no estado, porque o processo publicado não se edita.
-    /// </summary>
-    public void ComIsencaoHabilitadaSemMotivos()
-    {
-        ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!;
-        if (Processo.Rascunho is not null)
-        {
-            Processo.DefinirTaxaInscricao(taxa, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-            return;
-        }
-
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao))!.SetValue(Processo, taxa);
-    }
+    /// <summary>O processo passa a cobrar a taxa com um fundamento de isenção e não escolheu motivo algum.</summary>
+    public void ComIsencaoHabilitadaSemMotivos() => IsencaoDeTeste.HabilitarSemMotivos(Processo);
 
     /// <summary>O tipo da exigência voltou a pendente na proteção de dados depois de vinculado.</summary>
     public void ComTipoDaExigenciaPendente()

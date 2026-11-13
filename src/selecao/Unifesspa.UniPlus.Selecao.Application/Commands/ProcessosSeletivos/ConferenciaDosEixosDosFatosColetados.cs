@@ -27,30 +27,6 @@ internal static class ConferenciaDosEixosDosFatosColetados
         return Congelado(versao.MetadadosFatosCongelados, versao.AgregadosDosGrupos);
     }
 
-    /// <summary>
-    /// Lê as versões publicadas do processo, uma vez por retificação sem sessão. Sem versão, devolve
-    /// nulo. A versão que o sistema não sabe reidratar recusa, como a abertura da sessão.
-    /// </summary>
-    public static async Task<Result<FatosDasVersoesPublicadas?>> LerAsync(
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        Guid processoSeletivoId,
-        CancellationToken cancellationToken)
-    {
-        IReadOnlyList<VersaoConfiguracao> versoes = await processoSeletivoRepository
-            .ObterVersoesAsync(processoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (versoes.Count == 0)
-        {
-            return Result<FatosDasVersoesPublicadas?>.Success(null);
-        }
-
-        Result<VersoesPublicadasLidas> lidas = VersoesPublicadasLidas.Ler(registroCodecs, versoes, abrindoSessao: false);
-        return lidas.IsFailure
-            ? Result<FatosDasVersoesPublicadas?>.Failure(lidas.Error!)
-            : Result<FatosDasVersoesPublicadas?>.Success(lidas.Value!.Fatos);
-    }
-
     public static DomainError? Conferir(
         FatosDasVersoesPublicadas publicadas,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados,

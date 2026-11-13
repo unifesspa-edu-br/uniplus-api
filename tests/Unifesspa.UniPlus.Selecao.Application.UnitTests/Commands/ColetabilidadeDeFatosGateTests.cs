@@ -83,39 +83,11 @@ public sealed class ColetabilidadeDeFatosGateTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         processo.DefinirItens([FatoColetadoModalidade()], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-
-        IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoModalidadeReclassificadaComoDerivada());
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            fatoCandidatoReader,
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await ServicosComModalidadeDerivada(processo, canonicalizer).PublicarAsync(processo.Id);
 
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado");
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        eventos.Should().BeEmpty();
+        AfirmarRecusaDoFatoNaoMaisDeclarado(resposta, eventos, canonicalizer);
         processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
     }
 
@@ -123,91 +95,27 @@ public sealed class ColetabilidadeDeFatosGateTests
     public async Task Retificar_ComFatoColetadoNaoMaisDeclarado_RecusaSemCanonicalizar()
     {
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoComFatoColetado();
-
-        IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoModalidadeReclassificadaComoDerivada());
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
+        (Result resposta, IEnumerable<object> eventos) = await ServicosComModalidadeDerivada(processo, canonicalizer)
+            .ComVersaoVigente(processo, versaoAtual)
+            .RetificarAsync(processo.Id);
 
-        (Result resposta, IEnumerable<object> eventos) = await RetificarProcessoSeletivoCommandHandler.Handle(
-            new RetificarProcessoSeletivoCommand(
-                processo.Id, "Correção do prazo", "001/2026-R1",
-                null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            repositorio,
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            fatoCandidatoReader,
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado");
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        eventos.Should().BeEmpty();
+        AfirmarRecusaDoFatoNaoMaisDeclarado(resposta, eventos, canonicalizer);
     }
 
     [Fact(DisplayName = "FecharRetificacao_ComFatoColetadoNaoMaisDeclarado_RecusaESessaoPermaneceAberta — recusa não destrói a sessão editorial")]
     public async Task FecharRetificacao_ComFatoColetadoNaoMaisDeclarado_RecusaESessaoPermaneceAberta()
     {
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoComFatoColetado();
-
-        Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora);
-        rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
-        processo.DequeueDomainEvents();
-
-        IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoModalidadeReclassificadaComoDerivada());
+        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
+        (Result resposta, IEnumerable<object> eventos) = await ServicosComModalidadeDerivada(processo, canonicalizer)
+            .ComVersaoVigente(processo, versaoAtual)
+            .FecharRetificacaoAsync(processo.Id);
 
-        (Result resposta, IEnumerable<object> eventos) = await FecharRetificacaoCommandHandler.Handle(
-            ComandoDeFechamentoDaRetificacao(processo.Id),
-            repositorio,
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            fatoCandidatoReader,
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            FasesIniciadasDeTeste.Nenhuma(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado");
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        eventos.Should().BeEmpty();
+        AfirmarRecusaDoFatoNaoMaisDeclarado(resposta, eventos, canonicalizer);
         processo.Rascunho.Should().NotBeNull(
             "uma recusa de coletabilidade não destrói a sessão editorial — o administrador corrige e tenta de novo");
     }
@@ -219,37 +127,26 @@ public sealed class ColetabilidadeDeFatosGateTests
         // COR_RACA é coletado pela seção dos dados básicos do formulário de inscrição.
         processo.DefinirItens([], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-
-        IFatoCandidatoReader fatoCandidatoReader = ReaderCom(FatoCorRacaAindaDeclarado());
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
-        (Result resposta, IEnumerable<object> _) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            fatoCandidatoReader,
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> _) = await PublicarAsync(processo, ReaderCom(FatoCorRacaAindaDeclarado()), canonicalizer);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         _ = canonicalizer.Received(1).Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+    }
+
+    private static ServicosDoCongelamentoDeTeste ServicosComModalidadeDerivada(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
+        ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComCanonicalizer(canonicalizer)
+            .ComCatalogoDeFatos(ReaderCom(FatoModalidadeReclassificadaComoDerivada()));
+
+    private static void AfirmarRecusaDoFatoNaoMaisDeclarado(
+        Result resposta, IEnumerable<object> eventos, ISnapshotPublicacaoCanonicalizer canonicalizer)
+    {
+        resposta.IsFailure.Should().BeTrue();
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado");
+        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+        eventos.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Publicar congela o rótulo e o tipo do catálogo do derivado que a regra cita e nenhum formulário pergunta")]
@@ -305,30 +202,12 @@ public sealed class ColetabilidadeDeFatosGateTests
 
     private static Task<(Result, IEnumerable<object>)> PublicarAsync(
         ProcessoSeletivo processo, IFatoCandidatoReader fatoCandidatoReader, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
-        PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
+        ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComCanonicalizer(canonicalizer)
+            .ComCatalogoDeFatos(fatoCandidatoReader)
+            .PublicarAsync(new PublicarProcessoSeletivoCommand(
                 processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            Substitute.For<IObrigatoriedadeLegalRepository>(),
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            fatoCandidatoReader,
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()));
 
     // ══════════════════════════════════════════════════════════════════════════════
 
@@ -385,9 +264,6 @@ public sealed class ColetabilidadeDeFatosGateTests
         contexto.UserId.Returns("user-sub-1");
         return contexto;
     }
-
-    private static FecharRetificacaoCommand ComandoDeFechamentoDaRetificacao(Guid processoId) =>
-        new(processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga);
 
     private static DadosDoAto NovoAto() => new(
         Orgao: "CEPS",

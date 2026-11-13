@@ -53,42 +53,69 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
         ArgumentNullException.ThrowIfNull(tiposVivos);
         ArgumentNullException.ThrowIfNull(catalogoDeFatos);
 
+        IReadOnlyDictionary<string, FatoDerivadoCongelado> derivados =
+            CongelamentoDosFatosDerivados.Resolver(catalogoDeFatos, daVersaoVigente?.FatosDerivados);
+
+        return new ProtecaoVigenteDoProcesso(
+            new ProtecaoVigenteDasExigencias(
+                ClassificacaoDosDerivados(derivados),
+                ProtecaoDeCadaExigencia(processo, tiposVivos, daVersaoVigente),
+                DerivadosSemProtecaoAprovada(catalogoDeFatos, derivados)),
+            derivados);
+    }
+
+    private static Dictionary<Guid, ProtecaoDoDocumento> ProtecaoDeCadaExigencia(
+        ProcessoSeletivo processo, IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos, CongeladoNaVersaoVigente? daVersaoVigente)
+    {
         Dictionary<Guid, ProtecaoDoDocumento> porExigencia = [];
         foreach (DocumentoExigido exigencia in processo.DocumentosExigidos)
         {
-            if (daVersaoVigente is not null
-                && daVersaoVigente.Exigencias.TryGetValue(exigencia.Id, out ExigenciaCongelada? congelada)
-                && congelada.TipoDocumentoOrigemId == exigencia.TipoDocumentoOrigemId)
+            if (ProtecaoDaExigencia(exigencia, tiposVivos, daVersaoVigente) is { } protecao)
             {
-                porExigencia[exigencia.Id] = congelada.Protecao;
-            }
-            else if (tiposVivos.TryGetValue(exigencia.TipoDocumentoOrigemId, out TipoDocumentoView? tipo))
-            {
-                porExigencia[exigencia.Id] = new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal);
+                porExigencia[exigencia.Id] = protecao;
             }
         }
 
-        IReadOnlyDictionary<string, FatoDerivadoCongelado> derivados =
-            CongelamentoDosFatosDerivados.Resolver(catalogoDeFatos, daVersaoVigente?.FatosDerivados);
-        Dictionary<string, ClassificacaoDeProtecao> classificacaoDosDerivados = [];
+        return porExigencia;
+    }
+
+    private static ProtecaoDoDocumento? ProtecaoDaExigencia(
+        DocumentoExigido exigencia, IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos, CongeladoNaVersaoVigente? daVersaoVigente)
+    {
+        if (daVersaoVigente is not null
+            && daVersaoVigente.Exigencias.TryGetValue(exigencia.Id, out ExigenciaCongelada? congelada)
+            && congelada.TipoDocumentoOrigemId == exigencia.TipoDocumentoOrigemId)
+        {
+            return congelada.Protecao;
+        }
+
+        return tiposVivos.TryGetValue(exigencia.TipoDocumentoOrigemId, out TipoDocumentoView? tipo)
+            ? new ProtecaoDoDocumento(tipo.ClassificacaoProtecao, tipo.FinalidadeTratamento, tipo.HipoteseLegal)
+            : null;
+    }
+
+    private static Dictionary<string, ClassificacaoDeProtecao> ClassificacaoDosDerivados(IReadOnlyDictionary<string, FatoDerivadoCongelado> derivados)
+    {
+        Dictionary<string, ClassificacaoDeProtecao> classificacao = [];
         foreach (FatoDerivadoCongelado derivado in derivados.Values)
         {
             if (ClassificacoesDeProtecao.TryAnalisar(derivado.ClassificacaoProtecao, out ClassificacaoDeProtecao nivel))
             {
-                classificacaoDosDerivados[derivado.Codigo] = nivel;
+                classificacao[derivado.Codigo] = nivel;
             }
         }
 
-        HashSet<string> derivadosSemProtecaoAprovada = new(
+        return classificacao;
+    }
+
+    private static HashSet<string> DerivadosSemProtecaoAprovada(
+        IReadOnlyList<FatoCandidatoView> catalogoDeFatos, IReadOnlyDictionary<string, FatoDerivadoCongelado> derivados) =>
+        new(
             catalogoDeFatos
                 .Where(f => !f.ProtecaoAprovada && string.Equals(f.Origem, DominioDoCatalogo.OrigemDerivada, StringComparison.Ordinal))
                 .Select(static f => f.Codigo)
                 .Where(codigo => !derivados.ContainsKey(codigo)),
             StringComparer.Ordinal);
-
-        return new ProtecaoVigenteDoProcesso(
-            new ProtecaoVigenteDasExigencias(classificacaoDosDerivados, porExigencia, derivadosSemProtecaoAprovada), derivados);
-    }
 
     /// <summary>
     /// O que a versão vigente congelou — as exigências, por id, com o tipo e a proteção, e os fatos
@@ -99,38 +126,24 @@ internal static class ProtecaoVigenteDasExigenciasDoProcesso
         IRegistroCodecsEnvelope registroCodecs, VersaoConfiguracao? versaoVigente)
     {
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        if (versaoVigente is null)
-        {
-            return null;
-        }
 
-        Result<EnvelopeReidratado> vigente = registroCodecs.Reidratar(versaoVigente);
-        if (vigente.IsFailure)
-        {
-            return null;
-        }
-
-        return new CongeladoNaVersaoVigente(
-            vigente.Value!.Grafo.DocumentosExigidos.ToDictionary(
-                static e => e.Id,
-                static e => new ExigenciaCongelada(
-                    e.TipoDocumentoOrigemId,
-                    new ProtecaoDoDocumento(e.ClassificacaoProtecao, e.FinalidadeTratamento, e.HipoteseLegal))),
-            vigente.Value!.FatosDerivadosCongelados);
+        return versaoVigente is null ? null : DoEnvelope(registroCodecs.Reidratar(versaoVigente));
     }
 
-    public static async Task<CongeladoNaVersaoVigente?> LerDaVersaoVigenteAsync(
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        Guid processoSeletivoId,
-        CancellationToken cancellationToken)
+    /// <summary>O que o envelope já reidratado da versão vigente congelou; nulo quando o codec não o leu.</summary>
+    public static CongeladoNaVersaoVigente? DoEnvelope(Result<EnvelopeReidratado> vigente)
     {
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(vigente);
 
-        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
-            .ObterVersaoAtualAsync(processoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        return DaVersao(registroCodecs, versaoAtual);
+        return vigente.IsFailure
+            ? null
+            : new CongeladoNaVersaoVigente(
+                vigente.Value!.Grafo.DocumentosExigidos.ToDictionary(
+                    static e => e.Id,
+                    static e => new ExigenciaCongelada(
+                        e.TipoDocumentoOrigemId,
+                        new ProtecaoDoDocumento(e.ClassificacaoProtecao, e.FinalidadeTratamento, e.HipoteseLegal))),
+                vigente.Value!.FatosDerivadosCongelados);
     }
 }
 
