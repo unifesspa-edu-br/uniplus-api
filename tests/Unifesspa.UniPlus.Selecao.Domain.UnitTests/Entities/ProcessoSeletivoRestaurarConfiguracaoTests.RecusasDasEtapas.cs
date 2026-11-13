@@ -10,10 +10,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 {
-    private static EtapaProcesso EtapaDaProvaCongelada(Guid id, int ordem) =>
+    internal static EtapaProcesso EtapaDaProvaCongelada(Guid id, int ordem) =>
         EtapaProcesso.Reidratar(id, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, ordem);
 
-    private static EtapaProcesso EtapaSemNotaCongelada(Guid id, int ordem) =>
+    internal static EtapaProcesso EtapaSemNotaCongelada(Guid id, int ordem) =>
         EtapaProcesso.Reidratar(id, "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, null, null, ordem);
 
     private static Result RestaurarSemMudarOAgregado(GrafoConfiguracao grafo)

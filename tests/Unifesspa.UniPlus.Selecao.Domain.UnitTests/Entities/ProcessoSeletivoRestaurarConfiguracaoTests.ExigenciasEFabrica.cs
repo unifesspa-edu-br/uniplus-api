@@ -132,10 +132,10 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
     // ── Fábrica de cenários ──
 
-    private static EtapaProcesso EtapaNotaEnemCongelada(Guid id, int ordem) =>
+    internal static EtapaProcesso EtapaNotaEnemCongelada(Guid id, int ordem) =>
         EtapaProcesso.Reidratar(id, "Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, 1m, null, ordem);
 
-    private static ReferenciaRegra Regra(string codigo, char semente) =>
+    internal static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
     private static ProcessoSeletivo ProcessoConforme(TipoProcessoSnapshot tipo)
@@ -246,7 +246,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             referenciaTemporalFatos: null,
             numeroDeOpcoesDeCurso: 1);
 
-    private static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(
+    internal static DocumentoExigido DocumentoQualquer(Guid faseId) => DocumentoExigido.Criar(
         faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
         Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null, [], [], null,
         FormatosPermitidos.Criar(true, null).Value!, null).Value!;
@@ -285,7 +285,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
-    private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
+    internal static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
         ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
@@ -296,7 +296,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             resolucaoPesoAreaEnem: null,
             quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
-    private static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada(IReadOnlyList<RegraEliminacao>? eliminacoes = null) =>
+    internal static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada(IReadOnlyList<RegraEliminacao>? eliminacoes = null) =>
         ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
@@ -319,7 +319,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     /// passar exatamente a implementação que esse critério existe para proibir: a que aplica
     /// dimensão a dimensão e só depois falha, deixando o agregado meio-reposto.
     /// </summary>
-    private sealed record Estado(
+    internal sealed record Estado(
         StatusProcesso Status,
         IReadOnlyList<(Guid Id, string Nome, decimal? Peso, int? Ordem)> Etapas,
         int Condicoes,
