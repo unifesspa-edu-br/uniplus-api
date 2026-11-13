@@ -7,6 +7,8 @@ decision-makers:
 
 # ADR-0068: Relógio via TimeProvider injetado, obrigatório em todo o `src/`
 
+> **Emenda (2026-11-13):** a [ADR-0165](0165-instantes-em-microssegundos-e-ordem-de-registro.md) fixa um relógio único por processo, `RelogioEmMicrossegundos.DoSistema`, que trunca o instante em microssegundos e é o único uso de `TimeProvider.System` em produção; as extensões de registro deixam de acrescentar `TimeProvider.System` e dependem do que o host registrou. A conferência da seção Confirmação passa a ser por chamada de membro (`RelogioDoSistemaTests`), e não mais por leitura textual do código-fonte.
+
 ## Contexto e enunciado do problema
 
 Parte do código novo do `uniplus-api` já lê o relógio de forma testável via `System.TimeProvider` (BCL .NET 8+): idempotência ([ADR-0027](0027-idempotency-key-store-postgresql.md)), cursor pagination ([ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) — `CursorEncoder`), a entidade `ObrigatoriedadeLegal` ([ADR-0058](0058-obrigatoriedade-legal-validacao-data-driven.md)) e vários handlers. A convenção existia de facto, mas **não estava declarada nem enforçada**, e a fundação a contradizia.
