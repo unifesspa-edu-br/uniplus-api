@@ -215,9 +215,10 @@ public sealed class AprovacaoDaProtecao
     internal static Result ConferirRecomendacao(
         ClassificacaoDeProtecao recomendada, ClassificacaoDeProtecao atual, HipoteseLegalTratamento hipoteseLegal)
     {
-        if (recomendada == ClassificacaoDeProtecao.Nenhuma || !Enum.IsDefined(recomendada))
+        Result informada = ConferirClassificacaoRecomendada(recomendada);
+        if (informada.IsFailure)
         {
-            return Result.ValidationFailure([RecomendacaoAusente]);
+            return informada;
         }
 
         if (recomendada == atual)
@@ -229,6 +230,16 @@ public sealed class AprovacaoDaProtecao
             ? Result.Success()
             : Result.ValidationFailure([RecomendacaoForaDaHipotese]);
     }
+
+    /// <summary>
+    /// A parte da regra da recomendação que não depende do item: no ajuste, a classificação recomendada é obrigatória e
+    /// pertence à escala. É a mesma regra que <see cref="ConferirRecomendacao"/> aplica primeiro, e quem confere a forma
+    /// da decisão antes de ler o item a chama sem mudar nada, acumulando a recusa no mesmo lote (ADR-0125).
+    /// </summary>
+    public static Result ConferirClassificacaoRecomendada(ClassificacaoDeProtecao? recomendada) =>
+        recomendada is { } valor && valor != ClassificacaoDeProtecao.Nenhuma && Enum.IsDefined(valor)
+            ? Result.Success()
+            : Result.ValidationFailure([RecomendacaoAusente]);
 
     // O circuito recomeça e o registro do ciclo anterior sai dele; os atos e as manifestações continuam nos registros
     // próprios. Só o item que já entrou numa solicitação abre um ciclo novo.

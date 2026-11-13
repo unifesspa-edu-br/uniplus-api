@@ -162,6 +162,17 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
+    [Fact(DisplayName = "O ajuste sem a classificação recomendada é recusado uma vez, antes de ler o item")]
+    public async Task AjusteSemRecomendacao_RecusaUmaVezSemLer()
+    {
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "RECOMENDAR_AJUSTE", justificativa: "O dado é sensível.");
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
+        await _tipos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+    }
+
     [Fact(DisplayName = "A manifestação registrada depois da leitura recusa a decisão por conflito, sem mudar nem gravar")]
     public async Task ManifestacaoDepoisDaLeitura_Recusa()
     {

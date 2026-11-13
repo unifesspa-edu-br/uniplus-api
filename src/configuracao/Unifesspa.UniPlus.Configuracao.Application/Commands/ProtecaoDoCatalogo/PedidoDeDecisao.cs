@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -24,10 +25,6 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
 
     private static readonly FieldError DecisaoInvalida = new("decisao", new DomainError(
         ProtecaoDoCatalogoErrorCodes.DecisaoInvalida, $"A decisão deve ser {Aprovar}, {RecomendarAjuste} ou {Reprovar}."));
-
-    private static readonly FieldError RecomendacaoAusente = new("classificacaoRecomendada", new DomainError(
-        ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria,
-        "O ajuste exige a classificação de proteção de dados recomendada, dentro do vocabulário fechado."));
 
     private static readonly FieldError RecomendacaoNaoCabe = new("classificacaoRecomendada", new DomainError(
         ProtecaoDoCatalogoErrorCodes.DadoDaDecisaoNaoCabe,
@@ -81,21 +78,24 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
         return ato;
     }
 
-    // A classificação recomendada é do ajuste: nele é obrigatória e do vocabulário; nas demais decisões não cabe.
+    // Aqui só se converte o token. A regra da classificação recomendada é do domínio: no ajuste, obrigatória e da escala
+    // (a mesma que a transição aplica); nas demais decisões, ela não cabe.
     private static ClassificacaoDeProtecao? LerRecomendacao(AtoDaProtecao? ato, string? token, List<FieldError> erros)
     {
         ClassificacaoDeProtecao? lida = TokensDoFato.Classificacao(token);
-        bool valida = lida is not null and not (ClassificacaoDeProtecao)TokensDoFato.ForaDoVocabulario;
-        if (ato == AtoDaProtecao.AjusteRecomendado && !valida)
+        if (ato == AtoDaProtecao.AjusteRecomendado)
         {
-            erros.Add(RecomendacaoAusente);
+            Result conferida = AprovacaoDaProtecao.ConferirClassificacaoRecomendada(lida);
+            erros.AddRange(conferida.Errors);
+            return conferida.IsSuccess ? lida : null;
         }
-        else if (ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.Reprovacao && lida is not null)
+
+        if (ato is AtoDaProtecao.Aprovacao or AtoDaProtecao.Reprovacao && lida is not null)
         {
             erros.Add(RecomendacaoNaoCabe);
         }
 
-        return ato == AtoDaProtecao.AjusteRecomendado && valida ? lida : null;
+        return null;
     }
 
     private static ProtecaoDeDados? LerProtecaoConferida(ProtecaoInformada informada, List<FieldError> erros)
