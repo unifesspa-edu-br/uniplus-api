@@ -1217,6 +1217,7 @@ selecao.atos_do_processo.identificador_legivel_do_processo: Interno
 selecao.atos_do_processo.item_do_edital: Interno
 selecao.atos_do_processo.motivo_da_correcao: Interno
 selecao.atos_do_processo.numero: Interno
+selecao.atos_do_processo.ordem_de_registro: Interno
 selecao.atos_do_processo.politica_de_divulgacao_confirmada_em: Interno
 selecao.atos_do_processo.politica_de_divulgacao_confirmada_por_sub: Pessoal
 selecao.atos_do_processo.processo_seletivo_id: Interno
@@ -1687,6 +1688,7 @@ selecao.lotes_de_notas_do_enem.importado_por_nome: Pessoal
 selecao.lotes_de_notas_do_enem.leiaute_codigo: Interno
 selecao.lotes_de_notas_do_enem.leiaute_hash: Interno
 selecao.lotes_de_notas_do_enem.leiaute_versao: Interno
+selecao.lotes_de_notas_do_enem.ordem_de_registro: Interno
 selecao.lotes_de_notas_do_enem.processo_seletivo_id: Interno
 selecao.lotes_de_notas_do_enem.total_de_inscritos_com_nota: Interno
 selecao.lotes_de_notas_do_enem.total_de_inscritos_em_conflito: Interno

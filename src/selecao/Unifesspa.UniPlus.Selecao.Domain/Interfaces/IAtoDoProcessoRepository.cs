@@ -27,7 +27,7 @@ public interface IAtoDoProcessoRepository
     /// Registros do processo, com os anexos, sem rastreamento, do mais recente para o mais antigo.
     /// </summary>
     /// <remarks>
-    /// A ordem é o instante em que o registro foi gravado, com o ato como desempate: é o relógio do
+    /// A ordem é o instante em que o registro foi gravado, com a ordem de registro como desempate: é o relógio do
     /// sistema, e não a data que o documento declara, que não é única nem confiável para ordenar.
     /// </remarks>
     Task<IReadOnlyList<AtoDoProcesso>> ListarDoProcessoAsync(

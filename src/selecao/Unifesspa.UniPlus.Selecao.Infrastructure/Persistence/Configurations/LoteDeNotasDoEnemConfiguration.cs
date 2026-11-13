@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,12 +11,15 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// Configuração EF Core dos lotes de importação das notas do ENEM: evidência append-only
 /// (<c>IForensicEntity</c>), mapeada direto — nada aqui é cifrado.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<LoteDeNotasDoEnem>
+public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<LoteDeNotasDoEnem>
 {
+    /// <summary>
+    /// A ordem em que os lotes foram registrados, dada pelo banco: desempata dois lotes do mesmo escopo importados no mesmo
+    /// microssegundo, que a importação sob a trava do processo serializa. É propriedade sombra porque só a persistência
+    /// ordena por ela; o domínio e a Application não a leem.
+    /// </summary>
+    internal const string OrdemDeRegistro = nameof(OrdemDeRegistro);
+
     private const int HashHexLength = 64;
     private const int CodigoMaxLength = 60;
     private const int VersaoMaxLength = 20;
@@ -82,6 +83,9 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
 
         builder.Property(l => l.ImportadoEm).IsRequired();
 
+        builder.Property<long>(OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
+        builder.HasIndex(OrdemDeRegistro).IsUnique().HasDatabaseName("ux_lotes_de_notas_do_enem_ordem_de_registro");
+
         builder.Property(l => l.VersaoConfiguracaoId)
             .IsRequired()
             .HasComment("A versão divulgada do certame cujos pesos apuraram as avaliações do lote.");
@@ -129,7 +133,12 @@ internal sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<
         builder.Navigation(l => l.Ocorrencias).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // O lote vigente é o primeiro desta ordem; a listagem do escopo usa o mesmo índice.
-        builder.HasIndex(l => new { l.ProcessoSeletivoId, l.EtapaProcessoId, l.EdicaoCodigo, l.ImportadoEm, l.Id })
+        builder.HasIndex(
+                nameof(LoteDeNotasDoEnem.ProcessoSeletivoId),
+                nameof(LoteDeNotasDoEnem.EtapaProcessoId),
+                nameof(LoteDeNotasDoEnem.EdicaoCodigo),
+                nameof(LoteDeNotasDoEnem.ImportadoEm),
+                OrdemDeRegistro)
             .IsDescending(false, false, false, true, true)
             .HasDatabaseName("ix_lotes_de_notas_do_enem_escopo");
     }

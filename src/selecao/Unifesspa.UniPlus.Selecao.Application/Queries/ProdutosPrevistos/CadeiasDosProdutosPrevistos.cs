@@ -35,7 +35,7 @@ internal sealed class CadeiasDosProdutosPrevistos
             .GroupBy(static a => a.ItemDoEdital!)
             .ToDictionary(
                 static g => g.Key,
-                static g => g.OrderBy(static a => a.CreatedAt).ThenBy(static a => a.Id).First());
+                static g => g.OrderBy(static a => a.CreatedAt).ThenBy(static a => a.OrdemDeRegistro).First());
         ILookup<Guid, AtoDoProcesso> corrigidosPor = doProcesso
             .Where(static a => a.AtoCorrigidoId is not null)
             .ToLookup(static a => a.AtoCorrigidoId!.Value);
@@ -80,7 +80,7 @@ internal sealed class CadeiasDosProdutosPrevistos
         _corrigidosPor[corrigido.Id]
             .Where(a => !vistos.Contains(a.Id))
             .OrderBy(static a => a.CreatedAt)
-            .ThenBy(static a => a.Id)
+            .ThenBy(static a => a.OrdemDeRegistro)
             .FirstOrDefault();
 
     private IEnumerable<AtoDoProcesso> CadeiaDoItem(IdentidadeDoItemDoEdital item) =>

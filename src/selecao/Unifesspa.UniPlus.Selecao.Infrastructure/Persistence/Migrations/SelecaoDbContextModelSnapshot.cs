@@ -420,6 +420,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(60)")
                         .HasColumnName("numero");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.Property<DateTimeOffset?>("PoliticaDeDivulgacaoConfirmadaEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("politica_de_divulgacao_confirmada_em");
@@ -474,12 +481,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasIndex("DocumentoPrincipalId")
                         .HasDatabaseName("ix_atos_do_processo_documento_principal_id");
 
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_atos_do_processo_ordem_de_registro");
+
                     b.HasIndex("ProcessoSeletivoId", "ItemDoEdital")
                         .IsUnique()
                         .HasDatabaseName("ux_atos_do_processo_item_original")
                         .HasFilter("item_do_edital IS NOT NULL AND ato_corrigido_id IS NULL");
 
-                    b.HasIndex("ProcessoSeletivoId", "CreatedAt", "Id")
+                    b.HasIndex("ProcessoSeletivoId", "CreatedAt", "OrdemDeRegistro")
                         .IsDescending(false, true, true)
                         .HasDatabaseName("ix_atos_do_processo_processo_recentes");
 
@@ -2617,6 +2628,13 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("leiaute_versao");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
@@ -2656,10 +2674,14 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.HasAlternateKey("Id", "EtapaProcessoId")
                         .HasName("ak_lotes_de_notas_do_enem_id_etapa");
 
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_lotes_de_notas_do_enem_ordem_de_registro");
+
                     b.HasIndex("VersaoConfiguracaoId")
                         .HasDatabaseName("ix_lotes_de_notas_do_enem_versao_configuracao_id");
 
-                    b.HasIndex("ProcessoSeletivoId", "EtapaProcessoId", "EdicaoCodigo", "ImportadoEm", "Id")
+                    b.HasIndex("ProcessoSeletivoId", "EtapaProcessoId", "EdicaoCodigo", "ImportadoEm", "OrdemDeRegistro")
                         .IsDescending(false, false, false, true, true)
                         .HasDatabaseName("ix_lotes_de_notas_do_enem_escopo");
 
