@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.API;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Confluent.SchemaRegistry;
 
 using Microsoft.Extensions.Configuration;
@@ -38,10 +36,6 @@ using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado
 /// <see cref="ProcessoPublicadoEvent"/> a demonstração que antes vivia sobre o
 /// agregado <c>Edital</c> legado (removido por #782).
 /// </remarks>
-[SuppressMessage(
-    "Design",
-    "CA1515:Consider making public types internal",
-    Justification = "Referenciado pelo composition root (host do monólito modular) fora deste assembly.")]
 public static partial class SelecaoMessagingRegistration
 {
     /// <summary>
@@ -56,12 +50,6 @@ public static partial class SelecaoMessagingRegistration
     /// configurados) tópico Kafka <c>processo_seletivo_events</c> com serializer
     /// Avro Confluent.
     /// </returns>
-    [SuppressMessage(
-        "Reliability",
-        "CA2000:Dispose objects before losing scope",
-        Justification = "O ISchemaRegistryClient devolvido por RegistrarSchemaRegistry é "
-            + "registrado como singleton no DI (ownership transferido ao container, que o "
-            + "dispõe no shutdown do IHost). CA2000 não rastreia ownership via DI.")]
     public static Action<WolverineOptions> AddSelecaoMessaging(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -96,74 +84,86 @@ public static partial class SelecaoMessagingRegistration
         ArgumentNullException.ThrowIfNull(opts);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        ConfigurarFilaDosEventosDoProcesso(opts);
+        ConfigurarFilaDaDivulgacaoDoCertame(opts);
+        ConfigurarVerificacaoDosArquivos(opts, configuration);
+        ConfigurarPublicacaoAvroNoKafka(opts, configuration, srClient);
+    }
+
+    private static void ConfigurarFilaDosEventosDoProcesso(WolverineOptions opts)
+    {
         opts.PublishMessage<ProcessoPublicadoEvent>().ToPostgresqlQueue("domain-events");
         opts.ListenToPostgresqlQueue("domain-events");
+    }
 
-        // Desfecho do registro do ato, vindo de Publicações: é ele que materializa a divulgação
-        // pública do certame. Fila PostgreSQL, e não local: a local é em memória, e um encerramento
-        // entre o commit do ato e a projeção deixaria um certame registrado que nunca aparece.
+    /// <summary>
+    /// O desfecho do registro do ato, vindo de Publicações, é o que materializa a divulgação pública do certame. Fila
+    /// PostgreSQL, e não local: a local é em memória, e um encerramento entre o commit do ato e a projeção deixaria um
+    /// certame registrado que nunca aparece. Sem regra de falha, a primeira exceção do consumo manda o envelope para a
+    /// fila morta e o certame fica invisível com o ato já registrado (ver <c>ReentregaDaDivulgacaoDoCertame</c>).
+    /// </summary>
+    private static void ConfigurarFilaDaDivulgacaoDoCertame(WolverineOptions opts)
+    {
         opts.PublishMessage<Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoRegistrado>()
             .ToPostgresqlQueue("selecao-divulgacao-certame");
         opts.ListenToPostgresqlQueue("selecao-divulgacao-certame");
-
-        // Sem regra de falha, a primeira exceção do consumo manda o envelope para a fila morta e o
-        // certame fica invisível com o ato já registrado — ver ReentregaDaDivulgacaoDoCertame.
         opts.Policies.Add<ReentregaDaDivulgacaoDoCertame>();
+    }
 
-        ConfigurarVerificacaoDosArquivos(opts, configuration);
-
-        bool kafkaConfigured = !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
-        if (kafkaConfigured && srClient is not null)
+    /// <summary>
+    /// Com Kafka e Schema Registry configurados, produz Avro com o schema-id no envelope (wire format Confluent): os
+    /// consumidores cross-módulo recuperam o schema pelo id, sem depender do assembly Selecao.Domain.
+    /// </summary>
+    private static void ConfigurarPublicacaoAvroNoKafka(
+        WolverineOptions opts, IConfiguration configuration, ISchemaRegistryClient? srClient)
+    {
+        if (KafkaHabilitado(configuration) && srClient is not null)
         {
-            // Kafka + Schema Registry: produz Avro com schema-id no envelope
-            // (Confluent wire format). Consumers cross-módulo recuperam o schema
-            // via schema-id, sem dependência do assembly Selecao.Domain.
             opts.PublishMessage<ProcessoPublicadoAvro>()
                 .ToKafkaTopic("processo_seletivo_events")
                 .DefaultSerializer(new SchemaRegistryAvroSerializer(srClient));
         }
     }
 
+    private static bool KafkaHabilitado(IConfiguration configuration) =>
+        !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
+
     /// <summary>
     /// Transporte da verificação dos arquivos do candidato (ADR-0146): o pedido sai pelo outbox durável para a quorum
     /// queue de pedidos e o resultado chega pela de resultados. <c>RabbitMq:Uri</c> é obrigatória: sem ela o arquivo
-    /// ficaria em verificação para sempre.
+    /// ficaria em verificação para sempre. O handler do resultado é preso à fila: o resultado do documento de
+    /// designação, que chega pela fila da Autorização, não pode executar o da Seleção, e o contrário, porque os dois
+    /// tratam o mesmo tipo de mensagem.
     /// </summary>
     internal static void ConfigurarVerificacaoDosArquivos(WolverineOptions opts, IConfiguration configuration)
     {
-        string? uri = configuration["RabbitMq:Uri"];
-        if (string.IsNullOrWhiteSpace(uri))
-        {
-            throw new InvalidOperationException(
-                "Configuração inválida: RabbitMq:Uri é obrigatório — é por ele que a API publica o pedido de verificação dos "
-                + "arquivos do candidato e recebe o resultado (ADR-0146).");
-        }
-
-        opts.UseRabbitMq(new Uri(uri, UriKind.Absolute)).AutoProvision();
+        opts.UseRabbitMq(UriDoRabbitMq(configuration)).AutoProvision();
 
         opts.PublishMessage<PedidoDeVerificacaoDeArquivo>()
             .ToRabbitQueue(FilasDaVerificacao.Pedidos, fila => fila.QueueType = QueueType.quorum);
-
-        // O handler é preso à fila: o resultado do documento de designação, que chega pela fila da Autorização,
-        // não pode executar o da Seleção, e o contrário, porque os dois tratam o mesmo tipo de mensagem.
         opts.ListenToRabbitQueue(FilasDaVerificacao.Resultados, fila => fila.QueueType = QueueType.quorum)
             .AddStickyHandler(typeof(RegistrarResultadoDaVerificacaoDoArquivoHandler));
 
         opts.Policies.Add<ReentregaDoResultadoDaVerificacao>();
     }
 
+    private static Uri UriDoRabbitMq(IConfiguration configuration)
+    {
+        string? uri = configuration["RabbitMq:Uri"];
+
+        return string.IsNullOrWhiteSpace(uri)
+            ? throw new InvalidOperationException(
+                "Configuração inválida: RabbitMq:Uri é obrigatório — é por ele que a API publica o pedido de verificação dos "
+                + "arquivos do candidato e recebe o resultado (ADR-0146).")
+            : new Uri(uri, UriKind.Absolute);
+    }
+
     /// <summary>
-    /// Cria o <see cref="ISchemaRegistryClient"/> a partir de
-    /// <c>SchemaRegistry:Url</c> (ou <see langword="null"/> quando vazio) e o
-    /// registra como singleton, aplicando a invariante ADR-0051/0053 (Kafka em
-    /// ambiente produtivo exige Schema Registry).
+    /// Cria o <see cref="ISchemaRegistryClient"/> a partir de <c>SchemaRegistry:Url</c> (ou <see langword="null"/>
+    /// quando vazio) e o registra como singleton, aplicando a invariante ADR-0051/0053 (Kafka em ambiente produtivo
+    /// exige Schema Registry). A posse do cliente fica com o dono registrado por <c>CreateClient</c>, que o host
+    /// descarta no encerramento.
     /// </summary>
-    [SuppressMessage(
-        "Reliability",
-        "CA2000:Dispose objects before losing scope",
-        Justification = "O cliente criado por CreateClient é registrado como singleton no DI "
-            + "logo em seguida (services.AddSingleton); o container assume ownership e o dispõe "
-            + "no shutdown do IHost. CA2000 não rastreia ownership via DI.")]
     private static ISchemaRegistryClient? RegistrarSchemaRegistry(
         IServiceCollection services,
         IConfiguration configuration,
@@ -173,40 +173,56 @@ public static partial class SelecaoMessagingRegistration
             .GetSection(SchemaRegistrySettings.SectionName)
             .Get<SchemaRegistrySettings>() ?? new SchemaRegistrySettings();
 
-        // Invariante operacional (ADR-0051/0053): Kafka habilitado exige Schema
-        // Registry em ambientes produtivos. Só Development afrouxa (cobre test
-        // factories que sobem com UseEnvironment("Development")).
-        bool kafkaEnabled = !string.IsNullOrWhiteSpace(configuration["Kafka:BootstrapServers"]);
-        bool srMissing = string.IsNullOrWhiteSpace(srSettings.Url);
-        if (kafkaEnabled && srMissing)
-        {
-            if (!environment.IsDevelopment())
-            {
-                throw new InvalidOperationException(
-                    "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio em "
-                    + $"ASPNETCORE_ENVIRONMENT={environment.EnvironmentName}. "
-                    + "ADR-0051 exige Schema Registry para todo publishing cross-módulo em ambientes produtivos. "
-                    + "Configure SchemaRegistry:Url (ou desligue Kafka apagando Kafka:BootstrapServers).");
-            }
+        ConferirSchemaRegistryDoKafka(configuration, environment, srSettings);
 
-            using ILoggerFactory missingSrLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
-            Microsoft.Extensions.Logging.ILogger missingSrLogger =
-                missingSrLoggerFactory.CreateLogger("Selecao.Messaging.Bootstrap");
-            LogKafkaSemSchemaRegistry(missingSrLogger, environment.EnvironmentName);
-        }
+        return string.IsNullOrWhiteSpace(srSettings.Url) ? null : RegistrarClienteDoBootstrap(services, srSettings);
+    }
 
-        if (string.IsNullOrWhiteSpace(srSettings.Url))
-        {
-            return null;
-        }
-
+    private static ISchemaRegistryClient RegistrarClienteDoBootstrap(IServiceCollection services, SchemaRegistrySettings srSettings)
+    {
         using ILoggerFactory bootstrapLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
         ISchemaRegistryClient srClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
             srSettings,
             bootstrapLoggerFactory,
             services);
         services.AddSingleton(srClient);
+
         return srClient;
+    }
+
+    /// <summary>
+    /// Kafka habilitado exige Schema Registry em ambientes produtivos (ADR-0051/0053); só Development afrouxa, o que
+    /// cobre as test factories que sobem com <c>UseEnvironment("Development")</c>.
+    /// </summary>
+    private static void ConferirSchemaRegistryDoKafka(
+        IConfiguration configuration, IHostEnvironment environment, SchemaRegistrySettings srSettings)
+    {
+        if (!KafkaHabilitado(configuration) || !string.IsNullOrWhiteSpace(srSettings.Url))
+        {
+            return;
+        }
+
+        RecusarKafkaSemSchemaRegistryForaDeDevelopment(environment);
+        AvisarKafkaSemSchemaRegistry(environment.EnvironmentName);
+    }
+
+    private static void RecusarKafkaSemSchemaRegistryForaDeDevelopment(IHostEnvironment environment)
+    {
+        if (!environment.IsDevelopment())
+        {
+            throw new InvalidOperationException(
+                "Configuração inválida: Kafka:BootstrapServers populado mas SchemaRegistry:Url vazio em "
+                + $"ASPNETCORE_ENVIRONMENT={environment.EnvironmentName}. "
+                + "ADR-0051 exige Schema Registry para todo publishing cross-módulo em ambientes produtivos. "
+                + "Configure SchemaRegistry:Url (ou desligue Kafka apagando Kafka:BootstrapServers).");
+        }
+    }
+
+    private static void AvisarKafkaSemSchemaRegistry(string ambiente)
+    {
+        using ILoggerFactory loggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
+        ILogger logger = loggerFactory.CreateLogger("Selecao.Messaging.Bootstrap");
+        LogKafkaSemSchemaRegistry(logger, ambiente);
     }
 
     [LoggerMessage(
