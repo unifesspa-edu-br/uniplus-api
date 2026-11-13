@@ -135,6 +135,7 @@
             "mecanismo_revogacao_degradado",
             "impedido_por_inscricao_no_processo",
             "concessao_em_unidade_exigida",
+            "fora_da_designacao",
             null
           ]
         },

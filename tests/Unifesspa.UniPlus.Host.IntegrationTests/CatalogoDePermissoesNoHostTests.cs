@@ -96,8 +96,10 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
         string[] implementadas = [.. typeof(GrantEfetivoAplicavelCheck).Assembly.GetTypes()
             .Where(static t => t is { IsAbstract: false, IsInterface: false }
                 && typeof(IPermissaoCheck).IsAssignableFrom(t)
-                && t != typeof(ImpedimentoPorInscricaoCheck))
-            .Select(static t => ((IPermissaoCheck)Activator.CreateInstance(t)!).Nome)];
+                && t != typeof(ImpedimentoPorInscricaoCheck)
+                && t != typeof(DesignacaoNaBancaCheck))
+            .Select(static t => ((IPermissaoCheck)Activator.CreateInstance(t)!).Nome)
+            .Append(DesignacaoNaBancaCheck.NomeCanonico)];
 
         catalogo.Definicoes.SelectMany(static d => d.Requisito.VerificacoesDeContexto)
             .Should().BeSubsetOf(implementadas)

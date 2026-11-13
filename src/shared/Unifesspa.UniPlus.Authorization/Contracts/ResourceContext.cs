@@ -48,7 +48,13 @@ public sealed record ResourceContext
     public string? Ocorrencia { get; }
 
     /// <summary>Classificação de sensibilidade do dado retornado.</summary>
-    public ClassificacaoDeProtecao Sensibilidade { get; }
+    public ClassificacaoDeProtecao Sensibilidade { get; private init; }
+
+    /// <summary>
+    /// A banca a que o resource se refere e o lugar dela no processo, quando o ato exige designação a ela; nulo nos
+    /// demais resources. Entra por <see cref="ComVinculosDaBanca"/>, e não pela fábrica, que já recebe nove escopos.
+    /// </summary>
+    public VinculosDaBanca? Banca { get; private init; }
 
     private ResourceContext(
         string resourceTipo,
@@ -159,8 +165,15 @@ public sealed record ResourceContext
             throw new ArgumentOutOfRangeException(nameof(sensibilidade), sensibilidade, "A sensibilidade do resource é obrigatória.");
         }
 
-        return new ResourceContext(
-            ResourceTipo, sensibilidade, UnidadeProprietariaId, ProcessoId, ChamadaId, ResourceId, FatoCodigo, Ocorrencia, InscricaoId);
+        return this with { Sensibilidade = sensibilidade };
+    }
+
+    /// <summary>O mesmo resource situado numa banca, para a verificação de designação.</summary>
+    public ResourceContext ComVinculosDaBanca(VinculosDaBanca vinculos)
+    {
+        ArgumentNullException.ThrowIfNull(vinculos);
+
+        return this with { Banca = vinculos };
     }
 
     private static bool GuidVazioInformado(Guid? valor) => valor is { } g && g == Guid.Empty;

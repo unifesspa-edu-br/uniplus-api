@@ -58,7 +58,8 @@ public static class AutorizacaoServiceCollectionExtensions
     /// A verificação de concessão é o núcleo da decisão, não um item da lista de verificações contextuais: entra pelo
     /// tipo concreto, e não como mais um <c>IPermissaoCheck</c>, para que nenhum registro adicional a substitua. O
     /// impedimento por inscrição pergunta ao módulo dono das inscrições; onde não há inscrição, a pergunta tem sempre
-    /// a mesma resposta, e o módulo que as guarda substitui esta porta pela dele. A porta que os endpoints usam é uma
+    /// a mesma resposta, e o módulo que as guarda substitui esta porta pela dele. A designação de banca segue o mesmo
+    /// desenho, com uma verificação contextual que as permissões da banca declaram. A porta que os endpoints usam é uma
     /// pergunta, uma resposta.
     /// </summary>
     private static void RegistrarDecisaoDeAcesso(IServiceCollection services)
@@ -67,6 +68,8 @@ public static class AutorizacaoServiceCollectionExtensions
         services.TryAddSingleton<GrantEfetivoAplicavelCheck>();
         services.TryAddSingleton<IInscricaoDoSujeitoNoProcesso, SemInscricaoNoProcesso>();
         services.TryAddScoped<ImpedimentoPorInscricaoCheck>();
+        services.TryAddSingleton<IDesignacaoDeBanca, SemDesignacaoDeBanca>();
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IPermissaoCheck, DesignacaoNaBancaCheck>());
         services.TryAddScoped<IAuthorizationDecisionService, AuthorizationDecisionService>();
         services.TryAddScoped<IVerificadorDeAcesso, VerificadorDeAcessoHttp>();
         services.TryAddScoped<IPermissoesEfetivas, PermissoesEfetivasHttp>();
