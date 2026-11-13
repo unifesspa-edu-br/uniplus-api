@@ -64,6 +64,7 @@ public sealed class ArquivosDaInscricao
         .. Arquivos
             .Where(static a => a.Situacao == SituacaoDoArquivoDoCandidato.Verificado)
             .OrderBy(static a => a.ConfirmadoEm)
+            .ThenBy(static a => a.Id)
             .Select(a => new ArquivoConfirmado(
                 a.Id, a.ApresentacaoId, ApresentacaoDe(a).ExigenciaId, ApresentacaoDe(a).OcorrenciaId,
                 a.Formato, a.TamanhoBytes!.Value, a.HashSha256!, a.ConfirmadoEm!.Value)),
