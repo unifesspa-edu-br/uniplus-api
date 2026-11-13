@@ -69,7 +69,7 @@ public sealed record ConteudoDoTermo
         string[] linhas = texto.Normalize(NormalizationForm.FormC).Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n');
         string normalizado = string.Join('\n', linhas.Select(static l => l.TrimEnd())).Trim();
 
-        return normalizado.Length is >= TextoMinLength and <= TextoMaxLength && !TemControleProibido(normalizado) ? normalizado : null;
+        return CaracteresDe(normalizado) is >= TextoMinLength and <= TextoMaxLength && !TemControleProibido(normalizado) ? normalizado : null;
     }
 
     private static string? NormalizarAto(string? ato)
@@ -100,6 +100,10 @@ public sealed record ConteudoDoTermo
                 $"O ato que aprova a versão é obrigatório e tem até {AtoMaxLength} caracteres, sem caractere de controle."));
         }
     }
+
+    // Conta como o banco conta: um caractere por code point, e não por unidade UTF-16, para que o par de surrogates de
+    // um caractere suplementar valha um só e o texto aceito aqui caiba na restrição da tabela.
+    private static int CaracteresDe(string texto) => texto.EnumerateRunes().Count();
 
     private static bool TemControleProibido(string texto) =>
         texto.Any(static c => char.IsControl(c) && c is not '\n' and not '\t');
