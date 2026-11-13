@@ -59,19 +59,10 @@ internal sealed class CadeiasDosProdutosPrevistos
         // A cadeia é linear, mas o guarda contra o ciclo mantém a consulta finita se o dado for corrompido.
         HashSet<Guid> vistos = [primeiraPublicacao.Id];
         List<AtoDoProcesso> correcoes = [];
-        AtoDoProcesso? atual = primeiraPublicacao;
-        while (atual is not null)
+        for (AtoDoProcesso? atual = CorrecaoAindaNaoVista(primeiraPublicacao, vistos); atual is not null; atual = CorrecaoAindaNaoVista(atual, vistos))
         {
-            atual = _corrigidosPor[atual.Id]
-                .Where(a => !vistos.Contains(a.Id))
-                .OrderBy(static a => a.CreatedAt)
-                .ThenBy(static a => a.Id)
-                .FirstOrDefault();
-            if (atual is not null)
-            {
-                vistos.Add(atual.Id);
-                correcoes.Add(atual);
-            }
+            vistos.Add(atual.Id);
+            correcoes.Add(atual);
         }
 
         return correcoes;
@@ -82,18 +73,16 @@ internal sealed class CadeiasDosProdutosPrevistos
     {
         ArgumentNullException.ThrowIfNull(itens);
 
-        foreach (IdentidadeDoItemDoEdital item in itens.Distinct())
-        {
-            if (PrimeiraPublicacaoDe(item) is not { } primeira)
-            {
-                continue;
-            }
-
-            yield return primeira;
-            foreach (AtoDoProcesso correcao in CorrecoesDe(primeira))
-            {
-                yield return correcao;
-            }
-        }
+        return itens.Distinct().SelectMany(CadeiaDoItem);
     }
+
+    private AtoDoProcesso? CorrecaoAindaNaoVista(AtoDoProcesso corrigido, HashSet<Guid> vistos) =>
+        _corrigidosPor[corrigido.Id]
+            .Where(a => !vistos.Contains(a.Id))
+            .OrderBy(static a => a.CreatedAt)
+            .ThenBy(static a => a.Id)
+            .FirstOrDefault();
+
+    private IEnumerable<AtoDoProcesso> CadeiaDoItem(IdentidadeDoItemDoEdital item) =>
+        PrimeiraPublicacaoDe(item) is { } primeira ? [primeira, .. CorrecoesDe(primeira)] : [];
 }
