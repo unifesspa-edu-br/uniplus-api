@@ -137,7 +137,7 @@ public sealed partial class ValidacaoDoGrafoPrecedenciaTests
             g => g.FasesAdicionais.Add(Fase(2, Id(200), agrupaEtapas: false))),
         [Violacao.FaseAgrupadoraSemEtapa] = new(
             "ProcessoSeletivo.AvaliacaoSemEtapa",
-            "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.",
+            "Há uma fase que agrupa etapas no cronograma, mas nenhuma etapa acontece nela.",
             g => g.FaseDasEtapas = FaseForaDoCronograma),
         [Violacao.EtapaSemFaseAlguma] = new(
             "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",

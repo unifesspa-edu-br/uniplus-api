@@ -31,7 +31,7 @@ public sealed partial class PendenciasDoCronogramaPrecedenciaTests
     {
         [Pendencia.AvaliacaoSemEtapa] = new(
             "ProcessoSeletivo.AvaliacaoSemEtapa",
-            "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.",
+            "Há uma fase que agrupa etapas no cronograma, mas nenhuma etapa acontece nela.",
             c => c.Fases.Add(FaseDeAvaliacao(c.ProximaOrdem))),
         [Pendencia.EtapaSemFaseDeclarada] = new(
             "ProcessoSeletivo.EtapaSemFaseDeclarada",
