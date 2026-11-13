@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Entities;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 /// <summary>Uma etapa que já começou, pela identidade dela, e se a versão publicada vigente ainda a traz.</summary>
 public sealed record EtapaIniciada(Guid Id, string Nome, bool NaVersaoVigente);
@@ -18,22 +19,26 @@ public sealed record FasesIniciadas
     private readonly Dictionary<Guid, Guid?> _unidadesPublicadas;
     private readonly Dictionary<Guid, string> _codigosNaVersaoVigente;
     private readonly Dictionary<Guid, EtapaIniciada> _etapas;
+    private readonly HashSet<Guid> _fasesProdutoras;
 
     /// <summary>
     /// Cria o conjunto a partir da fase canônica de origem e da unidade publicada de cada fase iniciada, e do código das
     /// fases iniciadas que a versão publicada vigente ainda traz no cronograma: só essas podem ser removidas. As etapas
-    /// iniciadas seguem a mesma regra.
+    /// iniciadas seguem a mesma regra. As fases produtoras são as que começaram por algo que pertence à própria fase: a
+    /// janela dela, um ato dela ou uma decisão no lugar dela.
     /// </summary>
     public FasesIniciadas(
         IEnumerable<KeyValuePair<Guid, Guid?>> unidadesPublicadas,
         IEnumerable<KeyValuePair<Guid, string>>? codigosNaVersaoVigente = null,
-        IEnumerable<EtapaIniciada>? etapas = null)
+        IEnumerable<EtapaIniciada>? etapas = null,
+        IEnumerable<Guid>? fasesProdutoras = null)
     {
         ArgumentNullException.ThrowIfNull(unidadesPublicadas);
 
         _unidadesPublicadas = new(unidadesPublicadas);
         _codigosNaVersaoVigente = new(codigosNaVersaoVigente ?? []);
         _etapas = (etapas ?? []).ToDictionary(static e => e.Id);
+        _fasesProdutoras = [.. fasesProdutoras ?? []];
     }
 
     /// <summary>Nenhuma fase iniciada: o rascunho, que nunca foi publicado.</summary>
@@ -41,6 +46,19 @@ public sealed record FasesIniciadas
 
     /// <summary>Se a etapa já começou: a janela dela abriu, ela tem ato ou registro próprio, ou já terminou. A abertura de uma etapa não inicia as outras da fase.</summary>
     public bool ContemEtapa(Guid etapaId) => _etapas.ContainsKey(etapaId);
+
+    /// <summary>
+    /// Se a avaliação no lugar já começou: a fase, só quando ela mesma produziu um início; a etapa, como em
+    /// <see cref="ContemEtapa"/>. A janela de uma etapa e a inscrição recebida não iniciam a avaliação da fase.
+    /// </summary>
+    public bool AvaliacaoComecou(LugarDaDecisao lugar)
+    {
+        ArgumentNullException.ThrowIfNull(lugar);
+
+        return lugar.FaseCanonicaOrigemId is { } fase
+            ? _fasesProdutoras.Contains(fase)
+            : lugar.EtapaProcessoId is { } etapa && ContemEtapa(etapa);
+    }
 
     /// <summary>Se a fase de origem informada já começou.</summary>
     public bool Contem(Guid faseCanonicaOrigemId) => _unidadesPublicadas.ContainsKey(faseCanonicaOrigemId);
