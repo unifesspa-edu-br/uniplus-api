@@ -9,15 +9,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler da revogação. Quem revoga é o sujeito autenticado. A concessão de gestor de acessos só se revoga se sobrarem ao
-/// menos dois gestores distintos com concessão ativa. A de Representante do controlador se revoga sob a trava do papel, e
-/// a de qualquer perfil de governança, sob a trava da pessoa do beneficiário, ambas tomadas antes da trava da concessão
+/// menos dois gestores distintos com concessão ativa, e a de Representante do controlador, só se a instituição não ficar
+/// sem nenhuma pessoa com concessão vigente dele (UNI-REQ-0394). A de Representante se revoga sob a trava do papel, e a de
+/// qualquer perfil de governança, sob a trava da pessoa do beneficiário, ambas tomadas antes da trava da concessão
 /// (ADR-0162).
 /// </summary>
 public static class RevogarConcessaoCommandHandler
 {
     public static async Task<Result> Handle(
         RevogarConcessaoCommand command,
-        IConcessaoRepository repository,
+        RevogacaoDaConcessao revogacao,
         TravasDaRevogacao travas,
         IAutorizacaoUnitOfWork unitOfWork,
         IUserContext userContext,
@@ -25,7 +26,7 @@ public static class RevogarConcessaoCommandHandler
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(revogacao);
         ArgumentNullException.ThrowIfNull(travas);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -37,20 +38,20 @@ public static class RevogarConcessaoCommandHandler
             return Result.Failure(ConcessaoHandlerErros.AutorNaoIdentificado());
         }
 
-        return await TravarERevogarAsync(new(command, revogadaPor, timeProvider), repository, travas, unitOfWork, cancellationToken).ConfigureAwait(false);
+        return await TravarERevogarAsync(new(command, revogadaPor, timeProvider), revogacao, travas, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result> TravarERevogarAsync(
-        Pedido pedido, IConcessaoRepository repository, TravasDaRevogacao travas, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        Pedido pedido, RevogacaoDaConcessao revogacao, TravasDaRevogacao travas, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         Concessao? concessao = await travas.TravarAsync(pedido.Command.Id, cancellationToken).ConfigureAwait(false);
         return concessao is null
             ? Result.Failure(ConcessaoHandlerErros.NaoEncontrada(pedido.Command.Id))
-            : await RevogarAsync(new(pedido.Command, concessao, pedido.Por, pedido.Clock.GetUtcNow()), repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+            : await RevogarAsync(new(pedido.Command, concessao, pedido.Por, pedido.Clock.GetUtcNow()), revogacao, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result> RevogarAsync(
-        Revogacao r, IConcessaoRepository repository, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        Revogacao r, RevogacaoDaConcessao revogacao, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         // A concessão já revogada responde antes: confirmar a pessoa de algo encerrado não leva a nada.
         if (r.Concessao.RevogadaEm is null && r.Concessao.RecusaDaConfirmacao(r.Command.ConfirmacaoEmail) is { } recusa)
@@ -58,9 +59,8 @@ public static class RevogarConcessaoCommandHandler
             return Result.ValidationFailure([recusa]);
         }
 
-        Result revogada = await RevogacaoDaConcessao
-            .AplicarAsync(
-                r.Concessao, r.Agora, () => r.Concessao.Revogar(new AtoDoAgente(r.Por, r.Agora), r.Command.Motivo), repository, unitOfWork, cancellationToken)
+        Result revogada = await revogacao
+            .AplicarAsync(r.Concessao, r.Agora, () => r.Concessao.Revogar(new AtoDoAgente(r.Por, r.Agora), r.Command.Motivo), cancellationToken)
             .ConfigureAwait(false);
 
         return revogada.IsFailure ? revogada : await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);

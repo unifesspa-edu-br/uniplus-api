@@ -17,6 +17,10 @@ internal static class ConcessaoHandlerErros
         new(ConcessaoErrorCodes.MinimoDeGestores,
             "A revogação deixaria a plataforma com menos de dois gestores de acessos ativos. Designe outro gestor antes de revogar.");
 
+    public static DomainError UltimoRepresentante() =>
+        new(ConcessaoErrorCodes.UltimoRepresentante,
+            "A revogação deixaria a instituição sem Representante do controlador vigente. Designe primeiro quem vai substituí-lo e revogue esta designação depois que a nova estiver vigente.");
+
     public static DomainError ConflitoDeConcorrencia() =>
         new(ConcessaoErrorCodes.ConflitoDeConcorrencia,
             "A concessão de acesso foi alterada por outra operação. Consulte o estado atual antes de repetir.");

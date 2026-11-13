@@ -35,6 +35,8 @@ internal sealed class CenarioDaProvidencia
 
     public IAutorizacaoUnitOfWork Unidade { get; } = Substitute.For<IAutorizacaoUnitOfWork>();
 
+    public IPapelDoRepresentante Papel { get; } = Substitute.For<IPapelDoRepresentante>();
+
     public ITitularesDaPermissao Titulares { get; } = Substitute.For<ITitularesDaPermissao>();
 
     public LoggerDeTeste<AvisosDaProvidencia> Logger { get; } = new();
@@ -63,7 +65,7 @@ internal sealed class CenarioDaProvidencia
     public RespostaDaProvidencia Resposta => new(Providencias, Gravacao(), Relogio());
 
     public AtendimentoDaProvidencia Atendimento => new(
-        Providencias, Concessoes, new TravasDaRevogacao(Concessoes, Substitute.For<IPapelDoRepresentante>(), new PapeisDeTeste()), Gravacao(), Unidade, Relogio());
+        Providencias, Concessoes, new TravasDaRevogacao(Concessoes, Papel, new PapeisDeTeste()), Gravacao(), new RevogacaoDaConcessao(Concessoes, Papel, Unidade), Relogio());
 
     /// <summary>A concessão como os repositórios a leem: sob a trava compartilhada, com o perfil e travada para alterar.</summary>
     public Concessao ComConcessao(Concessao concessao)

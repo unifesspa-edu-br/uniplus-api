@@ -34,7 +34,7 @@ public sealed record TrocaDeVersaoDoPedidoDto(int VersaoAnterior, int VersaoNova
 /// <param name="EtapaAtual">Etapa que o pedido aguarda do aprovador (<c>gestor</c> ou <c>protecao_de_dados</c>); nula se não aguarda nenhum.</param>
 /// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugeriu; nulo, sem sugestão.</param>
 /// <param name="ValidaAte">Fim de vigência que o gestor definiu ao aprovar; nulo, sem prazo.</param>
-/// <param name="AdmitePrazo">Se a concessão pode ter prazo; falso só para o perfil de gestor de acessos.</param>
+/// <param name="AdmitePrazo">Se a concessão pode ter prazo; falso para os perfis de gestor de acessos e de Representante do controlador.</param>
 /// <param name="ConcessaoId">A concessão que a última aprovação gerou; nula até lá.</param>
 /// <param name="AnexaraDocumento">O solicitante declarou, na criação, que anexaria documento; sempre verdadeiro no perfil de governança.</param>
 /// <param name="Termo">O termo de responsabilidade fixado no pedido protegido e o aceite dele; nulo no pedido sem termo.</param>
@@ -95,7 +95,10 @@ public sealed record LeituraDoAnexoDto(Uri Url, DateTimeOffset ExpiraEm);
 /// <summary>Corpo do <c>POST /api/autorizacao/pedidos-de-concessao</c>.</summary>
 /// <param name="BeneficiarioEmail">E-mail institucional do beneficiário; em branco, o pedido é para o próprio solicitante.</param>
 /// <param name="UnidadeId">Unidade do escopo; ausente só para o perfil de governança, de escopo institucional.</param>
-/// <param name="ValidaAteSugerida">Fim de vigência que o solicitante sugere ao gestor; opcional e não vale para o perfil de gestor de acessos.</param>
+/// <param name="ValidaAteSugerida">
+/// Fim de vigência que o solicitante sugere ao gestor; opcional e recusado nos perfis de gestor de acessos e de Representante
+/// do controlador.
+/// </param>
 /// <param name="AnexaraDocumento">
 /// O solicitante vai anexar documento: o pedido espera a verificação dele antes do aceite e do gestor. No pedido protegido,
 /// só o documento declarado aqui se anexa; o perfil de governança o exige sempre.
@@ -128,7 +131,10 @@ public sealed record EnviarAnexoDoPedidoRequest(long TamanhoDoPdf);
 public sealed record ConfirmarAnexoDoPedidoRequest(string? Etag);
 
 /// <summary>Corpo opcional do <c>POST /api/autorizacao/pedidos-de-concessao/{id}/aprovacoes</c>.</summary>
-/// <param name="ValidaAte">Fim da vigência da concessão, definido pelo gestor; só vale na etapa dele. Ausente, sem prazo.</param>
+/// <param name="ValidaAte">
+/// Fim da vigência da concessão, definido pelo gestor; só vale na etapa dele e é recusado nos perfis de gestor de acessos e de
+/// Representante do controlador. Ausente, sem prazo.
+/// </param>
 public sealed record AprovarPedidoDeConcessaoRequest(DateTimeOffset? ValidaAte = null);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/pedidos-de-concessao/{id}/recusa</c>.</summary>

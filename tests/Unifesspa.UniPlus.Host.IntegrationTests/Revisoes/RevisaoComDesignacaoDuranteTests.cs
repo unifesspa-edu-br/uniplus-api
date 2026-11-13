@@ -85,10 +85,9 @@ public sealed class RevisaoComDesignacaoDuranteTests : PedidosDeConcessaoTestBas
     private async Task TornarLeandroRepresentanteVigenteAsync() =>
         await ExecutarSqlAsync("UPDATE autorizacao.concessoes SET valida_ate = NULL WHERE id = {0}", await DesignarLeandroAsync());
 
+    // A designação de Representante já não tem prazo: a vencida só existe no estado anterior a essa regra.
     private Task VencerAsync(Guid designacao) =>
-        ExecutarSqlAsync(
-            "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 minute' WHERE id = {0}",
-            designacao);
+        EstadoAnteriorAoRepresentanteSemPrazo.GravarPrazoNaDesignacaoAsync(Fixture.Factory.Services, designacao, DateTimeOffset.UtcNow.AddMinutes(-1));
 
     // Leandro tem o acesso sensível e, se pedido, também a designação de Representante; Marlene abre a revisão.
     private async Task<Revisao> AbrirComLeandroAsync(bool leandroERepresentante)

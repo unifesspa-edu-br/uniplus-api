@@ -24,7 +24,7 @@ public sealed class RevogarConcessaoCommandHandlerTests
     {
         Result resultado = await RevogarConcessaoCommandHandler.Handle(
             new RevogarConcessaoCommand(Guid.NewGuid(), "Mudou de função."),
-            new RepositorioIntocavel(),
+            new RevogacaoDaConcessao(new RepositorioIntocavel(), new PapelIntocavel(), new UnidadeDeTrabalhoIntocavel()),
             new TravasDaRevogacao(new RepositorioIntocavel(), new PapelIntocavel(), new PapeisDeTeste()),
             new UnidadeDeTrabalhoIntocavel(),
             new Usuario(emissor, sub),

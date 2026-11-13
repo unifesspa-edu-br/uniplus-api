@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O perfil de Encarregado de dados é imutável como os outros perfis de governança: não se edita, não se versiona, não se
-/// desativa, não se reativa, não se suspende nem perde permissão por remoção. Só o perfil de gestor de acessos não admite
-/// concessão com prazo (ADR-0162).
+/// desativa, não se reativa, não se suspende nem perde permissão por remoção. Os perfis de gestor de acessos e de
+/// Representante do controlador não admitem concessão com prazo; o de Encarregado admite (ADR-0162, UNI-REQ-0200).
 /// </summary>
 public sealed class PerfilDoEncarregadoDeDadosTests
 {
@@ -49,12 +49,12 @@ public sealed class PerfilDoEncarregadoDeDadosTests
         perfil.ComposicaoEmVigor.Should().Equal(Consultar);
     }
 
-    [Theory(DisplayName = "Só o perfil de gestor de acessos não admite prazo; o Representante, o Encarregado e o perfil comum admitem")]
+    [Theory(DisplayName = "Os perfis de gestor de acessos e de Representante não admitem prazo; o Encarregado e o perfil comum admitem")]
     [InlineData(TipoDeGovernanca.GestorDeAcessos, false)]
-    [InlineData(TipoDeGovernanca.RepresentanteDoControlador, true)]
+    [InlineData(TipoDeGovernanca.RepresentanteDoControlador, false)]
     [InlineData(TipoDeGovernanca.EncarregadoDeDados, true)]
     [InlineData(null, true)]
-    public void AdmitePrazo_SoOGestorNaoAdmite(TipoDeGovernanca? governanca, bool admite) =>
+    public void AdmitePrazo_GestorERepresentanteNaoAdmitem(TipoDeGovernanca? governanca, bool admite) =>
         Perfil.AdmitePrazoCom(governanca).Should().Be(admite);
 
     private Perfil DeGovernanca(TipoDeGovernanca tipo) =>
