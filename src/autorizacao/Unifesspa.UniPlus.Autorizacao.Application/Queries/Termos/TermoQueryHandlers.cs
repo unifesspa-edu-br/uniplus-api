@@ -52,8 +52,8 @@ public static class ListarVersoesDoTermoQueryHandler
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(termos);
 
-        (IReadOnlyList<VersaoDoTermo> itens, Guid? anterior, Guid? proximo) = await termos
-            .ListarVersoesAsync(query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
+        (IReadOnlyList<VersaoDoTermo> itens, (string, Guid)? anterior, (string, Guid)? proximo) = await termos
+            .ListarVersoesAsync(query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken).ConfigureAwait(false);
         Guid? vigenteId = (await termos.ObterVigenteAsync(cancellationToken).ConfigureAwait(false))?.Id;
 
         return Result<ListarVersoesDoTermoResult>.Success(

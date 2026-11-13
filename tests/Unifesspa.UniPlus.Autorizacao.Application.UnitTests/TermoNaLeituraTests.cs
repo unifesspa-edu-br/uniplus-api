@@ -43,12 +43,12 @@ public sealed class TermoNaLeituraTests
     public async Task Listar_MarcaAVigente()
     {
         VersaoDoTermo vigente = TermosDeTeste.Publicada();
-        _termos.ListarVersoesAsync(null, 10, Kernel.Pagination.PaginationDirection.Next, Arg.Any<CancellationToken>())
-            .Returns(([vigente], (Guid?)null, (Guid?)null));
+        _termos.ListarVersoesAsync(null, null, 10, Kernel.Pagination.PaginationDirection.Next, Arg.Any<CancellationToken>())
+            .Returns(([vigente], ((string, Guid)?)null, ((string, Guid)?)null));
         _termos.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns(vigente);
 
         Result<ListarVersoesDoTermoResult> resultado = await ListarVersoesDoTermoQueryHandler.Handle(
-            new(null, 10, Kernel.Pagination.PaginationDirection.Next), _termos, CancellationToken.None);
+            new(null, null, 10, Kernel.Pagination.PaginationDirection.Next), _termos, CancellationToken.None);
 
         resultado.Value!.Items.Should().ContainSingle().Which.Vigente.Should().BeTrue();
     }

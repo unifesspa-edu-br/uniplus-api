@@ -90,8 +90,8 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
         Resposta(await _queryBus.Send(new ObterVersaoDoTermoQuery(id), cancellationToken).ConfigureAwait(false));
 
     /// <summary>
-    /// O histórico das versões, sem o texto, em ordem de publicação, paginado por cursor opaco bidirecional (ADR-0026 +
-    /// ADR-0089). Só para quem publica o termo.
+    /// O histórico das versões, sem o texto, em ordem crescente de número, paginado por cursor opaco bidirecional
+    /// (ADR-0026 + ADR-0089) cuja chave é o número da versão. Só para quem publica o termo.
     /// </summary>
     [HttpGet("termos-de-responsabilidade/versoes")]
     [ExigePermissao<PermissaoAutorizacao>(PermissaoAutorizacao.TermosPublicar, ResourceTipo = ResourceTiposAutorizacao.TermoDeResponsabilidade)]
@@ -102,18 +102,19 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    public async Task<IActionResult> ListarVersoes([FromCursor(ResourceTag)] PageRequest page, CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ListarVersoes([FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(page);
 
         Result<ListarVersoesDoTermoResult> resultado = await _queryBus
-            .Send(new ListarVersoesDoTermoQuery(page.AfterId, page.Limit, page.Direction), cancellationToken)
+            .Send(new ListarVersoesDoTermoQuery(page.AfterSortKey, page.AfterId, page.Limit, page.Direction), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsFailure
             ? resultado.ToActionResult(_mapper)
-            : await this.OkPaginatedAsync(
-                resultado.Value!.Items, resultado.Value.AnteriorAfterId, resultado.Value.ProximoAfterId, page, ResourceTag,
+            : await this.OkPaginatedOrdenadoAsync(
+                resultado.Value!.Items, resultado.Value.Anterior, resultado.Value.Proximo, page, ResourceTag,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
