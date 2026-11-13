@@ -58,14 +58,17 @@ public sealed class FilaETrilhaDasProvidenciasEndpointTests : ProvidenciaEndpoin
     // identificadores: a mais nova pelo identificador é a mais antiga pela abertura. Devolve os identificadores em ordem.
     private async Task<Guid[]> AbertasComAAberturaInvertidaAsync()
     {
-        Guid[] ids = [(await ProvidenciaAbertaAsync()).ProvidenciaId, (await ProvidenciaAbertaAsync()).ProvidenciaId, (await ProvidenciaAbertaAsync()).ProvidenciaId];
+        Guid[] criadas = [(await ProvidenciaAbertaAsync()).ProvidenciaId, (await ProvidenciaAbertaAsync()).ProvidenciaId, (await ProvidenciaAbertaAsync()).ProvidenciaId];
+
+        // A ordem dos identificadores vem deles mesmos, e não da criação: o UUIDv7 não a garante no mesmo milissegundo.
+        Guid[] ids = [.. criadas.Order()];
         for (int i = 0; i < ids.Length; i++)
         {
             await ExecutarSqlAsync(
                 "UPDATE autorizacao.providencias SET aberta_em = {0} WHERE id = {1}", new DateTimeOffset(2001, 1, 3 - i, 12, 0, 0, TimeSpan.Zero), ids[i]);
         }
 
-        return [.. ids.Order()];
+        return ids;
     }
 
     private static async Task<Pagina> PaginaAsync(HttpClient cliente, Uri endereco)
