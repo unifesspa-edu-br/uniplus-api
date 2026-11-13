@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authorization;
 
+using System.Text.Json.Nodes;
+
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
@@ -29,6 +31,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class VerificadorDeAcessoHttpTests
 {
     private const string Permissao = "selecao:inscricoes:consultar";
+
+    private const string LeituraPorTitularidade = RegistroDeAcessoDeTeste.LeituraPorTitularidade;
 
     private static readonly Guid Unidade = Guid.CreateVersion7();
 
@@ -185,29 +189,15 @@ public sealed class VerificadorDeAcessoHttpTests
     {
         EffectiveGrant global = EffectiveGrant.From(
             "autorizacao:pedidos:aprovar-funcional", FonteGrant.Concessao, escopoInstitucional: true).Value!;
-        _decisao.DecidirAsync(default!, default!, default!, default!, default)
-            .ReturnsForAnyArgs(chamada => chamada.ArgAt<PermissionRequirement>(1).Permissao == global.PermissaoCodigo
-                ? AuthorizationDecision.Permitir(global)
-                : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
-        IVerificadorDeAcesso verificador = Verificador(_decisao, _registro, Sujeito(global));
-        ServiceProvider servicos = new ServiceCollection().AddSingleton(verificador).BuildServiceProvider();
-        AuthorizationFilterContext contexto = new(
-            new ActionContext(new DefaultHttpContext { RequestServices = servicos }, new RouteData(), new ActionDescriptor()), []);
+        PermitirSo(global);
 
-        await new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar)
-        {
-            OuEmAlgumaUnidade = PermissaoAutorizacao.PedidosAprovarFuncional,
-        }.OnAuthorizationAsync(contexto);
+        AuthorizationFilterContext contexto = await FiltrarAsync(
+            Verificador(_decisao, _registro, Sujeito(global)),
+            new ExigePermissaoAttribute<PermissaoAutorizacao>(PermissaoAutorizacao.ConcessoesAdministrar) { OuEmAlgumaUnidade = PermissaoAutorizacao.PedidosAprovarFuncional });
 
         contexto.Result.Should().BeOfType<ForbidResult>();
         await _registro.Received(1).RegistrarAsync(
-            Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l =>
-                l.Count == 2
-                && l.All(static r => !r.Permitido)
-                && l[0].Permissao == "autorizacao:concessoes:administrar"
-                && l[1].Permissao == "autorizacao:pedidos:aprovar-funcional"
-                && l[1].MotivoNegativa == "concessao_em_unidade_exigida"),
-            Arg.Any<CancellationToken>());
+            Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l => SaoAsNegativasDaPrincipalEDaAlternativa(l)), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Sem sujeito, avaliar devolve a decisão sem sujeito, exigir responde identidade incompleta e nada é gravado")]
@@ -245,6 +235,104 @@ public sealed class VerificadorDeAcessoHttpTests
             Arg.Is<IReadOnlyList<RegistroDecisaoAcesso>>(l => l.Count == 2 && l.All(r => r.ResourceTipo == "inscricao")),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "A leitura por titularidade grava um registro permitido por resource, com a fonte titularidade e sem concessão, sem passar pelo ponto de decisão")]
+    public async Task RegistrarLeituraPorTitularidade_UmRegistroPorResourceSemDecisao()
+    {
+        Guid[] pedidos = [Guid.CreateVersion7(), Guid.CreateVersion7()];
+
+        (ResultadoDoAcesso resultado, IReadOnlyList<RegistroDecisaoAcesso> gravados) = await LerPorTitularidadeAsync(_verificador, pedidos);
+
+        resultado.Should().Be(ResultadoDoAcesso.Permitido);
+        gravados.Select(static r => r.ResourceId).Should().Equal(pedidos.Select(static p => (Guid?)p));
+        gravados.Should().AllSatisfy(static r => (r.Permissao, r.FonteGrant, r.ResourceTipo, r.Sensibilidade, r.Resultado, r.AtorSubject)
+            .Should().Be((LeituraPorTitularidade, "titularidade", "pedido", "pessoal", ResultadoDoAcesso.Permitido, "sub-opaco-123")));
+        gravados.Should().AllSatisfy(static r => (r.GrantId, r.PerfilId, r.VersaoId, r.EscopoUnidadeId).Should().Be(((Guid?)null, (Guid?)null, (Guid?)null, (Guid?)null)));
+        await _decisao.DidNotReceiveWithAnyArgs().DecidirAsync(default!, default!, default!, default!, default);
+    }
+
+    [Fact(DisplayName = "O registro serializado da leitura por titularidade leva a fonte titularidade, o código fixo e os campos da concessão nulos")]
+    public async Task RegistrarLeituraPorTitularidade_RegistroSerializado()
+    {
+        (_, IReadOnlyList<RegistroDecisaoAcesso> gravados) = await LerPorTitularidadeAsync(_verificador, [Guid.CreateVersion7()]);
+
+        JsonNode registro = JsonNode.Parse(RegistroDeAcessoKafka.ValorDoLote(gravados))![0]!["registro"]!;
+
+        (registro["fonteGrant"]!.GetValue<string>(), registro["permissao"]!.GetValue<string>(), registro["resultado"]!.GetValue<string>(), registro["permitido"]!.GetValue<bool>())
+            .Should().Be(("titularidade", LeituraPorTitularidade, "permitido", true));
+        new[] { "grantId", "perfilId", "versaoId", "escopoUnidadeId" }.Should().AllSatisfy(campo => registro[campo].Should().BeNull());
+    }
+
+    [Fact(DisplayName = "Sem sujeito, a leitura por titularidade responde identidade incompleta e nada é gravado")]
+    public async Task RegistrarLeituraPorTitularidade_SemSujeito_IdentidadeIncompletaSemGravar()
+    {
+        VerificadorDeAcessoHttp semSujeito = Verificador(_decisao, _registro, sujeito: null);
+
+        ResultadoDoAcesso resultado = await semSujeito.RegistrarLeituraPorTitularidadeAsync(LeituraDoTitular(), "pedido", [Guid.CreateVersion7()]);
+
+        resultado.Should().Be(ResultadoDoAcesso.IdentidadeIncompleta);
+        await _registro.DidNotReceiveWithAnyArgs().RegistrarAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Sem resource exibido, a leitura por titularidade não grava nem consulta o registro")]
+    public async Task RegistrarLeituraPorTitularidade_SemResource_NaoGrava()
+    {
+        ResultadoDoAcesso resultado = await _verificador.RegistrarLeituraPorTitularidadeAsync(LeituraDoTitular(), "pedido", []);
+
+        resultado.Should().Be(ResultadoDoAcesso.Permitido);
+        await _registro.DidNotReceiveWithAnyArgs().RegistrarAsync(default!, default);
+    }
+
+    [Fact(DisplayName = "Falha ao gravar a leitura por titularidade sobe como erro: a leitura não é entregue")]
+    public async Task RegistrarLeituraPorTitularidade_FalhaAoRegistrar_Lanca()
+    {
+        _registro.RegistrarAsync(default!, default)
+            .ReturnsForAnyArgs(Task.FromException(new RegistroDeAcessoNaoGravadoException(new InvalidOperationException())));
+
+        Func<Task> acao = () => _verificador.RegistrarLeituraPorTitularidadeAsync(LeituraDoTitular(), "pedido", [Guid.CreateVersion7()]);
+
+        await acao.Should().ThrowAsync<RegistroDeAcessoNaoGravadoException>();
+    }
+
+    private async Task<(ResultadoDoAcesso Resultado, IReadOnlyList<RegistroDecisaoAcesso> Gravados)> LerPorTitularidadeAsync(
+        VerificadorDeAcessoHttp verificador, Guid[] pedidos)
+    {
+        IReadOnlyList<RegistroDecisaoAcesso> gravados = [];
+        _registro.RegistrarAsync(Arg.Do<IReadOnlyList<RegistroDecisaoAcesso>>(lote => gravados = lote), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        ResultadoDoAcesso resultado = await verificador.RegistrarLeituraPorTitularidadeAsync(LeituraDoTitular(), "pedido", pedidos);
+
+        return (resultado, gravados);
+    }
+
+    private static PermissionRequirement LeituraDoTitular() =>
+        PermissionRequirement.From(LeituraPorTitularidade, ClassificacaoDeProtecao.Pessoal).Value!;
+
+    // O ponto de decisão permite só a permissão da concessão e nega as demais por falta de concessão.
+    private void PermitirSo(EffectiveGrant concessao) =>
+        _decisao.DecidirAsync(default!, default!, default!, default!, default)
+            .ReturnsForAnyArgs(chamada => chamada.ArgAt<PermissionRequirement>(1).Permissao == concessao.PermissaoCodigo
+                ? AuthorizationDecision.Permitir(concessao)
+                : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel));
+
+    private static async Task<AuthorizationFilterContext> FiltrarAsync(IVerificadorDeAcesso verificador, ExigePermissaoAttribute<PermissaoAutorizacao> filtro)
+    {
+        ServiceProvider servicos = new ServiceCollection().AddSingleton(verificador).BuildServiceProvider();
+        AuthorizationFilterContext contexto = new(
+            new ActionContext(new DefaultHttpContext { RequestServices = servicos }, new RouteData(), new ActionDescriptor()), []);
+
+        await filtro.OnAuthorizationAsync(contexto);
+
+        return contexto;
+    }
+
+    private static bool SaoAsNegativasDaPrincipalEDaAlternativa(IReadOnlyList<RegistroDecisaoAcesso> lote) =>
+        lote.Count == 2
+        && lote.All(static r => !r.Permitido)
+        && lote[0].Permissao == "autorizacao:concessoes:administrar"
+        && lote[1].Permissao == "autorizacao:pedidos:aprovar-funcional"
+        && lote[1].MotivoNegativa == "concessao_em_unidade_exigida";
 
     private static VerificadorDeAcessoHttp Verificador(
         IAuthorizationDecisionService decisao, IRegistroOperacionalRestrito registro, AuthorizationSubject? sujeito)

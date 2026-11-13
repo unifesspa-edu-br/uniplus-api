@@ -85,8 +85,9 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     /// Lista os pedidos, paginados por cursor opaco bidirecional (ADR-0026 + ADR-0089). <c>fila=gestor</c> e
     /// <c>fila=protecao_de_dados</c> são as filas dos aprovadores e exigem a permissão da etapa; <c>fila=todos</c> lista os
     /// pedidos em qualquer situação e exige a permissão de uma das duas etapas ou a de consultar os pedidos; <c>fila=meus</c>,
-    /// o padrão, são os pedidos de quem pergunta. Nas filas, e nos pedidos de quem pergunta quando ele tem a permissão de
-    /// consultar os pedidos, cada pedido exibido é registrado antes da resposta; sem o registro, a leitura é recusada com 503.
+    /// o padrão, são os pedidos de quem pergunta. Cada pedido exibido é registrado antes da resposta: nas filas, pela
+    /// permissão que as governa; nos pedidos de quem pergunta, pela permissão de consultar os pedidos, quando ele a tem, ou
+    /// por titularidade, quando não a tem. Sem o registro, a leitura é recusada com 503; a página vazia não grava nada.
     /// </summary>
     [HttpGet("pedidos-de-concessao")]
     [VendorMediaType(Resource = "pedido-de-concessao", Versions = [1])]
@@ -150,8 +151,8 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>
     /// Lê o pedido: só as partes e quem decide uma etapa, administra concessões ou consulta os pedidos o veem; os demais
-    /// recebem 404. A leitura de quem não é parte, e a da parte que tem a permissão de consultar os pedidos, é registrada
-    /// antes da resposta (sem o registro, 503).
+    /// recebem 404. Toda leitura é registrada antes da resposta (sem o registro, 503): a de quem não é parte, pela
+    /// permissão que a deu; a da parte, pela permissão de consultar os pedidos, quando ela a tem, ou por titularidade.
     /// </summary>
     [HttpGet("pedidos-de-concessao/{id:guid}")]
     [VendorMediaType(Resource = "pedido-de-concessao", Versions = [1])]

@@ -22,8 +22,9 @@ internal static class VisibilidadeDoPedido
 
     /// <summary>
     /// Confere a visibilidade, ou devolve o erro que a borda responde: 401 para a identidade incompleta, 404 para
-    /// quem não vê. Quem é parte tem a leitura registrada pela consulta dos pedidos, quando a tem; quem não é parte, pela
-    /// permissão que a deu ou, se nenhuma deu, pelas negativas.
+    /// quem não vê. Quem é parte tem a leitura registrada pela consulta dos pedidos, quando a tem, ou por titularidade,
+    /// quando não a tem (ADR-0166); quem não é parte, pela permissão que a deu ou, se nenhuma deu, pelas negativas. Sem o
+    /// registro gravado, a leitura não sai.
     /// </summary>
     public static async Task<DomainError?> ConferirAsync(
         PedidoDeConcessao pedido, PessoaNoToken pessoa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
@@ -31,18 +32,15 @@ internal static class VisibilidadeDoPedido
             ? await ConferirParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false)
             : await ConferirQuemNaoEParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
 
-    // Sem a consulta dos pedidos, a parte lê por titularidade e nada se grava (issue #2389).
     private static async Task<DomainError?> ConferirParteAsync(
         PedidoDeConcessao pedido, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         Result<DecisaoPermitida?> governante = await AcessoDoAprovador
             .GovernanteDaLeituraDaParteAsync(verificador, pedido.Id, cancellationToken).ConfigureAwait(false);
-        if (governante is { IsSuccess: true, Value: { } permitida })
-        {
-            await AcessoDoAprovador.RegistrarAsync(verificador, permitida, cancellationToken).ConfigureAwait(false);
-        }
 
-        return governante.Error;
+        return governante.IsFailure
+            ? governante.Error
+            : await AcessoDoAprovador.RegistrarLeituraAsync(verificador, governante.Value, [pedido.Id], cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<DomainError?> ConferirQuemNaoEParteAsync(
