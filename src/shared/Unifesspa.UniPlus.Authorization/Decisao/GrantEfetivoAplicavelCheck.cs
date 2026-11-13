@@ -27,7 +27,8 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// O escopo decide pela unidade dona do resource, sem herança pela hierarquia
 /// (ADR-0079): a concessão de unidade alcança só o resource daquela unidade, e a
 /// institucional, só o resource sem unidade proprietária. Não há concessão sem
-/// escopo, e portanto nenhuma que alcance qualquer resource.
+/// escopo, e portanto nenhuma que alcance qualquer resource. A titularidade (<see cref="FonteGrant.Titularidade"/>) nunca
+/// autoriza: não é concessão, e é recusada qualquer que seja o escopo.
 /// </para>
 /// </remarks>
 public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
@@ -51,48 +52,36 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
         ArgumentNullException.ThrowIfNull(resource);
         ArgumentNullException.ThrowIfNull(request);
 
-        EffectiveGrant? selecionada = null;
-        int especificidadeSelecionada = -1;
-        bool houveExpirada = false;
+        EffectiveGrant[] aplicaveis = [.. subject.ConcessoesEfetivas.Where(grant => Aplicavel(grant, requirement, resource))];
 
-        foreach (EffectiveGrant grant in subject.ConcessoesEfetivas)
-        {
-            if (!string.Equals(grant.PermissaoCodigo, requirement.Permissao, StringComparison.Ordinal)
-                || !EscopoAlcancaResource(grant, resource))
-            {
-                continue;
-            }
+        EffectiveGrant? selecionada = MaisEspecifica(VigentesEm(aplicaveis, request.DataAcesso));
 
-            // A validade é comparada com o instante do acesso que veio no
-            // contexto, e não com uma leitura nova do relógio: a decisão inteira
-            // se explica por um único instante, e o teste a reproduz.
-            if (!ConcessaoAtiva.VigenteEm(grant.ValidoAte, request.DataAcesso))
-            {
-                houveExpirada = true;
-                continue;
-            }
-
-            // Vence a concessão mais específica; o desempate é a ordem da lista
-            // do sujeito, que é estável. Sem isso, duas concessões igualmente
-            // aplicáveis fariam a trilha registrar ora uma, ora outra.
-            int especificidade = Especificidade(grant);
-            if (especificidade > especificidadeSelecionada)
-            {
-                selecionada = grant;
-                especificidadeSelecionada = especificidade;
-            }
-        }
-
-        if (selecionada is not null)
-        {
-            return Task.FromResult(CheckResult.Aprovado(selecionada));
-        }
-
-        // Distinguir os dois motivos importa ao diagnóstico: "expirou" manda
-        // renovar a concessão; "não existe" manda concedê-la.
-        return Task.FromResult(CheckResult.Reprovado(
-            houveExpirada ? MotivoNegativa.ConcessaoExpirada : MotivoNegativa.SemConcessaoAplicavel));
+        return Task.FromResult(selecionada is not null ? CheckResult.Aprovado(selecionada) : CheckResult.Reprovado(MotivoDaNegativa(aplicaveis)));
     }
+
+    // A titularidade não é concessão: só existe no registro da leitura que a parte faz do que é seu (ADR-0166). Se chegar
+    // às concessões efetivas do sujeito por engano, não autoriza nada, e a falha é fechada aqui, sem depender de quem
+    // monta o sujeito.
+    private static bool Aplicavel(EffectiveGrant grant, PermissionRequirement requirement, ResourceContext resource) =>
+        grant.Fonte != FonteGrant.Titularidade
+        && string.Equals(grant.PermissaoCodigo, requirement.Permissao, StringComparison.Ordinal)
+        && EscopoAlcancaResource(grant, resource);
+
+    // A validade é comparada com o instante do acesso que veio no contexto, e não com uma leitura nova do relógio: a
+    // decisão inteira se explica por um único instante, e o teste a reproduz.
+    private static IEnumerable<EffectiveGrant> VigentesEm(IEnumerable<EffectiveGrant> aplicaveis, DateTimeOffset instante) =>
+        aplicaveis.Where(grant => ConcessaoAtiva.VigenteEm(grant.ValidoAte, instante));
+
+    // Distinguir os dois motivos importa ao diagnóstico: "expirou" manda renovar a concessão; "não existe" manda
+    // concedê-la. Havendo concessão aplicável e nenhuma vigente, todas expiraram.
+    private static MotivoNegativa MotivoDaNegativa(EffectiveGrant[] aplicaveis) =>
+        aplicaveis.Length > 0 ? MotivoNegativa.ConcessaoExpirada : MotivoNegativa.SemConcessaoAplicavel;
+
+    // Vence a concessão mais específica; o desempate é a ordem da lista do sujeito, que é estável (a ordenação do LINQ
+    // preserva a ordem dos empates). Sem isso, duas concessões igualmente aplicáveis fariam a trilha registrar ora uma,
+    // ora outra.
+    private static EffectiveGrant? MaisEspecifica(IEnumerable<EffectiveGrant> vigentes) =>
+        vigentes.OrderByDescending(Especificidade).FirstOrDefault();
 
     // A concessão exige que o resource esteja NO escopo dela. A institucional
     // alcança o resource que não pertence a unidade; a de unidade, o da mesma

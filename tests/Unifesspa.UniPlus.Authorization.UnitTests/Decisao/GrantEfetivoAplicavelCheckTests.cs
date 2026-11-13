@@ -195,6 +195,16 @@ public sealed class GrantEfetivoAplicavelCheckTests
             + "dependente da grafia com que alguém a digitou no provedor de identidade");
     }
 
+    [Fact(DisplayName = "A titularidade com escopo institucional e a permissão pedida é recusada: não é concessão e nunca autoriza")]
+    public async Task Check_Titularidade_RecusaComFalhaFechada()
+    {
+        CheckResult resultado = await Verificar(Concessao(fonte: FonteGrant.Titularidade), Resource());
+
+        resultado.Passou.Should().BeFalse("a titularidade só existe no registro da leitura da parte (ADR-0166)");
+        resultado.Motivo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
+        resultado.GrantSelecionado.Should().BeNull();
+    }
+
     private Task<CheckResult> Verificar(EffectiveGrant concessao, ResourceContext resource)
         => Verificar([concessao], resource);
 
