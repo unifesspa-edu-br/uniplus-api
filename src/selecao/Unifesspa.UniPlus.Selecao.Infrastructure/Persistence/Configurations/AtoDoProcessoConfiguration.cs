@@ -33,6 +33,10 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.ItemDoEdital).HasMaxLength(IdentidadeDoItemDoEdital.ChaveMaxLength);
         builder.Property(a => a.Situacao).HasConversion<int>().IsRequired();
 
+        // A ordem de registro é do banco, e o registro sob a trava do processo a torna a ordem real entre os atos dele.
+        builder.Property(a => a.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
+        builder.HasIndex(a => a.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_atos_do_processo_ordem_de_registro");
+
         // Vínculo por FK ao processo, sem navegação inversa: o registro não é filho do agregado. O
         // processo é soft-deletable e nunca emite DELETE, então o vínculo é Restrict e não carrega
         // uma remoção em cascata que jamais dispararia.
@@ -70,7 +74,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
 
         // A consulta administrativa filtra por processo e entrega do mais recente para o mais
         // antigo; as colunas descendentes evitam o passo de ordenação.
-        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.CreatedAt, a.Id })
+        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.CreatedAt, a.OrdemDeRegistro })
             .IsDescending(false, true, true)
             .HasDatabaseName("ix_atos_do_processo_processo_recentes");
 

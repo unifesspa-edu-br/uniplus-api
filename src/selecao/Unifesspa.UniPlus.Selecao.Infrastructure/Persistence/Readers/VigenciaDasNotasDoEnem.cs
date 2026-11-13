@@ -1,8 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
+using Microsoft.EntityFrameworkCore;
+
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 /// <summary>
@@ -20,7 +23,7 @@ internal static class VigenciaDasNotasDoEnem
             && mais.EtapaProcessoId == lote.EtapaProcessoId
             && mais.EdicaoCodigo == lote.EdicaoCodigo
             && (mais.ImportadoEm > lote.ImportadoEm
-                || (mais.ImportadoEm == lote.ImportadoEm && mais.Id.CompareTo(lote.Id) > 0))));
+                || (mais.ImportadoEm == lote.ImportadoEm && EF.Property<long>(mais, LoteDeNotasDoEnemConfiguration.OrdemDeRegistro) > EF.Property<long>(lote, LoteDeNotasDoEnemConfiguration.OrdemDeRegistro)))));
 
     /// <summary>A edição do ENEM que cada inscrição escolheu, como a resposta do fato da edição a guarda.</summary>
     public static IQueryable<RespostaDaInscricaoRecord> EdicoesEscolhidas(SelecaoDbContext context) =>

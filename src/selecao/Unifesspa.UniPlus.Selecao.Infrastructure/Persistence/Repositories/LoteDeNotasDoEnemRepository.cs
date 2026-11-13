@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 
 public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
@@ -147,7 +148,7 @@ public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
                 && l.EtapaProcessoId == etapaProcessoId
                 && l.EdicaoCodigo == edicaoCodigo)
             .OrderByDescending(l => l.ImportadoEm)
-            .ThenByDescending(l => l.Id);
+            .ThenByDescending(l => EF.Property<long>(l, LoteDeNotasDoEnemConfiguration.OrdemDeRegistro));
 
     private sealed record InscricaoDoLote(
         Guid Id, string? NumeroInscricao, Guid VersaoFormularioId, Guid? OfertaCursoId, Guid? OfertaCursoSegundaOpcaoId)

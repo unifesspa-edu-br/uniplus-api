@@ -58,6 +58,13 @@ public sealed class AtoDoProcesso : EntityBase
     private readonly List<AnexoDoAtoDoProcesso> _anexos = [];
 
     public Guid ProcessoSeletivoId { get; private set; }
+
+    /// <summary>
+    /// A ordem em que os atos foram registrados, dada pelo banco: desempata dois atos do mesmo processo gravados no
+    /// mesmo microssegundo, que o registro sob a trava do processo serializa.
+    /// </summary>
+    public long OrdemDeRegistro { get; private set; }
+
     public string TipoCodigo { get; private set; } = string.Empty;
     public string TipoNome { get; private set; } = string.Empty;
     public string? Numero { get; private set; }
