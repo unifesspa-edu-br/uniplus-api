@@ -81,15 +81,33 @@ public sealed class MetricasDaFilaDeEmail : IDisposable
     /// <summary>Registra o aceite do relay; atraso negativo, de relógios divergentes entre quem publicou e quem enviou, conta como zero.</summary>
     public void RegistrarEnvio(DateTimeOffset instante, TimeSpan atraso)
     {
-        Interlocked.Exchange(ref _ultimoEnvioEmMs, instante.ToUnixTimeMilliseconds());
+        GuardarOMaisRecente(ref _ultimoEnvioEmMs, instante);
         _enviados.Add(1);
         _atraso.Record(Math.Max(0, atraso.TotalSeconds));
     }
 
     public void RegistrarFalha(bool permanente, DateTimeOffset instante)
     {
-        Interlocked.Exchange(ref _ultimaFalhaEmMs, instante.ToUnixTimeMilliseconds());
+        GuardarOMaisRecente(ref _ultimaFalhaEmMs, instante);
         _falhas.Add(1, new KeyValuePair<string, object?>("tipo", permanente ? "permanente" : "transitoria"));
+    }
+
+    // Com envios simultâneos, quem registra por último não é necessariamente o mais recente: um aceite anterior pode
+    // chegar aqui depois de outro, e o instante exportado não pode voltar no tempo.
+    private static void GuardarOMaisRecente(ref long campoEmMs, DateTimeOffset instante)
+    {
+        long novo = instante.ToUnixTimeMilliseconds();
+        long atual = Interlocked.Read(ref campoEmMs);
+        while (novo > atual)
+        {
+            long visto = Interlocked.CompareExchange(ref campoEmMs, novo, atual);
+            if (visto == atual)
+            {
+                return;
+            }
+
+            atual = visto;
+        }
     }
 
     public void AtualizarAmostra(AmostraDaFilaDeEmail amostra)

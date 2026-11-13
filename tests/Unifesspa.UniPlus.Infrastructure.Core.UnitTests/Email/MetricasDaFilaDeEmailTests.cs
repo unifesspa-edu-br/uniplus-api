@@ -46,6 +46,22 @@ public sealed class MetricasDaFilaDeEmailTests
         coletor.Ultima("uniplus.email.amostra.idade").Should().Be(20 * 60);
     }
 
+    [Fact(DisplayName = "Registro que chega fora de ordem não faz o último envio nem a última falha voltarem no tempo")]
+    public void RegistroForaDeOrdem_NaoVoltaNoTempo()
+    {
+        using MetricasDaFilaDeEmail metricas = new(_relogio);
+        using ColetorDeMedidas coletor = new(metricas.Medidor);
+        DateTimeOffset depois = _relogio.GetUtcNow().AddSeconds(30);
+
+        metricas.RegistrarEnvio(depois, TimeSpan.Zero);
+        metricas.RegistrarEnvio(_relogio.GetUtcNow(), TimeSpan.Zero);
+        metricas.RegistrarFalha(permanente: false, depois);
+        metricas.RegistrarFalha(permanente: false, _relogio.GetUtcNow());
+
+        coletor.Ultima("uniplus.email.ultimo_envio").Should().Be(depois.ToUnixTimeMilliseconds() / 1000d);
+        coletor.Ultima("uniplus.email.ultima_falha").Should().Be(depois.ToUnixTimeMilliseconds() / 1000d);
+    }
+
     private sealed class RelogioAvancavel(DateTimeOffset inicio) : TimeProvider
     {
         private DateTimeOffset _agora = inicio;
