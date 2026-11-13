@@ -20,6 +20,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries.ProcessosDoPainelDeConformidade;
+
 public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
 {
     [Fact(DisplayName = "Handle com processo inexistente retorna null (mapeado a 404 pelo controller)")]
@@ -29,8 +31,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         repository.ObterComConfiguracaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((ProcessoSeletivo?)null);
 
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<ITipoDocumentoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(repository)
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(Guid.CreateVersion7()));
 
         result.Should().BeNull();
     }
@@ -38,30 +40,15 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "Handle marca vermelho o tipo de ato único do cronograma que o ato da linhagem, ainda pendente em Publicações, já ocupa")]
     public async Task Handle_TipoUnicoOcupadoPeloRegistroLocal_ItemVermelho()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null,
-                produtos: [ProdutoDaFase.Criar("ATO_UNICO", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
+        ProcessoSeletivo processo = QueDeclaraOTipoUnicoNoCronograma();
         Guid atoDaLinhagem = Guid.CreateVersion7();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
+        IProcessoSeletivoRepository repository = RepositorioDo(processo);
         repository.ObterAtosCriadoresAsync(processo.Id, Arg.Any<CancellationToken>()).Returns([atoDaLinhagem]);
-        IAtoDoProcessoRepository atos = Substitute.For<IAtoDoProcessoRepository>();
-        atos.ListarTiposDosAtosAsync(Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == atoDaLinhagem), Arg.Any<CancellationToken>())
-            .Returns(["ATO_UNICO"]);
-        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
-        catalogo.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns([new TipoAtoPublicadoView("ATO_UNICO", "Ato único", true, true, false, false)]);
 
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, atos, CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), catalogo, Substitute.For<ITipoDocumentoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(repository)
+            .ComAtos(AtosQueRegistramOTipo(atoDaLinhagem, "ATO_UNICO"))
+            .ComTiposDeAto(CatalogoQueDeclaraUnico("ATO_UNICO"))
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
         result!.Itens.Should().Contain(i => i.Codigo == "cronograma_tipo_de_ato_unico_declarado_uma_vez" && !i.Ok);
     }
@@ -69,14 +56,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "Handle com processo sem atendimento nem cronograma devolve os dois pendentes (Story #851 — Etapas não é mais item incondicional)")]
     public async Task Handle_EtapasSemAtendimento_ChecklistParcial()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 3m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Ausente);
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<ITipoDocumentoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ConformidadeAsync(SoComAsEtapas());
 
         result.Should().NotBeNull();
         // Etapa deixou de ser item do checklist (Story #851 §3.5): um processo sem prova
@@ -93,67 +73,16 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "Handle com InscricaoPropria sem fase de coleta NÃO declara o checklist inteiramente verde (issue #1092 — regressão do falso verde)")]
     public async Task Handle_InscricaoPropriaSemFaseDeColeta_NaoDeclaraChecklistTodoVerde()
     {
-        // Cenário da issue #1092: PendenciaDoCronograma tem quatro razões, mas antes da correção
-        // só a de "inscrição própria sem fase de coleta" (via item genérico incondicional) nunca
-        // aparecia no checklist — GET /conformidade devolvia tudo Ok enquanto POST /publicacao
-        // recusava com 422. Todas as outras dimensões estão presentes; só falta a fase de coleta.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Falso Verde", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
-            "Story #851 §3.5: lista vazia é estado válido sob CLASSIFICACAO-IMPORTADA — sem etapa, não precisamos de fase que agrupe etapas");
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = DeInscricaoPropriaSemFaseDeColeta();
 
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
-        ReferenciaRegra regraInstitucional = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!,
-            null, null,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Fase que PRODUZ RESULTADO (satisfaz "vagas ofertadas"), mas NÃO agrupa etapas (não
-        // precisa — sem etapa) e, sobretudo, NÃO coleta inscrição, embora a origem seja própria.
-        FaseCronograma faseSemColeta = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseSemColeta], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // Issue #1112: declarada para isolar a pendência de cronograma como a ÚNICA vermelha.
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<ITipoDocumentoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ConformidadeAsync(processo);
 
         result.Should().NotBeNull();
         result!.Itens.Should().Contain(
             i => i.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta" && !i.Ok,
             "a origem é InscricaoPropria e nenhuma fase coleta inscrição — antes da correção este item nem existia, e o checklist devolvia tudo Ok");
-        // O processo também não tem formulário de inscrição, e os itens do formulário ficam fora da
-        // razão que este teste isola.
-        result.Itens.Where(static i => !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal)).Should().ContainSingle(i => !i.Ok,
-            "isolar a asserção: só esta razão deveria estar vermelha neste estado — as outras três razões do cronograma e os demais gates estão satisfeitos");
-
-        // A mesma pendência que o checklist agora denuncia é a que Publicar já recusava — as
-        // duas superfícies concordam depois da correção (a prova da bicondicional).
-        Result<VersaoConfiguracao> publicar = processo.Publicar(
-            DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!,
-            "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
+        AfirmarQueSoOCronogramaFicouVermelho(result);
+        Result<VersaoConfiguracao> publicar = Publicar(processo);
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta");
     }
@@ -161,21 +90,12 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "Handle marca não conforme o tipo da exigência sem a proteção aprovada, como a publicação o recusa")]
     public async Task Handle_TipoSemProtecaoAprovada_ItemVermelho()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS painel da proteção", out Guid faseId);
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO") with { ProtecaoAprovada = false };
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
-        definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
-        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
+        ProcessoSeletivo processo = QueExigeODocumento("PS painel da proteção", tipo);
 
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), tipos, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo))
+            .ComTiposDocumento(TiposVivos(tipo))
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
         result!.Itens.Should().ContainSingle(i => i.Codigo == "ProcessoSeletivo.TipoDocumentoComProtecaoPendente:documentosExigidos.LAUDO_MEDICO" && !i.Ok);
     }
@@ -183,25 +103,13 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "O derivado pendente que a exigência comprova é acusado uma só vez, como pendente de aprovação, e não como fora do catálogo")]
     public async Task Handle_DerivadoComprovadoPendente_UmUnicoItemVermelho()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS painel do derivado", out Guid faseId);
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
-            finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: ["RENDA_PER_CAPITA"]).Value!;
-        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
-        definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
-        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
-        IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
-        catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
-            CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = "RENDA_PER_CAPITA", Origem = "DERIVADO", ProtecaoAprovada = false }]));
+        ProcessoSeletivo processo = QueExigeODocumento("PS painel do derivado", tipo, ["RENDA_PER_CAPITA"]);
 
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), catalogo, Substitute.For<ITipoAtoPublicadoReader>(), tipos, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ServicosNeutros(RepositorioDo(processo))
+            .ComCatalogoDeFatos(CatalogoComDerivadosPendentes("RENDA_PER_CAPITA"))
+            .ComTiposDocumento(TiposVivos(tipo))
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
 
         result!.Itens.Where(static i => i.Codigo.Contains("Fato", StringComparison.Ordinal) || i.Codigo.Contains("fato", StringComparison.Ordinal))
             .Where(static i => !i.Ok).Select(static i => i.Codigo).Should().Equal("ProcessoSeletivo.FatoComProtecaoPendente:fatos.RENDA_PER_CAPITA");
@@ -210,25 +118,9 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     [Fact(DisplayName = "Vários fatos pendentes saem com códigos distintos, cada um identificando o seu fato")]
     public async Task Handle_VariosFatosPendentes_CodigosDistintos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS painel dos fatos", out Guid faseId);
         TipoDocumentoView tipo = CadastrosVivos.TipoDocumento("LAUDO_MEDICO");
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, tipo.Id, tipo.Codigo, tipo.Nome, tipo.Categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
-            finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: ["RENDA_PER_CAPITA", "FAIXA_ETARIA", "IDADE_DO_CANDIDATO"]).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
-        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
-        IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
-        catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
-            .. new[] { "RENDA_PER_CAPITA", "FAIXA_ETARIA", "IDADE_DO_CANDIDATO" }
-                .Select(codigo => CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = codigo, Origem = "DERIVADO", ProtecaoAprovada = false })]));
-
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), catalogo, Substitute.For<ITipoAtoPublicadoReader>(), tipos, Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ConformidadeComDerivadosPendentesAsync(
+            tipo, "RENDA_PER_CAPITA", "FAIXA_ETARIA", "IDADE_DO_CANDIDATO");
 
         result!.Itens.Where(static i => i.Codigo.StartsWith("ProcessoSeletivo.FatoComProtecaoPendente", StringComparison.Ordinal)).Select(static i => i.Codigo)
             .Should().BeEquivalentTo(
@@ -238,97 +130,26 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         result.Itens.Select(static i => i.Codigo).Should().OnlyHaveUniqueItems();
     }
 
-    private static EtapaProcesso EtapaDaProvaObjetivaNoResultadoFinal() =>
-        EtapaProcesso.Criar(
-            "Prova Objetiva", CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 3m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!;
-
     [Fact(DisplayName = "Handle com todos os itens obrigatórios configurados devolve checklist sem pendências, e a publicação aceita (bicondicional, issue #1092)")]
     public async Task Handle_TodosOsItens_SemPendencia()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        ProcessoSeletivo processo = ComTodosOsItensObrigatorios();
 
-        ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
-        ReferenciaRegra regraInstitucional = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 50, pr: 1m, regraInstitucional, regraAjuste: null, referenciaDemografica: null, [ampla], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('b', 64)).Value!,
-            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64)).Value!,
-            2,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!,
-            [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
-
-        FaseCronograma faseConforme = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
-        processo.DefinirEtapas([EtapaDaProvaObjetivaNoResultadoFinal()], PrecondicaoIfMatch.Ausente);
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente);
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<ITipoDocumentoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ConformidadeAsync(processo);
 
         result.Should().NotBeNull();
         result!.Itens.Should().OnlyContain(i => i.Ok);
-
         // issue #1092 — a bicondicional exige mais do que "todas as dimensões presentes": o
         // checklist inteiramente verde TEM de significar que Publicar aceita. Fora do escopo
         // estrutural (não afetado aqui): conformidade legal, documento confirmado, tipo de ato.
-        Result<VersaoConfiguracao> publicar = processo.Publicar(
-            DadosEdital.Criar("001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!,
-            "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", new string('a', 64), "teste", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
+        Result<VersaoConfiguracao> publicar = Publicar(processo);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
     }
 
     [Fact(DisplayName = "Handle devolve os avisos em lista própria, fora dos itens do checklist")]
     public async Task Handle_DefinitivoRepetido_DevolveAvisoEmListaPropria()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Aviso", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        FaseCronograma Fase(int ordem, string codigo) => FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null,
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([Fase(1, "CLASSIFICACAO"), Fase(2, "HABILITACAO")], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
-        repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-
-        ConformidadeProcessoSeletivoDto? result = await ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(), CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<ITipoDocumentoReader>(), Substitute.For<IRegistroCodecsEnvelope>(), TimeProvider.System, CancellationToken.None);
+        ConformidadeProcessoSeletivoDto? result = await ConformidadeAsync(ComODefinitivoEmDuasFases());
 
         result!.Avisos.Should().ContainSingle().Which.Should().BeEquivalentTo(
             new AvisoConformidadeDto(
@@ -385,16 +206,78 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             && i.Mensagem == "A versão do envelope não é suportada.");
     }
 
+    private static Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ProcessoSeletivo processo) =>
+        ServicosNeutros(RepositorioDo(processo)).ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+
+    private static void AfirmarQueSoOCronogramaFicouVermelho(ConformidadeProcessoSeletivoDto result) =>
+        // O processo também não tem formulário de inscrição, e os itens do formulário ficam fora da
+        // razão que este teste isola.
+        result.Itens.Where(static i => !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal)).Should().ContainSingle(i => !i.Ok,
+            "isolar a asserção: só esta razão deveria estar vermelha neste estado — as outras três razões do cronograma e os demais gates estão satisfeitos");
+
+    private static IAtoDoProcessoRepository AtosQueRegistramOTipo(Guid atoDaLinhagem, string tipoCodigo)
+    {
+        IAtoDoProcessoRepository atos = Substitute.For<IAtoDoProcessoRepository>();
+        atos.ListarTiposDosAtosAsync(Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == atoDaLinhagem), Arg.Any<CancellationToken>())
+            .Returns([tipoCodigo]);
+
+        return atos;
+    }
+
+    private static ITipoAtoPublicadoReader CatalogoQueDeclaraUnico(string tipoCodigo)
+    {
+        ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
+        catalogo.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([new TipoAtoPublicadoView(tipoCodigo, "Ato único", true, true, false, false)]);
+
+        return catalogo;
+    }
+
+    private static ITipoDocumentoReader TiposVivos(TipoDocumentoView tipo)
+    {
+        ITipoDocumentoReader tipos = Substitute.For<ITipoDocumentoReader>();
+        tipos.ListarVivosAsync(Arg.Any<CancellationToken>()).Returns([tipo]);
+
+        return tipos;
+    }
+
+    private static async Task<ConformidadeProcessoSeletivoDto?> ConformidadeComDerivadosPendentesAsync(TipoDocumentoView tipo, params string[] fatos)
+    {
+        ProcessoSeletivo processo = QueExigeODocumento("PS painel dos fatos", tipo, fatos);
+
+        return await ServicosNeutros(RepositorioDo(processo))
+            .ComCatalogoDeFatos(CatalogoComDerivadosPendentes(fatos))
+            .ComTiposDocumento(TiposVivos(tipo))
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
+    }
+
+    private static IFatoCandidatoReader CatalogoComDerivadosPendentes(params string[] codigos)
+    {
+        IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
+        catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[
+            .. codigos.Select(codigo => CatalogoDoConjuntoBasico.Fatos[0] with { Codigo = codigo, Origem = "DERIVADO", ProtecaoAprovada = false })]));
+
+        return catalogo;
+    }
+
+    private static ServicosDoCongelamentoDeTeste ServicosNeutros(IProcessoSeletivoRepository repositorio) =>
+        new ServicosDoCongelamentoDeTeste()
+            .ComRepositorio(repositorio)
+            .ComTiposDeAto(Substitute.For<ITipoAtoPublicadoReader>())
+            .ComTiposDocumento(Substitute.For<ITipoDocumentoReader>())
+            .ComCodecs(Substitute.For<IRegistroCodecsEnvelope>())
+            .ComRelogio(TimeProvider.System);
+
     private static Task<ConformidadeProcessoSeletivoDto?> ChecklistAsyncBruto(
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje)
     {
         ITipoAtoPublicadoReader catalogo = Substitute.For<ITipoAtoPublicadoReader>();
         catalogo.ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(chamada => chamada.Arg<IReadOnlyCollection<string>>().Contains(hoje.Codigo) ? [hoje] : []);
-        return ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            new ObterConformidadeProcessoSeletivoQuery(processo.Id), repository, Substitute.For<IAtoDoProcessoRepository>(),
-            CalendarioVigenteReaderDeTeste.SemVigente(), new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(), catalogo, Substitute.For<ITipoDocumentoReader>(), codecs,
-            TimeProvider.System, CancellationToken.None);
+        return ServicosNeutros(repository)
+            .ComTiposDeAto(catalogo)
+            .ComCodecs(codecs)
+            .ConformidadeAsync(new ObterConformidadeProcessoSeletivoQuery(processo.Id));
     }
 
     private static async Task<ConformidadeProcessoSeletivoDto> ChecklistAsync(

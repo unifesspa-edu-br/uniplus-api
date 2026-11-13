@@ -8,9 +8,9 @@ using Domain.ValueObjects;
 
 using DTOs;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
+using Services;
+
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
@@ -56,119 +56,123 @@ public static class ObterConformidadeProcessoSeletivoQueryHandler
     public static async Task<ConformidadeProcessoSeletivoDto?> Handle(
         ObterConformidadeProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IAtoDoProcessoRepository atoDoProcessoRepository,
-        ICalendarioVigenteReader calendarioVigenteReader,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        IFatoCandidatoReader fatoCandidatoReader,
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
-        ITipoDocumentoReader tipoDocumentoReader,
+        LeituraDoContextoDeContagemDePrazos contextos,
+        ResolucaoDosTiposDeAtoUnicos tiposDeAto,
+        ConferenciaDoCatalogoEDaProtecao catalogos,
         IRegistroCodecsEnvelope registroCodecs,
-        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(calendarioVigenteReader);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(fatoCandidatoReader);
-        ArgumentNullException.ThrowIfNull(tipoAtoPublicadoReader);
-        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
+        ArgumentNullException.ThrowIfNull(contextos);
+        ArgumentNullException.ThrowIfNull(tiposDeAto);
+        ArgumentNullException.ThrowIfNull(catalogos);
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
         ProcessoSeletivo? processo = await processoSeletivoRepository
             .ObterComConfiguracaoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
-        if (processo is null)
-        {
-            return null;
-        }
 
-        CalendarioVigenteView? vigente = await calendarioVigenteReader
-            .ObterVigenteAsync(cancellationToken)
-            .ConfigureAwait(false);
+        return processo is null
+            ? null
+            : await AvaliarAsync(processo, processoSeletivoRepository, contextos, tiposDeAto, catalogos, registroCodecs, cancellationToken).ConfigureAwait(false);
+    }
 
-        // A falha de tradução viaja como estado, não como exceção nem como ausência: o
-        // preflight precisa reportar exatamente o que a publicação recusaria. Convertê-la em
-        // "sem calendário" deixaria o checklist verde para um processo sem contagem sobre dia
-        // útil — que de fato não usa o dado — enquanto a publicação recusava por causa dele.
-        Result<CalendarioDiasUteisCongelado?> calendario = LeituraDoCalendarioVigente.Traduzir(vigente);
-
-        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
-        var contexto = new ContextoDeContagemDePrazos(
-            calendario.IsSuccess ? calendario.Value : null,
-            FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
-            FusoInstitucional: fuso.IsSuccess ? fuso.Value : null);
-
+    private static async Task<ConformidadeProcessoSeletivoDto> AvaliarAsync(
+        ProcessoSeletivo processo,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        LeituraDoContextoDeContagemDePrazos contextos,
+        ResolucaoDosTiposDeAtoUnicos tiposDeAto,
+        ConferenciaDoCatalogoEDaProtecao catalogos,
+        IRegistroCodecsEnvelope registroCodecs,
+        CancellationToken cancellationToken)
+    {
+        ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyList<Guid> atosDaLinhagem = await processoSeletivoRepository
             .ObterAtosCriadoresAsync(processo.Id, cancellationToken)
             .ConfigureAwait(false);
-
-        // Como a retificação, o checklist trata o tipo que a versão vigente já congelou pela classificação
-        // congelada; só o processo ainda não publicado, ou o tipo novo, lê o catálogo de hoje. Uma versão que
-        // o codec não lê é recusada pela própria retificação, e o checklist mostra essa recusa como pendência
-        // em vez de avaliar os tipos pelo catálogo de hoje e parecer conforme.
-        VersaoConfiguracao? versaoAtual = await processoSeletivoRepository
-            .ObterVersaoAtualAsync(processo.Id, cancellationToken)
+        VersaoPublicada publicada = await LerAVersaoPublicadaAsync(processo.Id, processoSeletivoRepository, registroCodecs, cancellationToken).ConfigureAwait(false);
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await tiposDeAto
+            .ParaChecklistAsync(processo, atosDaLinhagem, contexto.FusoInstitucional, publicada.TiposCongelados, cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados = new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal);
-        DomainError? falhaDaVersaoPublicada = null;
-        if (versaoAtual is not null)
+        CatalogoVivo catalogo = await catalogos.LerAsync(processo, cancellationToken).ConfigureAwait(false);
+
+        return Projetar(processo, contexto, tiposDeAtoUnicos, catalogo, publicada);
+    }
+
+    // Como a retificação, o checklist trata o tipo que a versão vigente já congelou pela classificação congelada; só o
+    // processo ainda não publicado, ou o tipo novo, lê o catálogo de hoje. Uma versão que o codec não lê é recusada pela
+    // própria retificação, e o checklist mostra essa recusa como pendência em vez de avaliar os tipos pelo catálogo de
+    // hoje e parecer conforme.
+    private static async Task<VersaoPublicada> LerAVersaoPublicadaAsync(
+        Guid processoId, IProcessoSeletivoRepository repositorio, IRegistroCodecsEnvelope registroCodecs, CancellationToken cancellationToken)
+    {
+        VersaoConfiguracao? versaoAtual = await repositorio.ObterVersaoAtualAsync(processoId, cancellationToken).ConfigureAwait(false);
+        if (versaoAtual is null)
         {
-            Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> congelados =
-                CongelamentoDosTiposDeAto.DaVersao(registroCodecs, versaoAtual);
-            if (congelados.IsSuccess)
-            {
-                jaCongelados = congelados.Value!;
-            }
-            else
-            {
-                falhaDaVersaoPublicada = congelados.Error;
-            }
+            return new VersaoPublicada(new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal), null, null);
         }
 
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos = await ResolucaoDosTiposDeAtoUnicos
-            .ParaChecklistAsync(
-                tipoAtoPublicadoReader, atoDoProcessoRepository, processo, atosDaLinhagem,
-                ResolucaoDosTiposDeAtoUnicos.Hoje(timeProvider, fuso.IsSuccess ? fuso.Value : null),
-                jaCongelados,
-                cancellationToken)
-            .ConfigureAwait(false);
+        Result<EnvelopeReidratado> envelope = registroCodecs.Reidratar(versaoAtual);
+        Result<IReadOnlyDictionary<string, TipoDeAtoCongelado>> congelados = CongelamentoDosTiposDeAto.DoEnvelope(envelope);
 
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos = await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false);
-        FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(catalogoDeFatos);
+        return new VersaoPublicada(
+            congelados.IsSuccess ? congelados.Value! : new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal),
+            ProtecaoVigenteDasExigenciasDoProcesso.DoEnvelope(envelope),
+            congelados.Error);
+    }
 
-        // A mesma proteção e a mesma aprovação que a publicação e a retificação avaliam, sobre a mesma leitura dos
-        // tipos de documento: o painel não aprova o que elas recusam.
-        IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos = await ProtecaoVigenteDasExigenciasDoProcesso
-            .LerTiposVivosAsync(processo, tipoDocumentoReader, cancellationToken)
-            .ConfigureAwait(false);
-        ProtecaoVigenteDasExigencias protecaoDasExigencias = ProtecaoVigenteDasExigenciasDoProcesso
-            .Montar(processo, tiposVivos, catalogoDeFatos, ProtecaoVigenteDasExigenciasDoProcesso.DaVersao(registroCodecs, versaoAtual)).Exigencias;
-        Result aprovacaoDaProtecao = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, tiposVivos, catalogoDeFatos);
-
-        ItemConformidadeDto[] itens = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, fatosDeModalidade, tiposDeAtoUnicos, protecaoDasExigencias)
-            .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok))];
-        // O código do item é único no checklist: leva o alvo (o tipo ou o fato), porque vários itens pendentes dividem a
-        // mesma invariante.
-        itens = [.. itens, .. aprovacaoDaProtecao.Errors.Select(static erro => new ItemConformidadeDto(
-            $"{erro.Error.Code}:{erro.Field}",
-            erro.Field?.StartsWith("fatos.", StringComparison.Ordinal) == true ? DimensaoConformidade.ColetaDeFatos : DimensaoConformidade.ExigenciasDocumentais,
-            erro.Error.Message,
-            Ok: false))];
-        if (falhaDaVersaoPublicada is not null)
-        {
-            itens = [.. itens, new ItemConformidadeDto(
-                CodigoDaVersaoPublicadaIlegivel,
-                DimensaoConformidade.Cronograma,
-                falhaDaVersaoPublicada.Message,
-                Ok: false)];
-        }
-
+    private static ConformidadeProcessoSeletivoDto Projetar(
+        ProcessoSeletivo processo,
+        ContextoDeContagemDePrazos contexto,
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
+        CatalogoVivo catalogo,
+        VersaoPublicada publicada)
+    {
+        ItemConformidadeDto[] itens =
+        [
+            .. ItensDoChecklist(processo, contexto, tiposDeAtoUnicos, catalogo, publicada),
+            .. ConferenciaDaAprovacaoDaProtecao.Conferir(processo, catalogo.TiposVivos, catalogo.Fatos).Errors.Select(ItemDaProtecaoPendente),
+            .. ItemDaVersaoIlegivel(publicada.Falha),
+        ];
         AvisoConformidadeDto[] avisos = [.. ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo))
             .Select(static aviso => new AvisoConformidadeDto(aviso.Codigo, aviso.Dimensao, aviso.Mensagem))];
 
         return new ConformidadeProcessoSeletivoDto(processo.Id, itens, avisos);
     }
+
+    // A mesma proteção e a mesma aprovação que a publicação e a retificação avaliam, sobre a mesma leitura dos tipos de
+    // documento: o painel não aprova o que elas recusam.
+    private static IEnumerable<ItemConformidadeDto> ItensDoChecklist(
+        ProcessoSeletivo processo,
+        ContextoDeContagemDePrazos contexto,
+        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
+        CatalogoVivo catalogo,
+        VersaoPublicada publicada)
+    {
+        ProtecaoVigenteDasExigencias protecao = ProtecaoVigenteDasExigenciasDoProcesso
+            .Montar(processo, catalogo.TiposVivos, catalogo.Fatos, publicada.CongeladoNaVersao).Exigencias;
+
+        return ChecklistDeConformidade
+            .AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, catalogo.FatosDeModalidade, tiposDeAtoUnicos, protecao)
+            .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok));
+    }
+
+    // O código do item é único no checklist: leva o alvo (o tipo ou o fato), porque vários itens pendentes dividem a
+    // mesma invariante.
+    private static ItemConformidadeDto ItemDaProtecaoPendente(FieldError erro) =>
+        new(
+            $"{erro.Error.Code}:{erro.Field}",
+            erro.Field?.StartsWith("fatos.", StringComparison.Ordinal) == true ? DimensaoConformidade.ColetaDeFatos : DimensaoConformidade.ExigenciasDocumentais,
+            erro.Error.Message,
+            Ok: false);
+
+    private static IEnumerable<ItemConformidadeDto> ItemDaVersaoIlegivel(DomainError? falha) =>
+        falha is null
+            ? []
+            : [new ItemConformidadeDto(CodigoDaVersaoPublicadaIlegivel, DimensaoConformidade.Cronograma, falha.Message, Ok: false)];
+
+    /// <summary>O que a versão vigente informa ao checklist: a classificação dos tipos de ato e as exigências que congelou, ou a falha do codec.</summary>
+    private sealed record VersaoPublicada(
+        IReadOnlyDictionary<string, TipoDeAtoCongelado> TiposCongelados, CongeladoNaVersaoVigente? CongeladoNaVersao, DomainError? Falha);
 }

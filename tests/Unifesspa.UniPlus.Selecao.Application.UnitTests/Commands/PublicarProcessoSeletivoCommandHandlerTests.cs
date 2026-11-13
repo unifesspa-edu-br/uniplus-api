@@ -195,39 +195,47 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ICalendarioVigenteReader? calendarioReader = null,
         ISelecaoUnitOfWork? unitOfWork = null,
         IResolvedorDaUnidadeResponsavel? unidades = null,
-        ITipoDocumentoReader? tipos = null)
+        ITipoDocumentoReader? tipos = null) =>
+        ServicosDoHandler(mocks, calendarioReader, unitOfWork, unidades, tipos)
+            .PublicarAsync(ComandoDeAbertura(processo, documento));
+
+    private static ServicosDoCongelamentoDeTeste ServicosDoHandler(
+        Mocks mocks,
+        ICalendarioVigenteReader? calendarioReader,
+        ISelecaoUnitOfWork? unitOfWork,
+        IResolvedorDaUnidadeResponsavel? unidades,
+        ITipoDocumentoReader? tipos) =>
+        ServicosDosMocks(mocks)
+            .ComUnitOfWork(unitOfWork ?? Substitute.For<ISelecaoUnitOfWork>())
+            .ComTiposDocumento(tipos ?? CadastrosVivos.TiposDocumento())
+            .ComCalendario(calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente())
+            .ComUnidades(unidades ?? ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste());
+
+    private static ServicosDoCongelamentoDeTeste ServicosDosMocks(Mocks mocks) =>
+        new ServicosDoCongelamentoDeTeste()
+            .ComRepositorio(mocks.ProcessoRepository)
+            .ComDocumentos(mocks.DocumentoRepository)
+            .ComCanonicalizer(mocks.Canonicalizer)
+            .ComUsuario(UsuarioDoHandler())
+            .ComTiposDeAto(mocks.TipoDeAtoReader)
+            .ComVagasDeLinhagem(mocks.VagaDeLinhagemReader)
+            .ComObrigatoriedadesLegais(mocks.ObrigatoriedadeLegalRepository)
+            .ComCatalogoDeFatos(mocks.FatoCandidatoReader)
+            .ComRelogio(TimeProvider.System);
+
+    private static IUserContext UsuarioDoHandler()
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");
-
-        return PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: documento.Id,
-                Ato: new DadosDoAto(
-                    Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),
-                    Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA")),
-            mocks.ProcessoRepository,
-            mocks.DocumentoRepository,
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
-            unitOfWork ?? Substitute.For<ISelecaoUnitOfWork>(),
-            userContext,
-            mocks.TipoDeAtoReader,
-            mocks.VagaDeLinhagemReader,
-            mocks.ObrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            tipos ?? CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            mocks.FatoCandidatoReader,
-            calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente(),
-            unidades ?? ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            TimeProvider.System,
-            CancellationToken.None);
+        return userContext;
     }
+
+    private static PublicarProcessoSeletivoCommand ComandoDeAbertura(ProcessoSeletivo processo, DocumentoAPublicar documento) =>
+        new(processo.Id, "001/2026", null, null,
+            DocumentoEditalId: documento.Id,
+            Ato: new DadosDoAto(
+                Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),
+                Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA"));
 
     [Fact(DisplayName = "Fato reclassificado de PESSOAL para IDENTIFICADOR no catálogo publica como IDENTIFICADOR e a resposta é cifrada")]
     public async Task Handle_FatoReclassificadoNoCatalogo_PublicaComAClassificacaoViva()

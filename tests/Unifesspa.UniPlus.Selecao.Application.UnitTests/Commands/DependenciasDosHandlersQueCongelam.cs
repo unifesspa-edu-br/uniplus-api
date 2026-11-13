@@ -25,33 +25,74 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.RegrasLega
 /// </summary>
 internal sealed class DependenciasDosHandlersQueCongelam
 {
+    private readonly ServicosDoCongelamentoDeTeste _servicos;
+
     private DependenciasDosHandlersQueCongelam(ProcessoSeletivo processo)
     {
         Processo = processo;
-        Repositorio = RepositorioDoProcesso(processo);
+        _servicos = ServicosDoCongelamentoDeTeste.Para(processo)
+            .ComObrigatoriedadesLegais(RepositorioCom());
     }
 
     public ProcessoSeletivo Processo { get; }
 
-    public IProcessoSeletivoRepository Repositorio { get; }
+    public ServicosDoCongelamentoDeTeste Servicos => _servicos;
 
-    public IAtoDoProcessoRepository Atos { get; set; } = Substitute.For<IAtoDoProcessoRepository>();
+    public IProcessoSeletivoRepository Repositorio => _servicos.Repositorio;
 
-    public ISnapshotPublicacaoCanonicalizer Canonicalizer { get; set; } = CanonicalizerSubstituto();
+    public IAtoDoProcessoRepository Atos
+    {
+        get => _servicos.Atos;
+        set => _servicos.ComAtos(value);
+    }
 
-    public ITipoAtoPublicadoReader TiposDeAto { get; set; } = TipoDeAtoReader();
+    public ISnapshotPublicacaoCanonicalizer Canonicalizer
+    {
+        get => _servicos.Canonicalizer;
+        set => _servicos.ComCanonicalizer(value);
+    }
 
-    public IObrigatoriedadeLegalRepository ObrigatoriedadesLegais { get; set; } = RepositorioCom();
+    public ITipoAtoPublicadoReader TiposDeAto
+    {
+        get => _servicos.TiposDeAto;
+        set => _servicos.ComTiposDeAto(value);
+    }
 
-    public IModalidadeReader Modalidades { get; set; } = CadastrosVivos.Modalidades();
+    public IObrigatoriedadeLegalRepository ObrigatoriedadesLegais
+    {
+        get => _servicos.ObrigatoriedadesLegais;
+        set => _servicos.ComObrigatoriedadesLegais(value);
+    }
 
-    public ITipoDocumentoReader TiposDocumento { get; set; } = CadastrosVivos.TiposDocumento();
+    public IModalidadeReader Modalidades
+    {
+        get => _servicos.Modalidades;
+        set => _servicos.ComModalidades(value);
+    }
 
-    public IFatoCandidatoReader CatalogoDeFatos { get; set; } = CadastrosVivos.CatalogoDeFatos();
+    public ITipoDocumentoReader TiposDocumento
+    {
+        get => _servicos.TiposDocumento;
+        set => _servicos.ComTiposDocumento(value);
+    }
 
-    public IResolvedorDaUnidadeResponsavel Unidades { get; set; } = ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste();
+    public IFatoCandidatoReader CatalogoDeFatos
+    {
+        get => _servicos.CatalogoDeFatos;
+        set => _servicos.ComCatalogoDeFatos(value);
+    }
 
-    public IRegistroCodecsEnvelope Codecs { get; set; } = CodecsDeTeste.QueReidrataSemTiposDeAto();
+    public IResolvedorDaUnidadeResponsavel Unidades
+    {
+        get => _servicos.Unidades;
+        set => _servicos.ComUnidades(value);
+    }
+
+    public IRegistroCodecsEnvelope Codecs
+    {
+        get => _servicos.Codecs;
+        set => _servicos.ComCodecs(value);
+    }
 
     public static DependenciasDosHandlersQueCongelam Para(ProcessoSeletivo processo) => new(processo);
 
@@ -73,34 +114,18 @@ internal sealed class DependenciasDosHandlersQueCongelam
     }
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync() =>
-        PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(Processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            Repositorio, RepositorioDeDocumento(Processo.Id), Substitute.For<IRascunhoDePublicacaoRepository>(), Atos,
-            Canonicalizer, new ResolvedorFusoDeTeste(), Substitute.For<ISelecaoUnitOfWork>(), UsuarioAutenticado(),
-            TiposDeAto, Substitute.For<IVagaDeLinhagemReader>(), ObrigatoriedadesLegais, Modalidades, TiposDocumento,
-            CadastrosVivos.TiposEtapa(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), CatalogoDeFatos,
-            CalendarioVigenteReaderDeTeste.SemVigente(), Unidades, new RelogioFixo(Agora), CancellationToken.None);
+        _servicos.PublicarAsync(
+            new PublicarProcessoSeletivoCommand(Processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()));
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync() =>
-        RetificarProcessoSeletivoCommandHandler.Handle(
+        _servicos.RetificarAsync(
             new RetificarProcessoSeletivoCommand(
-                Processo.Id, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            Repositorio, RepositorioDeDocumento(Processo.Id), Substitute.For<IRascunhoDePublicacaoRepository>(), Atos,
-            Canonicalizer, new ResolvedorFusoDeTeste(), Substitute.For<ISelecaoUnitOfWork>(), UsuarioAutenticado(),
-            TiposDeAto, Substitute.For<IVagaDeLinhagemReader>(), ObrigatoriedadesLegais, Modalidades, TiposDocumento,
-            CadastrosVivos.TiposEtapa(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), CatalogoDeFatos,
-            CalendarioVigenteReaderDeTeste.SemVigente(), Unidades, Codecs, new RelogioFixo(Agora), CancellationToken.None);
+                Processo.Id, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()));
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync() =>
-        FecharRetificacaoCommandHandler.Handle(
+        _servicos.FecharRetificacaoAsync(
             new FecharRetificacaoCommand(
-                Processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga),
-            Repositorio, RepositorioDeDocumento(Processo.Id), Substitute.For<IRascunhoDePublicacaoRepository>(), Atos,
-            Canonicalizer, new ResolvedorFusoDeTeste(), Substitute.For<ISelecaoUnitOfWork>(), UsuarioAutenticado(),
-            TiposDeAto, Substitute.For<IVagaDeLinhagemReader>(), ObrigatoriedadesLegais, Modalidades, TiposDocumento,
-            CadastrosVivos.TiposEtapa(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), CatalogoDeFatos,
-            CalendarioVigenteReaderDeTeste.SemVigente(), Unidades, Codecs, FasesIniciadasDeTeste.Nenhuma(), new RelogioFixo(Agora),
-            CancellationToken.None);
+                Processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga));
 
     private static DependenciasDosHandlersQueCongelam ComVersaoVigente(ProcessoSeletivo processo, VersaoConfiguracao versaoAtual)
     {

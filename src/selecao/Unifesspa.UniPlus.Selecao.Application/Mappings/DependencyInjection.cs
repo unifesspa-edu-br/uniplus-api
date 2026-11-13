@@ -24,10 +24,9 @@ public static class SelecaoApplicationServiceRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        System.Reflection.Assembly assembly = typeof(SelecaoApplicationServiceRegistration).Assembly;
-
-        services.AddValidatorsFromAssembly(assembly);
+        services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
         AddDefinicaoDoCronogramaDeFases(services);
+        AddCongelamentoDaVersao(services);
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
@@ -44,5 +43,25 @@ public static class SelecaoApplicationServiceRegistration
     {
         services.AddScoped<MontagemDasFases>();
         services.AddScoped<DefinicaoDoCronogramaDeFases>();
+    }
+
+    // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as
+    // portas por construtor, e cada handler os recebe prontos, sem service location.
+    private static void AddCongelamentoDaVersao(IServiceCollection services)
+    {
+        services.AddScoped<ConferenciaDoAtoEDoDocumento>();
+        services.AddScoped<LeituraDaBaseDaRetificacao>();
+        services.AddScoped<LeituraDasVersoesPublicadas>();
+        services.AddScoped<ConferenciaDoCatalogoEDaProtecao>();
+        services.AddScoped<RecopiaAoCongelar>();
+        services.AddScoped<ResolucaoDosTiposDeAtoUnicos>();
+        services.AddScoped<ConferenciaDosAnexosDoEdital>();
+        services.AddScoped<ConferenciaDeConformidadeLegal>();
+        services.AddScoped<ConferenciaDosMotivosAoCongelar>();
+        services.AddScoped<ConferenciaDaConfiguracaoAoCongelar>();
+        services.AddScoped<LeituraDoContextoDeContagemDePrazos>();
+        services.AddScoped<MontagemDoCongelamento>();
+        services.AddScoped<GravacaoDaVersaoCongelada>();
+        services.AddScoped<CongelamentoDaVersao>();
     }
 }

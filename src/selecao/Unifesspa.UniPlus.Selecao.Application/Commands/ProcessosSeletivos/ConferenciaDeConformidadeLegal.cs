@@ -18,9 +18,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Espelha <see cref="ConferenciaDoTipoDeAto"/> em estilo: helper estático compartilhado
-/// pelos três handlers que congelam (<c>Publicar</c>, <c>Retificar</c>,
-/// <c>FecharRetificacao</c>), chamado uma vez cada, com o mesmo veredicto.
+/// Serviço compartilhado pela conferência do congelamento das três operações (<c>Publicar</c>,
+/// <c>Retificar</c> e <c>FecharRetificacao</c>), chamado uma vez em cada, com o mesmo veredicto.
 /// </para>
 /// <para>
 /// <b>Fonte única (CA-16):</b> <see cref="IObrigatoriedadeLegalRepository.ObterVigentesParaTipoProcessoAsync"/>
@@ -29,58 +28,52 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// que a consulta pública mostra reprovada é a mesma que bloqueia a transição.
 /// </para>
 /// </remarks>
-internal static class ConferenciaDeConformidadeLegal
+public sealed class ConferenciaDeConformidadeLegal(
+    IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+    IModalidadeReader modalidadeReader,
+    ITipoDocumentoReader tipoDocumentoReader,
+    ITipoEtapaReader tipoEtapaReader,
+    ITipoDeficienciaReader tipoDeficienciaReader,
+    IRegraCatalogoReader regraCatalogoReader)
 {
-    public static async Task<Result<ResultadoConformidade>> AvaliarAsync(
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository,
+    // O mesmo levantamento das referências alimenta a avaliação: a identidade que o gate usa para casar exigência com
+    // regra é a que a conferência acabou de ler, não uma segunda leitura que poderia divergir dela.
+    internal async Task<Result<ResultadoConformidade>> AvaliarAsync(
         ProcessoSeletivo processo,
         DateOnly dataReferencia,
-        IModalidadeReader modalidadeReader,
-        ITipoDocumentoReader tipoDocumentoReader,
-        ITipoEtapaReader tipoEtapaReader,
-        ITipoDeficienciaReader tipoDeficienciaReader,
-        IRegraCatalogoReader regraCatalogoReader,
         FatosDeModalidade fatosDeModalidade,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(obrigatoriedadeLegalRepository);
         ArgumentNullException.ThrowIfNull(processo);
 
         string tipoProcessoCodigo = processo.TipoProcesso.Codigo;
-
         IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(tipoProcessoCodigo, dataReferencia, cancellationToken)
             .ConfigureAwait(false);
-
-        // Antes de avaliar: uma regra que referencia cadastro inexistente é aprovada
-        // por vacuidade pelo avaliador, que é domínio puro e não consulta cadastro.
-        // Publicar sob ela seria publicar sob obrigação que ninguém pode cumprir.
-        Result<ConferenciaDeReferenciasDasRegras.RelatorioDeReferencias> referencias = await ConferenciaDeReferenciasDasRegras
-            .ConferirAsync(regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken)
+        Result<ConferenciaDeReferenciasDasRegras.RelatorioDeReferencias> referencias = await ConferirAsReferenciasAsync(regrasVigentes, cancellationToken)
             .ConfigureAwait(false);
-        if (referencias.IsFailure)
-        {
-            return Result<ResultadoConformidade>.Failure(referencias.Error!);
-        }
 
-        // O mesmo levantamento alimenta a avaliação: a identidade que o gate usa para
-        // casar exigência com regra é a que a conferência acabou de ler, não uma segunda
-        // leitura que poderia divergir dela.
-        ResultadoConformidade resultado = AvaliadorConformidadeLegal.Avaliar(
-            processo, tipoProcessoCodigo, regrasVigentes, referencias.Value!.Identidades, fatosDeModalidade);
+        return referencias.IsFailure
+            ? Result<ResultadoConformidade>.Failure(referencias.Error!)
+            : SomenteAprovadas(AvaliadorConformidadeLegal.Avaliar(
+                processo, tipoProcessoCodigo, regrasVigentes, referencias.Value!.Identidades, fatosDeModalidade));
+    }
 
-        bool todasAprovadas = resultado.Regras.All(static r => r.Aprovada);
-        if (!todasAprovadas)
-        {
-            IEnumerable<string> reprovadas = resultado.Regras
-                .Where(static r => !r.Aprovada)
-                .Select(static r => r.RegraCodigo);
+    // Antes de avaliar: uma regra que referencia cadastro inexistente é aprovada por vacuidade pelo avaliador, que é
+    // domínio puro e não consulta cadastro. Publicar sob ela seria publicar sob obrigação que ninguém pode cumprir.
+    private Task<Result<ConferenciaDeReferenciasDasRegras.RelatorioDeReferencias>> ConferirAsReferenciasAsync(
+        IReadOnlyList<ObrigatoriedadeLegal> regrasVigentes, CancellationToken cancellationToken) =>
+        ConferenciaDeReferenciasDasRegras.ConferirAsync(
+            regrasVigentes, modalidadeReader, tipoDocumentoReader, tipoEtapaReader, tipoDeficienciaReader, regraCatalogoReader, cancellationToken);
 
-            return Result<ResultadoConformidade>.Failure(new DomainError(
+    private static Result<ResultadoConformidade> SomenteAprovadas(ResultadoConformidade resultado)
+    {
+        string[] reprovadas = [.. resultado.Regras.Where(static r => !r.Aprovada).Select(static r => r.RegraCodigo)];
+
+        return reprovadas.Length > 0
+            ? Result<ResultadoConformidade>.Failure(new DomainError(
                 "ProcessoSeletivo.ConformidadeLegalInsuficiente",
-                $"Processo não conforme às obrigatoriedades legais vigentes — reprovado(s): {string.Join(", ", reprovadas)}."));
-        }
-
-        return Result<ResultadoConformidade>.Success(resultado);
+                $"Processo não conforme às obrigatoriedades legais vigentes — reprovado(s): {string.Join(", ", reprovadas)}."))
+            : Result<ResultadoConformidade>.Success(resultado);
     }
 }

@@ -2,56 +2,39 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Abstractions;
 
-using Domain.Entities;
 using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ValueObjects;
 
-using Kernel.Results;
+using Services;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
-internal static class MontagemDoCongelamento
+/// <summary>
+/// Lê o contexto de contagem de prazos, canonicaliza a configuração conferida e monta o pedido que o agregado
+/// congela. O dataset de calendário incoerente não aborta aqui, porque só importa para o processo cuja contagem
+/// distingue dia útil, e quem decide isso é o portão da raiz.
+/// </summary>
+public sealed class MontagemDoCongelamento(
+    LeituraDoContextoDeContagemDePrazos contextos,
+    ISnapshotPublicacaoCanonicalizer canonicalizer,
+    TimeProvider timeProvider,
+    IUserContext userContext)
 {
-    /// <summary>
-    /// Lê o calendário vigente, canonicaliza a configuração e monta o pedido que o agregado congela.
-    /// A leitura do calendário é uma só por operação: a mesma resposta alimenta o portão da raiz e o
-    /// bloco congelado do envelope, e ler duas vezes abriria a janela em que o dataset muda entre
-    /// validar e congelar. O dataset incoerente não aborta aqui, porque só importa para o processo
-    /// cuja contagem distingue dia útil, e quem decide isso é o portão da raiz.
-    /// </summary>
-    /// <param name="entrada">A entrada do canonicalizador, sem o calendário, que esta montagem acrescenta.</param>
-    internal static async Task<PedidoDeCongelamento> MontarAsync(
-        ICalendarioVigenteReader calendarios,
-        ISnapshotPublicacaoCanonicalizer canonicalizer,
-        TimeProvider timeProvider,
-        EntradaCanonicalizacao entrada,
-        TimeZoneInfo fusoInstitucional,
-        string atorUsuarioSub,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
-        CancellationToken cancellationToken)
+    internal async Task<PedidoDeCongelamento> MontarAsync(ConfiguracaoConferida conferida, CancellationToken cancellationToken)
     {
-        CalendarioVigenteView? calendarioVigente = await calendarios
-            .ObterVigenteAsync(cancellationToken)
-            .ConfigureAwait(false);
-        Result<CalendarioDiasUteisCongelado?> calendario = LeituraDoCalendarioVigente.Traduzir(calendarioVigente);
-
-        ContextoDeContagemDePrazos contexto = new(
-            calendario.IsSuccess ? calendario.Value : null,
-            FalhaDoCalendarioVigente: calendario.IsFailure ? calendario.Error : null,
-            FusoInstitucional: fusoInstitucional);
-
+        ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
+        EntradaCanonicalizacao entrada = conferida.Entrada;
         SnapshotCanonico canonico = canonicalizer.Canonicalizar(entrada with { CalendarioDiasUteis = contexto.CalendarioVigente });
 
         return new PedidoDeCongelamento
         {
             Dados = entrada.Dados,
             Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, entrada.HashDocumento),
-            AtorUsuarioSub = atorUsuarioSub,
+            AtorUsuarioSub = userContext.UserId ?? "system",
             Clock = timeProvider,
             Contexto = contexto,
-            FatosDeModalidade = fatosDeModalidade,
-            TiposDeAtoUnicos = tiposDeAtoUnicos,
+            FatosDeModalidade = conferida.FatosDeModalidade,
+            TiposDeAtoUnicos = conferida.TiposDeAtoUnicos,
         };
     }
 }

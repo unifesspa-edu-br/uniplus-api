@@ -28,8 +28,8 @@ public sealed class ConferenciaDosAnexosDoEditalTests
         AnexoDoEdital vigente = AnexoVigente(Documento("Quadro", TiposDeMidiaDeDocumento.Pdf));
         IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
 
-        Result<IReadOnlyList<AnexoDoEdital>> resultado = await ConferenciaDosAnexosDoEdital
-            .ConferirAsync(repositorio, ProcessoId, null, [vigente], CancellationToken.None);
+        Result<IReadOnlyList<AnexoDoEdital>> resultado = await new ConferenciaDosAnexosDoEdital(repositorio)
+            .ConferirAsync(ProcessoId, null, [vigente], CancellationToken.None);
 
         resultado.Value.Should().Equal(vigente);
         await repositorio.DidNotReceiveWithAnyArgs().ListarDoProcessoAsync(default, default!, default);
@@ -134,7 +134,7 @@ public sealed class ConferenciaDosAnexosDoEditalTests
         repositorio.ListarDoProcessoAsync(ProcessoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(armazenados);
 
-        return ConferenciaDosAnexosDoEdital.ConferirAsync(repositorio, ProcessoId, pedidos, vigentes, CancellationToken.None);
+        return new ConferenciaDosAnexosDoEdital(repositorio).ConferirAsync(ProcessoId, pedidos, vigentes, CancellationToken.None);
     }
 
     private static AnexoDoEdital AnexoVigente(DocumentoAPublicar documento) =>

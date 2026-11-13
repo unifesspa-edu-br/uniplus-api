@@ -8,7 +8,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
+/// <summary>A proteção do processo que a canonicalização congela e os fatos que as versões publicadas já coletaram.</summary>
+internal sealed record RecopiadoAoCongelar(ProtecaoVigenteDoProcesso Protecao, FatosDasVersoesPublicadas? Publicadas);
 
 /// <summary>
 /// O que a publicação, a retificação e o fechamento da sessão fazem antes de canonicalizar: o catálogo é
@@ -17,22 +18,38 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// os gates avaliam a cópia. Tudo é conferido antes e a recusa sai num só lote (ADR-0125); só então o
 /// agregado refaz as cópias.
 /// </summary>
-internal static class RecopiaAoCongelar
+public sealed class RecopiaAoCongelar(IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor, LeituraDasVersoesPublicadas versoesPublicadas)
 {
-    /// <param name="fatosJaColetados">Os fatos que alguma versão publicada já coletou; nulo na publicação inicial.</param>
-    /// <param name="daVersaoVigente">O que a versão vigente congelou das exigências; nulo na publicação inicial.</param>
-    /// <returns>A proteção do processo que a canonicalização congela, ou as recusas de itens e unidades somadas.</returns>
-    internal static async Task<Result<ProtecaoVigenteDoProcesso>> RecopiarAsync(
+    /// <returns>
+    /// A proteção do processo que a canonicalização congela e os fatos já coletados que a origem informa; ou a
+    /// recusa da leitura das versões publicadas, que precede as recusas de itens e unidades, somadas num lote.
+    /// </returns>
+    internal async Task<Result<RecopiadoAoCongelar>> RecopiarAsync(
+        ProcessoSeletivo processo, CatalogoVivo catalogo, OrigemDoCongelamento origem, CancellationToken cancellationToken)
+    {
+        Result<FatosDasVersoesPublicadas?> publicadas = await origem
+            .FatosJaPublicadosAsync(versoesPublicadas, processo, cancellationToken)
+            .ConfigureAwait(false);
+        if (publicadas.IsFailure)
+        {
+            return Result<RecopiadoAoCongelar>.Failure(publicadas.Error!);
+        }
+
+        Result<ProtecaoVigenteDoProcesso> recopia = await RecopiarCopiasEUnidadesAsync(
+            processo, catalogo, publicadas.Value?.FatosJaColetados, origem.CongeladoNaVersaoVigente, cancellationToken)
+            .ConfigureAwait(false);
+        return recopia.IsFailure
+            ? Result<RecopiadoAoCongelar>.ValidationFailure(recopia.Errors)
+            : Result<RecopiadoAoCongelar>.Success(new RecopiadoAoCongelar(recopia.Value!, publicadas.Value));
+    }
+
+    private async Task<Result<ProtecaoVigenteDoProcesso>> RecopiarCopiasEUnidadesAsync(
         ProcessoSeletivo processo,
-        CatalogoConferido catalogo,
+        CatalogoVivo catalogo,
         IReadOnlySet<string>? fatosJaColetados,
         CongeladoNaVersaoVigente? daVersaoVigente,
-        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(processo);
-        ArgumentNullException.ThrowIfNull(catalogo);
-
         Result<CopiasConferidas> copias = ReconferenciaDasCopiasDoItem.Conferir(processo, catalogo.Fatos, fatosJaColetados);
         Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>> unidades = await ReconferenciaDasUnidadesDasFases
             .ConferirAsync(processo, unidadeResponsavelResolvedor, cancellationToken)
@@ -45,31 +62,20 @@ internal static class RecopiaAoCongelar
         // O tipo de documento é editável depois que a exigência copiou dele a proteção: o valor vigente é
         // o que se congela, e a montagem não lê o que o agregado refaz a seguir.
         ProtecaoVigenteDoProcesso protecao = ProtecaoVigenteDasExigenciasDoProcesso.Montar(processo, catalogo.TiposVivos, catalogo.Fatos, daVersaoVigente);
-        Result recopiado = processo.RecopiarAoCongelar(
-            new CopiasDoCongelamento(copias.Value!.Copias, copias.Value.FatosJaColetados, unidades.Value!, protecao.Exigencias));
+
+        return Recopiar(processo, copias.Value!, unidades.Value!, protecao);
+    }
+
+    private static Result<ProtecaoVigenteDoProcesso> Recopiar(
+        ProcessoSeletivo processo,
+        CopiasConferidas copias,
+        IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> unidades,
+        ProtecaoVigenteDoProcesso protecao)
+    {
+        Result recopiado = processo.RecopiarAoCongelar(new CopiasDoCongelamento(copias.Copias, copias.FatosJaColetados, unidades, protecao.Exigencias));
 
         return recopiado.IsSuccess
             ? Result<ProtecaoVigenteDoProcesso>.Success(protecao)
             : Result<ProtecaoVigenteDoProcesso>.ValidationFailure(recopiado.Errors);
-    }
-
-    /// <summary>
-    /// Roda a operação e, se ela recusa, descarta o que a recópia mudou no agregado rastreado: a
-    /// recusa não devolve exceção, e o Wolverine salvaria o que sobrou (ADR-0119).
-    /// </summary>
-    public static async Task<(Result Resposta, IEnumerable<object> Eventos)> SemPersistirEmRecusaAsync(
-        ISelecaoUnitOfWork unitOfWork,
-        Func<Task<(Result Resposta, IEnumerable<object> Eventos)>> operacao)
-    {
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(operacao);
-
-        (Result Resposta, IEnumerable<object> Eventos) resultado = await operacao().ConfigureAwait(false);
-        if (resultado.Resposta.IsFailure)
-        {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-        }
-
-        return resultado;
     }
 }

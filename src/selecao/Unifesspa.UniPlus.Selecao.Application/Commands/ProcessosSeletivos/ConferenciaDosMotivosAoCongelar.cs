@@ -21,11 +21,11 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// O congelamento acontece antes de a transição do agregado aceitar a versão; se algo depois dele
 /// recusar, o descarte do rastreamento que envolve as três operações desfaz também este.
 /// </remarks>
-internal static class ConferenciaDosMotivosAoCongelar
+public sealed class ConferenciaDosMotivosAoCongelar(IProcessoSeletivoRepository repository)
 {
     /// <summary>A definição avaliável do processo, ou a primeira recusa: a da definição precede a dos motivos.</summary>
-    internal static async Task<Result<DefinicaoAvaliavel>> UltimosPortoesAsync(
-        IProcessoSeletivoRepository repository, ProcessoSeletivo processo, IReadOnlyCollection<FatoCandidatoView> catalogoDeFatos, CancellationToken cancellationToken)
+    internal async Task<Result<DefinicaoAvaliavel>> UltimosPortoesAsync(
+        ProcessoSeletivo processo, IReadOnlyCollection<FatoCandidatoView> catalogoDeFatos, CancellationToken cancellationToken)
     {
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);
         if (avaliavel.IsFailure)
@@ -33,14 +33,12 @@ internal static class ConferenciaDosMotivosAoCongelar
             return avaliavel;
         }
 
-        Result motivos = await ConferirAsync(repository, processo, cancellationToken).ConfigureAwait(false);
+        Result motivos = await ConferirAsync(processo, cancellationToken).ConfigureAwait(false);
         return motivos.IsSuccess ? avaliavel : Result<DefinicaoAvaliavel>.ValidationFailure(motivos.Errors);
     }
 
-    internal static async Task<Result> ConferirAsync(
-        IProcessoSeletivoRepository repository, ProcessoSeletivo processo, CancellationToken cancellationToken)
+    internal async Task<Result> ConferirAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(processo);
 
         IReadOnlyList<MotivoEscolhidoComOrigem> escolhidos = await repository.ListarMotivosEscolhidosAsync(processo.Id, cancellationToken).ConfigureAwait(false);

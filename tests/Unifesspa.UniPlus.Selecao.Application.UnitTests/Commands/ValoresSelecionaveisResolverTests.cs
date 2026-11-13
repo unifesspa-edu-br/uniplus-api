@@ -248,37 +248,30 @@ public sealed class ValoresSelecionaveisResolverTests
     }
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
-        Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento)
+        Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento) =>
+        ServicosDoHandler(mocks).PublicarAsync(ComandoDeAbertura(processo, documento));
+
+    private static ServicosDoCongelamentoDeTeste ServicosDoHandler(Mocks mocks)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.UserId.Returns("user-sub-1");
 
-        return PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: documento.Id,
-                Ato: new DadosDoAto(
-                    Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),
-                    Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA")),
-            mocks.ProcessoRepository,
-            mocks.DocumentoRepository,
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            mocks.Canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            userContext,
-            mocks.TipoDeAtoReader,
-            mocks.VagaDeLinhagemReader,
-            mocks.ObrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            mocks.FatoCandidatoReader,
-            CalendarioVigenteReaderDeTeste.SemVigente(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            TimeProvider.System,
-            CancellationToken.None);
+        return new ServicosDoCongelamentoDeTeste()
+            .ComRepositorio(mocks.ProcessoRepository)
+            .ComDocumentos(mocks.DocumentoRepository)
+            .ComCanonicalizer(mocks.Canonicalizer)
+            .ComUsuario(userContext)
+            .ComTiposDeAto(mocks.TipoDeAtoReader)
+            .ComVagasDeLinhagem(mocks.VagaDeLinhagemReader)
+            .ComObrigatoriedadesLegais(mocks.ObrigatoriedadeLegalRepository)
+            .ComCatalogoDeFatos(mocks.FatoCandidatoReader)
+            .ComRelogio(TimeProvider.System);
     }
+
+    private static PublicarProcessoSeletivoCommand ComandoDeAbertura(ProcessoSeletivo processo, DocumentoAPublicar documento) =>
+        new(processo.Id, "001/2026", null, null,
+            DocumentoEditalId: documento.Id,
+            Ato: new DadosDoAto(
+                Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),
+                Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA"));
 }
