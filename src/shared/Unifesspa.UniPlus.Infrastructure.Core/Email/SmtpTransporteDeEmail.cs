@@ -43,9 +43,6 @@ public sealed partial class SmtpTransporteDeEmail : ITransporteDeEmail
         _remetente = new MailboxAddress(_opcoes.NomeRemetente, _opcoes.Remetente);
     }
 
-    public Task EnviarAsync(EnviarEmail mensagem, CancellationToken cancellationToken) =>
-        EnviarAsync(mensagem, static () => { }, cancellationToken);
-
     public async Task EnviarAsync(EnviarEmail mensagem, Action aoAceitar, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(mensagem);

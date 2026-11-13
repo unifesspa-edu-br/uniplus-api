@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// </summary>
 public sealed class EnvioComRelayLentoIntegrationTests
 {
+    private static readonly Action Nada = static () => { };
+
     private static readonly TimeSpan PrazoExterno = TimeSpan.FromSeconds(60);
 
     [Fact(DisplayName = "Relay que prende uma conexão não segura a mensagem seguinte, e a presa estoura o prazo de conexão")]
@@ -26,7 +28,7 @@ public sealed class EnvioComRelayLentoIntegrationTests
         EnviarEmail seguinte = NovaMensagem();
 
         Task presa = await PrenderUmaConexaoAsync(relay, transporte, NovaMensagem());
-        await DentroDoPrazoExterno(transporte.EnviarAsync(seguinte, CancellationToken.None), "o envio da seguinte");
+        await DentroDoPrazoExterno(transporte.EnviarAsync(seguinte, Nada, CancellationToken.None), "o envio da seguinte");
         await DentroDoPrazoExterno(relay.PrimeiraEntregue, "a entrega da seguinte no relay");
 
         presa.IsCompleted.Should().BeFalse("a conexão presa ainda está dentro do prazo de 10 s");
@@ -45,14 +47,14 @@ public sealed class EnvioComRelayLentoIntegrationTests
         Task presa = await PrenderUmaConexaoAsync(relay, transporte, mensagem);
         await DentroDoPrazoExterno(presa.ContinueWith(static _ => { }, TaskScheduler.Default), "o prazo da presa");
         await presa.Awaiting(t => t).Should().ThrowAsync<TimeoutException>();
-        await DentroDoPrazoExterno(transporte.EnviarAsync(mensagem, CancellationToken.None), "a nova tentativa");
+        await DentroDoPrazoExterno(transporte.EnviarAsync(mensagem, Nada, CancellationToken.None), "a nova tentativa");
 
         relay.Recebidas.Should().ContainSingle().Which.Should().Contain(mensagem.MensagemId.ToString("N"));
     }
 
     private static async Task<Task> PrenderUmaConexaoAsync(RelaySmtpLento relay, SmtpTransporteDeEmail transporte, EnviarEmail mensagem)
     {
-        Task envio = transporte.EnviarAsync(mensagem, CancellationToken.None);
+        Task envio = transporte.EnviarAsync(mensagem, Nada, CancellationToken.None);
         await DentroDoPrazoExterno(relay.LentaAceita, "o relay segurar a conexão");
         return envio;
     }

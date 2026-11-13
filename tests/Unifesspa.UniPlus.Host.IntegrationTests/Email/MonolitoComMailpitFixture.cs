@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Email;
 
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
@@ -23,10 +22,6 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// Monólito com Postgres e um Mailpit efêmeros: o relay de e-mail do host aponta para o contêiner de
 /// captura, e a API HTTP dele é o que os testes consultam para ver a mensagem entregue.
 /// </summary>
-[SuppressMessage(
-    "Reliability",
-    "CA1001:Types that own disposable fields should be disposable",
-    Justification = "Recursos liberados por EncerrarDependenciasAsync — xUnit invoca deterministicamente.")]
 public sealed class MonolitoComMailpitFixture : MonolitoPostgresFixtureBase<MonolitoComMailpitApiFactory>
 {
     private readonly IContainer _mailpit = MailpitDeTeste.Criar();
@@ -51,10 +46,6 @@ public sealed class MonolitoComMailpitFixture : MonolitoPostgresFixtureBase<Mono
         new(connectionString, _mailpit.Hostname, _mailpit.GetMappedPublicPort(MailpitDeTeste.PortaSmtp));
 }
 
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "WebApplicationFactory<T> derivative usado como estado de fixture.")]
 public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
 {
     private readonly string _hostSmtp;
@@ -122,14 +113,14 @@ public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
 
     private sealed class TransporteQueFalhaAntes(ITransporteDeEmail real, MonolitoComMailpitApiFactory fabrica) : ITransporteDeEmail
     {
-        public Task EnviarAsync(EnviarEmail mensagem, CancellationToken cancellationToken)
+        public Task EnviarAsync(EnviarEmail mensagem, Action aoAceitar, CancellationToken cancellationToken)
         {
             if (ConsumirFalha(ref fabrica._falhas))
             {
                 throw new InvalidOperationException("Relay indisponível (simulado).");
             }
 
-            return real.EnviarAsync(mensagem, cancellationToken);
+            return real.EnviarAsync(mensagem, aoAceitar, cancellationToken);
         }
     }
 }
