@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>
 /// Configuração global de cursor pagination (ADR-0026): TTL do cursor e
 /// range aceitável de <c>limit</c>. Bind a partir da seção
@@ -17,8 +19,11 @@ public sealed record CursorPaginationOptions
     /// </summary>
     public const string DefaultKeyName = "uniplus-idempotency-aesgcm";
 
-    /// <summary>Tempo de validade do cursor opaco emitido pelo binder.</summary>
-    public TimeSpan CursorTtl { get; init; } = TimeSpan.FromMinutes(15);
+    /// <summary>
+    /// Tempo de validade do cursor opaco emitido pelo binder. Configurado em qualquer precisão, é guardado em
+    /// microssegundos inteiros, a precisão do instante de expiração que o cursor carrega.
+    /// </summary>
+    public TimeSpan CursorTtl { get; init => field = value.TruncadoEmMicrossegundos(); } = TimeSpan.FromMinutes(15);
 
     /// <summary>Tamanho de página padrão quando nem QS nem cursor especificam.</summary>
     public int LimitDefault { get; init; } = 20;

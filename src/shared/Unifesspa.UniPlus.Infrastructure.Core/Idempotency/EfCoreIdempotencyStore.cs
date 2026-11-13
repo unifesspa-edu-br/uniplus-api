@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>
 /// Implementação <see cref="IIdempotencyStore"/> sobre <see cref="DbContext"/>
 /// genérico. Cada módulo que usa idempotência registra um instance via
@@ -146,16 +148,17 @@ public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
     }
 
     private IdempotencyEntry NovaReserva(
-        string scope, string endpoint, string idempotencyKey, string bodyHash, DateTimeOffset expiresAt) => new()
-    {
-        Scope = scope,
-        Endpoint = endpoint,
-        IdempotencyKey = idempotencyKey,
-        BodyHash = bodyHash,
-        Status = IdempotencyStatus.Processing,
-        ExpiresAt = expiresAt,
-        CreatedAt = _timeProvider.GetUtcNow(),
-    };
+        string scope, string endpoint, string idempotencyKey, string bodyHash, DateTimeOffset expiresAt) =>
+        new()
+        {
+            Scope = scope,
+            Endpoint = endpoint,
+            IdempotencyKey = idempotencyKey,
+            BodyHash = bodyHash,
+            Status = IdempotencyStatus.Processing,
+            ExpiresAt = expiresAt.TruncadoEmMicrossegundos(),
+            CreatedAt = _timeProvider.GetUtcNow(),
+        };
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException pg && pg.SqlState == PostgresUniqueViolationSqlState;
