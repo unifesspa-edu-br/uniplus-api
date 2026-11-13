@@ -120,11 +120,20 @@ avancar_pedido() {
             aguardando_documento) anexar_designacao "$pedido" "$token" ;;
             aguardando_beneficiario) aceitar_termo_do_pedido "$pedido" "$token" ;;
             aguardando_gestor) decidir_pedido "$pedido" "${LISTA_DE_GESTORES[0]}" "$SENHA_GESTORES" ;;
-            aguardando_protecao_de_dados) decidir_pedido "$pedido" "${LISTA_DE_REPRESENTANTES[0]}" "$SENHA_REPRESENTANTES" ;;
+            aguardando_protecao_de_dados) decidir_pedido "$pedido" "$(representante_que_decide "$pessoa")" "$SENHA_REPRESENTANTES" ;;
             *) fail "o pedido de Representante de $pessoa ficou em '$situacao'." ;;
         esac
     done
     fail "o pedido de Representante de $pessoa não chegou a 'aprovado' (última situação: '$situacao')."
+}
+
+# O Representante vigente da lista que decide a segunda etapa: nunca a própria pessoa, que é parte do pedido.
+representante_que_decide() {
+    local outro
+    for outro in "${LISTA_DE_REPRESENTANTES[@]}"; do
+        [ "$outro" != "$1" ] && eh_representante "$outro" && { printf '%s\n' "$outro"; return 0; }
+    done
+    fail "o pedido de $1 aguarda a proteção de dados, e nenhum outro Representante da lista ($REPRESENTANTES) está vigente para decidi-lo. Decida-o na tela de pedidos com o Representante vigente."
 }
 
 designar_representante() {
@@ -164,7 +173,7 @@ decidir_item_da_protecao() {
 }
 
 garantir_protecao_do_catalogo() {
-    local pendentes representante item
+    local pendentes representante item solicitados
     pendentes=$(itens_da_protecao "$TOKEN" PENDENTE)
     if [ "$(jq 'length' <<< "$pendentes")" -gt 0 ]; then
         log "Enviando à proteção de dados $(jq 'length' <<< "$pendentes") itens do catálogo"
@@ -172,8 +181,10 @@ garantir_protecao_do_catalogo() {
             "$(jq -c '{itens: map({cadastro: (if .tipo == "FATO" then "FATO" else "TIPO_DOCUMENTO" end), id})}' <<< "$pendentes")" >/dev/null
     fi
     representante=$(token_de "${LISTA_DE_REPRESENTANTES[0]}" "$SENHA_REPRESENTANTES")
+    # A lista vem para uma variável antes do laço: falha dentro de <(...) não interromperia o roteiro.
+    solicitados=$(itens_da_protecao "$representante" SOLICITADA)
     while read -r item; do
         [ -n "$item" ] && decidir_item_da_protecao "$item" "$representante"
-    done < <(itens_da_protecao "$representante" SOLICITADA | jq -c '.[]')
+    done < <(jq -c '.[]' <<< "$solicitados")
     ok "proteção do catálogo aprovada por ${LISTA_DE_REPRESENTANTES[0]}"
 }
