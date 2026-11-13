@@ -28,6 +28,7 @@ internal static class ErrosDaProvidencia
     [
         new(ProvidenciaErrorCodes.SolicitanteNaoResponde, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.providencia.solicitante_nao_responde", "Quem solicitou a providência não a responde")),
         new(ProvidenciaErrorCodes.BeneficiarioNaoResponde, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.providencia.beneficiario_nao_responde", "O beneficiário da concessão não responde a providência")),
+        new(ProvidenciaErrorCodes.SemPermissao, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.forbidden", "Acesso negado")),
         new(ProvidenciaErrorCodes.AutorNaoIdentificado, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.autorizacao.providencia.autor_nao_identificado", "Autor da operação não identificado")),
         MapeamentosComuns.Concorrencia(ProvidenciaErrorCodes.ConflitoDeConcorrencia),
     ];

@@ -66,9 +66,9 @@ public sealed class TrilhaDaConcessao
     private async Task<IEnumerable<EventoDaTrilhaDto>> DasProvidenciasAsync(Guid concessaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         IReadOnlyList<Providencia> providencias = await _providencias.ListarDaConcessaoAsync(concessaoId, cancellationToken).ConfigureAwait(false);
-        bool podeLer = await AcessoAProvidencia.RegistrarLeituraAsync(verificador, [.. providencias.Select(static p => p.Id)], cancellationToken).ConfigureAwait(false);
 
-        return podeLer ? providencias.SelectMany(ProvidenciaMapping.EventosDaTrilha) : [];
+        return (await AcessoAProvidencia.LiberarAsync(verificador, providencias, cancellationToken).ConfigureAwait(false))
+            .SelectMany(ProvidenciaMapping.EventosDaTrilha);
     }
 
     private async Task<IReadOnlyList<EventoDaTrilhaDto>> DaOrigemAsync(Concessao concessao, CancellationToken cancellationToken)

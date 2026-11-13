@@ -9,6 +9,9 @@ internal static class ProvidenciaHandlerErros
     public static DomainError NaoEncontrada() =>
         new(ProvidenciaErrorCodes.NaoEncontrada, "Providência não encontrada.");
 
+    public static DomainError SemPermissao() =>
+        new(ProvidenciaErrorCodes.SemPermissao, "Token autenticado, mas sem permissão para ler a providência.");
+
     public static DomainError AutorNaoIdentificado() =>
         new(ProvidenciaErrorCodes.AutorNaoIdentificado, "Não foi possível identificar quem executa a operação; nada foi registrado.");
 

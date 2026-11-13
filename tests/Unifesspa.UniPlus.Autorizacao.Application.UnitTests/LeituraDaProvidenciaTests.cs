@@ -87,6 +87,30 @@ public sealed class LeituraDaProvidenciaTests
         verificador.Gravados.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Com a permissão negada no instante da leitura, o detalhe responde sem dado, como quem não tem a permissão, e nada é registrado")]
+    public async Task Obter_LeituraNegada_SemDado()
+    {
+        VerificadorDeTeste semPermissao = new("cecilia.moura", []);
+
+        Result<ProvidenciaDto> resultado = await ObterAsync(semPermissao, _item.Id);
+
+        (resultado.IsFailure, resultado.Value, resultado.Error!.Code).Should().Be((true, (ProvidenciaDto?)null, ProvidenciaErrorCodes.SemPermissao));
+        semPermissao.Gravados.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Com a permissão negada no instante da leitura, a fila sai sem o item e sem âncora de continuação, e nada é registrado")]
+    public async Task Listar_LeituraNegada_SemItem()
+    {
+        VerificadorDeTeste semPermissao = new("cecilia.moura", []);
+        _cenario.Providencias.ListarPaginadoAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(([_item], ("chave", _item.Id), ("chave", _item.Id)));
+
+        ListarProvidenciasResult resultado = await ProvidenciaQueryHandler.Handle(
+            new ListarProvidenciasQuery(null, null, null, null, 20, PaginationDirection.Next), Leitura(), semPermissao, Usuarios.De(ProvidenciaBuilder.Cecilia), CancellationToken.None);
+
+        (resultado.Items.Count, resultado.Anterior, resultado.Proximo).Should().Be((0, ((string, Guid)?)null, ((string, Guid)?)null));
+        semPermissao.Gravados.Should().BeEmpty();
+    }
+
     private Task<Result<ProvidenciaDto>> ObterAsync(VerificadorDeTeste verificador, Guid id) =>
         ProvidenciaQueryHandler.Handle(new ObterProvidenciaQuery(id), Leitura(), verificador, Usuarios.De(ProvidenciaBuilder.Cecilia), CancellationToken.None);
 

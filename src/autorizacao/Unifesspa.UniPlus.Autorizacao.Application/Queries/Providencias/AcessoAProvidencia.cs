@@ -4,11 +4,12 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
+using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
-/// O registro de cada providência exibida, antes de a resposta sair (ADR-0153), na leitura das providências e na trilha
-/// da concessão. A permissão que autorizou é a que nomeia cada registro: administrar, se a
-/// pessoa a tem, senão solicitar.
+/// A leitura das providências decidida e registrada item a item antes de a resposta sair (ADR-0153), na leitura das
+/// providências e na trilha da concessão. A permissão que autorizou é a que nomeia cada registro: administrar, se a pessoa
+/// a tem, senão solicitar.
 /// </summary>
 internal static class AcessoAProvidencia
 {
@@ -19,25 +20,25 @@ internal static class AcessoAProvidencia
         CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.ProvidenciasSolicitar).Requisito;
 
     /// <summary>
-    /// Registra cada providência a exibir pela permissão que dá a leitura delas. Devolve se quem lê pode vê-las: falso
-    /// quando nenhuma das duas permissões o autoriza, e nada é registrado. A falha do registro lança, e a resposta é 503.
+    /// As providências que quem lê pode ver, cada uma registrada antes de a resposta sair: todas, se a decisão no instante
+    /// da leitura permite, senão nenhuma, sem registro. É o ponto único da leitura das providências, no detalhe, na fila e
+    /// na trilha da concessão: a permissão pode ter deixado de valer depois do filtro da borda, e o dado não sai sem ela. A
+    /// falha do registro lança, e a resposta é 503.
     /// </summary>
-    public static async Task<bool> RegistrarLeituraAsync(
-        IVerificadorDeAcesso verificador, IReadOnlyCollection<Guid> providenciaIds, CancellationToken cancellationToken)
+    public static async Task<IReadOnlyList<T>> LiberarAsync<T>(
+        IVerificadorDeAcesso verificador, IReadOnlyList<T> providencias, CancellationToken cancellationToken)
+        where T : IIdentificavel
     {
-        if (providenciaIds.Count == 0)
-        {
-            return true;
-        }
+        ArgumentNullException.ThrowIfNull(providencias);
 
-        if (await LeituraPermitidaAsync(verificador, cancellationToken).ConfigureAwait(false) is not { } permitida)
+        if (providencias.Count == 0 || await LeituraPermitidaAsync(verificador, cancellationToken).ConfigureAwait(false) is not { } permitida)
         {
-            return false;
+            return [];
         }
 
         await verificador.RegistrarParaCadaAsync(
-            permitida, ResourceTiposAutorizacao.Providencia, providenciaIds, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return true;
+            permitida, ResourceTiposAutorizacao.Providencia, [.. providencias.Select(static p => p.Id)], cancellationToken: cancellationToken).ConfigureAwait(false);
+        return providencias;
     }
 
     // Administrar, se a pessoa a tem, senão solicitar; nula quando nenhuma das duas autoriza.
