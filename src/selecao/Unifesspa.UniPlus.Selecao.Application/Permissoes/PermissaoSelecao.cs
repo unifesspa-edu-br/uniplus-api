@@ -241,4 +241,23 @@ public enum PermissaoSelecao
         ClassificacaoDeProtecao.Interno,
         EscopoContextoObrigatorio = [CamposDeContexto.UnidadeProprietariaId])]
     DocumentosDaFasePublicar = 23,
+
+    /// <summary>Consultar a avaliação de uma inscrição pela banca a que a pessoa está designada.</summary>
+    [Permissao(
+        "selecao:avaliacoes:consultar",
+        "Consultar avaliações das inscrições da banca",
+        "Alcança a avaliação de uma inscrição numa etapa, na unidade responsável pela fase, quando a pessoa está designada à banca da etapa. Não libera item algum: cada dado e cada documento sai pela permissão da sua classe.",
+        ClassificacaoDeProtecao.Pessoal,
+        BaseLegal = "Lei nº 13.709/2018 (LGPD), art. 7º, III",
+        EscopoContextoObrigatorio =
+        [
+            CamposDeContexto.UnidadeProprietariaId,
+            "processoId",
+            CamposDeContexto.FaseId,
+            CamposDeContexto.EtapaId,
+            CamposDeContexto.BancaId,
+            CamposDeContexto.InscricaoId,
+        ],
+        VerificacoesDeContexto = [DesignacaoNaBancaCheck.NomeCanonico])]
+    AvaliacoesConsultar = 24,
 }

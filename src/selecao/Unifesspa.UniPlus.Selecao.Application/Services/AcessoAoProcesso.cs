@@ -54,6 +54,61 @@ public static class AcessoAoProcesso
             ResourceTiposSelecao.Inscricao, ClassificacaoDeProtecao.Pessoal, unidadeId, processoId, resourceId: inscricaoId,
             fatoCodigo: fatoCodigo, ocorrencia: ocorrencia, inscricaoId: inscricaoId).Value!;
 
+    // Resources dos atos de quem atua por uma banca. A unidade é a que conduz a fase na versão vigente, e nunca a dona
+    // do processo: quem recebe a banca numa fase conduzida por outra unidade atua nessa unidade. Cada tipo exige os
+    // campos dele e rejeita identificador vazio; o resource leva sempre o processo, para que o impedimento por inscrição
+    // valha, e os vínculos da banca, que a verificação de designação confere.
+
+    /// <summary>
+    /// A avaliação de uma inscrição numa etapa. É dado pessoal por natureza, como a inscrição, então a sensibilidade é
+    /// pessoal e toda decisão sobre ela entra no registro de acessos.
+    /// </summary>
+    public static Result<ResourceContext> AvaliacaoDaInscricao(
+        UnidadeDaFase fase, Guid processoId, Guid etapaId, Guid bancaId, Guid inscricaoId)
+    {
+        ArgumentNullException.ThrowIfNull(fase);
+
+        return Montar(
+            ResourceTiposSelecao.AvaliacaoDaInscricao, ClassificacaoDeProtecao.Pessoal, fase, processoId, inscricaoId,
+            VinculosDaBanca.From(fase.FaseId, bancaId, etapaId));
+    }
+
+    /// <summary>Os atos da banca sobre a fase do processo, sem inscrição alvo: a fase, a banca e o processo.</summary>
+    public static Result<ResourceContext> BancaDaFase(UnidadeDaFase fase, Guid processoId, Guid bancaId)
+    {
+        ArgumentNullException.ThrowIfNull(fase);
+
+        return Montar(
+            ResourceTiposSelecao.BancaDaFase, ClassificacaoDeProtecao.Interno, fase, processoId, inscricaoId: null,
+            VinculosDaBanca.From(fase.FaseId, bancaId));
+    }
+
+    /// <summary>Os atos da banca sobre a fase quando o alvo é uma inscrição: o mesmo tipo, com a inscrição e sensibilidade pessoal.</summary>
+    public static Result<ResourceContext> BancaDaFaseNaInscricao(UnidadeDaFase fase, Guid processoId, Guid bancaId, Guid inscricaoId)
+    {
+        ArgumentNullException.ThrowIfNull(fase);
+
+        return Montar(
+            ResourceTiposSelecao.BancaDaFase, ClassificacaoDeProtecao.Pessoal, fase, processoId, inscricaoId,
+            VinculosDaBanca.From(fase.FaseId, bancaId));
+    }
+
+    private static Result<ResourceContext> Montar(
+        string tipo, ClassificacaoDeProtecao sensibilidade, UnidadeDaFase fase, Guid processoId, Guid? inscricaoId, Result<VinculosDaBanca> vinculos)
+    {
+        if (vinculos.IsFailure)
+        {
+            return Result<ResourceContext>.Failure(vinculos.Error!);
+        }
+
+        Result<ResourceContext> resource = ResourceContext.From(
+            tipo, sensibilidade, fase.UnidadeId, processoId, resourceId: inscricaoId, inscricaoId: inscricaoId);
+
+        return resource.IsFailure
+            ? resource
+            : Result<ResourceContext>.Success(resource.Value!.ComVinculosDaBanca(vinculos.Value!));
+    }
+
     /// <summary>
     /// Decide o pedido da permissão sobre o resource que a unidade dona monta. Sem unidade (processo inexistente) não
     /// há decisão a tomar sobre o resource: o acesso é negado sem consultar o ponto de decisão, que registraria como

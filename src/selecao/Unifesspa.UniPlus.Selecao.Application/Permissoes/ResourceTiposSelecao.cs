@@ -30,4 +30,10 @@ public static class ResourceTiposSelecao
 
     /// <summary>Tipo <c>fase-do-processo</c>.</summary>
     public const string FaseDoProcesso = "fase-do-processo";
+
+    /// <summary>Tipo <c>avaliacao-da-inscricao</c>.</summary>
+    public const string AvaliacaoDaInscricao = "avaliacao-da-inscricao";
+
+    /// <summary>Tipo <c>banca-da-fase</c>.</summary>
+    public const string BancaDaFase = "banca-da-fase";
 }

@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Services;
+using Services.AcessoPelaBanca;
 using Services.InscricaoAdministrativa;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
@@ -56,6 +57,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ClassificacaoDaExigenciaDoArquivo>();
         services.AddScoped<DecisaoDoAcessoAoDocumento>();
         services.AddScoped<EmissaoDoAcessoAoArquivo>();
+        services.AddScoped<AcessoARevelacaoPelaBanca>();
     }
 
     // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as
