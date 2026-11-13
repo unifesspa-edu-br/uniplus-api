@@ -1,5 +1,5 @@
 ---
-status: "proposed"
+status: "accepted"
 date: "2026-11-13"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -63,7 +63,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 
 **Contrato.** O schema continua na `v1`, e o cabeçalho `uniplus.versao-schema` continua `1`. Mudam só as descrições de `fonteGrant` (o valor `titularidade`, que só aparece no registro e não representa concessão) e de `permissao` (na leitura por titularidade, o código fixo da operação do titular). Nenhuma propriedade nova é serializada, e nenhum enum muda. O leitor da `v1` lê o registro novo sem alteração.
 
-**Relação com outras decisões.** Esta ADR emenda o escopo da [ADR-0153](0153-projecao-por-protecao.md) ("O titular fica fora"): a exceção é a leitura feita pelas partes de um pedido de concessão. Emenda o vocabulário de fonte registrada da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): `titularidade` passa a ser valor de `fonteGrant` no registro, sem ser fonte de concessão efetiva; as três fontes possíveis da concessão efetiva e a regra da ADR-0152 de que toda permissão é satisfeita por concessão gravada não mudam. Cita a [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md), cuja remissão à issue #2389 na regra "Leituras do Encarregado" é retirada quando esta ADR for aceita. Não contradiz a [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) nem a [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md): nenhuma permissão nova entra no catálogo de permissões, e nenhum acesso passa a ser satisfeito sem concessão.
+**Relação com outras decisões.** Esta ADR emenda o escopo da [ADR-0153](0153-projecao-por-protecao.md) ("O titular fica fora"): a exceção é a leitura feita pelas partes de um pedido de concessão. Emenda o vocabulário de fonte registrada da [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md): `titularidade` passa a ser valor de `fonteGrant` no registro, sem ser fonte de concessão efetiva; as três fontes possíveis da concessão efetiva e a regra da ADR-0152 de que toda permissão é satisfeita por concessão gravada não mudam. Atualiza a [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md), na regra "Leituras do Encarregado": a leitura dos próprios pedidos por quem não tem a permissão de consultar passa a ser registrada por titularidade. Não contradiz a [ADR-0152](0152-governanca-das-concessoes-de-acesso.md) nem a [ADR-0151](0151-catalogo-de-permissoes-em-codigo-por-modulo.md): nenhuma permissão nova entra no catálogo de permissões, e nenhum acesso passa a ser satisfeito sem concessão.
 
 ## Consequências
 
