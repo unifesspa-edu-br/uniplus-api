@@ -48,124 +48,78 @@ public sealed partial class EnvelopeCodecRoundTripTests
     [Fact(DisplayName = "Round-trip com os seis conjuntos da issue #1067 povoados — bytes idênticos e a sequência imediatamente decodificada bate com o JSON")]
     public void RoundTrip_SeisConjuntosDaIssue1067Povoados_PreservaSequenciaImediatamenteDecodificada()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Seis Conjuntos", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        (ProcessoSeletivo processo, FaseCronograma fase) = ProcessoDeInscricao("PS Seis Conjuntos");
+        DefinirFolhaComOcorrenciasEFormatos(processo, fase);
+        EntradaCanonicalizacao entrada = EntradaDosSeisConjuntos(processo);
+        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
+        ConferirSchemaCorrente(congelado);
+        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-sub-seis-conjuntos");
+        SequenciasNoJson noJson = SequenciasDoJson(Envelope(congelado));
+        EnvelopeReidratado envelope = Reidratado(v1);
+        ConferirSequenciasDecodificadas(envelope, noJson);
+        processo.RestaurarConfiguracaoCongelada(v1, envelope.Grafo).IsSuccess.Should().BeTrue();
+        ConferirQueARecodificacaoReproduzOsBytes(
+            RecodificadoSemInsumosDeRecomputacao(processo, v1, envelope), congelado, "os seis conjuntos da issue #1067, todos povoados ao mesmo tempo");
+    }
 
+    private static EntradaCanonicalizacao EntradaDosSeisConjuntos(ProcessoSeletivo processo) =>
+        new(
+            processo, DadosDeEditalDoEnvelope(), "3333333333333333333333333333333333333333333333333333333333333333", FusoInstitucional.ZoneId,
+            Conformidade: ConformidadeComArgumentosEmOrdemNaoAlfabetica(), MetadadosFatosCongelados: MetadadosComValoresEmOrdemNaoAlfabetica(),
+            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
+            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    private sealed record SequenciasNoJson(
+        IReadOnlyList<string> Ocorrencias,
+        IReadOnlyList<string> Formatos,
+        IReadOnlyList<string> RegraCodigos,
+        IReadOnlyList<string> ValoresDominio,
+        IReadOnlyList<string> Codigos,
+        IReadOnlyList<string> Necessidades);
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        FaseCronograma fase = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "INSCRICAO",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: true,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "INSCRICAO").Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormatosPermitidos formatosPermitidos = FormatosPermitidos.Criar(
-            qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!;
-        DocumentoExigido documento = DocumentoExigido.Criar(
-            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            [], [], null, formatosPermitidos, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+    private static void DefinirFolhaComOcorrenciasEFormatos(ProcessoSeletivo processo, FaseCronograma fase)
+    {
         NoExigencia folha = NoExigencia.CriarFolha(
-            documento, 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
+            DocumentoDeIdentidadeComFormatosEnumerados(fase), 0, quantidadeMinima: 2, chaveDistincao: ChaveDistincao.Ocorrencia,
             ocorrenciasEsperadas: ["ocorrencia_zeta", "ocorrencia_alfa"]).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
 
-        RegraAvaliada regraModalidadesMinimas = new(
+    private static DocumentoExigido DocumentoDeIdentidadeComFormatosEnumerados(FaseCronograma fase) =>
+        DocumentoExigido.Criar(
+            fase.Id, Guid.CreateVersion7(), "RG", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
+            [], [], null,
+            FormatosPermitidos.Criar(qualquer: false, entradas: [("PNG", null), ("JPEG", null), ("PDF", null)]).Value!,
+            null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+
+    private static ResultadoConformidade ConformidadeComArgumentosEmOrdemNaoAlfabetica() =>
+        new(
+            [
+                RegraAprovada("REGRA-MODALIDADES-MINIMAS", new ModalidadesMinimas(["QUI", "AC", "LB_PPI"]), "Regra de modalidades mínimas", 'm'),
+                RegraAprovada("REGRA-ATENDIMENTO-DISPONIVEL", new AtendimentoDisponivel(["VISUAL", "AUDITIVA", "FISICA"]), "Regra de atendimento disponível", 'n'),
+            ],
+            []);
+
+    private static RegraAvaliada RegraAprovada(string codigo, PredicadoObrigatoriedade predicado, string descricao, char hash) =>
+        new(
             RegraId: Guid.CreateVersion7(),
-            RegraCodigo: "REGRA-MODALIDADES-MINIMAS",
+            RegraCodigo: codigo,
             Categoria: CategoriaObrigatoriedade.Outros,
             TipoProcessoCodigoAvaliado: "SiSU",
-            Predicado: new ModalidadesMinimas(["QUI", "AC", "LB_PPI"]),
+            Predicado: predicado,
             Aprovada: true,
             Motivo: null,
             BaseLegal: "Lei de teste",
             AtoNormativoUrl: null,
             PortariaInterna: null,
-            DescricaoHumana: "Regra de modalidades mínimas",
+            DescricaoHumana: descricao,
             VigenciaInicio: new DateOnly(2020, 1, 1),
             VigenciaFim: null,
-            Hash: new string('m', 64));
+            Hash: new string(hash, 64));
 
-        RegraAvaliada regraAtendimentoDisponivel = new(
-            RegraId: Guid.CreateVersion7(),
-            RegraCodigo: "REGRA-ATENDIMENTO-DISPONIVEL",
-            Categoria: CategoriaObrigatoriedade.Outros,
-            TipoProcessoCodigoAvaliado: "SiSU",
-            Predicado: new AtendimentoDisponivel(["VISUAL", "AUDITIVA", "FISICA"]),
-            Aprovada: true,
-            Motivo: null,
-            BaseLegal: "Lei de teste",
-            AtoNormativoUrl: null,
-            PortariaInterna: null,
-            DescricaoHumana: "Regra de atendimento disponível",
-            VigenciaInicio: new DateOnly(2020, 1, 1),
-            VigenciaFim: null,
-            Hash: new string('n', 64));
-
-        ResultadoConformidade conformidade = new([regraModalidadesMinimas, regraAtendimentoDisponivel], []);
-
-        Dictionary<string, MetadadoFatoCongelado> metadadosFatos = new(StringComparer.Ordinal)
+    private static Dictionary<string, MetadadoFatoCongelado> MetadadosComValoresEmOrdemNaoAlfabetica() =>
+        new(StringComparer.Ordinal)
         {
             ["COR_RACA"] = new MetadadoFatoCongelado(
                 Codigo: "COR_RACA",
@@ -178,79 +132,50 @@ public sealed partial class EnvelopeCodecRoundTripTests
                 ValoresDominioDeclarados: null),
         };
 
-        DadosEdital dados = DadosEdital.Criar(
-            numero: "099/2026",
-            periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            documentoEditalId: Guid.CreateVersion7()).Value!;
-        const string hashDocumento = "3333333333333333333333333333333333333333333333333333333333333333";
+    private static SequenciasNoJson SequenciasDoJson(JsonObject envelope)
+    {
+        JsonArray obrigatoriedades = envelope["documentosExigidos"]!["obrigatoriedades"]!.AsArray();
+        return new SequenciasNoJson(
+            Ocorrencias: Textos(envelope["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray(), static o => o),
+            Formatos: Textos(envelope["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray(), static f => f["formato"]),
+            RegraCodigos: Textos(obrigatoriedades, static r => r["regraCodigo"]),
+            ValoresDominio: Textos(envelope["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray(), static v => v),
+            Codigos: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA-MODALIDADES-MINIMAS")["codigos"]!.AsArray(), static c => c),
+            Necessidades: Textos(ArgumentosDoPredicado(obrigatoriedades, "REGRA-ATENDIMENTO-DISPONIVEL")["necessidades"]!.AsArray(), static n => n));
+    }
 
-        EntradaCanonicalizacao entrada = new(
-            processo, dados, hashDocumento, FusoInstitucional.ZoneId, Conformidade: conformidade, MetadadosFatosCongelados: metadadosFatos,
-            ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
-            TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
-        SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
-        congelado.SchemaVersion.Should().Be("0.0.42", "pré-condição: o codec corrente emite a forma única");
+    private static IReadOnlyList<string> Textos(JsonArray itens, Func<JsonNode, JsonNode?> selecao) =>
+        [.. itens.Select(item => selecao(item!)!.GetValue<string>())];
 
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-sub-seis-conjuntos", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        VersaoConfiguracao v1 = publicacao.Value!;
+    private static JsonNode ArgumentosDoPredicado(JsonArray obrigatoriedades, string regraCodigo) =>
+        obrigatoriedades
+            .Single(r => r!["regraCodigo"]!.GetValue<string>() == regraCodigo)!
+            ["predicado"]!["args"]!;
 
-        JsonObject envelopeJson = Envelope(congelado);
-        IReadOnlyList<string> ocorrenciasNoJson =
-            [.. envelopeJson["arvoreSatisfacao"]![0]!["ocorrenciasEsperadas"]!.AsArray().Select(static o => o!.GetValue<string>())];
-        IReadOnlyList<string> formatosNoJson =
-            [.. envelopeJson["documentosExigidos"]!["exigencias"]![0]!["formatosPermitidos"]!["lista"]!.AsArray()
-                .Select(static f => f!["formato"]!.GetValue<string>())];
-        IReadOnlyList<string> regraCodigosNoJson =
-            [.. envelopeJson["documentosExigidos"]!["obrigatoriedades"]!.AsArray().Select(static r => r!["regraCodigo"]!.GetValue<string>())];
-        IReadOnlyList<string> valoresDominioNoJson =
-            [.. envelopeJson["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominio"]!.AsArray().Select(static v => v!.GetValue<string>())];
-        IReadOnlyList<string> codigosNoJson =
-            [.. envelopeJson["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
-                .Single(static r => r!["regraCodigo"]!.GetValue<string>() == "REGRA-MODALIDADES-MINIMAS")!
-                ["predicado"]!["args"]!["codigos"]!.AsArray().Select(static c => c!.GetValue<string>())];
-        IReadOnlyList<string> necessidadesNoJson =
-            [.. envelopeJson["documentosExigidos"]!["obrigatoriedades"]!.AsArray()
-                .Single(static r => r!["regraCodigo"]!.GetValue<string>() == "REGRA-ATENDIMENTO-DISPONIVEL")!
-                ["predicado"]!["args"]!["necessidades"]!.AsArray().Select(static n => n!.GetValue<string>())];
-
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-        EnvelopeReidratado envelope = reidratado.Value!;
-
-        // ── A sequência IMEDIATAMENTE decodificada — antes de qualquer recodificação. ──
+    /// <summary>A sequência IMEDIATAMENTE decodificada — antes de qualquer recodificação.</summary>
+    private static void ConferirSequenciasDecodificadas(EnvelopeReidratado envelope, SequenciasNoJson noJson)
+    {
         envelope.Grafo.NosExigencia.Single().OcorrenciasEsperadas.Should().Equal(
-            ocorrenciasNoJson, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
+            noJson.Ocorrencias, "o decoder tem de preservar a sequência que leu — nunca recalculá-la");
         envelope.Grafo.DocumentosExigidos.Single().FormatosPermitidos.Lista!
-            .Select(static f => f.Formato.ToCodigo()).Should().Equal(formatosNoJson);
-        envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(regraCodigosNoJson);
-        envelope.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(valoresDominioNoJson);
+            .Select(static f => f.Formato.ToCodigo()).Should().Equal(noJson.Formatos);
+        envelope.Conformidade!.Regras.Select(static r => r.RegraCodigo).Should().Equal(noJson.RegraCodigos);
+        envelope.MetadadosFatosCongelados!["COR_RACA"].ValoresDominio.Should().Equal(noJson.ValoresDominio);
+        ((ModalidadesMinimas)PredicadoDaRegra(envelope, "REGRA-MODALIDADES-MINIMAS")).Codigos.Should().Equal(noJson.Codigos);
+        ((AtendimentoDisponivel)PredicadoDaRegra(envelope, "REGRA-ATENDIMENTO-DISPONIVEL")).Necessidades.Should().Equal(noJson.Necessidades);
+    }
 
-        RegraAvaliada modalidadesMinimasDecodificada = envelope.Conformidade.Regras
-            .Single(static r => r.RegraCodigo == "REGRA-MODALIDADES-MINIMAS");
-        ((ModalidadesMinimas)modalidadesMinimasDecodificada.Predicado).Codigos.Should().Equal(codigosNoJson);
+    private static PredicadoObrigatoriedade PredicadoDaRegra(EnvelopeReidratado envelope, string regraCodigo) =>
+        envelope.Conformidade!.Regras.Single(r => r.RegraCodigo == regraCodigo).Predicado;
 
-        RegraAvaliada atendimentoDisponivelDecodificada = envelope.Conformidade.Regras
-            .Single(static r => r.RegraCodigo == "REGRA-ATENDIMENTO-DISPONIVEL");
-        ((AtendimentoDisponivel)atendimentoDisponivelDecodificada.Predicado).Necessidades.Should().Equal(necessidadesNoJson);
-
-        // ── E os bytes recodificados batem, byte a byte, com os congelados. ──
-        processo.RestaurarConfiguracaoCongelada(v1, envelope.Grafo).IsSuccess.Should().BeTrue();
-
-        byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
-            v1.SchemaVersion,
+    private static byte[] RecodificadoSemInsumosDeRecomputacao(
+        ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope) =>
+        CorpusEnvelope.Registro.Recodificar(
+            versao.SchemaVersion,
             new EntradaCanonicalizacao(
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Value!.Bytes;
-
-        recodificado.Should().Equal(congelado.Bytes,
-            "reidratar e recanonicalizar os seis conjuntos da issue #1067, todos povoados ao mesmo tempo, tem de " +
-            "reproduzir os bytes congelados inteiros");
-    }
 
     internal static JsonObject Envelope(SnapshotCanonico snapshot) =>
         JsonNode.Parse(Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();
