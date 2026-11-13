@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
 using Unifesspa.UniPlus.Selecao.Application.Queries.CampoDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Application.Queries.InscricoesDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 internal static class ExcecoesDeAcessoDasAcoes
 {
@@ -43,6 +44,8 @@ internal static class ExcecoesDeAcessoDasAcoes
         // A emissão do comprovante decide no handler, que confere o vínculo antes das duas permissões: consultar responde o 404 do que
         // não existe, e emitir responde 403 a quem já alcança a inscrição.
         [Acao(typeof(InscricoesDoProcessoController), nameof(InscricoesDoProcessoController.EmitirComprovante))] = typeof(EmitirComprovanteDaInscricaoQuery),
+        // A autorização dos indicadores depende do estado e da unidade do processo carregado no handler.
+        [Acao(typeof(IndicadoresDoProcessoController), nameof(IndicadoresDoProcessoController.Obter))] = typeof(ObterIndicadoresDoProcessoQuery),
         // O pedido de concessão: a etapa que se decide vem da situação do pedido, a fila pedida vem da query, e quem
         // não é parte nem decide o pedido recebe o mesmo 404 do que não existe.
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Listar))] = typeof(ListarPedidosDeConcessaoQuery),

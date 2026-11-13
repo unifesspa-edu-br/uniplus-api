@@ -71,6 +71,7 @@ public static class SelecaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<ObrigatoriedadeLegalDto>, ObrigatoriedadeLegalLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<MotivoDeDecisaoDto>, MotivoDeDecisaoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<ProcessoSeletivoDto>, ProcessoSeletivoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<IndicadoresDoProcessoDto>, IndicadoresDoProcessoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<RegraCatalogoDto>, RegraCatalogoLinksBuilder>();
     }
 

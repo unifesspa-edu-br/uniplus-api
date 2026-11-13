@@ -43,9 +43,14 @@ public static class SelecaoApplicationServiceRegistration
         AddSalvamentoDoRascunho(services);
         AddRotinaPeriodicaEPortaDePermissao(services);
         AddRascunhoDoProcessoSeletivo(services);
+        AddIndicadoresDoProcesso(services);
 
         return services;
     }
+
+    // A descrição dos rascunhos recebe só as portas por construtor, e a consulta dos indicadores a recebe pronta.
+    private static void AddIndicadoresDoProcesso(IServiceCollection services) =>
+        services.AddScoped<DescricaoDosRascunhos>();
 
     private static void AddRotinaPeriodicaEPortaDePermissao(IServiceCollection services)
     {

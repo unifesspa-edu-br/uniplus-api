@@ -161,6 +161,10 @@ dotnet_diagnostic.CA2007.severity = none
 [src/**/*.API/{Controllers,Middleware}/**.cs]
 dotnet_diagnostic.CA1812.severity = none
 
+# Controllers precisam ser públicos para o MVC.
+[src/**/*.API/Controllers/**.cs]
+dotnet_diagnostic.CA1515.severity = none
+
 # Projetos de teste — convenções xUnit:
 # - CA1707: nomes de métodos com underscores (Fato_QuandoCondicao_DeveProduzirResultado)
 # - CA2007: xUnit não usa SynchronizationContext; ConfigureAwait é desnecessário

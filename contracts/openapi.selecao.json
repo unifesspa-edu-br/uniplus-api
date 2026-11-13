@@ -2490,6 +2490,84 @@
         "x-uniplus-idempotent": true
       }
     },
+    "/api/selecao/processos-seletivos/{id}/indicadores": {
+      "get": {
+        "tags": [
+          "IndicadoresDoProcesso"
+        ],
+        "summary": "Obt\u00E9m os indicadores quantitativos do processo seletivo",
+        "description": "Retorna inscri\u00E7\u00F5es submetidas n\u00E3o canceladas, inscritos distintos e rascunhos do processo seletivo. A consulta exige autentica\u00E7\u00E3o e autoriza\u00E7\u00E3o conforme o estado e a unidade do processo.",
+        "operationId": "ObterIndicadoresDoProcesso",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.indicadores-do-processo.v1\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicadoresDoProcessoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/selecao/processos-seletivos/{id}/inscricao": {
       "get": {
         "tags": [
@@ -14445,6 +14523,15 @@
           }
         }
       },
+      "CodigoIndicadorDoProcessoCodigo": {
+        "enum": [
+          "INSCRICOES",
+          "INSCRITOS",
+          "RASCUNHOS"
+        ],
+        "type": "string",
+        "description": "- \u0060INSCRICOES\u0060: Inscri\u00E7\u00F5es \u2014 Submetidas e n\u00E3o canceladas\n- \u0060INSCRITOS\u0060: Inscritos \u2014 Pessoas distintas com inscri\u00E7\u00E3o submetida e n\u00E3o cancelada\n- \u0060RASCUNHOS\u0060: Rascunhos"
+      },
       "ColetaDoFormularioDto": {
         "required": [
           "itens",
@@ -23251,6 +23338,73 @@
           }
         }
       },
+      "IndicadorDoProcessoDto": {
+        "required": [
+          "codigo",
+          "valor",
+          "rotulo",
+          "descricao"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "$ref": "#/components/schemas/CodigoIndicadorDoProcessoCodigo"
+          },
+          "valor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rotulo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
+      },
+      "IndicadoresDoProcessoDto": {
+        "required": [
+          "processoSeletivoId",
+          "consultadoEm",
+          "indicadores",
+          "_links"
+        ],
+        "type": "object",
+        "properties": {
+          "processoSeletivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "consultadoEm": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "indicadores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndicadorDoProcessoDto"
+            }
+          },
+          "_links": {
+            "$ref": "#/components/schemas/IndicadoresDoProcessoLinksDto"
+          }
+        }
+      },
+      "IndicadoresDoProcessoLinksDto": {
+        "required": [
+          "self",
+          "processo"
+        ],
+        "type": "object",
+        "properties": {
+          "self": {
+            "type": "string"
+          },
+          "processo": {
+            "type": "string"
+          }
+        }
+      },
       "IniciarEnvioDeDocumentoDaInscricaoDto": {
         "required": [
           "arquivoId",
@@ -30655,6 +30809,9 @@
     },
     {
       "name": "Formularios"
+    },
+    {
+      "name": "IndicadoresDoProcesso"
     },
     {
       "name": "Inscricoes"

@@ -142,6 +142,7 @@ public static class SelecaoInfrastructureRegistration
         services.Replace(ServiceDescriptor.Scoped<IInscricaoDoSujeitoNoProcesso>(
             static sp => new InscricaoDoSujeitoNoProcesso(sp.GetRequiredService<UniPlusDbContext>())));
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
+        services.AddScoped<IIndicadoresDoProcessoReader, IndicadoresDoProcessoReader>();
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
 
