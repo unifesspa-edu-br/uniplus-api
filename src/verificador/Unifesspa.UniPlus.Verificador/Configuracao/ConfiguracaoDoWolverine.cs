@@ -22,8 +22,14 @@ public static class ConfiguracaoDoWolverine
         ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(verificador);
 
-        RabbitMqOptions rabbit = verificador.RabbitMq;
-        RabbitMqTransportExpression transporte = opcoes.UseRabbitMq(fabrica =>
+        RabbitMqTransportExpression transporte = ConectarAoRabbitMq(opcoes, verificador.RabbitMq);
+        OuvirOsPedidos(opcoes, verificador.Paralelismo);
+        DeclararAsFilasDeResultado(opcoes, transporte);
+        TentarDeNovoQuandoODependenteNaoResponde(opcoes);
+    }
+
+    private static RabbitMqTransportExpression ConectarAoRabbitMq(WolverineOptions opcoes, RabbitMqOptions rabbit) =>
+        opcoes.UseRabbitMq(fabrica =>
         {
             if (!string.IsNullOrWhiteSpace(rabbit.Uri))
             {
@@ -39,26 +45,30 @@ public static class ConfiguracaoDoWolverine
         })
         .AutoProvision();
 
+    // No modo inline, a concorrência vem de um listener por slot de paralelismo, cada um com um pedido por vez.
+    private static void OuvirOsPedidos(WolverineOptions opcoes, int paralelismo) =>
         opcoes.ListenToRabbitQueue(FilasDaVerificacao.Pedidos, fila => fila.QueueType = QueueType.quorum)
             .ProcessInline()
-            .ListenerCount(verificador.Paralelismo)
+            .ListenerCount(paralelismo)
             .PreFetchCount(1);
 
-        // No modo inline, a concorrência vem de um listener por slot de paralelismo, cada um com um pedido por vez.
-        // O resultado vai para a fila do destino do pedido (VerificarArquivoHandler escolhe), e as duas são declaradas
-        // aqui, sem regra de publicação por tipo: uma regra por tipo entregaria o resultado às duas. Inline: o pedido
-        // só é confirmado depois de o RabbitMQ confirmar a publicação do resultado.
+    // O resultado vai para a fila do destino do pedido (VerificarArquivoHandler escolhe), e as duas são declaradas aqui,
+    // sem regra de publicação por tipo: uma regra por tipo entregaria o resultado às duas. Inline: o pedido só é
+    // confirmado depois de o RabbitMQ confirmar a publicação do resultado.
+    private static void DeclararAsFilasDeResultado(WolverineOptions opcoes, RabbitMqTransportExpression transporte)
+    {
         foreach (DestinoDoResultado destino in Enum.GetValues<DestinoDoResultado>())
         {
             string nome = FilasDaVerificacao.ResultadosDe(destino);
             transporte.DeclareQueue(nome, fila => fila.QueueType = QueueType.quorum);
             opcoes.Transports.GetOrCreate<RabbitMqTransport>().Queues[nome].Mode = EndpointMode.Inline;
         }
+    }
 
-        // O erro permanente do clamd não passa por aqui: o verificador o converte em recusa.
+    // O erro permanente do clamd não passa por aqui: o verificador o converte em recusa.
+    private static void TentarDeNovoQuandoODependenteNaoResponde(WolverineOptions opcoes) =>
         opcoes.OnException<ClamdIndisponivelException>()
             .Or<ArmazenamentoException>()
             .RetryWithCooldown(EsperasEntreTentativas)
             .Then.MoveToErrorQueue();
-    }
 }
