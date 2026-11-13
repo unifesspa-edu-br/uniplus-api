@@ -7,6 +7,8 @@ decision-makers:
 
 # ADR-0032: Guid v7 (RFC 9562) como identidade de entidades de domínio
 
+> **Emenda (2026-11-13):** a [ADR-0165](0165-instantes-em-microssegundos-e-ordem-de-registro.md) fixa que o `Id` não ordena fatos do mesmo microssegundo, porque o Guid v7 é aleatório abaixo do milissegundo. Onde a regra decide pela ordem de registro, a ordem vive em coluna de identidade própria (`OrdemDeRegistro`); o `Id` fica só como desempate de determinismo. O instante de auditoria (`CreatedAt`) passa a ser gravado em microssegundos.
+
 ## Contexto e enunciado do problema
 
 O projeto usa `EntityBase.Id` como chave primária de todas as entidades de domínio, gerada via `Guid.NewGuid()` (UUID v4 random) desde o scaffold inicial. A inconsistência foi detectada durante a review da [story #288](https://github.com/unifesspa-edu-br/uniplus-api/pull/310) (cursor pagination): o resto do projeto **já** usa `Guid.CreateVersion7()` em outros pontos (`Instance` e `traceId` de ProblemDetails em `ResultExtensions`, `GlobalExceptionMiddleware`, `VendorMediaTypeAttribute`), e a [ADR-0026](0026-paginacao-cursor-opaco-cifrado.md) (cursor pagination keyset-based) ganharia semântica temporal natural se os IDs fossem ordenáveis.
