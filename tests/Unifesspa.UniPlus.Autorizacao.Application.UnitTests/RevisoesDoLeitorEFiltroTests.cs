@@ -62,8 +62,8 @@ public sealed class RevisoesDoLeitorEFiltroTests
     private static RevisaoDetalhada ComUmItemDe(Identidade beneficiario)
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["geral:pedidos:consultar"], new CatalogoInstitucional());
-        Concessao concessao = Concessao.Conceder(
-            beneficiario, perfil, EscopoDaConcessao.DaInstituicao(), new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()), Marlene, DateTimeOffset.UtcNow, new CatalogoInstitucional(), beneficiarioEmail: "leandro-viana84@uniplus-test.local").Value!;
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, new CatalogoInstitucional())
+            .Para(beneficiario, "leandro-viana84@uniplus-test.local").ConcedidaPor(Marlene).Em(DateTimeOffset.UtcNow).Construir();
         RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(Marlene, [concessao.Id], DateTimeOffset.UtcNow);
 
         return new RevisaoDetalhada(revisao, [new ItemDaRevisaoComConcessao(revisao.Itens[0], concessao, perfil.Nome, ConcessaoAtiva: true)]);

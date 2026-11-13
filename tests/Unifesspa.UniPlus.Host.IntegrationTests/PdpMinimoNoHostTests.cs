@@ -120,11 +120,9 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         Guid unidadeDoCeps = Guid.CreateVersion7();
         Guid outraUnidade = Guid.CreateVersion7();
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, OperarInscricoes.Permissao);
-        Guid concessao = await ConcessoesDeTeste.ConcederAsync(
-            _fixture.Factory.Services, Betina, perfil, EscopoDaConcessao.DaUnidade(unidadeDoCeps));
+        Guid concessao = await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Betina, perfil, EscopoDaConcessao.DaUnidade(unidadeDoCeps));
 
-        (AuthorizationDecision naUnidade, RegistroDecisaoAcesso registro) = await Decidir(
-            Betina, OperarInscricoes, Resource(unidadeDoCeps));
+        (AuthorizationDecision naUnidade, RegistroDecisaoAcesso registro) = await Decidir(Betina, OperarInscricoes, Resource(unidadeDoCeps));
         (AuthorizationDecision emOutra, _) = await Decidir(Betina, OperarInscricoes, Resource(outraUnidade));
 
         naUnidade.Allowed.Should().BeTrue();
@@ -153,13 +151,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         AuthOptions auth = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AuthOptions>>().Value;
 
         Result<AuthorizationSubject> sujeito = await ResolverSujeito(
-            scope,
-            new Claim("iss", Emissor),
-            new Claim("sub", "pessoa-so-com-papel"),
-            new Claim("jti", "jti-1"),
-            new Claim("resource_access", JsonSerializer.Serialize(
-                new Dictionary<string, object> { [auth.ClientId] = new { roles = new[] { ManterMotivos.Permissao, "plataforma-admin" } } })),
-            new Claim("realm_access", JsonSerializer.Serialize(new { roles = new[] { ManterMotivos.Permissao, "plataforma-admin" } })));
+            scope, [new Claim("iss", Emissor), new Claim("sub", "pessoa-so-com-papel"), new Claim("jti", "jti-1"), .. PapeisComOCodigoDaPermissao(auth.ClientId)]);
 
         sujeito.Value!.ConcessoesEfetivas.Should().BeEmpty();
         AuthorizationDecision decisao = await DecidirComServico(scope, sujeito.Value, ManterMotivos, Resource(), Agora());
@@ -202,13 +194,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         Guid concessao = await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
         (await Decidir(Leandro, ManterMotivos, Resource())).Decisao.Allowed.Should().BeTrue();
 
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
-            Concessao gravada = await db.Concessoes.SingleAsync(c => c.Id == concessao);
-            gravada.Revogar(new Identidade(Emissor, Diogo), "Mudou de função na unidade.", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
-            await db.SaveChangesAsync();
-        }
+        await RevogarAsync(concessao);
 
         (AuthorizationDecision depois, _) = await Decidir(Leandro, ManterMotivos, Resource());
 
@@ -238,14 +224,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     public async Task Verificar_TokenSemJti_DaIdentidadeIncompleta()
     {
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
-
-        scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext =
-            new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity(
-                    [new Claim("iss", Emissor), new Claim("sub", "sub-opaco-1")],
-                    authenticationType: "Bearer")),
-            };
+        DefinirPrincipal(scope, new Claim("iss", Emissor), new Claim("sub", "sub-opaco-1"));
 
         ResultadoDoAcesso resultado = await scope.ServiceProvider
             .GetRequiredService<IVerificadorDeAcesso>()
@@ -304,11 +283,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     {
         // O contexto do usuário é lido do acessor no momento em que é construído,
         // então o principal precisa estar no lugar antes de resolvê-lo.
-        scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext =
-            new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType: "Bearer")),
-            };
+        DefinirPrincipal(scope, claims);
 
         return scope.ServiceProvider
             .GetRequiredService<IAuthorizationSubjectResolver>()
@@ -316,6 +291,35 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
                 scope.ServiceProvider.GetRequiredService<IUserContext>(),
                 Requisicao(Agora()),
                 CancellationToken.None);
+    }
+
+    private static void DefinirPrincipal(IServiceScope scope, params Claim[] claims) =>
+        scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>().HttpContext =
+            new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(claims, authenticationType: "Bearer")),
+            };
+
+    // O papel do client da API e o de realm trazem o próprio código da permissão e o papel mais amplo da plataforma.
+    private static Claim[] PapeisComOCodigoDaPermissao(string clientId)
+    {
+        string[] papeis = [ManterMotivos.Permissao, "plataforma-admin"];
+
+        return
+        [
+            new Claim("resource_access", JsonSerializer.Serialize(new Dictionary<string, object> { [clientId] = new { roles = papeis } })),
+            new Claim("realm_access", JsonSerializer.Serialize(new { roles = papeis })),
+        ];
+    }
+
+    private async Task RevogarAsync(Guid concessaoId)
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        Concessao gravada = await db.Concessoes.SingleAsync(c => c.Id == concessaoId);
+        AtoDoAgente revogacao = new(new Identidade(Emissor, Diogo), DateTimeOffset.UtcNow);
+        gravada.Revogar(revogacao, "Mudou de função na unidade.").IsSuccess.Should().BeTrue();
+        await db.SaveChangesAsync();
     }
 
     private static PermissionRequirement Pessoal(PermissionRequirement original) =>

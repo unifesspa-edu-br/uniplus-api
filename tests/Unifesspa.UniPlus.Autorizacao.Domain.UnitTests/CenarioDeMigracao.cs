@@ -43,16 +43,13 @@ internal sealed class CenarioDeMigracao
 
     public Concessao Conceder(Identidade pessoa, Guid? unidade = null, DateTimeOffset? validaAte = null, string? email = null)
     {
-        Concessao concessao = PerfisDeTeste.Garantir(Concessao.Conceder(
-            pessoa,
-            Perfil,
-            EscopoDaConcessao.DaUnidade(unidade ?? Guid.NewGuid()),
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            PerfisDeTeste.Autor,
-            Abertura.AddHours(-1),
-            _catalogo,
-            validaAte,
-            email));
+        Concessao concessao = ConcessaoBuilder.DoPerfil(Perfil, _catalogo)
+            .Para(pessoa, email)
+            .NaUnidade(unidade ?? Guid.NewGuid())
+            .ConcedidaPor(PerfisDeTeste.Autor)
+            .Em(Abertura.AddHours(-1))
+            .ValidaAte(validaAte)
+            .Construir();
         _concessoes.Add(concessao);
 
         return concessao;

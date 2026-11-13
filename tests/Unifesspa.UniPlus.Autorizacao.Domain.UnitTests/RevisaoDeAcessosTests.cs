@@ -57,7 +57,7 @@ public sealed class RevisaoDeAcessosTests
     public void Decidir_DesignacaoDuranteARevisao_MudaODecisor()
     {
         (RevisaoDeAcessos revisao, Concessao antes) = RevisaoComUmItem();
-        Concessao depois = Concedida();
+        Concessao depois = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora.AddDays(-30)).Construir();
         RevisaoDeAcessos outra = RevisaoDeAcessos.Abrir(Marlene, [depois.Id], Agora);
 
         revisao.Confirmar(revisao.Itens[0].Id, antes, MarleneDecide(false), Agora);
@@ -78,9 +78,9 @@ public sealed class RevisaoDeAcessosTests
     [Fact(DisplayName = "A revisão está em andamento enquanto há item sem decisão sobre concessão ativa")]
     public void EstaEmAndamento_DerivaDosItensEDaConcessao()
     {
-        Concessao decidida = Concedida();
-        Concessao encerrada = Concedida();
-        Concessao pendente = Concedida();
+        Concessao decidida = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora.AddDays(-30)).Construir();
+        Concessao encerrada = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora.AddDays(-30)).Construir();
+        Concessao pendente = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora.AddDays(-30)).Construir();
         RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(
             Marlene,
             new[] { decidida, encerrada, pendente }.Select(c => c.Id),
@@ -148,7 +148,7 @@ public sealed class RevisaoDeAcessosTests
     public void Decidir_ConcessaoEncerrada_Recusa()
     {
         (RevisaoDeAcessos revisao, Concessao concessao) = RevisaoComUmItem();
-        concessao.Revogar(Diogo, Motivo, Agora);
+        concessao.Revogar(new AtoDoAgente(Diogo, Agora), Motivo);
 
         CodigosDaRecusa(revisao.Confirmar(revisao.Itens[0].Id, concessao, MarleneDecide(false), Agora))
             .Should().Equal(RevisaoErrorCodes.ConcessaoNaoAtiva);
@@ -165,21 +165,14 @@ public sealed class RevisaoDeAcessosTests
 
     private static (RevisaoDeAcessos Revisao, Concessao Concessao) RevisaoComUmItem()
     {
-        Concessao concessao = Concedida();
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Para(Leandro).ConcedidaPor(Diogo).Em(Agora.AddDays(-30)).Construir();
         return (RevisaoDeAcessos.Abrir(Marlene, [concessao.Id], Agora), concessao);
     }
 
-    private static DecisorDoItem MarleneDecide(bool beneficiarioERepresentante) => new(Marlene, beneficiarioERepresentante);
+    private static Perfil PerfilComum() =>
+        PerfisDeTeste.Vigente("Análise de atendimento", "Descrição válida.", ["selecao:processos:consultar"], Catalogo);
 
-    private static Concessao Concedida() =>
-        Concessao.Conceder(
-            Leandro,
-            PerfisDeTeste.Vigente("Análise de atendimento", "Descrição válida.", ["selecao:processos:consultar"], Catalogo),
-            EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            Diogo,
-            Agora.AddDays(-30),
-            Catalogo).Value!;
+    private static DecisorDoItem MarleneDecide(bool beneficiarioERepresentante) => new(Marlene, beneficiarioERepresentante);
 
     private static string[] CodigosDaRecusa(Result resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
 

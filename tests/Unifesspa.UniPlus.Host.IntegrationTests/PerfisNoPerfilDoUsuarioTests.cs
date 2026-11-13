@@ -150,9 +150,9 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
         AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
         Concessao concessao = await db.Concessoes.SingleAsync(c => c.Id == concessaoId);
         concessao.Revogar(
-            new Identidade(TestAuthHandler.DefaultIssuer, "revogador.de.teste"),
-            "revogada no teste",
-            scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow());
+            new AtoDoAgente(
+                new Identidade(TestAuthHandler.DefaultIssuer, "revogador.de.teste"), scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow()),
+            "revogada no teste");
         await db.SaveChangesAsync();
     }
 

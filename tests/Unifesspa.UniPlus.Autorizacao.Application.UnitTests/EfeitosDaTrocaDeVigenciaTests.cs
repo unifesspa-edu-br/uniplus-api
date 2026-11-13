@@ -35,7 +35,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
     public async Task SemAcrescimo_MigraAsConcessoes()
     {
         Perfil perfil = PerfilNaVersao1(A, B);
-        Concessao concessao = Conceder(perfil);
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, Catalogo).Construir();
         TrocaDeVigencia troca = Trocar(perfil, A);
 
         await Efeitos(concessoes: [concessao]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
@@ -47,7 +47,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
     public async Task ComAcrescimo_NaoMigra()
     {
         Perfil perfil = PerfilNaVersao1(A);
-        Concessao concessao = Conceder(perfil);
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, Catalogo).Construir();
         Guid versaoAntiga = concessao.VersaoId!.Value;
         TrocaDeVigencia troca = Trocar(perfil, A, B);
 
@@ -102,11 +102,8 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         pedido.EncerradoEm.Should().NotBeNull();
         avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela");
         avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
-        foreach (EnviarEmail aviso in avisos)
-        {
-            aviso.CorpoTexto.Should().Contain("Faça o pedido de novo depois que o perfil for atualizado")
-                .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("janela");
-        }
+        avisos.Should().AllSatisfy(aviso => aviso.CorpoTexto.Should().Contain("Faça o pedido de novo depois que o perfil for atualizado")
+            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("janela"));
     }
 
     [Fact(DisplayName = "O pedido de outro perfil e o pedido já encerrado ficam como estão")]
@@ -156,27 +153,11 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
     private static TrocaDeVigencia Trocar(Perfil perfil, params string[] permissoes) =>
         PerfisDeTeste.Trocar(perfil, permissoes, Catalogo)[^1];
 
-    private static Concessao Conceder(Perfil perfil) =>
-        Concessao.Conceder(
-            Leandro.Identidade,
-            perfil,
-            EscopoDaConcessao.DaInstituicao(),
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            Diogo,
-            DateTimeOffset.UtcNow,
-            Catalogo).Value!;
-
     private static PedidoDeConcessao Pedido(Perfil perfil, bool paraSiMesmo)
     {
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            Betina,
-            paraSiMesmo ? null : Leandro.Email,
-            perfil,
-            EscopoDaConcessao.DaInstituicao(),
-            Justificativa,
-            new DominiosQualquer(),
-            Catalogo,
-            DateTimeOffset.UtcNow).Value!;
+            Betina, paraSiMesmo ? null : Leandro.Email, perfil, EscopoDaConcessao.DaInstituicao(), Justificativa,
+            new DominiosQualquer(), Catalogo, DateTimeOffset.UtcNow).Value!;
         if (!paraSiMesmo)
         {
             pedido.Aceitar(Leandro, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();

@@ -33,6 +33,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     private const string Analisar = "teste:atendimento:analisar";
     private const string Laudos = "teste:laudos:consultar";
     private const string RotaDasConcessoes = "/api/autorizacao/concessoes";
+    private const string MotivoDaRevogacao = "Revogação concorrente com a troca de versão.";
 
     public CorridasDaTrocaDeVersaoNoHostTests(MonolitoDaInstalacaoFixture fixture)
         : base(fixture)
@@ -78,12 +79,8 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     [Fact(DisplayName = "A troca espera a decisão que já travou o perfil e depois leva o pedido para a versão nova")]
     public async Task TrocaEsperaADecisao_PedidoPassaParaAVersaoNova()
     {
-        await ResetarAsync();
-        Guid perfil = await SemearPerfilAsync("Análise de atendimento", Analisar, Laudos);
-        Guid unidade = await SemearUnidadeAsync();
-        using HttpClient betina = Cliente(Betina);
+        (Guid perfil, Guid pedido) = await PedidoDoGestorAsync(Analisar, Laudos);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
-        Guid pedido = await CriarAsync(betina, perfil, unidade, null);
         await using TransacaoRetidaDeTeste decisao = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         await decisao.Servicos.GetRequiredService<IConcessaoRepository>().ObterParaConcederAsync(perfil);
 
@@ -100,9 +97,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     [Fact(DisplayName = "A criação do pedido que espera a troca nasce na versão nova")]
     public async Task CriacaoEsperaATroca_NasceNaVersaoNova()
     {
-        await ResetarAsync();
-        Guid perfil = await SemearPerfilAsync("Análise de atendimento", Analisar);
-        Guid unidade = await SemearUnidadeAsync();
+        (Guid perfil, Guid unidade) = await PerfilEUnidadeAsync(Analisar);
         using HttpClient betina = Cliente(Betina);
         await using TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar, Laudos]);
@@ -144,11 +139,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await using TransacaoRetidaDeTeste troca = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         await TrocarComposicaoNoEscopoAsync(troca.Servicos, perfil, [Analisar]);
 
-        Task<HttpResponseMessage> revogacao = EnviarAsync(
-            diogo,
-            HttpMethod.Post,
-            $"{RotaDasConcessoes}/{concessao}/revogacao",
-            new { motivo = "Revogação concorrente com a troca de versão.", confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
+        Task<HttpResponseMessage> revogacao = RevogarPeloEndpointAsync(diogo, concessao);
         await troca.AguardarBloqueioAsync();
         await troca.ConfirmarAsync();
 
@@ -159,11 +150,17 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         gravada.VersaoId.Should().Be(await VersaoDoPerfilAsync(perfil, 2));
     }
 
-    private async Task<(Guid Perfil, Guid Pedido)> PedidoDoGestorAsync(params string[] permissoes)
+    private async Task<(Guid Perfil, Guid Unidade)> PerfilEUnidadeAsync(params string[] permissoes)
     {
         await ResetarAsync();
         Guid perfil = await SemearPerfilAsync("Análise de atendimento", permissoes);
-        Guid unidade = await SemearUnidadeAsync();
+
+        return (perfil, await SemearUnidadeAsync());
+    }
+
+    private async Task<(Guid Perfil, Guid Pedido)> PedidoDoGestorAsync(params string[] permissoes)
+    {
+        (Guid perfil, Guid unidade) = await PerfilEUnidadeAsync(permissoes);
         using HttpClient betina = Cliente(Betina);
         Guid pedido = await CriarAsync(betina, perfil, unidade, null);
 
@@ -180,10 +177,17 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         return (perfil, concessao);
     }
 
+    private static Task<HttpResponseMessage> RevogarPeloEndpointAsync(HttpClient cliente, Guid concessaoId) =>
+        EnviarAsync(
+            cliente,
+            HttpMethod.Post,
+            $"{RotaDasConcessoes}/{concessaoId}/revogacao",
+            new { motivo = MotivoDaRevogacao, confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
+
     private static async Task RevogarNaTransacaoAsync(IServiceProvider servicos, Guid concessaoId)
     {
         Concessao concessao = (await servicos.GetRequiredService<IConcessaoRepository>().ObterParaAlterarAsync(concessaoId))!;
-        concessao.Revogar(IdentidadeDe(Diogo), "Revogação concorrente com a troca de versão.", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        concessao.Revogar(new AtoDoAgente(IdentidadeDe(Diogo), DateTimeOffset.UtcNow), MotivoDaRevogacao).IsSuccess.Should().BeTrue();
         await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }
 

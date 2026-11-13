@@ -71,7 +71,8 @@ public sealed class PapeisIncompativeisNoPedidoTests
         List<string> travas = [];
         DecisaoDaEtapa decisao = Decisao(Guid.CreateVersion7());
         IConcessaoRepository concessoes = Substitute.For<IConcessaoRepository>();
-        concessoes.ObterNaoRevogadaIgualAsync(default!, default, default!, default).ReturnsForAnyArgs(Ativa(decisao));
+        Concessao ativa = ConcessaoBuilder.DoPerfil(decisao.Perfil, new CatalogoInstitucional()).Para(Betina.Identidade, Betina.Email).Construir();
+        concessoes.ObterNaoRevogadaIgualAsync(default!, default, default!, default).ReturnsForAnyArgs(ativa);
 
         Result concedida = await new ConcessaoDoPedidoAprovado(concessoes, new CatalogoInstitucional(), new PapeisDeTeste(travas, Betina.Identidade))
             .ConcederAsync(decisao, DateTimeOffset.UtcNow, CancellationToken.None);
@@ -79,11 +80,6 @@ public sealed class PapeisIncompativeisNoPedidoTests
         concedida.Error!.Code.Should().Be(PedidoErrorCodes.JaTemConcessao);
         travas.Should().BeEmpty();
     }
-
-    private static Concessao Ativa(DecisaoDaEtapa decisao) =>
-        Concessao.Conceder(
-            Betina.Identidade, decisao.Perfil, EscopoDaConcessao.DaInstituicao(), new OrigemDaConcessao(Domain.Enums.TipoDeOrigem.Pedido, Guid.NewGuid()),
-            Leandro.Identidade, DateTimeOffset.UtcNow.AddDays(-1), new CatalogoInstitucional(), beneficiarioEmail: Betina.Email).Value!;
 
     private AceiteDoPedido Aceite(PedidoDeConcessao pedido, PapeisDeTeste papeis) =>
         new(new PedidosNaMemoria(pedido), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), _unidade, papeis, TimeProvider.System);

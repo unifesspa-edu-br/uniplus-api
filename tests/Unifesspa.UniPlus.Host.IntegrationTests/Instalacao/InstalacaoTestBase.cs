@@ -291,7 +291,7 @@ public abstract partial class InstalacaoTestBase
     private protected async Task SemearGestorAtivoAsync(Persona gestor)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        Concessao concessao = await MontarConcessaoDeGestorAsync(scope, gestor, new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()));
+        Concessao concessao = (await ConcessaoDeGestorAsync(scope, gestor)).Construir();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }
@@ -301,25 +301,26 @@ public abstract partial class InstalacaoTestBase
     private protected async Task SemearConcessaoRevogadaDaOrigemAsync(Guid instalacaoId, Persona gestor)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        Concessao concessao = await MontarConcessaoDeGestorAsync(scope, gestor, new OrigemDaConcessao(TipoDeOrigem.Instalacao, instalacaoId));
-        concessao.Revogar(new Identidade(TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString()), "Semente do teste.", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        Concessao concessao = (await ConcessaoDeGestorAsync(scope, gestor))
+            .DaOrigem(new OrigemDaConcessao(TipoDeOrigem.Instalacao, instalacaoId))
+            .Construir();
+        AtoDoAgente revogacao = new(new Identidade(TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString()), DateTimeOffset.UtcNow);
+        concessao.Revogar(revogacao, "Semente do teste.").IsSuccess.Should().BeTrue();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }
 
-    private protected static async Task<Concessao> MontarConcessaoDeGestorAsync(AsyncServiceScope scope, Persona gestor, OrigemDaConcessao origem)
+    /// <summary>A concessão do perfil de gestor de acessos ao gestor, dada agora por Paulo, por um pedido.</summary>
+    private protected static async Task<ConcessaoBuilder> ConcessaoDeGestorAsync(AsyncServiceScope scope, Persona gestor)
     {
         IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
         Perfil perfil = (await repositorio.ObterParaConcederAsync(PerfisDeSistema.GestorDeAcessosId))!;
-        return Concessao.Conceder(
-                new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString()),
-                perfil,
-                EscopoDaConcessao.DaInstituicao(),
-                origem,
-                new Identidade(TestAuthHandler.DefaultIssuer, Paulo.Sub.ToString()),
-                DateTimeOffset.UtcNow,
-                scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
-            .Value!;
+
+        return ConcessaoBuilder.DoPerfil(perfil, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString()))
+            .NaInstituicao()
+            .ConcedidaPor(new Identidade(TestAuthHandler.DefaultIssuer, Paulo.Sub.ToString()))
+            .Em(DateTimeOffset.UtcNow);
     }
 
     private protected async Task<string[]> TiposDaTrilhaDaInstalacaoAsync(Guid id)

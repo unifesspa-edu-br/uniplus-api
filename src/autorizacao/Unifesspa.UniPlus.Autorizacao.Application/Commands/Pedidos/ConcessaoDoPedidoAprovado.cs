@@ -81,13 +81,13 @@ public sealed class ConcessaoDoPedidoAprovado
         PedidoDeConcessao pedido = decisao.Pedido;
 
         return Concessao.Conceder(
-            pedido.Beneficiario!, decisao.Perfil, pedido.Escopo, new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), decisao.Decisor, agora, _catalogo,
-            validaAte: pedido.ValidaAte, beneficiarioEmail: pedido.BeneficiarioEmail);
+            new TitularDaConcessao(pedido.Beneficiario!, pedido.BeneficiarioEmail), decisao.Perfil, pedido.Escopo,
+            new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), new AtoDoAgente(decisao.Decisor, agora), _catalogo, pedido.ValidaAte);
     }
 
     // A vencida não se encerra sozinha e, enquanto não revogada, o índice único recusa a nova. A revogação e a concessão
     // vão na mesma gravação, que é atômica: a falha de uma não deixa a outra, nem o pedido aprovado, e o EF emite a
     // revogação antes da inserção.
     private static Result RevogarVencida(Concessao? igual, DecisaoDaEtapa decisao, DateTimeOffset agora) =>
-        igual is null ? Result.Success() : igual.Revogar(decisao.Decisor, $"Renovação pelo pedido {decisao.Pedido.Id}.", agora);
+        igual is null ? Result.Success() : igual.Revogar(new AtoDoAgente(decisao.Decisor, agora), $"Renovação pelo pedido {decisao.Pedido.Id}.");
 }

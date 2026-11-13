@@ -204,11 +204,11 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
-        Concessao revogada = Concessao.Conceder(
-            IdentidadeDe(Leandro), (await repositorio.ObterParaConcederAsync(perfil))!, EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
-            new OrigemDaConcessao(Autorizacao.Domain.Enums.TipoDeOrigem.Pedido, pedido), IdentidadeDe(Diogo), DateTimeOffset.UtcNow,
-            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()).Value!;
-        revogada.Revogar(IdentidadeDe(Diogo), "Semente do teste.", DateTimeOffset.UtcNow);
+        Concessao revogada = ConcessaoBuilder
+            .DoPerfil((await repositorio.ObterParaConcederAsync(perfil))!, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(IdentidadeDe(Leandro)).NaUnidade(Guid.NewGuid()).DaOrigem(new OrigemDaConcessao(Autorizacao.Domain.Enums.TipoDeOrigem.Pedido, pedido))
+            .ConcedidaPor(IdentidadeDe(Diogo)).Em(DateTimeOffset.UtcNow).Construir();
+        revogada.Revogar(new AtoDoAgente(IdentidadeDe(Diogo), DateTimeOffset.UtcNow), "Semente do teste.");
         await repositorio.AdicionarAsync(revogada);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }

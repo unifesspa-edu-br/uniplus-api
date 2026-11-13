@@ -76,7 +76,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         var cenario = new CenarioDeMigracao(protegido: true);
         Concessao revogadaDepois = cenario.Conceder(Diogo);
         JanelaDeMigracao janela = LoteDoGestor(cenario, revogadaDepois);
-        revogadaDepois.Revogar(Betina, "Revogação manual.", Abertura.AddHours(75)).IsSuccess.Should().BeTrue();
+        revogadaDepois.Revogar(new AtoDoAgente(Betina, Abertura.AddHours(75)), "Revogação manual.").IsSuccess.Should().BeTrue();
 
         janela.Materializar(cenario.Contexto(Abertura.AddHours(100)), FormaDoEncerramento.Prazo);
 
@@ -109,7 +109,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         Concessao deIsabella = cenario.Conceder(Isabella);
         JanelaDeMigracao janela = cenario.Abrir();
         janela.EnviarLote(CenarioDeMigracao.Lote(false, (deLeandro, ResultadoDaMigracao.Migrar), (deIsabella, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Abertura.AddHours(1)));
-        deLeandro.Revogar(Betina, "Revogação manual.", Abertura.AddHours(2)).IsSuccess.Should().BeTrue();
+        deLeandro.Revogar(new AtoDoAgente(Betina, Abertura.AddHours(2)), "Revogação manual.").IsSuccess.Should().BeTrue();
 
         DomainError? recusa = janela.ConferirEstado(cenario.Contexto(Abertura.AddHours(3)));
 
@@ -125,7 +125,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao deLeandro = cenario.Conceder(Leandro);
         JanelaDeMigracao janela = cenario.Abrir();
-        deLeandro.Revogar(Betina, "Revogação manual.", Abertura.AddHours(2)).IsSuccess.Should().BeTrue();
+        deLeandro.Revogar(new AtoDoAgente(Betina, Abertura.AddHours(2)), "Revogação manual.").IsSuccess.Should().BeTrue();
 
         DomainError? recusa = janela.ConferirEstado(cenario.Contexto(Abertura.AddHours(3)));
 

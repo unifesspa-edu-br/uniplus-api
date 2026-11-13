@@ -56,8 +56,7 @@ public sealed class BasesDaMigracaoDaConcessaoTests
     private static Concessao Migrada()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Acompanhamento", "Acompanha os atendimentos.", [Mantido, Removido], Catalogo);
-        Concessao concessao = Concessao.Conceder(
-            Isabella, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()), Diogo, Agora, Catalogo).Value!;
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Isabella).NaUnidade(Guid.NewGuid()).ConcedidaPor(Diogo).Em(Agora).Construir();
         foreach (TrocaDeVigencia troca in PerfisDeTeste.Trocar(perfil, [Mantido, Novo], Catalogo))
         {
             concessao.MigrarParaVersao(troca.Anterior!, troca.Nova);

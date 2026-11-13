@@ -99,7 +99,7 @@ public sealed class RevisaoDeAcessos : EntityBase
         ArgumentNullException.ThrowIfNull(decisor);
 
         Result<ItemDaRevisao> item = ItemDecidivel(itemId, concessao, decisor.Pessoa, instante);
-        Result revogada = item.IsFailure ? Result.Failure(item.Error!) : concessao.Revogar(decisor.Pessoa, motivo, instante);
+        Result revogada = item.IsFailure ? Result.Failure(item.Error!) : concessao.Revogar(new AtoDoAgente(decisor.Pessoa, instante), motivo);
         if (revogada.IsSuccess)
         {
             item.Value!.Decidir(ResultadoDoItemDaRevisao.Revogada, decisor.Pessoa, decisor.Como, instante);

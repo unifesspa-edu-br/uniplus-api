@@ -12,7 +12,6 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos;
@@ -41,7 +40,11 @@ public sealed class AvisosDaJanelaTests
     public async Task Abertura_AvisaAprovadoresEBeneficiarios()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] elegiveis = [Conceder(perfil, Leandro, EmailLeandro), Conceder(perfil, Betina, EmailBetina)];
+        Concessao[] elegiveis =
+        [
+            ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Leandro, EmailLeandro).Construir(),
+            ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Betina, EmailBetina).Construir(),
+        ];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DaAberturaAsync(perfil, janela, elegiveis, ["a:b:c"], CancellationToken.None);
 
@@ -55,7 +58,7 @@ public sealed class AvisosDaJanelaTests
     public async Task Lembrete_AvisaAprovadoresEAdvertePendentes(int horas)
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] pendentes = [Conceder(perfil, Leandro, EmailLeandro)];
+        Concessao[] pendentes = [ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Leandro, EmailLeandro).Construir()];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, new LembreteDaJanela(horas, pendentes, [], true), CancellationToken.None);
 
@@ -68,7 +71,7 @@ public sealed class AvisosDaJanelaTests
     public async Task Lembrete_SemEtapaDaProtecao_NaoAvisaAProtecaoDeDados()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] pendentes = [Conceder(perfil, Leandro, EmailLeandro)];
+        Concessao[] pendentes = [ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Leandro, EmailLeandro).Construir()];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, new LembreteDaJanela(24, pendentes, [], false), CancellationToken.None);
 
@@ -79,7 +82,7 @@ public sealed class AvisosDaJanelaTests
     public async Task Lembrete_DonoDaRetida_RecebeAAdvertencia()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] retidas = [Conceder(perfil, Diogo, EmailDiogo)];
+        Concessao[] retidas = [ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Diogo, EmailDiogo).Construir()];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DoLembreteAsync(perfil, janela, new LembreteDaJanela(24, retidas, retidas, false), CancellationToken.None);
 
@@ -93,7 +96,7 @@ public sealed class AvisosDaJanelaTests
     public async Task Retida_AvisaGestoresMenosODono()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] retidas = [Conceder(perfil, Isabella, EmailIsabella)];
+        Concessao[] retidas = [ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Isabella, EmailIsabella).Construir()];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DasRetidasAsync(perfil, janela, retidas, Instante, CancellationToken.None);
 
@@ -106,7 +109,11 @@ public sealed class AvisosDaJanelaTests
     public async Task SemEmail_NaoRecebeAviso()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] elegiveis = [Conceder(perfil, Leandro, null), Conceder(perfil, Betina, EmailBetina)];
+        Concessao[] elegiveis =
+        [
+            ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Leandro).Construir(),
+            ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Betina, EmailBetina).Construir(),
+        ];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DaAberturaAsync(perfil, janela, elegiveis, [], CancellationToken.None);
 
@@ -118,7 +125,7 @@ public sealed class AvisosDaJanelaTests
     public async Task SemDestinatario_SoLog()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario(titulares: []);
-        Concessao[] elegiveis = [Conceder(perfil, Leandro, null)];
+        Concessao[] elegiveis = [ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Leandro).Construir()];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DaAberturaAsync(perfil, janela, elegiveis, [], CancellationToken.None);
 
@@ -129,7 +136,7 @@ public sealed class AvisosDaJanelaTests
     public async Task Corpo_NaoTrazDadosDeTerceiros()
     {
         (AvisosDaJanela avisos, Perfil perfil, JanelaDeMigracao janela) = Cenario();
-        Concessao[] elegiveis = [Conceder(perfil, Leandro, EmailLeandro)];
+        Concessao[] elegiveis = [ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Leandro, EmailLeandro).Construir()];
 
         IReadOnlyList<EnviarEmail> enviados = await avisos.DaAberturaAsync(perfil, janela, elegiveis, [], CancellationToken.None);
 
@@ -153,17 +160,6 @@ public sealed class AvisosDaJanelaTests
 
         return (avisos, perfil, janela);
     }
-
-    private static Concessao Conceder(Perfil perfil, Identidade beneficiario, string? email) =>
-        Concessao.Conceder(
-            beneficiario,
-            perfil,
-            EscopoDaConcessao.DaInstituicao(),
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            Diogo,
-            Instante,
-            Catalogo,
-            beneficiarioEmail: email).Value!;
 
     // A gestão e a proteção de dados têm titulares próprios: Diogo aprova pela gestão, Marlene pela proteção de dados e Isabella pelas duas.
     private sealed class TitularesPorPermissao(TitularDaPermissao[]? titulares) : ITitularesDaPermissao
