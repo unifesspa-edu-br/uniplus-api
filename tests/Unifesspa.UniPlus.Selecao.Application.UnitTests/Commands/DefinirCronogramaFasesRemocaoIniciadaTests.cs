@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static ConformidadeLegalGateTests;
+using static PublicacaoDeTeste;
 
 /// <summary>
 /// A edição do cronograma na retificação recusa a remoção da fase iniciada, conferida contra a versão publicada vigente
