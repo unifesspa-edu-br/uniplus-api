@@ -7,11 +7,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
 /// <summary>
-/// Os eventos que o pedido conta, montados na leitura a partir das colunas, das decisões e dos acessos aos anexos, e os
-/// que ele acrescenta à trilha da concessão que gerou. Nunca trazem o conteúdo de um anexo nem o nome de uma ameaça.
+/// Os eventos que o pedido conta, montados na leitura a partir das colunas, das decisões, do aceite do termo e dos acessos
+/// aos anexos, e os que ele acrescenta à trilha da concessão que gerou. Nunca trazem o conteúdo de um anexo, o texto do
+/// termo nem o nome de uma ameaça.
 /// </summary>
 public sealed class EventosDoPedido : IEventosDaOrigem
 {
+    // O veredicto do anexo é do verificador, que não é pessoa: o autor é o sistema.
+    private static readonly IdentidadeDto Verificador = new("uniplus:sistema", "verificador");
+
     private readonly IPedidoDeConcessaoRepository _repositorio;
 
     public EventosDoPedido(IPedidoDeConcessaoRepository repositorio)
@@ -19,9 +23,6 @@ public sealed class EventosDoPedido : IEventosDaOrigem
         ArgumentNullException.ThrowIfNull(repositorio);
         _repositorio = repositorio;
     }
-
-    // O veredicto do anexo é do verificador, que não é pessoa: o autor é o sistema.
-    private static readonly IdentidadeDto Verificador = new("uniplus:sistema", "verificador");
 
     public TipoDeOrigem Tipo => TipoDeOrigem.Pedido;
 
@@ -44,76 +45,100 @@ public sealed class EventosDoPedido : IEventosDaOrigem
         ArgumentNullException.ThrowIfNull(pedido);
         ArgumentNullException.ThrowIfNull(leituras);
 
-        IdentidadeDto solicitante = new(pedido.SolicitanteEmissor, pedido.SolicitanteSub, pedido.SolicitanteNome);
-        List<EventoDaTrilhaDto> eventos =
+        IEnumerable<EventoDaTrilhaDto> eventos =
         [
-            new("pedido_criado", pedido.CriadoEm, solicitante, $"Justificativa: {pedido.Justificativa}"),
+            .. DoSolicitante(pedido),
+            .. DoAceite(pedido),
+            .. leituras.Select(DaLeitura),
+            .. pedido.Decisoes.SelectMany(DaDecisao),
         ];
-
-        if (pedido.BeneficiarioAceitouEm is { } aceitouEm && pedido.Beneficiario is { } beneficiario)
-        {
-            eventos.Add(new("beneficiario_aceitou", aceitouEm, new IdentidadeDto(beneficiario.Emissor, beneficiario.Sub, beneficiario.Nome), null));
-        }
-
-        foreach (AnexoDoPedido anexo in pedido.Anexos)
-        {
-            if (anexo.EnviadoEm is { } enviadoEm)
-            {
-                eventos.Add(new("anexo_enviado", enviadoEm, solicitante, $"Anexo {anexo.Id}."));
-            }
-
-            if (anexo.VerificadoEm is { } verificadoEm)
-            {
-                eventos.Add(new("anexo_verificado", verificadoEm, Verificador, $"Anexo {anexo.Id}. SHA-256 do PDF: {anexo.Sha256}."));
-            }
-
-            if (anexo.RecusadoEm is { } recusadoEm)
-            {
-                eventos.Add(new("anexo_recusado", recusadoEm, Verificador, $"Anexo {anexo.Id}. O verificador recusou o documento ou pediu o reenvio."));
-            }
-        }
-
-        eventos.AddRange(leituras.Select(l => new EventoDaTrilhaDto(
-            "anexo_lido", l.Instante, new IdentidadeDto(l.LeitorEmissor, l.LeitorSub, l.LeitorNome), $"Anexo {l.AnexoId}.")));
-
-        foreach (DecisaoDoPedido decisao in pedido.Decisoes)
-        {
-            IdentidadeDto decisor = new(decisao.DecisorEmissor, decisao.DecisorSub, decisao.DecisorNome);
-            if (decisao.Resultado == ResultadoDaDecisao.PerfilAlterado)
-            {
-                eventos.Add(new(
-                    "perfil_alterado_entre_etapas",
-                    decisao.Instante,
-                    decisor,
-                    $"Etapa: {decisao.Etapa.ToCodigo()}. O perfil mudou depois da aprovação do gestor, e o pedido voltou a aguardá-lo."));
-                continue;
-            }
-
-            if (decisao.Resultado == ResultadoDaDecisao.PrazoVencido)
-            {
-                eventos.Add(new(
-                    "prazo_vencido_entre_etapas",
-                    decisao.Instante,
-                    decisor,
-                    $"Etapa: {decisao.Etapa.ToCodigo()}. O prazo definido pelo gestor venceu antes desta aprovação, e o pedido voltou a aguardá-lo."));
-                continue;
-            }
-
-            string detalhe = $"Etapa: {decisao.Etapa.ToCodigo()}. Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}."
-                + (decisao.Motivo is null ? string.Empty : $" Motivo: {decisao.Motivo}");
-            eventos.Add(new(decisao.Resultado.ToCodigo(), decisao.Instante, decisor, detalhe));
-
-            if (decisao.Dispensa is { } dispensa)
-            {
-                eventos.Add(new("segunda_aprovacao_dispensada", decisao.Instante, decisor, $"Motivo: {dispensa}."));
-            }
-        }
-
-        if (pedido.Situacao == SituacaoDoPedido.Cancelado && pedido.EncerradoEm is { } canceladoEm)
-        {
-            eventos.Add(new("cancelado", canceladoEm, solicitante, null));
-        }
 
         return [.. eventos.OrderBy(e => e.Instante)];
     }
+
+    private static IEnumerable<EventoDaTrilhaDto> DoSolicitante(PedidoDeConcessao pedido)
+    {
+        IdentidadeDto solicitante = Dto(pedido.SolicitanteEmissor, pedido.SolicitanteSub, pedido.SolicitanteNome);
+
+        return
+        [
+            new("pedido_criado", pedido.CriadoEm, solicitante, $"Justificativa: {pedido.Justificativa}"),
+            .. pedido.Anexos.SelectMany(a => DoAnexo(a, solicitante)),
+            .. DoCancelamento(pedido, solicitante),
+        ];
+    }
+
+    private static IEnumerable<EventoDaTrilhaDto> DoAceite(PedidoDeConcessao pedido)
+    {
+        if (pedido.BeneficiarioAceitouEm is { } aceitouEm && pedido.Beneficiario is { } beneficiario)
+        {
+            yield return new("beneficiario_aceitou", aceitouEm, Dto(beneficiario.Emissor, beneficiario.Sub, beneficiario.Nome), null);
+        }
+
+        if (pedido.AceiteDoTermo is { } aceite)
+        {
+            yield return new(
+                "termo_aceito", aceite.AceitoEm, Dto(aceite.PessoaEmissor, aceite.PessoaSub, aceite.PessoaNome), $"Versão {aceite.Numero}, resumo {aceite.Resumo}.");
+        }
+    }
+
+    private static IEnumerable<EventoDaTrilhaDto> DoAnexo(AnexoDoPedido anexo, IdentidadeDto solicitante)
+    {
+        if (anexo.EnviadoEm is { } enviadoEm)
+        {
+            yield return new("anexo_enviado", enviadoEm, solicitante, $"Anexo {anexo.Id}.");
+        }
+
+        if (anexo.VerificadoEm is { } verificadoEm)
+        {
+            yield return new("anexo_verificado", verificadoEm, Verificador, $"Anexo {anexo.Id}. SHA-256 do PDF: {anexo.Sha256}.");
+        }
+
+        if (anexo.RecusadoEm is { } recusadoEm)
+        {
+            yield return new("anexo_recusado", recusadoEm, Verificador, $"Anexo {anexo.Id}. O verificador recusou o documento ou pediu o reenvio.");
+        }
+    }
+
+    private static EventoDaTrilhaDto DaLeitura(LeituraDoAnexoDoPedido l) =>
+        new("anexo_lido", l.Instante, Dto(l.LeitorEmissor, l.LeitorSub, l.LeitorNome), $"Anexo {l.AnexoId}.");
+
+    private static EventoDaTrilhaDto[] DaDecisao(DecisaoDoPedido decisao)
+    {
+        IdentidadeDto decisor = Dto(decisao.DecisorEmissor, decisao.DecisorSub, decisao.DecisorNome);
+        string etapa = $"Etapa: {decisao.Etapa.ToCodigo()}.";
+        if (SemDecisao(decisao.Resultado) is { } semDecisao)
+        {
+            return [new(semDecisao.Tipo, decisao.Instante, decisor, $"{etapa} {semDecisao.Detalhe}")];
+        }
+
+        string motivo = decisao.Motivo is null ? string.Empty : $" Motivo: {decisao.Motivo}";
+        EventoDaTrilhaDto decidida = new(decisao.Resultado.ToCodigo(), decisao.Instante, decisor, $"{etapa} Sensibilidade avaliada: {decisao.SensibilidadeAvaliada}.{motivo}");
+
+        return decisao.Dispensa is { } dispensa
+            ? [decidida, new("segunda_aprovacao_dispensada", decisao.Instante, decisor, $"Motivo: {dispensa}.")]
+            : [decidida];
+    }
+
+    // A tentativa que não decidiu: o pedido voltou ao gestor ou foi devolvido ao solicitante.
+    private static (string Tipo, string Detalhe)? SemDecisao(ResultadoDaDecisao resultado) => resultado switch
+    {
+        ResultadoDaDecisao.PerfilAlterado =>
+            ("perfil_alterado_entre_etapas", "O perfil mudou depois da aprovação do gestor, e o pedido voltou a aguardá-lo."),
+        ResultadoDaDecisao.PrazoVencido =>
+            ("prazo_vencido_entre_etapas", "O prazo definido pelo gestor venceu antes desta aprovação, e o pedido voltou a aguardá-lo."),
+        ResultadoDaDecisao.TermoExigido =>
+            ("termo_exigido", "O perfil passou a exigir o termo de responsabilidade depois da criação, e o pedido foi devolvido."),
+        _ => null,
+    };
+
+    private static IEnumerable<EventoDaTrilhaDto> DoCancelamento(PedidoDeConcessao pedido, IdentidadeDto solicitante)
+    {
+        if (pedido.Situacao == SituacaoDoPedido.Cancelado && pedido.EncerradoEm is { } canceladoEm)
+        {
+            yield return new("cancelado", canceladoEm, solicitante, null);
+        }
+    }
+
+    private static IdentidadeDto Dto(string emissor, string sub, string? nome) => new(emissor, sub, nome);
 }

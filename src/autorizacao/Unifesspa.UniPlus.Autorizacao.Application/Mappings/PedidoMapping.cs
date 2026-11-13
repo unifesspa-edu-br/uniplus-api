@@ -18,14 +18,11 @@ public static class PedidoMapping
             new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteSub, p.SolicitanteNome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
-            NumeroDaVersao(p, perfil),
-            Escopo(p),
-            p.Justificativa,
+            NumeroDaVersao(p, perfil), Escopo(p), p.Justificativa,
             p.ValidaAteSugerida, p.ValidaAte, perfil?.AdmitePrazo ?? false,
             p.CriadoEm, p.EncerradoEm, p.ConcessaoId,
-            [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)],
-            [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.Id).Select(ToDto)],
-            [.. p.TrocasDeVersao.OrderBy(t => t.Instante).ThenBy(t => t.Id).Select(ToDto)]);
+            Anexos(p), Decisoes(p), TrocasDeVersao(p),
+            p.AnexaraDocumento, Termo(p));
     }
 
     public static PedidoResumoDto ToResumo(PedidoComPerfil item)
@@ -35,15 +32,11 @@ public static class PedidoMapping
         PedidoDeConcessao p = item.Pedido;
 
         return new PedidoResumoDto(
-            p.Id,
-            p.Situacao.ToCodigo(),
-            p.EtapaAtual?.ToCodigo(),
+            p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, item.PerfilNome),
-            item.Versao,
-            Escopo(p),
-            p.Justificativa,
-            p.CriadoEm);
+            item.Versao, Escopo(p), p.Justificativa,
+            p.CriadoEm, p.AguardaAceiteDoTermo);
     }
 
     public static AnexoDoPedidoDto ToDto(AnexoDoPedido a)
@@ -74,6 +67,20 @@ public static class PedidoMapping
         p.BeneficiarioEmail,
         p.Beneficiario is { } b ? new IdentidadeDto(b.Emissor, b.Sub, b.Nome) : null,
         p.BeneficiarioNome);
+
+    private static AnexoDoPedidoDto[] Anexos(PedidoDeConcessao p) => [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)];
+
+    private static DecisaoDoPedidoDto[] Decisoes(PedidoDeConcessao p) =>
+        [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.Id).Select(ToDto)];
+
+    private static TrocaDeVersaoDoPedidoDto[] TrocasDeVersao(PedidoDeConcessao p) =>
+        [.. p.TrocasDeVersao.OrderBy(t => t.Instante).ThenBy(t => t.Id).Select(ToDto)];
+
+    private static TermoDoPedidoDto? Termo(PedidoDeConcessao p) =>
+        p.Termo is { } termo ? new TermoDoPedidoDto(termo.VersaoId, termo.Numero, termo.Resumo, Aceite(p.AceiteDoTermo)) : null;
+
+    private static AceiteDoTermoDto? Aceite(AceiteDoTermo? a) =>
+        a is null ? null : new AceiteDoTermoDto(new IdentidadeDto(a.PessoaEmissor, a.PessoaSub, a.PessoaNome), a.AceitoEm, a.VersaoDoTermoId, a.Numero, a.Resumo);
 
     private static EscopoDto Escopo(PedidoDeConcessao p) => new(p.Escopo.Tipo.ToCodigo(), p.UnidadeId);
 }

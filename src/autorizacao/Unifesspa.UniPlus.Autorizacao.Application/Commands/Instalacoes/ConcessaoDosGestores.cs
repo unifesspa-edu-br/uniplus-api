@@ -13,9 +13,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// como valer.
 /// </summary>
 /// <remarks>
-/// A ordem de travas é a única de todo caminho que concede ou revoga concessão de governança: o perfil de gestor, as
-/// pessoas dos gestores, em ordem de emissor e <c>sub</c>, e por último a trava dos gestores, que a revogação também toma
-/// depois da pessoa. O gestor acumula com qualquer outro papel, e a instalação nunca recusa por incompatibilidade.
+/// A ordem de travas é a única de todo caminho que concede ou revoga concessão de governança: o perfil de gestor, a
+/// vigência do termo de responsabilidade (compartilhada), as pessoas dos gestores, em ordem de emissor e <c>sub</c>, e por
+/// último a trava dos gestores, que a revogação também toma depois da pessoa. O gestor acumula com qualquer outro papel, e
+/// a instalação nunca recusa por incompatibilidade. Os gestores instalados não aceitam o termo: a exceção fica registrada
+/// com a vigência lida, e a instalação segue (ADR-0162).
 /// </remarks>
 public sealed class ConcessaoDosGestores
 {
@@ -24,30 +26,34 @@ public sealed class ConcessaoDosGestores
     private readonly ICatalogoDePermissoesConsultavel _catalogo;
     private readonly IIncompatibilidadeDosPapeis _papeis;
     private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly ITermoDeResponsabilidadeRepository _termos;
 
     public ConcessaoDosGestores(
         IInstalacaoRepository instalacoes,
         IConcessaoRepository concessoes,
         ICatalogoDePermissoesConsultavel catalogo,
         IIncompatibilidadeDosPapeis papeis,
-        IAutorizacaoUnitOfWork unitOfWork)
+        IAutorizacaoUnitOfWork unitOfWork,
+        ITermoDeResponsabilidadeRepository termos)
     {
         ArgumentNullException.ThrowIfNull(instalacoes);
         ArgumentNullException.ThrowIfNull(concessoes);
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(papeis);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(termos);
 
         _instalacoes = instalacoes;
         _concessoes = concessoes;
         _catalogo = catalogo;
         _papeis = papeis;
         _unitOfWork = unitOfWork;
+        _termos = termos;
     }
 
     internal async Task<Result> ConcederAsync(Instalacao instalacao, Identidade autor, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        Perfil perfil = await TravarAsync(instalacao, cancellationToken).ConfigureAwait(false);
+        (Perfil perfil, VersaoDoTermo? vigente) = await TravarAsync(instalacao, cancellationToken).ConfigureAwait(false);
 
         // A contagem roda sob a trava dos gestores: duas confirmações simultâneas de instalações diferentes não passam as duas.
         bool haGestor = await _concessoes
@@ -56,18 +62,19 @@ public sealed class ConcessaoDosGestores
 
         return haGestor
             ? await RecusarCorridaPerdidaAsync(instalacao, autor, agora, cancellationToken).ConfigureAwait(false)
-            : await InstalarAsync(instalacao, perfil, autor, agora, cancellationToken).ConfigureAwait(false);
+            : await InstalarAsync(instalacao, perfil, vigente, autor, agora, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Perfil> TravarAsync(Instalacao instalacao, CancellationToken cancellationToken)
+    private async Task<(Perfil Perfil, VersaoDoTermo? Vigente)> TravarAsync(Instalacao instalacao, CancellationToken cancellationToken)
     {
         Perfil perfil = await _concessoes.ObterParaConcederAsync(PerfisDeSistema.GestorDeAcessosId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("O perfil de sistema do gestor de acessos não existe: a carga inicial não rodou.");
+        VersaoDoTermo? vigente = await _termos.ObterVigenteSobTravaCompartilhadaAsync(cancellationToken).ConfigureAwait(false);
 
         await _papeis.TravarAsync(instalacao.Gestores.Select(static g => new Identidade(g.Emissor, g.Sub)), cancellationToken).ConfigureAwait(false);
         await _concessoes.TravarGovernancaParaEscritaAsync(cancellationToken).ConfigureAwait(false);
 
-        return perfil;
+        return (perfil, vigente);
     }
 
     // Outra instalação venceu a corrida: esta não tem mais como valer, e o código certo não a mantém pendente. A tentativa
@@ -83,7 +90,7 @@ public sealed class ConcessaoDosGestores
     }
 
     private async Task<Result> InstalarAsync(
-        Instalacao instalacao, Perfil perfil, Identidade autor, DateTimeOffset agora, CancellationToken cancellationToken)
+        Instalacao instalacao, Perfil perfil, VersaoDoTermo? vigente, Identidade autor, DateTimeOffset agora, CancellationToken cancellationToken)
     {
         instalacao.Confirmar(agora);
         Result<IReadOnlyList<Concessao>> concessoes = Conceder(instalacao, perfil, autor, agora);
@@ -94,6 +101,7 @@ public sealed class ConcessaoDosGestores
         }
 
         await AdicionarAsync(concessoes.Value!, cancellationToken).ConfigureAwait(false);
+        await _termos.AdicionarExcecaoDaInstalacaoAsync(TermoNaInstalacao.Registrar(instalacao.Id, vigente, agora), cancellationToken).ConfigureAwait(false);
         await RegistrarTentativaAsync(instalacao, autor, ResultadoDaTentativaDeInstalacao.Aceita, agora, cancellationToken).ConfigureAwait(false);
         DomainError? falha = await GravacaoDaConfirmacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
 

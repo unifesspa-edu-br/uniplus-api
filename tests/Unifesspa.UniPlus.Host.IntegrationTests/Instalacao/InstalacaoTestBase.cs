@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -278,6 +279,7 @@ public abstract partial class InstalacaoTestBase
         await ExecutarSqlAsync(
             "DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", PerfisDeSistema.GestorDeAcessosId);
         await ExecutarSqlAsync("DELETE FROM autorizacao.instalacao_tentativas");
+        await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
         await ExecutarSqlAsync("DELETE FROM autorizacao.instalacoes");
         await LimparCaixaAsync();
     }

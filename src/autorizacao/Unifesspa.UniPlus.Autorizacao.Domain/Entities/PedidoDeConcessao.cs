@@ -64,7 +64,7 @@ public sealed partial class PedidoDeConcessao : EntityBase
 
     public string? BeneficiarioNome { get; private set; }
 
-    /// <summary>Instante do aceite do beneficiário; nulo no pedido para si mesmo, que não tem aceite.</summary>
+    /// <summary>Instante do aceite do beneficiário; nulo antes dele e no pedido para si mesmo que não passa pelo aceite.</summary>
     public DateTimeOffset? BeneficiarioAceitouEm { get; private set; }
 
     public Guid PerfilId { get; private set; }

@@ -34,7 +34,7 @@ public sealed class PapeisIncompativeisNoPedidoTests
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
 
         (Result<PedidoDeConcessaoDto> resposta, IEnumerable<object> mensagens) = await Aceite(pedido, new PapeisDeTeste([], Leandro.Identidade))
-            .AceitarAsync(pedido.Id, Leandro, CancellationToken.None);
+            .AceitarAsync(pedido.Id, Leandro, null, CancellationToken.None);
 
         resposta.Error!.Code.Should().Be(PedidoErrorCodes.PapeisIncompativeis);
         (mensagens.Any(), _unidade.Descartou, _unidade.Gravacoes).Should().Be((false, true, 0));
@@ -45,7 +45,7 @@ public sealed class PapeisIncompativeisNoPedidoTests
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
 
-        (Result<PedidoDeConcessaoDto> resposta, _) = await Aceite(pedido, new PapeisDeTeste()).AceitarAsync(pedido.Id, Leandro, CancellationToken.None);
+        (Result<PedidoDeConcessaoDto> resposta, _) = await Aceite(pedido, new PapeisDeTeste()).AceitarAsync(pedido.Id, Leandro, null, CancellationToken.None);
 
         resposta.IsSuccess.Should().BeTrue();
         _unidade.Gravacoes.Should().Be(1);
@@ -85,9 +85,7 @@ public sealed class PapeisIncompativeisNoPedidoTests
         new(new PedidosNaMemoria(pedido), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), _unidade, papeis, TimeProvider.System);
 
     private static PedidoDeConcessao Pedido(bool paraSiMesmo) =>
-        PedidoDeConcessao.Criar(
-            Betina, paraSiMesmo ? null : Leandro.Email, PerfilComum(), EscopoDaConcessao.DaInstituicao(), "Atende o setor de matrículas.",
-            new DominiosDeTeste(), new CatalogoInstitucional(), DateTimeOffset.UtcNow).Value!;
+        PedidoDeConcessao.Criar(new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido("Atende o setor de matrículas."), new DominiosDeTeste(), new CatalogoInstitucional(), DateTimeOffset.UtcNow).Value!;
 
     // O pedido é de Betina para si mesma; o perfil decidido recebe o id do perfil de sistema que a aprovação concederia.
     private static DecisaoDaEtapa Decisao(Guid perfilId)

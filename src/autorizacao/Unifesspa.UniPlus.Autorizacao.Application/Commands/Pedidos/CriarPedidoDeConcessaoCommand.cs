@@ -8,9 +8,16 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Pede a concessão de um perfil numa unidade (ou na instituição, para o perfil de governança). Qualquer pessoa
 /// autenticada pede: pedir não dá acesso, o filtro é a aprovação.
 /// </summary>
+/// <param name="AnexaraDocumento">O solicitante vai anexar documento; o perfil de governança o exige sempre.</param>
+/// <param name="TermoVersaoApresentadaId">
+/// A versão do termo de responsabilidade que o cliente apresentou; obrigatória quando o envio é o aceite (pedido protegido
+/// para si mesmo, sem documento), conferida quando vem nos demais pedidos protegidos e proibida no pedido sem termo.
+/// </param>
 public sealed record CriarPedidoDeConcessaoCommand(
     string? BeneficiarioEmail,
     Guid PerfilId,
     Guid? UnidadeId,
     string? Justificativa,
-    DateTimeOffset? ValidaAteSugerida = null) : ICommand<Result<PedidoDeConcessaoDto>>;
+    DateTimeOffset? ValidaAteSugerida = null,
+    bool AnexaraDocumento = false,
+    Guid? TermoVersaoApresentadaId = null) : ICommand<Result<PedidoDeConcessaoDto>>;

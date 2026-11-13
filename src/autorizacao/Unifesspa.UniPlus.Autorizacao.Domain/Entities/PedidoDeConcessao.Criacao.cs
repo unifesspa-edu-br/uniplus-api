@@ -4,97 +4,103 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>A criação do pedido e as conferências que a antecedem.</summary>
 public sealed partial class PedidoDeConcessao
 {
     /// <summary>
-    /// Cria o pedido. Acumula toda violação independente (ADR-0125). Que o pedido ativo igual não exista é do
-    /// índice único, traduzido por quem grava; que a unidade exista é do handler.
+    /// Cria o pedido. Acumula toda violação independente num só conjunto de erros (ADR-0125). Que o pedido ativo igual não
+    /// exista é do índice único, traduzido por quem grava; que a unidade exista é do handler; o termo de responsabilidade se
+    /// fixa em seguida, por <see cref="FixarTermo"/>.
     /// </summary>
-    /// <param name="solicitante">Quem pede, como o token o traz.</param>
-    /// <param name="validaAteSugerida">Fim de vigência que o solicitante sugere; o perfil de governança não admite prazo.</param>
-    /// <param name="emailDoBeneficiario">E-mail institucional do beneficiário; ausente, ou igual ao e-mail verificado do solicitante, o pedido é para si mesmo.</param>
+    /// <param name="partes">Quem pede e a quem o pedido se destina.</param>
+    /// <param name="declaracao">Justificativa, validade sugerida e intenção de anexar documento; o perfil de gestor de acessos não admite prazo.</param>
     public static Result<PedidoDeConcessao> Criar(
-        PessoaNoToken solicitante,
-        string? emailDoBeneficiario,
+        PartesDoPedido partes,
         Perfil perfil,
         EscopoDaConcessao escopo,
-        string? justificativa,
+        DeclaracaoDoPedido declaracao,
         IDominiosInstitucionais dominios,
         ICatalogoDePermissoesConsultavel catalogo,
-        DateTimeOffset instante,
-        DateTimeOffset? validaAteSugerida = null)
+        DateTimeOffset instante)
     {
-        ArgumentNullException.ThrowIfNull(solicitante);
-        ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(partes);
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(escopo);
+        ArgumentNullException.ThrowIfNull(declaracao);
         ArgumentNullException.ThrowIfNull(dominios);
+        ArgumentNullException.ThrowIfNull(catalogo);
 
-        if (RecusaDoSolicitante(solicitante, emailDoBeneficiario, dominios) is { } recusa)
-        {
-            return Result<PedidoDeConcessao>.Failure(recusa);
-        }
+        DomainError? recusa = RecusaDoSolicitante(partes, dominios);
+        (List<FieldError> erros, string? justificativa) = ValidarCampos(perfil, escopo, catalogo, declaracao, instante);
+        (string? email, bool paraSiMesmo) = ResolverBeneficiario(partes, dominios, erros);
 
-        (List<FieldError> erros, string? justificativaNormalizada) = ValidarCampos(perfil, escopo, catalogo, justificativa, validaAteSugerida, instante);
-        (string? email, bool paraSiMesmo) = ResolverBeneficiario(solicitante, emailDoBeneficiario, dominios, erros);
-
-        return erros.Count > 0
-            ? Result<PedidoDeConcessao>.ValidationFailure(erros)
-            : Result<PedidoDeConcessao>.Success(
-                Novo(solicitante, perfil, escopo, justificativaNormalizada!, validaAteSugerida, instante, (email!, paraSiMesmo)));
+        return recusa is not null ? Result<PedidoDeConcessao>.Failure(recusa)
+            : erros.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(erros)
+            : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, Consolidada(declaracao, justificativa, perfil), instante, (email!, paraSiMesmo)));
     }
 
-    private static DomainError? RecusaDoSolicitante(PessoaNoToken solicitante, string? emailDoBeneficiario, IDominiosInstitucionais dominios) =>
-        !ParaSiMesmo(solicitante, emailDoBeneficiario) && !SolicitanteInstitucional(solicitante, dominios)
+    private static DomainError? RecusaDoSolicitante(PartesDoPedido partes, IDominiosInstitucionais dominios) =>
+        !ParaSiMesmo(partes.Solicitante, partes.EmailDoBeneficiario) && !SolicitanteInstitucional(partes.Solicitante, dominios)
             ? new DomainError(
                 PedidoErrorCodes.SolicitanteNaoInstitucional,
                 "Para pedir acesso a outra pessoa, o e-mail da sessão deve ser institucional e verificado.")
             : null;
 
+    // A justificativa já normalizada; o perfil de governança anexa sempre o documento de designação.
+    private static DeclaracaoDoPedido Consolidada(DeclaracaoDoPedido declaracao, string? justificativa, Perfil perfil) =>
+        declaracao with { Justificativa = justificativa, AnexaraDocumento = declaracao.AnexaraDocumento || perfil.Governanca is not null };
+
     private static PedidoDeConcessao Novo(
         PessoaNoToken solicitante,
         Perfil perfil,
         EscopoDaConcessao escopo,
-        string justificativa,
-        DateTimeOffset? validaAteSugerida,
+        DeclaracaoDoPedido declaracao,
         DateTimeOffset instante,
         (string Email, bool ParaSiMesmo) beneficiario)
     {
         PedidoDeConcessao pedido = new()
         {
-            BeneficiarioEmail = beneficiario.Email,
             PerfilId = perfil.Id,
             VersaoId = perfil.VersaoVigente?.Id,
             UnidadeId = escopo.UnidadeId,
-            Justificativa = justificativa,
-            ValidaAteSugerida = validaAteSugerida?.ToUniversalTime(),
-            Situacao = SituacaoInicial(perfil, beneficiario.ParaSiMesmo),
+            Justificativa = declaracao.Justificativa!,
+            ValidaAteSugerida = declaracao.ValidaAteSugerida?.ToUniversalTime(),
+            AnexaraDocumento = declaracao.AnexaraDocumento,
+            Situacao = SituacaoInicial(declaracao.AnexaraDocumento, beneficiario.ParaSiMesmo),
             CriadoEm = instante,
         };
-        pedido.DefinirPartes(solicitante, beneficiario.ParaSiMesmo);
+        pedido.DefinirPartes(solicitante, beneficiario);
 
         return pedido;
     }
 
-    private void DefinirPartes(PessoaNoToken solicitante, bool paraSiMesmo)
+    private void DefinirPartes(PessoaNoToken solicitante, (string Email, bool ParaSiMesmo) beneficiario)
     {
+        BeneficiarioEmail = beneficiario.Email;
         SolicitanteEmissor = solicitante.Identidade.Emissor;
         SolicitanteSub = solicitante.Identidade.Sub;
         SolicitanteNome = NomeDeExibicao.Normalizar(solicitante.Nome);
         SolicitanteEmail = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
 
-        if (paraSiMesmo)
+        if (beneficiario.ParaSiMesmo)
         {
             DefinirBeneficiario(solicitante.Identidade, SolicitanteNome);
         }
     }
 
-    private static SituacaoDoPedido SituacaoInicial(Perfil perfil, bool paraSiMesmo) =>
-        perfil.Governanca is not null ? SituacaoDoPedido.AguardandoDocumento : EtapaSeguinteAoDocumento(paraSiMesmo);
+    // O documento declarado vem antes de tudo; sem ele, o pedido para si mesmo vai ao gestor e o para outra pessoa espera o
+    // aceite dela.
+    private static SituacaoDoPedido SituacaoInicial(bool anexaraDocumento, bool paraSiMesmo)
+    {
+        if (anexaraDocumento)
+        {
+            return SituacaoDoPedido.AguardandoDocumento;
+        }
+
+        return paraSiMesmo ? SituacaoDoPedido.AguardandoGestor : SituacaoDoPedido.AguardandoBeneficiario;
+    }
 
     private static IEnumerable<FieldError> ErrosDoPerfil(Perfil perfil)
     {
@@ -123,15 +129,10 @@ public sealed partial class PedidoDeConcessao
     }
 
     private static (List<FieldError> Erros, string? Justificativa) ValidarCampos(
-        Perfil perfil,
-        EscopoDaConcessao escopo,
-        ICatalogoDePermissoesConsultavel catalogo,
-        string? justificativa,
-        DateTimeOffset? validaAteSugerida,
-        DateTimeOffset instante)
+        Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo, DeclaracaoDoPedido declaracao, DateTimeOffset instante)
     {
         List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo)];
-        string? normalizada = NormalizarTexto(justificativa, JustificativaMinLength, JustificativaMaxLength);
+        string? normalizada = NormalizarTexto(declaracao.Justificativa, JustificativaMinLength, JustificativaMaxLength);
 
         if (normalizada is null)
         {
@@ -140,7 +141,7 @@ public sealed partial class PedidoDeConcessao
                 $"A justificativa é obrigatória e deve ter entre {JustificativaMinLength} e {JustificativaMaxLength} caracteres.")));
         }
 
-        ConferirValidade(validaAteSugerida, perfil.AdmitePrazo, instante, "validaAteSugerida", erros);
+        ConferirValidade(declaracao.ValidaAteSugerida, perfil.AdmitePrazo, instante, "validaAteSugerida", erros);
 
         return (erros, normalizada);
     }
@@ -159,13 +160,9 @@ public sealed partial class PedidoDeConcessao
     {
         if (!admitePrazo)
         {
-            return "Perfil de governança não admite concessão com prazo: gestor de acessos e proteção de dados não têm vigência limitada.";
+            return MensagensDoPrazo.PerfilSemPrazo;
         }
 
         return fim <= instante ? "O fim da vigência deve ser posterior ao instante atual." : null;
     }
-
-    // O pedido para si mesmo não tem aceite: o beneficiário já é conhecido e a decisão cabe ao gestor.
-    private static SituacaoDoPedido EtapaSeguinteAoDocumento(bool paraSiMesmo) =>
-        paraSiMesmo ? SituacaoDoPedido.AguardandoGestor : SituacaoDoPedido.AguardandoBeneficiario;
 }

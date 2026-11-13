@@ -10,13 +10,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
+
 /// <summary>O perfil que muda entre as etapas, a recusa, o cancelamento, o anexo e a concessão do pedido.</summary>
 public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
 {
     [Fact(DisplayName = "Perfil que mudou entre as etapas devolve o pedido ao gestor e nada é concedido")]
     public void Aprovar_PerfilAlterado_VoltaAoGestor()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
 
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Marlene.Identidade, Ampliado, Contexto, Agora.AddHours(1));
@@ -34,7 +36,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "Devolvido pelo perfil alterado, o gestor decide de novo e a segunda etapa aprova o que ele avaliou")]
     public void Aprovar_PerfilAlterado_GestorDecideDeNovo()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
         pedido.Aprovar(Marlene.Identidade, Ampliado, Contexto, Agora.AddHours(1));
 
@@ -47,7 +49,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [InlineData(true)]
     public void Aprovar_PerfilInativo_Recusa(bool naEtapaDeProtecaoDeDados)
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         if (naEtapaDeProtecaoDeDados)
         {
             pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
@@ -65,7 +67,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "Recusa encerra o pedido com o motivo e o retrato avaliado, sem concessão")]
     public void Recusar_EncerraComMotivo()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
 
         Result recusa = pedido.Recusar(Diogo.Identidade, "  Função não exige acesso a laudos.  ", Sensivel, Agora.AddHours(1));
 
@@ -85,7 +87,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [InlineData("Mot\0ivo")]
     public void Recusar_MotivoInvalido_Recusa(string? motivo)
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
 
         Codigos(pedido.Recusar(Diogo.Identidade, motivo, Interno, Agora)).Should().Equal(PedidoErrorCodes.MotivoInvalido);
         Codigos(pedido.Recusar(Diogo.Identidade, new string('a', 501), Interno, Agora)).Should().Equal(PedidoErrorCodes.MotivoInvalido);
@@ -95,7 +97,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "O solicitante cancela antes da primeira decisão")]
     public void Cancelar_AntesDaPrimeiraDecisao_Encerra()
     {
-        PedidoDeConcessao cancelavel = PedidoAguardandoGestor();
+        PedidoDeConcessao cancelavel = Pedido().Protegido().AguardandoGestor();
 
         cancelavel.Cancelar(Agora.AddHours(1)).IsSuccess.Should().BeTrue();
 
@@ -107,11 +109,11 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "Depois da primeira decisão o pedido não se cancela, nem quando volta ao gestor")]
     public void Cancelar_DepoisDaPrimeiraDecisao_Recusa()
     {
-        PedidoDeConcessao decidido = PedidoAguardandoGestor();
+        PedidoDeConcessao decidido = Pedido().Protegido().AguardandoGestor();
         decidido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
         Codigos(decidido.Cancelar(Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
 
-        PedidoDeConcessao devolvido = PedidoAguardandoGestor();
+        PedidoDeConcessao devolvido = Pedido().Protegido().AguardandoGestor();
         devolvido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
         devolvido.Aprovar(Marlene.Identidade, new PerfilAvaliado(["outra"], "sensivel", true, null), Contexto, Agora);
         devolvido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
@@ -121,7 +123,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "O anexo só se envia e se confirma antes da primeira decisão")]
     public void Anexo_SoAntesDaPrimeiraDecisao()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().AguardandoGestor();
         AnexoDoPedido anexo = pedido.NovoAnexo(2048).Value!;
         anexo.ChaveDeEnvio.Should().Be($"autorizacao/pedido/{pedido.Id}/anexo/{anexo.Id}/envio");
         anexo.ChaveDefinitiva.Should().Be($"autorizacao/pedido/{pedido.Id}/anexo/{anexo.Id}/definitivo");
@@ -138,12 +140,12 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [InlineData(-1)]
     [InlineData(10L * 1024 * 1024 + 1)]
     public void Anexo_TamanhoInvalido_Recusa(long tamanho) =>
-        Codigos(PedidoAguardandoGestor().NovoAnexo(tamanho)).Should().Equal(PedidoErrorCodes.AnexoInvalido);
+        Codigos(Pedido().AguardandoGestor().NovoAnexo(tamanho)).Should().Equal(PedidoErrorCodes.AnexoInvalido);
 
     [Fact(DisplayName = "Confirmar o anexo exige o ETag e leva o anexo à verificação, uma vez só")]
     public void Anexo_Confirmar_LevaAVerificacao()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().AguardandoGestor();
         AnexoDoPedido anexo = pedido.NovoAnexo(2048).Value!;
 
         Codigos(pedido.ConfirmarAnexo(anexo.Id, "  ", Agora)).Should().Equal(PedidoErrorCodes.AnexoInvalido);
@@ -159,7 +161,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "O veredicto repetido do anexo não muda nada")]
     public void Anexo_VeredictoRepetido_NaoMuda()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().AguardandoGestor();
         AnexoDoPedido anexo = pedido.NovoAnexo(2048).Value!;
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", Agora);
 
@@ -172,21 +174,21 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
     [Fact(DisplayName = "As partes do pedido são o solicitante e o beneficiário, este também pelo e-mail antes do aceite")]
     public void EhParte_SolicitanteEBeneficiario()
     {
-        PedidoDeConcessao pedido = Criar(Betina, Leandro.Email);
+        PedidoDeConcessao pedido = Pedido().Criado();
 
         pedido.EhParte(Betina).Should().BeTrue();
         pedido.EhParte(Leandro).Should().BeTrue("o e-mail verificado dele é o do pedido");
         pedido.EhParte(Leandro with { EmailVerificado = false }).Should().BeFalse();
         pedido.EhParte(Diogo).Should().BeFalse();
 
-        pedido.Aceitar(Leandro, Agora);
+        pedido.Aceitar(Leandro, null, Agora);
         pedido.EhParte(Leandro with { Email = "outro@uniplus-test.local" }).Should().BeTrue("já aceitou: vale a identidade");
     }
 
     [Fact(DisplayName = "Só o pedido aprovado registra a concessão")]
     public void RegistrarConcessao_SoNoPedidoAprovado()
     {
-        PedidoDeConcessao pedido = PedidoAguardandoGestor();
+        PedidoDeConcessao pedido = Pedido().AguardandoGestor();
         Guid concessao = Guid.NewGuid();
 
         FluentActions.Invoking(() => pedido.RegistrarConcessao(concessao)).Should().Throw<InvalidOperationException>();

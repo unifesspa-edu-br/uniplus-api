@@ -230,7 +230,7 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
         using HttpClient betina = Cliente(Betina);
         Guid pedido = default;
-        await EntregarAsync(async () => pedido = await Pedidos.PedidosDeConcessaoTestBase.CriarAsync(betina, vigente.PerfilId, await SemearUnidadeAsync(), null));
+        await EntregarAsync(async () => pedido = await CriarAsync(betina, vigente.PerfilId, await SemearUnidadeAsync(), null));
         await EsvaziarCaixaAsync();
 
         return (vigente, pedido);

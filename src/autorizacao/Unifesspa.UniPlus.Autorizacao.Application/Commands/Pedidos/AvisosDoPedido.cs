@@ -60,7 +60,7 @@ public sealed class AvisosDoPedido
 
         string escopo = await EscopoAsync(pedido, cancellationToken).ConfigureAwait(false);
 
-        return Emails(destinatarios, TextosDoAvisoDoPedido.Da(pedido.Situacao), perfilNome, escopo, _link.Para(pedido.Id));
+        return Emails(destinatarios, TextosDoAvisoDoPedido.Do(pedido), perfilNome, escopo, _link.Para(pedido.Id));
     }
 
     private static List<EnviarEmail> Emails(

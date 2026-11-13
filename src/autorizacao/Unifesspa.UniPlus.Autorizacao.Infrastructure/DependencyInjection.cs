@@ -32,6 +32,7 @@ public static class AutorizacaoInfrastructureRegistration
         AddContexto(services);
         AddUnidadeDeTrabalho(services);
         AddRepositorios(services);
+        AddCatalogo(services);
         AddInstalacao(services);
         AddAvisos(services);
         AddArmazenamento(services);
@@ -70,9 +71,14 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddScoped<IConcessoesAtivasDoSujeito, ConcessoesAtivasDoSujeito>();
         services.AddScoped<ITitularesDaPermissao, TitularesDaPermissao>();
         services.AddScoped<IPedidoDeConcessaoRepository, PedidoDeConcessaoRepository>();
+        services.AddScoped<ITermoDeResponsabilidadeRepository, TermoDeResponsabilidadeRepository>();
         services.AddScoped<IRevisaoDeAcessosRepository, RevisaoDeAcessosRepository>();
         services.AddScoped<IReclassificacaoRepository, ReclassificacaoRepository>();
         services.AddScoped<ILeituraDoMonitoramento, LeituraDoMonitoramento>();
+    }
+
+    private static void AddCatalogo(IServiceCollection services)
+    {
         services.AddSingleton<ICatalogoDePermissoesConsultavel, CatalogoDePermissoesDaAplicacao>();
         services.AddScoped<ConciliacaoDoCatalogo>();
     }

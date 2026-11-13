@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 using Microsoft.AspNetCore.Authorization;
@@ -34,10 +33,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class PedidosDeConcessaoController : ControllerBase
 {
     private const string ResourceTag = "pedidos-de-concessao";
@@ -59,7 +54,10 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
     /// <summary>
     /// Cria o pedido. O beneficiário é o próprio solicitante (e-mail em branco ou o da sessão verificado) ou outra
-    /// pessoa, nomeada pelo e-mail institucional; neste caso o pedido espera o aceite dela.
+    /// pessoa, nomeada pelo e-mail institucional; neste caso o pedido espera o aceite dela. O pedido de perfil protegido
+    /// fixa a versão vigente do termo de responsabilidade e é recusado sem termo publicado; no pedido para si mesmo sem
+    /// documento, o envio é o aceite do termo. A versão apresentada divergente da vigente responde 409, e a reapresentação
+    /// usa chave de idempotência nova.
     /// </summary>
     [HttpPost("pedidos-de-concessao")]
     [RequiresIdempotencyKey]
@@ -75,9 +73,7 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         ArgumentNullException.ThrowIfNull(request);
 
         Result<PedidoDeConcessaoDto> resultado = await _commandBus
-            .Send(
-                new CriarPedidoDeConcessaoCommand(request.BeneficiarioEmail, request.PerfilId, request.UnidadeId, request.Justificativa, request.ValidaAteSugerida),
-                cancellationToken)
+            .Send(Comando(request), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess
@@ -189,7 +185,11 @@ public sealed class PedidosDeConcessaoController : ControllerBase
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
-    /// <summary>O beneficiário aceita o pedido que o nomeou; o e-mail verificado do token tem de ser o do pedido.</summary>
+    /// <summary>
+    /// O beneficiário aceita o pedido que o nomeou e, no pedido protegido, o termo fixado nele, informando a versão
+    /// apresentada. O beneficiário ainda desconhecido é conferido pelo e-mail verificado do pedido, e o já conhecido, pela
+    /// identidade da sessão. O pedido que aguarda o documento declarado não aceita.
+    /// </summary>
     [HttpPost("pedidos-de-concessao/{id:guid}/aceite")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(PedidoDeConcessaoDto), StatusCodes.Status200OK)]
@@ -198,91 +198,16 @@ public sealed class PedidosDeConcessaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Aceitar(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Aceitar(
+        Guid id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] AceitarPedidoDeConcessaoRequest? request,
+        CancellationToken cancellationToken)
     {
         Result<PedidoDeConcessaoDto> resultado = await _commandBus
-            .Send(new AceitarPedidoDeConcessaoCommand(id), cancellationToken)
+            .Send(new AceitarPedidoDeConcessaoCommand(id, request?.TermoVersaoApresentadaId), cancellationToken)
             .ConfigureAwait(false);
 
         return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>Pede a URL de PUT assinada de um PDF para anexar ao pedido, só do solicitante e antes da primeira decisão.</summary>
-    [HttpPost("pedidos-de-concessao/{id:guid}/anexos")]
-    // TTL alinhado ao da URL de PUT devolvida: um replay depois de ela expirar devolveria uma URL inutilizável.
-    [RequiresIdempotencyKey(TtlSeconds = 15 * 60)]
-    [ProducesResponseType(typeof(AnexoParaEnvioDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> EnviarAnexo(
-        Guid id, [FromBody] EnviarAnexoDoPedidoRequest request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        Result<AnexoParaEnvioDto> resultado = await _commandBus
-            .Send(new CriarAnexoDoPedidoCommand(id, request.TamanhoDoPdf), cancellationToken)
-            .ConfigureAwait(false);
-
-        return resultado.IsSuccess
-            ? CreatedAtAction(nameof(LerAnexo), new { id, anexoId = resultado.Value!.Id }, resultado.Value)
-            : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>
-    /// O solicitante informa o <c>ETag</c> que o PUT devolveu. A API não lê o objeto: grava o anexo como em verificação
-    /// e publica o pedido ao verificador na mesma transação.
-    /// </summary>
-    [HttpPost("pedidos-de-concessao/{id:guid}/anexos/{anexoId:guid}/confirmacao")]
-    [RequiresIdempotencyKey]
-    [ProducesResponseType(typeof(AnexoDoPedidoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ConfirmarAnexo(
-        Guid id, Guid anexoId, [FromBody] ConfirmarAnexoDoPedidoRequest request, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        Result<AnexoDoPedidoDto> resultado = await _commandBus
-            .Send(new ConfirmarAnexoDoPedidoCommand(id, anexoId, request.Etag), cancellationToken)
-            .ConfigureAwait(false);
-
-        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
-    }
-
-    /// <summary>
-    /// URL assinada de leitura do anexo, de validade curta, só para o anexo verificado e só para quem vê o pedido. O
-    /// acesso entra na trilha.
-    /// </summary>
-    [HttpGet("pedidos-de-concessao/{id:guid}/anexos/{anexoId:guid}")]
-    [VendorMediaType(Resource = "anexo-do-pedido", Versions = [1])]
-    [ProducesResponseType(typeof(LeituraDoAnexoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
-    public async Task<IActionResult> LerAnexo(Guid id, Guid anexoId, CancellationToken cancellationToken)
-    {
-        Result<LeituraDoAnexoDto> resultado = await _commandBus
-            .Send(new LerAnexoDoPedidoCommand(id, anexoId), cancellationToken)
-            .ConfigureAwait(false);
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        // A URL é credencial de acesso: nenhum cache a guarda.
-        Response.Headers.CacheControl = "no-store";
-
-        return Ok(resultado.Value);
     }
 
     /// <summary>
@@ -348,6 +273,9 @@ public sealed class PedidosDeConcessaoController : ControllerBase
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
+
+    private static CriarPedidoDeConcessaoCommand Comando(CriarPedidoDeConcessaoRequest r) =>
+        new(r.BeneficiarioEmail, r.PerfilId, r.UnidadeId, r.Justificativa, r.ValidaAteSugerida, r.AnexaraDocumento, r.TermoVersaoApresentadaId);
 
     private static FilaDePedidos? LerFila(string? texto) =>
         string.IsNullOrWhiteSpace(texto)

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos;
@@ -102,9 +103,12 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         pedido.EncerradoEm.Should().NotBeNull();
         avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela");
         avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
-        avisos.Should().AllSatisfy(aviso => aviso.CorpoTexto.Should().Contain("Faça o pedido de novo depois que o perfil for atualizado")
-            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("janela"));
+        avisos.Should().AllSatisfy(ConferirAvisoDeDevolucao);
     }
+
+    private static void ConferirAvisoDeDevolucao(EnviarEmail aviso) =>
+        aviso.CorpoTexto.Should().Contain("Faça o pedido de novo depois que o perfil for atualizado")
+            .And.NotContain(Betina.Nome!).And.NotContain(Leandro.Nome!).And.NotContain(Justificativa).And.NotContain("janela");
 
     [Fact(DisplayName = "O pedido de outro perfil e o pedido já encerrado ficam como estão")]
     public async Task PedidoDeOutroPerfilEEncerrado_FicamInalterados()
@@ -153,14 +157,17 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
     private static TrocaDeVigencia Trocar(Perfil perfil, params string[] permissoes) =>
         PerfisDeTeste.Trocar(perfil, permissoes, Catalogo)[^1];
 
+    // O pedido segue um perfil que os testes avaliam como sensível: o termo fica fixado na criação.
+    private static readonly VersaoDoTermo Vigente = TermosDeTeste.Publicada();
+
     private static PedidoDeConcessao Pedido(Perfil perfil, bool paraSiMesmo)
     {
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            Betina, paraSiMesmo ? null : Leandro.Email, perfil, EscopoDaConcessao.DaInstituicao(), Justificativa,
-            new DominiosQualquer(), Catalogo, DateTimeOffset.UtcNow).Value!;
+            new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email), perfil, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), new DominiosQualquer(), Catalogo, DateTimeOffset.UtcNow).Value!;
+        pedido.FixarTermo(new TermoNaCriacao(Vigente, Vigente.Id, true), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         if (!paraSiMesmo)
         {
-            pedido.Aceitar(Leandro, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+            pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         }
 
         return pedido;

@@ -124,7 +124,7 @@ public sealed class PapeisIncompativeisNoHostTests : PedidosDeConcessaoTestBase
         using HttpClient betina = Cliente(Betina);
         Guid id = await CriarAsync(betina, perfilId, null, beneficiario);
         await AnexarVerificadoAsync(betina, id);
-        (await EnviarAsync(Cliente(beneficiario), HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AceitarAsync(Cliente(beneficiario), id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         return id;
     }

@@ -39,7 +39,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
         (await ListarFilaAsync(diogo, "gestor")).Should().NotContain(id);
-        await ConferirRecusaAsync(await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
+        await ConferirRecusaAsync(await AceitarAsync(Cliente(Leandro), id), HttpStatusCode.UnprocessableEntity, "anexo_nao_verificado");
         await ConferirRecusaAsync(await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.UnprocessableEntity, "situacao_invalida");
     }
 
@@ -90,7 +90,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         (await ConcessoesAsync(Leandro, PerfisDeSistema.GestorDeAcessosId)).Single().EscopoTipo.Should().Be(Autorizacao.Domain.Enums.TipoDeEscopo.Instituicao);
         (await TiposDaTrilhaAsync(diogo, id)).Should().Equal(
-            "pedido_criado", "anexo_enviado", "anexo_verificado", "beneficiario_aceitou", "anexo_lido", "anexo_lido", "aprovado", "aprovado");
+            "pedido_criado", "anexo_enviado", "anexo_verificado", "beneficiario_aceitou", "termo_aceito", "anexo_lido", "anexo_lido", "aprovado", "aprovado");
     }
 
     [Fact(DisplayName = "O veredicto de recusa do verificador encerra o anexo, e o pedido de governança continua sem documento")]
@@ -117,7 +117,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
     {
         await ResetarAsync();
         using HttpClient betina = Cliente(Betina);
-        Guid id = await PedidoSensivelAceitoAsync(betina);
+        Guid id = await PedidoComumAceitoAsync(betina);
 
         (await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/anexos", new { tamanhoDoPdf = 100 })).StatusCode.Should().Be(HttpStatusCode.NotFound);
         await ConferirRecusaAsync(await EnviarAsync(betina, HttpMethod.Post, $"{Rota}/{id}/anexos", new { tamanhoDoPdf = 0 }), HttpStatusCode.UnprocessableEntity, "anexo_invalido");
@@ -129,7 +129,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
     {
         await ResetarAsync();
         using HttpClient betina = Cliente(Betina);
-        Guid id = await PedidoSensivelAceitoAsync(betina);
+        Guid id = await PedidoComumAceitoAsync(betina);
         Guid pendente = (await CorpoAsync(
             await EnviarAsync(betina, HttpMethod.Post, $"{Rota}/{id}/anexos", new { tamanhoDoPdf = 100 }), HttpStatusCode.Created)).GetProperty("id").GetGuid();
         await ConferirRecusaAsync(
@@ -150,7 +150,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(betina, PerfisDeSistema.GestorDeAcessosId, null, Leandro);
         await AnexarVerificadoAsync(betina, id);
-        await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        await AceitarAsync(Cliente(Leandro), id);
 
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
 
@@ -188,17 +188,18 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
         await AguardarAsync(async () => await SituacaoDoAnexoAsync(betina, id, anexo) == "verificado", "o anexo não chegou a verificado");
         await PromoverObjetoAsync(id, anexo);
         (await SituacaoAsync(betina, id)).Should().Be("aguardando_beneficiario", "o documento verificado libera o pedido para o aceite");
-        (await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AceitarAsync(Cliente(Leandro), id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         return (id, anexo);
     }
 
-    private async Task<Guid> PedidoSensivelAceitoAsync(HttpClient betina) => await PedidoAceitoAsync(betina, await SemearPerfilSensivelAsync());
+    // O pedido de perfil comum, que não exige o termo, aceita anexo até a primeira decisão sem tê-lo declarado.
+    private async Task<Guid> PedidoComumAceitoAsync(HttpClient betina) => await PedidoAceitoAsync(betina, await SemearPerfilInternoAsync());
 
     private async Task<Guid> PedidoAceitoAsync(HttpClient betina, Guid perfil)
     {
         Guid id = await CriarAsync(betina, perfil, await SemearUnidadeAsync(), Leandro);
-        await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        await AceitarAsync(Cliente(Leandro), id);
 
         return id;
     }

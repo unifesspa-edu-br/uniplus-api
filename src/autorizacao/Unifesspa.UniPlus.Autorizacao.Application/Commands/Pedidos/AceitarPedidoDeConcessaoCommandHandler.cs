@@ -19,7 +19,7 @@ public static class AceitarPedidoDeConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
 
         return IdentidadeDoToken.PessoaDe(userContext) is { } pessoa
-            ? await aceite.AceitarAsync(command.Id, pessoa, cancellationToken).ConfigureAwait(false)
+            ? await aceite.AceitarAsync(command.Id, pessoa, command.TermoVersaoApresentadaId, cancellationToken).ConfigureAwait(false)
             : (Result<PedidoDeConcessaoDto>.Failure(PedidoHandlerErros.AutorNaoIdentificado()), []);
     }
 }
