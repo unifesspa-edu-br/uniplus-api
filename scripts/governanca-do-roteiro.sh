@@ -174,6 +174,7 @@ decidir_item_da_protecao() {
 
 garantir_protecao_do_catalogo() {
     local pendentes representante item solicitados
+    renovar_token_do_executor
     pendentes=$(itens_da_protecao "$TOKEN" PENDENTE)
     if [ "$(jq 'length' <<< "$pendentes")" -gt 0 ]; then
         log "Enviando à proteção de dados $(jq 'length' <<< "$pendentes") itens do catálogo"

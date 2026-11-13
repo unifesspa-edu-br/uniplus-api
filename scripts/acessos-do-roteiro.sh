@@ -67,6 +67,12 @@ token_de() {
     printf '%s\n' "$token"
 }
 
+# As esperas pelo verificador de arquivos podem passar da validade do token do executor (300 s no realm local):
+# quem chama depois de uma espera renova antes.
+renovar_token_do_executor() {
+    TOKEN=$(token_de "$ADMIN_USER" "$ADMIN_PASS")
+}
+
 # Chamada como uma pessoa; falha com o corpo da recusa. $1=passo $2=token $3=método $4=caminho $5=corpo
 como() {
     local passo="$1" token="$2" metodo="$3" caminho="$4" corpo="${5:-}" resp status
@@ -192,9 +198,9 @@ garantir_perfil() {
     [ "${#LISTA_DE_GESTORES[@]}" -eq 2 ] || fail "GESTORES deve ter exatamente dois gestores de acessos (recebido: '$GESTORES')."
     log "Concedendo a $ADMIN_USER o perfil '$nome' $escopo"
     perfil=$(perfil_do_roteiro "$nome" "$permissoes")
-    # A espera pelo verificador pode passar da validade do token do executor.
-    TOKEN=$(token_de "$ADMIN_USER" "$ADMIN_PASS")
+    renovar_token_do_executor
     pedir_e_aprovar "$perfil" "$unidade" "$nome"
+    renovar_token_do_executor
     executor_tem_perfil "$nome" "$unidade" || fail "o pedido foi aprovado, mas GET /api/profile/me de $ADMIN_USER não mostra o perfil '$nome' $escopo."
     ok "perfil '$nome' concedido $escopo"
 }
