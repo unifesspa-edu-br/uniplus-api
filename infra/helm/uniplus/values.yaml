@@ -108,7 +108,9 @@ reconciliacaoDaVerificacao:
 # AddEnvioDeEmail().ValidateOnStart() rejeita vazio, sem eles o pod crashloopa no startup.
 # seguranca: Nenhuma | StartTls | TlsImplicito. Usuario e senha, quando o relay exige autenticacao,
 # vao em secrets.emailSmtpUsuario / emailSmtpSenha (informados juntos). Viram Email__Smtp__Host /
-# __Porta / __Seguranca / __Remetente / __NomeRemetente.
+# __Porta / __Seguranca / __Remetente / __NomeRemetente. Os prazos (TimeSpan, maior que zero e de no maximo 5 min) e o teto de
+# envios simultaneos (de 1 a 20) viram __TempoLimiteDeConexao / __TempoLimiteDeEnvio / __EnviosSimultaneos
+# (issue #2403): prazo vencido devolve a mensagem a fila para nova tentativa.
 email:
   smtp:
     host: ""
@@ -116,6 +118,9 @@ email:
     seguranca: StartTls
     remetente: ""
     nomeRemetente: "Uni+"
+    tempoLimiteDeConexao: "00:00:10"
+    tempoLimiteDeEnvio: "00:00:30"
+    enviosSimultaneos: 5
 
 # Chaves esperadas no Secret externo `{{ .Release.Name }}-uniplus-secrets`
 # (provisionado pelo RUNBOOK do uniplus-infra — NÃO renderizado por este chart).

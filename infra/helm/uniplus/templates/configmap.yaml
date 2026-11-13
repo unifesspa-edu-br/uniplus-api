@@ -46,6 +46,9 @@ data:
   Email__Smtp__Seguranca: {{ .Values.email.smtp.seguranca | quote }}
   Email__Smtp__Remetente: {{ .Values.email.smtp.remetente | quote }}
   Email__Smtp__NomeRemetente: {{ .Values.email.smtp.nomeRemetente | quote }}
+  Email__Smtp__TempoLimiteDeConexao: {{ .Values.email.smtp.tempoLimiteDeConexao | quote }}
+  Email__Smtp__TempoLimiteDeEnvio: {{ .Values.email.smtp.tempoLimiteDeEnvio | quote }}
+  Email__Smtp__EnviosSimultaneos: {{ .Values.email.smtp.enviosSimultaneos | quote }}
   Selecao__ReconciliacaoDaVerificacao__Prazo: {{ .Values.reconciliacaoDaVerificacao.prazo | quote }}
   Selecao__ReconciliacaoDaVerificacao__Intervalo: {{ .Values.reconciliacaoDaVerificacao.intervalo | quote }}
   Selecao__ReconciliacaoDaVerificacao__TamanhoDoLote: {{ .Values.reconciliacaoDaVerificacao.tamanhoDoLote | quote }}
