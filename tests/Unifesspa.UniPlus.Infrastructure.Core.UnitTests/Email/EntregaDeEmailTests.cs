@@ -30,6 +30,11 @@ public sealed class EntregaDeEmailTests : IDisposable
     public EntregaDeEmailTests()
     {
         _metricas = new MetricasDaFilaDeEmail(_relogio);
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<Action>(), Arg.Any<CancellationToken>()).Returns(c =>
+        {
+            c.Arg<Action>()();
+            return Task.CompletedTask;
+        });
         _coletor = new ColetorDeMedidas(_metricas.Medidor);
     }
 
@@ -46,7 +51,7 @@ public sealed class EntregaDeEmailTests : IDisposable
 
         await Entrega().Handle(mensagem, new Envelope { Attempts = 1 }, CancellationToken.None);
 
-        await _transporte.Received(1).EnviarAsync(mensagem, Arg.Any<CancellationToken>());
+        await _transporte.Received(1).EnviarAsync(mensagem, Arg.Any<Action>(), Arg.Any<CancellationToken>());
         string log = _logger.Texto;
         log.Should().Contain("instalacao.codigo").And.Contain("c***@unifesspa.edu.br");
         log.Should().NotContain("candidato@unifesspa.edu.br")
@@ -59,7 +64,7 @@ public sealed class EntregaDeEmailTests : IDisposable
     public async Task Handle_FalhaDoTransporte_RelancaESemEmailNoLog()
     {
         EnviarEmail mensagem = NovaMensagem();
-        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>())
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<Action>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new InvalidOperationException("550 rejeitado para candidato@unifesspa.edu.br"));
 
         Func<Task> envio = () => Entrega().Handle(mensagem, new Envelope { Attempts = 3 }, CancellationToken.None);
@@ -82,14 +87,14 @@ public sealed class EntregaDeEmailTests : IDisposable
 
         await envio.Should().ThrowAsync<DestinatarioInvalidoException>();
         _logger.Texto.Should().Contain("instalacao.codigo").And.Contain(invalida.MensagemId.ToString());
-        await _transporte.DidNotReceiveWithAnyArgs().EnviarAsync(default!, default);
+        await _transporte.DidNotReceiveWithAnyArgs().EnviarAsync(default!, default!, default);
     }
 
     [Fact(DisplayName = "Rejeição 5xx do relay vai para mortas, saneada e sem o endereço, sem passar pelo retry")]
     public async Task Handle_Rejeicao5xx_LancaRecusaPermanenteSaneada()
     {
         EnviarEmail mensagem = NovaMensagem();
-        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>())
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<Action>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new SmtpCommandException(
                 SmtpErrorCode.RecipientNotAccepted, SmtpStatusCode.MailboxUnavailable, "550 candidato@unifesspa.edu.br inexistente"));
 
@@ -115,7 +120,7 @@ public sealed class EntregaDeEmailTests : IDisposable
     [Fact(DisplayName = "A falha transitória soma em falhas por tipo e guarda o instante da última falha")]
     public async Task Handle_FalhaTransitoria_SomaEmFalhasTransitoria()
     {
-        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new InvalidOperationException());
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<Action>(), Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new InvalidOperationException());
 
         Func<Task> envio = () => Entrega().Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
 
@@ -129,7 +134,7 @@ public sealed class EntregaDeEmailTests : IDisposable
     [Fact(DisplayName = "A recusa permanente do relay soma em falhas como permanente")]
     public async Task Handle_Rejeicao5xx_SomaEmFalhasPermanente()
     {
-        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>())
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<Action>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new SmtpCommandException(SmtpErrorCode.RecipientNotAccepted, SmtpStatusCode.MailboxUnavailable, "550"));
 
         Func<Task> envio = () => Entrega().Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
@@ -160,10 +165,13 @@ public sealed class EntregaDeEmailTests : IDisposable
         _coletor.Registradas("uniplus.email.atraso").Should().ContainSingle().Which.Valor.Should().Be(0);
     }
 
-    [Fact(DisplayName = "Prazo vencido no relay é falha transitória: volta à fila para nova tentativa, não vai para as mortas")]
-    public async Task Handle_PrazoVencido_FalhaTransitoria()
+    // Prova só a classificação: o prazo vencido sai como falha transitória, a exceção que a política da chain reenvia.
+    // A volta à fila com o Wolverine real é provada pelo teste do Host "Falha transitória do relay não perde a mensagem:
+    // ela chega na nova tentativa" (EnvioDeEmailTests).
+    [Fact(DisplayName = "Prazo vencido no relay é classificado como falha transitória, não como recusa permanente")]
+    public async Task Handle_PrazoVencido_ClassificadoComoTransitorio()
     {
-        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new TimeoutException());
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<Action>(), Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new TimeoutException());
 
         Func<Task> envio = () => Entrega().Handle(NovaMensagem(), new Envelope { Attempts = 1 }, CancellationToken.None);
 

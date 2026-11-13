@@ -43,9 +43,13 @@ public sealed partial class SmtpTransporteDeEmail : ITransporteDeEmail
         _remetente = new MailboxAddress(_opcoes.NomeRemetente, _opcoes.Remetente);
     }
 
-    public async Task EnviarAsync(EnviarEmail mensagem, CancellationToken cancellationToken)
+    public Task EnviarAsync(EnviarEmail mensagem, CancellationToken cancellationToken) =>
+        EnviarAsync(mensagem, static () => { }, cancellationToken);
+
+    public async Task EnviarAsync(EnviarEmail mensagem, Action aoAceitar, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(mensagem);
+        ArgumentNullException.ThrowIfNull(aoAceitar);
 
         using MimeMessage mime = Montar(mensagem);
         using ISmtpClient cliente = _novoCliente();
@@ -53,6 +57,7 @@ public sealed partial class SmtpTransporteDeEmail : ITransporteDeEmail
 
         await ComPrazoAsync(prazo => ConectarAsync(cliente, prazo), _opcoes.TempoLimiteDeConexao, cancellationToken).ConfigureAwait(false);
         await ComPrazoAsync(prazo => EntregarAsync(cliente, mime, prazo), _opcoes.TempoLimiteDeEnvio, cancellationToken).ConfigureAwait(false);
+        aoAceitar();
         await EncerrarAsync(cliente, cancellationToken).ConfigureAwait(false);
     }
 
@@ -75,6 +80,9 @@ public sealed partial class SmtpTransporteDeEmail : ITransporteDeEmail
     private Task ConectarAsync(ISmtpClient cliente, CancellationToken cancellationToken) =>
         cliente.ConnectAsync(_opcoes.Host, _opcoes.Porta, Seguranca(_opcoes.Seguranca), cancellationToken);
 
+    // Ambiguidade do envio: o relay pode ter aceitado o DATA e a confirmação ter se perdido ou chegado depois do prazo.
+    // A falha volta à fila, e a nova tentativa pode entregar uma segunda cópia. O Message-ID, estável por pedido, ajuda
+    // o destinatário e o suporte a reconhecer a cópia, mas não a impede: nem o relay nem o Uni+ deduplicam por ele.
     private async Task EntregarAsync(ISmtpClient cliente, MimeMessage mime, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(_opcoes.Usuario))
