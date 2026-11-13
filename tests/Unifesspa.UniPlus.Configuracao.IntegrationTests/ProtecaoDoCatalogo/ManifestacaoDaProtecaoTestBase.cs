@@ -11,8 +11,9 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// O apoio dos testes da manifestação técnica na proteção do catálogo (ADR-0163): além de Isabella, que mantém os
-/// cadastros, e de Betina e Caroline, Representantes do controlador, Kevin e Lúcia são Encarregados de dados.
+/// O apoio dos testes da manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato
+/// (ADR-0163): além de Isabella, que mantém os cadastros, e de Betina e Caroline, Representantes do controlador, Kevin
+/// e Lúcia são Encarregados de dados.
 /// </summary>
 public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBase
 {

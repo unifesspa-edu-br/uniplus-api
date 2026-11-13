@@ -10,8 +10,9 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
-/// A manifestação técnica do Encarregado de dados na proteção do catálogo pelo host real (UNI-REQ-0373, ADR-0163): quem
-/// tem a permissão de se manifestar registra o parecer num item com aprovação solicitada, sem decidir.
+/// A manifestação técnica do Encarregado de dados na proteção do catálogo de tipos de documento e de fatos do candidato
+/// pelo host real (UNI-REQ-0373, ADR-0163): quem tem a permissão de se manifestar registra o parecer num item com
+/// aprovação solicitada, sem decidir.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecaoTestBase

@@ -4,8 +4,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
-/// Registro só acrescentado das manifestações técnicas na proteção do catálogo (ADR-0163): grava junto da mudança do
-/// circuito do item e lê os eventos de um ciclo ou o histórico inteiro do item.
+/// Registro só acrescentado das manifestações técnicas na proteção do catálogo de tipos de documento e de fatos do
+/// candidato (ADR-0163): grava junto da mudança do circuito do item e lê os eventos de um ciclo ou o histórico inteiro
+/// do item.
 /// </summary>
 public interface IManifestacaoDaProtecaoRepository
 {

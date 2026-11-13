@@ -8,7 +8,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-/// <summary>Registro só acrescentado das manifestações técnicas na proteção do catálogo (ADR-0163).</summary>
+/// <summary>
+/// Registro só acrescentado das manifestações técnicas na proteção do catálogo de tipos de documento e de fatos do
+/// candidato (ADR-0163).
+/// </summary>
 public sealed class ManifestacaoDaProtecaoRepository : IManifestacaoDaProtecaoRepository
 {
     private readonly ConfiguracaoDbContext _dbContext;

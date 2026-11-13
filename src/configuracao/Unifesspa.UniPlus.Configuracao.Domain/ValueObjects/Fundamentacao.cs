@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Texto livre que fundamenta um ato da proteção do catálogo: a justificativa da decisão ou o texto da manifestação
-/// técnica. Sem os espaços das pontas, com até <see cref="MaxLength"/> caracteres; em branco conta como ausente.
+/// Texto livre que fundamenta um ato da proteção do catálogo de tipos de documento e de fatos do candidato: a
+/// justificativa da decisão ou o texto da manifestação técnica. Sem os espaços das pontas, com até <see cref="MaxLength"/> caracteres; em branco conta como ausente.
 /// </summary>
 public sealed record Fundamentacao
 {

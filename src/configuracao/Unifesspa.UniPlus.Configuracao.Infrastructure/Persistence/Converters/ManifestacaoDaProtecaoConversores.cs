@@ -6,8 +6,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
-/// Conversores do ciclo de aprovação, do parecer e do texto das manifestações técnicas da proteção do catálogo
-/// (ADR-0163), compartilhados pelo circuito na linha do item, pelo ato e pela manifestação.
+/// Conversores do ciclo de aprovação, do parecer e do texto das manifestações técnicas da proteção do catálogo de tipos
+/// de documento e de fatos do candidato (ADR-0163), compartilhados pelo circuito na linha do item, pelo ato e pela
+/// manifestação.
 /// </summary>
 internal static class ManifestacaoDaProtecaoConversores
 {

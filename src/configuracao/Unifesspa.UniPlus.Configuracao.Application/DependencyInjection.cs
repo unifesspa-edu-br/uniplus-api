@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
 /// <summary>
 /// Registra recursos da camada Application do módulo Configuracao: os validators FluentValidation do assembly e os
-/// serviços do circuito de aprovação da proteção do catálogo, que os handlers recebem prontos.
+/// serviços do circuito de aprovação da proteção do catálogo de tipos de documento e de fatos do candidato, que os
+/// handlers recebem prontos.
 /// </summary>
 public static class ConfiguracaoApplicationServiceRegistration
 {

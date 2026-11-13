@@ -13,11 +13,11 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core dos atos da proteção de dados do catálogo, registro só acrescentado: sem chave
-/// estrangeira para o item, que pode ser desativado sem apagar o registro. As colunas de quem agiu são
-/// <c>Pessoal</c>, como em <c>pedido_decisoes</c>; as demais são <c>Interno</c>. A decisão guarda o ciclo e se havia
-/// manifestação técnica desfavorável vigente, e o banco recusa a aprovação ou o ajuste diante dela sem justificativa
-/// (ADR-0163).
+/// Configuração EF Core dos atos da proteção de dados do catálogo de tipos de documento e de fatos do candidato,
+/// registro só acrescentado: sem chave estrangeira para o item, que pode ser desativado sem apagar o registro. As
+/// colunas de quem agiu são <c>Pessoal</c>, como em <c>pedido_decisoes</c>; as demais são <c>Interno</c>. A decisão
+/// guarda o ciclo e se havia manifestação técnica desfavorável vigente, e o banco recusa a aprovação ou o ajuste diante
+/// dela sem justificativa (ADR-0163).
 /// </summary>
 public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfiguration<AtoDaProtecaoDoCatalogo>
 {

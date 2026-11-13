@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O texto que fundamenta um ato da proteção do catálogo: a justificativa da decisão e o texto da manifestação seguem a
-/// mesma regra, cada um com as próprias recusas.
+/// O texto que fundamenta um ato da proteção do catálogo de tipos de documento e de fatos do candidato: a justificativa
+/// da decisão e o texto da manifestação seguem a mesma regra, cada um com as próprias recusas.
 /// </summary>
 public sealed class FundamentacaoTests
 {

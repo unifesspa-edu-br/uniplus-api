@@ -7,23 +7,27 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
-/// Monta os e-mails do circuito de aprovação da proteção de dados do catálogo para quem tem a permissão de
-/// aprovar e para quem tem a de se manifestar. Os handlers devolvem o resultado como mensagens de saída, que entram no outbox junto da gravação.
+/// Monta os e-mails do circuito de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do
+/// candidato para quem tem a permissão de aprovar e para quem tem a de se manifestar. Os handlers devolvem o resultado
+/// como mensagens de saída, que entram no outbox junto da gravação.
 /// </summary>
 /// <remarks>
-/// O corpo traz só o que o próprio catálogo declara — quantidades, cadastro, nome e código do item, classificação —,
-/// nunca nome de pessoa nem justificativa: quem agiu fica registrado no item, que só quem tem acesso abre.
+/// O corpo traz só o que o próprio cadastro do item declara — quantidades, cadastro, nome e código do item,
+/// classificação —, nunca nome de pessoa nem justificativa: quem agiu fica registrado no item, que só quem tem acesso
+/// abre.
 /// </remarks>
 internal static class AvisosDaProtecaoDoCatalogo
 {
     public static IReadOnlyList<EnviarEmail> DaSolicitacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
     {
-        string abertura = $"Há itens do catálogo aguardando a aprovação da proteção de dados: {Itens(tiposDeDocumento, fatos)}.";
-        const string chamada = "Abra a área de proteção de dados do catálogo no Uni+ para aprovar, recomendar ajuste ou reprovar cada um.";
+        string abertura =
+            $"Há itens do catálogo de tipos de documento e de fatos do candidato aguardando a aprovação da proteção de dados: {Itens(tiposDeDocumento, fatos)}.";
+        const string chamada =
+            "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato para aprovar, recomendar ajuste ou reprovar cada um.";
 
         return Montar(
             destinatarios,
-            "Solicitação de aprovação da proteção de dados do catálogo",
+            "Solicitação de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato",
             $"{abertura}\n\n{chamada}",
             $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
             "catalogo.protecao.solicitacao");
@@ -35,12 +39,14 @@ internal static class AvisosDaProtecaoDoCatalogo
     /// </summary>
     public static IReadOnlyList<EnviarEmail> DaSolicitacaoParaManifestacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
     {
-        string abertura = $"Há itens do catálogo com a aprovação da proteção de dados solicitada: {Itens(tiposDeDocumento, fatos)}.";
-        const string chamada = "Abra a área de proteção de dados do catálogo no Uni+ se quiser registrar manifestação técnica sobre cada um; a decisão cabe a quem aprova.";
+        string abertura =
+            $"Há itens do catálogo de tipos de documento e de fatos do candidato com a aprovação da proteção de dados solicitada: {Itens(tiposDeDocumento, fatos)}.";
+        const string chamada =
+            "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato se quiser registrar manifestação técnica sobre cada um; a decisão cabe a quem aprova.";
 
         return Montar(
             destinatarios,
-            "Solicitação de aprovação da proteção de dados do catálogo aberta a manifestação",
+            "Solicitação de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato aberta a manifestação",
             $"{abertura}\n\n{chamada}",
             $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
             "catalogo.protecao.solicitacao.manifestacao");
@@ -53,7 +59,7 @@ internal static class AvisosDaProtecaoDoCatalogo
 
         return Montar(
             destinatarios,
-            "Recomendação da proteção de dados aceita no catálogo",
+            "Recomendação da proteção de dados aceita no catálogo de tipos de documento e de fatos do candidato",
             aviso,
             $"<p>{WebUtility.HtmlEncode(aviso)}</p>",
             "catalogo.protecao.aceite");

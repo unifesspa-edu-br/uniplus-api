@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O número do ciclo de aprovação da proteção de um item do catálogo: começa em 1 e avança a cada reinício de item
-/// que já entrou numa solicitação (ADR-0163). Liga a solicitação, as manifestações e a decisão de um mesmo ciclo; as
+/// O número do ciclo de aprovação da proteção de um tipo de documento ou fato do candidato: começa em 1 e avança a
+/// cada reinício de item que já entrou numa solicitação (ADR-0163). Liga a solicitação, as manifestações e a decisão de um mesmo ciclo; as
 /// manifestações de um ciclo encerrado continuam no histórico e deixam de ser vigentes (UNI-REQ-0373).
 /// </summary>
 /// <param name="Numero">O número do ciclo, a partir de 1.</param>

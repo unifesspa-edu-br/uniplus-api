@@ -9,13 +9,13 @@ informed:
   - "Equipe Uni+"
 ---
 
-# ADR-0163: Manifestação técnica na proteção do catálogo como evento imutável por ciclo de aprovação, gravada sob o controle de concorrência do item
+# ADR-0163: Manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato como evento imutável por ciclo de aprovação, gravada sob o controle de concorrência do item
 
 ## Contexto e enunciado do problema
 
-A [ADR-0153](0153-projecao-por-protecao.md) pôs todo tipo de documento e todo fato do catálogo sob a aprovação da proteção de dados: o item nasce pendente, o administrador do cadastro o envia numa solicitação e quem aprova decide (aprova, recomenda ajuste ou reprova). Cada ato fica num registro só acrescentado, e a edição que muda a proteção, ou qualquer edição de item reprovado ou com ajuste recomendado, reinicia a aprovação sem apagar esse registro (UNI-REQ-0205).
+A [ADR-0153](0153-projecao-por-protecao.md) pôs todo tipo de documento e todo fato do candidato sob a aprovação da proteção de dados: o item nasce pendente, o administrador do cadastro o envia numa solicitação e quem aprova decide (aprova, recomenda ajuste ou reprova). Cada ato fica num registro só acrescentado, e a edição que muda a proteção, ou qualquer edição de item reprovado ou com ajuste recomendado, reinicia a aprovação sem apagar esse registro (UNI-REQ-0205).
 
-A [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md) separou quem decide de quem fiscaliza: o Representante do controlador decide a proteção do catálogo, e o Encarregado de dados registra manifestação técnica, sem decidir. A regra de negócio está em UNI-REQ-0373 e UNI-REQ-0374: a manifestação tem parecer adequada, recomenda ajuste ou inadequada, com texto obrigatório nos dois últimos; vale para o ciclo de aprovação em que foi feita; a nova manifestação da mesma pessoa substitui a vigente sem apagar a anterior; manifestações de pessoas diferentes coexistem; a falta de manifestação não impede a decisão; e aprovar ou recomendar ajuste diante de manifestação desfavorável vigente exige justificativa, registrada no ato da decisão, inclusive na aprovação, que hoje não guarda justificativa.
+A [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md) separou quem decide de quem fiscaliza: o Representante do controlador decide a proteção do catálogo de tipos de documento e de fatos do candidato, e o Encarregado de dados registra manifestação técnica, sem decidir. A regra de negócio está em UNI-REQ-0373 e UNI-REQ-0374: a manifestação tem parecer adequada, recomenda ajuste ou inadequada, com texto obrigatório nos dois últimos; vale para o ciclo de aprovação em que foi feita; a nova manifestação da mesma pessoa substitui a vigente sem apagar a anterior; manifestações de pessoas diferentes coexistem; a falta de manifestação não impede a decisão; e aprovar ou recomendar ajuste diante de manifestação desfavorável vigente exige justificativa, registrada no ato da decisão, inclusive na aprovação, que hoje não guarda justificativa.
 
 O problema é decidir onde a manifestação fica, como ela se liga ao ciclo, como a decisão enxerga a manifestação vigente sem corrida entre as duas, e como a justificativa entra no registro do ato.
 
@@ -73,7 +73,7 @@ A solicitação avisa, além de quem aprova, quem tem a permissão de se manifes
 
 ### Consultas
 
-Quem aprova ou consulta a proteção do catálogo lê as manifestações vigentes no detalhe do item e o histórico de todos os eventos de manifestação do item, de todos os ciclos, com a situação derivada na leitura (vigente, substituída ou encerrada). As leituras passam pelo registro de acesso das permissões de classe pessoal ([ADR-0153](0153-projecao-por-protecao.md)).
+Quem aprova ou consulta a proteção do catálogo de tipos de documento e de fatos do candidato lê as manifestações vigentes no detalhe do item e o histórico de todos os eventos de manifestação do item, de todos os ciclos, com a situação derivada na leitura (vigente, substituída ou encerrada). As leituras passam pelo registro de acesso das permissões de classe pessoal ([ADR-0153](0153-projecao-por-protecao.md)).
 
 ## Consequências
 
@@ -121,7 +121,7 @@ Quem aprova ou consulta a proteção do catálogo lê as manifestações vigente
 ## Mais informações
 
 - **Emenda** a [ADR-0153](0153-projecao-por-protecao.md), seção "Aprovação da proteção de dados como pré-condição": o circuito ganha o ciclo e o estado das manifestações, e o ato de aprovação passa a guardar a justificativa.
-- **Detalha** a regra "Manifestação na proteção do catálogo" da [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md), sem contradizê-la.
+- **Detalha** a regra "Manifestação na proteção do catálogo", sobre os tipos de documento e os fatos do candidato, da [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md), sem contradizê-la.
 - [ADR-0119](0119-padrao-concorrencia-otimista-handlers-wolverine.md): os endpoints de manifestação e de decisão exigem chave de idempotência, então o conflito é tratado no handler, com descarte das alterações, e responde 409 com nova tentativa possível.
 - [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md): a manifestação, como o ato, é evidência forense, fora do soft delete e sem chave estrangeira para o item.
 - [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md): as recusas de forma da manifestação e da decisão saem num único lote.

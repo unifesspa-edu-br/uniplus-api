@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
-/// <summary>Mapeamentos HTTP dos erros de Aprovação da proteção de dados do catálogo (ADR-0153).</summary>
+/// <summary>Mapeamentos HTTP dos erros de Aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato (ADR-0153).</summary>
 internal static class ProtecaoDoCatalogoErrorMappings
 {
     internal static readonly IReadOnlyList<KeyValuePair<string, DomainErrorMapping>> Todos =
@@ -50,13 +50,13 @@ internal static class ProtecaoDoCatalogoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.sem_quem_aprove",
-                "Ninguém tem a permissão de aprovar a proteção de dados do catálogo")),
+                "Ninguém tem a permissão de aprovar a proteção de dados do catálogo de tipos de documento e de fatos do candidato")),
 
         new(ProtecaoDoCatalogoErrorCodes.SemPermissaoNoCatalogo,
             new DomainErrorMapping(
                 StatusCodes.Status403Forbidden,
                 "uniplus.configuracao.protecao_do_catalogo.sem_permissao",
-                "Sem permissão sobre a proteção de dados do catálogo")),
+                "Sem permissão sobre a proteção de dados do catálogo de tipos de documento e de fatos do candidato")),
 
         new(ProtecaoDoCatalogoErrorCodes.IdentidadeIncompleta,
             new DomainErrorMapping(
@@ -68,7 +68,7 @@ internal static class ProtecaoDoCatalogoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
                 "uniplus.configuracao.protecao_do_catalogo.conflito_de_concorrencia",
-                "Um item do catálogo foi alterado concorrentemente",
+                "Um tipo de documento ou fato do candidato foi alterado concorrentemente",
                 RetryableConflict: true)),
 
         new(TipoDocumentoErrorCodes.ConflitoDeConcorrencia,

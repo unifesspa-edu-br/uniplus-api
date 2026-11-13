@@ -199,7 +199,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
             [PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo]);
     }
 
-    [Fact(DisplayName = "Sem nenhuma das quatro permissões do catálogo, as quatro negativas são registradas uma vez só")]
+    [Fact(DisplayName = "Sem nenhuma das quatro permissões do catálogo de tipos de documento e de fatos do candidato, as quatro negativas são registradas uma vez só")]
     public async Task Handle_SemNenhumaPermissao_RegistraAsQuatroNegativasUmaVez()
     {
         IVerificadorDeAcesso verificador = VerificadorCom();
@@ -209,7 +209,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
         NegativasRegistradas(verificador).Should().HaveCount(4);
     }
 
-    [Fact(DisplayName = "Quem só consulta a proteção do catálogo não solicita: a recusa grava as negativas dos dois cadastros")]
+    [Fact(DisplayName = "Quem só consulta a proteção do catálogo de tipos de documento e de fatos do candidato não solicita: a recusa grava as negativas dos dois cadastros")]
     public async Task Handle_SoConsulta_Recusa()
     {
         IVerificadorDeAcesso verificador = VerificadorCom(PermissaoConfiguracao.ProtecaoDoCatalogoConsultar);

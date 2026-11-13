@@ -5,8 +5,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O item do catálogo sob o circuito de aprovação da proteção de dados, seja tipo de documento, seja fato: a decisão e
-/// a manifestação tratam os dois cadastros do mesmo jeito.
+/// O item do catálogo de tipos de documento e de fatos do candidato sob o circuito de aprovação da proteção de dados,
+/// seja tipo de documento, seja fato: a decisão e a manifestação tratam os dois cadastros do mesmo jeito.
 /// </summary>
 /// <remarks>
 /// Provisório: o lugar deste contrato é o domínio, implementado pelo tipo de documento e pelo fato, quando a divisão do

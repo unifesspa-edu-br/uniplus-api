@@ -7,13 +7,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O circuito de aprovação da proteção de dados de um item do catálogo — tipo de documento ou fato
-/// (ADR-0153): o item nasce pendente, o administrador o envia numa solicitação, a proteção de dados
-/// o aprova, recomenda o ajuste da classificação ou o reprova com a justificativa, e o administrador aceita a
-/// recomendação do ajuste ou edita o item. Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a
-/// hipótese legal ou a finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou reprovado
-/// também o reinicia, seja qual for o campo. O reinício de item já solicitado abre um novo ciclo, que encerra as
-/// manifestações técnicas do anterior (ADR-0163).
+/// O circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): o item nasce
+/// pendente, o administrador o envia numa solicitação, a proteção de dados o aprova, recomenda o ajuste da
+/// classificação ou o reprova com a justificativa, e o administrador aceita a recomendação do ajuste ou edita o item.
+/// Guarda quem agiu e quando em cada passo, só o ciclo corrente: mudar a classificação, a hipótese legal ou a
+/// finalidade do item reinicia o circuito, e editar o item com ajuste recomendado ou reprovado também o reinicia, seja
+/// qual for o campo. O reinício de item já solicitado abre um novo ciclo, que encerra as manifestações técnicas do
+/// anterior (ADR-0163).
 /// </summary>
 /// <remarks>
 /// Mutável por dentro do dono, que o mapeia na própria tabela: a transição é sempre um método
