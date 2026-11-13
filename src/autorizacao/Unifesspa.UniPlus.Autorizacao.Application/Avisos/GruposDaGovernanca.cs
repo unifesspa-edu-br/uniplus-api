@@ -8,14 +8,17 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <summary>Os grupos de pessoas que a governança de perfis avisa, cada um definido pela permissão que a pessoa tem.</summary>
 public enum GrupoDaGovernanca
 {
-    /// <summary>Quem aprova pela gestão de acessos; no perfil de governança, os mesmos gestores que mantêm perfis.</summary>
+    /// <summary>Os gestores de acessos que aprovam a adequação funcional; no perfil de governança, os mesmos que mantêm perfis.</summary>
     Gestao = 1,
 
-    /// <summary>Quem mantém perfis.</summary>
+    /// <summary>Os gestores de acessos que mantêm perfis.</summary>
     Manutencao = 2,
 
-    /// <summary>Quem aprova pela proteção de dados.</summary>
-    ProtecaoDeDados = 3,
+    /// <summary>
+    /// Os Representantes do controlador: quem aprova pela proteção de dados, permissão reservada que só o perfil do
+    /// Representante reúne. O Encarregado de dados não entra: não recebe aviso de decisão.
+    /// </summary>
+    RepresentanteDoControlador = 3,
 }
 
 /// <summary>
@@ -28,7 +31,7 @@ public sealed class GruposDaGovernanca
     {
         [GrupoDaGovernanca.Gestao] = CodigoDe(PermissaoAutorizacao.PerfisAprovarFuncional),
         [GrupoDaGovernanca.Manutencao] = CodigoDe(PermissaoAutorizacao.PerfisManter),
-        [GrupoDaGovernanca.ProtecaoDeDados] = CodigoDe(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados),
+        [GrupoDaGovernanca.RepresentanteDoControlador] = CodigoDe(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados),
     };
 
     private readonly ITitularesDaPermissao _titulares;
@@ -41,7 +44,7 @@ public sealed class GruposDaGovernanca
     }
 
     public static GrupoDaGovernanca DaEtapa(EtapaDaVersao etapa) =>
-        etapa == EtapaDaVersao.GestaoDeAcessos ? GrupoDaGovernanca.Gestao : GrupoDaGovernanca.ProtecaoDeDados;
+        etapa == EtapaDaVersao.GestaoDeAcessos ? GrupoDaGovernanca.Gestao : GrupoDaGovernanca.RepresentanteDoControlador;
 
     public async Task<List<DestinatarioDoAviso>> ListarAsync(GrupoDaGovernanca grupo, CancellationToken cancellationToken) =>
         await TitularesDoAviso.ListarAsync(_titulares, Codigos[grupo], cancellationToken).ConfigureAwait(false);

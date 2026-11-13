@@ -74,12 +74,12 @@ internal static class RedacaoDoAviso
     private static IEnumerable<(string Rotulo, string? Valor)> ContagensDe(ContagensDoAviso? contagens)
     {
         yield return ("Concessões pendentes", Numero(contagens?.Pendentes));
-        yield return ("Aguardando a proteção de dados", Numero(contagens?.Aguardando));
+        yield return ("Aguardando o Representante do controlador", Numero(contagens?.Aguardando));
         yield return ("Migradas", Numero(contagens?.Migradas));
         yield return ("Revogadas", Numero(contagens?.Revogadas));
     }
 
     private static string? Numero(int? valor) => valor?.ToString(CultureInfo.InvariantCulture);
 
-    private static string NomeDaEtapa(EtapaDaVersao etapa) => etapa == EtapaDaVersao.GestaoDeAcessos ? "gestão de acessos" : "proteção de dados";
+    private static string NomeDaEtapa(EtapaDaVersao etapa) => etapa == EtapaDaVersao.GestaoDeAcessos ? "gestão de acessos" : "Representante do controlador";
 }

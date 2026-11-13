@@ -83,16 +83,25 @@ public sealed class EfeitosDoDesfechoDaVersao
 
         if (desfecho.Cancelada is { } cancelada)
         {
-            avisos.AddRange(await _avisos.DoCancelamentoPorContencaoAsync(perfil, cancelada, cancellationToken).ConfigureAwait(false));
+            avisos.AddRange(await _avisos.DoCancelamentoPorContencaoAsync(perfil, cancelada, autor, cancellationToken).ConfigureAwait(false));
         }
 
-        if (desfecho.Recalculo is { } recalculo)
-        {
-            VersaoDoPerfil versao = perfil.Versoes.First(v => v.Id == recalculo.VersaoId);
-            avisos.AddRange(await _avisos.DasAprovacoesDescartadasAsync(perfil, versao, desfecho, cancellationToken).ConfigureAwait(false));
-        }
+        avisos.AddRange(await DoRecalculoAsync(perfil, desfecho, cancellationToken).ConfigureAwait(false));
 
         return avisos;
+    }
+
+    // O recálculo do ciclo descarta as aprovações dadas, e quem as deu é avisado.
+    private async Task<IReadOnlyList<EnviarEmail>> DoRecalculoAsync(Perfil perfil, DesfechoDaVersao desfecho, CancellationToken cancellationToken)
+    {
+        if (desfecho.Recalculo is not { } recalculo)
+        {
+            return [];
+        }
+
+        VersaoDoPerfil versao = perfil.Versoes.First(v => v.Id == recalculo.VersaoId);
+
+        return await _avisos.DasAprovacoesDescartadasAsync(perfil, versao, desfecho, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<EnviarEmail>> DaTrocaAsync(

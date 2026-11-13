@@ -6,8 +6,8 @@ using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 /// <summary>
-/// Os avisos da contenção do perfil. A suspensão avisa quem mantém perfis e quem aprova pela proteção de dados, menos
-/// quem suspendeu, uma mensagem por pessoa. Nenhum aviso leva motivo, nome de pessoa nem e-mail; o envelope nasce uma
+/// Os avisos da contenção do perfil. A suspensão avisa os gestores de acessos que mantêm perfis e os Representantes do
+/// controlador, menos quem suspendeu, uma mensagem por pessoa (UNI-REQ-0359). Nenhum aviso leva motivo, nome de pessoa nem e-mail; o envelope nasce uma
 /// vez, na transação que cria a suspensão.
 /// </summary>
 public sealed class AvisosDaContencao
@@ -35,7 +35,7 @@ public sealed class AvisosDaContencao
 
         ModeloDeAviso modelo = new(TipoDeAviso.PerfilSuspenso, perfil.Nome, null, [], _link.DoPerfil(perfil.Id));
         List<DestinatarioDoAviso> destinatarios = await _grupos
-            .ListarAsync([GrupoDaGovernanca.Manutencao, GrupoDaGovernanca.ProtecaoDeDados], cancellationToken)
+            .ListarAsync([GrupoDaGovernanca.Manutencao, GrupoDaGovernanca.RepresentanteDoControlador], cancellationToken)
             .ConfigureAwait(false);
 
         return await _emissor
