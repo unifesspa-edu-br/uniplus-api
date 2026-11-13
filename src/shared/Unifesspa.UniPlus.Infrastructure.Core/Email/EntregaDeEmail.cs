@@ -42,16 +42,18 @@ public sealed partial class EntregaDeEmail(
         // recusada, mensagem que não monta: vai direto para a fila de mensagens mortas.
         chain.OnException<DestinatarioInvalidoException>().MoveToErrorQueue();
         chain.OnException<EnvioDeEmailRecusadoException>().MoveToErrorQueue();
+        TentarDeNovoAsFalhasTransitorias(chain);
+    }
 
-        // Retry em linha só cobre o soluço; queda de relay dura mais, e segurar a fila durante ela
-        // atrasaria os demais e-mails. Depois do curto, reagenda em intervalos crescentes e só então
-        // manda para a fila de mensagens mortas.
+    // Retry em linha só cobre o soluço; queda de relay dura mais, e segurar a fila durante ela
+    // atrasaria os demais e-mails. Depois do curto, reagenda em intervalos crescentes e só então
+    // manda para a fila de mensagens mortas. Relay lento chega aqui como prazo vencido do transporte.
+    private static void TentarDeNovoAsFalhasTransitorias(HandlerChain chain) =>
         chain.OnException<Exception>()
             .RetryWithCooldown(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5))
             .Then.ScheduleRetry(
                 TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(30), TimeSpan.FromHours(1))
             .Then.MoveToErrorQueue();
-    }
 
     public async Task Handle(EnviarEmail mensagem, Envelope envelope, CancellationToken cancellationToken)
     {
@@ -62,7 +64,8 @@ public sealed partial class EntregaDeEmail(
 
         await EnviarAsync(mensagem, mascarado, envelope.Attempts, cancellationToken).ConfigureAwait(false);
 
-        metricas.RegistrarEnvio(relogio.GetUtcNow());
+        DateTimeOffset aceite = relogio.GetUtcNow();
+        metricas.RegistrarEnvio(aceite, aceite - envelope.SentAt);
         LogEnviado(logger, mensagem.Finalidade, mensagem.MensagemId, envelope.Attempts, mascarado);
     }
 

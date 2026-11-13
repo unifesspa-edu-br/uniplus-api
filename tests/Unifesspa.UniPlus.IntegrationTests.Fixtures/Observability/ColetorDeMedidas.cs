@@ -52,6 +52,9 @@ public sealed class ColetorDeMedidas : IDisposable
             .Where(m => m.Instrumento == instrumento && (etiqueta is null || Equals(m.Etiquetas.GetValueOrDefault(etiqueta), valor)))
             .Sum(static m => m.Valor);
 
+    /// <summary>As medidas registradas por um instrumento não observável, com as etiquetas de cada uma.</summary>
+    public IReadOnlyList<MedidaColhida> Registradas(string instrumento) => [.. _acumuladas.Where(m => m.Instrumento == instrumento)];
+
     public void Dispose() => _escuta.Dispose();
 
     private void Registrar<T>(Instrument instrumento, T medida, ReadOnlySpan<KeyValuePair<string, object?>> etiquetas, object? estado)

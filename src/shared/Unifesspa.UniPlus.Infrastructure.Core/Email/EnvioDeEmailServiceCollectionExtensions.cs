@@ -61,15 +61,31 @@ public static class EnvioDeEmailServiceCollectionExtensions
             builder.AddMeter(sp.GetRequiredService<MetricasDaFilaDeEmail>().Medidor.Name));
     }
 
-    /// <summary>Roteia <see cref="EnviarEmail"/> para a fila durável e a consome neste processo.</summary>
-    public static void ConfigurarRoutingDeEmail(WolverineOptions opts)
+    /// <summary>
+    /// Roteia <see cref="EnviarEmail"/> para a fila durável e a consome neste processo, com o teto de envios simultâneos
+    /// de <c>Email:Smtp:EnviosSimultaneos</c>. O roteamento roda antes da validação das opções; por isso o teto é
+    /// validado aqui também, e um valor inválido impede a subida em vez de chegar ao Wolverine.
+    /// </summary>
+    public static void ConfigurarRoutingDeEmail(WolverineOptions opts, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(opts);
+        ArgumentNullException.ThrowIfNull(configuration);
 
         // Explícito, e não pela varredura do assembly compartilhado: o handler só pode existir nos
         // hosts que registram o transporte (AddEnvioDeEmail).
         opts.Discovery.IncludeType<EntregaDeEmail>();
         opts.PublishMessage<EnviarEmail>().ToPostgresqlQueue(FilaDeEnvio);
-        opts.ListenToPostgresqlQueue(FilaDeEnvio);
+        opts.ListenToPostgresqlQueue(FilaDeEnvio).MaximumParallelMessages(EnviosSimultaneos(configuration));
+    }
+
+    internal static int EnviosSimultaneos(IConfiguration configuration)
+    {
+        EmailSmtpOptions opcoes = configuration.GetSection(EmailSmtpOptions.SectionName).Get<EmailSmtpOptions>() ?? new();
+        List<string> falhas = [];
+        EmailSmtpOptionsValidator.ValidarEnviosSimultaneos(opcoes.EnviosSimultaneos, falhas);
+
+        return falhas.Count == 0
+            ? opcoes.EnviosSimultaneos
+            : throw new OptionsValidationException(EmailSmtpOptions.SectionName, typeof(EmailSmtpOptions), falhas);
     }
 }
