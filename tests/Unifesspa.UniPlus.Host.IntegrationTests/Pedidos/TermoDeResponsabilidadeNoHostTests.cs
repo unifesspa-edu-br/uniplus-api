@@ -81,4 +81,22 @@ public sealed class TermoDeResponsabilidadeNoHostTests : TermoNoHostTestBase
         await ConferirAsync(await PedirAsync(betina, sensivel, unidade, null), HttpStatusCode.UnprocessableEntity, "pedido.apresentacao_do_termo_invalida");
         (await ContarPedidosAsync()).Should().Be(0);
     }
+
+    [Fact(DisplayName = "No pedido protegido para outra pessoa, a versão apresentada é obrigatória e conferida com a vigente")]
+    public async Task ParaOutraPessoa_VersaoObrigatoriaEConferida()
+    {
+        (Guid perfil, Guid unidade) = await CenarioAsync();
+        using HttpClient betina = Cliente(Betina);
+        Guid antiga = Vigente!.Id;
+        await TermoNoHostDeTeste.PublicarAsync(Fixture.Factory.Services, "segunda versão");
+
+        await ConferirAsync(await PedirParaLeandroAsync(betina, perfil, unidade, null), HttpStatusCode.UnprocessableEntity, "pedido.apresentacao_do_termo_invalida");
+        await ConferirAsync(await PedirParaLeandroAsync(betina, perfil, unidade, antiga), HttpStatusCode.Conflict, "pedido.termo_divergente");
+        (await ContarPedidosAsync()).Should().Be(0);
+    }
+
+    private static Task<HttpResponseMessage> PedirParaLeandroAsync(HttpClient solicitante, Guid perfilId, Guid unidadeId, Guid? apresentada) =>
+        EnviarAsync(
+            solicitante, HttpMethod.Post, Rota,
+            new { beneficiarioEmail = Leandro.Email, perfilId, unidadeId, justificativa = Justificativa, termoVersaoApresentadaId = apresentada });
 }

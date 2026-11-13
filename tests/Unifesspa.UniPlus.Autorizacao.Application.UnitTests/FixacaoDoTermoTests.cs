@@ -27,7 +27,7 @@ public sealed class FixacaoDoTermoTests
         _termos.ObterVigenteSobTravaCompartilhadaAsync(Arg.Any<CancellationToken>()).Returns(vigente);
         PedidoDeConcessao pedido = Novo(PedidoDeConcessaoTestBase.PerfilDeGovernanca());
 
-        Result resultado = await FixarAsync(pedido, PedidoDeConcessaoTestBase.PerfilDeGovernanca());
+        Result resultado = await FixarAsync(pedido, PedidoDeConcessaoTestBase.PerfilDeGovernanca(), vigente.Id);
 
         resultado.IsSuccess.Should().BeTrue();
         pedido.TermoVersaoId.Should().Be(vigente.Id);
@@ -36,7 +36,7 @@ public sealed class FixacaoDoTermoTests
     [Fact(DisplayName = "O pedido não protegido não lê a vigência do termo")]
     public async Task Fixar_NaoProtegido_NaoTrava()
     {
-        Result resultado = await FixarAsync(Novo(PedidoDeConcessaoTestBase.PerfilComum()), PedidoDeConcessaoTestBase.PerfilComum());
+        Result resultado = await FixarAsync(Novo(PedidoDeConcessaoTestBase.PerfilComum()), PedidoDeConcessaoTestBase.PerfilComum(), null);
 
         resultado.IsSuccess.Should().BeTrue();
         await _termos.DidNotReceive().ObterVigenteSobTravaCompartilhadaAsync(Arg.Any<CancellationToken>());
@@ -58,9 +58,9 @@ public sealed class FixacaoDoTermoTests
         (evento.Ator, evento.Detalhe).Should().Be(("sistema", "Gestores instalados antes de existir termo de responsabilidade publicado."));
     }
 
-    private Task<Result> FixarAsync(PedidoDeConcessao pedido, Perfil perfil) =>
+    private Task<Result> FixarAsync(PedidoDeConcessao pedido, Perfil perfil, Guid? apresentada) =>
         new FixacaoDoTermo(_termos, PedidoDeConcessaoTestBase.Catalogo)
-            .FixarAsync(pedido, perfil, null, DateTimeOffset.UtcNow, CancellationToken.None);
+            .FixarAsync(pedido, perfil, apresentada, DateTimeOffset.UtcNow, CancellationToken.None);
 
     private static PedidoDeConcessao Novo(Perfil perfil) =>
         PedidoDeConcessao.Criar(

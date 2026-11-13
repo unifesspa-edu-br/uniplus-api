@@ -67,13 +67,22 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests : PedidoDeConcessaoTest
         pedido.TermoVersaoId.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Fora do envio que é o aceite, a versão apresentada é opcional e, ausente, a vigente se fixa")]
-    public void Fixar_ParaOutraPessoaSemApresentada_Fixa()
+    [Fact(DisplayName = "No pedido protegido para outra pessoa, a versão apresentada também é obrigatória (UNI-REQ-0377)")]
+    public void Fixar_ParaOutraPessoaSemApresentada_Recusa()
     {
         PedidoDeConcessao pedido = Novo(paraSiMesmo: false);
 
-        pedido.FixarTermo(new TermoNaCriacao(Vigente, null, true), Agora).IsSuccess.Should().BeTrue();
-        pedido.TermoVersaoId.Should().Be(Vigente.Id);
+        Codigos(pedido.FixarTermo(new TermoNaCriacao(Vigente, null, true), Agora)).Should().Equal(PedidoErrorCodes.ApresentacaoDoTermoInvalida);
+        pedido.TermoVersaoId.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "No pedido protegido para outra pessoa, a versão apresentada se fixa sem registrar aceite de quem pede")]
+    public void Fixar_ParaOutraPessoaComApresentada_FixaSemAceite()
+    {
+        PedidoDeConcessao pedido = Novo(paraSiMesmo: false);
+
+        pedido.FixarTermo(new TermoNaCriacao(Vigente, Vigente.Id, true), Agora).IsSuccess.Should().BeTrue();
+        (pedido.TermoVersaoId, pedido.AceiteDoTermo).Should().Be((Vigente.Id, null));
     }
 
     [Fact(DisplayName = "Pedido não protegido não fixa termo e recusa a versão apresentada")]
