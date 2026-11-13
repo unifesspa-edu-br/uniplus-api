@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Verificador.Configuracao;
 
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Verificador.Antivirus;
 using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Contratos;
@@ -21,6 +22,9 @@ public static class ConfiguracaoDoWolverine
     {
         ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(verificador);
+
+        // Mesmo contrato de instantes que a API aplica ao outro lado das filas.
+        opcoes.UseSystemTextJsonForSerialization(OpcoesJsonDasMensagens.Aplicar);
 
         RabbitMqTransportExpression transporte = ConectarAoRabbitMq(opcoes, verificador.RabbitMq);
         OuvirOsPedidos(opcoes, verificador.Paralelismo);

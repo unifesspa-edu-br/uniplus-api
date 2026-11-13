@@ -7,6 +7,8 @@ using Microsoft.Extensions.Options;
 
 using Middleware;
 
+using Unifesspa.UniPlus.Kernel.Tempo;
+
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Kafka;
@@ -110,6 +112,7 @@ public static class WolverineOutboxConfiguration
         string kafkaConfigSection,
         Action<WolverineOptions>? configureRouting)
     {
+        ConfigurarSerializacaoDasMensagens(opts);
         ConfigurarOutboxTransacional(opts, ConnectionStringDoOutbox(configuration, connectionStringName));
         ConfigurarGeracaoDeCodigoEDescoberta(opts);
         ConfigurarMiddlewaresDoPipeline(opts);
@@ -158,6 +161,14 @@ public static class WolverineOutboxConfiguration
                 $"Connection string '{connectionStringName}' não configurada — Wolverine não pode inicializar o outbox.")
             : connectionString;
     }
+
+    /// <summary>
+    /// Serializador JSON padrão das mensagens, o mesmo contrato de instantes que o verificador aplica do outro lado do
+    /// RabbitMQ (<see cref="OpcoesJsonDasMensagens"/>). Vem antes de qualquer endpoint: os que não declaram serializador
+    /// próprio, como as filas PostgreSQL, usam o padrão. O Kafka declara o Avro por endpoint e não passa por aqui.
+    /// </summary>
+    private static void ConfigurarSerializacaoDasMensagens(WolverineOptions opts) =>
+        opts.UseSystemTextJsonForSerialization(OpcoesJsonDasMensagens.Aplicar);
 
     /// <summary>
     /// Persiste o outbox no mesmo banco do módulo, em schema isolado; <c>EnableMessageTransport(_ => { })</c> ativa o
