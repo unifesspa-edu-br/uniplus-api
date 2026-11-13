@@ -52,8 +52,7 @@ public sealed class RevisaoComDesignacaoDuranteTests : PedidosDeConcessaoTestBas
         Revisao revisao = await AbrirComLeandroAsync(leandroERepresentante: true);
         (await DecideAsync(revisao)).Should().Be(Gestor);
 
-        (await EnviarAsync(revisao.Diogo, HttpMethod.Post, $"/api/autorizacao/concessoes/{revisao.DesignacaoDeLeandro}/revogacao", new { motivo = Motivo, confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste }))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await RevogarAsync(revisao.Diogo, revisao.DesignacaoDeLeandro!.Value, Motivo)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await ConferirDecisaoDoRepresentanteAsync(revisao);
     }

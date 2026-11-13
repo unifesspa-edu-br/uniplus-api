@@ -46,7 +46,7 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         await using TransacaoRetidaDeTeste trava = await TravarConcessaoAsync(cenario.Concessoes[Leandro]);
 
         (Task<HttpResponseMessage> revogacao, Task<HttpResponseMessage> lote) = await EmFilaAsync(
-            trava, () => RevogarAsync(administrador, cenario.Concessoes[Leandro], Leandro.Email), () => EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]));
+            trava, () => RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email), () => EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")]));
 
         using HttpResponseMessage respostaDaRevogacao = await revogacao;
         JsonElement janela = await CorpoAsync(await lote, HttpStatusCode.OK);
@@ -205,9 +205,6 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
 
         return trava;
     }
-
-    private static Task<HttpResponseMessage> RevogarAsync(HttpClient administrador, Guid concessaoId, string email) =>
-        EnviarAsync(administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = "A pessoa deixou a função.", confirmacaoEmail = email });
 
     // As duas operações param na trava retida, na ordem pedida, e seguem quando a transação do teste confirma.
     private static async Task<(Task<HttpResponseMessage> Primeira, Task<HttpResponseMessage> Segunda)> EmFilaAsync(

@@ -7,7 +7,6 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -82,9 +81,7 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
-        using HttpResponseMessage revogacao = await EnviarAsync(
-            administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Leandro]}/revogacao",
-            new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email });
+        using HttpResponseMessage revogacao = await RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email);
         revogacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await EncerradaEmAsync(cenario.PerfilId)).Should().BeNull();
         using HttpClient betina = Cliente(Betina);
@@ -101,9 +98,7 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         using HttpClient gestao = await GestaoAsync();
         using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
-        (await EnviarAsync(
-            administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Leandro]}/revogacao",
-            new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email })).Dispose();
+        (await RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email)).Dispose();
         string chave = Guid.NewGuid().ToString();
 
         using HttpResponseMessage primeira = await EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave: chave);
@@ -122,20 +117,12 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
         object[] lote = [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")];
-        object etapa = new { decisoes = new[] { Decisao(cenario.Concessoes[Leandro], "migrar") } };
         object encerramento = new { motivo = "Prazo acordado com a gestão.", confirmacaoDeExclusao = true };
-        string[] chaves = [Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString()];
 
-        string loteUm = await TextoAsync(await EnviarLoteAsync(gestao, cenario.PerfilId, lote, chave: chaves[0]));
-        string loteDois = await TextoAsync(await EnviarLoteAsync(gestao, cenario.PerfilId, lote, chave: chaves[0]));
-        string etapaUm = await TextoAsync(await EnviarAsync(protecao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"), etapa, chaves[1]));
-        string etapaDois = await TextoAsync(await EnviarAsync(protecao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"), etapa, chaves[1]));
-        string fimUm = await TextoAsync(await EnviarAsync(gestao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/encerramento"), encerramento, chaves[2]));
-        string fimDois = await TextoAsync(await EnviarAsync(gestao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/encerramento"), encerramento, chaves[2]));
+        await ConferirReplayIgualAsync(chave => EnviarLoteAsync(gestao, cenario.PerfilId, lote, chave: chave));
+        await ConferirReplayIgualAsync(chave => EtapaDaProtecaoAsync(protecao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")], chave));
+        await ConferirReplayIgualAsync(chave => EnviarAsync(gestao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/encerramento"), encerramento, chave));
 
-        loteDois.Should().Be(loteUm);
-        etapaDois.Should().Be(etapaUm);
-        fimDois.Should().Be(fimUm);
         (await ContarAsync("SELECT count(*)::int AS \"Value\" FROM autorizacao.lotes_da_migracao")).Should().Be(2);
     }
 
@@ -147,11 +134,8 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
         using HttpClient protecao = await ProtecaoAsync();
         (await EnviarLoteAsync(gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "migrar")])).Dispose();
 
-        using HttpResponseMessage etapa = await EnviarAsync(
-            protecao,
-            HttpMethod.Post,
-            RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"),
-            new { decisoes = new[] { Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(Guid.CreateVersion7(), "migrar") } });
+        using HttpResponseMessage etapa = await EtapaDaProtecaoAsync(
+            protecao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(Guid.CreateVersion7(), "migrar")]);
 
         etapa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await etapa.Content.ReadAsStringAsync());
         JsonElement janela = await JanelaAsync(gestao, cenario.PerfilId);
@@ -182,26 +166,10 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         using HttpClient gestor = await GestorAsync();
-        HttpStatusCode? status = null;
-        await ExecutarSqlAsync(FuncaoQueFalhaDepoisDosAvisos);
-        await ExecutarSqlAsync("CREATE TRIGGER tg_teste_falha BEFORE INSERT OR UPDATE ON autorizacao.vigencias_do_perfil FOR EACH ROW EXECUTE FUNCTION autorizacao.falha_depois_dos_avisos_da_janela()");
 
-        try
-        {
-            string[] envelopes = await EnvelopesDeixadosPorAsync(async () =>
-            {
-                using HttpResponseMessage resposta = await RemoverVencendoAJanelaNaEsperaAsync(gestor, cenario.PerfilId);
-                status = resposta.StatusCode;
-            });
+        (HttpStatusCode status, string[] envelopes) = await ComFalhaDepoisDosAvisosAsync(() => RemoverComEnvelopesAsync(gestor, cenario.PerfilId));
 
-            envelopes.Should().BeEmpty("os envelopes preparados na troca voltaram com ela");
-        }
-        finally
-        {
-            await ExecutarSqlAsync("DROP TRIGGER IF EXISTS tg_teste_falha ON autorizacao.vigencias_do_perfil");
-            await ExecutarSqlAsync("DROP FUNCTION IF EXISTS autorizacao.falha_depois_dos_avisos_da_janela()");
-        }
-
+        envelopes.Should().BeEmpty("os envelopes preparados na troca voltaram com ela");
         status.Should().Be(HttpStatusCode.InternalServerError, "a falha só dispara depois de o aviso da versão encerrada estar registrado");
         (await EncerradaEmAsync(cenario.PerfilId)).Should().BeNull("o fim da janela voltou com a troca");
         (await RevogadasPelaJanelaAsync(cenario.PerfilId)).Should().Be(0);
@@ -215,13 +183,8 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         using HttpClient gestor = await GestorAsync();
-        HttpStatusCode? status = null;
 
-        string[] envelopes = await EnvelopesDeixadosPorAsync(async () =>
-        {
-            using HttpResponseMessage resposta = await RemoverVencendoAJanelaNaEsperaAsync(gestor, cenario.PerfilId);
-            status = resposta.StatusCode;
-        });
+        (HttpStatusCode status, string[] envelopes) = await RemoverComEnvelopesAsync(gestor, cenario.PerfilId);
 
         status.Should().Be(HttpStatusCode.OK);
         await ConferirAMaterializacaoAsync(cenario.PerfilId, envelopes);
@@ -268,6 +231,47 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
         return await remocao;
     }
 
+    // A remoção que vence a janela na espera da trava, com os envelopes que ela deixou no outbox.
+    private async Task<(HttpStatusCode Status, string[] Envelopes)> RemoverComEnvelopesAsync(HttpClient gestor, Guid perfilId)
+    {
+        HttpStatusCode status = default;
+        string[] envelopes = await EnvelopesDeixadosPorAsync(async () =>
+        {
+            using HttpResponseMessage resposta = await RemoverVencendoAJanelaNaEsperaAsync(gestor, perfilId);
+            status = resposta.StatusCode;
+        });
+
+        return (status, envelopes);
+    }
+
+    // Faz a gravação da vigência falhar depois de o aviso da versão encerrada estar registrado, só durante a operação.
+    private async Task<T> ComFalhaDepoisDosAvisosAsync<T>(Func<Task<T>> operacao)
+    {
+        await ExecutarSqlAsync(FuncaoQueFalhaDepoisDosAvisos);
+        await ExecutarSqlAsync("CREATE TRIGGER tg_teste_falha BEFORE INSERT OR UPDATE ON autorizacao.vigencias_do_perfil FOR EACH ROW EXECUTE FUNCTION autorizacao.falha_depois_dos_avisos_da_janela()");
+        try
+        {
+            return await operacao();
+        }
+        finally
+        {
+            await ExecutarSqlAsync("DROP TRIGGER IF EXISTS tg_teste_falha ON autorizacao.vigencias_do_perfil");
+            await ExecutarSqlAsync("DROP FUNCTION IF EXISTS autorizacao.falha_depois_dos_avisos_da_janela()");
+        }
+    }
+
+    private static Task<HttpResponseMessage> EtapaDaProtecaoAsync(HttpClient protecao, Guid perfilId, object[] decisoes, string? chave = null) =>
+        EnviarAsync(protecao, HttpMethod.Post, RotaDaJanela(perfilId, "/protecao-de-dados"), new { decisoes }, chave);
+
+    // O replay com a mesma chave devolve a mesma resposta, status e corpo.
+    private static async Task ConferirReplayIgualAsync(Func<string, Task<HttpResponseMessage>> chamada)
+    {
+        string chave = Guid.NewGuid().ToString();
+        string primeira = await TextoAsync(await chamada(chave));
+
+        (await TextoAsync(await chamada(chave))).Should().Be(primeira);
+    }
+
     private static async Task<string> TextoAsync(HttpResponseMessage resposta)
     {
         using (resposta)
@@ -290,25 +294,31 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     }
 
     // Os registros dos avisos do fim da janela: a revogação de cada concessão tem por fato a linha da migração, e o encerramento tem a janela.
-    private async Task<AvisosDaMaterializacao> AvisosDaMaterializacaoAsync(Guid perfilId)
-    {
-        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        DatabaseFacade banco = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database;
-        List<Guid> revogadas = await banco.SqlQuery<Guid>(
+    private async Task<AvisosDaMaterializacao> AvisosDaMaterializacaoAsync(Guid perfilId) =>
+        new(await MensagensDasRevogacoesAsync(perfilId), await MensagensDosEncerramentosAsync(perfilId));
+
+    private Task<List<Guid>> MensagensDasRevogacoesAsync(Guid perfilId) =>
+        MensagensAsync(
             $"""
             SELECT a.mensagem_id AS "Value" FROM autorizacao.avisos_emitidos a
             JOIN autorizacao.migracoes_da_concessao m ON m.id = a.fato_id
             JOIN autorizacao.janelas_de_migracao j ON j.id = m.janela_id
             WHERE a.tipo = 'concessao_revogada' AND j.perfil_id = {perfilId}
-            """).ToListAsync();
-        List<Guid> encerradas = await banco.SqlQuery<Guid>(
+            """);
+
+    private Task<List<Guid>> MensagensDosEncerramentosAsync(Guid perfilId) =>
+        MensagensAsync(
             $"""
             SELECT a.mensagem_id AS "Value" FROM autorizacao.avisos_emitidos a
             JOIN autorizacao.janelas_de_migracao j ON j.id = a.fato_id
             WHERE a.tipo = 'versao_encerrada' AND j.perfil_id = {perfilId}
-            """).ToListAsync();
+            """);
 
-        return new AvisosDaMaterializacao(revogadas, encerradas);
+    private async Task<List<Guid>> MensagensAsync(FormattableString sql)
+    {
+        await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
+
+        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQuery<Guid>(sql).ToListAsync();
     }
 
     private sealed record AvisosDaMaterializacao(IReadOnlyList<Guid> Revogadas, IReadOnlyList<Guid> Encerradas);

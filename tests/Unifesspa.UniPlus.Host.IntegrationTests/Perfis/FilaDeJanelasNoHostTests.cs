@@ -124,7 +124,7 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
         Relogio.Avancar(TimeSpan.FromHours(2));
         (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(2);
 
-        (await RevogarAsync(diogo, cenario.Concessoes[Betina], Betina.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await RevogarAsync(diogo, cenario.Concessoes[Betina], MotivoDaRevogacao, Betina.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await QuantidadeAsync(diogo, cenario.PerfilId)).Should().Be(1);
         (await JanelaAsync(diogo, cenario.PerfilId)).GetProperty("situacao").GetString().Should().Be("aberta");
@@ -192,9 +192,6 @@ public sealed class FilaDeJanelasNoHostTests : JanelaDeMigracaoNoHostTestBase
 
     private static JsonElement ItemDoPerfil(JsonElement fila, Guid perfilId) =>
         fila.EnumerateArray().Single(i => i.GetProperty("perfilId").GetGuid() == perfilId);
-
-    private static Task<HttpResponseMessage> RevogarAsync(HttpClient quem, Guid concessaoId, string email) =>
-        EnviarAsync(quem, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = "A pessoa deixou a função.", confirmacaoEmail = email });
 
     // A gestão envia, em cada janela, o lote que migra todas as concessões.
     private async Task MigrarTudoNaGestaoAsync(params JanelaAberta[] janelas)

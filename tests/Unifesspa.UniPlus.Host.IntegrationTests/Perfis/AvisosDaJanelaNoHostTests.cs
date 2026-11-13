@@ -42,25 +42,17 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
         JanelaAberta cenario = await AbrirEEntregarAsync(Leandro, Betina);
         using HttpClient gestao = await GestaoAsync();
         using HttpClient protecao = await ProtecaoAsync();
-        HttpResponseMessage? lote = null;
-        HttpResponseMessage? etapa = null;
 
-        await EntregarAsync(async () => lote = await EnviarLoteAsync(
+        Caixa[] doLote = await AvisosDeAsync(() => EnviarLoteAsync(
             gestao, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "recusar")], confirmacaoDeExclusao: true));
-        Caixa[] doLote = await LerCaixaAsync();
         await EsvaziarCaixaAsync();
-        await EntregarAsync(async () => etapa = await EnviarAsync(
+        Caixa[] daEtapa = await AvisosDeAsync(() => EnviarAsync(
             protecao, HttpMethod.Post, RotaDaJanela(cenario.PerfilId, "/protecao-de-dados"), new { decisoes = new[] { Decisao(cenario.Concessoes[Leandro], "migrar") } }));
-        Caixa[] daEtapa = await LerCaixaAsync();
 
-        lote!.IsSuccessStatusCode.Should().BeTrue();
-        etapa!.IsSuccessStatusCode.Should().BeTrue();
         Para(doLote, Revogada).Should().Equal(Betina.Email);
         Para(daEtapa, Migrada).Should().Equal(Leandro.Email);
         Para(doLote, Aguardando).Should().Contain(Marlene.Email).And.NotContain(Isabella.Email);
-        doLote.Where(m => m.Assunto.Contains(ComRecusas, StringComparison.Ordinal)).Should().OnlyContain(
-            m => !m.Texto.Contains(Leandro.Email, StringComparison.Ordinal) && !m.Texto.Contains(Betina.Email, StringComparison.Ordinal)
-                && !m.Texto.Contains(Leandro.Nome, StringComparison.Ordinal) && !m.Texto.Contains(Betina.Nome, StringComparison.Ordinal));
+        Mensagens(doLote, ComRecusas).Should().OnlyContain(m => SemDadoDosBeneficiarios(m));
     }
 
     [Fact(DisplayName = "O fim do prazo pela rotina avisa quem perdeu o acesso e os grupos, uma vez, mesmo com a rotina rodando de novo")]
@@ -69,15 +61,10 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
         JanelaAberta cenario = await AbrirEEntregarAsync(Leandro);
         Relogio.Avancar(TimeSpan.FromHours(73));
 
-        await EntregarAsync(async () =>
-        {
-            await ProcessarJanelasAsync();
-            await ProcessarJanelasAsync();
-        });
-        Caixa[] caixa = await LerCaixaAsync();
+        Caixa[] caixa = await CaixaDepoisDeAsync(RodarARotinaDuasVezesAsync);
 
         Para(caixa, Revogada).Should().Equal(Leandro.Email);
-        caixa.Where(m => m.Assunto.Contains(Encerrada, StringComparison.Ordinal)).Select(m => m.Para).Should().OnlyHaveUniqueItems();
+        Para(caixa, Encerrada).Should().OnlyHaveUniqueItems();
         (await TemConcessaoAtivaAsync(Leandro, cenario.PerfilId)).Should().BeFalse();
     }
 
@@ -87,12 +74,7 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
         await AbrirEEntregarAsync(Leandro);
         Relogio.Avancar(TimeSpan.FromHours(25));
 
-        await EntregarAsync(async () =>
-        {
-            await ProcessarJanelasAsync();
-            await ProcessarJanelasAsync();
-        });
-        Caixa[] caixa = await LerCaixaAsync();
+        Caixa[] caixa = await CaixaDepoisDeAsync(RodarARotinaDuasVezesAsync);
 
         Para(caixa, Advertencia).Should().Equal(Leandro.Email);
     }
@@ -102,16 +84,11 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta cenario = await AbrirEEntregarAsync(Isabella, Leandro);
         using HttpClient isabella = await GestaoAsync();
-        await EntregarAsync(async () =>
-        {
-            using HttpResponseMessage lote = await EnviarLoteAsync(isabella, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]);
-            lote.IsSuccessStatusCode.Should().BeTrue();
-        });
+        await EntregarComSucessoAsync(() => EnviarLoteAsync(isabella, cenario.PerfilId, [Decisao(cenario.Concessoes[Leandro], "migrar")]));
         await EsvaziarCaixaAsync();
         Relogio.Avancar(TimeSpan.FromHours(49));
 
-        await EntregarAsync(ProcessarJanelasAsync);
-        Caixa[] caixa = await LerCaixaAsync();
+        Caixa[] caixa = await CaixaDepoisDeAsync(ProcessarJanelasAsync);
 
         Para(caixa, Advertencia).Should().Contain(Isabella.Email);
         caixa.Where(m => m.Para == Isabella.Email).Should().NotContain(m => m.Assunto.Contains(Retida, StringComparison.Ordinal) || m.Assunto.StartsWith(Faltam, StringComparison.Ordinal));
@@ -139,18 +116,15 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta cenario = await AbrirEEntregarAsync(Leandro);
         using HttpClient gestor = await GestorAsync();
-        HttpResponseMessage? remocao = null;
 
-        await EntregarAsync(async () =>
+        Caixa[] caixa = await CaixaDepoisDeAsync(async () =>
         {
-            remocao = await RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]);
+            using HttpResponseMessage remocao = await RemoverBrutoAsync(gestor, cenario.PerfilId, [Sensivel]);
+            remocao.IsSuccessStatusCode.Should().BeTrue();
             Relogio.Avancar(TimeSpan.FromHours(73));
-            await ProcessarJanelasAsync();
-            await ProcessarJanelasAsync();
+            await RodarARotinaDuasVezesAsync();
         });
-        Caixa[] caixa = await LerCaixaAsync();
 
-        remocao!.IsSuccessStatusCode.Should().BeTrue();
         Tem(caixa, Encerrada).Should().BeTrue();
         Para(caixa, Encerrada).Should().OnlyHaveUniqueItems();
         Para(caixa, Revogada).Should().OnlyHaveUniqueItems();
@@ -164,16 +138,9 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
         object[] decisoes = [Decisao(cenario.Concessoes[Leandro], "migrar"), Decisao(cenario.Concessoes[Betina], "recusar")];
         string chave = Guid.NewGuid().ToString();
 
-        HttpResponseMessage? primeira = null;
-        HttpResponseMessage? replay = null;
+        Caixa[] aposAPrimeira = await AvisosDeAsync(() => EnviarLoteAsync(gestao, cenario.PerfilId, decisoes, confirmacaoDeExclusao: true, chave: chave));
+        Caixa[] aposOReplay = await AvisosDeAsync(() => EnviarLoteAsync(gestao, cenario.PerfilId, decisoes, confirmacaoDeExclusao: true, chave: chave));
 
-        await EntregarAsync(async () => primeira = await EnviarLoteAsync(gestao, cenario.PerfilId, decisoes, confirmacaoDeExclusao: true, chave: chave));
-        Caixa[] aposAPrimeira = await LerCaixaAsync();
-        await EntregarAsync(async () => replay = await EnviarLoteAsync(gestao, cenario.PerfilId, decisoes, confirmacaoDeExclusao: true, chave: chave));
-        Caixa[] aposOReplay = await LerCaixaAsync();
-
-        primeira!.IsSuccessStatusCode.Should().BeTrue();
-        replay!.IsSuccessStatusCode.Should().BeTrue();
         Tem(aposAPrimeira, Revogada).Should().BeTrue();
         aposOReplay.Select(m => (m.Para, m.Assunto)).Should().BeEquivalentTo(aposAPrimeira.Select(m => (m.Para, m.Assunto)));
     }
@@ -181,21 +148,15 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
     [Fact(DisplayName = "O pedido ativo devolvido pela abertura da janela avisa o solicitante e o beneficiário uma vez, ainda que a rotina rode")]
     public async Task PedidoDevolvidoPelaJanela_AvisaUmaVez()
     {
-        await ResetarAsync();
+        (Envio vigente, Guid pedido) = await PerfilComPedidoAtivoAsync();
         using HttpClient gestor = await GestorAsync();
-        Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
-        using HttpClient betina = Cliente(Betina);
-        Guid pedido = default;
-        await EntregarAsync(async () => pedido = await Pedidos.PedidosDeConcessaoTestBase.CriarAsync(betina, vigente.PerfilId, await SemearUnidadeAsync(), null));
-        await EsvaziarCaixaAsync();
         Envio nova = await CriarVersaoAsync(gestor, vigente.PerfilId, Nome(), Consultar, Sensivel);
 
-        await EntregarAsync(async () =>
+        Caixa[] caixa = await CaixaDepoisDeAsync(async () =>
         {
             await EnviarEVerificarAsync(gestor, nova);
             await ProcessarJanelasAsync();
         });
-        Caixa[] caixa = await LerCaixaAsync();
 
         pedido.Should().NotBeEmpty();
         Para(caixa, Devolvido).Should().Contain(Betina.Email).And.OnlyHaveUniqueItems();
@@ -206,27 +167,74 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         JanelaAberta cenario = await AbrirEEntregarAsync(Leandro, Betina);
         using HttpClient administrador = await ClienteComPermissoesAsync(Diogo, Administrar);
-        HttpResponseMessage? revogacao = null;
         Relogio.Avancar(TimeSpan.FromHours(73));
 
-        await EntregarAsync(async () =>
+        Caixa[] caixa = await CaixaDepoisDeAsync(async () =>
         {
-            revogacao = await EnviarAsync(
-                administrador, HttpMethod.Post, $"/api/autorizacao/concessoes/{cenario.Concessoes[Leandro]}/revogacao",
-                new { motivo = "A pessoa deixou a função.", confirmacaoEmail = Leandro.Email });
+            using HttpResponseMessage revogacao = await RevogarAsync(administrador, cenario.Concessoes[Leandro], MotivoDaRevogacao, Leandro.Email);
+            revogacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await revogacao.Content.ReadAsStringAsync());
             await ProcessarJanelasAsync();
         });
-        Caixa[] caixa = await LerCaixaAsync();
 
         Tem(caixa, Encerrada).Should().BeTrue();
-        revogacao!.StatusCode.Should().Be(HttpStatusCode.NoContent, await revogacao.Content.ReadAsStringAsync());
         Para(caixa, Revogada).Should().NotContain(Leandro.Email);
     }
 
-    private static bool Tem(Caixa[] caixa, string assunto) => caixa.Any(m => m.Assunto.Contains(assunto, StringComparison.Ordinal));
+    private static bool Tem(Caixa[] caixa, string assunto) => Mensagens(caixa, assunto).Length > 0;
 
-    private static string[] Para(Caixa[] caixa, string assunto) =>
-        [.. caixa.Where(m => m.Assunto.Contains(assunto, StringComparison.Ordinal)).Select(m => m.Para)];
+    private static string[] Para(Caixa[] caixa, string assunto) => [.. Mensagens(caixa, assunto).Select(m => m.Para)];
+
+    private static Caixa[] Mensagens(Caixa[] caixa, string assunto) =>
+        [.. caixa.Where(m => m.Assunto.Contains(assunto, StringComparison.Ordinal))];
+
+    // O aviso aos grupos não leva o nome nem o e-mail dos beneficiários do lote.
+    private static bool SemDadoDosBeneficiarios(Caixa mensagem) =>
+        new[] { Leandro.Email, Betina.Email, Leandro.Nome, Betina.Nome }.All(dado => !mensagem.Texto.Contains(dado, StringComparison.Ordinal));
+
+    /// <summary>Entrega o que a chamada publica no outbox e confere que ela foi aceita.</summary>
+    private async Task EntregarComSucessoAsync(Func<Task<HttpResponseMessage>> chamada) =>
+        await EntregarAsync(async () =>
+        {
+            using HttpResponseMessage resposta = await chamada();
+            resposta.IsSuccessStatusCode.Should().BeTrue(await resposta.Content.ReadAsStringAsync());
+        });
+
+    /// <summary>Os avisos que a chamada aceita deixou na caixa de e-mail.</summary>
+    private async Task<Caixa[]> AvisosDeAsync(Func<Task<HttpResponseMessage>> chamada)
+    {
+        await EntregarComSucessoAsync(chamada);
+
+        return await LerCaixaAsync();
+    }
+
+    /// <summary>A caixa de e-mail depois de entregar o que a ação publicou no outbox.</summary>
+    private async Task<Caixa[]> CaixaDepoisDeAsync(Func<Task> acao)
+    {
+        await EntregarAsync(acao);
+
+        return await LerCaixaAsync();
+    }
+
+    // A rotina rodando de novo não repete o que já avisou.
+    private async Task RodarARotinaDuasVezesAsync()
+    {
+        await ProcessarJanelasAsync();
+        await ProcessarJanelasAsync();
+    }
+
+    // O perfil vigente com um pedido ativo de Betina, cujos avisos já foram entregues; a caixa fica vazia.
+    private async Task<(Envio Vigente, Guid Pedido)> PerfilComPedidoAtivoAsync()
+    {
+        await ResetarAsync();
+        using HttpClient gestor = await GestorAsync();
+        Envio vigente = await PerfilVigenteAsync(gestor, Consultar);
+        using HttpClient betina = Cliente(Betina);
+        Guid pedido = default;
+        await EntregarAsync(async () => pedido = await Pedidos.PedidosDeConcessaoTestBase.CriarAsync(betina, vigente.PerfilId, await SemearUnidadeAsync(), null));
+        await EsvaziarCaixaAsync();
+
+        return (vigente, pedido);
+    }
 
     private HttpClient Mailpit() => new() { BaseAddress = Fixture.ApiDoMailpit };
 

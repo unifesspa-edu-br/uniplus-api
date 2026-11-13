@@ -269,8 +269,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
     {
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         await ClienteComPermissoesAsync(Betina, AprovarFuncional);
-        (await EnviarAsync(diogo, HttpMethod.Post, $"/api/autorizacao/concessoes/{concessaoId}/revogacao", new { motivo = Motivo, confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste }))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await RevogarAsync(diogo, concessaoId, Motivo)).StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     private static JsonElement[] ItensDe(JsonElement revisao, Persona persona) =>
