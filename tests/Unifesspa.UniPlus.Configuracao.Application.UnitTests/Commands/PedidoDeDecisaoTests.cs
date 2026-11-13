@@ -44,6 +44,11 @@ public sealed class PedidoDeDecisaoTests
         PedidoDeDecisao.Ler(Comando(decisao, recomendada: recomendada, justificativa: justificativa)).Errors
             .Should().ContainSingle(e => e.Field == campo).Which.Error.Code.Should().Be($"ProtecaoDoCatalogo.{codigo}");
 
+    [Fact(DisplayName = "O ajuste sem a classificação recomendada sai com uma recusa só no lote, a da regra do domínio")]
+    public void Ler_AjusteSemRecomendacao_UmaRecusaSo() =>
+        PedidoDeDecisao.Ler(Comando("RECOMENDAR_AJUSTE")).Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "classificacaoRecomendada" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.RecomendacaoObrigatoria);
+
     [Theory(DisplayName = "A justificativa de até 2.000 caracteres é aceita; com mais, recusada")]
     [InlineData(2000, true)]
     [InlineData(2001, false)]
