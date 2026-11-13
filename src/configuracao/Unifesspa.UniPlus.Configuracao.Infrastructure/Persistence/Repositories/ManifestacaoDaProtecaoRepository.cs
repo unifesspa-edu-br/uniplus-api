@@ -33,7 +33,7 @@ public sealed class ManifestacaoDaProtecaoRepository : IManifestacaoDaProtecaoRe
         await DoItem(item)
             .Where(m => m.Ciclo == ciclo)
             .OrderBy(m => m.Instante)
-            .ThenBy(m => m.Id)
+            .ThenBy(m => m.OrdemDeRegistro)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -41,7 +41,7 @@ public sealed class ManifestacaoDaProtecaoRepository : IManifestacaoDaProtecaoRe
         await DoItem(item)
             .OrderBy(m => m.Ciclo)
             .ThenBy(m => m.Instante)
-            .ThenBy(m => m.Id)
+            .ThenBy(m => m.OrdemDeRegistro)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

@@ -29,7 +29,7 @@ public sealed class HistoricoDasManifestacoes
         ArgumentNullException.ThrowIfNull(eventos);
 
         return new HistoricoDasManifestacoes(
-            [.. eventos.OrderBy(static e => e.Ciclo.Numero).ThenBy(static e => e.Instante).ThenBy(static e => e.Id)], cicloCorrente);
+            [.. eventos.OrderBy(static e => e.Ciclo.Numero).ThenBy(static e => e.Instante).ThenBy(static e => e.PosicaoNoInstante)], cicloCorrente);
     }
 
     /// <summary>A situação do evento: substituída tem precedência; senão, vigente no ciclo corrente e encerrada nos demais.</summary>

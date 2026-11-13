@@ -58,6 +58,19 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
 
     public DateTimeOffset Instante { get; private init; }
 
+    /// <summary>
+    /// A ordem em que as manifestações foram registradas, dada pelo banco: desempata duas manifestações do mesmo instante
+    /// sobre o mesmo item, que a mudança na linha do item serializa pelo token de concorrência. Zero enquanto a
+    /// manifestação não foi gravada.
+    /// </summary>
+    public long OrdemDeRegistro { get; private set; }
+
+    /// <summary>
+    /// A posição da manifestação entre as do mesmo instante: a ainda não gravada é a mais recente, porque só se grava
+    /// depois das já existentes.
+    /// </summary>
+    internal long PosicaoNoInstante => OrdemDeRegistro == 0 ? long.MaxValue : OrdemDeRegistro;
+
     /// <summary>Recomenda ajuste ou inadequada.</summary>
     public bool Desfavoravel => PareceresDaManifestacao.EhDesfavoravel(Parecer);
 

@@ -60,6 +60,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
             .IsRequired();
         builder.Property(m => m.Texto).HasConversion(ManifestacaoDaProtecaoConversores.Texto).HasMaxLength(Fundamentacao.MaxLength);
         builder.Property(m => m.Instante).IsRequired();
+        builder.Property(m => m.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
 
         builder.Property<string>(CampoDoEmissor).HasColumnName("autor_emissor").HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
@@ -82,6 +83,9 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
     {
         builder.HasIndex(CampoDoCadastro, CampoDoItem, nameof(ManifestacaoDaProtecaoDoCatalogo.Ciclo), nameof(ManifestacaoDaProtecaoDoCatalogo.Instante))
             .HasDatabaseName("ix_protecao_do_catalogo_manifestacoes_item_ciclo");
+        builder.HasIndex(m => m.OrdemDeRegistro)
+            .IsUnique()
+            .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_ordem_de_registro");
         builder.HasIndex(m => m.SubstituiId)
             .IsUnique()
             .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_substitui");

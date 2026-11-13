@@ -115,8 +115,19 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("justificativa");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.HasKey("Id")
                         .HasName("pk_protecao_do_catalogo_atos");
+
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_protecao_do_catalogo_atos_ordem_de_registro");
 
                     b.HasIndex("Ato", "Instante")
                         .HasDatabaseName("ix_protecao_do_catalogo_atos_ato");
@@ -3557,6 +3568,13 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("instante");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.Property<string>("Parecer")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -3601,6 +3619,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_protecao_do_catalogo_manifestacoes");
+
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_ordem_de_registro");
 
                     b.HasIndex("SubstituiId")
                         .IsUnique()

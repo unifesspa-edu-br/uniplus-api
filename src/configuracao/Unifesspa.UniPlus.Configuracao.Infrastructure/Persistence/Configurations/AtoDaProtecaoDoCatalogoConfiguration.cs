@@ -69,7 +69,9 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property(a => a.AtorNome).HasMaxLength(AtorDoAto.NomeMaxLength).ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property(a => a.Instante).IsRequired();
+        builder.Property(a => a.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
 
+        builder.HasIndex(a => a.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_protecao_do_catalogo_atos_ordem_de_registro");
         builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_item");
         builder.HasIndex(a => new { a.Ato, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_ato");
         builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Ciclo, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_item_ciclo");
