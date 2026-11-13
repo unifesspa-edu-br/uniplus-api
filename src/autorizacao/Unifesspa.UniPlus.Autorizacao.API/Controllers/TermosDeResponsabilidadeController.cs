@@ -71,17 +71,21 @@ public sealed class TermosDeResponsabilidadeController : ControllerBase
 
     /// <summary>A versão vigente, para quem vai pedir acesso; 404 se nenhuma foi publicada.</summary>
     [HttpGet("termos-de-responsabilidade/vigente")]
+    [VendorMediaType(Resource = "versao-do-termo", Versions = [1])]
     [ProducesResponseType(typeof(VersaoDoTermoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterVigente(CancellationToken cancellationToken) =>
         Resposta(await _queryBus.Send(new ObterTermoVigenteQuery(), cancellationToken).ConfigureAwait(false));
 
     /// <summary>Uma versão pelo id, vigente ou não: a tela de aceite mostra a versão fixada no pedido.</summary>
     [HttpGet("termos-de-responsabilidade/versoes/{id:guid}")]
+    [VendorMediaType(Resource = "versao-do-termo", Versions = [1])]
     [ProducesResponseType(typeof(VersaoDoTermoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterVersao(Guid id, CancellationToken cancellationToken) =>
         Resposta(await _queryBus.Send(new ObterVersaoDoTermoQuery(id), cancellationToken).ConfigureAwait(false));
 
