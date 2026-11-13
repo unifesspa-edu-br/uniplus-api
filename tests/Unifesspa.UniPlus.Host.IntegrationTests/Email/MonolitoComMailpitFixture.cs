@@ -29,16 +29,9 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
     Justification = "Recursos liberados por EncerrarDependenciasAsync — xUnit invoca deterministicamente.")]
 public sealed class MonolitoComMailpitFixture : MonolitoPostgresFixtureBase<MonolitoComMailpitApiFactory>
 {
-    private const ushort PortaSmtp = 1025;
-    private const ushort PortaHttp = 8025;
+    private readonly IContainer _mailpit = MailpitDeTeste.Criar();
 
-    private readonly IContainer _mailpit = new ContainerBuilder("axllent/mailpit:v1.27")
-        .WithPortBinding(PortaSmtp, true)
-        .WithPortBinding(PortaHttp, true)
-        .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(PortaHttp).ForPath("/readyz")))
-        .Build();
-
-    public Uri ApiDoMailpit => new($"http://{_mailpit.Hostname}:{_mailpit.GetMappedPublicPort(PortaHttp)}");
+    public Uri ApiDoMailpit => new($"http://{_mailpit.Hostname}:{_mailpit.GetMappedPublicPort(MailpitDeTeste.PortaHttp)}");
 
     protected override Task IniciarDependenciasAsync() => _mailpit.StartAsync();
 
@@ -55,7 +48,7 @@ public sealed class MonolitoComMailpitFixture : MonolitoPostgresFixtureBase<Mono
     }
 
     protected override MonolitoComMailpitApiFactory CreateFactory(string connectionString) =>
-        new(connectionString, _mailpit.Hostname, _mailpit.GetMappedPublicPort(PortaSmtp));
+        new(connectionString, _mailpit.Hostname, _mailpit.GetMappedPublicPort(MailpitDeTeste.PortaSmtp));
 }
 
 [SuppressMessage(
@@ -182,10 +175,7 @@ public sealed class FalhaNoCommitDaSolicitacao : SaveChangesInterceptor, IDbTran
 
         if (_alterouEntidade && Interlocked.CompareExchange(ref _armada, 0, 1) == 1)
         {
-            await using DbCommand contagem = transaction.Connection!.CreateCommand();
-            contagem.Transaction = transaction;
-            contagem.CommandText = "SELECT count(*) FROM wolverine.wolverine_outgoing_envelopes WHERE message_type ILIKE '%email%'";
-            Volatile.Write(ref _envelopesNaTransacao, Convert.ToInt32(await contagem.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture));
+            Volatile.Write(ref _envelopesNaTransacao, await ContarEnvelopesDeEmailAsync(transaction, cancellationToken));
             Interlocked.Increment(ref _disparos);
             _alterouEntidade = false;
 
@@ -193,5 +183,13 @@ public sealed class FalhaNoCommitDaSolicitacao : SaveChangesInterceptor, IDbTran
         }
 
         return result;
+    }
+
+    private static async Task<int> ContarEnvelopesDeEmailAsync(DbTransaction transaction, CancellationToken cancellationToken)
+    {
+        await using DbCommand contagem = transaction.Connection!.CreateCommand();
+        contagem.Transaction = transaction;
+        contagem.CommandText = "SELECT count(*) FROM wolverine.wolverine_outgoing_envelopes WHERE message_type ILIKE '%email%'";
+        return Convert.ToInt32(await contagem.ExecuteScalarAsync(cancellationToken), System.Globalization.CultureInfo.InvariantCulture);
     }
 }
