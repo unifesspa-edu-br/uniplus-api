@@ -24,11 +24,11 @@
 # classificação, a hipótese legal e a finalidade que o item já declara.
 #
 # Variáveis de ambiente opcionais, além das do roteiro e de acessos-do-roteiro.sh:
-#   REPRESENTANTES   (default: "betina.neves isabella.figueiredo") — duas
+#   REPRESENTANTES   (default: "betina.neves caroline.jesus") — duas
 #                    personas fictícias do portal, nenhuma delas gestor
 #   SENHA_REPRESENTANTES (default: $ADMIN_PASS)
 
-REPRESENTANTES="${REPRESENTANTES:-betina.neves isabella.figueiredo}"
+REPRESENTANTES="${REPRESENTANTES:-betina.neves caroline.jesus}"
 SENHA_REPRESENTANTES="${SENHA_REPRESENTANTES:-$ADMIN_PASS}"
 PERFIL_REPRESENTANTE_ID="019a0000-0000-7000-8000-000000000002"
 PDF_DE_DESIGNACAO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/edital-de-teste.pdf"
