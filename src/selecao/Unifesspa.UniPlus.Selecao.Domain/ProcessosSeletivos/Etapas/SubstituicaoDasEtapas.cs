@@ -16,16 +16,19 @@ internal sealed class SubstituicaoDasEtapas
 {
     private readonly EstadoDaConfiguracao _estado;
     private readonly IReadOnlyList<EtapaProcesso> _novas;
+    private readonly FasesIniciadas _iniciadas;
     private readonly EtapasDoProcesso _conjunto;
     private readonly HashSet<Guid> _idsDasNovas;
     private readonly Dictionary<string, FaseCronograma> _fasesPorCodigo;
 
-    internal SubstituicaoDasEtapas(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> novas)
+    internal SubstituicaoDasEtapas(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> novas, FasesIniciadas iniciadas)
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(novas);
+        ArgumentNullException.ThrowIfNull(iniciadas);
 
         _estado = estado;
+        _iniciadas = iniciadas;
         _novas = novas;
         _conjunto = new EtapasDoProcesso(novas);
         _idsDasNovas = [.. novas.Select(e => e.Id)];
@@ -33,13 +36,15 @@ internal sealed class SubstituicaoDasEtapas
     }
 
     /// <summary>
-    /// A recusa de trocar o conjunto, na ordem em que orienta quem edita: o conjunto em si, o que a
+    /// A recusa de trocar o conjunto, na ordem em que orienta quem edita: o conjunto em si, a remoção de etapa
+    /// que já começou (UNI-REQ-0364), que é a causa a corrigir antes das referências às etapas removidas, o que a
     /// configuração cita, o cronograma e, por fim, o ciclo recursal, que acumula as violações.
     /// </summary>
     internal Result Conferir()
     {
         DomainError? recusa =
             _conjunto.RecusaDaColecao(_estado.Classificacao)
+            ?? _iniciadas.RecusaDaRemocaoDaEtapa(_novas)
             ?? EtapaCitadaPeloDesempate()
             ?? EtapaCitadaPelaClassificacao()
             ?? EtapaCitadaPelaExigenciaDocumental()
