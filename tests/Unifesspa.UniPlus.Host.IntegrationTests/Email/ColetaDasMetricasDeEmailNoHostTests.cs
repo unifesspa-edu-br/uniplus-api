@@ -15,7 +15,7 @@ using Wolverine;
 
 /// <summary>
 /// As métricas do envio de e-mail pelo pipeline OpenTelemetry real do host, com um exportador em memória: a série dos
-/// instantes existe desde a subida, antes de qualquer envio, e a entrega soma aceites e falhas por tipo.
+/// instantes existe desde a subida, antes de qualquer envio, e a entrega soma aceites e falhas por tipo e mede o atraso só do aceite.
 /// </summary>
 [Collection(MonolitoComMailpitCollection.Name)]
 public sealed class ColetaDasMetricasDeEmailNoHostTests : IClassFixture<HostComColetaDeMetricasDeEmail>
@@ -49,6 +49,7 @@ public sealed class ColetaDasMetricasDeEmailNoHostTests : IClassFixture<HostComC
         IReadOnlyList<MedidaExportada> medidas = _host.Exportar(_fixture);
 
         medidas.Single(m => m.Instrumento == "uniplus.email.enviados").Valor.Should().Be(1);
+        medidas.Single(m => m.Instrumento == "uniplus.email.atraso").Valor.Should().Be(1, "só o aceite mede o atraso");
         medidas.Single(m => m.Instrumento == "uniplus.email.falhas" && (string?)m.Etiquetas["tipo"] == "transitoria").Valor.Should().Be(1);
         medidas.Single(m => m.Instrumento == "uniplus.email.falhas" && (string?)m.Etiquetas["tipo"] == "permanente").Valor.Should().Be(1);
         medidas.Single(m => m.Instrumento == "uniplus.email.ultimo_envio").Valor.Should().BeGreaterThan(0);
