@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>
 /// Quanto o pedido de verificação espera, depois de cada publicação, antes de ser republicado. O prazo dobra a cada
 /// publicação, até o teto: com o verificador fora do ar, a fila não acumula um duplicado a cada prazo base.
@@ -10,11 +12,14 @@ public sealed record PoliticaDeRepublicacao(TimeSpan Base, TimeSpan Maximo)
 {
     public static PoliticaDeRepublicacao Padrao { get; } = new(TimeSpan.FromMinutes(10), TimeSpan.FromHours(6));
 
-    /// <summary>O prazo até a próxima publicação, dado quantas já foram feitas: <c>Base × 2^(publicações − 1)</c>, limitado ao teto.</summary>
+    /// <summary>
+    /// O prazo até a próxima publicação, dado quantas já foram feitas: <c>Base × 2^(publicações − 1)</c>, limitado ao teto,
+    /// em microssegundos inteiros: somado a um instante em microssegundos, não reintroduz a 7ª casa decimal.
+    /// </summary>
     public TimeSpan PrazoApos(int publicacoes)
     {
         int dobras = Math.Max(publicacoes - 1, 0);
         double prazo = Base.TotalSeconds * Math.Pow(2, Math.Min(dobras, 30));
-        return prazo >= Maximo.TotalSeconds ? Maximo : TimeSpan.FromSeconds(prazo);
+        return (prazo >= Maximo.TotalSeconds ? Maximo : TimeSpan.FromSeconds(prazo)).TruncadoEmMicrossegundos();
     }
 }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+
 /// <summary>Configuração da consulta administrativa dos atos do processo.</summary>
 public sealed class AtosDoProcessoOptions
 {
@@ -11,7 +13,8 @@ public sealed class AtosDoProcessoOptions
     /// <summary>
     /// Há quanto tempo um ato pode ficar pendente antes de a consulta destacá-lo. A confirmação chega
     /// pela fila em segundos, e a divulgação insiste em espaços de até quinze minutos antes de desistir:
-    /// meia hora já separa o atraso da recusa que ninguém vai responder.
+    /// meia hora já separa o atraso da recusa que ninguém vai responder. Configurado em qualquer precisão, é guardado
+    /// em microssegundos inteiros, a precisão do instante gravado com que a consulta o compara.
     /// </summary>
-    public TimeSpan LimiarDePendencia { get; set; } = TimeSpan.FromMinutes(30);
+    public TimeSpan LimiarDePendencia { get; set => field = value.TruncadoEmMicrossegundos(); } = TimeSpan.FromMinutes(30);
 }

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using System.Text;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -127,7 +128,7 @@ public sealed class RascunhoDePublicacao : EntityBase
                 UsuarioSub = usuarioSub,
                 Conteudo = conteudo,
                 Versao = versao,
-                ExpiraEm = agora.Add(prazo),
+                ExpiraEm = VenceEm(agora, prazo),
             });
     }
 
@@ -145,11 +146,13 @@ public sealed class RascunhoDePublicacao : EntityBase
 
         Conteudo = conteudo;
         Versao = versao;
-        ExpiraEm = agora.Add(prazo);
+        ExpiraEm = VenceEm(agora, prazo);
         return Result.Success();
     }
 
     public bool Expirou(DateTimeOffset agora) => agora >= ExpiraEm;
+
+    private static DateTimeOffset VenceEm(DateTimeOffset agora, TimeSpan prazo) => (agora + prazo).TruncadoEmMicrossegundos();
 
     /// <summary>
     /// As duas únicas recusas do servidor. <b>O conteúdo não é validado</b> — rascunho de

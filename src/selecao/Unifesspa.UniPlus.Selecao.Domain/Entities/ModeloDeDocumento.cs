@@ -9,6 +9,7 @@ using Interfaces;
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -78,7 +79,7 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
         return erros.Count > 0
             ? Result<ModeloDeDocumento>.ValidationFailure(erros)
             : Result<ModeloDeDocumento>.Success(
-                Pendente(processoSeletivoId, nome!, formatoDoModelo!.Value, clock.GetUtcNow().Add(ttl)));
+                Pendente(processoSeletivoId, nome!, formatoDoModelo!.Value, (clock.GetUtcNow() + ttl).TruncadoEmMicrossegundos()));
     }
 
     private static IEnumerable<FieldError> RecusasDoModelo(FormatoDeDocumento? formato, string? nome)
