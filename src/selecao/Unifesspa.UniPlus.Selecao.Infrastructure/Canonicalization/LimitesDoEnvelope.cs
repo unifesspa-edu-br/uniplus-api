@@ -110,6 +110,12 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int TipoBancaCodigo = 60;
 
+    /// <summary>
+    /// <c>BancaRequerida.Nome</c> e <c>BancaDaEtapa.Nome</c> — snapshot-copy do nome do
+    /// <c>TipoBanca</c>, na mesma coluna de 200.
+    /// </summary>
+    public const int TipoBancaNome = 200;
+
     /// <summary><c>ItemDeAvaliacao.Rotulo</c>.</summary>
     public const int ItemDeAvaliacaoRotulo = Domain.Entities.ItemDeAvaliacao.RotuloMaxLength;
 

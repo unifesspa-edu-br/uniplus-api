@@ -562,7 +562,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso, UnidadesDeTeste.Ceps).Value!;
+            bancasRequeridas: BancasDaFase(regraRecurso), regraRecurso, UnidadesDeTeste.Ceps).Value!;
 
     private static FaseCronograma FaseReidratada(
         int ordem,
@@ -577,7 +577,10 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             coletaInscricao: false, coletaSolicitacaoIsencao: false,
             inicio: null, fim: null,
             produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso, UnidadesDeTeste.Ceps);
+            bancasRequeridas: BancasDaFase(regraRecurso), regraRecurso, UnidadesDeTeste.Ceps);
+
+    private static BancaRequerida[] BancasDaFase(RegraRecursoFase? regraRecurso) =>
+        regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()];
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),

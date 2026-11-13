@@ -96,6 +96,8 @@ internal static class SerializacaoDoCronograma
     {
         ["tipoBancaOrigemId"] = banca.TipoBancaOrigemId,
         ["codigo"] = HashCanonicalComputer.NormalizeNfc(banca.Codigo),
+        ["nome"] = HashCanonicalComputer.NormalizeNfc(banca.Nome),
+        ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(banca.RegraDeDeliberacao),
         ["recorteDeCompetencia"] = SerializarRecorteDeCompetencia(banca),
     };
 

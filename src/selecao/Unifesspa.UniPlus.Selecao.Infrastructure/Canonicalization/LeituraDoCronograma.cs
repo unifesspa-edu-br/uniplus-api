@@ -219,35 +219,28 @@ internal static class LeituraDoCronograma
     internal static List<BancaRequerida> LerBancasRequeridas(LeitorEnvelope leitor, JsonObject faseItem, string pathPai)
     {
         JsonArray array = leitor.Array(faseItem, "bancasRequeridas", pathPai);
-        if (leitor.Falhou)
-        {
-            return [];
-        }
-
         List<BancaRequerida> bancas = [];
-        for (int i = 0; i < array.Count; i++)
+        for (int i = 0; !leitor.Falhou && i < array.Count; i++)
         {
             string path = $"{pathPai}.bancasRequeridas[{i}]";
-            JsonObject item = leitor.ItemObjeto(array, i, $"{pathPai}.bancasRequeridas");
-            leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo", "recorteDeCompetencia");
-
-            Guid tipoBancaOrigemId = leitor.Identificador(item, "tipoBancaOrigemId", path);
-            string codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.TipoBancaCodigo);
-
-            if (leitor.Falhou)
+            BancaRequerida? banca = LerBancaRequerida(leitor, leitor.ItemObjeto(array, i, $"{pathPai}.bancasRequeridas"), path);
+            if (banca is not null)
             {
-                return [];
+                bancas.Add(banca);
             }
-
-            IReadOnlyList<CategoriaJulgada> recorte = LeituraDosPrazosDeRecurso.LerRecorteDeCompetencia(leitor, item, path);
-            if (leitor.Falhou)
-            {
-                return [];
-            }
-
-            bancas.Add(BancaRequerida.Criar(tipoBancaOrigemId, codigo, recorte));
         }
 
-        return bancas;
+        return leitor.Falhou ? [] : bancas;
+    }
+
+    private static BancaRequerida? LerBancaRequerida(LeitorEnvelope leitor, JsonObject item, string path)
+    {
+        leitor.ExigirChaves(item, path, "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao", "recorteDeCompetencia");
+        BancaLida? lida = BancaLida.Ler(leitor, item, path);
+        IReadOnlyList<CategoriaJulgada> recorte = lida is null ? [] : LeituraDosPrazosDeRecurso.LerRecorteDeCompetencia(leitor, item, path);
+
+        return leitor.Falhou || lida is null
+            ? null
+            : BancaRequerida.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, recorte, lida.Regra);
     }
 }

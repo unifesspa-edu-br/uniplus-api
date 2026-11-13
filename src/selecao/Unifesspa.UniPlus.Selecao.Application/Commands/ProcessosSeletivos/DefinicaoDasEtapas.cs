@@ -86,10 +86,16 @@ internal sealed class DefinicaoDasEtapas(
             Result declarada = await declaracao.DeclararAsync(etapas[indice], command.Etapas[indice], cancellationToken).ConfigureAwait(false);
             if (declarada.IsFailure)
             {
-                return declarada;
+                return ComPosicaoDaEtapa(declarada, indice);
             }
         }
 
         return Result.Success();
     }
+
+    // A recusa com campo ganha a posição da etapa no payload; a sem campo segue como veio.
+    private static Result ComPosicaoDaEtapa(Result declarada, int indice) =>
+        declarada.Errors.Any(static erro => erro.Field is not null)
+            ? Result.ValidationFailure(EscritaDasEtapasDoProcesso.ComIndice(declarada.Errors, indice))
+            : declarada;
 }

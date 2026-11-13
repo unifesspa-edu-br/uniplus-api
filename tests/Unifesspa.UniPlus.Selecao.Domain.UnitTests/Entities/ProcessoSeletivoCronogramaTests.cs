@@ -216,7 +216,7 @@ public sealed partial class ProcessoSeletivoCronogramaTests
     public void Redefinir_ComAPropriaFaseJaGravada_PreservaBancasRequeridas()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        BancaRequerida banca = BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", []);
+        BancaRequerida banca = BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", []);
         FaseCronograma heteroidentificacao = Fase(1, "HETEROIDENTIFICACAO", bancasRequeridas: [banca]).Value!;
         processo.DefinirCronogramaFases([heteroidentificacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

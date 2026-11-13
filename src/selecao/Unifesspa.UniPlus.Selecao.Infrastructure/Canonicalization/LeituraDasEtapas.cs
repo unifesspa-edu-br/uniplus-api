@@ -269,23 +269,25 @@ internal static class LeituraDasEtapas
         JsonArray? array = leitor.Array(item, "bancas", path);
         string pathBancas = $"{path}.bancas";
         List<BancaDaEtapa> bancas = [];
-        for (int j = 0; array is not null && j < array.Count; j++)
+        for (int j = 0; !leitor.Falhou && array is not null && j < array.Count; j++)
         {
-            string pathBanca = $"{pathBancas}[{j}]";
-            JsonObject itemBanca = leitor.ItemObjeto(array, j, pathBancas);
-            leitor.ExigirChaves(itemBanca, pathBanca, "tipoBancaOrigemId", "codigo");
-            Guid origem = leitor.Identificador(itemBanca, "tipoBancaOrigemId", pathBanca);
-            string codigoBanca = leitor.TextoNaoVazio(itemBanca, "codigo", pathBanca, LimitesDoEnvelope.TipoBancaCodigo);
-            if (leitor.Falhou)
+            BancaDaEtapa? banca = LerBancaDaEtapa(leitor, leitor.ItemObjeto(array, j, pathBancas), $"{pathBancas}[{j}]");
+            if (banca is not null)
             {
-                return [];
+                bancas.Add(banca);
             }
-
-            // Id novo: o envelope não congela a identidade da linha porque nada a referencia.
-            bancas.Add(BancaDaEtapa.Criar(origem, codigoBanca));
         }
 
-        return bancas;
+        return leitor.Falhou ? [] : bancas;
+    }
+
+    // Id novo: o envelope não congela a identidade da linha porque nada a referencia.
+    private static BancaDaEtapa? LerBancaDaEtapa(LeitorEnvelope leitor, JsonObject itemBanca, string pathBanca)
+    {
+        leitor.ExigirChaves(itemBanca, pathBanca, "tipoBancaOrigemId", "codigo", "nome", "regraDeDeliberacao");
+        BancaLida? lida = BancaLida.Ler(leitor, itemBanca, pathBanca);
+
+        return lida is null ? null : BancaDaEtapa.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, lida.Regra);
     }
 
     private static List<RecursoDaEtapa>? LerRecursosDaEtapa(LeitorEnvelope leitor, JsonObject item, string path)

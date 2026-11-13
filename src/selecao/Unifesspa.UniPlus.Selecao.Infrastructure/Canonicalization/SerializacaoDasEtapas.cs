@@ -88,6 +88,8 @@ internal static class SerializacaoDasEtapas
             {
                 ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
                 ["codigo"] = HashCanonicalComputer.NormalizeNfc(b.Codigo),
+                ["nome"] = HashCanonicalComputer.NormalizeNfc(b.Nome),
+                ["regraDeDeliberacao"] = RegraDeDeliberacaoNoEnvelope.Serializar(b.RegraDeDeliberacao),
             })]);
 
     private static JsonArray SerializarRecursos(EtapaProcesso etapa) =>

@@ -53,7 +53,14 @@ public sealed record ItemDeAvaliacaoDto(Guid Id, string Rotulo, decimal Pontuaca
 public sealed record NivelDeAtendimentoDto(string Rotulo, decimal Fracao);
 
 /// <summary>Projeção de leitura de <c>BancaDaEtapa</c>.</summary>
-public sealed record BancaDaEtapaDto(Guid Id, Guid TipoBancaOrigemId, string Codigo);
+/// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
+/// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
+public sealed record BancaDaEtapaDto(
+    Guid Id,
+    Guid TipoBancaOrigemId,
+    string Codigo,
+    string Nome,
+    RegraDeDeliberacaoDto? RegraDeDeliberacao);
 
 /// <summary>Projeção de leitura de <c>RecursoDaEtapa</c>.</summary>
 public sealed record RecursoDaEtapaDto(

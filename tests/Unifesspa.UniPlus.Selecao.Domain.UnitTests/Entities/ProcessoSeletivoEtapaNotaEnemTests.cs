@@ -154,7 +154,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
@@ -217,7 +217,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     public void DefinirEtapas_OrdemDasRecusas()
     {
         EtapaProcesso comTudo = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
-        comTudo.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        comTudo.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         comTudo.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
 
         NovoProcesso().DefinirEtapas([comTudo, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
@@ -226,7 +226,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota");
 
         EtapaProcesso comBancaEProduto = EtapaNotaEnem();
-        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        comBancaEProduto.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         comBancaEProduto.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         NovoProcesso().DefinirEtapas([comBancaEProduto], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
@@ -238,7 +238,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnemForaDaMedia(CaraterEtapa.Eliminatoria);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
@@ -249,7 +249,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso redacao = EtapaRedacao();
-        redacao.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        redacao.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         redacao.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([EtapaNotaEnem(), redacao], PrecondicaoIfMatch.Ausente);
@@ -275,7 +275,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = EtapaNotaEnem();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
         Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 

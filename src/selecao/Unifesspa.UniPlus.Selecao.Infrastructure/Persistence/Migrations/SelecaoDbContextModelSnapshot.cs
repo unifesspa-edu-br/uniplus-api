@@ -571,6 +571,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("etapa_processo_id");
 
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome");
+
                     b.Property<Guid>("TipoBancaOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("tipo_banca_origem_id");
@@ -608,6 +614,12 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
                         .HasColumnName("fase_cronograma_id");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome");
 
                     b.Property<Guid>("TipoBancaOrigemId")
                         .HasColumnType("uuid")
@@ -5110,6 +5122,55 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_bancas_da_etapa_etapas_processo_etapa_processo_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.RegraDeDeliberacao", "RegraDeDeliberacao", b1 =>
+                        {
+                            b1.Property<Guid>("BancaDaEtapaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int?>("Criterio")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_criterio");
+
+                            b1.Property<int?>("Desempate")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_desempate");
+
+                            b1.Property<int?>("Encerramento")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_encerramento");
+
+                            b1.Property<int>("Integrantes")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_integrantes");
+
+                            b1.Property<int>("Modo")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_modo");
+
+                            b1.Property<int?>("Quorum")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_quorum");
+
+                            b1.Property<int?>("SemUnanimidade")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_sem_unanimidade");
+
+                            b1.Property<int>("Suplentes")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_suplentes");
+
+                            b1.HasKey("BancaDaEtapaId");
+
+                            b1.ToTable("bancas_da_etapa", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BancaDaEtapaId")
+                                .HasConstraintName("fk_bancas_da_etapa_bancas_da_etapa_id");
+                        });
+
+                    b.Navigation("RegraDeDeliberacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaRequerida", b =>
@@ -5120,6 +5181,55 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_bancas_requeridas_fases_cronograma_fase_cronograma_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.RegraDeDeliberacao", "RegraDeDeliberacao", b1 =>
+                        {
+                            b1.Property<Guid>("BancaRequeridaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int?>("Criterio")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_criterio");
+
+                            b1.Property<int?>("Desempate")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_desempate");
+
+                            b1.Property<int?>("Encerramento")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_encerramento");
+
+                            b1.Property<int>("Integrantes")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_integrantes");
+
+                            b1.Property<int>("Modo")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_modo");
+
+                            b1.Property<int?>("Quorum")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_quorum");
+
+                            b1.Property<int?>("SemUnanimidade")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_sem_unanimidade");
+
+                            b1.Property<int>("Suplentes")
+                                .HasColumnType("integer")
+                                .HasColumnName("regra_deliberacao_suplentes");
+
+                            b1.HasKey("BancaRequeridaId");
+
+                            b1.ToTable("bancas_requeridas", "selecao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BancaRequeridaId")
+                                .HasConstraintName("fk_bancas_requeridas_bancas_requeridas_id");
+                        });
+
+                    b.Navigation("RegraDeDeliberacao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CategoriaJulgada", b =>

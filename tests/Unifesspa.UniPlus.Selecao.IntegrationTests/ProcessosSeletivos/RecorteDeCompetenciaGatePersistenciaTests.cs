@@ -82,24 +82,12 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
     public async Task RecortesIguais_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte igual {Guid.CreateVersion7()}");
-
-        // As duas bancas passam a julgar a MESMA categoria: cada uma tem recorte, então a
-        // checagem de ausência sozinha não veria o defeito — o que some é a distinção.
         await UniformizarRecortesAsync(processoId);
-
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-
-        processo.CronogramaFases.Single().BancasRequeridas
-            .Should().OnlyContain(b => b.RecorteDeCompetencia.Count == 1,
-                "pré-condição: as duas bancas seguem com recorte declarado — o que mudou foi ele ser o mesmo");
-
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
-            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
-            .Which.Ok.Should().BeFalse();
-
+        ConferirQueAsBancasDocumentaisSeguemComRecorte(processo);
+        ItemDoRecorteDasBancas(processo).Ok.Should().BeFalse();
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
-
         publicacao.IsFailure.Should().BeTrue();
         publicacao.Error!.Code.Should().Be("BancaRequerida.RecorteDeCompetenciaDuplicado");
     }
@@ -112,9 +100,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         await using SelecaoDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
-            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
-            .Which.Ok.Should().BeTrue();
+        ItemDoRecorteDasBancas(processo).Ok.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
 
@@ -138,7 +124,10 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         },
         linhasEsperadas: 1);
 
-    /// <summary>Faz as duas bancas do mesmo tipo julgarem a MESMA categoria.</summary>
+    /// <summary>
+    /// Faz as duas bancas do mesmo tipo julgarem a MESMA categoria: cada uma tem recorte, então a
+    /// checagem de ausência sozinha não veria o defeito — o que some é a distinção.
+    /// </summary>
     private Task UniformizarRecortesAsync(Guid processoId) => ExecutarAsync(
         """
         UPDATE selecao.categorias_julgadas c
@@ -151,6 +140,15 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         """,
         comando => comando.Parameters.AddWithValue("processo", processoId),
         linhasEsperadas: 1);
+
+    private static ItemConformidade ItemDoRecorteDasBancas(ProcessoSeletivo processo) =>
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas").Which;
+
+    private static void ConferirQueAsBancasDocumentaisSeguemComRecorte(ProcessoSeletivo processo) =>
+        processo.CronogramaFases.Single().BancasRequeridas.Where(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL")
+            .Should().OnlyContain(b => b.RecorteDeCompetencia.Count == 1,
+                "pré-condição: as duas bancas seguem com recorte declarado — o que mudou foi ele ser o mesmo");
 
     /// <summary>
     /// Calendário vigente mínimo — o prazo de interposição corre em dia útil, e sem ele a
@@ -273,35 +271,40 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
 
         return FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true,
-            coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital,
+            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas:
-            [
-                BancaRequerida.Criar(TipoBancaOrigemId, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]),
-                BancaRequerida.Criar(TipoBancaOrigemId, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "ETNICO_RACIAL")]),
-            ],
-            regraRecurso: RegraRecursoFase.Criar(
-                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
-                new ArgsRegraPrazoRecurso(
-                    PrazoValor: 48m,
-                    PrazoUnidade: UnidadePrazo.Horas,
-                    SuspensividadePrimeiraInstanciaValor: null,
-                    SuspensividadePrimeiraInstanciaUnidade: null,
-                    AdmiteInstanciaSuperior: false,
-                    SuspensividadeSegundaInstanciaValor: null,
-                    SuspensividadeSegundaInstanciaUnidade: null),
-                preliminar.Id).Value!,
+            faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: [.. BancasDoMesmoTipoComRecorteDistinto(), BancasDeTeste.DeRecursosDaFase()],
+            regraRecurso: RegraDeRecurso(preliminar.Id),
             unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
     }
+
+    private static BancaRequerida[] BancasDoMesmoTipoComRecorteDistinto() =>
+    [
+        BancaDoRecorte("RENDA"),
+        BancaDoRecorte("ETNICO_RACIAL"),
+    ];
+
+    private static BancaRequerida BancaDoRecorte(string categoriaCodigo) =>
+        BancaRequerida.Criar(
+            TipoBancaOrigemId,
+            "BANCA_ANALISE_DOCUMENTAL",
+            "Banca de teste",
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo)],
+            BancasDeTeste.Regra());
+
+    private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId) =>
+        RegraRecursoFase.Criar(
+            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
+            new ArgsRegraPrazoRecurso(
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+            produtoPreliminarId).Value!;
 }

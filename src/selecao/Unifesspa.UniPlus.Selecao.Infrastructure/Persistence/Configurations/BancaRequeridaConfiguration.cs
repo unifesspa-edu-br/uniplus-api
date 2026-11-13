@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<BancaRequerida>
 {
     private const int CodigoMaxLength = 60;
+    private const int NomeMaxLength = 200;
 
     public void Configure(EntityTypeBuilder<BancaRequerida> builder)
     {
@@ -25,6 +26,8 @@ public sealed class BancaRequeridaConfiguration : IEntityTypeConfiguration<Banca
 
         builder.Property(b => b.TipoBancaOrigemId).IsRequired();
         builder.Property(b => b.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(b => b.Nome).HasMaxLength(NomeMaxLength).IsRequired();
+        builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
 
         builder.HasMany(b => b.RecorteDeCompetencia)
             .WithOne()

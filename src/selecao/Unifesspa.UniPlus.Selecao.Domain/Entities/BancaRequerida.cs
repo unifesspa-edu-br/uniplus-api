@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma banca requerida por uma <see cref="FaseCronograma"/> (0..*, Story #851 §4) —
@@ -33,6 +34,12 @@ public sealed class BancaRequerida : EntityBase
     /// <summary>Código classificatório congelado (ex.: <c>"BANCA_ANALISE_DOCUMENTAL"</c>).</summary>
     public string Codigo { get; private set; } = string.Empty;
 
+    /// <summary>Nome do tipo de banca, copiado do cadastro no congelamento (ADR-0061).</summary>
+    public string Nome { get; private set; } = string.Empty;
+
+    /// <summary>Como a banca é composta e delibera; ausente enquanto o rascunho não a declara.</summary>
+    public RegraDeDeliberacao? RegraDeDeliberacao { get; private set; }
+
     private readonly List<CategoriaJulgada> _recorteDeCompetencia = [];
 
     /// <summary>
@@ -46,28 +53,31 @@ public sealed class BancaRequerida : EntityBase
     public static BancaRequerida Criar(
         Guid tipoBancaOrigemId,
         string codigo,
-        IReadOnlyList<CategoriaJulgada> recorteDeCompetencia)
+        string nome,
+        IReadOnlyList<CategoriaJulgada> recorteDeCompetencia,
+        RegraDeDeliberacao? regraDeDeliberacao = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        (string codigoAparado, string nomeAparado) = OrigemDaBanca.Exigir(tipoBancaOrigemId, codigo, nome);
         ArgumentNullException.ThrowIfNull(recorteDeCompetencia);
-        if (tipoBancaOrigemId == Guid.Empty)
-        {
-            throw new ArgumentException("O id de origem do tipo de banca é obrigatório.", nameof(tipoBancaOrigemId));
-        }
 
         BancaRequerida banca = new()
         {
             TipoBancaOrigemId = tipoBancaOrigemId,
-            Codigo = codigo.Trim(),
+            Codigo = codigoAparado,
+            Nome = nomeAparado,
+            RegraDeDeliberacao = regraDeDeliberacao,
         };
+        banca.AdotarRecorte(recorteDeCompetencia);
+        return banca;
+    }
 
+    private void AdotarRecorte(IReadOnlyList<CategoriaJulgada> recorteDeCompetencia)
+    {
         foreach (CategoriaJulgada categoria in recorteDeCompetencia)
         {
-            categoria.VincularBanca(banca.Id);
-            banca._recorteDeCompetencia.Add(categoria);
+            categoria.VincularBanca(Id);
+            _recorteDeCompetencia.Add(categoria);
         }
-
-        return banca;
     }
 
     internal void VincularFase(Guid faseCronogramaId) => FaseCronogramaId = faseCronogramaId;

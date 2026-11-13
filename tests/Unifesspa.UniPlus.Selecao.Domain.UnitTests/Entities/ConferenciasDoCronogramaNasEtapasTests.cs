@@ -65,6 +65,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         ]).IsSuccess.Should().BeTrue();
         Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
         etapa.DefinirRecursos([Janela(preliminar)]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 

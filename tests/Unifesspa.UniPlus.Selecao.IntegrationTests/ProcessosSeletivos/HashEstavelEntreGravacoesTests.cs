@@ -147,24 +147,28 @@ public sealed class HashEstavelEntreGravacoesTests
     {
         EtapaProcesso etapa = processo.Etapas.Single();
 
-        etapa.DefinirProdutos([
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-            ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-            ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
-        ]).IsSuccess.Should().BeTrue();
-
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaOrigem, "BANCA_TECNICA")])
+        etapa.DefinirProdutos(ProdutosDaEtapaCompleta()).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaOrigem, "BANCA_TECNICA", "Banca de teste")])
             .IsSuccess.Should().BeTrue();
-
-        // Duas janelas, declaradas na ordem INVERSA à que o documento emite: a posição de cada
-        // uma tem de sair do conteúdo da âncora, não da ordem de chegada nem do id sorteado da
-        // linha do produto. Sem estas duas linhas, o bloco de recursos da etapa fica fora do
-        // cenário de estabilidade de bytes.
-        etapa.DefinirRecursos([
-            JanelaAncoradaEm(etapa, "RESULTADO_CLASSIFICACAO"),
-            JanelaAncoradaEm(etapa, "GABARITO"),
-        ]).IsSuccess.Should().BeTrue();
+        etapa.DefinirRecursos(JanelasEmOrdemInversaDoDocumento(etapa)).IsSuccess.Should().BeTrue();
     }
+
+    private static ProdutoDaEtapa[] ProdutosDaEtapaCompleta() =>
+    [
+        ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+        ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+        ProdutoDaEtapa.Criar("GABARITO", PapelProdutoFase.Preliminar),
+    ];
+
+    // Duas janelas, declaradas na ordem INVERSA à que o documento emite: a posição de cada
+    // uma tem de sair do conteúdo da âncora, não da ordem de chegada nem do id sorteado da
+    // linha do produto. Sem estas duas linhas, o bloco de recursos da etapa fica fora do
+    // cenário de estabilidade de bytes.
+    private static RecursoDaEtapa[] JanelasEmOrdemInversaDoDocumento(EtapaProcesso etapa) =>
+    [
+        JanelaAncoradaEm(etapa, "RESULTADO_CLASSIFICACAO"),
+        JanelaAncoradaEm(etapa, "GABARITO"),
+    ];
 
     /// <summary>
     /// Janela recursal que corre da publicação do produto preliminar do ato indicado — a

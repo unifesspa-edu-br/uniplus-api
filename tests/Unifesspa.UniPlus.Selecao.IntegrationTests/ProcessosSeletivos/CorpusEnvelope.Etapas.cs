@@ -74,9 +74,9 @@ internal static partial class CorpusEnvelope
     // normalização —, aplicado ao outro campo que a canonicalização ordena por texto.
     private static IReadOnlyList<BancaDaEtapa> BancasDaObjetiva(int variante, bool permutar) =>
         Ordem([
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaAnaliseDecomposta),
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(3, variante), TipoBancaAnulacao, BancaAnulacao),
-            BancaDaEtapa.Reidratar(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA"),
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaAnaliseDecomposta, "Banca de teste", BancasDeTeste.Regra()),
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(3, variante), TipoBancaAnulacao, BancaAnulacao, "Banca de teste", BancasDeTeste.Regra()),
+            BancaDaEtapa.Reidratar(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra()),
         ], permutar);
 
     private static IReadOnlyList<RecursoDaEtapa> RecursosDaObjetiva(int variante) =>
@@ -136,7 +136,7 @@ internal static partial class CorpusEnvelope
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
             ], permutar), faseCodigo: "RESULTADO_FINAL");
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 
@@ -152,7 +152,7 @@ internal static partial class CorpusEnvelope
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
             ], permutar),
             escalaDeAtendimento: EscalaDeAtendimentoDaDefesa(permutar), faseCodigo: "RESULTADO_FINAL");
-        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 

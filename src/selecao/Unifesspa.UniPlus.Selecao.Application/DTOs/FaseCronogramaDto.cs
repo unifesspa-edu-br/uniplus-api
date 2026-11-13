@@ -10,6 +10,8 @@ public sealed record ProdutoDaFaseDto(Guid Id, string AtoCodigo, string? Papel);
 public sealed record CategoriaJulgadaDto(Guid Id, Guid CategoriaDocumentoOrigemId, string Codigo);
 
 /// <summary>Projeção de leitura de <c>BancaRequerida</c> (Story #851).</summary>
+/// <param name="Nome">Nome do tipo de banca congelado na declaração: o cliente o exibe como veio.</param>
+/// <param name="RegraDeDeliberacao">Nula enquanto o rascunho não a declara; a publicação a exige.</param>
 /// <param name="RecorteDeCompetencia">
 /// As categorias de documento que a banca julga — o que a distingue de outra banca do
 /// mesmo tipo na mesma fase. Vazio quando o tipo já identifica a banca sozinho.
@@ -18,6 +20,8 @@ public sealed record BancaRequeridaDto(
     Guid Id,
     Guid TipoBancaOrigemId,
     string Codigo,
+    string Nome,
+    RegraDeDeliberacaoDto? RegraDeDeliberacao,
     IReadOnlyList<CategoriaJulgadaDto> RecorteDeCompetencia);
 
 /// <summary>Projeção de leitura de <c>ArgsRegraPrazoRecurso</c> (Story #851).</summary>

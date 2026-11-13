@@ -68,6 +68,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(FaseCronograma), nameof(FaseCronograma.FaseConcluinteCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaFase), nameof(ProdutoDaFase.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaRequerida), nameof(BancaRequerida.Codigo)),
+        ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaRequerida), nameof(BancaRequerida.Nome)),
         ("CategoriaDocumentoCodigo", LimitesDoEnvelope.CategoriaDocumentoCodigo, typeof(CategoriaJulgada), nameof(CategoriaJulgada.Codigo)),
 
         // As mesmas grandezas, um nível abaixo: a etapa repete fase, ato e banca, e as colunas
@@ -82,6 +83,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("FaseCodigo", LimitesDoEnvelope.FaseCodigo, typeof(EtapaProcesso), nameof(EtapaProcesso.FaseCodigo)),
         ("TipoAtoCodigo", LimitesDoEnvelope.TipoAtoCodigo, typeof(ProdutoDaEtapa), nameof(ProdutoDaEtapa.AtoCodigo)),
         ("TipoBancaCodigo", LimitesDoEnvelope.TipoBancaCodigo, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Codigo)),
+        ("TipoBancaNome", LimitesDoEnvelope.TipoBancaNome, typeof(BancaDaEtapa), nameof(BancaDaEtapa.Nome)),
         ("ItemDeAvaliacaoRotulo", LimitesDoEnvelope.ItemDeAvaliacaoRotulo, typeof(ItemDeAvaliacao), nameof(ItemDeAvaliacao.Rotulo)),
 
         // Story #554 (PR #903) — exigencias[] real.

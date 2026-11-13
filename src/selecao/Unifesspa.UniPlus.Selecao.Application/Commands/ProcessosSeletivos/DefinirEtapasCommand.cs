@@ -109,7 +109,11 @@ public sealed record ItemDeAvaliacaoInput(Guid? Id, string Rotulo, decimal Pontu
 public sealed record NivelDeAtendimentoInput(string Rotulo, decimal Fracao);
 
 /// <summary>Uma banca requerida pela etapa — o id do tipo no cadastro de Configuração.</summary>
-public sealed record BancaDaEtapaInput(Guid TipoBancaId);
+/// <param name="TipoBancaId">Id do tipo de banca vivo no cadastro de Configuração.</param>
+/// <param name="RegraDeDeliberacao">
+/// Como a banca é composta e delibera. Opcional no rascunho; a publicação e a retificação a exigem.
+/// </param>
+public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput? RegraDeDeliberacao = null);
 
 /// <summary>
 /// Uma janela recursal da etapa. <paramref name="AtoAncoraCodigo"/> só é lido na âncora de

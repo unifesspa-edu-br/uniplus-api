@@ -130,7 +130,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     {
         ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
         EtapaProcesso etapa = EtapaNotaEnemCongelada(EtapaCongelada, 1);
-        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(
             VersaoDo(processo),

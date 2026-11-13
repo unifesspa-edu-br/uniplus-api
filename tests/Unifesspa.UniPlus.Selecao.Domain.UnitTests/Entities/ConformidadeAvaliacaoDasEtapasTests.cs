@@ -44,7 +44,7 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
             itensDeAvaliacao: itens, escalaDeAtendimento: escala, faseCodigo: "RESULTADO_FINAL").Value!;
         if (comBanca)
         {
-            etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA")]).IsSuccess.Should().BeTrue();
+            etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
         }
 
         return etapa;

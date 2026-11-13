@@ -260,6 +260,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             .Include(p => p.OfertaAtendimento)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
+            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
             .Include(p => p.ConfiguracaoTaxaInscricao)
             .Include(p => p.CriteriosDesempate)
             .AsSplitQuery()
@@ -273,31 +274,26 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
 
         return FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true,
-            coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital,
+            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: RegraRecursoFase.Criar(
-                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
-                new ArgsRegraPrazoRecurso(
-                    PrazoValor: 48m,
-                    PrazoUnidade: UnidadePrazo.Horas,
-                    SuspensividadePrimeiraInstanciaValor: null,
-                    SuspensividadePrimeiraInstanciaUnidade: null,
-                    AdmiteInstanciaSuperior: false,
-                    SuspensividadeSegundaInstanciaValor: null,
-                    SuspensividadeSegundaInstanciaUnidade: null),
-                preliminar.Id).Value!,
+            faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()],
+            regraRecurso: RegraDeRecurso(preliminar.Id),
             unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
     }
+
+    private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId) =>
+        RegraRecursoFase.Criar(
+            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
+            new ArgsRegraPrazoRecurso(
+                PrazoValor: 48m,
+                PrazoUnidade: UnidadePrazo.Horas,
+                SuspensividadePrimeiraInstanciaValor: null,
+                SuspensividadePrimeiraInstanciaUnidade: null,
+                AdmiteInstanciaSuperior: false,
+                SuspensividadeSegundaInstanciaValor: null,
+                SuspensividadeSegundaInstanciaUnidade: null),
+            produtoPreliminarId).Value!;
 }

@@ -108,49 +108,44 @@ internal static class ProcessoConformeFactory
     }
 
     /// <summary>
-    /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado e coleta inscrição (há
-    /// vagas e a origem é inscrição própria).
-    /// </summary>
-    /// <summary>
     /// Produto preliminar da fase conforme — a âncora que as regras de recurso montadas por
     /// esta suíte declaram.
     /// </summary>
     internal static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000001");
 
-    internal static FaseCronograma FaseConforme(RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false)
+    /// <summary>
+    /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado e coleta inscrição (há
+    /// vagas e a origem é inscrição própria). A asserção de sucesso impede que uma fase recusada
+    /// vire null e o teste siga com um cronograma vazio, passando por não exercitar nada.
+    /// </summary>
+    internal static FaseCronograma FaseConforme(
+        RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false, IReadOnlyList<BancaRequerida>? bancas = null)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            // O preliminar entra só quando há regra de recurso: é nele que a fase ancora o
-            // prazo, e sem ele a factory devolveria uma fase recusada em vez da fase conforme
-            // que os testes desta suíte tomam como ponto de partida. O Id é fixo para que
-            // quem monta a regra possa declarar a âncora antes de a fase existir.
-            produtos: regraRecurso is null
-                ? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]
-                :
-                [
-                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-                ],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: regraRecurso,
-            unidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps);
+            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital,
+            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
+            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            produtos: ProdutosDaFaseConforme(comRecurso: regraRecurso is not null),
+            faseConcluinteCodigo: null, emiteParecerIndividual: false,
+            bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]),
+            regraRecurso: regraRecurso, unidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps);
 
-        // Sem esta asserção, uma fase recusada viraria null e o teste seguiria com um
-        // cronograma vazio — passando por não exercitar nada, que é o pior modo de falhar.
         fase.IsSuccess.Should().BeTrue(fase.Error?.Message);
         return fase.Value!;
     }
+
+    // O preliminar entra só quando há regra de recurso: é nele que a fase ancora o prazo, e sem
+    // ele a factory devolveria uma fase recusada em vez da fase conforme que os testes desta
+    // suíte tomam como ponto de partida. O Id é fixo para que quem monta a regra possa declarar
+    // a âncora antes de a fase existir.
+    private static ProdutoDaFase[] ProdutosDaFaseConforme(bool comRecurso) =>
+        comRecurso
+            ?
+            [
+                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ]
+            : [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)];
 
     internal static DadosEdital Dados() => DadosEdital.Criar(
         numero: "001/2026",

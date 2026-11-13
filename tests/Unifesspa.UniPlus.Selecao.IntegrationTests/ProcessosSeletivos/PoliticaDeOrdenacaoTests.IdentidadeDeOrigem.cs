@@ -55,8 +55,8 @@ public sealed partial class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "cronogramaFases.fases[].bancasRequeridas: identidade de origem governa sobre o conteúdo — oráculo de sequência exata")]
     public void CronogramaFases_BancasRequeridas_IdentidadeDeOrigemGovernaSobreConteudo()
     {
-        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(IdFixo(1), "ZETA_BANCA", []);
-        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA", []);
+        BancaRequerida bancaComOrigemMenor = BancaRequerida.Criar(IdFixo(1), "ZETA_BANCA", "Banca de teste", []);
+        BancaRequerida bancaComOrigemMaior = BancaRequerida.Criar(IdFixo(2), "ALFA_BANCA", "Banca de teste", []);
 
         new[] { bancaComOrigemMenor, bancaComOrigemMaior }.OrderBy(static b => b.Codigo, StringComparer.Ordinal).Select(static b => b.Codigo)
             .Should().Equal(["ALFA_BANCA", "ZETA_BANCA"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");
@@ -77,9 +77,9 @@ public sealed partial class PoliticaDeOrdenacaoTests
     {
         Guid tipoUnico = IdFixo(1);
         BancaRequerida bancaDaRenda = BancaRequerida.Criar(
-            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
+            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [CategoriaJulgada.Criar(IdFixo(9), "RENDA")]);
         BancaRequerida bancaEtnicoRacial = BancaRequerida.Criar(
-            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
+            tipoUnico, "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [CategoriaJulgada.Criar(IdFixo(8), "ETNICO_RACIAL")]);
 
         JsonArray bancasJson = BancasRequeridasEnvelopadas(FaseComAsBancas("ANALISE", bancaDaRenda, bancaEtnicoRacial));
 
@@ -97,7 +97,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
     {
         BancaRequerida banca = BancaRequerida.Criar(
             IdFixo(1),
-            "BANCA_ANALISE_DOCUMENTAL",
+            "BANCA_ANALISE_DOCUMENTAL", "Banca de teste",
             [
                 CategoriaJulgada.Criar(IdFixo(1), "ZETA_CATEGORIA"),
                 CategoriaJulgada.Criar(IdFixo(2), "ALFA_CATEGORIA"),
