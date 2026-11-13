@@ -12,10 +12,6 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ord
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogoRepository
 {
     private const string EscapeDoLike = @"\";
@@ -57,58 +53,74 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
     {
         ArgumentNullException.ThrowIfNull(filtro);
 
-        AtoDaProtecao[] atos = [.. (filtro.Atos.Count > 0 ? filtro.Atos : AtosDaProtecao.Decisoes).Distinct()];
+        AtoDaProtecao[] atos = AtosConsideradosPor(filtro);
+        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca);
+        IQueryable<DecisaoOrdenada> linhas = DecisoesDoRecorte(filtro, atos, termo);
+        KeysetSort<DecisaoOrdenada> ordenacao = OrdenacaoDasDecisoesDaProtecao.Montar(RecorteDe(filtro, atos, termo));
+
+        OrderedKeysetPage<DecisaoOrdenada> page = await OrderedKeysetCursor
+            .ApplyAsync(linhas, ordenacao, afterSortKey, afterId, limit, direction, cancellationToken)
+            .ConfigureAwait(false);
+
+        return ([.. page.Items.Select(static l => l.Entidade)], page.Previous, page.Next);
+    }
+
+    private static AtoDaProtecao[] AtosConsideradosPor(FiltroDasDecisoesDaProtecao filtro) =>
+        [.. (filtro.Atos.Count > 0 ? filtro.Atos : AtosDaProtecao.Decisoes).Distinct()];
+
+    private IQueryable<DecisaoOrdenada> DecisoesDoRecorte(FiltroDasDecisoesDaProtecao filtro, AtoDaProtecao[] atos, string? termo)
+    {
         IQueryable<AtoDaProtecaoDoCatalogo> query = _dbContext.AtosDaProtecaoDoCatalogo
             .AsNoTracking()
             .Where(a => atos.Contains(a.Ato));
 
-        if (filtro.Cadastro is { } cadastro)
-        {
-            query = query.Where(a => a.Cadastro == cadastro);
-        }
+        query = FiltrarPorCadastro(query, filtro);
+        query = FiltrarPorPeriodo(query, filtro);
+        query = FiltrarPorAutor(query, filtro);
+        query = FiltrarPorBusca(query, termo);
 
+        return query.Select(a => new DecisaoOrdenada { Id = a.Id, Instante = a.Instante, Entidade = a });
+    }
+
+    private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorCadastro(
+        IQueryable<AtoDaProtecaoDoCatalogo> query, FiltroDasDecisoesDaProtecao filtro) =>
+        filtro.Cadastro is { } cadastro ? query.Where(a => a.Cadastro == cadastro) : query;
+
+    // A data máxima não tem dia seguinte: vale como sem limite superior.
+    private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorPeriodo(
+        IQueryable<AtoDaProtecaoDoCatalogo> query, FiltroDasDecisoesDaProtecao filtro)
+    {
         if (filtro.De is { } de)
         {
             DateTimeOffset inicio = InicioDoDia(de);
             query = query.Where(a => a.Instante >= inicio);
         }
 
-        // A data máxima não tem dia seguinte: vale como sem limite superior.
         if (filtro.Ate is { } ate && ate != DateOnly.MaxValue)
         {
             DateTimeOffset fim = InicioDoDia(ate.AddDays(1));
             query = query.Where(a => a.Instante < fim);
         }
 
-        if (filtro.Autor is { } autor)
+        return query;
+    }
+
+    private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorAutor(
+        IQueryable<AtoDaProtecaoDoCatalogo> query, FiltroDasDecisoesDaProtecao filtro) =>
+        filtro.Autor is { } autor ? query.Where(a => a.AtorEmissor == autor.Emissor && a.AtorSub == autor.Sub) : query;
+
+    // A busca compara a forma normalizada, sem acento e em minúsculas, do nome e do código do item.
+    private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorBusca(IQueryable<AtoDaProtecaoDoCatalogo> query, string? termo)
+    {
+        if (termo is null)
         {
-            query = query.Where(a => a.AtorEmissor == autor.Emissor && a.AtorSub == autor.Sub);
+            return query;
         }
 
-        // A busca compara a forma normalizada, sem acento e em minúsculas, do nome e do código do item.
-        string? termo = NormalizacaoTextual.PrepararTermoDeBusca(filtro.Busca);
-        if (termo is not null)
-        {
-            string padrao = "%" + termo + "%";
-            query = query.Where(a =>
-                EF.Functions.ILike(PgFunctions.NormalizeForComparison(a.ItemNome), padrao, EscapeDoLike)
-                || EF.Functions.ILike(PgFunctions.NormalizeForComparison(a.ItemCodigo), padrao, EscapeDoLike));
-        }
-
-        IQueryable<DecisaoOrdenada> linhas = query.Select(a => new DecisaoOrdenada { Id = a.Id, Instante = a.Instante, Entidade = a });
-
-        OrderedKeysetPage<DecisaoOrdenada> page = await OrderedKeysetCursor
-            .ApplyAsync(
-                linhas,
-                OrdenacaoDasDecisoesDaProtecao.Montar(RecorteDe(filtro, atos, termo)),
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        return ([.. page.Items.Select(static l => l.Entidade)], page.Previous, page.Next);
+        string padrao = "%" + termo + "%";
+        return query.Where(a =>
+            EF.Functions.ILike(PgFunctions.NormalizeForComparison(a.ItemNome), padrao, EscapeDoLike)
+            || EF.Functions.ILike(PgFunctions.NormalizeForComparison(a.ItemCodigo), padrao, EscapeDoLike));
     }
 
     // O provedor só grava e compara instante com deslocamento zero.
