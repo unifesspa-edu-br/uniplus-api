@@ -71,7 +71,7 @@ public static class PedidoMapping
     private static AnexoDoPedidoDto[] Anexos(PedidoDeConcessao p) => [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)];
 
     private static DecisaoDoPedidoDto[] Decisoes(PedidoDeConcessao p) =>
-        [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.OrdemDeRegistro).Select(ToDto)];
+        [.. p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.PosicaoNoInstante).Select(ToDto)];
 
     private static TrocaDeVersaoDoPedidoDto[] TrocasDeVersao(PedidoDeConcessao p) =>
         [.. p.TrocasDeVersao.OrderBy(t => t.Instante).ThenBy(t => t.Id).Select(ToDto)];

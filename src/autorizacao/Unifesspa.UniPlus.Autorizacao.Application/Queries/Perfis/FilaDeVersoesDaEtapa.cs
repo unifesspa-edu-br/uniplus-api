@@ -38,6 +38,7 @@ public sealed class FilaDeVersoesDaEtapa
             .Select(p => (Perfil: p, Versao: VersaoMapping.PendenteDe(p, _catalogo, leitor)))
             .Where(x => x.Versao?.EtapaAtual == etapa.ToCodigo())
             .Select(static x => new ItemDaFilaDeVersoesDto(x.Perfil.Id, x.Perfil.Nome, x.Versao!, x.Versao!.PropostaPorQuemLe))
-            .OrderBy(static i => i.Versao.CriadaEm)];
+            .OrderBy(static i => i.Versao.CriadaEm)
+            .ThenBy(static i => i.PerfilId)];
     }
 }

@@ -60,9 +60,12 @@ public sealed partial class PedidoDeConcessao
             : RegistrarRecusa(decisor, etapa, motivoNormalizado, perfil, instante);
     }
 
+    // A mais recente é a de maior instante e, no mesmo instante, a registrada por último; relógio que regride vale pelo instante.
     private DecisaoDoPedido? UltimaAprovacaoDoGestor => _decisoes
         .Where(d => d.Etapa == EtapaDoPedido.Gestor && d.Resultado == ResultadoDaDecisao.Aprovado)
-        .MaxBy(d => d.Instante);
+        .OrderBy(d => d.Instante)
+        .ThenBy(d => d.PosicaoNoInstante)
+        .LastOrDefault();
 
     private Result<DesfechoDaAprovacao> AprovarNaEtapa(AprovacaoNaEtapa aprovacao)
     {
