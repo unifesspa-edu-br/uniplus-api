@@ -24,22 +24,46 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(documentName);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        return services
+            .AddOpcoesDoOpenApi(configuration)
+            .AddTransformersDoOpenApi()
+            .AddOpenApi(documentName, options =>
+            {
+                AdicionarTransformersDeDocumento(options);
+                AdicionarTransformersDeOperacao(options);
+                AdicionarTransformersDeSchema(options);
+            });
+    }
+
+    private static IServiceCollection AddOpcoesDoOpenApi(this IServiceCollection services, IConfiguration configuration)
+    {
         services
             .AddOptions<UniPlusOpenApiOptions>()
             .Bind(configuration.GetSection(UniPlusOpenApiOptions.SectionName))
             .Validate(
-                static o => Uri.TryCreate(o.ContactUrl, UriKind.Absolute, out _)
-                    && Uri.TryCreate(o.ProductionServerUrl, UriKind.Absolute, out _)
-                    && Uri.TryCreate(o.StagingServerUrl, UriKind.Absolute, out _)
-                    // Opcional, mas se vier tem de ser utilizável: uma URL relativa ou
-                    // malformada aqui vira um servidor que a interface seleciona por padrão
-                    // e contra o qual nenhuma chamada funciona.
-                    && (string.IsNullOrWhiteSpace(o.LocalServerUrl)
-                        || Uri.TryCreate(o.LocalServerUrl, UriKind.Absolute, out _)),
+                ContatoEServidoresSaoUrisUtilizaveis,
                 "UniPlus:OpenApi — ContactUrl/ProductionServerUrl/StagingServerUrl precisam ser URIs absolutas, "
                 + "e LocalServerUrl (quando definida) também.")
             .ValidateOnStart();
 
+        return services;
+    }
+
+    private static bool ContatoEServidoresSaoUrisUtilizaveis(UniPlusOpenApiOptions opcoes) =>
+        UriAbsoluta(opcoes.ContactUrl)
+        && UriAbsoluta(opcoes.ProductionServerUrl)
+        && UriAbsoluta(opcoes.StagingServerUrl)
+        && ServidorLocalAusenteOuUtilizavel(opcoes.LocalServerUrl);
+
+    // Opcional, mas se vier tem de ser utilizável: uma URL relativa ou malformada aqui vira um
+    // servidor que a interface seleciona por padrão e contra o qual nenhuma chamada funciona.
+    private static bool ServidorLocalAusenteOuUtilizavel(string? url) =>
+        string.IsNullOrWhiteSpace(url) || UriAbsoluta(url);
+
+    private static bool UriAbsoluta(string? url) => Uri.TryCreate(url, UriKind.Absolute, out _);
+
+    private static IServiceCollection AddTransformersDoOpenApi(this IServiceCollection services)
+    {
         services.TryAddSingleton<UniPlusInfoTransformer>();
         services.TryAddSingleton<UniPlusOperationTransformer>();
         services.TryAddSingleton<CursorPaginationOperationTransformer>();
@@ -52,27 +76,34 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<PaginationOrphanSchemaDocumentTransformer>();
         services.TryAddSingleton<ProblemDetailsExtensionsDocumentTransformer>();
         services.TryAddSingleton<UniPlusSchemaTransformer>();
-
-        services.AddOpenApi(documentName, options =>
-        {
-            options.AddDocumentTransformer<UniPlusInfoTransformer>();
-            options.AddOperationTransformer<UniPlusOperationTransformer>();
-            options.AddOperationTransformer<CursorPaginationOperationTransformer>();
-            options.AddOperationTransformer<PrecondicaoOperationTransformer>();
-            options.AddOperationTransformer<IdempotenciaOperationTransformer>();
-            options.AddOperationTransformer<AuthorizationOperationTransformer>();
-            options.AddOperationTransformer<CorpoMultipartOperationTransformer>();
-
-            // Depois do UniPlusOperationTransformer, que coage os 4xx/5xx para
-            // application/problem+json: este reescreve só as respostas de sucesso, e a ordem
-            // deixa claro que os dois tratam de faixas de status disjuntas.
-            options.AddOperationTransformer<VendorMediaTypeOperationTransformer>();
-            options.AddDocumentTransformer<BearerSecuritySchemeDocumentTransformer>();
-            options.AddDocumentTransformer<PaginationOrphanSchemaDocumentTransformer>();
-            options.AddDocumentTransformer<ProblemDetailsExtensionsDocumentTransformer>();
-            options.AddSchemaTransformer<UniPlusSchemaTransformer>();
-        });
-
         return services;
+    }
+
+    private static void AdicionarTransformersDeDocumento(OpenApiOptions options)
+    {
+        options.AddDocumentTransformer<UniPlusInfoTransformer>();
+        options.AddDocumentTransformer<BearerSecuritySchemeDocumentTransformer>();
+        options.AddDocumentTransformer<PaginationOrphanSchemaDocumentTransformer>();
+        options.AddDocumentTransformer<ProblemDetailsExtensionsDocumentTransformer>();
+    }
+
+    private static void AdicionarTransformersDeOperacao(OpenApiOptions options)
+    {
+        options.AddOperationTransformer<UniPlusOperationTransformer>();
+        options.AddOperationTransformer<CursorPaginationOperationTransformer>();
+        options.AddOperationTransformer<PrecondicaoOperationTransformer>();
+        options.AddOperationTransformer<IdempotenciaOperationTransformer>();
+        options.AddOperationTransformer<AuthorizationOperationTransformer>();
+        options.AddOperationTransformer<CorpoMultipartOperationTransformer>();
+
+        // Depois do UniPlusOperationTransformer, que coage os 4xx/5xx para
+        // application/problem+json: este reescreve só as respostas de sucesso, e a ordem
+        // deixa claro que os dois tratam de faixas de status disjuntas.
+        options.AddOperationTransformer<VendorMediaTypeOperationTransformer>();
+    }
+
+    private static void AdicionarTransformersDeSchema(OpenApiOptions options)
+    {
+        options.AddSchemaTransformer<UniPlusSchemaTransformer>();
     }
 }
