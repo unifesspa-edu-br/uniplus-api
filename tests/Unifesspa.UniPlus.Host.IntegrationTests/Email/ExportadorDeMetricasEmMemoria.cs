@@ -40,6 +40,8 @@ internal sealed class ExportadorDeMetricasEmMemoria : BaseExporter<Metric>
         MetricType.DoubleSum => ponto.GetSumDouble(),
         MetricType.LongGauge => ponto.GetGaugeLastValueLong(),
         MetricType.DoubleGauge => ponto.GetGaugeLastValueDouble(),
+        // Do histograma, o teste lê quantas medidas ele recebeu, que é o que não depende do relógio.
+        MetricType.Histogram => ponto.GetHistogramCount(),
         _ => throw new NotSupportedException($"Tipo de métrica {tipo} fora do que o teste lê."),
     };
 
