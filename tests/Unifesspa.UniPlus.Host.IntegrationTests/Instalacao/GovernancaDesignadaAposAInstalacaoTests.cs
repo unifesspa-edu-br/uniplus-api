@@ -131,14 +131,27 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     private async Task<Guid> DesignacaoComDocumentoAsync(Guid perfilId, Persona beneficiario)
     {
         using HttpClient leandro = Cliente(Leandro, papel: false);
-        using HttpResponseMessage criado = await PedidosDeConcessaoTestBase.EnviarAsync(
-            leandro, HttpMethod.Post, Pedidos, new { beneficiarioEmail = beneficiario.Email, perfilId, justificativa = PedidosDeConcessaoTestBase.Justificativa });
-        Guid id = (await PedidosDeConcessaoTestBase.CorpoAsync(criado, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        Guid id = await CriarDesignacaoAsync(leandro, perfilId, beneficiario);
         Guid anexoId = await PedidosDeConcessaoTestBase.AnexarEmVerificacaoAsync(leandro, id);
         await InjetarResultadoAsync(anexoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(
             async () => await PedidosDeConcessaoTestBase.SituacaoDoAnexoAsync(leandro, id, anexoId) == "verificado", $"o anexo {anexoId} não chegou a verificado");
 
         return id;
+    }
+
+    // O pedido de designação apresenta a versão vigente do termo, obrigatória no perfil de governança.
+    private async Task<Guid> CriarDesignacaoAsync(HttpClient leandro, Guid perfilId, Persona beneficiario)
+    {
+        using HttpResponseMessage criado = await PedidosDeConcessaoTestBase.EnviarAsync(
+            leandro, HttpMethod.Post, Pedidos, new
+            {
+                beneficiarioEmail = beneficiario.Email,
+                perfilId,
+                justificativa = PedidosDeConcessaoTestBase.Justificativa,
+                termoVersaoApresentadaId = await TermoNoHostDeTeste.ParaApresentarAsync(Fixture.Factory.Services, perfilId),
+            });
+
+        return (await PedidosDeConcessaoTestBase.CorpoAsync(criado, HttpStatusCode.Created)).GetProperty("id").GetGuid();
     }
 }

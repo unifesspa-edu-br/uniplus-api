@@ -64,6 +64,9 @@ public enum TipoDeAviso
 
     /// <summary>O pedido em andamento foi devolvido porque o perfil pedido mudou.</summary>
     PedidoDevolvidoPelaJanela = 20,
+
+    /// <summary>O pedido foi devolvido porque o perfil passou a exigir o termo de responsabilidade depois da criação.</summary>
+    PedidoDevolvidoPorTermoExigido = 21,
 }
 
 /// <summary>O texto estável de cada tipo: a finalidade do envio e o que o registro de avisos guarda.</summary>
@@ -91,6 +94,7 @@ public static class TipoDeAvisoCodigo
         [TipoDeAviso.VersaoEncerrada] = "versao_encerrada",
         [TipoDeAviso.AdvertenciaDeFimDaMigracao] = "advertencia_de_fim_da_migracao",
         [TipoDeAviso.PedidoDevolvidoPelaJanela] = "pedido_devolvido_pela_janela",
+        [TipoDeAviso.PedidoDevolvidoPorTermoExigido] = "pedido_devolvido_por_termo_exigido",
     }.ToFrozenDictionary();
 
     public static string ToCodigo(this TipoDeAviso tipo) =>

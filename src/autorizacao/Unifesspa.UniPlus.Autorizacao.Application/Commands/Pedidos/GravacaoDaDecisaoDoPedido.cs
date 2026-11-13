@@ -21,19 +21,26 @@ public sealed class GravacaoDaDecisaoDoPedido
     private readonly IPerfilRepository _perfis;
     private readonly AvisosDoPedido _avisos;
     private readonly ConcessaoDoPedidoAprovado _concessao;
+    private readonly AvisoDeDevolucaoPorTermoExigido _avisoDeTermoExigido;
 
     public GravacaoDaDecisaoDoPedido(
-        IAutorizacaoUnitOfWork unitOfWork, IPerfilRepository perfis, AvisosDoPedido avisos, ConcessaoDoPedidoAprovado concessao)
+        IAutorizacaoUnitOfWork unitOfWork,
+        IPerfilRepository perfis,
+        AvisosDoPedido avisos,
+        ConcessaoDoPedidoAprovado concessao,
+        AvisoDeDevolucaoPorTermoExigido avisoDeTermoExigido)
     {
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(avisos);
         ArgumentNullException.ThrowIfNull(concessao);
+        ArgumentNullException.ThrowIfNull(avisoDeTermoExigido);
 
         _unitOfWork = unitOfWork;
         _perfis = perfis;
         _avisos = avisos;
         _concessao = concessao;
+        _avisoDeTermoExigido = avisoDeTermoExigido;
     }
 
     /// <summary>A recusa sem gravação nem aviso.</summary>
@@ -109,7 +116,7 @@ public sealed class GravacaoDaDecisaoDoPedido
     }
 
     // O pedido voltou ao gestor: a fila dele é avisada, mesmo que a resposta a quem decidiu a segunda etapa seja a recusa. O
-    // pedido devolvido por exigir o termo não gera aviso.
+    // pedido devolvido por exigir o termo avisa o solicitante, que precisa refazê-lo, pelo aviso próprio dessa devolução.
     private async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> GravarDevolucaoAsync(
         DecisaoDaEtapa decisao, DomainError erro, CancellationToken cancellationToken)
     {
@@ -118,12 +125,15 @@ public sealed class GravacaoDaDecisaoDoPedido
             return Recusa(PedidoHandlerErros.ConflitoDeConcorrencia());
         }
 
-        IReadOnlyList<EnviarEmail> mensagens = await _avisos
-            .AvisarAsync(decisao.Pedido, decisao.Perfil.Nome, SituacaoDoPedido.AguardandoProtecaoDeDados, cancellationToken)
-            .ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> mensagens = await AvisosDaDevolucaoAsync(decisao, erro, cancellationToken).ConfigureAwait(false);
 
         return (Result<PedidoDeConcessaoDto>.Failure(erro), mensagens);
     }
+
+    private Task<IReadOnlyList<EnviarEmail>> AvisosDaDevolucaoAsync(DecisaoDaEtapa decisao, DomainError erro, CancellationToken cancellationToken) =>
+        erro.Code == PedidoErrorCodes.TermoExigido
+            ? _avisoDeTermoExigido.AvisarAsync(decisao.Pedido, decisao.Perfil.Nome, cancellationToken)
+            : _avisos.AvisarAsync(decisao.Pedido, decisao.Perfil.Nome, SituacaoDoPedido.AguardandoProtecaoDeDados, cancellationToken);
 
     private async Task<bool> SalvouAsync(CancellationToken cancellationToken)
     {

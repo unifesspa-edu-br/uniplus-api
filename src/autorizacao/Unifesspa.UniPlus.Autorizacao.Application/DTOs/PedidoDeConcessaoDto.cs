@@ -101,9 +101,9 @@ public sealed record LeituraDoAnexoDto(Uri Url, DateTimeOffset ExpiraEm);
 /// só o documento declarado aqui se anexa; o perfil de governança o exige sempre.
 /// </param>
 /// <param name="TermoVersaoApresentadaId">
-/// A versão do termo de responsabilidade que a tela apresentou. Obrigatória no pedido protegido para si mesmo sem
-/// documento, em que o envio é o aceite; conferida com a vigente, sem registrar aceite, nos demais pedidos protegidos; e
-/// proibida no pedido sem termo. Divergente da vigente, a resposta é conflito e a reapresentação usa chave de idempotência nova.
+/// A versão do termo de responsabilidade que a tela apresentou. Obrigatória em todo pedido protegido e conferida com a
+/// vigente (UNI-REQ-0377); no pedido para si mesmo sem documento, o envio é também o aceite. Proibida no pedido sem termo.
+/// Divergente da vigente, a resposta é conflito e a reapresentação usa chave de idempotência nova.
 /// </param>
 public sealed record CriarPedidoDeConcessaoRequest(
     string? BeneficiarioEmail,

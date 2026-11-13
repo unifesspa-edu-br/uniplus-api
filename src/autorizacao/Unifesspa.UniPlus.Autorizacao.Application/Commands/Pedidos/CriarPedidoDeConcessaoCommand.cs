@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <param name="AnexaraDocumento">O solicitante vai anexar documento; o perfil de governança o exige sempre.</param>
 /// <param name="TermoVersaoApresentadaId">
-/// A versão do termo de responsabilidade que o cliente apresentou; obrigatória quando o envio é o aceite (pedido protegido
-/// para si mesmo, sem documento), conferida quando vem nos demais pedidos protegidos e proibida no pedido sem termo.
+/// A versão do termo de responsabilidade que o cliente apresentou; obrigatória em todo pedido protegido, conferida com a
+/// vigente, e proibida no pedido sem termo.
 /// </param>
 public sealed record CriarPedidoDeConcessaoCommand(
     string? BeneficiarioEmail,

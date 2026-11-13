@@ -48,10 +48,9 @@ public sealed class AnexoDoPedidoProtegidoNoHostTests : TermoNoHostTestBase
         await ConferirAsync(await EnviarAsync(betina, HttpMethod.Post, $"{Rota}/{id}/anexos", new { tamanhoDoPdf = 100 }), HttpStatusCode.UnprocessableEntity, "pedido.situacao_invalida");
     }
 
-    private static async Task<Guid> DeclaradoParaLeandroAsync(HttpClient betina, Guid perfil, Guid unidade)
+    private async Task<Guid> DeclaradoParaLeandroAsync(HttpClient betina, Guid perfil, Guid unidade)
     {
-        using HttpResponseMessage criado = await EnviarAsync(
-            betina, HttpMethod.Post, Rota, new { beneficiarioEmail = Leandro.Email, perfilId = perfil, unidadeId = unidade, justificativa = Justificativa, anexaraDocumento = true });
+        using HttpResponseMessage criado = await CriarBrutoAsync(betina, perfil, unidade, Leandro.Email, anexaraDocumento: true);
 
         return (await CorpoAsync(criado, HttpStatusCode.Created)).GetProperty("id").GetGuid();
     }

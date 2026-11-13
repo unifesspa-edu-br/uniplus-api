@@ -49,8 +49,9 @@ public sealed partial class PedidoDeConcessao
 
     /// <summary>
     /// Fixa no pedido recém-criado a versão vigente do termo, quando o perfil o exige, e confere a versão que o cliente
-    /// apresentou: divergente da vigente, conflito; ausente quando o envio é o aceite, ou presente quando o pedido não exige
-    /// termo, recusa de campo. No pedido para si mesmo sem documento, o envio é o aceite, registrado com a versão fixada.
+    /// apresentou, obrigatória em todo pedido protegido (UNI-REQ-0377): divergente da vigente, conflito; ausente no pedido
+    /// protegido, ou presente quando o pedido não exige termo, recusa de campo. No pedido para si mesmo sem documento, o
+    /// envio é o aceite, registrado com a versão fixada.
     /// </summary>
     public Result FixarTermo(TermoNaCriacao termo, DateTimeOffset instante)
     {
@@ -71,7 +72,7 @@ public sealed partial class PedidoDeConcessao
 
     private bool EnvioEOAceite => Beneficiario is not null && !AnexaraDocumento;
 
-    private Result? RecusaDoTermoNaCriacao(TermoNaCriacao termo)
+    private static Result? RecusaDoTermoNaCriacao(TermoNaCriacao termo)
     {
         if (!termo.Exigido)
         {
@@ -83,9 +84,7 @@ public sealed partial class PedidoDeConcessao
             return Result.Failure(SemTermoVigente());
         }
 
-        return termo.Apresentada is null
-            ? (EnvioEOAceite ? ApresentacaoAusente() : null)
-            : Comparar(termo.Apresentada.Value, termo.Vigente.Id);
+        return termo.Apresentada is { } apresentada ? Comparar(apresentada, termo.Vigente.Id) : ApresentacaoAusente();
     }
 
     private void Fixar(VersaoDoTermo vigente, DateTimeOffset instante)
