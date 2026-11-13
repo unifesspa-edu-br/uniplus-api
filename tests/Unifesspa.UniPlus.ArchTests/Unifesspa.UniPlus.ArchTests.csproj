@@ -57,6 +57,8 @@
     <!-- Host composition root do monólito modular — referenciado pelo fato
          positivo do R8 (host PODE compor todos os módulos). Fica FORA do roster. -->
     <ProjectReference Include="../../src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
+    <!-- O Verificador é um processo à parte, com Program próprio: entra no escopo da regra do relógio do sistema. -->
+    <ProjectReference Include="../../src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
   </ItemGroup>
 
   <ItemGroup>
