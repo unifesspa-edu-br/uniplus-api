@@ -2,17 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
-using NSubstitute;
-
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -35,7 +31,7 @@ public sealed class DefinirCronogramaFasesRemocaoIniciadaTests
             [KeyValuePair.Create<Guid, Guid?>(publicada.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)],
             [KeyValuePair.Create(publicada.FaseCanonicaOrigemId, publicada.Codigo)]);
 
-        Result<MutacaoAceita> resultado = await DefinirAsync(processo, novaFase, FasesIniciadasDeTeste.Com(iniciada));
+        Result<MutacaoAceita> resultado = await DefinirAsync(processo, novaFase, iniciada);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(CodigoDaRemocao);
     }
@@ -45,7 +41,7 @@ public sealed class DefinirCronogramaFasesRemocaoIniciadaTests
     {
         (ProcessoSeletivo processo, Guid novaFase) = RetificacaoAberta();
 
-        Result<MutacaoAceita> resultado = await DefinirAsync(processo, novaFase, FasesIniciadasDeTeste.Nenhuma());
+        Result<MutacaoAceita> resultado = await DefinirAsync(processo, novaFase, FasesIniciadas.Nenhuma);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseReferenciadaPorFormulario");
     }
@@ -59,22 +55,15 @@ public sealed class DefinirCronogramaFasesRemocaoIniciadaTests
         return (processo, Guid.CreateVersion7());
     }
 
-    private static Task<Result<MutacaoAceita>> DefinirAsync(ProcessoSeletivo processo, Guid novaFase, IFasesIniciadasDoProcesso iniciadas)
+    private static Task<Result<MutacaoAceita>> DefinirAsync(ProcessoSeletivo processo, Guid novaFase, FasesIniciadas iniciadas)
     {
-        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
-        repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        IFaseCanonicaReader fases = Substitute.For<IFaseCanonicaReader>();
-        fases.ObterPorIdAsync(novaFase, Arg.Any<CancellationToken>()).Returns(FaseCanonica(novaFase));
-        ITipoAtoPublicadoReader atos = Substitute.For<ITipoAtoPublicadoReader>();
-        atos.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns(Resultado());
-        IPrecedenciaFaseReader precedencias = Substitute.For<IPrecedenciaFaseReader>();
-        precedencias.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<PrecedenciaFaseView>)[]);
+        CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.Para(processo)
+            .ComFasesIniciadas(iniciadas)
+            .ComTipoDeAto(Resultado());
+        cenario.CadastrarFase(FaseCanonica(novaFase));
 
-        return DefinirCronogramaFasesCommandHandler.Handle(
-            new DefinirCronogramaFasesCommand(processo.Id, [InputDaFase(novaFase)], PrecondicaoIfMatch.Curinga),
-            repositorio, fases, Substitute.For<IResolvedorDaUnidadeResponsavel>(), Substitute.For<ITipoBancaReader>(),
-            Substitute.For<ICategoriaDocumentoReader>(), precedencias, Substitute.For<IRegraCatalogoReader>(), atos,
-            Substitute.For<IRegistroCodecsEnvelope>(), iniciadas, Substitute.For<ISelecaoUnitOfWork>(), TimeProvider.System, CancellationToken.None);
+        return cenario.DefinirAsync(
+            new DefinirCronogramaFasesCommand(processo.Id, [InputDaFase(novaFase)], PrecondicaoIfMatch.Curinga));
     }
 
     private static TipoAtoPublicadoView Resultado() =>
