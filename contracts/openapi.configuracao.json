@@ -4887,6 +4887,94 @@
         ]
       }
     },
+    "/api/configuracao/admin/fatos-candidato/{id}/protecao/manifestacoes": {
+      "get": {
+        "tags": [
+          "FatosCandidato"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.protecao-do-catalogo-manifestacao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ManifestacaoDaProtecaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/admin/fatos-candidato/{id}/ativacao": {
       "post": {
         "tags": [
@@ -13190,6 +13278,94 @@
         ]
       }
     },
+    "/api/configuracao/admin/tipos-documento/{id}/protecao/manifestacoes": {
+      "get": {
+        "tags": [
+          "TiposDocumento"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/vnd.uniplus.protecao-do-catalogo-manifestacao.v1\u002Bjson": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ManifestacaoDaProtecaoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/configuracao/tipos-etapa": {
       "get": {
         "tags": [
@@ -14661,7 +14837,8 @@
           "justificativa",
           "aceitaEm",
           "manifestadaEm",
-          "manifestacaoDesfavoravel"
+          "manifestacaoDesfavoravel",
+          "manifestacoesNoCiclo"
         ],
         "type": "object",
         "properties": {
@@ -14714,6 +14891,10 @@
           },
           "manifestacaoDesfavoravel": {
             "type": "boolean"
+          },
+          "manifestacoesNoCiclo": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -17535,7 +17716,9 @@
           "decisao",
           "classificacaoProtecao",
           "hipoteseLegal",
-          "finalidadeTratamento"
+          "finalidadeTratamento",
+          "ciclo",
+          "manifestacoesNoCiclo"
         ],
         "type": "object",
         "properties": {
@@ -17581,6 +17764,20 @@
               "null",
               "string"
             ]
+          },
+          "ciclo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "manifestacoesNoCiclo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "classificacaoRecomendada": {
             "type": [
