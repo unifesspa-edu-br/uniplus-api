@@ -7,6 +7,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 /// Corpo da decisão da proteção de dados sobre um item do catálogo. Declara no contrato o vocabulário do cadastro e da
 /// decisão; a recusa do valor fora dele continua sendo do handler.
 /// </summary>
+/// <param name="Justificativa">
+/// Obrigatória em <c>REPROVAR</c>; em <c>APROVAR</c> e <c>RECOMENDAR_AJUSTE</c>, opcional, salvo diante de manifestação
+/// técnica desfavorável vigente, que a exige. Fica registrada no ato da decisão.
+/// </param>
 public sealed record DecidirProtecaoDoCatalogoRequest(
     [property: VocabularioFechado(CadastrosDaProtecaoDoCatalogo.TipoDocumento, CadastrosDaProtecaoDoCatalogo.Fato)]
     string? Cadastro,

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -33,11 +31,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <c>ponto_resolucao</c>/<c>binding</c> (ADR-0116) são referência por valor, sem FK.
 /// </para>
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCandidato>
+public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCandidato>
 {
     private const int CodigoMaxLength = 50;
     private const int NomeMaxLength = 200;
@@ -117,7 +111,7 @@ internal sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<Fato
         builder.OwnsOne(f => f.Aprovacao, aprovacao =>
         {
             AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
-            aprovacao.HasData(FatoCandidatoSeed.Itens.Select(item => new { FatoCandidatoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente }));
+            aprovacao.HasData(FatoCandidatoSeed.Itens.Select(item => new { FatoCandidatoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false }));
         });
         builder.Navigation(f => f.Aprovacao).IsRequired();
 

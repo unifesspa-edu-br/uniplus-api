@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -17,13 +15,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>
 /// Configuração EF Core dos atos da proteção de dados do catálogo, registro só acrescentado: sem chave
 /// estrangeira para o item, que pode ser desativado sem apagar o registro. As colunas de quem agiu são
-/// <c>Pessoal</c>, como em <c>pedido_decisoes</c>; as demais são <c>Interno</c>.
+/// <c>Pessoal</c>, como em <c>pedido_decisoes</c>; as demais são <c>Interno</c>. A decisão guarda o ciclo e se havia
+/// manifestação técnica desfavorável vigente, e o banco recusa a aprovação ou o ajuste diante dela sem justificativa
+/// (ADR-0163).
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfiguration<AtoDaProtecaoDoCatalogo>
+public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfiguration<AtoDaProtecaoDoCatalogo>
 {
     private const int CadastroMaxLength = 20;
     private const int AtoMaxLength = 20;
@@ -59,11 +55,13 @@ internal sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigur
             .HasMaxLength(ProtecaoDeDadosConversores.HipoteseLegalMaxLength)
             .IsRequired();
         builder.Property(a => a.FinalidadeTratamento).HasMaxLength(ProtecaoDeDados.FinalidadeMaxLength).IsRequired();
+        builder.Property(a => a.Ciclo).HasConversion(ManifestacaoDaProtecaoConversores.Ciclo).IsRequired();
 
         builder.Property(a => a.ClassificacaoRecomendada)
             .HasConversion<ClassificacaoDeProtecaoValueConverter>()
             .HasMaxLength(ClassificacaoDeProtecaoValueConverter.MaxLength);
-        builder.Property(a => a.Justificativa).HasMaxLength(AprovacaoDaProtecao.JustificativaMaxLength);
+        builder.Property(a => a.Justificativa).HasMaxLength(Fundamentacao.MaxLength);
+        builder.Property(a => a.DianteDeManifestacaoDesfavoravel).IsRequired();
 
         builder.Property(a => a.AtorEmissor).HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
@@ -74,6 +72,7 @@ internal sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigur
 
         builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_item");
         builder.HasIndex(a => new { a.Ato, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_ato");
+        builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Ciclo, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_item_ciclo");
     }
 
     private static void ConfigurarChecks(TableBuilder<AtoDaProtecaoDoCatalogo> tabela)
@@ -89,5 +88,12 @@ internal sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigur
         tabela.HasCheckConstraint(
             "ck_protecao_do_catalogo_atos_reprovacao_com_justificativa",
             "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
+        tabela.HasCheckConstraint("ck_protecao_do_catalogo_atos_ciclo_positivo", "ciclo >= 1");
+        tabela.HasCheckConstraint(
+            "ck_protecao_do_catalogo_atos_diante_so_na_decisao",
+            "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
+        tabela.HasCheckConstraint(
+            "ck_protecao_do_catalogo_atos_justificativa_diante_desfavoravel",
+            "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
     }
 }

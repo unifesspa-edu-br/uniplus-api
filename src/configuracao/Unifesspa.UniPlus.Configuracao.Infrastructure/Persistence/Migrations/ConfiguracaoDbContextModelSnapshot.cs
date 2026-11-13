@@ -59,6 +59,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("cadastro");
 
+                    b.Property<int>("Ciclo")
+                        .HasColumnType("integer")
+                        .HasColumnName("ciclo");
+
                     b.Property<string>("ClassificacaoProtecao")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -69,6 +73,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("classificacao_recomendada");
+
+                    b.Property<bool>("DianteDeManifestacaoDesfavoravel")
+                        .HasColumnType("boolean")
+                        .HasColumnName("diante_de_manifestacao_desfavoravel");
 
                     b.Property<string>("FinalidadeTratamento")
                         .IsRequired()
@@ -116,6 +124,9 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                     b.HasIndex("Cadastro", "ItemId", "Instante")
                         .HasDatabaseName("ix_protecao_do_catalogo_atos_item");
 
+                    b.HasIndex("Cadastro", "ItemId", "Ciclo", "Instante")
+                        .HasDatabaseName("ix_protecao_do_catalogo_atos_item_ciclo");
+
                     b.ToTable("protecao_do_catalogo_atos", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_protecao_do_catalogo_atos_ajuste_com_recomendacao", "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
@@ -123,6 +134,12 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_protecao_do_catalogo_atos_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO', 'ACEITE')");
 
                             t.HasCheckConstraint("ck_protecao_do_catalogo_atos_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_ciclo_positivo", "ciclo >= 1");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_atos_justificativa_diante_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
 
                             t.HasCheckConstraint("ck_protecao_do_catalogo_atos_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
                         });
@@ -1289,6 +1306,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
@@ -3520,6 +3541,91 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.ManifestacaoDaProtecaoDoCatalogo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Ciclo")
+                        .HasColumnType("integer")
+                        .HasColumnName("ciclo");
+
+                    b.Property<DateTimeOffset>("Instante")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("instante");
+
+                    b.Property<string>("Parecer")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("parecer");
+
+                    b.Property<Guid?>("SubstituiId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("substitui_id");
+
+                    b.Property<string>("Texto")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("texto");
+
+                    b.Property<string>("_autorEmissor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_emissor");
+
+                    b.Property<string>("_autorNome")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_nome");
+
+                    b.Property<string>("_autorSub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_sub");
+
+                    b.Property<string>("_cadastro")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("cadastro");
+
+                    b.Property<Guid>("_itemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_protecao_do_catalogo_manifestacoes");
+
+                    b.HasIndex("SubstituiId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_substitui");
+
+                    b.HasIndex("_cadastro", "_itemId", "Ciclo", "Instante")
+                        .HasDatabaseName("ix_protecao_do_catalogo_manifestacoes_item_ciclo");
+
+                    b.HasIndex("_cadastro", "_itemId", "Ciclo", "_autorEmissor", "_autorSub")
+                        .IsUnique()
+                        .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_inicial_do_autor")
+                        .HasFilter("substitui_id IS NULL");
+
+                    b.ToTable("protecao_do_catalogo_manifestacoes", "configuracao", t =>
+                        {
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_ciclo_positivo", "ciclo >= 1");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_parecer", "parecer IN ('ADEQUADA', 'RECOMENDA_AJUSTE', 'INADEQUADA')");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
+
+                            t.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.Modalidade", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4801,6 +4907,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_tipo_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
 
                             t.HasCheckConstraint("ck_tipo_documento_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
                             t.HasCheckConstraint("ck_tipo_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
@@ -6300,6 +6410,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(255)")
                                 .HasColumnName("protecao_aceita_por");
 
+                            b1.Property<int>("Ciclo")
+                                .HasColumnType("integer")
+                                .HasColumnName("protecao_ciclo");
+
                             b1.Property<string>("ClassificacaoRecomendada")
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
@@ -6318,6 +6432,14 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(2000)
                                 .HasColumnType("character varying(2000)")
                                 .HasColumnName("protecao_justificativa");
+
+                            b1.Property<bool>("ManifestacaoDesfavoravelVigente")
+                                .HasColumnType("boolean")
+                                .HasColumnName("protecao_manifestacao_desfavoravel");
+
+                            b1.Property<DateTimeOffset?>("ManifestadaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_manifestada_em");
 
                             b1.Property<string>("Situacao")
                                 .IsRequired()
@@ -6346,291 +6468,407 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000001"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000002"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000003"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000004"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000005"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000006"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000007"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000008"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000009"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000010"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000011"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000012"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000013"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000014"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000015"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000016"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000017"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000018"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000019"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000020"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000021"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000022"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000023"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000024"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000025"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000026"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000027"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000028"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000029"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000030"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000031"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000032"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000056"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000033"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000051"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000052"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000036"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000037"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000057"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000058"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000059"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000038"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000039"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000040"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000041"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000042"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000043"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000044"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000045"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000046"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000047"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000048"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000049"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000050"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000054"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000055"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000053"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     FatoCandidatoId = new Guid("fa700000-0000-7000-8000-000000000060"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 });
                         });
@@ -6751,6 +6989,15 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Endereco");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.ManifestacaoDaProtecaoDoCatalogo", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.ManifestacaoDaProtecaoDoCatalogo", null)
+                        .WithOne()
+                        .HasForeignKey("Unifesspa.UniPlus.Configuracao.Domain.Entities.ManifestacaoDaProtecaoDoCatalogo", "SubstituiId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_protecao_do_catalogo_manifestacoes_substitui");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.OfertaCurso", b =>
@@ -6893,6 +7140,10 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(255)")
                                 .HasColumnName("protecao_aceita_por");
 
+                            b1.Property<int>("Ciclo")
+                                .HasColumnType("integer")
+                                .HasColumnName("protecao_ciclo");
+
                             b1.Property<string>("ClassificacaoRecomendada")
                                 .HasMaxLength(20)
                                 .HasColumnType("character varying(20)")
@@ -6911,6 +7162,14 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 .HasMaxLength(2000)
                                 .HasColumnType("character varying(2000)")
                                 .HasColumnName("protecao_justificativa");
+
+                            b1.Property<bool>("ManifestacaoDesfavoravelVigente")
+                                .HasColumnType("boolean")
+                                .HasColumnName("protecao_manifestacao_desfavoravel");
+
+                            b1.Property<DateTimeOffset?>("ManifestadaEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("protecao_manifestada_em");
 
                             b1.Property<string>("Situacao")
                                 .IsRequired()
@@ -6939,461 +7198,645 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000001"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000002"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000003"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000004"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000005"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000006"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000007"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000008"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000009"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000010"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000011"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000012"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000013"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000014"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000015"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000016"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000017"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000018"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000019"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000020"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000021"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000022"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000023"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000024"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000025"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000026"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000027"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000028"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000029"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000030"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000031"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000032"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000033"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000034"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000035"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000036"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000037"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000038"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000039"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000040"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000041"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000042"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000043"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000044"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000045"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000046"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000047"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000048"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000049"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000050"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000051"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000052"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000053"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000054"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000055"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000056"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000057"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000058"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000059"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000060"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000061"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000062"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000063"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000064"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000065"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000066"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000067"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000068"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000069"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000070"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000071"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000072"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000073"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000074"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000075"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000076"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000077"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000078"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000079"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000080"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000081"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000082"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000083"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000084"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000085"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000086"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000087"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000088"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000089"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000090"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000091"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 },
                                 new
                                 {
                                     TipoDocumentoId = new Guid("d0c00000-0000-7000-8000-000000000092"),
+                                    Ciclo = 1,
+                                    ManifestacaoDesfavoravelVigente = false,
                                     Situacao = "PENDENTE"
                                 });
                         });

@@ -4,10 +4,11 @@ using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
+
 /// <summary>
-/// Registra recursos da camada Application do módulo Configuracao. Em V1
-/// só varre assembly por validators FluentValidation (vazio neste scaffold —
-/// commands/queries entram em F2 com as entidades).
+/// Registra recursos da camada Application do módulo Configuracao: os validators FluentValidation do assembly e os
+/// serviços do circuito de aprovação da proteção do catálogo, que os handlers recebem prontos.
 /// </summary>
 public static class ConfiguracaoApplicationServiceRegistration
 {
@@ -17,6 +18,11 @@ public static class ConfiguracaoApplicationServiceRegistration
 
         System.Reflection.Assembly assembly = typeof(ConfiguracaoApplicationServiceRegistration).Assembly;
         services.AddValidatorsFromAssembly(assembly);
+
+        services.AddScoped<ItensSobAprovacao>();
+        services.AddScoped<SolicitacaoDaProtecaoDoCatalogo>();
+        services.AddScoped<DecisaoNaProtecaoDoCatalogo>();
+        services.AddScoped<ManifestacaoNaProtecaoDoCatalogo>();
 
         return services;
     }

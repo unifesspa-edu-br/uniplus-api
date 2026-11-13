@@ -24,7 +24,7 @@ using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.Ca
 
 /// <summary>
 /// A solicitação reúne de uma vez os itens pendentes que quem envia escolheu, dos cadastros que mantém, e só então
-/// avisa quem aprova (ADR-0153).
+/// avisa quem aprova (ADR-0153). O aviso a quem se manifesta está em <see cref="SolicitacaoAvisaQuemSeManifestaTests"/>.
 /// </summary>
 public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
 {
@@ -354,9 +354,13 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
     {
         ITitularesDaPermissao titulares = Substitute.For<ITitularesDaPermissao>();
         titulares.ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar.Codigo, Arg.Any<CancellationToken>()).Returns(destinatarios);
+        titulares.ListarEmailsAsync(PermissaoConfiguracao.ProtecaoDoCatalogoManifestar.Codigo, Arg.Any<CancellationToken>()).Returns([]);
 
         return SolicitarAprovacaoDaProtecaoCommandHandler.Handle(
-            new SolicitarAprovacaoDaProtecaoCommand(itens), _tipos, _fatos, _atos, _unitOfWork, verificador, titulares, UsuarioIsabella(), Relogio(),
+            new SolicitarAprovacaoDaProtecaoCommand(itens),
+            new SolicitacaoDaProtecaoDoCatalogo(_tipos, _fatos, _atos, _unitOfWork, titulares, Relogio()),
+            verificador,
+            UsuarioIsabella(),
             CancellationToken.None);
     }
 }

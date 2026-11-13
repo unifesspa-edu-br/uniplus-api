@@ -12,11 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1812:Avoid uninstantiated internal classes",
-    Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class TipoDocumentoConfiguration
+public sealed class TipoDocumentoConfiguration
     : IEntityTypeConfiguration<TipoDocumento>
 {
     private const int CodigoMaxLength = 50;
@@ -112,7 +108,7 @@ internal sealed class TipoDocumentoConfiguration
         builder.OwnsOne(t => t.Aprovacao, aprovacao =>
         {
             AprovacaoDaProtecaoOwnedConfiguration.Configure(aprovacao);
-            aprovacao.HasData(TipoDocumentoSeed.Itens.Select(item => new { TipoDocumentoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente }));
+            aprovacao.HasData(TipoDocumentoSeed.Itens.Select(item => new { TipoDocumentoId = item.Id, Situacao = SituacaoDaAprovacao.Pendente, Ciclo = CicloDaAprovacao.Primeiro, ManifestacaoDesfavoravelVigente = false }));
         });
         builder.Navigation(t => t.Aprovacao).IsRequired();
 

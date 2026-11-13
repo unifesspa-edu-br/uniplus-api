@@ -69,8 +69,32 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>Justificativa da decisão acima do limite de caracteres.</summary>
     public const string JustificativaMuitoLonga = "ProtecaoDoCatalogo.JustificativaMuitoLonga";
 
-    /// <summary>Classificação recomendada ou justificativa numa decisão que não as admite.</summary>
+    /// <summary>Classificação recomendada numa decisão que não a admite (aprovação ou reprovação).</summary>
     public const string DadoDaDecisaoNaoCabe = "ProtecaoDoCatalogo.DadoDaDecisaoNaoCabe";
+
+    /// <summary>
+    /// Aprovação ou recomendação de ajuste sem justificativa num item com manifestação técnica desfavorável vigente
+    /// (recomenda ajuste ou inadequada) no ciclo.
+    /// </summary>
+    public const string JustificativaExigidaPelaManifestacao = "ProtecaoDoCatalogo.JustificativaExigidaPelaManifestacao";
+
+    /// <summary>O parecer da manifestação (<c>ADEQUADA</c>, <c>RECOMENDA_AJUSTE</c> ou <c>INADEQUADA</c>) ausente ou fora do vocabulário.</summary>
+    public const string ParecerInvalido = "ProtecaoDoCatalogo.ParecerInvalido";
+
+    /// <summary>Manifestação com parecer recomenda ajuste ou inadequada sem o texto.</summary>
+    public const string TextoDaManifestacaoObrigatorio = "ProtecaoDoCatalogo.TextoDaManifestacaoObrigatorio";
+
+    /// <summary>Texto da manifestação acima do limite de caracteres.</summary>
+    public const string TextoDaManifestacaoMuitoLongo = "ProtecaoDoCatalogo.TextoDaManifestacaoMuitoLongo";
+
+    /// <summary>O ciclo de aprovação lido no item ausente ou menor que 1.</summary>
+    public const string CicloInvalido = "ProtecaoDoCatalogo.CicloInvalido";
+
+    /// <summary>
+    /// O ciclo de aprovação do item mudou depois de lido: o item foi reiniciado, e a manifestação falaria do que quem
+    /// se manifesta não viu. Reler o item resolve; repetir a mesma manifestação nunca dá certo.
+    /// </summary>
+    public const string CicloMudou = "ProtecaoDoCatalogo.CicloMudou";
 
     /// <summary>Aceite da recomendação num item reprovado: a reprovação não recomenda classificação, o item só se edita.</summary>
     public const string AceiteDeItemReprovado = "ProtecaoDoCatalogo.AceiteDeItemReprovado";

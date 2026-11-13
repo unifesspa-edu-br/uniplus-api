@@ -108,6 +108,11 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<AtoDaProtecaoDoCatalogo> AtosDaProtecaoDoCatalogo => Set<AtoDaProtecaoDoCatalogo>();
 
     /// <summary>
+    /// Manifestações técnicas na proteção do catálogo (ADR-0163), registro só acrescentado de eventos por ciclo.
+    /// </summary>
+    public DbSet<ManifestacaoDaProtecaoDoCatalogo> ManifestacoesDaProtecaoDoCatalogo => Set<ManifestacaoDaProtecaoDoCatalogo>();
+
+    /// <summary>
     /// Cache de Idempotency-Key (ADR-0027). Vive no mesmo banco do módulo
     /// para permitir gravação adjacente no outbox.
     /// </summary>
@@ -116,30 +121,17 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
-        // Banco único, schema-por-módulo: fixa o schema
-        // default do modelo — tabelas, índices, FKs e idempotency_cache deste
-        // módulo passam a ser qualificados por `configuracao`.
+
+        // Banco único, schema por módulo: tabelas, índices, FKs e idempotency_cache deste módulo ficam em `configuracao`.
         modelBuilder.HasDefaultSchema(Schema);
-        // pg_trgm: busca por proximidade indexada (GIN trigram) do catálogo de
-        // termos de consentimento por nome (issue #1105) — evita ILIKE em full
-        // scan. Extensão global ao banco; o índice de expressão em si (não
-        // representável via HasIndex fluente) vive na migration.
-        modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ConfiguracaoDbContext).Assembly);
         // Configurações cross-cutting de Infrastructure.Core (idempotency_cache).
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly);
-        // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo
-        // tipo ISoftDeletable, após os ApplyConfigurations registrarem os tipos.
+        // Convenção global de soft-delete (issue #629): aplica `!IsDeleted` a todo tipo ISoftDeletable, depois de os
+        // ApplyConfigurations registrarem os tipos.
         modelBuilder.AplicarFiltroGlobalSoftDelete();
         base.OnModelCreating(modelBuilder);
-
-        // Mapeia PgFunctions.NormalizeForComparison para a função criada por
-        // migration. Sem esse registro, a consulta que a chama não traduz e o EF
-        // tentaria avaliá-la no cliente, onde o stub lança.
-        modelBuilder.HasDbFunction(
-            typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)
-            .HasName("normalizar_para_comparacao")
-            .HasSchema("configuracao");
+        RegistrarRecursosDoPostgres(modelBuilder);
     }
 
     public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
@@ -155,5 +147,19 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public void DescartarAlteracoesNaoSalvas()
     {
         ChangeTracker.Clear();
+    }
+
+    // A extensão e a função do PostgreSQL de que as consultas do módulo dependem.
+    private static void RegistrarRecursosDoPostgres(ModelBuilder modelBuilder)
+    {
+        // pg_trgm: busca por proximidade indexada (GIN trigram) do catálogo de termos de consentimento por nome (issue
+        // #1105), sem ILIKE em full scan. O índice de expressão, que o HasIndex fluente não representa, vive na migration.
+        modelBuilder.HasPostgresExtension("pg_trgm");
+
+        // Sem este registro a consulta que chama PgFunctions.NormalizeForComparison não traduz, e o EF tentaria avaliá-la
+        // no cliente, onde o stub lança. A função é criada por migration.
+        modelBuilder.HasDbFunction(typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)
+            .HasName("normalizar_para_comparacao")
+            .HasSchema("configuracao");
     }
 }

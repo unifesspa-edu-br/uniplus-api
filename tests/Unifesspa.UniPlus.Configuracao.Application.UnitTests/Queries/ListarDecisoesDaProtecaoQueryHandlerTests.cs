@@ -86,17 +86,17 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
     public async Task Handle_MapeiaADecisao()
     {
         TipoDocumento tipo = NovoTipo();
-        AtoDaProtecaoDoCatalogo ato = AtoDaProtecaoDoCatalogo.Registrar(
-            CadastroDoCatalogo.TipoDocumento, tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", AtoDaProtecao.Reprovacao,
-            tipo.Protecao, null, "Dado desnecessário.", new AtorDoAto(Emissor, "betina.souza", "Betina Souza"), Agora);
+        AtoDaProtecaoDoCatalogo ato = AtoDaProtecaoDoCatalogo.RegistrarDecisao(
+            Retrato(tipo), new DecisaoFundamentada(AtoDaProtecao.Reprovacao, null, Fundamentacao.Analisar("Dado desnecessário.")),
+            new AtorDoAto(Emissor, "betina.neves", "Betina Marina Valentina das Neves"), Agora);
         _atos.ListarDecisoesAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(
             ([ato], ((string, Guid)?)null, ((string, Guid)?)("proximo", ato.Id)));
 
         Result<ListarDecisoesDaProtecaoResult> resultado = await ListarAsync(Consulta());
 
         resultado.Value!.Items.Should().ContainSingle().Which.Should().Be(new DecisaoDaProtecaoDto(
-            "TIPO_DOCUMENTO", tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", "REPROVACAO", Agora, "Betina Souza",
-            "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, null, "Dado desnecessário."));
+            "TIPO_DOCUMENTO", tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", "REPROVACAO", Agora, "Betina Marina Valentina das Neves", 1,
+            "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, null, "Dado desnecessário.", false));
         resultado.Value.Proximo.Should().Be(("proximo", ato.Id));
         typeof(DecisaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorSub", "AtorEmissor", "Sub", "Emissor"]);
     }

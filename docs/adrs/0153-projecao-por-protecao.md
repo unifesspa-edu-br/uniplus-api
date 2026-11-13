@@ -255,3 +255,7 @@ Descartados também, dentro da opção escolhida: a permissão de acesso ao reso
 - Issues: #2162 (registro durável, decidir sem registrar a negativa, consulta de capacidade sem registro, registros em lote), #2151 (permissões dos arquivos `Publico`, `Interno` e `Identificador`), #2168 (detalhe da inscrição), #2169 (padronização do tipo de resource).
 - UNI-REQ-0130, UNI-REQ-0183 e UNI-REQ-0184.
 - Emendada pela [ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md): a aprovação da proteção do catálogo é do Representante do controlador, com manifestação técnica não bloqueante do Encarregado de dados; a consulta dos registros de acesso pela proteção de dados é do Encarregado e fica para incremento posterior.
+
+## Emenda: manifestação técnica na proteção do catálogo (#2366)
+
+A [ADR-0163](0163-manifestacao-tecnica-por-ciclo-na-protecao-do-catalogo.md) emenda a seção "Aprovação da proteção de dados como pré-condição". O circuito de aprovação de cada tipo de documento e de cada fato ganha o número do ciclo, que avança a cada reinício de item já solicitado, e o estado das manifestações técnicas do ciclo. O ato da aprovação passa a guardar a justificativa, que é obrigatória na aprovação e no ajuste diante de manifestação desfavorável vigente.

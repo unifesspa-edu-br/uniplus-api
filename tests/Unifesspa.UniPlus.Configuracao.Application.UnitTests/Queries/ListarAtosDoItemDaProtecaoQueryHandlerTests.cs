@@ -31,9 +31,7 @@ public sealed class ListarAtosDoItemDaProtecaoQueryHandlerTests
         _fatos.ObterPorIdParaLeituraAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
         _atos.ListarDoItemAsync(CadastroDoCatalogo.Fato, fato.Id, Arg.Any<CancellationToken>()).Returns(
         [
-            AtoDaProtecaoDoCatalogo.Registrar(
-                CadastroDoCatalogo.Fato, fato.Id, fato.Codigo, fato.Nome, AtoDaProtecao.Solicitacao, fato.Protecao, null, null,
-                new AtorDoAto(Emissor, Isabella, "Isabella Figueiredo"), Agora),
+            AtoDaProtecaoDoCatalogo.Registrar(Retrato(fato), AtoDaProtecao.Solicitacao, new AtorDoAto(Emissor, Isabella, "Isabella Priscila Figueiredo"), Agora),
         ]);
 
         IReadOnlyList<AtoDaProtecaoDto>? atos = await ListarAsync(CadastroDaProtecaoDoCatalogo.Fato, fato.Id);
