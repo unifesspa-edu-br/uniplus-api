@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Providencias;
 using AwesomeAssertions;
 
 using Npgsql;
+
 using NpgsqlTypes;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
