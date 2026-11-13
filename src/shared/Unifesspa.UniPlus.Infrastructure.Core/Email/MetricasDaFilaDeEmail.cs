@@ -10,7 +10,7 @@ using System.Diagnostics.Metrics;
 public sealed record AmostraDaFilaDeEmail(long Prontas, TimeSpan IdadeDaMaisAntiga, long Atrasadas, long Mortas);
 
 /// <summary>
-/// As métricas do envio de e-mail: o que a entrega aceitou e falhou, os instantes do último aceite e da última falha
+/// As métricas do envio de e-mail: o que a entrega aceitou e falhou, o atraso entre a publicação do pedido e o aceite, os instantes do último aceite e da última falha
 /// e o retrato da fila. Os instantes e o retrato são gravados com <see cref="Interlocked"/> e lidos na coleta; os dois
 /// instantes começam em zero ("nunca"), de modo que a série existe desde a subida, e a partida nunca é lida como aceite.
 /// </summary>
@@ -24,6 +24,7 @@ public sealed class MetricasDaFilaDeEmail : IDisposable
     private readonly Meter _medidor = new(NomeDoMedidor);
     private readonly Counter<long> _enviados;
     private readonly Counter<long> _falhas;
+    private readonly Histogram<double> _atraso;
     private readonly TimeProvider _relogio;
     private long _ultimoEnvioEmMs;
     private long _ultimaFalhaEmMs;
@@ -41,6 +42,8 @@ public sealed class MetricasDaFilaDeEmail : IDisposable
         _ultimaAmostraEmTicks = relogio.GetUtcNow().UtcTicks;
         _enviados = _medidor.CreateCounter<long>("uniplus.email.enviados", description: "E-mails aceitos pelo relay");
         _falhas = _medidor.CreateCounter<long>("uniplus.email.falhas", description: "Falhas de envio, por tipo (transitória ou permanente)");
+        _atraso = _medidor.CreateHistogram<double>(
+            "uniplus.email.atraso", UnidadeSegundos, "Tempo entre a publicação do pedido de e-mail e o aceite do relay, novas tentativas incluídas");
         CriarGaugesDosInstantes();
         CriarGaugesDaFila();
     }
@@ -75,10 +78,12 @@ public sealed class MetricasDaFilaDeEmail : IDisposable
     /// <summary>O medidor das métricas, para quem precisa escutá-lo.</summary>
     public Meter Medidor => _medidor;
 
-    public void RegistrarEnvio(DateTimeOffset instante)
+    /// <summary>Registra o aceite do relay; atraso negativo, de relógios divergentes entre quem publicou e quem enviou, conta como zero.</summary>
+    public void RegistrarEnvio(DateTimeOffset instante, TimeSpan atraso)
     {
         Interlocked.Exchange(ref _ultimoEnvioEmMs, instante.ToUnixTimeMilliseconds());
         _enviados.Add(1);
+        _atraso.Record(Math.Max(0, atraso.TotalSeconds));
     }
 
     public void RegistrarFalha(bool permanente, DateTimeOffset instante)

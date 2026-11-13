@@ -44,6 +44,53 @@ public sealed class EmailSmtpOptionsValidatorTests
         _validator.Validate(null, opcoes).Succeeded.Should().BeTrue();
     }
 
+    [Theory(DisplayName = "Tempo limite de conexão fora do intervalo aceito é recusado na subida")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(301)]
+    public void Validate_TempoLimiteDeConexaoForaDoIntervalo_Falha(int segundos)
+    {
+        EmailSmtpOptions opcoes = Valida();
+        opcoes.TempoLimiteDeConexao = TimeSpan.FromSeconds(segundos);
+
+        _validator.Validate(null, opcoes).Failures.Should().ContainSingle().Which.Should().Contain("TempoLimiteDeConexao");
+    }
+
+    [Theory(DisplayName = "Tempo limite de envio fora do intervalo aceito é recusado na subida")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(301)]
+    public void Validate_TempoLimiteDeEnvioForaDoIntervalo_Falha(int segundos)
+    {
+        EmailSmtpOptions opcoes = Valida();
+        opcoes.TempoLimiteDeEnvio = TimeSpan.FromSeconds(segundos);
+
+        _validator.Validate(null, opcoes).Failures.Should().ContainSingle().Which.Should().Contain("TempoLimiteDeEnvio");
+    }
+
+    [Fact(DisplayName = "Sem configuração, os tempos limite têm padrão finito e válido")]
+    public void Validate_TemposLimitePadrao_Passa()
+    {
+        EmailSmtpOptions opcoes = Valida();
+
+        opcoes.TempoLimiteDeConexao.Should().Be(TimeSpan.FromSeconds(10));
+        opcoes.TempoLimiteDeEnvio.Should().Be(TimeSpan.FromSeconds(30));
+        opcoes.EnviosSimultaneos.Should().Be(5);
+        _validator.Validate(null, opcoes).Succeeded.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "Teto de envios simultâneos fora do intervalo aceito é recusado na subida")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(21)]
+    public void Validate_EnviosSimultaneosForaDoIntervalo_Falha(int teto)
+    {
+        EmailSmtpOptions opcoes = Valida();
+        opcoes.EnviosSimultaneos = teto;
+
+        _validator.Validate(null, opcoes).Failures.Should().ContainSingle().Which.Should().Contain("EnviosSimultaneos");
+    }
+
     private static EmailSmtpOptions ComRemetente(string remetente)
     {
         EmailSmtpOptions opcoes = Valida();

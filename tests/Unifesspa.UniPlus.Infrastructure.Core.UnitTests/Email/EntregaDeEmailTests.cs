@@ -138,6 +138,41 @@ public sealed class EntregaDeEmailTests : IDisposable
         _coletor.Soma("uniplus.email.falhas", "tipo", "permanente").Should().Be(1);
     }
 
+    [Fact(DisplayName = "O atraso até o aceite entra no histograma em segundos, sem rótulo de destinatário, assunto ou finalidade")]
+    public async Task Handle_Enviado_RegistraOAtrasoSemDadoPessoal()
+    {
+        Envelope envelope = new() { SentAt = _relogio.GetUtcNow().AddSeconds(-82) };
+
+        await Entrega().Handle(NovaMensagem(), envelope, CancellationToken.None);
+
+        MedidaColhida atraso = _coletor.Registradas("uniplus.email.atraso").Should().ContainSingle().Which;
+        atraso.Valor.Should().Be(82);
+        atraso.Etiquetas.Should().BeEmpty("o atraso não pode carregar destinatário, assunto nem finalidade");
+    }
+
+    [Fact(DisplayName = "Atraso negativo, de relógios divergentes, é registrado como zero")]
+    public async Task Handle_PublicacaoNoFuturo_RegistraAtrasoZero()
+    {
+        Envelope envelope = new() { SentAt = _relogio.GetUtcNow().AddSeconds(3) };
+
+        await Entrega().Handle(NovaMensagem(), envelope, CancellationToken.None);
+
+        _coletor.Registradas("uniplus.email.atraso").Should().ContainSingle().Which.Valor.Should().Be(0);
+    }
+
+    [Fact(DisplayName = "Prazo vencido no relay é falha transitória: volta à fila para nova tentativa, não vai para as mortas")]
+    public async Task Handle_PrazoVencido_FalhaTransitoria()
+    {
+        _transporte.EnviarAsync(Arg.Any<EnviarEmail>(), Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new TimeoutException());
+
+        Func<Task> envio = () => Entrega().Handle(NovaMensagem(), new Envelope { Attempts = 1 }, CancellationToken.None);
+
+        await envio.Should().ThrowAsync<FalhaNoEnvioDeEmailException>();
+        _coletor.Soma("uniplus.email.falhas", "tipo", "transitoria").Should().Be(1);
+        _coletor.Soma("uniplus.email.falhas", "tipo", "permanente").Should().Be(0, "prazo vencido não vai para as mortas");
+        _coletor.Registradas("uniplus.email.atraso").Should().BeEmpty("nada foi aceito");
+    }
+
     private EntregaDeEmail Entrega() => new(_transporte, _metricas, _relogio, _logger);
 
     private static EnviarEmail NovaMensagem() => EnviarEmail.Para(

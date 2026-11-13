@@ -162,7 +162,7 @@ builder.Host.UseWolverineOutboxCascading(
         PublicacoesMessagingRegistration.ConfigurarRouting(opts);
 
         // fila PG durável dos pedidos de e-mail (capacidade compartilhada, sem módulo dono).
-        EnvioDeEmailServiceCollectionExtensions.ConfigurarRoutingDeEmail(opts);
+        EnvioDeEmailServiceCollectionExtensions.ConfigurarRoutingDeEmail(opts, builder.Configuration);
     });
 builder.Services.AddWolverineMessaging();
 
@@ -201,7 +201,4 @@ await app.RunAsync().ConfigureAwait(false);
 return 0;
 
 // Necessário para WebApplicationFactory<Program> nos testes de integração do host.
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Design", "CA1515:Consider making public types internal",
-    Justification = "Program público exigido por WebApplicationFactory<Program>.")]
 public partial class Program;
