@@ -20,9 +20,11 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// O perfil de Encarregado de dados isolado, pelo host real: consulta pedidos, concessões, revisões, perfis e a proteção
-/// do catálogo, com cada leitura registrada pela permissão de consulta, e é recusado em toda fila de decisão e em toda
-/// operação que decide, revoga ou solicita. Cecília Moura é a Encarregada.
+/// O perfil de Encarregado de dados isolado, pelo host real: consulta pedidos, concessões, revisões, perfis, a proteção
+/// do catálogo de tipos de documento e de fatos do candidato e as providências sobre concessões, com cada leitura
+/// registrada pela permissão que a autorizou, e é recusado em toda fila de decisão e em toda operação que decide, revoga
+/// ou solicita a aprovação da proteção daquele catálogo, inclusive responder ou atender providência. Cecília Moura é a
+/// Encarregada.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBase
@@ -36,7 +38,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     {
     }
 
-    [Theory(DisplayName = "O Encarregado isolado consulta cada leitura da matriz, e a leitura grava a permissão de consulta")]
+    [Theory(DisplayName = "O Encarregado isolado consulta cada leitura da matriz, e a leitura grava a permissão que a autorizou")]
     [InlineData("/api/autorizacao/pedidos-de-concessao?fila=todos", "autorizacao:pedidos:consultar")]
     [InlineData("/api/autorizacao/concessoes", "autorizacao:concessoes:consultar")]
     [InlineData("/api/autorizacao/instalacoes/tentativas-sem-pendencia", "autorizacao:concessoes:consultar")]
@@ -45,6 +47,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     [InlineData("/api/autorizacao/governanca/divergencias", "autorizacao:perfis:consultar-versoes")]
     [InlineData("/api/configuracao/admin/protecao-do-catalogo", "configuracao:protecao-do-catalogo:consultar")]
     [InlineData("/api/configuracao/admin/protecao-do-catalogo/decisoes", "configuracao:protecao-do-catalogo:consultar")]
+    [InlineData("/api/autorizacao/providencias", "autorizacao:providencias:solicitar")]
     public async Task Leitura_DoEncarregadoIsolado_PermitidaERegistrada(string rota, string permissao)
     {
         using HttpClient cecilia = await EncarregadaAsync();
@@ -56,7 +59,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         DaCecilia(antes).Should().Contain(r => r.Permissao == permissao && r.Resultado == ResultadoDoAcesso.Permitido);
     }
 
-    [Theory(DisplayName = "O Encarregado isolado é recusado em toda fila de decisão e em toda operação que decide, revoga ou solicita")]
+    [Theory(DisplayName = "O Encarregado isolado é recusado em toda fila de decisão e em toda operação que decide, revoga, solicita a aprovação da proteção ou responde e atende providência")]
     [InlineData("GET", "/api/autorizacao/pedidos-de-concessao?fila=gestor")]
     [InlineData("GET", "/api/autorizacao/pedidos-de-concessao?fila=protecao_de_dados")]
     [InlineData("GET", "/api/autorizacao/versoes-de-perfil?fila=protecao_de_dados")]
@@ -65,6 +68,8 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     [InlineData("POST", "/api/autorizacao/revisoes")]
     [InlineData("POST", "/api/configuracao/admin/protecao-do-catalogo")]
     [InlineData("POST", "/api/configuracao/admin/protecao-do-catalogo/solicitacoes")]
+    [InlineData("POST", "/api/autorizacao/providencias/019a0000-0000-7000-8000-0000000000f1/resposta")]
+    [InlineData("POST", "/api/autorizacao/providencias/019a0000-0000-7000-8000-0000000000f1/atendimento")]
     public async Task Decisao_DoEncarregadoIsolado_Recusada(string metodo, string rota)
     {
         using HttpClient cecilia = await EncarregadaAsync();

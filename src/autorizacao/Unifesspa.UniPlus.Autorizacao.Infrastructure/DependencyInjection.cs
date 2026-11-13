@@ -73,6 +73,7 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddScoped<IPedidoDeConcessaoRepository, PedidoDeConcessaoRepository>();
         services.AddScoped<ITermoDeResponsabilidadeRepository, TermoDeResponsabilidadeRepository>();
         services.AddScoped<IRevisaoDeAcessosRepository, RevisaoDeAcessosRepository>();
+        services.AddScoped<IProvidenciaRepository, ProvidenciaRepository>();
         services.AddScoped<IReclassificacaoRepository, ReclassificacaoRepository>();
         services.AddScoped<ILeituraDoMonitoramento, LeituraDoMonitoramento>();
     }

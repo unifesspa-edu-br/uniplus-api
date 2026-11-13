@@ -67,6 +67,18 @@ public enum TipoDeAviso
 
     /// <summary>O pedido foi devolvido porque o perfil passou a exigir o termo de responsabilidade depois da criação.</summary>
     PedidoDevolvidoPorTermoExigido = 21,
+
+    /// <summary>Uma providência sobre concessão foi solicitada e aguarda resposta.</summary>
+    ProvidenciaSolicitada = 22,
+
+    /// <summary>A providência solicitada foi respondida.</summary>
+    ProvidenciaRespondida = 23,
+
+    /// <summary>A providência solicitada foi atendida, com a revogação da concessão.</summary>
+    ProvidenciaAtendida = 24,
+
+    /// <summary>A concessão foi revogada pelo atendimento de uma providência, para o beneficiário.</summary>
+    ConcessaoRevogadaNoAtendimento = 25,
 }
 
 /// <summary>O texto estável de cada tipo: a finalidade do envio e o que o registro de avisos guarda.</summary>
@@ -95,6 +107,10 @@ public static class TipoDeAvisoCodigo
         [TipoDeAviso.AdvertenciaDeFimDaMigracao] = "advertencia_de_fim_da_migracao",
         [TipoDeAviso.PedidoDevolvidoPelaJanela] = "pedido_devolvido_pela_janela",
         [TipoDeAviso.PedidoDevolvidoPorTermoExigido] = "pedido_devolvido_por_termo_exigido",
+        [TipoDeAviso.ProvidenciaSolicitada] = "providencia_solicitada",
+        [TipoDeAviso.ProvidenciaRespondida] = "providencia_respondida",
+        [TipoDeAviso.ProvidenciaAtendida] = "providencia_atendida",
+        [TipoDeAviso.ConcessaoRevogadaNoAtendimento] = "concessao_revogada_no_atendimento",
     }.ToFrozenDictionary();
 
     public static string ToCodigo(this TipoDeAviso tipo) =>

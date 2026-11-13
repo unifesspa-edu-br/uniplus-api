@@ -19,6 +19,9 @@ public enum GrupoDaGovernanca
     /// Representante reúne. O Encarregado de dados não entra: não recebe aviso de decisão.
     /// </summary>
     RepresentanteDoControlador = 3,
+
+    /// <summary>Quem administra as concessões: os gestores de acessos e os Representantes do controlador.</summary>
+    AdministracaoDasConcessoes = 4,
 }
 
 /// <summary>
@@ -32,6 +35,7 @@ public sealed class GruposDaGovernanca
         [GrupoDaGovernanca.Gestao] = CodigoDe(PermissaoAutorizacao.PerfisAprovarFuncional),
         [GrupoDaGovernanca.Manutencao] = CodigoDe(PermissaoAutorizacao.PerfisManter),
         [GrupoDaGovernanca.RepresentanteDoControlador] = CodigoDe(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados),
+        [GrupoDaGovernanca.AdministracaoDasConcessoes] = CodigoDe(PermissaoAutorizacao.ConcessoesAdministrar),
     };
 
     private readonly ITitularesDaPermissao _titulares;

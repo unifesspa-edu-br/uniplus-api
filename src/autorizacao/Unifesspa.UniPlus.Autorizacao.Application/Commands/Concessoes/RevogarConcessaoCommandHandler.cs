@@ -53,9 +53,9 @@ public static class RevogarConcessaoCommandHandler
         Revogacao r, IConcessaoRepository repository, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         // A concessão já revogada responde antes: confirmar a pessoa de algo encerrado não leva a nada.
-        if (r.Concessao.RevogadaEm is null && !r.Concessao.ConfirmaEmailDoBeneficiario(r.Command.ConfirmacaoEmail))
+        if (r.Concessao.RevogadaEm is null && r.Concessao.RecusaDaConfirmacao(r.Command.ConfirmacaoEmail) is { } recusa)
         {
-            return Result.ValidationFailure([new FieldError("confirmacaoEmail", ConcessaoHandlerErros.ConfirmacaoDivergente())]);
+            return Result.ValidationFailure([recusa]);
         }
 
         Result revogada = await RevogacaoDaConcessao

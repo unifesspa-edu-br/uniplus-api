@@ -12,13 +12,16 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerificacao;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Termos;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Providencias;
 using Unifesspa.UniPlus.Autorizacao.Application.Queries.Reclassificacoes;
 
 /// <summary>
@@ -33,7 +36,7 @@ public static class AutorizacaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(AutorizacaoApplicationServiceRegistration).Assembly);
 
-        AdicionarEventosDaOrigem(services);
+        AdicionarTrilhaDaConcessao(services);
         AdicionarFluxoDoPedido(services);
         AdicionarDecisoesDaGovernanca(services);
         AdicionarInstalacao(services);
@@ -45,11 +48,12 @@ public static class AutorizacaoApplicationServiceRegistration
         return services;
     }
 
-    private static void AdicionarEventosDaOrigem(IServiceCollection services)
+    private static void AdicionarTrilhaDaConcessao(IServiceCollection services)
     {
         // As origens "instalação" e "pedido" acrescentam os eventos delas à trilha da concessão que gerou.
         services.AddScoped<IEventosDaOrigem, EventosDaInstalacao>();
         services.AddScoped<IEventosDaOrigem, EventosDoPedido>();
+        services.AddScoped<TrilhaDaConcessao>();
     }
 
     private static void AdicionarFluxoDoPedido(IServiceCollection services)
@@ -73,6 +77,12 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<PreparoDaDecisaoDoItem>();
         services.AddScoped<LeituraDaRevisao>();
         services.AddScoped<AberturaDaRevisao>();
+        services.AddScoped<AvisosDaProvidencia>();
+        services.AddScoped<GravacaoDaProvidencia>();
+        services.AddScoped<AberturaDaProvidencia>();
+        services.AddScoped<RespostaDaProvidencia>();
+        services.AddScoped<AtendimentoDaProvidencia>();
+        services.AddScoped<LeituraDaProvidencia>();
     }
 
     private static void AdicionarInstalacao(IServiceCollection services)

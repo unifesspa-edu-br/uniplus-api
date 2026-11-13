@@ -27,4 +27,7 @@ public static class ResourceTiposAutorizacao
 
     /// <summary>Tipo <c>reclassificacao-de-permissao</c>.</summary>
     public const string Reclassificacao = "reclassificacao-de-permissao";
+
+    /// <summary>Tipo <c>providencia-sobre-concessao</c>.</summary>
+    public const string Providencia = "providencia-sobre-concessao";
 }
