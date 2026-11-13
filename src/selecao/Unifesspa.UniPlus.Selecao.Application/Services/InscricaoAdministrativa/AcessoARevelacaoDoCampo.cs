@@ -71,36 +71,12 @@ public sealed class AcessoARevelacaoDoCampo
         Vinculo conferido, Guid processoId, Guid inscricaoId, string fatoCodigo, string? ocorrencia, CancellationToken cancellationToken)
     {
         ResourceContext resource = AcessoAoProcesso.ResourceDoCampo(conferido.UnidadeId, processoId, inscricaoId, fatoCodigo, ocorrencia);
-        DomainError? recusa = await RecusaDaClasseAsync(resource, cancellationToken).ConfigureAwait(false)
-            ?? await RecusaDeRevelarAsync(conferido, resource, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await DecisaoDoIdentificador
+            .RecusaAsync(_verificador, conferido, resource, ErrosDoCampoDaInscricao.NaoEncontrado, cancellationToken)
+            .ConfigureAwait(false);
 
         return recusa is null ? Result<VinculoDaInscricao>.Success(conferido.Inscricao) : Result<VinculoDaInscricao>.Failure(recusa);
     }
-
-    private async Task<DomainError?> RecusaDaClasseAsync(ResourceContext resource, CancellationToken cancellationToken)
-    {
-        DecisaoDeAcesso daClasse = await _verificador
-            .AvaliarAsync(PermissaoSelecao.DadosIdentificadoresConsultar.Requisito, resource, cancellationToken)
-            .ConfigureAwait(false);
-        if (daClasse is DecisaoPermitida)
-        {
-            return null;
-        }
-
-        if (daClasse is DecisaoNegada)
-        {
-            await _verificador.RegistrarDesfechoAsync([daClasse], IntencaoDoRegistro.Pedido, cancellationToken).ConfigureAwait(false);
-        }
-
-        return AcessoAInscricao.Erro(new Recusada(daClasse.Resultado), ErrosDoCampoDaInscricao.NaoEncontrado);
-    }
-
-    private async Task<DomainError?> RecusaDeRevelarAsync(Vinculo conferido, ResourceContext resource, CancellationToken cancellationToken) =>
-        await AcessoAInscricao
-            .DecidirAsync(_verificador, conferido, PermissaoSelecao.DadosIdentificadoresRevelar.Requisito, resource, cancellationToken)
-            .ConfigureAwait(false) is Recusada recusada
-            ? AcessoAInscricao.Erro(recusada, ErrosDoCampoDaInscricao.NaoEncontrado)
-            : null;
 
     private async Task<Result<VinculoDaInscricao>> RecusarInexistenteAsync(
         ConferenciaDoVinculo conferencia, Guid processoId, CancellationToken cancellationToken)
