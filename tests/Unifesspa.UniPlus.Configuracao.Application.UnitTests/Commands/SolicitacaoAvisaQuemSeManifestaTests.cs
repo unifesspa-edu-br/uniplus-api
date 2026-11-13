@@ -67,6 +67,29 @@ public sealed class SolicitacaoAvisaQuemSeManifestaTests
         mensagens.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Os avisos da solicitação nomeiam o Representante do controlador e o Encarregado de dados e qualificam o catálogo")]
+    public async Task Solicitar_TextosNomeiamOsPapeis()
+    {
+        (_, IEnumerable<object> mensagens) = await SolicitarAsync([Caroline], [Kevin]);
+
+        EnviarEmail[] avisos = [.. mensagens.OfType<EnviarEmail>()];
+        EnviarEmail aQuemDecide = avisos.Single(static e => e.Finalidade == "catalogo.protecao.solicitacao");
+        EnviarEmail aQuemSeManifesta = avisos.Single(static e => e.Finalidade == "catalogo.protecao.solicitacao.manifestacao");
+        aQuemDecide.Assunto.Should().Contain("aguardam a decisão do Representante do controlador");
+        aQuemSeManifesta.Assunto.Should().Contain("manifestação do Encarregado de dados");
+        aQuemSeManifesta.CorpoTexto.Should().Contain("a decisão cabe ao Representante do controlador");
+        avisos.Should().OnlyContain(static e => CatalogoQualificado(e.Assunto) && CatalogoQualificado(e.CorpoTexto) && CatalogoQualificado(e.CorpoHtml));
+    }
+
+    // O texto fala do catálogo ao menos uma vez, e cada "catálogo" vem seguido do que ele cataloga.
+    internal static bool CatalogoQualificado(string texto)
+    {
+        string[] depoisDeCadaCatalogo = [.. texto.Split("catálogo").Skip(1)];
+
+        return depoisDeCadaCatalogo.Length > 0
+            && depoisDeCadaCatalogo.All(static resto => resto.StartsWith(" de tipos de documento e de fatos do candidato", StringComparison.Ordinal));
+    }
+
     private Task<(Result<SolicitacaoDaProtecaoDto> Resposta, IEnumerable<object> Mensagens)> SolicitarAsync(
         IReadOnlyList<string> aprovadores, IReadOnlyList<string> quemSeManifesta)
     {
