@@ -10,7 +10,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O aceite do pedido pelo beneficiário. O e-mail verificado do token tem de ser o do pedido; senão, o aceite é recusado.
+/// O aceite do pedido pelo beneficiário e, no pedido protegido, do termo fixado nele. O beneficiário ainda desconhecido é
+/// conferido pelo e-mail verificado do pedido, e o já conhecido, pela identidade do token; senão, o aceite é recusado. O
+/// aceite não toca a vigência do termo: compara a versão apresentada com a fixada, que é imutável.
 /// No pedido feito para outra pessoa, é no aceite que a identidade do beneficiário passa a ser conhecida, e a
 /// incompatibilidade dos papéis de governança se confere aqui, sem trava: o aceite não concede, e a conferência
 /// definitiva é a da aprovação, sob a trava da pessoa (ADR-0162). O aviso à fila do gestor sai como mensagem de saída, no
@@ -49,7 +51,7 @@ public sealed class AceiteDoPedido
     }
 
     internal async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> AceitarAsync(
-        Guid pedidoId, PessoaNoToken pessoa, CancellationToken cancellationToken)
+        Guid pedidoId, PessoaNoToken pessoa, Guid? termoApresentado, CancellationToken cancellationToken)
     {
         PedidoDeConcessao? pedido = await _pedidos.ObterParaAlterarAsync(pedidoId, cancellationToken).ConfigureAwait(false);
         if (pedido is null)
@@ -57,10 +59,10 @@ public sealed class AceiteDoPedido
             return Recusa(PedidoHandlerErros.NaoEncontrado());
         }
 
-        if (await RecusaDoAceiteAsync(pedido, pessoa, cancellationToken).ConfigureAwait(false) is { } recusa)
+        if (await RecusaDoAceiteAsync(pedido, pessoa, termoApresentado, cancellationToken).ConfigureAwait(false) is { } recusa)
         {
             _unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Recusa(recusa);
+            return (Result<PedidoDeConcessaoDto>.ValidationFailure(recusa.Errors), []);
         }
 
         return await GravarAsync(pedido, cancellationToken).ConfigureAwait(false);
@@ -69,17 +71,18 @@ public sealed class AceiteDoPedido
     private static (Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens) Recusa(DomainError erro) =>
         (Result<PedidoDeConcessaoDto>.Failure(erro), []);
 
-    private async Task<DomainError?> RecusaDoAceiteAsync(PedidoDeConcessao pedido, PessoaNoToken pessoa, CancellationToken cancellationToken)
+    private async Task<Result?> RecusaDoAceiteAsync(
+        PedidoDeConcessao pedido, PessoaNoToken pessoa, Guid? termoApresentado, CancellationToken cancellationToken)
     {
         DateTimeOffset agora = _clock.GetUtcNow();
-        Result aceite = pedido.Aceitar(pessoa, agora);
+        Result aceite = pedido.Aceitar(pessoa, termoApresentado, agora);
         if (aceite.IsFailure)
         {
-            return aceite.Error;
+            return aceite;
         }
 
         return await _papeis.TemPapelIncompativelAsync(pessoa.Identidade, pedido.PerfilId, agora, cancellationToken).ConfigureAwait(false)
-            ? PedidoHandlerErros.PapeisIncompativeis()
+            ? Result.Failure(PedidoHandlerErros.PapeisIncompativeis())
             : null;
     }
 

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using System.Collections.Frozen;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>O que o aviso de uma situação diz: a finalidade do envio, o assunto, a abertura e a situação por extenso.</summary>
@@ -46,6 +47,22 @@ internal static class TextosDoAvisoDoPedido
             "O pedido de acesso em seu nome foi cancelado pelo solicitante.",
             "Cancelado"),
     }.ToFrozenDictionary();
+
+    // O pedido próprio protegido com documento passa a aguardar o aceite do termo depois da verificação: quem é avisado é o
+    // próprio solicitante, e o texto não pode falar de um pedido feito por outra pessoa.
+    private static readonly TextoDoAviso AceiteDoProprioTermo = new(
+        "pedido.aceite_do_termo_pendente",
+        "Seu pedido de acesso aguarda o aceite do termo de responsabilidade",
+        "O documento do seu pedido de acesso foi verificado. Para o pedido seguir ao gestor de acessos, leia e aceite o termo de responsabilidade.",
+        "Aguardando o aceite do termo de responsabilidade");
+
+    /// <summary>O texto do aviso da situação em que o pedido ficou.</summary>
+    public static TextoDoAviso Do(PedidoDeConcessao pedido)
+    {
+        ArgumentNullException.ThrowIfNull(pedido);
+
+        return pedido.AguardaAceiteDoTermo && pedido.Beneficiario == pedido.Solicitante ? AceiteDoProprioTermo : Da(pedido.Situacao);
+    }
 
     public static TextoDoAviso Da(SituacaoDoPedido situacao) =>
         Textos.GetValueOrDefault(situacao) ?? throw new InvalidOperationException($"A situação {situacao} não gera aviso.");

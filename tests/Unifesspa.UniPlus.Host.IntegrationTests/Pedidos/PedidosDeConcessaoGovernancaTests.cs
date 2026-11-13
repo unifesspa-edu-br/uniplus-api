@@ -166,7 +166,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
     private async Task<Guid> PedidoAceitoAsync(Guid perfil, Guid unidade)
     {
         Guid id = await CriarAsync(Cliente(Betina), perfil, unidade, Leandro);
-        await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        await AceitarAsync(Cliente(Leandro), id);
         return id;
     }
 

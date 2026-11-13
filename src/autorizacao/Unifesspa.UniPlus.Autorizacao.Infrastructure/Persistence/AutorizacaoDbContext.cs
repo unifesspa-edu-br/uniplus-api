@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// <see cref="DbContext"/> do módulo Autorização, no schema <c>autorizacao</c> do banco único,
-/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões, anexos e trocas de versão, as revisões periódicas dos acessos, a contenção dos perfis (suspensões, desativações e a trilha), os catálogos aplicados com as bases, as reclassificações e as liberações das permissões e o cache de Idempotency-Key
+/// naming snake_case (ADR-0054). Hospeda os perfis de acesso com as versões, vigências e documentos instituidores, as concessões, as instalações dos primeiros gestores, os pedidos de concessão com decisões, anexos e trocas de versão, o termo de responsabilidade com as versões, os aceites e a exceção da instalação, as revisões periódicas dos acessos, a contenção dos perfis (suspensões, desativações e a trilha), os catálogos aplicados com as bases, as reclassificações e as liberações das permissões e o cache de Idempotency-Key
 /// (ADR-0027) adjacente, que permite gravação atômica com o outbox.
 /// </summary>
 public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
@@ -70,6 +70,14 @@ public sealed class AutorizacaoDbContext : DbContext, IAutorizacaoUnitOfWork
     public DbSet<AnexoDoPedido> AnexosDosPedidos => Set<AnexoDoPedido>();
 
     public DbSet<LeituraDoAnexoDoPedido> LeiturasDosAnexos => Set<LeituraDoAnexoDoPedido>();
+
+    public DbSet<TermoDeResponsabilidade> TermosDeResponsabilidade => Set<TermoDeResponsabilidade>();
+
+    public DbSet<VersaoDoTermo> VersoesDoTermo => Set<VersaoDoTermo>();
+
+    public DbSet<AceiteDoTermo> AceitesDoTermo => Set<AceiteDoTermo>();
+
+    public DbSet<TermoNaInstalacao> TermosNaInstalacao => Set<TermoNaInstalacao>();
 
     public DbSet<RevisaoDeAcessos> Revisoes => Set<RevisaoDeAcessos>();
 

@@ -23,6 +23,9 @@
     <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\ConcessaoBuilder.cs" Link="Apoio\ConcessaoBuilder.cs" />
     <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\CatalogoMutavelDeTeste.cs" Link="Apoio\CatalogoMutavelDeTeste.cs" />
     <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\CenarioDeMigracao.cs" Link="Apoio\CenarioDeMigracao.cs" />
+    <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\TermosDeTeste.cs" Link="Apoio\TermosDeTeste.cs" />
+    <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\PedidoDeConcessaoBuilder.cs" Link="Apoio\PedidoDeConcessaoBuilder.cs" />
+    <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\PedidoDeConcessaoTestBase.cs" Link="Apoio\PedidoDeConcessaoTestBase.cs" />
     <Compile Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Observability/ColetorDeMedidas.cs" Link="Apoio/ColetorDeMedidas.cs" />
     <Using Include="Xunit" />
     <Using Include="Unifesspa.UniPlus.Autorizacao.Apoio" />

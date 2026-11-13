@@ -146,15 +146,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
     private static PedidoDeConcessao PedidoComAnexoEmVerificacao(Perfil? perfilPedido = null)
     {
         Perfil perfil = perfilPedido ?? PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], new Catalogo());
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            new PessoaNoToken(new Identidade(Emissor, "betina.neves"), "Betina Marina Valentina das Neves", "betina-dasneves81@uniplus-test.local", true),
-            perfilPedido is null ? null : "leandro-viana84@uniplus-test.local",
-            perfil,
-            perfilPedido is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao(),
-            "A coordenação do CEPS precisa analisar os pedidos de atendimento.",
-            new Dominios(),
-            new Catalogo(),
-            DateTimeOffset.UtcNow).Value!;
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(new PessoaNoToken(new Identidade(Emissor, "betina.neves"), "Betina Marina Valentina das Neves", "betina-dasneves81@uniplus-test.local", true), perfilPedido is null ? null : "leandro-viana84@uniplus-test.local"), perfil, perfilPedido is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido("A coordenação do CEPS precisa analisar os pedidos de atendimento."), new Dominios(), new Catalogo(), DateTimeOffset.UtcNow).Value!;
         AnexoDoPedido anexo = pedido.NovoAnexo(1024).Value!;
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         return pedido;

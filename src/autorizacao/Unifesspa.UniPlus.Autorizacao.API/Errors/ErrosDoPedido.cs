@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 internal static class ErrosDoPedido
 {
     public static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
-        [.. Cadastro(), .. Decisao(), .. Consulta(), .. Acesso()];
+        [.. Cadastro(), .. Decisao(), .. Termo(), .. Consulta(), .. Acesso()];
 
     private static KeyValuePair<string, DomainErrorMapping>[] Cadastro() =>
     [
@@ -40,6 +40,15 @@ internal static class ErrosDoPedido
         new(PedidoErrorCodes.PerfilAlterado, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.perfil_alterado", "O perfil mudou depois da aprovação do gestor", RecusaAposGravacao: true)),
         new(PedidoErrorCodes.AnexoNaoVerificado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.anexo_nao_verificado", "O anexo ainda não foi verificado")),
         new(PedidoErrorCodes.AnexoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.anexo_invalido", "Anexo do pedido inválido")),
+    ];
+
+    private static KeyValuePair<string, DomainErrorMapping>[] Termo() =>
+    [
+        new(PedidoErrorCodes.SemTermoVigente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.sem_termo_vigente", "Não há termo de responsabilidade publicado")),
+        new(PedidoErrorCodes.TermoDivergente, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.termo_divergente", "O termo apresentado não é o vigente")),
+        new(PedidoErrorCodes.ApresentacaoDoTermoInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.apresentacao_do_termo_invalida", "Versão do termo ausente ou indevida")),
+        new(PedidoErrorCodes.AnexoNaoDeclarado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.autorizacao.pedido.anexo_nao_declarado", "O pedido não declarou documento")),
+        new(PedidoErrorCodes.TermoExigido, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.autorizacao.pedido.termo_exigido", "O perfil passou a exigir o termo de responsabilidade", RecusaAposGravacao: true)),
     ];
 
     private static KeyValuePair<string, DomainErrorMapping>[] Consulta() =>

@@ -31,24 +31,14 @@ public sealed class AvisosDoPedidoPorEmailTests : PedidosDeConcessaoTestBase
     [Fact(DisplayName = "Pedido para outra pessoa avisa o beneficiário, depois o gestor, e a aprovação avisa as duas partes, sem PII no corpo nem no log")]
     public async Task PedidoParaOutraPessoa_AvisaACadaTransicao()
     {
-        await ResetarAsync();
-        Guid perfil = await SemearPerfilInternoAsync();
-        Guid unidade = await SemearUnidadeAsync();
+        (Guid perfil, Guid unidade) = await PerfilEUnidadeAsync(sensivel: false);
         using HttpClient betina = Cliente(Betina);
-        using HttpClient leandro = Cliente(Leandro);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
 
         Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
-        JsonElement aceite = await AguardarAvisoAsync(Leandro, id, "aguarda o seu aceite");
-
-        string link = $"{MonolitoApiFactory.EnderecoDaConfiguracao}/acessos/pedidos/{id}";
-        aceite.GetProperty("Text").GetString().Should().Contain(link);
-        aceite.GetProperty("HTML").GetString().Should().Contain($"href=\"{link}\"");
-        SemDadosPessoais(aceite);
-        (await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
-
-        SemDadosPessoais(await AguardarAvisoAsync(Diogo, id, "análise do gestor de acessos"));
-        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        string link = await ConferirAvisoDoAceiteAsync(id);
+        await AceitoPorLeandroAsync(id);
+        await AprovarDepoisDoAvisoAoGestorAsync(diogo, id);
 
         SemDadosPessoais(await AguardarAvisoAsync(Betina, id, "Pedido de acesso aprovado"));
         SemDadosPessoais(await AguardarAvisoAsync(Leandro, id, "Pedido de acesso aprovado"));
@@ -58,18 +48,11 @@ public sealed class AvisosDoPedidoPorEmailTests : PedidosDeConcessaoTestBase
     [Fact(DisplayName = "Pedido sensível avisa a proteção de dados sem quem aprovou como gestor, e a recusa avisa as partes sem o motivo")]
     public async Task PedidoSensivel_AvisaAProtecaoDeDadosForaDoGestorQueAprovou()
     {
-        await ResetarAsync();
-        Guid perfil = await SemearPerfilSensivelAsync();
-        Guid unidade = await SemearUnidadeAsync();
-        using HttpClient betina = Cliente(Betina);
-        using HttpClient leandro = Cliente(Leandro);
+        (Guid perfil, Guid unidade) = await PerfilEUnidadeAsync(sensivel: true);
         using HttpClient isabella = await ClienteComPermissoesAsync(Isabella, AprovarFuncional, AprovarProtecaoDeDados);
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
-
-        Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
-        (await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
-        await AguardarAvisoAsync(Isabella, id, "análise do gestor de acessos");
-        (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+        Guid id = await PedidoDeBetinaAceitoAsync(perfil, unidade);
+        await AprovarComoGestorAsync(isabella, id);
 
         SemDadosPessoais(await AguardarAvisoAsync(Marlene, id, "análise da proteção de dados"));
         (await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = MotivoDaRecusa })).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -94,6 +77,46 @@ public sealed class AvisosDoPedidoPorEmailTests : PedidosDeConcessaoTestBase
 
         await AguardarAvisoAsync(Leandro, id, "Pedido de acesso cancelado");
         (await MensagensAsync(Betina, id)).Should().BeEmpty();
+    }
+
+    // O aviso do aceite leva ao pedido pelo link da tela, sem dado pessoal; devolve o link, que o log não pode trazer.
+    private async Task<string> ConferirAvisoDoAceiteAsync(Guid id)
+    {
+        JsonElement aceite = await AguardarAvisoAsync(Leandro, id, "aguarda o seu aceite");
+        string link = $"{MonolitoApiFactory.EnderecoDaConfiguracao}/acessos/pedidos/{id}";
+        aceite.GetProperty("Text").GetString().Should().Contain(link);
+        aceite.GetProperty("HTML").GetString().Should().Contain($"href=\"{link}\"");
+        SemDadosPessoais(aceite);
+
+        return link;
+    }
+
+    // O gestor tem a concessão antes do aceite: o aviso à fila do gestor sai para quem é gestor naquele instante.
+    private async Task AprovarDepoisDoAvisoAoGestorAsync(HttpClient diogo, Guid id)
+    {
+        SemDadosPessoais(await AguardarAvisoAsync(Diogo, id, "análise do gestor de acessos"));
+        (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private async Task AprovarComoGestorAsync(HttpClient isabella, Guid id)
+    {
+        await AguardarAvisoAsync(Isabella, id, "análise do gestor de acessos");
+        (await EnviarAsync(isabella, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private async Task<Guid> PedidoDeBetinaAceitoAsync(Guid perfil, Guid unidade)
+    {
+        using HttpClient betina = Cliente(Betina);
+        Guid id = await CriarAsync(betina, perfil, unidade, Leandro);
+        await AceitoPorLeandroAsync(id);
+
+        return id;
+    }
+
+    private async Task AceitoPorLeandroAsync(Guid id)
+    {
+        using HttpClient leandro = Cliente(Leandro);
+        (await AceitarAsync(leandro, id)).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     private static void SemDadosPessoais(JsonElement mensagem)

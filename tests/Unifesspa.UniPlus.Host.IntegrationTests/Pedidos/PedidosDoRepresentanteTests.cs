@@ -74,7 +74,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid perfil = await SemearPerfilSensivelAsync();
         Guid id = await CriarAsync(Cliente(Betina), perfil, await SemearUnidadeAsync(), Marlene);
-        await EnviarAsync(Cliente(Marlene), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        await AceitarAsync(Cliente(Marlene), id);
 
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -134,7 +134,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
         Guid id = await CriarAsync(betina, Representante, null, beneficiario);
         (await SituacaoAsync(betina, id)).Should().Be("aguardando_documento");
         await AnexarVerificadoAsync(betina, id);
-        await EnviarAsync(Cliente(beneficiario), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        await AceitarAsync(Cliente(beneficiario), id);
 
         return id;
     }

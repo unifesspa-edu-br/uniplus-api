@@ -60,7 +60,7 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.PerfisParaPedir))] = typeof(ListarPerfisParaPedirQuery),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Obter))] = typeof(ObterPedidoDeConcessaoQuery),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Trilha))] = typeof(ObterTrilhaDoPedidoQuery),
-        [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.LerAnexo))] = typeof(LerAnexoDoPedidoCommand),
+        [Acao(typeof(AnexosDoPedidoController), nameof(AnexosDoPedidoController.LerAnexo))] = typeof(LerAnexoDoPedidoCommand),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Aprovar))] = typeof(AprovarPedidoDeConcessaoCommand),
         [Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Recusar))] = typeof(RecusarPedidoDeConcessaoCommand),
         // A governança das versões do perfil: a permissão que vale é a da etapa pedida, o cancelamento é de quem criou a
@@ -109,14 +109,17 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     /// <summary>
     /// Actions de qualquer pessoa autenticada: pedir acesso não dá acesso, porque o filtro é a aprovação; o aceite é só
     /// do beneficiário nomeado, conferido pelo e-mail verificado do token; anexar e cancelar são só do solicitante,
-    /// antes da primeira decisão; as permissões efetivas são as do próprio token de quem consulta.
+    /// antes da primeira decisão; o termo de responsabilidade, texto institucional sem dado pessoal, é lido por quem vai
+    /// pedir ou aceitar; as permissões efetivas são as do próprio token de quem consulta.
     /// </summary>
     private static readonly HashSet<string> DePessoaAutenticada = new(StringComparer.Ordinal)
     {
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Criar)),
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Aceitar)),
-        Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.EnviarAnexo)),
-        Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.ConfirmarAnexo)),
+        Acao(typeof(AnexosDoPedidoController), nameof(AnexosDoPedidoController.EnviarAnexo)),
+        Acao(typeof(AnexosDoPedidoController), nameof(AnexosDoPedidoController.ConfirmarAnexo)),
+        Acao(typeof(TermosDeResponsabilidadeController), nameof(TermosDeResponsabilidadeController.ObterVigente)),
+        Acao(typeof(TermosDeResponsabilidadeController), nameof(TermosDeResponsabilidadeController.ObterVersao)),
         Acao(typeof(PedidosDeConcessaoController), nameof(PedidosDeConcessaoController.Cancelar)),
         Acao(typeof(PermissoesController), nameof(PermissoesController.ConsultarEfetivas)),
     };

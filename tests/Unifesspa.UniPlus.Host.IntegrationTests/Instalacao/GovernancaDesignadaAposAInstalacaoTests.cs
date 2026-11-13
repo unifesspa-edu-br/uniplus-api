@@ -57,7 +57,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
         (await AprovarNasDuasEtapasAsync(diogo, manoel, await DesignacaoAceitaAsync(Encarregado, Betina))).Should().Be("aprovado");
 
         Guid cruzado = await DesignacaoComDocumentoAsync(Encarregado, Manoel);
-        using HttpResponseMessage aceite = await PedidosDeConcessaoTestBase.EnviarAsync(manoel, HttpMethod.Post, $"{Pedidos}/{cruzado}/aceite");
+        using HttpResponseMessage aceite = await TermoNoHostDeTeste.AceitarAsync(Fixture.Factory.Services, manoel, cruzado);
         await PedidosDeConcessaoTestBase.ConferirRecusaAsync(aceite, HttpStatusCode.Conflict, "papeis_incompativeis");
     }
 
@@ -71,6 +71,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
         string codigo = await UltimoCodigoAsync(Paulo);
 
         (await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo })).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await TermoNoHostDeTeste.PublicarAsync(Fixture.Factory.Services, "publicada pelos gestores instalados");
     }
 
     // Os avisos dos pedidos saem pelo outbox depois das respostas: a caixa só se limpa quando para de receber, e as
@@ -96,6 +97,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
 
     private async Task LimparDesignacoesAsync()
     {
+        await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
         foreach (string tabela in new[] { "pedido_anexo_leituras", "pedido_decisoes", "pedido_anexos", "pedidos_de_concessao" })
         {
             await ExecutarSqlAsync($"DELETE FROM autorizacao.{tabela}");
@@ -121,7 +123,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     {
         Guid id = await DesignacaoComDocumentoAsync(perfilId, beneficiario);
         using HttpClient cliente = Cliente(beneficiario, papel: false);
-        (await PedidosDeConcessaoTestBase.EnviarAsync(cliente, HttpMethod.Post, $"{Pedidos}/{id}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await TermoNoHostDeTeste.AceitarAsync(Fixture.Factory.Services, cliente, id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         return id;
     }
@@ -129,7 +131,8 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     private async Task<Guid> DesignacaoComDocumentoAsync(Guid perfilId, Persona beneficiario)
     {
         using HttpClient leandro = Cliente(Leandro, papel: false);
-        using HttpResponseMessage criado = await PedidosDeConcessaoTestBase.CriarBrutoAsync(leandro, perfilId, null, beneficiario.Email);
+        using HttpResponseMessage criado = await PedidosDeConcessaoTestBase.EnviarAsync(
+            leandro, HttpMethod.Post, Pedidos, new { beneficiarioEmail = beneficiario.Email, perfilId, justificativa = PedidosDeConcessaoTestBase.Justificativa });
         Guid id = (await PedidosDeConcessaoTestBase.CorpoAsync(criado, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         Guid anexoId = await PedidosDeConcessaoTestBase.AnexarEmVerificacaoAsync(leandro, id);
         await InjetarResultadoAsync(anexoId, VeredictoDaVerificacao.Verificado);

@@ -48,7 +48,7 @@ public sealed class PapeisIncompativeisNasDuasOrdensNoHostTests : PedidosDeConce
         await SemearConcessaoAsync(Leandro, exercido, EscopoDaConcessao.DaInstituicao());
         Guid id = await PedidoComDocumentoAsync(pedido);
 
-        using HttpResponseMessage aceite = await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        using HttpResponseMessage aceite = await AceitarAsync(Cliente(Leandro), id);
 
         await ConferirRecusaAsync(aceite, HttpStatusCode.Conflict, "papeis_incompativeis");
     }
@@ -73,7 +73,7 @@ public sealed class PapeisIncompativeisNasDuasOrdensNoHostTests : PedidosDeConce
         await SemearVencidaAsync(Leandro, vencido);
         Guid id = await PedidoComDocumentoAsync(pedido);
 
-        using HttpResponseMessage aceite = await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        using HttpResponseMessage aceite = await AceitarAsync(Cliente(Leandro), id);
 
         aceite.StatusCode.Should().Be(HttpStatusCode.OK, await aceite.Content.ReadAsStringAsync());
     }

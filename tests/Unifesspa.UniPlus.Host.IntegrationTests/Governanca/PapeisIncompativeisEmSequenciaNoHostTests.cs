@@ -50,7 +50,7 @@ public sealed class PapeisIncompativeisEmSequenciaNoHostTests : PedidosDeConcess
         await AnexarVerificadoAsync(betina, id);
         string antes = await SituacaoAsync(betina, id);
 
-        await ConferirRecusaAsync(await EnviarAsync(Cliente(Leandro), HttpMethod.Post, $"{Rota}/{id}/aceite"), HttpStatusCode.Conflict, "papeis_incompativeis");
+        await ConferirRecusaAsync(await AceitarAsync(Cliente(Leandro), id), HttpStatusCode.Conflict, "papeis_incompativeis");
 
         (await SituacaoAsync(betina, id)).Should().Be(antes);
     }
@@ -63,7 +63,7 @@ public sealed class PapeisIncompativeisEmSequenciaNoHostTests : PedidosDeConcess
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         Guid id = await CriarAsync(Cliente(Betina), Representante, null, Marlene);
         await AnexarVerificadoAsync(Cliente(Betina), id);
-        await EnviarAsync(Cliente(Marlene), HttpMethod.Post, $"{Rota}/{id}/aceite");
+        await AceitarAsync(Cliente(Marlene), id);
 
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 

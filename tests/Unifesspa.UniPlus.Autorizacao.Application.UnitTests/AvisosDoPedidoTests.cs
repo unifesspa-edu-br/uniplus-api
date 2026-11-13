@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -44,6 +45,20 @@ public sealed class AvisosDoPedidoTests
         aviso.Finalidade.Should().Be("pedido.aceite_pendente");
     }
 
+    [Fact(DisplayName = "O pedido próprio protegido que passa a aguardar o aceite do termo avisa o próprio solicitante, sem falar de outra pessoa")]
+    public async Task AceiteDoProprioTermo_AvisaOSolicitante()
+    {
+        PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().ParaSiMesmo().DeclarandoDocumento().Protegido().Criado();
+        PedidoDeConcessaoBuilder.VerificarDocumento(pedido);
+
+        EnviarEmail aviso = (await Avisar(pedido, SituacaoDoPedido.AguardandoDocumento)).Should().ContainSingle().Subject;
+
+        aviso.Destinatario.Should().Be(PedidoDeConcessaoTestBase.Betina.Email);
+        aviso.Finalidade.Should().Be("pedido.aceite_do_termo_pendente");
+        aviso.Assunto.Should().Be("Seu pedido de acesso aguarda o aceite do termo de responsabilidade");
+        aviso.CorpoTexto.Should().Contain("Aguardando o aceite do termo de responsabilidade").And.NotContain("em seu nome");
+    }
+
     [Fact(DisplayName = "O corpo traz perfil, escopo, situação e link, escapa o HTML e não traz nome, justificativa nem motivo")]
     public async Task Corpo_TrazSoOEssencial()
     {
@@ -74,7 +89,7 @@ public sealed class AvisosDoPedidoTests
     public async Task AguardandoGestor_AvisaOsGestoresForaDasPartes()
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
-        pedido.Aceitar(Leandro, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         ConcessoesComTitulares concessoes = new(PerfisDeSistema.GestorDeAcessosId,
             new TitularComEmail(Diogo, EmailDiogo),
             new TitularComEmail(Diogo, EmailDiogo.ToUpperInvariant()),
@@ -188,10 +203,7 @@ public sealed class AvisosDoPedidoTests
     [Fact(DisplayName = "O e-mail do solicitante é o verificado do token, em minúsculas")]
     public void Criar_GravaOEmailVerificadoDoSolicitante()
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            Betina with { Email = "Betina-DasNeves81@uniplus-test.local" },
-            Leandro.Email, PerfilComum(), EscopoDaConcessao.DaInstituicao(), Justificativa,
-            new Dominios(), new Catalogo(), DateTimeOffset.UtcNow).Value!;
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina with { Email = "Betina-DasNeves81@uniplus-test.local" }, Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), new Dominios(), new Catalogo(), DateTimeOffset.UtcNow).Value!;
 
         pedido.SolicitanteEmail.Should().Be(Betina.Email);
     }
@@ -205,24 +217,29 @@ public sealed class AvisosDoPedidoTests
             TimeProvider.System)
             .AvisarAsync(pedido, PerfilNome, situacaoAnterior, CancellationToken.None);
 
+    private static readonly VersaoDoTermo Vigente = TermosDeTeste.Publicada();
+
     private static PedidoDeConcessao Pedido(bool paraSiMesmo, Guid? unidade = null, Perfil? perfil = null)
     {
         Perfil alvo = perfil ?? PerfilComum(deUnidade: unidade is not null);
-        return PedidoDeConcessao.Criar(
-            Betina,
-            paraSiMesmo ? null : Leandro.Email,
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+            new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email),
             alvo,
             unidade is { } id ? EscopoDaConcessao.DaUnidade(id) : EscopoDaConcessao.DaInstituicao(),
-            Justificativa,
+            new DeclaracaoDoPedido(Justificativa),
             new Dominios(),
             new Catalogo(),
             DateTimeOffset.UtcNow).Value!;
+
+        // Os avisos tratam o pedido que chega à proteção de dados: o termo fica fixado, como no perfil protegido.
+        pedido.FixarTermo(new TermoNaCriacao(Vigente, Vigente.Id, true), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        return pedido;
     }
 
     private static PedidoDeConcessao PedidoAprovadoPeloGestor(Identidade gestor)
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
-        pedido.Aceitar(Leandro, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         pedido.Aprovar(gestor, Avaliado(sensivel: true), new ContextoDaAprovacao(false), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         return pedido;
     }
@@ -230,7 +247,7 @@ public sealed class AvisosDoPedidoTests
     private static PedidoDeConcessao PedidoDecidido(bool aprovar)
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
-        pedido.Aceitar(Leandro, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         if (aprovar)
         {
             pedido.Aprovar(Diogo, Avaliado(), new ContextoDaAprovacao(false), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();

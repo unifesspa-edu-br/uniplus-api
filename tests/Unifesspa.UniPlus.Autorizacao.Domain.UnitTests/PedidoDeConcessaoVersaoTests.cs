@@ -43,8 +43,7 @@ public sealed class PedidoDeConcessaoVersaoTests
         Perfil governanca = PerfisDeTeste.DeGovernanca(
             "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo);
 
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            Betina, null, governanca, EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 
         pedido.VersaoId.Should().BeNull();
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
@@ -100,8 +99,7 @@ public sealed class PedidoDeConcessaoVersaoTests
     {
         Perfil governanca = PerfisDeTeste.DeGovernanca(
             "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo);
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
-            Betina, null, governanca, EscopoDaConcessao.DaInstituicao(), Justificativa, Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
         VersaoDoPerfil nova = NovaVersao(comAcrescimo: false);
 
         pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: false, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
@@ -227,16 +225,9 @@ public sealed class PedidoDeConcessaoVersaoTests
     private static Perfil PerfilNaVersao1() =>
         PerfisDeTeste.Vigente("Acompanhamento", "Acompanha os atendimentos.", [Consultar], Catalogo);
 
+    // O pedido segue o perfil de dado sensível que os testes avaliam: o termo fica fixado na criação.
     private static PedidoDeConcessao Criar(Perfil perfil, bool paraSiMesmo) =>
-        PedidoDeConcessao.Criar(
-            Betina,
-            paraSiMesmo ? null : Leandro.Email,
-            perfil,
-            EscopoDaConcessao.DaUnidade(Guid.NewGuid()),
-            Justificativa,
-            Dominios,
-            Catalogo,
-            Agora).Value!;
+        (paraSiMesmo ? PedidoDeConcessaoBuilder.Pedido().ParaSiMesmo() : PedidoDeConcessaoBuilder.Pedido()).DoPerfil(perfil).Protegido().Criado();
 
     private static PessoaNoToken Pessoa(string sub, string nome, string email) =>
         new(new Identidade(Emissor, sub), nome, email, true);

@@ -4,20 +4,21 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Os anexos do pedido: o documento de designação que o perfil de governança exige.</summary>
+/// <summary>Os anexos do pedido: o documento declarado na criação, como o de designação que o perfil de governança exige.</summary>
 public sealed partial class PedidoDeConcessao
 {
     public bool TemAnexoVerificado => _anexos.Exists(a => a.Situacao == SituacaoDoAnexo.Verificado);
 
-    /// <summary>Cria o anexo e devolve-o para o handler emitir a URL de envio. Só antes da primeira decisão.</summary>
+    /// <summary>
+    /// Cria o anexo e devolve-o para o handler emitir a URL de envio. Só antes da primeira decisão e, no pedido protegido,
+    /// só o documento declarado na criação, enquanto o pedido o aguarda.
+    /// </summary>
     public Result<AnexoDoPedido> NovoAnexo(long tamanhoDoPdf)
     {
-        if (!PodeSerAlteradoPeloSolicitante)
-        {
-            return Result<AnexoDoPedido>.Failure(SituacaoInvalida("O anexo só se envia antes da primeira decisão."));
-        }
-
-        Result<AnexoDoPedido> anexo = AnexoDoPedido.Criar(Id, tamanhoDoPdf);
+        DomainError? recusa = PodeSerAlteradoPeloSolicitante
+            ? RecusaDoNovoAnexo()
+            : SituacaoInvalida("O anexo só se envia antes da primeira decisão.");
+        Result<AnexoDoPedido> anexo = recusa is null ? AnexoDoPedido.Criar(Id, tamanhoDoPdf) : Result<AnexoDoPedido>.Failure(recusa);
         if (anexo.IsSuccess)
         {
             _anexos.Add(anexo.Value!);
@@ -42,8 +43,8 @@ public sealed partial class PedidoDeConcessao
     }
 
     /// <summary>
-    /// Libera o pedido que espera o documento de designação quando já há anexo verificado: o pedido segue para o
-    /// aceite do beneficiário, se ele é outra pessoa, ou para o gestor. Em qualquer outra situação, ou sem o anexo
+    /// Libera o pedido que espera o documento declarado quando já há anexo verificado: o pedido segue para o aceite do
+    /// beneficiário, se ele é outra pessoa ou se o pedido tem termo, ou para o gestor. Em qualquer outra situação, ou sem o anexo
     /// verificado, nada muda e devolve falso.
     /// </summary>
     public bool LiberarAoVerificarDocumento()
@@ -53,7 +54,7 @@ public sealed partial class PedidoDeConcessao
             return false;
         }
 
-        Situacao = EtapaSeguinteAoDocumento(Beneficiario is not null);
+        Situacao = EtapaSeguinteAoDocumento();
         return true;
     }
 

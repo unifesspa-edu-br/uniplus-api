@@ -59,7 +59,7 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
 
         confirmada.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.Sub.ToString(), Isabella.Sub.ToString());
-        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("instalacao_iniciada", "documento_verificado", "codigo_enviado", "tentativas", "instalacao_confirmada");
+        (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("instalacao_iniciada", "documento_verificado", "codigo_enviado", "tentativas", "instalacao_confirmada", "termo_excecao_da_instalacao");
         (await TiposDaTrilhaDaConcessaoAsync(id, Diogo)).Should().Contain(["concedida", "instalacao_iniciada", "documento_verificado", "codigo_enviado", "instalacao_confirmada"]);
     }
 

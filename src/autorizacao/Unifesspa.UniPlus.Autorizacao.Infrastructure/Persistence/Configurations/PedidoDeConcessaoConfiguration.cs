@@ -61,6 +61,9 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             tabela.HasCheckConstraint(
                 "ck_pedidos_concessao_so_aprovado",
                 "concessao_id IS NULL OR situacao = 'aprovado'");
+            tabela.HasCheckConstraint(
+                "ck_pedidos_termo_completo",
+                "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
         });
 
     private static void ConfigurarColunas(EntityTypeBuilder<PedidoDeConcessao> builder)
@@ -79,6 +82,9 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.ValidaAte);
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(p => p.UnidadeId);
+        builder.Property(p => p.AnexaraDocumento).IsRequired();
+        builder.Property(p => p.TermoNumero);
+        builder.Property(p => p.TermoResumo).HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength();
 
         // Derivados do estado: não se gravam de novo.
         builder.Ignore(p => p.Solicitante);
@@ -87,6 +93,8 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Ignore(p => p.Ativo);
         builder.Ignore(p => p.EtapaAtual);
         builder.Ignore(p => p.TemAnexoVerificado);
+        builder.Ignore(p => p.Termo);
+        builder.Ignore(p => p.AguardaAceiteDoTermo);
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<PedidoDeConcessao> builder)
@@ -115,6 +123,19 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             .WithOne()
             .HasForeignKey(a => a.PedidoId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // A versão fixada é imutável e não se apaga: a chave estrangeira impede o pedido de apontar para versão inexistente.
+        builder.HasOne<VersaoDoTermo>()
+            .WithMany()
+            .HasForeignKey(p => p.TermoVersaoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // O aceite acompanha toda leitura do pedido: a trilha, o detalhe e a aprovação o conferem.
+        builder.HasOne(p => p.AceiteDoTermo)
+            .WithOne()
+            .HasForeignKey<AceiteDoTermo>(a => a.PedidoId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Navigation(p => p.AceiteDoTermo).AutoInclude();
 
         builder.Navigation(p => p.TrocasDeVersao).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.HasMany(p => p.TrocasDeVersao)

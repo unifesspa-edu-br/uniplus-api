@@ -154,7 +154,7 @@ public abstract class PedidosDeConcessaoTestBase
         corpo.Should().Contain($"uniplus.autorizacao.pedido.{motivo}");
     }
 
-    internal static async Task<Guid> CriarAsync(
+    private protected async Task<Guid> CriarAsync(
         HttpClient solicitante, Guid perfilId, Guid? unidadeId, Persona? beneficiario, string justificativa = Justificativa)
     {
         using HttpResponseMessage resposta = await CriarBrutoAsync(solicitante, perfilId, unidadeId, beneficiario?.Email, justificativa);
@@ -162,9 +162,16 @@ public abstract class PedidosDeConcessaoTestBase
         return corpo.GetProperty("id").GetGuid();
     }
 
-    internal static Task<HttpResponseMessage> CriarBrutoAsync(
-        HttpClient solicitante, Guid perfilId, Guid? unidadeId, string? emailDoBeneficiario, string? justificativa = Justificativa) =>
-        EnviarAsync(solicitante, HttpMethod.Post, Rota, new { beneficiarioEmail = emailDoBeneficiario, perfilId, unidadeId, justificativa });
+    /// <summary>Cria o pedido como a tela: no perfil que exige o termo, apresenta a versão vigente.</summary>
+    private protected async Task<HttpResponseMessage> CriarBrutoAsync(
+        HttpClient solicitante, Guid perfilId, Guid? unidadeId, string? emailDoBeneficiario, string? justificativa = Justificativa, bool anexaraDocumento = false)
+    {
+        Guid? termoVersaoApresentadaId = await TermoNoHostDeTeste.ParaApresentarAsync(Fixture.Factory.Services, perfilId);
+
+        return await EnviarAsync(
+            solicitante, HttpMethod.Post, Rota,
+            new { beneficiarioEmail = emailDoBeneficiario, perfilId, unidadeId, justificativa, anexaraDocumento, termoVersaoApresentadaId });
+    }
 
     /// <summary>
     /// Revoga a concessão pelo endpoint, com o e-mail que confirma o beneficiário; o padrão é o que o apoio dos testes
@@ -209,11 +216,20 @@ public abstract class PedidosDeConcessaoTestBase
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexo_leituras");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_decisoes");
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexos");
+        await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedidos_de_concessao");
         await ApagarFatosDasConcessoesAsync();
         await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE origem_tipo = 'pedido' OR perfil_id = ANY({0})", PerfisDeGovernanca);
         await ExpirarVersoesVencidasDeTestesAnterioresAsync();
+        Vigente = await TermoNoHostDeTeste.PublicarAsync(Fixture.Factory.Services, "versão do teste");
     }
+
+    /// <summary>A versão do termo publicada pelo último <see cref="ResetarAsync"/>.</summary>
+    private protected VersaoDoTermo? Vigente { get; private set; }
+
+    /// <summary>O beneficiário aceita o pedido apresentando a versão do termo que ele fixou, se fixou.</summary>
+    private protected Task<HttpResponseMessage> AceitarAsync(HttpClient beneficiario, Guid pedidoId, string? chave = null) =>
+        TermoNoHostDeTeste.AceitarAsync(Fixture.Factory.Services, beneficiario, pedidoId, chave);
 
     /// <summary>
     /// Leva ao fim do prazo, pela rotina real, as versões pendentes vencidas que um teste anterior deixou. Sem isso, a
@@ -296,6 +312,15 @@ public abstract class PedidosDeConcessaoTestBase
         await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
 
         return avisos;
+    }
+
+    /// <summary>Reinicia o ambiente e semeia um perfil, sensível ou só interno, e uma unidade.</summary>
+    private protected async Task<(Guid Perfil, Guid Unidade)> PerfilEUnidadeAsync(bool sensivel)
+    {
+        await ResetarAsync();
+        Guid perfil = sensivel ? await SemearPerfilSensivelAsync() : await SemearPerfilInternoAsync();
+
+        return (perfil, await SemearUnidadeAsync());
     }
 
     private protected Task<Guid> SemearPerfilInternoAsync() =>

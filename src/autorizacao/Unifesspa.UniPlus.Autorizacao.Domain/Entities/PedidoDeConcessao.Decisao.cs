@@ -72,6 +72,11 @@ public sealed partial class PedidoDeConcessao
             return Result<DesfechoDaAprovacao>.ValidationFailure(erros);
         }
 
+        if (RecusaPeloTermo(aprovacao) is { } recusa)
+        {
+            return Result<DesfechoDaAprovacao>.Failure(recusa);
+        }
+
         return DevolverAoGestorSeMudou(aprovacao.Decisor, aprovacao.Etapa, aprovacao.Perfil, aprovacao.Instante) is { } devolucao
             ? Result<DesfechoDaAprovacao>.Failure(devolucao)
             : RegistrarAprovacao(aprovacao);

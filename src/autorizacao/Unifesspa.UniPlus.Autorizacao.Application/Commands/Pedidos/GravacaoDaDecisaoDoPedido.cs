@@ -42,13 +42,14 @@ public sealed class GravacaoDaDecisaoDoPedido
 
     /// <summary>
     /// A aprovação recusada pelo agregado. O perfil alterado ou o prazo vencido entre as etapas devolvem o pedido ao
-    /// gestor, e esse estado se grava; as demais recusas descartam o rastreamento.
+    /// gestor, e o perfil que passou a exigir o termo devolve o pedido ao solicitante; esse estado se grava. As demais
+    /// recusas descartam o rastreamento.
     /// </summary>
     internal async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> RecusarAprovacaoAsync(
         DecisaoDaEtapa decisao, IReadOnlyList<FieldError> erros, CancellationToken cancellationToken)
     {
         DomainError erro = erros[0].Error;
-        if (erro.Code is PedidoErrorCodes.PerfilAlterado or PedidoErrorCodes.PrazoVencido)
+        if (erro.Code is PedidoErrorCodes.PerfilAlterado or PedidoErrorCodes.PrazoVencido or PedidoErrorCodes.TermoExigido)
         {
             return await GravarDevolucaoAsync(decisao, erro, cancellationToken).ConfigureAwait(false);
         }
@@ -107,7 +108,8 @@ public sealed class GravacaoDaDecisaoDoPedido
         return concedida;
     }
 
-    // O pedido voltou ao gestor: a fila dele é avisada, mesmo que a resposta a quem decidiu a segunda etapa seja a recusa.
+    // O pedido voltou ao gestor: a fila dele é avisada, mesmo que a resposta a quem decidiu a segunda etapa seja a recusa. O
+    // pedido devolvido por exigir o termo não gera aviso.
     private async Task<(Result<PedidoDeConcessaoDto> Resposta, IEnumerable<object> Mensagens)> GravarDevolucaoAsync(
         DecisaoDaEtapa decisao, DomainError erro, CancellationToken cancellationToken)
     {

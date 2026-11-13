@@ -11,21 +11,25 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed partial class PedidoDeConcessao
 {
     /// <summary>
-    /// O beneficiário aceita o pedido que o nomeou: o e-mail verificado do token tem de ser o do pedido, e o
-    /// aceite grava a identidade e o nome do token dele.
+    /// O beneficiário aceita o pedido que o nomeou e, no pedido protegido, o termo fixado nele. O beneficiário já conhecido
+    /// (o próprio solicitante) é conferido pela identidade do token; o ainda desconhecido, pelo e-mail verificado do pedido. O
+    /// aceite grava a identidade e o nome do token e, havendo termo, a versão e o resumo aceitos. O pedido que aguarda o
+    /// documento declarado não aceita: o aceite espera a verificação.
     /// </summary>
-    public Result Aceitar(PessoaNoToken pessoa, DateTimeOffset instante)
+    /// <param name="termoApresentado">A versão do termo que o cliente apresentou; obrigatória no pedido com termo e proibida nos demais.</param>
+    public Result Aceitar(PessoaNoToken pessoa, Guid? termoApresentado, DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(pessoa);
 
-        DomainError? recusa = RecusaDoAceite(pessoa);
+        Result? recusa = RecusaDoAceite(pessoa) is { } erro ? Result.Failure(erro) : RecusaDoTermoNoAceite(termoApresentado);
         if (recusa is not null)
         {
-            return Result.Failure(recusa);
+            return recusa;
         }
 
         DefinirBeneficiario(pessoa.Identidade, NomeDeExibicao.Normalizar(pessoa.Nome));
         BeneficiarioAceitouEm = instante;
+        RegistrarAceiteDoTermo(instante);
         Situacao = SituacaoDoPedido.AguardandoGestor;
 
         return Result.Success();
@@ -43,12 +47,12 @@ public sealed partial class PedidoDeConcessao
 
     private DomainError? RecusaDoAceite(PessoaNoToken pessoa)
     {
-        if (Situacao != SituacaoDoPedido.AguardandoBeneficiario)
+        if (RecusaDaSituacaoNoAceite() is { } recusa)
         {
-            return SituacaoInvalida("O pedido não aguarda o aceite do beneficiário.");
+            return recusa;
         }
 
-        if (!EhOBeneficiarioPeloEmail(pessoa))
+        if (!EhOBeneficiario(pessoa))
         {
             return new DomainError(
                 PedidoErrorCodes.NaoEOBeneficiario,
@@ -58,6 +62,18 @@ public sealed partial class PedidoDeConcessao
         // O aprovador julga a pessoa pelo nome: sem ele no token, o pedido não avança à aprovação.
         return NomeDeExibicao.Normalizar(pessoa.Nome) is null ? SemNome() : null;
     }
+
+    private DomainError? RecusaDaSituacaoNoAceite() => Situacao switch
+    {
+        SituacaoDoPedido.AguardandoBeneficiario => null,
+        SituacaoDoPedido.AguardandoDocumento => new DomainError(
+            PedidoErrorCodes.AnexoNaoVerificado,
+            "O documento declarado ainda não foi verificado; o aceite e a decisão esperam a verificação."),
+        _ => SituacaoInvalida("O pedido não aguarda o aceite do beneficiário."),
+    };
+
+    private bool EhOBeneficiario(PessoaNoToken pessoa) =>
+        Beneficiario is { } conhecido ? pessoa.Identidade == conhecido : EhOBeneficiarioPeloEmail(pessoa);
 
     private bool EhOBeneficiarioPeloEmail(PessoaNoToken pessoa) =>
         pessoa.EmailVerificado
@@ -70,6 +86,7 @@ public sealed partial class PedidoDeConcessao
         BeneficiarioSub = identidade.Sub;
         BeneficiarioNome = nome;
     }
+
     private static DomainError SemNome() => new(
         PedidoErrorCodes.BeneficiarioSemNome,
         "A sessão do beneficiário não traz o nome completo, que o aprovador precisa para julgar o pedido.");
@@ -77,32 +94,32 @@ public sealed partial class PedidoDeConcessao
     // O beneficiário é o próprio solicitante quando o e-mail vem em branco ou é o do token dele, verificado:
     // quem usa o próprio e-mail já provou que é ele, e não há ninguém a quem esperar.
     private static (string? Email, bool ParaSiMesmo) ResolverBeneficiario(
-        PessoaNoToken solicitante,
-        string? emailInformado,
-        IDominiosInstitucionais dominios,
-        List<FieldError> erros)
+        PartesDoPedido partes, IDominiosInstitucionais dominios, List<FieldError> erros) =>
+        ParaSiMesmo(partes.Solicitante, partes.EmailDoBeneficiario)
+            ? (ResolverParaSiMesmo(partes.Solicitante, dominios, erros), true)
+            : (ResolverParaOutraPessoa(partes.EmailDoBeneficiario, dominios, erros), false);
+
+    private static string? ResolverParaSiMesmo(PessoaNoToken solicitante, IDominiosInstitucionais dominios, List<FieldError> erros)
     {
-        string? informado = EmailNormalizado(emailInformado);
         string? doToken = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
-        bool paraSiMesmo = ParaSiMesmo(solicitante, emailInformado);
-
-        if (paraSiMesmo)
+        if (doToken is null || !DominioInstitucional(doToken, dominios))
         {
-            if (doToken is null || !DominioInstitucional(doToken, dominios))
-            {
-                erros.Add(new("beneficiarioEmail", new DomainError(
-                    PedidoErrorCodes.BeneficiarioInvalido,
-                    "Para pedir para si, o e-mail da sessão deve ser institucional e verificado; para outra pessoa, informe o e-mail institucional dela.")));
-            }
-
-            if (NomeDeExibicao.Normalizar(solicitante.Nome) is null)
-            {
-                erros.Add(new("beneficiario", SemNome()));
-            }
-
-            return (doToken, true);
+            erros.Add(new("beneficiarioEmail", new DomainError(
+                PedidoErrorCodes.BeneficiarioInvalido,
+                "Para pedir para si, o e-mail da sessão deve ser institucional e verificado; para outra pessoa, informe o e-mail institucional dela.")));
         }
 
+        if (NomeDeExibicao.Normalizar(solicitante.Nome) is null)
+        {
+            erros.Add(new("beneficiario", SemNome()));
+        }
+
+        return doToken;
+    }
+
+    private static string? ResolverParaOutraPessoa(string? emailInformado, IDominiosInstitucionais dominios, List<FieldError> erros)
+    {
+        string? informado = EmailNormalizado(emailInformado);
         if (informado is null || !DominioInstitucional(informado, dominios))
         {
             erros.Add(new("beneficiarioEmail", new DomainError(
@@ -110,7 +127,7 @@ public sealed partial class PedidoDeConcessao
                 "O beneficiário é identificado pelo e-mail institucional dele.")));
         }
 
-        return (informado, false);
+        return informado;
     }
 
     private static bool ParaSiMesmo(PessoaNoToken solicitante, string? emailInformado)

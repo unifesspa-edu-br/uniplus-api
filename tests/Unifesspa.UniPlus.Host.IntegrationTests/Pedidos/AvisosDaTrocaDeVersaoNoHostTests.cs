@@ -53,9 +53,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         sessao.Sent.MessagesOf<EnviarEmail>().Should().ContainSingle(m => m.Finalidade == "perfil.versao_encerrada", "a versão anterior saiu sem concessão a migrar");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
         await AguardarAvisoAsync(Leandro, pedido, Devolvido);
-        JsonElement lido = await LerAsync(gestor, $"{Rota}/{pedido}");
-        lido.GetProperty("situacao").GetString().Should().Be("devolvido");
-        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("devolvido");
+        await ConferirDesfechoAsync(gestor, pedido, "devolvido", "devolvido");
     }
 
     [Fact(DisplayName = "A versão sem acréscimo devolve ao gestor o pedido que esperava a proteção de dados e avisa a fila do gestor pelo outbox")]
@@ -74,9 +72,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         await AguardarAsync(
             async () => (await MensagensAsync(Diogo, pedido)).Count(EhDaFilaDoGestor) > avisosAntes,
             "a fila do gestor não foi avisada do retorno do pedido");
-        JsonElement lido = await LerAsync(gestor, $"{Rota}/{pedido}");
-        lido.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
-        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be("voltou_ao_gestor");
+        await ConferirDesfechoAsync(gestor, pedido, "aguardando_gestor", "voltou_ao_gestor");
     }
 
     [Fact(DisplayName = "Se a gravação da troca falha, nem a vigência, nem o pedido, nem os avisos ficam, e a reentrega aplica tudo junto")]
@@ -86,25 +82,9 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         using HttpClient gestor = await GestorAsync();
         (Guid perfil, Guid pedido) = await PedidoAguardandoOBeneficiarioAsync(gestor, Catalogo);
         Envio versao2 = await PrepararVersaoAsync(gestor, perfil, Catalogo, Motivos);
-        await ExecutarSqlAsync(
-            "ALTER TABLE autorizacao.trocas_de_versao_do_pedido ADD CONSTRAINT ck_teste_sem_troca CHECK (false) NOT VALID");
-
         await EntregarPelaFilaAsync(versao2.DocumentoId);
 
-        try
-        {
-            await RastrearAsync(async () =>
-            {
-                using HttpResponseMessage resposta = await AprovarUltimaEtapaBrutoAsync(gestor, versao2);
-                resposta.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-            },
-            aceitarFalha: true);
-            await ConferirNadaGravadoAsync(gestor, perfil, versao2, pedido);
-        }
-        finally
-        {
-            await ExecutarSqlAsync("ALTER TABLE autorizacao.trocas_de_versao_do_pedido DROP CONSTRAINT IF EXISTS ck_teste_sem_troca");
-        }
+        await AprovarComATrocaRecusadaPeloBancoAsync(gestor, versao2, () => ConferirNadaGravadoAsync(gestor, perfil, versao2, pedido));
 
         using HttpResponseMessage reentrega = await AprovarUltimaEtapaBrutoAsync(gestor, versao2);
         reentrega.StatusCode.Should().Be(HttpStatusCode.OK, await reentrega.Content.ReadAsStringAsync());
@@ -112,6 +92,35 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         (await TemVigenteComVersaoAsync(gestor, perfil, versao2.VersaoId)).Should().BeTrue();
         (await SituacaoAsync(gestor, pedido)).Should().Be("devolvido");
         await AguardarAvisoAsync(Betina, pedido, Devolvido);
+    }
+
+    private static async Task ConferirDesfechoAsync(HttpClient gestor, Guid pedido, string situacao, string desfecho)
+    {
+        JsonElement lido = await LerAsync(gestor, $"{Rota}/{pedido}");
+        lido.GetProperty("situacao").GetString().Should().Be(situacao);
+        lido.GetProperty("trocasDeVersao").EnumerateArray().Single().GetProperty("desfecho").GetString().Should().Be(desfecho);
+    }
+
+    // O banco recusa gravar a troca do pedido enquanto a conferência roda; a restrição sai mesmo se ela falhar.
+    private async Task AprovarComATrocaRecusadaPeloBancoAsync(HttpClient gestor, Envio versao2, Func<Task> conferir)
+    {
+        await ExecutarSqlAsync(
+            "ALTER TABLE autorizacao.trocas_de_versao_do_pedido ADD CONSTRAINT ck_teste_sem_troca CHECK (false) NOT VALID");
+        try
+        {
+            await RastrearAsync(() => AprovarComFalhaAsync(gestor, versao2), aceitarFalha: true);
+            await conferir();
+        }
+        finally
+        {
+            await ExecutarSqlAsync("ALTER TABLE autorizacao.trocas_de_versao_do_pedido DROP CONSTRAINT IF EXISTS ck_teste_sem_troca");
+        }
+    }
+
+    private async Task AprovarComFalhaAsync(HttpClient gestor, Envio versao2)
+    {
+        using HttpResponseMessage resposta = await AprovarUltimaEtapaBrutoAsync(gestor, versao2);
+        resposta.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
     }
 
     private async Task ConferirNadaGravadoAsync(HttpClient gestor, Guid perfil, Envio versao2, Guid pedido)
@@ -158,7 +167,7 @@ public sealed class AvisosDaTrocaDeVersaoNoHostTests : AprovacaoDaVersaoNoHostTe
         using HttpClient betina = Cliente(Betina);
         using HttpClient leandro = Cliente(Leandro);
         Guid pedido = await CriarAsync(betina, perfil, unidade, Leandro);
-        (await EnviarAsync(leandro, HttpMethod.Post, $"{Rota}/{pedido}/aceite")).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await AceitarAsync(leandro, pedido)).StatusCode.Should().Be(HttpStatusCode.OK);
         (await EnviarAsync(gestor, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await SituacaoAsync(gestor, pedido)).Should().Be("aguardando_protecao_de_dados");
 

@@ -4,10 +4,13 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.Logging.Abstractions;
 
+using NSubstitute;
+
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDaInstalacao;
@@ -76,7 +79,7 @@ public sealed class ConfirmacaoDaInstalacaoTests
         ConfirmarInstalacaoCommandHandler.Handle(
             new ConfirmarInstalacaoCommand("12345678"),
             new TentativaDeConfirmacao(instalacoes, new ResumoFixo(), unidade, NullLogger<TentativaDeConfirmacao>.Instance),
-            new ConcessaoDosGestores(instalacoes, concessoes, new CatalogoInstitucional(), papeis, unidade),
+            new ConcessaoDosGestores(instalacoes, concessoes, new CatalogoInstitucional(), papeis, unidade, Substitute.For<ITermoDeResponsabilidadeRepository>()),
             new Usuario(Executor),
             TimeProvider.System,
             CancellationToken.None);
