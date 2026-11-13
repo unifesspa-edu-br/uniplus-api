@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Providencias;
 using AwesomeAssertions;
 
 using Npgsql;
+using NpgsqlTypes;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
@@ -60,7 +61,9 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
     {
         Guid concessao = await ConcessaoAsync();
 
-        PostgresException violacao = await FalharAsync(() => InserirAsync(concessao, estado, tipo, new string('a', caracteres)));
+        // Com o desfecho preenchido fora da aberta, a recusa vem só da regra testada, e não da do desfecho completo.
+        PostgresException violacao = await FalharAsync(
+            () => InserirAsync(concessao, estado, tipo, new string('a', caracteres), comDesfecho: estado != "aberta"));
 
         violacao.ConstraintName.Should().Be(restricao);
     }
@@ -73,7 +76,7 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
 
         PostgresException violacao = await FalharAsync(() => ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE id = {0}", concessao));
 
-        violacao.SqlState.Should().Be("23503");
+        violacao.SqlState.Should().Be(PostgresErrorCodes.RestrictViolation);
     }
 
     private async Task<Guid> ConcessaoAsync() =>
@@ -82,9 +85,12 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
     private Task<int> InserirAsync(Guid concessaoId, string estado, string tipo = "retirada", string fundamento = Fundamento, bool comDesfecho = false) =>
         ExecutarSqlAsync(
             Inserir, Guid.CreateVersion7(), concessaoId, tipo, fundamento, estado,
-            Se(comDesfecho, DateTimeOffset.UtcNow), Se(comDesfecho, "https://idp.test"), Se(comDesfecho, "diogo.souza"), Se(comDesfecho, Motivo));
+            Se(comDesfecho, DateTimeOffset.UtcNow, NpgsqlDbType.TimestampTz), Se(comDesfecho, "https://idp.test", NpgsqlDbType.Text),
+            Se(comDesfecho, "diogo.souza", NpgsqlDbType.Text), Se(comDesfecho, Motivo, NpgsqlDbType.Text));
 
-    private static object Se(bool presente, object valor) => presente ? valor : DBNull.Value;
+    // O nulo vai tipado: o EF Core não mapeia um DBNull solto num parâmetro de SQL cru.
+    private static NpgsqlParameter Se(bool presente, object valor, NpgsqlDbType tipo) =>
+        new() { NpgsqlDbType = tipo, Value = presente ? valor : DBNull.Value };
 
     private static async Task<PostgresException> FalharAsync(Func<Task<int>> gravar)
     {
