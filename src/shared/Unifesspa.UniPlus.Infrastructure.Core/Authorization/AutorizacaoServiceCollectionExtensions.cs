@@ -69,7 +69,6 @@ public static class AutorizacaoServiceCollectionExtensions
         services.TryAddScoped<ImpedimentoPorInscricaoCheck>();
         services.TryAddScoped<IAuthorizationDecisionService, AuthorizationDecisionService>();
         services.TryAddScoped<IVerificadorDeAcesso, VerificadorDeAcessoHttp>();
-        services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<IPermissoesEfetivas, PermissoesEfetivasHttp>();
     }
 

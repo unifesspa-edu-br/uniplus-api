@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 using Serilog;
 
 using Unifesspa.UniPlus.Autorizacao.API;
@@ -19,6 +21,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Ingresso.API;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
 using Unifesspa.UniPlus.Publicacoes.API;
@@ -33,6 +36,9 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 // segue deploy separado. Este assembly é o único que depende de múltiplos módulos
 // (composition root) — isento do fitness R8.
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Relógio único do processo: instantes em microssegundos, como o banco os persiste.
+builder.Services.Replace(ServiceDescriptor.Singleton<TimeProvider>(RelogioEmMicrossegundos.DoSistema));
 
 const string nomeServico = "uniplus-monolito";
 
@@ -112,7 +118,8 @@ builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringN
 // é dono do seu wiring (SelecaoMessagingRegistration); o host registra o Schema
 // Registry e compõe o configurador de routing na instância única de Wolverine.
 Action<Wolverine.WolverineOptions> configurarSelecaoRouting =
-    builder.Services.AddSelecaoMessaging(builder.Configuration, builder.Environment);
+    builder.Services.AddSelecaoMessaging(
+        builder.Configuration, builder.Environment, RelogioEmMicrossegundos.DoSistema);
 
 builder.Host.UseWolverineOutboxCascading(
     builder.Configuration,

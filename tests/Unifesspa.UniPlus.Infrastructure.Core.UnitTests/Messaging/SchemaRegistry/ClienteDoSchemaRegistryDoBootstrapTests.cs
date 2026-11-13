@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A posse do cliente do Schema Registry criado antes de existir o <see cref="IServiceProvider"/>: o host a assume
@@ -23,10 +24,12 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
     {
         ["SchemaRegistry:Url"] = "http://schema-registry.invalid:8081",
         ["SchemaRegistry:AuthType"] = "OAuthBearer",
-        ["SchemaRegistry:OAuth:TokenEndpoint"] = "https://keycloak.invalid/token",
+        ["SchemaRegistry:OAuth:TokenEndpoint"] = "http://127.0.0.1:1/token",
         ["SchemaRegistry:OAuth:ClientId"] = "cliente-de-teste",
         ["SchemaRegistry:OAuth:ClientSecret"] = "segredo-de-teste",
     };
+
+    private static readonly TimeProvider Relogio = new RelogioFixo(new DateTimeOffset(2026, 11, 1, 12, 30, 0, TimeSpan.Zero));
 
     private static SchemaRegistrySettings SettingsDe(IReadOnlyDictionary<string, string?> valores) =>
         Configuracao(valores).GetSection(SchemaRegistrySettings.SectionName).Get<SchemaRegistrySettings>()!;
@@ -42,7 +45,7 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
     {
         ServiceCollection services = new();
         SchemaRegistryServiceCollectionExtensions.CreateClient(
-            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services);
+            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services, Relogio);
 
         using ServiceProvider provider = services.BuildServiceProvider();
 
@@ -54,7 +57,7 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
     {
         ServiceCollection services = new();
         SchemaRegistryServiceCollectionExtensions.CreateClient(
-            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services);
+            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services, Relogio);
         ServiceProvider provider = services.BuildServiceProvider();
         IAuthenticationHeaderValueProvider autenticacao = DonoRegistrado(provider).Autenticacao!;
 
@@ -70,12 +73,29 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
     {
         ServiceCollection services = new();
         SchemaRegistryServiceCollectionExtensions.CreateClient(
-            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services);
+            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services, Relogio);
 
         using ServiceProvider provider = services.BuildServiceProvider();
 
         provider.GetRequiredService<IAuthenticationHeaderValueProvider>()
             .Should().BeSameAs(DonoRegistrado(provider).Autenticacao);
+    }
+
+    [Fact(DisplayName = "O provider OAuth do bootstrap lê o instante do mesmo relógio que o container registra")]
+    public void CreateClient_ComOAuth_LeOInstanteDoRelogioDoContainer()
+    {
+        RelogioQueConta relogio = new(Relogio);
+        ServiceCollection services = new();
+        services.AddSingleton<TimeProvider>(relogio);
+        SchemaRegistryServiceCollectionExtensions.CreateClient(
+            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services, relogio);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Action cabecalho = () => DonoRegistrado(provider).Autenticacao!.GetAuthenticationHeader();
+
+        cabecalho.Should().Throw<HttpRequestException>(because: "o endpoint de token do teste é inalcançável");
+        provider.GetRequiredService<TimeProvider>().Should().BeSameAs(relogio);
+        relogio.Leituras.Should().BePositive("a decisão de renovar o token consulta o relógio do container");
     }
 
     [Fact(DisplayName = "Sem OAuth bearer o bootstrap não cria nem registra provider de autenticação")]
@@ -85,7 +105,8 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
         SchemaRegistryServiceCollectionExtensions.CreateClient(
             SettingsDe(new Dictionary<string, string?> { ["SchemaRegistry:Url"] = "http://schema-registry.invalid:8081" }),
             NullLoggerFactory.Instance,
-            services);
+            services,
+            Relogio);
 
         using ServiceProvider provider = services.BuildServiceProvider();
 
@@ -97,7 +118,7 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
     public void CreateClient_SemUrl_Lanca()
     {
         Action criar = () => SchemaRegistryServiceCollectionExtensions.CreateClient(
-            new SchemaRegistrySettings(), NullLoggerFactory.Instance, new ServiceCollection());
+            new SchemaRegistrySettings(), NullLoggerFactory.Instance, new ServiceCollection(), Relogio);
 
         criar.Should().Throw<InvalidOperationException>().WithMessage("*SchemaRegistry:Url*");
     }
@@ -109,7 +130,7 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
         ServiceCollection services = new();
         services.AddLogging();
         ISchemaRegistryClient bootstrap = SchemaRegistryServiceCollectionExtensions.CreateClient(
-            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services);
+            SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services, Relogio);
         services.AddSingleton(bootstrap);
         services.AddSchemaRegistry(configuracao);
 
@@ -125,6 +146,7 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
     {
         ServiceCollection services = new();
         services.AddLogging();
+        services.AddSingleton(Relogio);
         services.AddSchemaRegistry(Configuracao(ConfiguracaoOAuth));
 
         using ServiceProvider provider = services.BuildServiceProvider();
@@ -158,5 +180,16 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
         Action registrar = () => services.AddSchemaRegistry(invalida);
 
         registrar.Should().Throw<InvalidOperationException>().WithMessage("*SchemaRegistry*inválida*");
+    }
+
+    private sealed class RelogioQueConta(TimeProvider fonte) : TimeProvider
+    {
+        public int Leituras { get; private set; }
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            Leituras++;
+            return fonte.GetUtcNow();
+        }
     }
 }

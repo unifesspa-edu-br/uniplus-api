@@ -109,7 +109,6 @@ public static class SelecaoModuleRegistration
     /// </summary>
     private static void RegistrarRemocaoDeArquivosPendentes(IServiceCollection services, IConfiguration configuration)
     {
-        services.TryAddSingleton(TimeProvider.System);
         services.AddOptions<RemocaoDeArquivosPendentesOptions>()
             .Bind(configuration.GetSection(RemocaoDeArquivosPendentesOptions.SectionName))
             .Validate(

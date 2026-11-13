@@ -43,7 +43,6 @@ public static class OrigensRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         RegistrarOpcoes(services, configuration);
-        services.TryAddSingleton(TimeProvider.System);
         RegistrarClienteDaOrigem<ISelecaoCertamePublicoApi>(services, PoliticaDeSelecao, static opcoes => opcoes.SelecaoBaseUrl);
         RegistrarClienteDaOrigem<IPublicacoesAtosApi>(services, PoliticaDePublicacoes, static opcoes => opcoes.PublicacoesBaseUrl);
         RegistrarComposicaoDaPagina(services);

@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Pagination;
 
@@ -48,14 +47,10 @@ public static class CursorPaginationServiceCollectionExtensions
     }
 
     /// <summary>
-    /// <c>TryAdd</c> respeita o <see cref="TimeProvider"/> já registrado pelo host (testes determinísticos, relógio
-    /// controlado, replay); <c>AddSingleton</c> direto sobrescreveria esse override em silêncio.
+    /// O codificador resolve o <see cref="TimeProvider"/> registrado pelo host: esta extensão não registra relógio.
     /// </summary>
-    private static void RegistrarCodificadorDoCursor(IServiceCollection services)
-    {
+    private static void RegistrarCodificadorDoCursor(IServiceCollection services) =>
         services.AddSingleton<CursorEncoder>();
-        services.TryAddSingleton(TimeProvider.System);
-    }
 
     /// <summary>
     /// Compõe com o factory padrão do MVC: tenta primeiro o erro de binding de cursor e, se não for dele, delega ao

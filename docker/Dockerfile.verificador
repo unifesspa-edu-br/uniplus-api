@@ -5,7 +5,8 @@ WORKDIR /src
 # .editorconfig vive junto da solution porque as políticas de análise por glob estão nele.
 COPY Directory.Build.props Directory.Packages.props SonarLint.xml .globalconfig global.json UniPlus.slnx .editorconfig ./
 
-# O verificador não depende de src/shared nem de módulo de negócio: só dos seus dois projetos.
+# O verificador não depende de módulo de negócio: só do Kernel compartilhado (relógio único) e dos seus dois projetos.
+COPY src/shared/Unifesspa.UniPlus.Kernel/ src/shared/Unifesspa.UniPlus.Kernel/
 COPY src/verificador/ src/verificador/
 
 RUN dotnet restore src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj

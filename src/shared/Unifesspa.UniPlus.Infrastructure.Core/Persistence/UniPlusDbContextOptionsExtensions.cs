@@ -137,17 +137,15 @@ public static class UniPlusDbContextOptionsExtensions
     /// </summary>
     /// <remarks>
     /// Os interceptors dependem do <see cref="TimeProvider"/> para <c>CreatedAt</c>/<c>UpdatedAt</c>/<c>DeletedAt</c>;
-    /// <c>TryAdd</c> preserva override de teste (relógio fixo) e é idempotente com os demais pontos que já registram
-    /// o relógio. Cada módulo chama este método no seu <c>Add{Modulo}Infrastructure</c>, então no co-hosting (monólito
-    /// modular) ele roda N vezes no mesmo container: sem o <c>TryAdd</c>, o container acumularia N descritores idênticos
-    /// de cada interceptor. Eles não têm estado por módulo (resolvem <c>IUserContext</c> e <see cref="TimeProvider"/>
+    /// o relógio é o registrado pelo host: esta extensão não registra relógio. Cada módulo chama este método no seu
+    /// <c>Add{Modulo}Infrastructure</c>, então no co-hosting (monólito modular) ele roda N vezes no mesmo container:
+    /// sem o <c>TryAdd</c>, o container acumularia N descritores idênticos de cada interceptor. Eles não têm estado por módulo (resolvem <c>IUserContext</c> e <see cref="TimeProvider"/>
     /// scoped), então um único registro serve a todos os DbContexts.
     /// </remarks>
     public static IServiceCollection AddUniPlusEfInterceptors(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<SoftDeleteInterceptor>();
         services.TryAddScoped<AuditableInterceptor>();
 

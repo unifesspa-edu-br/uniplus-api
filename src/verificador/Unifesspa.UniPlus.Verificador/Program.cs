@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -6,6 +7,7 @@ using Minio;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Verificador.Antivirus;
 using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Configuracao;
@@ -14,6 +16,9 @@ using Unifesspa.UniPlus.Verificador.Observabilidade;
 using Wolverine;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+// Relógio único do processo: instantes em microssegundos, como o banco os persiste.
+builder.Services.Replace(ServiceDescriptor.Singleton<TimeProvider>(RelogioEmMicrossegundos.DoSistema));
 
 builder.Logging.AddJsonConsole();
 
@@ -38,7 +43,6 @@ builder.Services.AddSingleton<IMinioClient>(sp =>
 });
 builder.Services.AddSingleton<IArmazenamentoDeArquivos, ArmazenamentoMinio>();
 builder.Services.AddSingleton<IClamd, ClamdClient>();
-builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<MetricasDoVerificador>();
 builder.Services.AddHostedService<IdadeDaBaseWorker>();
 

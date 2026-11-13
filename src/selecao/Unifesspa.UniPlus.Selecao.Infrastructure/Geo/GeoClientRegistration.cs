@@ -30,7 +30,6 @@ public static class GeoClientRegistration
         ArgumentNullException.ThrowIfNull(services);
 
         RegistrarOpcoes(services);
-        services.TryAddSingleton(TimeProvider.System);
         RegistrarClienteDeAutenticacao(services);
         RegistrarClienteDeConsulta(services);
 

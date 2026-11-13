@@ -24,9 +24,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 /// <see cref="EfCoreIdempotencyStore{TDbContext}"/> (não <c>IIdempotencyStore</c>):
 /// sem registro não-keyed da interface, não há como o co-hosting cair no
 /// "último registro vence".</para>
-/// <para>Services compartilhados (TimeProvider, registro de erros de domínio)
-/// usam <c>TryAdd*</c> — idempotentes quando N módulos chamam este método no
-/// mesmo container.</para>
+/// <para>O registro de erros de domínio usa <c>TryAdd*</c> — idempotente quando N
+/// módulos chamam este método no mesmo container. O <see cref="TimeProvider"/> é o
+/// registrado pelo host: esta extensão não registra relógio.</para>
 /// </remarks>
 /// <typeparam name="TDbContext">DbContext do módulo que hospeda a tabela de idempotência.</typeparam>
 /// <typeparam name="TApiMarker">
@@ -70,7 +70,6 @@ public static class IdempotencyServiceCollectionExtensions
     private static void RegistrarArmazenamento<TDbContext>(IServiceCollection services)
         where TDbContext : DbContext
     {
-        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<EfCoreIdempotencyStore<TDbContext>>();
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<Errors.IDomainErrorRegistration, IdempotencyDomainErrorRegistration>());

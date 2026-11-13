@@ -40,27 +40,35 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
     {
         int porta = PortaLivre();
         _bootstrap = $"localhost:{porta}";
-        _kafka = new ContainerBuilder(Imagem)
-            .WithPortBinding(porta, PortaInterna)
-            .WithEnvironment("KAFKA_NODE_ID", "1")
-            .WithEnvironment("KAFKA_PROCESS_ROLES", "broker,controller")
-            .WithEnvironment("KAFKA_LISTENERS", $"PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:{PortaInterna}")
-            .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", $"PLAINTEXT://localhost:29092,PLAINTEXT_HOST://{_bootstrap}")
-            .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT")
-            .WithEnvironment("KAFKA_INTER_BROKER_LISTENER_NAME", "PLAINTEXT")
-            .WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER")
-            .WithEnvironment("KAFKA_CONTROLLER_QUORUM_VOTERS", "1@localhost:9093")
-            .WithEnvironment("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
-            .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
-            .WithEnvironment("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
-            .WithEnvironment("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false")
-            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Kafka Server started"))
-            .Build();
+        _kafka = ContainerDoKafka(porta);
         await _kafka.StartAsync();
 
         // O produtor não cria tópico: a fixture o cria, como o compose faz em dev.
         await CriarTopicoAsync(TopicoDoTeste);
     }
+
+    private IContainer ContainerDoKafka(int porta) =>
+        new ContainerBuilder(Imagem)
+            .WithPortBinding(porta, PortaInterna)
+            .WithEnvironment(VariaveisDoKafka())
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Kafka Server started"))
+            .Build();
+
+    private Dictionary<string, string> VariaveisDoKafka() => new()
+    {
+        ["KAFKA_NODE_ID"] = "1",
+        ["KAFKA_PROCESS_ROLES"] = "broker,controller",
+        ["KAFKA_LISTENERS"] = $"PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:{PortaInterna}",
+        ["KAFKA_ADVERTISED_LISTENERS"] = $"PLAINTEXT://localhost:29092,PLAINTEXT_HOST://{_bootstrap}",
+        ["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT",
+        ["KAFKA_INTER_BROKER_LISTENER_NAME"] = "PLAINTEXT",
+        ["KAFKA_CONTROLLER_LISTENER_NAMES"] = "CONTROLLER",
+        ["KAFKA_CONTROLLER_QUORUM_VOTERS"] = "1@localhost:9093",
+        ["KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR"] = "1",
+        ["KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR"] = "1",
+        ["KAFKA_TRANSACTION_STATE_LOG_MIN_ISR"] = "1",
+        ["KAFKA_AUTO_CREATE_TOPICS_ENABLE"] = "false",
+    };
 
     private async Task<string> CriarTopicoAsync(string nome, int particoes = 1)
     {
@@ -80,10 +88,8 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
     [Fact(DisplayName = "O lote é uma única mensagem no tópico, com a chave de cada registro, e sem o valor revelado")]
     public async Task Lote_PublicaUmaMensagemUnicaComTodasAsChaves()
     {
-        Guid fernanda = Guid.CreateVersion7();
-        Guid caroline = Guid.CreateVersion7();
         IReadOnlyList<RegistroDecisaoAcesso> lote = Registro()
-            .ParaCadaResource("inscricao", [fernanda, caroline], resourceEhInscricao: true);
+            .ParaCadaResource("inscricao", [Guid.CreateVersion7(), Guid.CreateVersion7()], resourceEhInscricao: true);
         using RegistroDeAcessoKafka registro = Criar(_bootstrap, TimeSpan.FromSeconds(20), topico: TopicoDoTeste);
 
         await registro.RegistrarAsync(lote, default);
@@ -97,26 +103,29 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
             && e.GetProperty("registro").GetProperty("inscricaoId").GetGuid() == e.GetProperty("registro").GetProperty("resourceId").GetGuid());
     }
 
-    [Fact(DisplayName = "A mensagem chega com a execução como chave e com os cabeçalhos do lote")]
-    public async Task Mensagem_ChegaComAChaveEOsCabecalhos()
+    [Fact(DisplayName = "A mensagem chega com a execução como chave e com os cabeçalhos de identificação do lote")]
+    public async Task Mensagem_ChegaComAChaveEOsCabecalhosDeIdentificacao()
     {
-        string topico = await CriarTopicoAsync($"cabecalhos-{Guid.NewGuid():N}");
         Guid execucao = Guid.CreateVersion7();
-        using RegistroDeAcessoKafka registro = Criar(_bootstrap, TimeSpan.FromSeconds(20), topico: topico);
 
-        await registro.RegistrarAsync([Registro(execucaoId: execucao, clienteOidc: "selecao-web")], default);
+        Message<string, string> mensagem = await MensagemDeUmRegistroAsync(execucao);
 
-        Message<string, string> mensagem = Consumir(topico).Should().ContainSingle().Subject.Message;
         mensagem.Key.Should().Be(execucao.ToString());
-        string Cabecalho(string nome) => System.Text.Encoding.UTF8.GetString(mensagem.Headers.GetLastBytes(nome));
-        Cabecalho("content-type").Should().Be("application/json");
-        Cabecalho("uniplus.tipo").Should().Be("registro-de-acesso.lote");
-        Cabecalho("uniplus.versao-schema").Should().Be("1");
-        Cabecalho("uniplus.execucao-id").Should().Be(execucao.ToString());
-        Cabecalho("uniplus.cliente-oidc").Should().Be("selecao-web");
-        Cabecalho("uniplus.quantidade").Should().Be("1");
-        Cabecalho("uniplus.resultado").Should().Be("permitido");
-        Cabecalho("uniplus.sensibilidade-maxima").Should().Be("identificador");
+        Cabecalho(mensagem, "content-type").Should().Be("application/json");
+        Cabecalho(mensagem, "uniplus.tipo").Should().Be("registro-de-acesso.lote");
+        Cabecalho(mensagem, "uniplus.versao-schema").Should().Be("1");
+        Cabecalho(mensagem, "uniplus.execucao-id").Should().Be(execucao.ToString());
+    }
+
+    [Fact(DisplayName = "A mensagem chega com os cabeçalhos de resumo do lote")]
+    public async Task Mensagem_ChegaComOsCabecalhosDeResumo()
+    {
+        Message<string, string> mensagem = await MensagemDeUmRegistroAsync(Guid.CreateVersion7());
+
+        Cabecalho(mensagem, "uniplus.cliente-oidc").Should().Be("selecao-web");
+        Cabecalho(mensagem, "uniplus.quantidade").Should().Be("1");
+        Cabecalho(mensagem, "uniplus.resultado").Should().Be("permitido");
+        Cabecalho(mensagem, "uniplus.sensibilidade-maxima").Should().Be("identificador");
     }
 
     [Fact(DisplayName = "Dois lotes da mesma requisição caem na mesma partição, mesmo com várias partições no tópico")]
@@ -222,23 +231,54 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
     // Resolve pelo contêiner, como a aplicação: é a leitura das opções que valida a configuração.
     private static RegistroDeAcessoKafka Criar(string bootstrap, TimeSpan prazo, string? topico = null, string? protocolo = null, string? mecanismo = null)
     {
-        Dictionary<string, string?> configuracao = new()
-        {
-            ["RegistroDeAcesso:Kafka:BootstrapServers"] = bootstrap,
-            ["RegistroDeAcesso:Kafka:PrazoDeConfirmacao"] = prazo.ToString("c", System.Globalization.CultureInfo.InvariantCulture),
-            ["RegistroDeAcesso:Kafka:Topico"] = topico ?? RegistroDeAcessoKafkaOptions.TopicoPadrao,
-            ["RegistroDeAcesso:Kafka:SecurityProtocol"] = protocolo,
-            ["RegistroDeAcesso:Kafka:SaslMechanism"] = mecanismo,
-        };
-        IConfiguration config = new ConfigurationBuilder().AddInMemoryCollection(configuracao).Build();
         ServiceCollection services = new();
-        services.AddAutorizacao(config);
+        services.AddSingleton(TimeProvider.System);
+        services.AddAutorizacao(ConfiguracaoDoRegistro(bootstrap, prazo, topico, protocolo, mecanismo));
         ServiceProvider provedor = services.BuildServiceProvider();
 
         return (RegistroDeAcessoKafka)provedor.GetRequiredService<IRegistroOperacionalRestrito>();
     }
 
+    private static IConfiguration ConfiguracaoDoRegistro(string bootstrap, TimeSpan prazo, string? topico, string? protocolo, string? mecanismo) =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["RegistroDeAcesso:Kafka:BootstrapServers"] = bootstrap,
+                ["RegistroDeAcesso:Kafka:PrazoDeConfirmacao"] = prazo.ToString("c", System.Globalization.CultureInfo.InvariantCulture),
+                ["RegistroDeAcesso:Kafka:Topico"] = topico ?? RegistroDeAcessoKafkaOptions.TopicoPadrao,
+                ["RegistroDeAcesso:Kafka:SecurityProtocol"] = protocolo,
+                ["RegistroDeAcesso:Kafka:SaslMechanism"] = mecanismo,
+            })
+            .Build();
+
+    private static string Cabecalho(Message<string, string> mensagem, string nome) =>
+        System.Text.Encoding.UTF8.GetString(mensagem.Headers.GetLastBytes(nome));
+
+    private async Task<Message<string, string>> MensagemDeUmRegistroAsync(Guid execucao)
+    {
+        string topico = await CriarTopicoAsync($"cabecalhos-{Guid.NewGuid():N}");
+        using RegistroDeAcessoKafka registro = Criar(_bootstrap, TimeSpan.FromSeconds(20), topico: topico);
+
+        await registro.RegistrarAsync([Registro(execucaoId: execucao, clienteOidc: "selecao-web")], default);
+
+        return Consumir(topico).Should().ContainSingle().Subject.Message;
+    }
+
     private List<ConsumeResult<string, string>> Consumir(string topico, int esperadas = 1)
+    {
+        using IConsumer<string, string> consumidor = ConsumidorDoTopico(topico);
+        List<ConsumeResult<string, string>> recebidas = LerAteEsperadas(consumidor, esperadas);
+
+        // Janela para qualquer outra mensagem que viesse junto: o lote é uma só.
+        while (consumidor.Consume(TimeSpan.FromSeconds(2)) is { } extra)
+        {
+            recebidas.Add(extra);
+        }
+
+        return recebidas;
+    }
+
+    private IConsumer<string, string> ConsumidorDoTopico(string topico)
     {
         ConsumerConfig config = new()
         {
@@ -247,9 +287,14 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false,
         };
-        using IConsumer<string, string> consumidor = new ConsumerBuilder<string, string>(config).Build();
+        IConsumer<string, string> consumidor = new ConsumerBuilder<string, string>(config).Build();
         consumidor.Subscribe(topico);
 
+        return consumidor;
+    }
+
+    private static List<ConsumeResult<string, string>> LerAteEsperadas(IConsumer<string, string> consumidor, int esperadas)
+    {
         List<ConsumeResult<string, string>> recebidas = [];
         DateTime limite = DateTime.UtcNow.AddSeconds(30);
 
@@ -259,12 +304,6 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
             {
                 recebidas.Add(mensagem);
             }
-        }
-
-        // Janela para qualquer outra mensagem que viesse junto: o lote é uma só.
-        while (consumidor.Consume(TimeSpan.FromSeconds(2)) is { } extra)
-        {
-            recebidas.Add(extra);
         }
 
         return recebidas;
