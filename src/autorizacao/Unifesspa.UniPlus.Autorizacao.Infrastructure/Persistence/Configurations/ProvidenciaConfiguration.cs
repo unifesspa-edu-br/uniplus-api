@@ -105,7 +105,7 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
         // A trilha da concessão e o filtro por concessão.
         builder.HasIndex(p => p.ConcessaoId, "ix_providencias_concessao").HasDatabaseName("ix_providencias_concessao");
 
-        // A fila por estado, em ordem de abertura.
-        builder.HasIndex(p => new { p.Estado, p.Id }, "ix_providencias_estado_id").HasDatabaseName("ix_providencias_estado_id");
+        // A fila por estado, em ordem de abertura: o seek do cursor compara (aberta_em, id) dentro do estado.
+        builder.HasIndex(p => new { p.Estado, p.AbertaEm, p.Id }, "ix_providencias_estado_aberta_em_id").HasDatabaseName("ix_providencias_estado_aberta_em_id");
     }
 }

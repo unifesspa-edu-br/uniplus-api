@@ -2164,8 +2164,8 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                     b.HasIndex(new[] { "ConcessaoId" }, "ix_providencias_concessao")
                         .HasDatabaseName("ix_providencias_concessao");
 
-                    b.HasIndex(new[] { "Estado", "Id" }, "ix_providencias_estado_id")
-                        .HasDatabaseName("ix_providencias_estado_id");
+                    b.HasIndex(new[] { "Estado", "AbertaEm", "Id" }, "ix_providencias_estado_aberta_em_id")
+                        .HasDatabaseName("ix_providencias_estado_aberta_em_id");
 
                     b.HasIndex(new[] { "ConcessaoId" }, "ux_providencias_concessao_aberta")
                         .IsUnique()

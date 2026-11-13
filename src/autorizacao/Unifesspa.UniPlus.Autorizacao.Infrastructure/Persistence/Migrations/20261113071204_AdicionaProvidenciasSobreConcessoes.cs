@@ -58,10 +58,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                 column: "concessao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_providencias_estado_id",
+                name: "ix_providencias_estado_aberta_em_id",
                 schema: "autorizacao",
                 table: "providencias",
-                columns: new[] { "estado", "id" });
+                columns: new[] { "estado", "aberta_em", "id" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_providencias_concessao_aberta",

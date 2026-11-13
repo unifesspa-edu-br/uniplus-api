@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Queries.Concessoes;
 
+using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
+using Unifesspa.UniPlus.Autorizacao.Application.Queries.Providencias;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 
@@ -39,10 +41,15 @@ public sealed class TrilhaDaConcessao
         _clock = clock;
     }
 
-    /// <summary>Os eventos da concessão em ordem cronológica.</summary>
-    public async Task<IReadOnlyList<EventoDaTrilhaDto>> MontarAsync(Concessao concessao, CancellationToken cancellationToken)
+    /// <summary>
+    /// Os eventos da concessão em ordem cronológica. Cada providência exposta, com fundamento, motivo e identidades, é
+    /// registrada antes, pela permissão que dá a leitura das providências (ADR-0153); quem não tem nenhuma delas não as vê.
+    /// </summary>
+    /// <param name="verificador">O ponto de decisão da requisição, que avalia e registra a leitura das providências.</param>
+    public async Task<IReadOnlyList<EventoDaTrilhaDto>> MontarAsync(Concessao concessao, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(concessao);
+        ArgumentNullException.ThrowIfNull(verificador);
 
         List<EventoDaTrilhaDto> eventos = [.. ConcessaoMapping.EventosDaConcessao(concessao, _clock.GetUtcNow())];
         eventos.AddRange(await DaOrigemAsync(concessao, cancellationToken).ConfigureAwait(false));
@@ -51,9 +58,17 @@ public sealed class TrilhaDaConcessao
         // aparece com sua identidade, e o sistema como ator.
         eventos.AddRange((await _revisoes.ListarDecisoesDaConcessaoAsync(concessao.Id, cancellationToken).ConfigureAwait(false)).Select(RevisaoMapping.ToEvento));
         eventos.AddRange((await _janelas.ListarDecisoesDaConcessaoAsync(concessao.Id, cancellationToken).ConfigureAwait(false)).Select(MigracaoMapping.ToEvento));
-        eventos.AddRange((await _providencias.ListarDaConcessaoAsync(concessao.Id, cancellationToken).ConfigureAwait(false)).SelectMany(ProvidenciaMapping.EventosDaTrilha));
+        eventos.AddRange(await DasProvidenciasAsync(concessao.Id, verificador, cancellationToken).ConfigureAwait(false));
 
         return [.. eventos.OrderBy(static e => e.Instante)];
+    }
+
+    private async Task<IEnumerable<EventoDaTrilhaDto>> DasProvidenciasAsync(Guid concessaoId, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<Providencia> providencias = await _providencias.ListarDaConcessaoAsync(concessaoId, cancellationToken).ConfigureAwait(false);
+        bool podeLer = await AcessoAProvidencia.RegistrarLeituraAsync(verificador, [.. providencias.Select(static p => p.Id)], cancellationToken).ConfigureAwait(false);
+
+        return podeLer ? providencias.SelectMany(ProvidenciaMapping.EventosDaTrilha) : [];
     }
 
     private async Task<IReadOnlyList<EventoDaTrilhaDto>> DaOrigemAsync(Concessao concessao, CancellationToken cancellationToken)

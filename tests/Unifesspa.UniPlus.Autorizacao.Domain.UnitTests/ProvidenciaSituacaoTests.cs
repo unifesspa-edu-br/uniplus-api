@@ -67,6 +67,35 @@ public sealed class ProvidenciaSituacaoTests
         EncerramentoDaConcessao.De(revogada, Agora.AddHours(2)).Should().Be(new EncerramentoDaConcessao(CausaDoEncerramento.Revogada, Agora.AddMinutes(10)));
     }
 
+    [Fact(DisplayName = "A concessão vencida e revogada depois tem o vencimento como encerramento, no instante do fim da vigência")]
+    public void Encerramento_VencidaAntesDaRevogacao_Vencimento()
+    {
+        Concessao concessao = ProvidenciaBuilder.ConcessaoDeLeandro(validaAte: Agora.AddHours(1));
+        concessao.Revogar(ProvidenciaBuilder.AtoDeDiogo(Agora.AddHours(3)), "Revogada depois de vencida.");
+
+        EncerramentoDaConcessao.De(concessao, Agora.AddHours(4)).Should().Be(new EncerramentoDaConcessao(CausaDoEncerramento.Vencida, Agora.AddHours(1)));
+        EncerramentoDaConcessao.VencimentoDe(concessao, Agora.AddHours(4)).Should().Be(Agora.AddHours(1));
+    }
+
+    [Fact(DisplayName = "No empate entre o fim da vigência e a revogação, a concessão já não valia: o encerramento é o vencimento")]
+    public void Encerramento_Empate_Vencimento()
+    {
+        Concessao concessao = ProvidenciaBuilder.ConcessaoDeLeandro(validaAte: Agora.AddHours(1));
+        concessao.Revogar(ProvidenciaBuilder.AtoDeDiogo(Agora.AddHours(1)), "Revogada no fim da vigência.");
+
+        EncerramentoDaConcessao.De(concessao, Agora.AddHours(2)).Should().Be(new EncerramentoDaConcessao(CausaDoEncerramento.Vencida, Agora.AddHours(1)));
+    }
+
+    [Fact(DisplayName = "A concessão revogada antes do fim da vigência tem a revogação como encerramento e não tem vencimento")]
+    public void Encerramento_RevogadaAntesDoFim_Revogacao()
+    {
+        Concessao concessao = ProvidenciaBuilder.ConcessaoDeLeandro(validaAte: Agora.AddHours(1));
+        concessao.Revogar(ProvidenciaBuilder.AtoDeDiogo(Agora.AddMinutes(59)), "Revogada um minuto antes do fim.");
+
+        EncerramentoDaConcessao.De(concessao, Agora.AddHours(2)).Should().Be(new EncerramentoDaConcessao(CausaDoEncerramento.Revogada, Agora.AddMinutes(59)));
+        EncerramentoDaConcessao.VencimentoDe(concessao, Agora.AddHours(2)).Should().BeNull();
+    }
+
     [Fact(DisplayName = "Estão impedidos de responder quem solicitou e o beneficiário; quem administra concessões, não")]
     public void ImpedeResposta_SolicitanteEBeneficiario()
     {

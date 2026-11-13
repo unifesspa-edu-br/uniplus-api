@@ -11,7 +11,7 @@ internal static class TextosDosAvisosDaProvidencia
         TextoDoAviso.Para(
             TipoDeAviso.ProvidenciaSolicitada,
             "Solicitação de providência sobre concessão de acesso",
-            "Uma solicitação de providência sobre uma concessão de acesso aguarda resposta da gestão de acessos ou de um Representante do controlador."),
+            "Uma solicitação de providência sobre uma concessão de acesso aguarda resposta de um gestor de acessos ou de um Representante do controlador."),
         TextoDoAviso.Para(
             TipoDeAviso.ProvidenciaRespondida,
             "Providência respondida",

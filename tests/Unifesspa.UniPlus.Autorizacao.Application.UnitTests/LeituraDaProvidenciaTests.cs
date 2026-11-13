@@ -28,7 +28,7 @@ public sealed class LeituraDaProvidenciaTests
         ProvidenciaBuilder construtor = new();
         _item = new(construtor.Aberta(), new ConcessaoDaProvidencia(construtor.Concessao, CenarioDaProvidencia.PerfilNome));
         _cenario.Providencias.ObterComConcessaoAsync(_item.Id, Arg.Any<CancellationToken>()).Returns(_item);
-        _cenario.Providencias.ListarPaginadoAsync(default!, default, default, default, default).ReturnsForAnyArgs(([_item], null, null));
+        _cenario.Providencias.ListarPaginadoAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(([_item], null, null));
     }
 
     [Fact(DisplayName = "Quem administra concessões lê o detalhe, e a leitura grava a permissão de administrar para a providência")]
@@ -62,27 +62,27 @@ public sealed class LeituraDaProvidenciaTests
         verificador.Gravados.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A fila pede a situação no instante da leitura e registra cada providência exibida")]
+    [Fact(DisplayName = "A fila pede a situação no instante da leitura, repassa a âncora do cursor e registra cada providência exibida")]
     public async Task Listar_FiltraERegistraCadaUma()
     {
         VerificadorDeTeste verificador = new("diogo.souza", [Administrar]);
-        ListarProvidenciasQuery query = new(SituacaoDaProvidencia.Aberta, null, null, 20, PaginationDirection.Next);
+        ListarProvidenciasQuery query = new(SituacaoDaProvidencia.Aberta, null, "chave", null, 20, PaginationDirection.Next);
 
         ListarProvidenciasResult resultado = await ProvidenciaQueryHandler.Handle(query, Leitura(), verificador, Usuarios.De(ProvidenciaBuilder.Diogo), CancellationToken.None);
 
         resultado.Items.Should().ContainSingle().Which.Situacao.Should().Be("aberta");
         verificador.Gravados.Single().Select(static r => r.ResourceId).Should().Equal(_item.Id);
         await _cenario.Providencias.Received(1).ListarPaginadoAsync(
-            Arg.Is<FiltroDeProvidencias>(f => f.Situacao == SituacaoDaProvidencia.Aberta && f.Agora == ProvidenciaBuilder.Agora), null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
+            Arg.Is<FiltroDeProvidencias>(f => f.Situacao == SituacaoDaProvidencia.Aberta && f.Agora == ProvidenciaBuilder.Agora), "chave", null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A fila vazia não registra nada")]
     public async Task Listar_Vazia_NaoRegistra()
     {
         VerificadorDeTeste verificador = new("diogo.souza", [Administrar]);
-        _cenario.Providencias.ListarPaginadoAsync(default!, default, default, default, default).ReturnsForAnyArgs(([], null, null));
+        _cenario.Providencias.ListarPaginadoAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(([], null, null));
 
-        await ProvidenciaQueryHandler.Handle(new ListarProvidenciasQuery(null, null, null, 20, PaginationDirection.Next), Leitura(), verificador, Usuarios.De(ProvidenciaBuilder.Diogo), CancellationToken.None);
+        await ProvidenciaQueryHandler.Handle(new ListarProvidenciasQuery(null, null, null, null, 20, PaginationDirection.Next), Leitura(), verificador, Usuarios.De(ProvidenciaBuilder.Diogo), CancellationToken.None);
 
         verificador.Gravados.Should().BeEmpty();
     }
