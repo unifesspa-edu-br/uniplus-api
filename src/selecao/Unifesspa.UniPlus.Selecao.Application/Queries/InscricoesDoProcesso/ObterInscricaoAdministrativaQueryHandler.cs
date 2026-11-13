@@ -50,7 +50,8 @@ public static class ObterInscricaoAdministrativaQueryHandler
         ConferenciaDoVinculo conferencia = await leitura
             .ConferirVinculoAsync(query.ProcessoSeletivoId, query.InscricaoId, cancellationToken).ConfigureAwait(false);
         Result<InscricaoAlcancada> alcancada = await AcessoDoOperadorAInscricao
-            .AlcancarAsync(verificador, conferencia, query.ProcessoSeletivoId, query.InscricaoId, cancellationToken).ConfigureAwait(false);
+            .AlcancarAsync(verificador, conferencia, query.ProcessoSeletivoId, query.InscricaoId, AcessoAInscricao.NaoEncontradaNoProcesso, cancellationToken)
+            .ConfigureAwait(false);
 
         return alcancada.IsFailure
             ? Result<InscricaoAdministrativaDto>.Failure(alcancada.Error!)

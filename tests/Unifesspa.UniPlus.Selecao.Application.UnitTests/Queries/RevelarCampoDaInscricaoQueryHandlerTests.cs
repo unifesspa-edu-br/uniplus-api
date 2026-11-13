@@ -14,15 +14,23 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.CampoDaInscricao;
+using Unifesspa.UniPlus.Selecao.Application.Services.InscricaoAdministrativa;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>A revelação devolve o CPF no formato de CPF e trata o valor decifrado vazio como campo não encontrado.</summary>
+/// <summary>
+/// A revelação administrativa de um campo identificador exige, nesta ordem, a consulta da inscrição, a permissão da classe
+/// e a de revelar; sem qualquer uma, a resposta existente e a ausente dão o mesmo 404, e a resposta nem é procurada.
+/// </summary>
 public sealed class RevelarCampoDaInscricaoQueryHandlerTests
 {
-    private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
+    private const string CodigoDoCampoNaoEncontrado = "Inscricao.CampoNaoEncontrado";
+
+    private static readonly string CodigoDeConsultarInscricoes = PermissaoSelecao.InscricoesConsultar.Codigo;
     private static readonly string CodigoDaClasse = PermissaoSelecao.DadosIdentificadoresConsultar.Codigo;
+    private static readonly string CodigoRevelar = PermissaoSelecao.DadosIdentificadoresRevelar.Codigo;
 
     [Fact(DisplayName = "O fato de formato CPF é revelado formatado")]
     public async Task Revela_Cpf_Formatado()
@@ -39,52 +47,71 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
     {
         Result<CampoReveladoDto> resultado = await Revelar(decifrado);
 
-        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
     }
 
-    [Theory(DisplayName = "Inscrição que não existe, pedida por quem não tem a permissão da classe ou a de revelar, responde 404 e registra só a primeira negada, sem o id do resource")]
-    [InlineData(false, "selecao:dados-identificadores:consultar")]
-    [InlineData(true, "selecao:dados-identificadores:revelar")]
-    public async Task Inexistente_SemAPermissao_RegistraAPrimeiraNegadaSemId(bool comAClasse, string negada)
-    {
-        InscricaoAdministrativaDeTeste cenario = new(PersonasDeTeste.FernandaDrumond);
-        InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
-        DecisoesDeAcessoDeTeste kevin = comAClasse
-            ? new("kevin.carvalho", PermissaoSelecao.DadosIdentificadoresConsultar)
-            : new("kevin.carvalho", PermissaoSelecao.DadosIdentificadoresRevelar);
-
-        Result<CampoReveladoDto> resultado = await RevelarCampoDaInscricaoQueryHandler.Handle(
-            new RevelarCampoDaInscricaoQuery(cenario.ProcessoId, Guid.CreateVersion7(), "CPF", null),
-            kevin.Verificador, mundo.Processos, mundo.Inscricoes, mundo.Codecs,
-            Substitute.For<IUserContext>(), NullLogger.Instance, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        IReadOnlyCollection<DecisaoDeAcesso> entregues = ((IReadOnlyCollection<DecisaoDeAcesso>)kevin.Verificador.ReceivedCalls()
-            .Single(static c => c.GetMethodInfo().Name == nameof(IVerificadorDeAcesso.RegistrarDesfechoAsync)).GetArguments()[0]!);
-        DecisaoNegada registrada = entregues.Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject;
-        registrada.Registro.Permissao.Should().Be(negada);
-        registrada.Registro.ResourceId.Should().BeNull();
-        registrada.Registro.FatoCodigo.Should().BeNull();
-    }
-
-    [Theory(DisplayName = "Sem a permissão de revelar, a resposta existente e a ausente dão o mesmo 404, decidido antes de procurar a resposta")]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task SemRevelar_MesmoNaoEncontrado_AntesDeProcurarAResposta(bool respostaExiste)
+    [Fact(DisplayName = "Erick com a consulta da inscrição, a permissão do identificador mascarado e a de revelar revela o CPF")]
+    public async Task ComAsTresPermissoes_Revela()
     {
         InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
-        InscricaoAdministrativaDeTeste.Mundo mundo = cenario.Montar();
-        DecisoesDeAcessoDeTeste kevin = new(
-            "kevin.carvalho", PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresConsultar);
-        if (respostaExiste)
-        {
-            mundo.Inscricoes.LocalizarIdentificadorAsync(cenario.InscricaoId, "CPF", null, null, Arg.Any<CancellationToken>())
-                .Returns(new RespostaIdentificadora(Guid.CreateVersion7()));
-        }
+        DecisoesDeAcessoDeTeste erick = Persona("erick.araujo", consultar: true, classe: true, revelar: true);
 
-        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, kevin);
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor), erick.Verificador);
 
-        resultado.Error!.Code.Should().Be("Inscricao.CampoNaoEncontrado");
+        resultado.Value!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Formatado);
+    }
+
+    [Theory(DisplayName = "Sem a consulta da inscrição, responde 404 e decide só a consulta, sobre o resource da inscrição, que registra a negativa")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task SemConsultarInscricoes_NaoEncontrado_RegistraANegativaDaConsulta(bool respostaExiste)
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = respostaExiste ? Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor) : cenario.Montar();
+        DecisoesDeAcessoDeTeste kevin = Persona("kevin.carvalho", consultar: false, classe: true, revelar: true);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, kevin.Verificador);
+
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
+        await kevin.ExigiuOAcessoAsync(cenario.InscricaoId, CodigoDeConsultarInscricoes);
+        await kevin.NaoExigiuAsync(CodigoRevelar);
+        await kevin.NaoAvaliouNadaAsync();
+    }
+
+    [Fact(DisplayName = "Sem a consulta da inscrição, o campo existente e o ausente respondem exatamente o mesmo erro")]
+    public async Task SemConsultarInscricoes_CampoExistenteEAusente_RespondemIgual()
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        Task<Result<CampoReveladoDto>> existente = Revelar(cenario, Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor), SemConsultarInscricoes().Verificador);
+        Task<Result<CampoReveladoDto>> ausente = Revelar(cenario, cenario.Montar(), SemConsultarInscricoes().Verificador);
+
+        (await existente).Error.Should().Be((await ausente).Error);
+    }
+
+    [Fact(DisplayName = "Erick só com a permissão do identificador mascarado não revela: 404, sem decidir revelar e sem procurar a resposta")]
+    public async Task SoAClasse_NaoRevela()
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
+        DecisoesDeAcessoDeTeste erick = Persona("erick.araujo", consultar: false, classe: true, revelar: false);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick.Verificador);
+
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
+        await erick.NaoExigiuAsync(CodigoRevelar);
+        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
+    }
+
+    [Fact(DisplayName = "Com a consulta da inscrição e a do identificador mascarado, sem a de revelar, responde 404 decidido antes de procurar a resposta")]
+    public async Task SemRevelar_NaoEncontrado_AntesDeProcurarAResposta()
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
+        DecisoesDeAcessoDeTeste kevin = Persona("kevin.carvalho", consultar: true, classe: true, revelar: false);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, kevin.Verificador);
+
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
         await kevin.Verificador.Received(1).ExigirAsync(
             Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar),
             Arg.Is<ResourceContext?>(r => r!.FatoCodigo == "CPF" && r.InscricaoId == cenario.InscricaoId),
@@ -92,39 +119,78 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
         await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
     }
 
-    [Fact(DisplayName = "Erick com a permissão de revelar e a do identificador mascarado, sem consultar inscrições, revela o CPF")]
-    public async Task ComAsDuasPermissoes_Revela()
-    {
-        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
-        InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
-        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
-
-        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick);
-
-        resultado.Value!.Valor.Should().Be(PersonasDeTeste.FernandaDrumond.Formatado);
-    }
-
-    [Fact(DisplayName = "Erick só com a permissão de revelar, sem a do identificador mascarado, não revela o CPF: 404, só a negativa da classe é registrada e a resposta nem é procurada")]
+    [Fact(DisplayName = "Com a consulta da inscrição e a de revelar, sem a do identificador mascarado, não revela: 404, só a negativa da classe é registrada e a resposta nem é procurada")]
     public async Task SoRevelar_SemAClasse_Recusa()
     {
         InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
         InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
-        DecisoesDeAcessoDeTeste erick = new("erick.araujo", PermissaoSelecao.DadosIdentificadoresRevelar);
+        DecisoesDeAcessoDeTeste erick = Persona("erick.araujo", consultar: true, classe: false, revelar: true);
 
-        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick);
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, erick.Verificador);
 
-        resultado.Error!.Code.Should().Be("Inscricao.CampoNaoEncontrado");
-        await erick.Verificador.Received(1).RegistrarDesfechoAsync(
-            Arg.Is<IReadOnlyCollection<DecisaoDeAcesso>>(d =>
-                d.Count == 1 && d.Single() is DecisaoNegada && d.Single().Resultado == ResultadoDoAcesso.Negado
-                && ((DecisaoNegada)d.Single()).Requisito.Permissao == CodigoDaClasse),
-            IntencaoDoRegistro.Pedido,
-            Arg.Any<CancellationToken>());
-        await erick.Verificador.DidNotReceive().ExigirAsync(
-            Arg.Is<PermissionRequirement>(r => r.Permissao == CodigoRevelar), Arg.Any<ResourceContext?>(), Arg.Any<CancellationToken>());
-        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
+        erick.DecisoesRegistradas().Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject.Registro.Permissao.Should().Be(CodigoDaClasse);
+        await erick.NaoExigiuAsync(CodigoRevelar);
         await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LerIdentificadorAsync(default, default);
     }
+
+    [Theory(DisplayName = "Inscrição que não existe, pedida sem uma das três permissões, responde 404 e registra só a primeira negada, sem o id do resource")]
+    [InlineData(false, true, true, "selecao:inscricoes:consultar")]
+    [InlineData(true, false, true, "selecao:dados-identificadores:consultar")]
+    [InlineData(true, true, false, "selecao:dados-identificadores:revelar")]
+    public async Task Inexistente_SemAPermissao_RegistraAPrimeiraNegadaSemId(bool consultar, bool classe, bool revelar, string negada)
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        DecisoesDeAcessoDeTeste kevin = Persona("kevin.carvalho", consultar, classe, revelar);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, cenario.Montar(), kevin.Verificador, Guid.CreateVersion7());
+
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
+        DecisaoNegada registrada = kevin.DecisoesRegistradas().Should().ContainSingle().Which.Should().BeOfType<DecisaoNegada>().Subject;
+        registrada.Registro.Permissao.Should().Be(negada);
+        registrada.Registro.ResourceId.Should().BeNull();
+        registrada.Registro.FatoCodigo.Should().BeNull();
+        registrada.Registro.MotivoNegativa.Should().Be("sem_concessao_aplicavel");
+    }
+
+    [Fact(DisplayName = "Inscrição que não existe, pedida por quem tem as três permissões, responde 404 sem registrar nada")]
+    public async Task Inexistente_ComAsTresPermissoes_NaoRegistra()
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        DecisoesDeAcessoDeTeste erick = Persona("erick.araujo", consultar: true, classe: true, revelar: true);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, cenario.Montar(), erick.Verificador, Guid.CreateVersion7());
+
+        resultado.Error!.Code.Should().Be(CodigoDoCampoNaoEncontrado);
+        await erick.NaoRegistrouNadaAsync();
+    }
+
+    [Theory(DisplayName = "O impedimento e a identidade incompleta respondem o que são, e não o 404 do campo")]
+    [InlineData(ResultadoDoAcesso.Impedido, ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso)]
+    [InlineData(ResultadoDoAcesso.IdentidadeIncompleta, ProcessoSeletivoErrorCodes.IdentidadeIncompleta)]
+    public async Task ImpedimentoEIdentidadeIncompleta_RespondemOQueSao(ResultadoDoAcesso desfecho, string codigo)
+    {
+        InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
+        InscricaoAdministrativaDeTeste.Mundo mundo = Mundo(cenario, PersonasDeTeste.FernandaDrumond.Valor);
+        IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
+        verificador.ExigirAsync(default!, default, default).ReturnsForAnyArgs(desfecho);
+
+        Result<CampoReveladoDto> resultado = await Revelar(cenario, mundo, verificador);
+
+        resultado.Error!.Code.Should().Be(codigo);
+        await mundo.Inscricoes.DidNotReceiveWithAnyArgs().LocalizarIdentificadorAsync(default, default!, default, default, default);
+    }
+
+    private static DecisoesDeAcessoDeTeste Persona(string nome, bool consultar, bool classe, bool revelar) =>
+        new(
+            nome,
+            [
+                .. consultar ? [PermissaoSelecao.InscricoesConsultar] : Array.Empty<PermissaoSelecao>(),
+                .. classe ? [PermissaoSelecao.DadosIdentificadoresConsultar] : Array.Empty<PermissaoSelecao>(),
+                .. revelar ? [PermissaoSelecao.DadosIdentificadoresRevelar] : Array.Empty<PermissaoSelecao>(),
+            ]);
+
+    private static DecisoesDeAcessoDeTeste SemConsultarInscricoes() => Persona("kevin.carvalho", consultar: false, classe: true, revelar: true);
 
     private static InscricaoAdministrativaDeTeste CenarioComCpf() =>
         new InscricaoAdministrativaDeTeste(PersonasDeTeste.FernandaDrumond)
@@ -144,16 +210,20 @@ public sealed class RevelarCampoDaInscricaoQueryHandlerTests
     {
         InscricaoAdministrativaDeTeste cenario = CenarioComCpf();
 
-        return Revelar(cenario, Mundo(cenario, decifrado), new DecisoesDeAcessoDeTeste("diogo.souza", PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar));
+        return Revelar(cenario, Mundo(cenario, decifrado), Persona("diogo.souza", consultar: true, classe: true, revelar: true).Verificador);
     }
 
-    private static async Task<Result<CampoReveladoDto>> Revelar(
-        InscricaoAdministrativaDeTeste cenario, InscricaoAdministrativaDeTeste.Mundo mundo, DecisoesDeAcessoDeTeste persona)
+    private static Task<Result<CampoReveladoDto>> Revelar(
+        InscricaoAdministrativaDeTeste cenario, InscricaoAdministrativaDeTeste.Mundo mundo, IVerificadorDeAcesso verificador, Guid? inscricaoId = null)
     {
-        IUserContext usuario = Substitute.For<IUserContext>();
+        LeituraDaInscricaoAdministrativa leitura = new(mundo.Processos, mundo.Inscricoes, mundo.Documentos, mundo.Codecs);
 
-        return await RevelarCampoDaInscricaoQueryHandler.Handle(
-            new RevelarCampoDaInscricaoQuery(cenario.ProcessoId, cenario.InscricaoId, "CPF", null),
-            persona.Verificador, mundo.Processos, mundo.Inscricoes, mundo.Codecs, usuario, NullLogger.Instance, CancellationToken.None);
+        return RevelarCampoDaInscricaoQueryHandler.Handle(
+            new RevelarCampoDaInscricaoQuery(cenario.ProcessoId, inscricaoId ?? cenario.InscricaoId, "CPF", null),
+            new AcessoARevelacaoDoCampo(verificador, mundo.Processos, mundo.Inscricoes),
+            new LeituraDoIdentificador(leitura, mundo.Inscricoes),
+            Substitute.For<IUserContext>(),
+            NullLogger.Instance,
+            CancellationToken.None);
     }
 }

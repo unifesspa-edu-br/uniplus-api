@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -44,7 +45,7 @@ public sealed class RevelacaoDeIdentificadoresEndpointTests : IAsyncLifetime
     public async Task Revelacao_SemAPermissaoDaClasse_404ESoANegativaDaClasse()
     {
         CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nameof(Revelacao_SemAPermissaoDaClasse_404ESoANegativaDaClasse));
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Betina, cenario.Processo.UnidadeId, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Betina, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosPessoaisConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await RevelarAsync(PersonasDoAcesso.Betina, cenario, cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf);
 
@@ -139,7 +140,7 @@ public sealed class RevelacaoDeIdentificadoresEndpointTests : IAsyncLifetime
     {
         CenarioDeAcessoAosDados cenario = await SemearComPermissaoDeRevelarAsync(nameof(Revelacao_ForaDoAlcance_404));
         CenarioDeAcessoAosDados outroProcesso = await _cenarios.SemearAsync(nameof(Revelacao_ForaDoAlcance_404) + "-outro");
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Betina, Guid.CreateVersion7(), PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Betina, Guid.CreateVersion7(), PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage outraUnidade = await RevelarAsync(PersonasDoAcesso.Betina, cenario, cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf);
         using HttpResponseMessage deOutroProcesso = await RevelarAsync(PersonasDoAcesso.Diogo, cenario, outroProcesso.InscricaoId, ConjuntoBasicoDaInscricao.Cpf);
@@ -154,17 +155,35 @@ public sealed class RevelacaoDeIdentificadoresEndpointTests : IAsyncLifetime
     public async Task Revelacao_ServidoraInscrita_Impedida()
     {
         CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nameof(Revelacao_ServidoraInscrita_Impedida));
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Caroline, cenario.Processo.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Caroline, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
 
         using HttpResponseMessage resposta = await RevelarAsync(PersonasDoAcesso.Caroline, cenario, cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        _decisoes.DoAtor(PersonasDoAcesso.Caroline).Where(r => r.ProcessoId == cenario.Processo.Id && !r.Permitido).Should().ContainSingle()
+            .Which.MotivoNegativa.Should().Be(ValoresCanonicos.De(MotivoNegativa.ImpedidoPorInscricaoNoProcesso));
+    }
+
+    [Fact(DisplayName = "Sem a permissão de consultar as inscrições, a revelação é recusada antes de qualquer leitura: 404, só a negativa dessa permissão e nada decidido sobre a classe nem sobre revelar")]
+    public async Task Revelacao_SemConsultarInscricoes_RecusadaAntesDeQualquerLeitura()
+    {
+        CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nameof(Revelacao_SemConsultarInscricoes_RecusadaAntesDeQualquerLeitura));
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Diogo, cenario.Processo.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+
+        using HttpResponseMessage resposta = await RevelarAsync(PersonasDoAcesso.Diogo, cenario, cenario.InscricaoId, ConjuntoBasicoDaInscricao.Cpf);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await resposta.Content.ReadAsStringAsync()).Should().NotContain(PersonasDeTeste.FernandaDrumond.Valor);
+        RegistroDecisaoAcesso negativa = _decisoes.DoAtor(PersonasDoAcesso.Diogo).Where(r => r.ProcessoId == cenario.Processo.Id).Should().ContainSingle().Subject;
+        negativa.Permissao.Should().Be(PermissaoSelecao.InscricoesConsultar.Codigo);
+        negativa.Permitido.Should().BeFalse();
+        negativa.MotivoNegativa.Should().Be(ValoresCanonicos.De(MotivoNegativa.SemConcessaoAplicavel));
     }
 
     private async Task<CenarioDeAcessoAosDados> SemearComPermissaoDeRevelarAsync(string nome)
     {
         CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nome);
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Diogo, cenario.Processo.UnidadeId, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Diogo, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DadosIdentificadoresConsultar, PermissaoSelecao.DadosIdentificadoresRevelar);
         return cenario;
     }
 

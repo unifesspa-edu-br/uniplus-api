@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Services;
+using Services.InscricaoAdministrativa;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -27,6 +28,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
         AddDefinicaoDoCronogramaDeFases(services);
         AddCongelamentoDaVersao(services);
+        AddAcessoAoCampoEAoDocumentoDaInscricao(services);
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
@@ -43,6 +45,17 @@ public static class SelecaoApplicationServiceRegistration
     {
         services.AddScoped<MontagemDasFases>();
         services.AddScoped<DefinicaoDoCronogramaDeFases>();
+    }
+
+    // A decisão e a leitura da revelação de um campo e da abertura de um documento, pela consulta administrativa, guardam
+    // só as portas por construtor, e cada handler os recebe prontos, sem service location.
+    private static void AddAcessoAoCampoEAoDocumentoDaInscricao(IServiceCollection services)
+    {
+        services.AddScoped<AcessoARevelacaoDoCampo>();
+        services.AddScoped<LeituraDoIdentificador>();
+        services.AddScoped<ClassificacaoDaExigenciaDoArquivo>();
+        services.AddScoped<DecisaoDoAcessoAoDocumento>();
+        services.AddScoped<EmissaoDoAcessoAoArquivo>();
     }
 
     // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as

@@ -72,6 +72,15 @@ public static class AcessoAInscricao
         }
 
         ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(unidade, processoId, inscricaoId: null);
+        await RegistrarAPrimeiraNegadaAsync(verificador, requisitos, resource, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task RegistrarAPrimeiraNegadaAsync(
+        IVerificadorDeAcesso verificador,
+        IReadOnlyList<PermissionRequirement> requisitos,
+        ResourceContext resource,
+        CancellationToken cancellationToken)
+    {
         foreach (PermissionRequirement requisito in requisitos)
         {
             DecisaoDeAcesso decisao = await verificador.AvaliarAsync(requisito, resource, cancellationToken).ConfigureAwait(false);

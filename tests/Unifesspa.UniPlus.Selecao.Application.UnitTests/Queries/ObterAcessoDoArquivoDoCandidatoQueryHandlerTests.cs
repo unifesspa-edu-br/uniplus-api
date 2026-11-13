@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosDaInscricao;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -51,6 +52,12 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         arquivo.Confirmar("\"etag\"", TimeProvider.System);
         estado?.Invoke(arquivo);
         _documentos.ObterArquivoAsync(arquivo.Id, Arg.Any<CancellationToken>()).Returns(arquivo);
+        ListarNaInscricao(inscricaoId, arquivo, apresentacao);
+        return arquivo;
+    }
+
+    private void ListarNaInscricao(Guid inscricaoId, ArquivoDaApresentacao arquivo, ApresentacaoDeDocumento apresentacao)
+    {
         if (!_arquivosPorInscricao.TryGetValue(inscricaoId, out List<ArquivoDaApresentacao>? arquivos))
         {
             _arquivosPorInscricao[inscricaoId] = arquivos = [];
@@ -61,7 +68,6 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         _apresentacoesPorInscricao[inscricaoId].Add(apresentacao);
         _documentos.ListarArquivosDaInscricaoAsync(inscricaoId, Arg.Any<CancellationToken>()).Returns([.. arquivos]);
         _documentos.ListarApresentacoesDaInscricaoAsync(inscricaoId, Arg.Any<CancellationToken>()).Returns([.. _apresentacoesPorInscricao[inscricaoId]]);
-        return arquivo;
     }
 
     private Task<Result<AcessoArquivoDoCandidatoDto>> Acessar(Guid arquivoId, string sub = "sub-1", Guid? processoId = null, string? cpf = null)
@@ -70,8 +76,13 @@ public sealed class ObterAcessoDoArquivoDoCandidatoQueryHandlerTests
         usuario.Cpf.Returns(cpf ?? PersonasDeTeste.KevinCarvalho.Valor);
         usuario.UserId.Returns(sub);
         return ObterAcessoDoArquivoDoCandidatoQueryHandler.Handle(
-            new ObterAcessoDoArquivoDoCandidatoQuery(processoId ?? ProcessoId, arquivoId), _inscricoes, _documentos, _storage, usuario,
-            new RelogioFixo(DateTimeOffset.UnixEpoch), NullLogger.Instance, CancellationToken.None);
+            new ObterAcessoDoArquivoDoCandidatoQuery(processoId ?? ProcessoId, arquivoId),
+            _inscricoes,
+            _documentos,
+            new EmissaoDoAcessoAoArquivo(_documentos, _storage, new RelogioFixo(DateTimeOffset.UnixEpoch)),
+            usuario,
+            NullLogger.Instance,
+            CancellationToken.None);
     }
 
     [Fact(DisplayName = "O arquivo verificado do dono devolve a URL assinada na chave definitiva, com o nome de download que a listagem informa")]
