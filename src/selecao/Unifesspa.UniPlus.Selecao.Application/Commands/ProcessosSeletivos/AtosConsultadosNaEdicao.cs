@@ -24,13 +24,23 @@ internal sealed class AtosConsultadosNaEdicao
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
         Guid processoSeletivoId,
-        TimeProvider timeProvider)
+        DateTimeOffset agora)
     {
-        DateOnly hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        DateOnly hoje = DateOnly.FromDateTime(agora.UtcDateTime);
         _tiposVigentes = new LeituraMemoizada<string, TipoAtoPublicadoView>(
             (codigo, cancellationToken) => tipoAtoPublicadoReader.ObterVigenteAsync(codigo, hoje, cancellationToken),
             StringComparer.Ordinal);
         Congelados = new ClassificacaoDosTiposNaEdicao(processoSeletivoRepository, registroCodecs, processoSeletivoId);
+    }
+
+    public AtosConsultadosNaEdicao(
+        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        IRegistroCodecsEnvelope registroCodecs,
+        Guid processoSeletivoId,
+        TimeProvider timeProvider)
+        : this(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, processoSeletivoId, timeProvider.GetUtcNow())
+    {
     }
 
     /// <summary>A classificação congelada na versão publicada e as âncoras que ela já tem.</summary>
@@ -53,11 +63,13 @@ internal sealed class AtosConsultadosNaEdicao
             return Result<ClassificacaoDoAtoConsultado>.ValidationFailure(congelada.Errors);
         }
 
-        if (congelada.Value is { } daVersaoPublicada)
-        {
-            return Result<ClassificacaoDoAtoConsultado>.Success(new ClassificacaoDoAtoConsultado.Conhecida(daVersaoPublicada));
-        }
+        return congelada.Value is { } daVersaoPublicada
+            ? Result<ClassificacaoDoAtoConsultado>.Success(new ClassificacaoDoAtoConsultado.Conhecida(daVersaoPublicada))
+            : await ClassificacaoDoCatalogoAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
+    }
 
+    private async Task<Result<ClassificacaoDoAtoConsultado>> ClassificacaoDoCatalogoAsync(string atoCodigo, CancellationToken cancellationToken)
+    {
         TipoAtoPublicadoView? vigente = await TipoVigenteAsync(atoCodigo, cancellationToken).ConfigureAwait(false);
         return Result<ClassificacaoDoAtoConsultado>.Success(vigente is null
             ? new ClassificacaoDoAtoConsultado.SemVersaoVigente()

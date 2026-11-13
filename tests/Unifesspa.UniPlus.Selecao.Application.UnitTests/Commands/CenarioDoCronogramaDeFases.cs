@@ -101,6 +101,15 @@ internal sealed class CenarioDoCronogramaDeFases
         return this;
     }
 
+    /// <summary>As fases da versão publicada vigente que já começaram.</summary>
+    public TimeProvider Relogio { get; set; } = TimeProvider.System;
+
+    public CenarioDoCronogramaDeFases ComFasesIniciadas(FasesIniciadas iniciadas)
+    {
+        FasesIniciadas.ObterAsync(default, default, default).ReturnsForAnyArgs(iniciadas);
+        return this;
+    }
+
     public CenarioDoCronogramaDeFases ComUnidadeNoCadastro(UnidadeResponsavelSnapshot unidade)
     {
         UnidadeResponsavel.ResolverAsync(unidade.OrigemId, Arg.Any<CancellationToken>()).Returns(unidade);
@@ -151,9 +160,11 @@ internal sealed class CenarioDoCronogramaDeFases
 
     private Task<Result<MutacaoAceita>> ChamarHandlerAsync(DefinirCronogramaFasesCommand command, IProcessoSeletivoRepository repositorio) =>
         DefinirCronogramaFasesCommandHandler.Handle(
-            command, repositorio, FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader,
-            PrecedenciaFaseReader, RegraCatalogoReader, TipoAtoPublicadoReader, Codecs, FasesIniciadas, UnitOfWork,
-            TimeProvider.System, CancellationToken.None);
+            command, repositorio, DefinicaoSobre(repositorio), UnitOfWork, Relogio, CancellationToken.None);
+
+    private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
+        new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader),
+        PrecedenciaFaseReader, FasesIniciadas, TipoAtoPublicadoReader, repositorio, Codecs);
 
     private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)
     {

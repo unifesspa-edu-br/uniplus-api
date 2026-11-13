@@ -4,70 +4,35 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
-
 /// <summary>
-/// Handler do <see cref="DefinirCronogramaFasesCommand"/>: monta as fases (ver <see cref="MontagemDasFases"/>)
-/// com a data do relógio injetado lida <b>uma vez</b> por operação (ADR-0068), entrega ao domínio o grafo de
-/// precedências vigente como parâmetro, e não como navegação (ADR-0042), e delega a validação final ao
-/// agregado. A recusa do domínio sai como LOTE: a conclusão do ciclo recursal acumula uma violação por fase
-/// mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma.
+/// Handler do <see cref="DefinirCronogramaFasesCommand"/>: trava o processo para edição, delega a definição do
+/// cronograma (ver <see cref="DefinicaoDoCronogramaDeFases"/>) com o relógio injetado lido <b>uma vez</b> por
+/// operação (ADR-0068) e grava. A recusa do domínio sai como LOTE: a conclusão do ciclo recursal acumula uma
+/// violação por fase mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma.
 /// </summary>
 public static class DefinirCronogramaFasesCommandHandler
 {
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirCronogramaFasesCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IFaseCanonicaReader faseCanonicaReader,
-        IResolvedorDaUnidadeResponsavel unidadeResponsavelResolvedor,
-        ITipoBancaReader tipoBancaReader,
-        ICategoriaDocumentoReader categoriaDocumentoReader,
-        IPrecedenciaFaseReader precedenciaFaseReader,
-        IRegraCatalogoReader regraCatalogoReader,
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
-        IRegistroCodecsEnvelope registroCodecs,
-        IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
+        DefinicaoDoCronogramaDeFases definicao,
         ISelecaoUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(precedenciaFaseReader);
-        ArgumentNullException.ThrowIfNull(fasesIniciadasDoProcesso);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(timeProvider);
 
         Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
-        if (obtido.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(obtido.Error!);
-        }
-
-        ProcessoSeletivo processo = obtido.Value!;
-        CadastrosDasFases cadastros = new(
-            faseCanonicaReader, unidadeResponsavelResolvedor, tipoBancaReader, categoriaDocumentoReader, regraCatalogoReader);
-        AtosConsultadosNaEdicao atos = new(
-            tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider);
-        FasesIniciadas iniciadas = processo.Rascunho is null
-            ? FasesIniciadas.Nenhuma
-            : await fasesIniciadasDoProcesso
-                .ObterAsync(processo.Id, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        Result definida = await DefinirAsync(
-                processo, command, new MontagemDasFases(processo, cadastros, atos), (precedenciaFaseReader, iniciadas), cancellationToken)
-            .ConfigureAwait(false);
-        if (definida.IsFailure)
-        {
-            return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
-        }
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return obtido.IsFailure
+            ? Result<MutacaoAceita>.Failure(obtido.Error!)
+            : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
     // A precondição precede a resolução de regras externas (ADR-0110).
@@ -87,26 +52,21 @@ public static class DefinirCronogramaFasesCommandHandler
             : Result<ProcessoSeletivo>.Success(processo);
     }
 
-    // O grafo de precedências é parâmetro do domínio, e não navegação (ADR-0042): é lido depois de as fases
-    // serem montadas, e só se elas vieram sem recusa.
-    private static async Task<Result> DefinirAsync(
+    private static async Task<Result<MutacaoAceita>> DefinirEGravarAsync(
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
-        MontagemDasFases montagem,
-        (IPrecedenciaFaseReader Precedencias, FasesIniciadas Iniciadas) leituras,
+        DefinicaoDoCronogramaDeFases definicao,
+        ISelecaoUnitOfWork unitOfWork,
+        DateTimeOffset agora,
         CancellationToken cancellationToken)
     {
-        Result<List<FaseCronograma>> fases = await montagem.MontarAsync(command.Fases, cancellationToken).ConfigureAwait(false);
-        if (fases.IsFailure)
+        Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
+        if (definida.IsFailure)
         {
-            return Result.ValidationFailure(fases.Errors);
+            return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
         }
 
-        IReadOnlyList<PrecedenciaFaseView> arestasVivas = await leituras.Precedencias
-            .ListarVivasAsync(cancellationToken)
-            .ConfigureAwait(false);
-        List<ArestaPrecedencia> precedencias = [.. arestasVivas
-            .Select(static a => new ArestaPrecedencia(a.AntecessoraCodigo, a.SucessoraCodigo, a.PermiteSobreposicao))];
-        return processo.DefinirCronogramaFases(fases.Value!, precedencias, command.Precondicao, leituras.Iniciadas);
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
 }

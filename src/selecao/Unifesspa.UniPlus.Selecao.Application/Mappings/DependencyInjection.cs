@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Services;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
@@ -26,6 +27,7 @@ public static class SelecaoApplicationServiceRegistration
         System.Reflection.Assembly assembly = typeof(SelecaoApplicationServiceRegistration).Assembly;
 
         services.AddValidatorsFromAssembly(assembly);
+        AddDefinicaoDoCronogramaDeFases(services);
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
@@ -34,5 +36,13 @@ public static class SelecaoApplicationServiceRegistration
         services.AddSingleton<IPortaDePermissaoPorPar, PortaDePermissaoPorPar<PermissaoSelecao>>();
 
         return services;
+    }
+
+    // O serviço de definição e a montagem das fases não guardam estado de uma edição para outra: as portas entram
+    // por construtor, e o handler recebe os dois prontos.
+    private static void AddDefinicaoDoCronogramaDeFases(IServiceCollection services)
+    {
+        services.AddScoped<MontagemDasFases>();
+        services.AddScoped<DefinicaoDoCronogramaDeFases>();
     }
 }
