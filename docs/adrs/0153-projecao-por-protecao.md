@@ -46,7 +46,7 @@ Não é a opção C: a decisão é por permissão e contexto, pedida ao ponto de
 
 ### Escopo
 
-Vale para as rotas administrativas, inclusive exportação e relatório. O titular fica fora: acessa os próprios dados sem concessão ([ADR-0152](0152-governanca-das-concessoes-de-acesso.md)).
+Vale para as rotas administrativas, inclusive exportação e relatório. O titular fica fora: acessa os próprios dados sem concessão ([ADR-0152](0152-governanca-das-concessoes-de-acesso.md)). A exceção é a leitura feita pelas partes de um pedido de concessão, registrada com a fonte `titularidade` desde a [ADR-0166](0166-registro-da-leitura-das-partes-do-pedido-por-titularidade.md).
 
 ### Vocabulário
 
@@ -259,3 +259,7 @@ Descartados também, dentro da opção escolhida: a permissão de acesso ao reso
 ## Emenda: manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato (#2366)
 
 A [ADR-0163](0163-manifestacao-tecnica-por-ciclo-na-protecao-do-catalogo.md) emenda a seção "Aprovação da proteção de dados como pré-condição". O circuito de aprovação de cada tipo de documento e de cada fato ganha o número do ciclo, que avança a cada reinício de item já solicitado, e o estado das manifestações técnicas do ciclo. O ato da aprovação passa a guardar a justificativa, que é obrigatória na aprovação e no ajuste diante de manifestação desfavorável vigente.
+
+## Emenda: leitura das partes de um pedido de concessão registrada por titularidade (#2389)
+
+A [ADR-0166](0166-registro-da-leitura-das-partes-do-pedido-por-titularidade.md) emenda a seção "Escopo". A leitura feita pelo solicitante ou pelo beneficiário de um pedido de concessão (a fila dos próprios pedidos, o detalhe, a trilha e o anexo) deixa de ficar fora do registro de acesso: cada item exibido gera um registro permitido com a fonte (`fonteGrant`) `titularidade` e a permissão `autorizacao:pedidos:ler-proprios`, código fixo fora do catálogo de permissões e não concedível, e a falha ao gravar responde 503 sem dado, como nas demais leituras registradas. A parte que tem `autorizacao:pedidos:consultar` continua registrada por essa permissão. As demais leituras do titular, como as próprias inscrições, continuam fora. O schema do tópico continua na `v1`.
