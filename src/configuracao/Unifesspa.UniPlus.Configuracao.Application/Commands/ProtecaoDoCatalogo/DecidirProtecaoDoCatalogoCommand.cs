@@ -8,35 +8,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// está numa solicitação (ADR-0153): aprova a proteção declarada, recomenda o ajuste indicando a classificação correta,
 /// ou a reprova com a justificativa.
 /// </summary>
-/// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
-/// <param name="ItemId">Identificador do tipo de documento ou do fato.</param>
-/// <param name="Decisao"><c>APROVAR</c>, <c>RECOMENDAR_AJUSTE</c> ou <c>REPROVAR</c>.</param>
-/// <param name="ClassificacaoProtecao">Token canônico da classificação que o Representante do controlador conferiu, como a listagem a mostra.</param>
-/// <param name="HipoteseLegal">Token canônico da hipótese legal que o Representante do controlador conferiu.</param>
-/// <param name="FinalidadeTratamento">A finalidade do tratamento que o Representante do controlador conferiu.</param>
-/// <param name="Ciclo">O ciclo de aprovação lido no item (<c>aprovacao.ciclo</c>).</param>
-/// <param name="ManifestacoesNoCiclo">
-/// Quantas manifestações técnicas o ciclo tinha na leitura (<c>aprovacao.manifestacoesNoCiclo</c>): a manifestação
-/// registrada depois dela faz a decisão responder conflito (UNI-REQ-0374).
-/// </param>
-/// <param name="ClassificacaoRecomendada">Token canônico da classificação; obrigatório no ajuste e recusado nas demais decisões.</param>
-/// <param name="Justificativa">
-/// Motivo da decisão, de até 2.000 caracteres: obrigatório na reprovação; na aprovação e no ajuste, opcional, salvo
-/// diante de manifestação técnica desfavorável vigente, que o exige (UNI-REQ-0374). Fica registrado no ato da decisão.
-/// </param>
+/// <param name="Item">O cadastro e o identificador do item.</param>
+/// <param name="Decisao">A decisão, a classificação recomendada e a justificativa.</param>
+/// <param name="ProtecaoConferida">A proteção que o Representante do controlador conferiu.</param>
+/// <param name="Lida">O ciclo e a contagem de manifestações que ele leu no item.</param>
 /// <remarks>
-/// <c>Cadastro</c>, <c>Decisao</c> e a proteção conferida são <c>string?</c> para que o campo ausente seja recusado no
-/// próprio campo, junto das demais violações (ADR-0125). A decisão vale sobre a proteção que o Representante do controlador viu: se o
-/// item foi editado e reenviado depois disso, a proteção vigente difere da conferida e a decisão responde conflito.
+/// As partes chegam como o corpo as informa, com campos anuláveis, para que o ausente seja recusado no próprio campo,
+/// junto das demais violações, num único lote (ADR-0125): quem as lê é <see cref="PedidoDeDecisao"/>. A decisão vale
+/// sobre a proteção e o circuito que o Representante do controlador leu: se o item foi editado, ou recebeu manifestação,
+/// depois disso, a decisão responde conflito.
 /// </remarks>
 public sealed record DecidirProtecaoDoCatalogoCommand(
-    string? Cadastro,
-    Guid ItemId,
-    string? Decisao,
-    string? ClassificacaoProtecao,
-    string? HipoteseLegal,
-    string? FinalidadeTratamento,
-    int? Ciclo,
-    int? ManifestacoesNoCiclo,
-    string? ClassificacaoRecomendada = null,
-    string? Justificativa = null) : ICommand<Result>;
+    ItemInformado Item,
+    DecisaoInformada Decisao,
+    ProtecaoInformada ProtecaoConferida,
+    LeituraInformada Lida) : ICommand<Result>;

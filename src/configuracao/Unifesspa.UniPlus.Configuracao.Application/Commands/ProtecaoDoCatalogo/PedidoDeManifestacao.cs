@@ -21,9 +21,9 @@ public sealed record PedidoDeManifestacao(ItemDaProtecao Item, CicloDaAprovacao 
         ArgumentNullException.ThrowIfNull(command);
 
         List<FieldError> erros = [];
-        ItemDaProtecao? item = ItemDaProtecao.Ler(command.Cadastro, command.ItemId, erros);
+        ItemDaProtecao? item = ItemDaProtecao.Ler(command.Item.Cadastro, command.Item.ItemId, erros);
         CicloDaAprovacao? ciclo = CicloDaAprovacao.Ler(command.Ciclo, erros);
-        ConteudoDaManifestacao? conteudo = ConteudoDaManifestacao.Ler(command.Parecer, command.Texto, erros);
+        ConteudoDaManifestacao? conteudo = ConteudoDaManifestacao.Ler(command.Conteudo.Parecer, command.Conteudo.Texto, erros);
 
         return erros.Count > 0
             ? Result<PedidoDeManifestacao>.ValidationFailure(erros)

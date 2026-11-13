@@ -54,7 +54,8 @@ public sealed class LeituraDoCircuitoTests
 
         Do(tipo).Registrar(tipo.Aprovacao, tipo.Aprovacao.Ciclo, Adequada(), Kevin, TipoDocumentoNaAprovacaoBuilder.Segunda);
 
-        lida.ConferirCom(tipo.Aprovacao).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+        lida.ConferirCom(tipo.Aprovacao).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+            e.Field == "manifestacoesNoCiclo" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
     }
 
     [Fact(DisplayName = "O ciclo lido diferente do corrente recusa a leitura por conflito")]
@@ -62,7 +63,7 @@ public sealed class LeituraDoCircuitoTests
     {
         TipoDocumento tipo = new TipoDocumentoNaAprovacaoBuilder().Solicitado().Build();
 
-        new LeituraDoCircuito(new CicloDaAprovacao(2), 0).ConferirCom(tipo.Aprovacao).Error!.Code
-            .Should().Be(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+        new LeituraDoCircuito(new CicloDaAprovacao(2), 0).ConferirCom(tipo.Aprovacao).Errors.Should().ContainSingle()
+            .Which.Should().Match<FieldError>(e => e.Field == "ciclo" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
     }
 }

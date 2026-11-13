@@ -16,7 +16,7 @@ public sealed class PedidoDeManifestacaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        PedidoDeManifestacao pedido = PedidoDeManifestacao.Ler(new("FATO", id, 2, "INADEQUADA", " O dado é sensível. ")).Value!;
+        PedidoDeManifestacao pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("FATO", id), 2, new ConteudoInformado("INADEQUADA", " O dado é sensível. "))).Value!;
 
         pedido.Item.Should().Be(new ItemDaProtecao(CadastroDoCatalogo.Fato, id));
         pedido.Ciclo.Should().Be(new CicloDaAprovacao(2));
@@ -26,7 +26,8 @@ public sealed class PedidoDeManifestacaoTests
     [Fact(DisplayName = "O cadastro, o ciclo, o parecer e o texto inválidos saem juntos, cada um no seu campo")]
     public void Ler_FormaInvalida_AcumulaRecusas()
     {
-        Result<PedidoDeManifestacao> pedido = PedidoDeManifestacao.Ler(new("MODALIDADE", Guid.NewGuid(), null, "TALVEZ", new string('a', 2001)));
+        Result<PedidoDeManifestacao> pedido = PedidoDeManifestacao.Ler(
+            new(new ItemInformado("MODALIDADE", Guid.NewGuid()), null, new ConteudoInformado("TALVEZ", new string('a', 2001))));
 
         pedido.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("cadastro", ProtecaoDoCatalogoErrorCodes.CadastroInvalido),
@@ -41,7 +42,7 @@ public sealed class PedidoDeManifestacaoTests
     [InlineData("ADEQUADA", true)]
     public void Ler_TextoNoParecer(string parecer, bool aceito)
     {
-        Result<PedidoDeManifestacao> pedido = PedidoDeManifestacao.Ler(new("TIPO_DOCUMENTO", Guid.NewGuid(), 1, parecer, null));
+        Result<PedidoDeManifestacao> pedido = PedidoDeManifestacao.Ler(new(new ItemInformado("TIPO_DOCUMENTO", Guid.NewGuid()), 1, new ConteudoInformado(parecer)));
 
         pedido.IsSuccess.Should().Be(aceito);
         pedido.Errors.Select(static e => e.Error.Code).Should().Equal(aceito ? [] : new[] { ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoObrigatorio });

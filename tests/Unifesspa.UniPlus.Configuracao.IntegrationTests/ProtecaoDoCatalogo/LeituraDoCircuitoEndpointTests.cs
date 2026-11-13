@@ -57,6 +57,25 @@ public sealed class LeituraDoCircuitoEndpointTests : ManifestacaoDaProtecaoTestB
         await DeveSerConflitoSemNovaTentativaAsync(manifestacao, "decisao_ja_tomada");
     }
 
+    [Fact(DisplayName = "A proteção editada e a manifestação registrada depois da leitura chegam juntas ao errors[] do 409, com protecao_mudou no topo")]
+    public async Task ProtecaoEManifestacaoDepoisDaLeitura_ErrorsComOsDoisCodigos()
+    {
+        await PrepararTodosAsync();
+        using HttpClient client = Fixture.Factory.CreateClient();
+        Guid id = await SolicitadoAsync(client, "TIPO_DOCUMENTO");
+        LeituraDoCircuitoLida lida = await LerOCircuitoAsync(client, Betina, "TIPO_DOCUMENTO", id);
+        (await ManifestarAsync(client, Kevin, "TIPO_DOCUMENTO", id, "ADEQUADA", texto: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        HttpResponseMessage resposta = await DecidirSobreALeituraAsync(client, new("TIPO_DOCUMENTO", id, "APROVAR", "SENSIVEL"), lida);
+
+        JsonElement problema = await resposta.Content.ReadFromJsonAsync<JsonElement>();
+        (resposta.StatusCode, problema.GetProperty("code").GetString()).Should().Be(
+            (HttpStatusCode.Conflict, "uniplus.configuracao.protecao_do_catalogo.protecao_mudou"));
+        problema.GetProperty("errors").EnumerateArray().Select(static e => (e.GetProperty("field").GetString(), e.GetProperty("code").GetString())).Should().Equal(
+            ("classificacaoProtecao", "uniplus.configuracao.protecao_do_catalogo.protecao_mudou"),
+            ("manifestacoesNoCiclo", "uniplus.configuracao.protecao_do_catalogo.manifestacao_nao_lida"));
+    }
+
     [Fact(DisplayName = "A decisão sem o ciclo e a contagem de manifestações lidos é recusada nos dois campos")]
     public async Task DecisaoSemLeitura_422()
     {

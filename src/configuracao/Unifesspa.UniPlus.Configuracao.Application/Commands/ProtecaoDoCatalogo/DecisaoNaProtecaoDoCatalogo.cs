@@ -79,16 +79,24 @@ public sealed class DecisaoNaProtecaoDoCatalogo
     }
 
     // A decisão vale sobre a proteção e o circuito que o Representante do controlador leu: a proteção editada e a
-    // manifestação registrada depois da leitura saem juntas no lote de conflitos; sem conflito, a justificativa que a
-    // manifestação exige e a classificação recomendada saem juntas no lote de recusas, antes de qualquer mudança no item.
+    // manifestação registrada depois da leitura saem juntas no lote de conflitos, cada recusa no campo que divergiu, para
+    // as duas chegarem ao errors[] da resposta (ADR-0125); sem conflito, a justificativa que a manifestação exige e a
+    // classificação recomendada saem juntas no lote de recusas, antes de qualquer mudança no item.
     private static Result Conferir(IItemSobAprovacao item, PedidoDeDecisao pedido)
     {
-        List<FieldError> conflitos = [.. pedido.Lida.ConferirCom(item.Aprovacao).Errors];
-        if (item.Protecao != pedido.ProtecaoConferida)
-        {
-            conflitos.Insert(0, new FieldError(null, ProtecaoMudou));
-        }
-
+        List<FieldError> conflitos = [.. ProtecaoMudada(item.Protecao, pedido.ProtecaoConferida), .. pedido.Lida.ConferirCom(item.Aprovacao).Errors];
         return conflitos.Count > 0 ? Result.ValidationFailure(conflitos) : pedido.Decisao.Conferir(item.Aprovacao, item.Protecao);
+    }
+
+    // Um conflito por eixo da proteção que difere do conferido, no campo do corpo da decisão que o levou.
+    private static IEnumerable<FieldError> ProtecaoMudada(ProtecaoDeDados vigente, ProtecaoDeDados conferida)
+    {
+        (string Campo, bool Mudou)[] eixos =
+        [
+            ("classificacaoProtecao", vigente.Classificacao != conferida.Classificacao),
+            ("hipoteseLegal", vigente.Hipotese != conferida.Hipotese),
+            ("finalidadeTratamento", !string.Equals(vigente.Finalidade, conferida.Finalidade, StringComparison.Ordinal)),
+        ];
+        return eixos.Where(static e => e.Mudou).Select(static e => new FieldError(e.Campo, ProtecaoMudou));
     }
 }

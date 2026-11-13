@@ -37,14 +37,17 @@ public readonly record struct LeituraDoCircuito(CicloDaAprovacao Ciclo, int Mani
 
     /// <summary>
     /// Confere a leitura contra o <paramref name="circuito"/>: o ciclo e a contagem iguais aos gravados. Senão, a falha
-    /// <c>ManifestacaoNaoLida</c>, sem campo, que pede a releitura.
+    /// <c>ManifestacaoNaoLida</c>, que pede a releitura, no campo que divergiu: <c>ciclo</c> quando o item foi reiniciado
+    /// depois da leitura; <c>manifestacoesNoCiclo</c> quando houve manifestação no mesmo ciclo. O campo leva a recusa ao
+    /// <c>errors[]</c> da resposta, junto dos demais conflitos do lote (ADR-0125).
     /// </summary>
     public Result ConferirCom(AprovacaoDaProtecao circuito)
     {
         ArgumentNullException.ThrowIfNull(circuito);
 
-        return Ciclo == circuito.Ciclo && ManifestacoesNoCiclo == circuito.ManifestacoesNoCiclo
-            ? Result.Success()
-            : Result.Failure(ManifestacaoNaoLida);
+        string? divergente = Ciclo != circuito.Ciclo ? "ciclo"
+            : ManifestacoesNoCiclo != circuito.ManifestacoesNoCiclo ? "manifestacoesNoCiclo"
+            : null;
+        return divergente is null ? Result.Success() : Result.ValidationFailure([new FieldError(divergente, ManifestacaoNaoLida)]);
     }
 }

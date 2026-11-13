@@ -34,7 +34,10 @@ public sealed record DecidirProtecaoDoCatalogoRequest(
     string? ClassificacaoRecomendada = null,
     string? Justificativa = null)
 {
+    // O corpo continua plano, porque é o contrato; o comando recebe as partes agrupadas, ainda não conferidas.
     public DecidirProtecaoDoCatalogoCommand ParaComando() => new(
-        Cadastro, ItemId, Decisao, ClassificacaoProtecao, HipoteseLegal, FinalidadeTratamento, Ciclo, ManifestacoesNoCiclo,
-        ClassificacaoRecomendada, Justificativa);
+        new ItemInformado(Cadastro, ItemId),
+        new DecisaoInformada(Decisao, ClassificacaoRecomendada, Justificativa),
+        new ProtecaoInformada(ClassificacaoProtecao, HipoteseLegal, FinalidadeTratamento),
+        new LeituraInformada(Ciclo, ManifestacoesNoCiclo));
 }
