@@ -1,21 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosDaInscricao;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -27,6 +20,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -48,37 +42,17 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
 
     public DocumentoDaInscricaoIntegrationTests(InscricaoDbFixture db, MinioContainerFixture minio)
     {
-        ArgumentNullException.ThrowIfNull(minio);
         _db = db;
-
-        Dictionary<string, string?> config = new()
-        {
-            ["Storage:Endpoint"] = minio.Endpoint,
-            ["Storage:AccessKey"] = MinioContainerFixture.AccessKey,
-            ["Storage:SecretKey"] = MinioContainerFixture.SecretKey,
-            ["Storage:BucketName"] = "uniplus-documentos-test",
-        };
-        ServiceCollection services = new();
-        services.AddUniPlusStorage(
-            new ConfigurationBuilder().AddInMemoryCollection(config).Build(),
-            new HostingEnvironment { EnvironmentName = Environments.Production });
-        ServiceProvider provider = services.BuildServiceProvider();
-        _bucketes = provider.GetRequiredService<IStorageService>();
+        _bucketes = new ArmazenamentoDeTesteNoMinio(minio, "uniplus-documentos-test").Bucketes;
         _storage = new ArquivoDoCandidatoStorageService(
             new ArmazenamentoDoCandidato(_bucketes), Options.Create(new ArquivosDoCandidatoOptions { BucketDeEnvio = BucketDeEnvio, BucketDefinitivo = BucketDefinitivo }));
     }
 
-    private async Task<(SelecaoDbContext Context, DocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Arquivo)> PendenteAsync()
+    private async Task<ArquivoPendenteDaInscricao> PendenteAsync()
     {
         SelecaoDbContext context = _db.CreateDbContext();
-        InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
-        Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
-        await inscricoes.AdicionarAsync(inscricao);
-
-        DocumentoExigido laudo = DocumentoExigido.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
+        Inscricao inscricao = await GravarInscricaoAsync(context);
+        DocumentoExigido laudo = ExigenciaDoLaudo();
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             apresentacao.Id, inscricao.Id, laudo, "application/pdf", Pdf.Length, TimeProvider.System, PrazosDoArquivoEnviado.Envio).Value!;
@@ -86,8 +60,21 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         await repositorio.AdicionarApresentacaoAsync(apresentacao);
         await repositorio.AdicionarArquivoAsync(arquivo);
         await context.SaveChangesAsync();
-        return (context, repositorio, arquivo);
+        return new ArquivoPendenteDaInscricao(context, repositorio, arquivo);
     }
+
+    private async Task<Inscricao> GravarInscricaoAsync(SelecaoDbContext context)
+    {
+        InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
+        Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        await inscricoes.AdicionarAsync(inscricao);
+        return inscricao;
+    }
+
+    private static DocumentoExigido ExigenciaDoLaudo() => DocumentoExigido.Criar(
+        Guid.CreateVersion7(), Guid.CreateVersion7(), "LAUDO", "Laudo médico", "SAUDE", ProtecaoDoDocumentoDeTeste.Pessoal,
+        Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
+        [], [], null, FormatosPermitidos.Criar(false, [("PDF", null)]).Value!, null).Value!;
 
     private async Task GravarAsync(string bucket, string chave)
     {
@@ -98,7 +85,8 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
     [Fact(DisplayName = "A URL de leitura entrega o arquivo do bucket definitivo como download, com nome genérico codificado em filename*, sem a chave do objeto")]
     public async Task Leitura_UrlEntregaAttachmentComNomeGenerico()
     {
-        (SelecaoDbContext context, _, ArquivoDaApresentacao arquivo) = await PendenteAsync();
+        using ArquivoPendenteDaInscricao pendente = await PendenteAsync();
+        ArquivoDaApresentacao arquivo = pendente.Arquivo;
         await GravarAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista);
 
         string url = await _storage.GerarUrlLeituraAsync(arquivo.ChaveDefinitivaPrevista, "Arquivo 1.pdf", TimeSpan.FromMinutes(1));
@@ -109,23 +97,21 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         resposta.Content.Headers.ContentDisposition!.ToString().Should().Be("attachment; filename*=UTF-8''Arquivo%201.pdf");
         (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(Pdf);
         resposta.Content.Headers.ContentDisposition.ToString().Should().NotContain(arquivo.Id.ToString("D"));
-        context.Dispose();
     }
 
     [Fact(DisplayName = "A disposição vai na assinatura: trocar attachment por inline na URL de leitura é recusado pelo armazenamento")]
     public async Task Leitura_DisposicaoAdulteradaERecusada()
     {
-        (SelecaoDbContext context, _, ArquivoDaApresentacao arquivo) = await PendenteAsync();
-        await GravarAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista);
+        using ArquivoPendenteDaInscricao pendente = await PendenteAsync();
+        await GravarAsync(BucketDefinitivo, pendente.Arquivo.ChaveDefinitivaPrevista);
 
-        string url = await _storage.GerarUrlLeituraAsync(arquivo.ChaveDefinitivaPrevista, "Arquivo 1.pdf", TimeSpan.FromMinutes(1));
+        string url = await _storage.GerarUrlLeituraAsync(pendente.Arquivo.ChaveDefinitivaPrevista, "Arquivo 1.pdf", TimeSpan.FromMinutes(1));
         string adulterada = url.Replace("attachment", "inline", StringComparison.Ordinal);
 
         adulterada.Should().NotBe(url, "a disposição está na query da URL assinada");
         using HttpClient http = new();
         using HttpResponseMessage resposta = await http.GetAsync(new Uri(adulterada));
         resposta.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
-        context.Dispose();
     }
 
     [Fact(DisplayName = "O banco recusa a apresentação sem nome do documento")]
@@ -147,59 +133,47 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
     [Fact(DisplayName = "O pendente vencido sai com a apresentação que ficou sem arquivo, e o arquivo em verificação nunca sai")]
     public async Task RemoverPendenteVencido_LimpaAApresentacaoSemArquivo_EPoupaOEmVerificacao()
     {
-        (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao pendente) = await PendenteAsync();
-        (SelecaoDbContext outroContext, DocumentoDaInscricaoRepository outroRepositorio, ArquivoDaApresentacao emVerificacao) = await PendenteAsync();
-        emVerificacao.Confirmar("\"etag\"", TimeProvider.System).IsSuccess.Should().BeTrue();
-        outroRepositorio.Atualizar(emVerificacao);
-        await outroContext.SaveChangesAsync();
+        using ArquivoPendenteDaInscricao pendente = await PendenteAsync();
+        using ArquivoPendenteDaInscricao emVerificacao = await PendenteAsync();
+        await emVerificacao.ColocarEmVerificacaoAsync();
         DateTimeOffset depoisDoPrazo = DateTimeOffset.UtcNow.AddDays(1);
 
-        (await repositorio.RemoverSePendenteVencidoAsync(pendente.Id, depoisDoPrazo)).Should().BeTrue();
-        (await outroRepositorio.RemoverSePendenteVencidoAsync(emVerificacao.Id, depoisDoPrazo)).Should().BeFalse();
+        (await pendente.Repositorio.RemoverSePendenteVencidoAsync(pendente.Arquivo.Id, depoisDoPrazo)).Should().BeTrue();
+        (await emVerificacao.Repositorio.RemoverSePendenteVencidoAsync(emVerificacao.Arquivo.Id, depoisDoPrazo)).Should().BeFalse();
 
         await using SelecaoDbContext leitura = _db.CreateDbContext();
-        (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == pendente.Id)).Should().BeFalse();
-        (await leitura.ApresentacoesDeDocumento.AnyAsync(a => a.Id == pendente.ApresentacaoId)).Should().BeFalse();
-        (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == emVerificacao.Id)).Should().BeTrue();
-        context.Dispose();
-        outroContext.Dispose();
+        (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == pendente.Arquivo.Id)).Should().BeFalse();
+        (await leitura.ApresentacoesDeDocumento.AnyAsync(a => a.Id == pendente.Arquivo.ApresentacaoId)).Should().BeFalse();
+        (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == emVerificacao.Arquivo.Id)).Should().BeTrue();
     }
 
     [Fact(DisplayName = "A conclusão da verificação é atômica: só a primeira transição de um arquivo em verificação grava, a segunda não altera a linha")]
     public async Task TentarConcluirVerificacao_SoAPrimeiraTransicaoGrava()
     {
-        (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) = await PendenteAsync();
-        arquivo.Confirmar("\"etag\"", TimeProvider.System).IsSuccess.Should().BeTrue();
-        repositorio.Atualizar(arquivo);
-        await context.SaveChangesAsync();
+        using ArquivoPendenteDaInscricao pendente = await PendenteAsync();
+        await pendente.ColocarEmVerificacaoAsync();
+        Guid arquivoId = pendente.Arquivo.Id;
 
-        (await repositorio.TentarConcluirVerificacaoAsync(arquivo.Id, SituacaoDoArquivoDoCandidato.Recusado)).Should().BeTrue();
-        (await repositorio.TentarConcluirVerificacaoAsync(arquivo.Id, SituacaoDoArquivoDoCandidato.ReenvioNecessario)).Should().BeFalse();
+        (await pendente.Repositorio.TentarConcluirVerificacaoAsync(arquivoId, SituacaoDoArquivoDoCandidato.Recusado)).Should().BeTrue();
+        (await pendente.Repositorio.TentarConcluirVerificacaoAsync(arquivoId, SituacaoDoArquivoDoCandidato.ReenvioNecessario)).Should().BeFalse();
 
         await using SelecaoDbContext leitura = _db.CreateDbContext();
-        (await leitura.ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == arquivo.Id)).Situacao
+        (await leitura.ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == arquivoId)).Situacao
             .Should().Be(SituacaoDoArquivoDoCandidato.Recusado);
-        context.Dispose();
     }
 
     [Fact(DisplayName = "A rotina apaga só a chave definitiva do arquivo removido e deixa o bucket de envio para a expiração dele")]
     public async Task Rotina_ApagaSoADefinitiva()
     {
-        (SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) = await PendenteAsync();
-        arquivo.Confirmar("\"etag\"", TimeProvider.System).IsSuccess.Should().BeTrue();
-        arquivo.RegistrarVerificado(Pdf.Length, new string('a', 64), FormatoPermitido.Pdf).Should().BeTrue();
-        await GravarAsync(BucketDeEnvio, arquivo.ObjectKey);
-        await GravarAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista);
-        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(repositorio, arquivo, DateTimeOffset.UtcNow, CancellationToken.None);
-        await context.SaveChangesAsync();
+        using ArquivoPendenteDaInscricao pendente = await PendenteAsync();
+        ArquivoDaApresentacao arquivo = await PrepararParaALimpezaAsync(pendente);
 
-        await Rotina(context, repositorio, DateTimeOffset.UtcNow).ExecutarAsync(CancellationToken.None);
+        await Rotina(pendente).ExecutarAsync(CancellationToken.None);
 
         (await _bucketes.ObterMetadadosAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista)).Should().BeNull();
         (await _bucketes.ObterMetadadosAsync(BucketDeEnvio, arquivo.ObjectKey)).Should().NotBeNull("a API não remove nada do bucket de envio");
         await using SelecaoDbContext leitura = _db.CreateDbContext();
         (await leitura.ChavesALimpar.AnyAsync(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista)).Should().BeFalse("a chave sai da agenda");
-        context.Dispose();
     }
 
     [Fact(DisplayName = "Duas réplicas na reconciliação: só a que obtém a exclusividade da transação executa, e a outra executa depois que a primeira termina")]
@@ -221,8 +195,19 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         (await repoSegunda.TentarObterExclusividadeDaReconciliacaoAsync()).Should().BeTrue("a exclusividade acaba com a transação");
     }
 
-    [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Port da Application, o mesmo que a rotina real consome.")]
-    private RemocaoDeArquivosPendentesVencidos Rotina(SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, DateTimeOffset agora) => new(
-        new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), repositorio,
-        Substitute.For<IArquivoArmazenadoStorage>(), _storage, new RelogioFixo(agora), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
+    private async Task<ArquivoDaApresentacao> PrepararParaALimpezaAsync(ArquivoPendenteDaInscricao pendente)
+    {
+        ArquivoDaApresentacao arquivo = pendente.Arquivo;
+        arquivo.Confirmar("\"etag\"", TimeProvider.System).IsSuccess.Should().BeTrue();
+        arquivo.RegistrarVerificado(Pdf.Length, new string('a', 64), FormatoPermitido.Pdf).Should().BeTrue();
+        await GravarAsync(BucketDeEnvio, arquivo.ObjectKey);
+        await GravarAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista);
+        await AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(pendente.Repositorio, arquivo, DateTimeOffset.UtcNow, CancellationToken.None);
+        await pendente.Context.SaveChangesAsync();
+        return arquivo;
+    }
+
+    private RemocaoDeArquivosPendentesVencidos Rotina(ArquivoPendenteDaInscricao pendente) => new(
+        new DocumentoAPublicarRepository(pendente.Context), new ModeloDeDocumentoRepository(pendente.Context), pendente.Repositorio,
+        Substitute.For<IArquivoArmazenadoStorage>(), _storage, new RelogioFixo(DateTimeOffset.UtcNow), NullLogger<RemocaoDeArquivosPendentesVencidos>.Instance);
 }
