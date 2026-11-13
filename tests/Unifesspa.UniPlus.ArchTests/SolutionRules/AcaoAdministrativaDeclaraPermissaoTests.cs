@@ -149,26 +149,36 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
     [Fact(DisplayName = "Fitness_DecisaoDeNegocioPassaPeloPontoUnico")]
     public void Fitness_DecisaoDeNegocioPassaPeloPontoUnico()
     {
+        ConferirAsFixturesDaRegra();
+
+        IReadOnlyList<Type> controllers = ControllersDaSolucao.Todos();
+        controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t).Where(a => DeclaraDecisao(t, a)))
+            .Select(static a => a.DeclaringType!.Assembly.GetName().Name)
+            .Distinct()
+            .Should().HaveCountGreaterThan(1, "o ponto único protege actions de mais de um módulo");
+        ConferirAsListasFechadas(controllers);
+        Sozinhas(controllers).Should().BeEmpty(
+            "action administrativa declara [ExigePermissao<…>], [ExigePermissaoNoProcesso] ou [ExigeLeituraDoProcesso]; só [Authorize] não decide acesso");
+    }
+
+    // A regra acusa a action só autenticada e a sem atributo, e aceita a decidida pelo ponto único e a da política de identidade.
+    private static void ConferirAsFixturesDaRegra()
+    {
         Sozinhas([typeof(FixturesDeAutorizacao.AcaoAdministrativaSoAutenticada)])
             .Should().ContainSingle().Which.Should().Contain("Publicar");
         Sozinhas([typeof(FixturesDeAutorizacao.AcaoAdministrativaSemAtributo)])
             .Should().ContainSingle().Which.Should().Contain("Publicar");
         Sozinhas([typeof(FixturesDeAutorizacao.AcaoAdministrativaDecididaPeloPontoUnico)]).Should().BeEmpty();
         Sozinhas([typeof(FixturesDeAutorizacao.PoliticaDeIdentidade)]).Should().BeEmpty("a ação da instalação é identificada pela política");
+    }
 
-        IReadOnlyList<Type> controllers = ControllersDaSolucao.Todos();
+    private static void ConferirAsListasFechadas(IReadOnlyList<Type> controllers)
+    {
         HashSet<string> acoes = [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t).Select(a => Acao(t, a.Name)))];
-
-        controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t).Where(a => DeclaraDecisao(t, a)))
-            .Select(static a => a.DeclaringType!.Assembly.GetName().Name)
-            .Distinct()
-            .Should().HaveCountGreaterThan(1, "o ponto único protege actions de mais de um módulo");
         DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
             "a lista fechada só nomeia actions que existem; action removida ou renomeada sai da lista");
         DecididasNoHandler.Values.Should().AllSatisfy(static mensagem => HandlerDe(mensagem)
             .GetParameters().Should().Contain(static p => p.ParameterType == typeof(IVerificadorDeAcesso)));
-        Sozinhas(controllers).Should().BeEmpty(
-            "action administrativa declara [ExigePermissao<…>], [ExigePermissaoNoProcesso] ou [ExigeLeituraDoProcesso]; só [Authorize] não decide acesso");
     }
 
     private static List<string> Sozinhas(IEnumerable<Type> controllers)
