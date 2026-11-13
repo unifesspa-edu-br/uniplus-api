@@ -45,6 +45,12 @@ public sealed partial class JanelaDeMigracao : EntityBase
 
     public DateTimeOffset AbertaEm { get; private set; }
 
+    /// <summary>
+    /// A ordem em que as janelas foram abertas, dada pelo banco: a última janela do perfil é a de maior abertura e, no
+    /// mesmo instante, a de maior ordem de registro.
+    /// </summary>
+    public long OrdemDeRegistro { get; private set; }
+
     public DateTimeOffset Prazo { get; private set; }
 
     public DateTimeOffset? EncerradaEm { get; private set; }

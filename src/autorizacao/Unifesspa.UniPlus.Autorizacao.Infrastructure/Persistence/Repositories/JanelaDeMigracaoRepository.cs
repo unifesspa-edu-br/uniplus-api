@@ -32,6 +32,7 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
         await ComFilhas(_context.JanelasDeMigracao.AsNoTracking())
             .Where(j => j.PerfilId == perfilId)
             .OrderByDescending(j => j.AbertaEm)
+            .ThenByDescending(j => j.OrdemDeRegistro)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -116,7 +117,7 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
         Guid concessaoId, CancellationToken cancellationToken = default) =>
         await _context.DecisoesDaMigracao.AsNoTracking()
             .Where(d => d.ConcessaoId == concessaoId)
-            .OrderBy(d => d.Instante).ThenBy(d => d.Id)
+            .OrderBy(d => d.Instante).ThenBy(d => d.OrdemDeRegistro)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

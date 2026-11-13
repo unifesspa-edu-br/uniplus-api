@@ -50,6 +50,7 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.Motivo).HasMaxLength(PedidoDeConcessao.MotivoMaxLength);
         builder.Property(d => d.Instante).IsRequired();
+        builder.Property(d => d.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
         builder.Property(d => d.PermissoesAvaliadas).IsRequired();
         builder.Property(d => d.SensibilidadeAvaliada).HasMaxLength(SensibilidadeMaxLength).IsRequired();
         builder.Property(d => d.Dispensa).HasMaxLength(CodigoMaxLength);
@@ -57,5 +58,6 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
         builder.Ignore(d => d.Decisor);
 
         builder.HasIndex(d => d.PedidoId).HasDatabaseName("ix_pedido_decisoes_pedido");
+        builder.HasIndex(d => d.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_pedido_decisoes_ordem_de_registro");
     }
 }

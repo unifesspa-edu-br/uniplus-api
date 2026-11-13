@@ -483,6 +483,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("lote_de_origem_id");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.Property<Guid>("PerfilId")
                         .HasColumnType("uuid")
                         .HasColumnName("perfil_id");
@@ -503,6 +510,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_decisoes_da_migracao");
+
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_decisoes_da_migracao_ordem_de_registro");
 
                     b.HasIndex("JanelaId", "PerfilId")
                         .HasDatabaseName("ix_decisoes_da_migracao_janela_id_perfil_id");
@@ -731,6 +742,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("motivo");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.Property<Guid>("PedidoId")
                         .HasColumnType("uuid")
                         .HasColumnName("pedido_id");
@@ -754,6 +772,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_pedido_decisoes");
+
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_pedido_decisoes_ordem_de_registro");
 
                     b.HasIndex("PedidoId")
                         .HasDatabaseName("ix_pedido_decisoes_pedido");
@@ -1399,6 +1421,13 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("numero_da_versao_nova");
 
+                    b.Property<long>("OrdemDeRegistro")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ordem_de_registro");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("OrdemDeRegistro"));
+
                     b.Property<Guid>("PerfilId")
                         .HasColumnType("uuid")
                         .HasColumnName("perfil_id");
@@ -1430,6 +1459,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Migrations
 
                     b.HasAlternateKey("Id", "PerfilId")
                         .HasName("ak_janelas_de_migracao_id_perfil_id");
+
+                    b.HasIndex("OrdemDeRegistro")
+                        .IsUnique()
+                        .HasDatabaseName("ux_janelas_de_migracao_ordem_de_registro");
 
                     b.HasIndex("PerfilId")
                         .IsUnique()

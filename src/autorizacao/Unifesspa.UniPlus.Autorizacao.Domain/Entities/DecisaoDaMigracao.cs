@@ -53,6 +53,12 @@ public sealed class DecisaoDaMigracao : IForensicEntity
 
     public DateTimeOffset Instante { get; private set; }
 
+    /// <summary>
+    /// A ordem em que as decisões foram registradas, dada pelo banco: desempata duas decisões da mesma concessão do mesmo
+    /// instante, que o lote da janela serializa sob a trava das concessões.
+    /// </summary>
+    public long OrdemDeRegistro { get; private set; }
+
     public Identidade? Decisor =>
         DecisorEmissor is null || DecisorSub is null ? null : new Identidade(DecisorEmissor, DecisorSub, DecisorNome);
 

@@ -63,6 +63,8 @@ internal sealed class JanelaDeMigracaoConfiguration : IEntityTypeConfiguration<J
     {
         builder.Property(j => j.NumeroDaVersaoNova).IsRequired();
         builder.Property(j => j.AbertaEm).IsRequired();
+        builder.Property(j => j.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
+        builder.HasIndex(j => j.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_janelas_de_migracao_ordem_de_registro");
         builder.Property(j => j.Prazo).IsRequired();
         builder.Property(j => j.Forma).HasColumnName("forma_do_encerramento").HasConversion(FormaConverter).HasMaxLength(FormaMaxLength);
         builder.Property(j => j.MotivoDoEncerramento).HasMaxLength(JanelaDeMigracao.MotivoMaxLength);

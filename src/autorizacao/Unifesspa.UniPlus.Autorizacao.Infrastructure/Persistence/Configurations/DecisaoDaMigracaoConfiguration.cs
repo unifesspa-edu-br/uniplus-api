@@ -65,6 +65,8 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         builder.Property(d => d.AcrescimoAvaliado).IsRequired();
         builder.Property(d => d.Prazo).IsRequired();
         builder.Property(d => d.Instante).IsRequired();
+        builder.Property(d => d.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
+        builder.HasIndex(d => d.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_decisoes_da_migracao_ordem_de_registro");
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<DecisaoDaMigracao> builder)
