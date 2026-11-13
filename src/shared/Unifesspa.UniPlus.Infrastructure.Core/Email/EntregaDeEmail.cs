@@ -62,9 +62,8 @@ public sealed partial class EntregaDeEmail(
 
         string mascarado = DestinatarioValido(mensagem).Mascarado;
 
-        await EnviarAsync(mensagem, mascarado, envelope.Attempts, cancellationToken).ConfigureAwait(false);
+        DateTimeOffset aceite = await EnviarAsync(mensagem, mascarado, envelope.Attempts, cancellationToken).ConfigureAwait(false);
 
-        DateTimeOffset aceite = relogio.GetUtcNow();
         metricas.RegistrarEnvio(aceite, aceite - envelope.SentAt);
         LogEnviado(logger, mensagem.Finalidade, mensagem.MensagemId, envelope.Attempts, mascarado);
     }
@@ -82,11 +81,14 @@ public sealed partial class EntregaDeEmail(
         return destinatario.Value!;
     }
 
-    private async Task EnviarAsync(EnviarEmail mensagem, string mascarado, int tentativa, CancellationToken cancellationToken)
+    // Devolve o instante do aceite do relay, que é onde o atraso termina; o encerramento da sessão fica de fora.
+    private async Task<DateTimeOffset> EnviarAsync(EnviarEmail mensagem, string mascarado, int tentativa, CancellationToken cancellationToken)
     {
+        DateTimeOffset? aceite = null;
         try
         {
-            await transporte.EnviarAsync(mensagem, cancellationToken).ConfigureAwait(false);
+            await transporte.EnviarAsync(mensagem, () => aceite = relogio.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            return aceite ?? relogio.GetUtcNow();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

@@ -15,6 +15,7 @@ internal sealed class RelaySmtpLento : IAsyncDisposable
     private readonly CancellationTokenSource _parada = new();
     private readonly ConcurrentQueue<string> _recebidas = new();
     private readonly TaskCompletionSource _lentaAceita = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _primeiraEntregue = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _lentasPendentes;
     private Task _aceite = Task.CompletedTask;
 
@@ -29,6 +30,9 @@ internal sealed class RelaySmtpLento : IAsyncDisposable
 
     /// <summary>Conclui quando a primeira conexão lenta foi aceita e está presa.</summary>
     public Task LentaAceita => _lentaAceita.Task;
+
+    /// <summary>Conclui quando o relay aceitou a primeira mensagem.</summary>
+    public Task PrimeiraEntregue => _primeiraEntregue.Task;
 
     public static RelaySmtpLento Iniciar(int conexoesLentas)
     {
@@ -95,12 +99,18 @@ internal sealed class RelaySmtpLento : IAsyncDisposable
             string comando = Comando(linha);
             if (comando == "DATA")
             {
-                await escritor.WriteLineAsync("354 envie a mensagem");
-                _recebidas.Enqueue(await LerMensagemAsync(leitor, cancellationToken));
+                await ReceberMensagemAsync(leitor, escritor, cancellationToken);
             }
 
             await escritor.WriteLineAsync(comando == "QUIT" ? "221 encerrado" : "250 ok");
         }
+    }
+
+    private async Task ReceberMensagemAsync(StreamReader leitor, StreamWriter escritor, CancellationToken cancellationToken)
+    {
+        await escritor.WriteLineAsync("354 envie a mensagem");
+        _recebidas.Enqueue(await LerMensagemAsync(leitor, cancellationToken));
+        _primeiraEntregue.TrySetResult();
     }
 
     private static string Comando(string linha) => (linha.Length > 4 ? linha[..4] : linha).ToUpperInvariant();
