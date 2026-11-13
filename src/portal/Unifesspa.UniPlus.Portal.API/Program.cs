@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Infrastructure.Core.Observability;
 using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Infrastructure.Core.Routing;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Portal.API;
 using Unifesspa.UniPlus.Portal.API.Errors;
 using Unifesspa.UniPlus.Portal.Application;
@@ -21,6 +22,9 @@ using Unifesspa.UniPlus.Portal.Infrastructure.Origens;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Relógio único do processo: instantes em microssegundos, como o banco os persiste.
+builder.Services.Replace(ServiceDescriptor.Singleton<TimeProvider>(RelogioEmMicrossegundos.DoSistema));
 
 // service.name canônico — ver explicação em Selecao.API/Program.cs. Single
 // source of truth em UniPlusServiceNames evita drift entre logs e traces.
@@ -33,15 +37,6 @@ builder.Services.AddControllers();
 
 // Controllers e Minimal APIs têm pipelines JSON distintos; o método configura os dois.
 builder.Services.AddUniPlusJsonOptions();
-
-// TimeProvider — registrado explicitamente porque Selecao/Ingresso o ganham
-// indiretamente via AddCursorPagination/AddIdempotency, mas o Portal (esqueleto)
-// não invoca nenhum dos dois. Sem este TryAdd, o PingController falha na
-// ativação. TryAddSingleton
-// preserva overrides de teste (ex.: FakeTimeProvider) — alinhado com o
-// padrão usado em CursorPaginationServiceCollectionExtensions e
-// IdempotencyServiceCollectionExtensions.
-builder.Services.TryAddSingleton(TimeProvider.System);
 
 builder.Services.AddEndpointsApiExplorer();
 // OpenAPI 3.1 (ADR-0030) — documento nomeado por módulo + transformers Uni+

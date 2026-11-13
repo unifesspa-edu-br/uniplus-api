@@ -72,19 +72,22 @@ public static class SchemaRegistryServiceCollectionExtensions
     /// <c>TryAddSingleton</c> e respeita o registro prévio, evitando duplicação de cache. O hosted service e o routing
     /// do Wolverine usam então a mesma instância. A posse do cliente e do provider OAuth fica com o
     /// <see cref="SchemaRegistryDoBootstrap"/>, registrado em <paramref name="services"/> para o host descartá-lo no
-    /// encerramento.
+    /// encerramento. O <paramref name="relogio"/> é o mesmo registrado no container pelo host: o bootstrap roda antes
+    /// do <c>Build</c>, então um relógio trocado depois, nos testes, não chega ao provider OAuth.
     /// </remarks>
     public static ISchemaRegistryClient CreateClient(
         SchemaRegistrySettings settings,
         ILoggerFactory loggerFactory,
-        IServiceCollection services)
+        IServiceCollection services,
+        TimeProvider relogio)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(relogio);
         ExigirUrl(settings);
 
-        SchemaRegistryDoBootstrap dono = new(settings, loggerFactory);
+        SchemaRegistryDoBootstrap dono = new(settings, loggerFactory, relogio);
         RegistrarPosse(services, dono);
 
         return dono.Cliente;
@@ -168,13 +171,11 @@ public static class SchemaRegistryServiceCollectionExtensions
     /// <summary>
     /// Registro defensivo, via <see cref="IHttpClientFactory"/>, para o caller que usa só
     /// <see cref="AddSchemaRegistry"/>, sem o cliente standalone. Quando <see cref="CreateClient"/> vem antes (caminho
-    /// canônico do Seleção), o provider dele já está registrado e o <c>TryAdd</c> o respeita. O relógio canônico
-    /// (ADR-0068) é registrado aqui para o provider o resolver por <c>GetRequiredService</c>, fail-fast; o
-    /// <c>TryAdd</c> preserva o override de teste.
+    /// canônico do Seleção), o provider dele já está registrado e o <c>TryAdd</c> o respeita. O provider resolve o
+    /// <see cref="TimeProvider"/> do host por <c>GetRequiredService</c>, fail-fast.
     /// </summary>
     private static void RegistrarAutenticacaoOAuthBearer(IServiceCollection services)
     {
-        services.TryAddSingleton(TimeProvider.System);
         services.AddHttpClient<OAuthBearerAuthenticationHeaderValueProvider>();
         services.TryAddSingleton<IAuthenticationHeaderValueProvider>(AutenticacaoOAuthBearerDoContainer);
     }

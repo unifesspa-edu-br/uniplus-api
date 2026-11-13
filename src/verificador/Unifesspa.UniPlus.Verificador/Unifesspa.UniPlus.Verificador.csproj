@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Kernel\Unifesspa.UniPlus.Kernel.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.Verificador.Contratos\Unifesspa.UniPlus.Verificador.Contratos.csproj" />
   </ItemGroup>
 

@@ -1795,6 +1795,7 @@
           "OpenTelemetry.Extensions.Hosting": "[1.20.0, )",
           "OpenTelemetry.Instrumentation.Runtime": "[1.20.0, )",
           "PdfPig": "[0.1.16, )",
+          "Unifesspa.UniPlus.Kernel": "[1.0.0, )",
           "Unifesspa.UniPlus.Verificador.Contratos": "[1.0.0, )",
           "WolverineFx": "[5.41.0, )",
           "WolverineFx.RabbitMQ": "[5.41.0, )"

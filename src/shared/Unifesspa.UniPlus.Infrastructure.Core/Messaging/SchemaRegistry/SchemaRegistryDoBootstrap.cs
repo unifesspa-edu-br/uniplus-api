@@ -26,14 +26,15 @@ internal sealed class SchemaRegistryDoBootstrap : IHostedService, IDisposable
 {
     private readonly OAuthBearerAuthenticationHeaderValueProvider? _autenticacao;
 
-    public SchemaRegistryDoBootstrap(SchemaRegistrySettings settings, ILoggerFactory loggerFactory)
+    public SchemaRegistryDoBootstrap(SchemaRegistrySettings settings, ILoggerFactory loggerFactory, TimeProvider relogio)
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(loggerFactory);
+        ArgumentNullException.ThrowIfNull(relogio);
 
         SchemaRegistryConfig configuracao = SchemaRegistryServiceCollectionExtensions.ConfiguracaoDoCliente(settings);
         _autenticacao = SchemaRegistryServiceCollectionExtensions.UsaOAuthBearer(settings)
-            ? AutenticacaoOAuth(settings, loggerFactory)
+            ? AutenticacaoOAuth(settings, loggerFactory, relogio)
             : null;
         Cliente = _autenticacao is null
             ? new CachedSchemaRegistryClient(configuracao)
@@ -58,11 +59,11 @@ internal sealed class SchemaRegistryDoBootstrap : IHostedService, IDisposable
     // Composition root genuíno (o callback do Wolverine roda antes de builder.Build(), sem IServiceProvider): o
     // HttpClient é próprio do provider, que o dispõe.
     private static OAuthBearerAuthenticationHeaderValueProvider AutenticacaoOAuth(
-        SchemaRegistrySettings settings, ILoggerFactory loggerFactory) =>
+        SchemaRegistrySettings settings, ILoggerFactory loggerFactory, TimeProvider relogio) =>
         new(
             new HttpClient(),
             ownsHttpClient: true,
             settings.OAuth,
             loggerFactory.CreateLogger<OAuthBearerAuthenticationHeaderValueProvider>(),
-            TimeProvider.System);
+            relogio);
 }

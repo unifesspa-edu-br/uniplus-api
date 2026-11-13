@@ -21,16 +21,7 @@ public sealed class ConferenciaEnderecoGeoSemOAuthTests
     [Fact(DisplayName = "Sem endpoint OAuth configurado, a conferência no Geo é falha fechada, não exceção")]
     public async Task Conferir_SemTokenEndpoint_FalhaFechada()
     {
-        IConfiguration configuracao = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["Geo:BaseUrl"] = "https://geo.exemplo.test" })
-            .Build();
-
-        ServiceCollection servicos = new();
-        servicos.AddLogging();
-        servicos.AddSingleton(configuracao);
-        servicos.AddGeoClient();
-
-        await using ServiceProvider provedor = servicos.BuildServiceProvider();
+        await using ServiceProvider provedor = ProvedorSemTokenEndpoint();
         await using AsyncServiceScope escopo = provedor.CreateAsyncScope();
         IConferenciaEnderecoGeo conferencia = escopo.ServiceProvider.GetRequiredService<IConferenciaEnderecoGeo>();
 
@@ -41,5 +32,20 @@ public sealed class ConferenciaEnderecoGeoSemOAuthTests
         cep.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
         municipio.IsFailure.Should().BeTrue();
         municipio.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);
+    }
+
+    private static ServiceProvider ProvedorSemTokenEndpoint()
+    {
+        IConfiguration configuracao = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Geo:BaseUrl"] = "https://geo.exemplo.test" })
+            .Build();
+
+        ServiceCollection servicos = new();
+        servicos.AddLogging();
+        servicos.AddSingleton(configuracao);
+        servicos.AddSingleton(TimeProvider.System);
+        servicos.AddGeoClient();
+
+        return servicos.BuildServiceProvider();
     }
 }

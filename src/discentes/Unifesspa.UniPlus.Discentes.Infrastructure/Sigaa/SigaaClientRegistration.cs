@@ -55,7 +55,6 @@ public static class SigaaClientRegistration
     private static IServiceCollection RegistrarAcessoAoSigaa(IServiceCollection services, IConfiguration configuration)
     {
         RegistrarOpcoes(services, configuration);
-        services.TryAddSingleton(TimeProvider.System);
         RegistrarClienteDeAutenticacao(services);
         RegistrarClienteDeConsulta(services);
         RegistrarSincronizacao(services, configuration);

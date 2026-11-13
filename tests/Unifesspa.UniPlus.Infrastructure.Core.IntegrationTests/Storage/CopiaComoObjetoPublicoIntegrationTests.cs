@@ -31,30 +31,39 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
         "Autodeclaração étnico-racial.odt",
         new Dictionary<string, string> { ["sha256"] = new string('a', 64) });
 
-    [Fact(DisplayName = "A cópia grava no objeto público o tipo, o cache imutável, o nome de apresentação e a procedência")]
-    public async Task Copiar_GravaOsCabecalhosNoObjetoPublico()
+    [Fact(DisplayName = "A cópia grava no objeto público o conteúdo, o tipo e o cache imutável")]
+    public async Task Copiar_GravaOConteudoOTipoEOCacheImutavel()
     {
         await minio.ProvisionarAcervoPublicoAsync();
         await using ServiceProvider provider = Provider();
         IStorageService storage = provider.GetRequiredService<IStorageService>();
         byte[] conteudo = Encoding.UTF8.GetBytes("modelo de autodeclaração");
-        string origem = await EnviarAoPrivadoAsync(storage, conteudo);
         string destino = $"testes/{Guid.NewGuid():N}.odt";
 
-        bool copiou = await storage.CopiarComoObjetoPublicoAsync(
-            BucketPrivado, origem, MinioContainerFixture.BucketDoAcervoPublico, destino, Apresentacao);
+        bool copiou = await CopiarAsync(storage, conteudo, destino, Apresentacao);
+        using HttpResponseMessage resposta = await LerAnonimamenteAsync(destino);
 
         copiou.Should().BeTrue();
-        using HttpClient anonimo = new();
-        using HttpResponseMessage resposta = await anonimo.GetAsync(new Uri($"{minio.EnderecoDoAcervoPublico}/{destino}"));
-        resposta.EnsureSuccessStatusCode();
         (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(conteudo);
-        resposta.Content.Headers.NonValidated["Content-Type"].ToString().Should().Be("application/vnd.oasis.opendocument.text");
-        resposta.Headers.NonValidated["Cache-Control"].ToString().Should().Be("public, max-age=31536000, immutable");
-        resposta.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().Be(
+        Cabecalho(resposta, "Content-Type").Should().Be("application/vnd.oasis.opendocument.text");
+        Cabecalho(resposta, "Cache-Control").Should().Be("public, max-age=31536000, immutable");
+    }
+
+    [Fact(DisplayName = "A cópia grava no objeto público o nome de apresentação e a procedência")]
+    public async Task Copiar_GravaONomeDeApresentacaoEAProcedencia()
+    {
+        await minio.ProvisionarAcervoPublicoAsync();
+        await using ServiceProvider provider = Provider();
+        IStorageService storage = provider.GetRequiredService<IStorageService>();
+        string destino = $"testes/{Guid.NewGuid():N}.odt";
+
+        await CopiarAsync(storage, Encoding.UTF8.GetBytes("modelo de autodeclaração"), destino, Apresentacao);
+        using HttpResponseMessage resposta = await LerAnonimamenteAsync(destino);
+
+        Cabecalho(resposta, "Content-Disposition").Should().Be(
             "attachment; filename=\"Autodeclaracao etnico-racial.odt\"; "
             + "filename*=UTF-8''Autodeclara%C3%A7%C3%A3o%20%C3%A9tnico-racial.odt");
-        resposta.Headers.NonValidated["x-amz-meta-sha256"].ToString().Should().Be(new string('a', 64));
+        Cabecalho(resposta, "x-amz-meta-sha256").Should().Be(new string('a', 64));
     }
 
     [Fact(DisplayName = "O PDF é gravado para abrir no navegador, com o mesmo nome de apresentação")]
@@ -64,18 +73,12 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
         await using ServiceProvider provider = Provider();
         IStorageService storage = provider.GetRequiredService<IStorageService>();
         string destino = $"testes/{Guid.NewGuid():N}.pdf";
+        ApresentacaoDoObjetoPublico pdf = Apresentacao with { ContentType = "application/pdf", NomeDeApresentacao = "Edital de abertura.pdf" };
 
-        await storage.CopiarComoObjetoPublicoAsync(
-            BucketPrivado,
-            await EnviarAoPrivadoAsync(storage, Encoding.UTF8.GetBytes("%PDF-1.4 edital")),
-            MinioContainerFixture.BucketDoAcervoPublico,
-            destino,
-            Apresentacao with { ContentType = "application/pdf", NomeDeApresentacao = "Edital de abertura.pdf" });
+        await CopiarAsync(storage, Encoding.UTF8.GetBytes("%PDF-1.4 edital"), destino, pdf);
+        using HttpResponseMessage resposta = await LerAnonimamenteAsync(destino);
 
-        using HttpClient anonimo = new();
-        using HttpResponseMessage resposta = await anonimo.GetAsync(new Uri($"{minio.EnderecoDoAcervoPublico}/{destino}"));
-        resposta.EnsureSuccessStatusCode();
-        resposta.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().Be(
+        Cabecalho(resposta, "Content-Disposition").Should().Be(
             "inline; filename=\"Edital de abertura.pdf\"; filename*=UTF-8''Edital%20de%20abertura.pdf");
     }
 
@@ -86,19 +89,12 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
         await using ServiceProvider provider = Provider();
         IStorageService storage = provider.GetRequiredService<IStorageService>();
         string destino = $"testes/{Guid.NewGuid():N}.odt";
+        ApresentacaoDoObjetoPublico comEspacos = Apresentacao with { NomeDeApresentacao = "Declaração  de renda.odt" };
 
-        await storage.CopiarComoObjetoPublicoAsync(
-            BucketPrivado,
-            await EnviarAoPrivadoAsync(storage, Encoding.UTF8.GetBytes("declaração")),
-            MinioContainerFixture.BucketDoAcervoPublico,
-            destino,
-            Apresentacao with { NomeDeApresentacao = "Declaração  de renda.odt" });
+        await CopiarAsync(storage, Encoding.UTF8.GetBytes("declaração"), destino, comEspacos);
+        using HttpResponseMessage resposta = await LerAnonimamenteAsync(destino);
 
-        using HttpClient anonimo = new();
-        using HttpResponseMessage resposta = await anonimo.GetAsync(new Uri($"{minio.EnderecoDoAcervoPublico}/{destino}"));
-        resposta.EnsureSuccessStatusCode();
-        resposta.Content.Headers.NonValidated["Content-Disposition"].ToString().Should().EndWith(
-            "filename*=UTF-8''Declara%C3%A7%C3%A3o%20%20de%20renda.odt");
+        Cabecalho(resposta, "Content-Disposition").Should().EndWith("filename*=UTF-8''Declara%C3%A7%C3%A3o%20%20de%20renda.odt");
     }
 
     [Fact(DisplayName = "A cópia não sobrescreve o objeto público que já existe")]
@@ -109,19 +105,13 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
         IStorageService storage = provider.GetRequiredService<IStorageService>();
         byte[] primeiro = Encoding.UTF8.GetBytes("primeira cópia");
         string destino = $"testes/{Guid.NewGuid():N}.odt";
-        await storage.CopiarComoObjetoPublicoAsync(
-            BucketPrivado, await EnviarAoPrivadoAsync(storage, primeiro), MinioContainerFixture.BucketDoAcervoPublico, destino, Apresentacao);
+        await CopiarAsync(storage, primeiro, destino, Apresentacao);
 
-        bool copiou = await storage.CopiarComoObjetoPublicoAsync(
-            BucketPrivado,
-            await EnviarAoPrivadoAsync(storage, Encoding.UTF8.GetBytes("conteúdo que não pode entrar")),
-            MinioContainerFixture.BucketDoAcervoPublico,
-            destino,
-            Apresentacao);
+        bool copiou = await CopiarAsync(storage, Encoding.UTF8.GetBytes("conteúdo que não pode entrar"), destino, Apresentacao);
+        using HttpResponseMessage resposta = await LerAnonimamenteAsync(destino);
 
         copiou.Should().BeFalse();
-        using HttpClient anonimo = new();
-        (await anonimo.GetByteArrayAsync(new Uri($"{minio.EnderecoDoAcervoPublico}/{destino}"))).Should().Equal(primeiro);
+        (await resposta.Content.ReadAsByteArrayAsync()).Should().Equal(primeiro);
     }
 
     [Fact(DisplayName = "A cópia não cria o bucket público ausente: falha, e o bucket continua não existindo")]
@@ -136,8 +126,7 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
             BucketPrivado, origem, bucketAusente, "testes/modelo.odt", Apresentacao);
 
         await copiar.Should().ThrowAsync<Exception>();
-        IMinioClient cliente = provider.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
-        (await cliente.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketAusente))).Should().BeFalse(
+        (await BucketExisteAsync(provider, bucketAusente)).Should().BeFalse(
             "criado pela aplicação, o bucket nasceria privado e os endereços divulgados responderiam 403 em silêncio");
     }
 
@@ -149,18 +138,50 @@ public sealed class CopiaComoObjetoPublicoIntegrationTests(MinioContainerFixture
         return chave;
     }
 
+    private static async Task<bool> CopiarAsync(
+        IStorageService storage, byte[] conteudo, string destino, ApresentacaoDoObjetoPublico apresentacao) =>
+        await storage.CopiarComoObjetoPublicoAsync(
+            BucketPrivado,
+            await EnviarAoPrivadoAsync(storage, conteudo),
+            MinioContainerFixture.BucketDoAcervoPublico,
+            destino,
+            apresentacao);
+
+    private static async Task<bool> BucketExisteAsync(ServiceProvider provider, string bucket)
+    {
+        IMinioClient cliente = provider.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
+
+        return await cliente.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucket));
+    }
+
+    private static string Cabecalho(HttpResponseMessage resposta, string nome) =>
+        (resposta.Headers.NonValidated.Contains(nome)
+            ? resposta.Headers.NonValidated[nome]
+            : resposta.Content.Headers.NonValidated[nome]).ToString();
+
+    private async Task<HttpResponseMessage> LerAnonimamenteAsync(string destino)
+    {
+        using HttpClient anonimo = new();
+        HttpResponseMessage resposta = await anonimo.GetAsync(new Uri($"{minio.EnderecoDoAcervoPublico}/{destino}"));
+
+        return resposta.EnsureSuccessStatusCode();
+    }
+
+    private Dictionary<string, string?> ConfiguracaoDoMinio() => new()
+    {
+        ["Storage:Endpoint"] = minio.Endpoint,
+        ["Storage:AccessKey"] = MinioContainerFixture.AccessKey,
+        ["Storage:SecretKey"] = MinioContainerFixture.SecretKey,
+    };
+
     private ServiceProvider Provider()
     {
-        Dictionary<string, string?> config = new()
-        {
-            ["Storage:Endpoint"] = minio.Endpoint,
-            ["Storage:AccessKey"] = MinioContainerFixture.AccessKey,
-            ["Storage:SecretKey"] = MinioContainerFixture.SecretKey,
-        };
         ServiceCollection services = new();
+        services.AddSingleton(TimeProvider.System);
         services.AddUniPlusStorage(
-            new ConfigurationBuilder().AddInMemoryCollection(config).Build(),
+            new ConfigurationBuilder().AddInMemoryCollection(ConfiguracaoDoMinio()).Build(),
             new HostingEnvironment { EnvironmentName = Environments.Production });
+
         return services.BuildServiceProvider();
     }
 }

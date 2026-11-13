@@ -12,9 +12,12 @@ using Minio;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class StorageServiceCollectionExtensionsTests
 {
+    private static readonly TimeProvider Relogio = new RelogioFixo(new DateTimeOffset(2026, 11, 1, 12, 30, 0, TimeSpan.Zero));
+
     private static IConfiguration BuildConfig(Dictionary<string, string?> values) =>
         new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 
@@ -27,6 +30,42 @@ public sealed class StorageServiceCollectionExtensionsTests
         ["Storage:AccessKey"] = "ak-test",
         ["Storage:SecretKey"] = "sk-test",
     };
+
+    private static ServiceProvider Provedor(Dictionary<string, string?> values)
+    {
+        ServiceCollection services = new();
+        services.AddSingleton(Relogio);
+        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
+
+        return services.BuildServiceProvider();
+    }
+
+    private static Dictionary<string, string?> ConfigComTodasAsPropriedades() => new()
+    {
+        ["Storage:Endpoint"] = "storage.example:9000",
+        ["Storage:AccessKey"] = "ak",
+        ["Storage:SecretKey"] = "sk",
+        ["Storage:UseSSL"] = "true",
+        ["Storage:Region"] = "us-east-1",
+        ["Storage:BucketName"] = "uniplus-documentos",
+    };
+
+    private static Dictionary<string, string?> ConfigComEnderecoPublico() => new(CompleteConfig())
+    {
+        ["Storage:PublicEndpoint"] = "localhost:9000",
+    };
+
+    private static object? CampoDoArmazenamento(MinioStorageService storage, string nome) =>
+        typeof(MinioStorageService)
+            .GetField(nome, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(storage);
+
+    private static IStorageService ArmazenamentoDeUmEscopo(ServiceProvider sp)
+    {
+        using IServiceScope escopo = sp.CreateScope();
+
+        return escopo.ServiceProvider.GetRequiredService<IStorageService>();
+    }
 
     [Fact]
     public void AddUniPlusStorage_ServicesNulo_LancaArgumentNullException()
@@ -73,14 +112,9 @@ public sealed class StorageServiceCollectionExtensionsTests
     [Fact]
     public void AddUniPlusStorage_ConfigCompleta_ResolveIStorageServiceComoMinioStorageService()
     {
-        ServiceCollection services = new();
-        services.AddUniPlusStorage(BuildConfig(CompleteConfig()), Env(Environments.Production));
+        using ServiceProvider sp = Provedor(CompleteConfig());
 
-        using ServiceProvider sp = services.BuildServiceProvider();
-        using IServiceScope scope = sp.CreateScope();
-        IStorageService storage = scope.ServiceProvider.GetRequiredService<IStorageService>();
-
-        storage.Should().BeOfType<MinioStorageService>();
+        ArmazenamentoDeUmEscopo(sp).Should().BeOfType<MinioStorageService>();
     }
 
     [Fact]
@@ -113,15 +147,7 @@ public sealed class StorageServiceCollectionExtensionsTests
     [Fact]
     public void AddUniPlusStorage_EndpointDiferenteDePublicEndpoint_ClientesInternoEPublicoSaoDistintosComEndpointCorreto()
     {
-        Dictionary<string, string?> values = new(CompleteConfig())
-        {
-            ["Storage:PublicEndpoint"] = "localhost:9000",
-        };
-
-        ServiceCollection services = new();
-        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
-
-        using ServiceProvider sp = services.BuildServiceProvider();
+        using ServiceProvider sp = Provedor(ConfigComEnderecoPublico());
         IMinioClient interno = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
         IMinioClient publico = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey);
 
@@ -142,47 +168,21 @@ public sealed class StorageServiceCollectionExtensionsTests
     [Fact]
     public void AddUniPlusStorage_MinioStorageService_RecebeClienteInternoEPublicoCorretos()
     {
-        Dictionary<string, string?> values = new(CompleteConfig())
-        {
-            ["Storage:PublicEndpoint"] = "localhost:9000",
-            ["Storage:BucketName"] = "uniplus-documentos",
-        };
+        using ServiceProvider sp = Provedor(ConfigComEnderecoPublico());
+        MinioStorageService storage = (MinioStorageService)ArmazenamentoDeUmEscopo(sp);
 
-        ServiceCollection services = new();
-        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
-
-        using ServiceProvider sp = services.BuildServiceProvider();
-        using IServiceScope scope = sp.CreateScope();
-        MinioStorageService storage = (MinioStorageService)scope.ServiceProvider.GetRequiredService<IStorageService>();
-
-        IMinioClient internoEsperado = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey);
-        IMinioClient publicoEsperado = sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey);
-
-        typeof(MinioStorageService).GetField("_minioClient", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .GetValue(storage).Should().BeSameAs(internoEsperado);
-        typeof(MinioStorageService).GetField("_presignClient", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .GetValue(storage).Should().BeSameAs(publicoEsperado);
+        CampoDoArmazenamento(storage, "_minioClient").Should().BeSameAs(
+            sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StorageInternalClientKey));
+        CampoDoArmazenamento(storage, "_presignClient").Should().BeSameAs(
+            sp.GetRequiredKeyedService<IMinioClient>(StorageServiceCollectionExtensions.StoragePublicClientKey));
     }
 
     [Fact]
     public void AddUniPlusStorage_IStorageService_DeveSerScopedDistintoEntreScopes()
     {
-        ServiceCollection services = new();
-        services.AddUniPlusStorage(BuildConfig(CompleteConfig()), Env(Environments.Production));
+        using ServiceProvider sp = Provedor(CompleteConfig());
 
-        using ServiceProvider sp = services.BuildServiceProvider();
-        IStorageService a, b;
-        using (IServiceScope scope1 = sp.CreateScope())
-        {
-            a = scope1.ServiceProvider.GetRequiredService<IStorageService>();
-        }
-
-        using (IServiceScope scope2 = sp.CreateScope())
-        {
-            b = scope2.ServiceProvider.GetRequiredService<IStorageService>();
-        }
-
-        b.Should().NotBeSameAs(a);
+        ArmazenamentoDeUmEscopo(sp).Should().NotBeSameAs(ArmazenamentoDeUmEscopo(sp));
     }
 
     [Theory]
@@ -270,20 +270,8 @@ public sealed class StorageServiceCollectionExtensionsTests
     [Fact]
     public void AddUniPlusStorage_BindingMapeiaTodasAsPropriedades()
     {
-        Dictionary<string, string?> values = new()
-        {
-            ["Storage:Endpoint"] = "storage.example:9000",
-            ["Storage:AccessKey"] = "ak",
-            ["Storage:SecretKey"] = "sk",
-            ["Storage:UseSSL"] = "true",
-            ["Storage:Region"] = "us-east-1",
-            ["Storage:BucketName"] = "uniplus-documentos",
-        };
+        using ServiceProvider sp = Provedor(ConfigComTodasAsPropriedades());
 
-        ServiceCollection services = new();
-        services.AddUniPlusStorage(BuildConfig(values), Env(Environments.Production));
-
-        using ServiceProvider sp = services.BuildServiceProvider();
         StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
 
         opts.Endpoint.Should().Be("storage.example:9000");

@@ -44,6 +44,10 @@ public static partial class SelecaoMessagingRegistration
     /// Wolverine do Seleção, para o host compor no <c>configureRouting</c> de
     /// <c>UseWolverineOutboxCascading</c> — sem o host precisar conhecer Kafka/SR.
     /// </summary>
+    /// <param name="relogio">
+    /// Relógio do processo, o mesmo registrado no container: o bootstrap do cliente roda antes do <c>Build</c> e não
+    /// o resolve pelo DI.
+    /// </param>
     /// <returns>
     /// Ação que aplica o routing do Seleção a um <see cref="WolverineOptions"/>:
     /// PG queue intra-módulo <c>domain-events</c> + (quando Kafka e SR estão
@@ -53,13 +57,15 @@ public static partial class SelecaoMessagingRegistration
     public static Action<WolverineOptions> AddSelecaoMessaging(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        TimeProvider relogio)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
+        ArgumentNullException.ThrowIfNull(relogio);
 
-        ISchemaRegistryClient? srClient = RegistrarSchemaRegistry(services, configuration, environment);
+        ISchemaRegistryClient? srClient = RegistrarSchemaRegistry(services, configuration, environment, relogio);
 
         services.AddSchemaRegistry(configuration)
             .AddSchema(
@@ -167,7 +173,8 @@ public static partial class SelecaoMessagingRegistration
     private static ISchemaRegistryClient? RegistrarSchemaRegistry(
         IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        TimeProvider relogio)
     {
         SchemaRegistrySettings srSettings = configuration
             .GetSection(SchemaRegistrySettings.SectionName)
@@ -175,16 +182,18 @@ public static partial class SelecaoMessagingRegistration
 
         ConferirSchemaRegistryDoKafka(configuration, environment, srSettings);
 
-        return string.IsNullOrWhiteSpace(srSettings.Url) ? null : RegistrarClienteDoBootstrap(services, srSettings);
+        return string.IsNullOrWhiteSpace(srSettings.Url) ? null : RegistrarClienteDoBootstrap(services, srSettings, relogio);
     }
 
-    private static ISchemaRegistryClient RegistrarClienteDoBootstrap(IServiceCollection services, SchemaRegistrySettings srSettings)
+    private static ISchemaRegistryClient RegistrarClienteDoBootstrap(
+        IServiceCollection services, SchemaRegistrySettings srSettings, TimeProvider relogio)
     {
         using ILoggerFactory bootstrapLoggerFactory = LoggerFactory.Create(static b => b.AddSerilog());
         ISchemaRegistryClient srClient = SchemaRegistryServiceCollectionExtensions.CreateClient(
             srSettings,
             bootstrapLoggerFactory,
-            services);
+            services,
+            relogio);
         services.AddSingleton(srClient);
 
         return srClient;

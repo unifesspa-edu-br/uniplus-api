@@ -47,7 +47,6 @@ public static class EnvioDeEmailServiceCollectionExtensions
     // A fila e as mortas vivem no banco do outbox: o retrato lê dele, e o medidor entra no pipeline de métricas.
     private static void AddMonitoramento(IServiceCollection services)
     {
-        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<MetricasDaFilaDeEmail>();
         services.AddSingleton(sp => new LeituraDaFilaDeEmail(
             sp.GetRequiredService<IConfiguration>().GetConnectionString(ConexaoDoOutbox)

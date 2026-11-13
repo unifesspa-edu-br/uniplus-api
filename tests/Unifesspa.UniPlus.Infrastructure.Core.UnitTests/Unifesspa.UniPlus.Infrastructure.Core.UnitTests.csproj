@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Observability/ColetorDeMedidas.cs" Link="Apoio/ColetorDeMedidas.cs" />
     <Using Include="Xunit" />
   </ItemGroup>

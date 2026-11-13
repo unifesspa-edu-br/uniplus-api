@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -164,12 +163,11 @@ public static class StorageServiceCollectionExtensions
     /// <summary>
     /// O <see cref="IHttpClientFactory"/> serve ao GET com Range via URL pre-assinada de
     /// <see cref="MinioStorageService"/>, que a API de alto nível do SDK não suporta. A assinatura da cópia para o
-    /// acervo público carimba o instante da requisição; <c>TryAdd</c> mantém o relógio de quem já registrou um.
+    /// acervo público carimba o instante da requisição, com o <see cref="TimeProvider"/> registrado pelo host.
     /// </summary>
     private static void RegistrarServicoDeArmazenamento(IServiceCollection services)
     {
         services.AddHttpClient();
-        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IStorageService, MinioStorageService>();
     }
 

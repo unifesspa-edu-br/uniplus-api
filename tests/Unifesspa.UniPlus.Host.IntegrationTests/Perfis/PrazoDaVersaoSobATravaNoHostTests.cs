@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 using AwesomeAssertions;
@@ -15,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
@@ -23,10 +23,6 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 /// trava primeiro.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostTestBase, IDisposable
 {
     private static readonly TimeSpan MargemDoPrazo = TimeSpan.FromMinutes(1);
@@ -40,7 +36,7 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         _host = Fixture.Factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(servicos =>
         {
             servicos.RemoveAll<TimeProvider>();
-            servicos.AddSingleton<TimeProvider>(_relogio);
+            servicos.AddSingleton<TimeProvider>(new RelogioEmMicrossegundos(_relogio));
         }));
     }
 
@@ -76,17 +72,15 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
     [Fact(DisplayName = "A decisão que trava primeiro expira a versão vencida e a rotina que vem depois não expira nada")]
     public async Task DecisaoTravaPrimeiro_ExpiraUmaSoVez()
     {
-        (Envio vigente, Envio versao) = await VigenteEPendenteVerificadaAsync();
+        (Envio vigente, Envio versao) = await VigenteEPendenteVencidaAsync();
         using HttpClient gestao = await GestaoAsync();
-        await ExpirarEmAsync(versao, MargemDoPrazo);
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
 
         Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
         await trava.AguardarBloqueioAsync();
         AtravessarOPrazo();
         Task<int> rotina = ExpirarAsync();
-        await trava.AguardarBloqueioAsync(2);
-        await trava.ConfirmarAsync();
+        await ConfirmarQuandoDuasEsperamAsync(trava);
 
         using HttpResponseMessage resposta = await decisao;
         await ConferirRecusaDoPerfilAsync(resposta, HttpStatusCode.UnprocessableEntity, "versao_expirada");
@@ -97,17 +91,15 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
     [Fact(DisplayName = "A rotina que trava primeiro expira a versão vencida e a decisão que vem depois a encontra expirada")]
     public async Task RotinaTravaPrimeiro_ADecisaoEncontraAVersaoExpirada()
     {
-        (Envio vigente, Envio versao) = await VigenteEPendenteVerificadaAsync();
+        (Envio vigente, Envio versao) = await VigenteEPendenteVencidaAsync();
         using HttpClient gestao = await GestaoAsync();
-        await ExpirarEmAsync(versao, MargemDoPrazo);
         AtravessarOPrazo();
         await using TransacaoRetidaDeTeste trava = await TravarOPerfilAsync(vigente.PerfilId);
 
         Task<int> rotina = ExpirarAsync();
         await trava.AguardarBloqueioAsync();
         Task<HttpResponseMessage> decisao = AprovarBrutoAsync(gestao, versao, EtapaGestao);
-        await trava.AguardarBloqueioAsync(2);
-        await trava.ConfirmarAsync();
+        await ConfirmarQuandoDuasEsperamAsync(trava);
 
         (await rotina).Should().Be(1);
         using HttpResponseMessage resposta = await decisao;
@@ -173,6 +165,20 @@ public sealed class PrazoDaVersaoSobATravaNoHostTests : AprovacaoDaVersaoNoHostT
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar, Sensivel);
 
         return (vigente, await PendenteVerificadaAsync(gestor, vigente.PerfilId, Consultar, Sensivel));
+    }
+
+    private async Task<(Envio Vigente, Envio Versao)> VigenteEPendenteVencidaAsync()
+    {
+        (Envio vigente, Envio versao) = await VigenteEPendenteVerificadaAsync();
+        await ExpirarEmAsync(versao, MargemDoPrazo);
+
+        return (vigente, versao);
+    }
+
+    private static async Task ConfirmarQuandoDuasEsperamAsync(TransacaoRetidaDeTeste trava)
+    {
+        await trava.AguardarBloqueioAsync(2);
+        await trava.ConfirmarAsync();
     }
 
     private Task ExpirarEmAsync(Envio versao, TimeSpan prazo) =>

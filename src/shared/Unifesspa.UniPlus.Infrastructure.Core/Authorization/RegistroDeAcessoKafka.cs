@@ -46,12 +46,14 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
     }
 
     internal RegistroDeAcessoKafka(
-        Func<IProducer<string, string>> fabrica, string topico, TimeSpan prazo, TimeProvider? relogio = null)
+        Func<IProducer<string, string>> fabrica, string topico, TimeSpan prazo, TimeProvider relogio)
     {
+        ArgumentNullException.ThrowIfNull(relogio);
+
         _fabrica = fabrica;
         _topico = topico;
         _prazo = prazo;
-        _relogio = relogio ?? TimeProvider.System;
+        _relogio = relogio;
         _produtor = fabrica();
     }
 

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Persistence;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Cobre o contrato do helper <see cref="UniPlusDbContextOptionsExtensions"/>
@@ -23,10 +22,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 /// </summary>
 public sealed class UniPlusDbContextOptionsExtensionsTests
 {
-    [SuppressMessage(
-        "Performance",
-        "CA1812:Avoid uninstantiated internal classes",
-        Justification = "DbContext sintético usado pelos testes via DbContextOptions<FakeContext> — type-arg apenas, sem instanciação.")]
     private sealed class FakeContext : DbContext
     {
         public FakeContext(DbContextOptions<FakeContext> options)
@@ -35,20 +30,22 @@ public sealed class UniPlusDbContextOptionsExtensionsTests
         }
     }
 
-    private static ServiceProvider BuildServiceProvider(string? connectionString)
+    private static IConfiguration Configuracao(string? connectionString)
     {
-        ServiceCollection services = new();
-
         Dictionary<string, string?> config = new();
         if (connectionString is not null)
         {
             config["ConnectionStrings:FakeDb"] = connectionString;
         }
 
-        services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
-            .AddInMemoryCollection(config)
-            .Build());
+        return new ConfigurationBuilder().AddInMemoryCollection(config).Build();
+    }
 
+    private static ServiceProvider BuildServiceProvider(string? connectionString)
+    {
+        ServiceCollection services = new();
+        services.AddSingleton(Configuracao(connectionString));
+        services.AddSingleton<TimeProvider>(new RelogioFixo(new DateTimeOffset(2026, 11, 1, 12, 30, 0, TimeSpan.Zero)));
         services.AddUniPlusEfInterceptors();
 
         return services.BuildServiceProvider();

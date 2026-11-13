@@ -42,6 +42,7 @@ public sealed class GeoOptionsValidacaoTests
         ServiceCollection servicos = new();
         servicos.AddLogging();
         servicos.AddSingleton(configuracao);
+        servicos.AddSingleton(TimeProvider.System);
         servicos.AddGeoClient();
 
         using ServiceProvider provedor = servicos.BuildServiceProvider();
