@@ -20,8 +20,11 @@ using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authorization.Regis
 /// </summary>
 public sealed class SchemaDoRegistroDeAcessoTests
 {
+    // Path.Join só concatena: nenhum segmento posterior descarta o diretório base.
+    private static readonly string CaminhoDoSchema = Path.Join(AppContext.BaseDirectory, "Contratos", "v1.schema.json");
+
     private static readonly JsonSchema Schema = JsonSchema.FromText(
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Contratos", "v1.schema.json")));
+        File.ReadAllText(CaminhoDoSchema));
 
     private static readonly EvaluationOptions Opcoes = new() { RequireFormatValidation = true };
 
@@ -96,7 +99,7 @@ public sealed class SchemaDoRegistroDeAcessoTests
         JsonArray lote = (JsonArray)JsonNode.Parse(RegistroDeAcessoKafka.ValorDoLote([Registro(clienteOidc: "selecao-web")]))!;
         string[] serializadas = [.. lote[0]!["registro"]!.AsObject().Select(static p => p.Key)];
 
-        JsonObject documento = (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Contratos", "v1.schema.json")))!;
+        JsonObject documento = (JsonObject)JsonNode.Parse(File.ReadAllText(CaminhoDoSchema))!;
         string[] declaradas = [.. documento["$defs"]!["registro"]!["properties"]!.AsObject().Select(static p => p.Key)];
 
         serializadas.Should().BeEquivalentTo(declaradas);
@@ -106,7 +109,7 @@ public sealed class SchemaDoRegistroDeAcessoTests
     [Fact(DisplayName = "O enum de motivoNegativa do schema é o vocabulário canônico de motivos, mais nulo")]
     public void MotivoNegativa_EnumDoSchemaEOVocabularioCanonico()
     {
-        JsonObject documento = (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Contratos", "v1.schema.json")))!;
+        JsonObject documento = (JsonObject)JsonNode.Parse(File.ReadAllText(CaminhoDoSchema))!;
         string?[] declarados = [.. documento["$defs"]!["registro"]!["properties"]!["motivoNegativa"]!["enum"]!.AsArray()
             .Select(static v => v?.GetValue<string>())];
 
@@ -116,5 +119,5 @@ public sealed class SchemaDoRegistroDeAcessoTests
     }
 
     private static JsonObject PropriedadesDoSchema() =>
-        (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Contratos", "v1.schema.json")))!["$defs"]!["registro"]!;
+        (JsonObject)JsonNode.Parse(File.ReadAllText(CaminhoDoSchema))!["$defs"]!["registro"]!;
 }
