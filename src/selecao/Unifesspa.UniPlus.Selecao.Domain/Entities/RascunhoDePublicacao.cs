@@ -119,19 +119,16 @@ public sealed class RascunhoDePublicacao : EntityBase
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(usuarioSub);
 
-        if (Recusar(conteudo, versao) is { } recusa)
-        {
-            return Result<RascunhoDePublicacao>.Failure(recusa);
-        }
-
-        return Result<RascunhoDePublicacao>.Success(new RascunhoDePublicacao
-        {
-            ProcessoSeletivoId = processoSeletivoId,
-            UsuarioSub = usuarioSub,
-            Conteudo = conteudo,
-            Versao = versao,
-            ExpiraEm = agora.Add(prazo),
-        });
+        return Recusar(conteudo, versao) is { } recusa
+            ? Result<RascunhoDePublicacao>.Failure(recusa)
+            : Result<RascunhoDePublicacao>.Success(new RascunhoDePublicacao
+            {
+                ProcessoSeletivoId = processoSeletivoId,
+                UsuarioSub = usuarioSub,
+                Conteudo = conteudo,
+                Versao = versao,
+                ExpiraEm = agora.Add(prazo),
+            });
     }
 
     /// <summary>
@@ -166,18 +163,17 @@ public sealed class RascunhoDePublicacao : EntityBase
 
         if (versao <= 0)
         {
-            return new DomainError(
-                "RascunhoDePublicacao.VersaoInvalida",
-                "A versão do formato do rascunho deve ser um inteiro positivo.");
+            return VersaoInvalida;
         }
 
-        if (Encoding.UTF8.GetByteCount(conteudo) > ConteudoMaxBytes)
-        {
-            return new DomainError(
-                "RascunhoDePublicacao.ConteudoMuitoGrande",
-                $"O rascunho da publicação deve ter no máximo {ConteudoMaxBytes / 1024} KB.");
-        }
-
-        return null;
+        return Encoding.UTF8.GetByteCount(conteudo) > ConteudoMaxBytes ? ConteudoMuitoGrande : null;
     }
+
+    private static DomainError VersaoInvalida { get; } = new(
+        "RascunhoDePublicacao.VersaoInvalida",
+        "A versão do formato do rascunho deve ser um inteiro positivo.");
+
+    private static DomainError ConteudoMuitoGrande { get; } = new(
+        "RascunhoDePublicacao.ConteudoMuitoGrande",
+        $"O rascunho da publicação deve ter no máximo {ConteudoMaxBytes / 1024} KB.");
 }

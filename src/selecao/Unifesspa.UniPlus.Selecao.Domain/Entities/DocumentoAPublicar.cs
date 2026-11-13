@@ -99,53 +99,64 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
         ArgumentNullException.ThrowIfNull(clock);
 
         FormatoDeDocumento? formato = FormatosDeDocumento.DoTipoDeMidia(tipoDeMidia);
-        List<FieldError> erros = [];
-        if (formato is null)
-        {
-            erros.Add(new FieldError("tipoDeMidia", new DomainError(
-                DocumentoAPublicarErrorCodes.TipoDeMidiaNaoAceito,
-                $"O tipo de mídia deve ser {TiposDeMidiaDeDocumento.Pdf}, {TiposDeMidiaDeDocumento.Docx} ou {TiposDeMidiaDeDocumento.Odt}.")));
-        }
-
-        if (finalidade is not { } finalidadeDeclarada || !FinalidadesDeDocumento.Conhecida(finalidadeDeclarada))
-        {
-            erros.Add(new FieldError("finalidade", new DomainError(
-                DocumentoAPublicarErrorCodes.FinalidadeInvalida,
-                "A finalidade do documento é obrigatória: edital, anexo do edital ou documento de ato.")));
-        }
-        else if (formato is { } formatoDeclarado && !FinalidadesDeDocumento.AceitaFormato(finalidadeDeclarada, formatoDeclarado))
-        {
-            erros.Add(new FieldError("tipoDeMidia", new DomainError(
-                DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade,
-                finalidadeDeclarada == FinalidadeDoDocumento.DocumentoDoEdital
-                    ? $"O documento do edital deve ser um PDF ({TiposDeMidiaDeDocumento.Pdf})."
-                    : "O formato do documento não é aceito para a finalidade declarada.")));
-        }
-
         string? nome = NomeDeArquivoEnviado.Normalizar(nomeArquivo, formato is { } f ? FormatosDeDocumento.Extensao(f) : string.Empty);
-        if (nome is null)
+        List<FieldError> erros =
+        [
+            .. new[] { RecusaDoFormato(formato), RecusaDaFinalidade(finalidade, formato), RecusaDoNome(nome) }.OfType<FieldError>(),
+        ];
+
+        return erros.Count > 0
+            ? Result<DocumentoAPublicar>.ValidationFailure(erros)
+            : Result<DocumentoAPublicar>.Success(
+                Pendente(processoSeletivoId, finalidade!.Value, nome!, formato!.Value, clock.GetUtcNow().Add(ttl)));
+    }
+
+    private static FieldError? RecusaDoFormato(FormatoDeDocumento? formato) => formato is not null
+        ? null
+        : new FieldError("tipoDeMidia", new DomainError(
+            DocumentoAPublicarErrorCodes.TipoDeMidiaNaoAceito,
+            $"O tipo de mídia deve ser {TiposDeMidiaDeDocumento.Pdf}, {TiposDeMidiaDeDocumento.Docx} ou {TiposDeMidiaDeDocumento.Odt}."));
+
+    private static FieldError? RecusaDoNome(string? nome) => nome is not null
+        ? null
+        : new FieldError("nomeArquivo", new DomainError(
+            DocumentoAPublicarErrorCodes.NomeArquivoInvalido,
+            $"O nome do arquivo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}."));
+
+    private static FieldError? RecusaDaFinalidade(FinalidadeDoDocumento? finalidade, FormatoDeDocumento? formato)
+    {
+        if (finalidade is not { } declarada || !FinalidadesDeDocumento.Conhecida(declarada))
         {
-            erros.Add(new FieldError("nomeArquivo", new DomainError(
-                DocumentoAPublicarErrorCodes.NomeArquivoInvalido,
-                $"O nome do arquivo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}.")));
+            return new FieldError("finalidade", new DomainError(
+                DocumentoAPublicarErrorCodes.FinalidadeInvalida,
+                "A finalidade do documento é obrigatória: edital, anexo do edital ou documento de ato."));
         }
 
-        if (erros.Count > 0)
-        {
-            return Result<DocumentoAPublicar>.ValidationFailure(erros);
-        }
+        return formato is { } formatoDeclarado && !FinalidadesDeDocumento.AceitaFormato(declarada, formatoDeclarado)
+            ? new FieldError("tipoDeMidia", new DomainError(
+                DocumentoAPublicarErrorCodes.FormatoNaoAceitoParaAFinalidade, MensagemDoFormatoRecusado(declarada)))
+            : null;
+    }
 
+    private static string MensagemDoFormatoRecusado(FinalidadeDoDocumento finalidade) =>
+        finalidade == FinalidadeDoDocumento.DocumentoDoEdital
+            ? $"O documento do edital deve ser um PDF ({TiposDeMidiaDeDocumento.Pdf})."
+            : "O formato do documento não é aceito para a finalidade declarada.";
+
+    private static DocumentoAPublicar Pendente(
+        Guid processoSeletivoId, FinalidadeDoDocumento finalidade, string nome, FormatoDeDocumento formato, DateTimeOffset expiraEm)
+    {
         DocumentoAPublicar documento = new()
         {
             ProcessoSeletivoId = processoSeletivoId,
-            Finalidade = finalidade!.Value,
-            NomeArquivo = nome!,
-            Formato = formato!.Value,
+            Finalidade = finalidade,
+            NomeArquivo = nome,
+            Formato = formato,
             Status = StatusArquivoEnviado.Pendente,
-            ExpiraEm = clock.GetUtcNow().Add(ttl),
+            ExpiraEm = expiraEm,
         };
         documento.ObjectKey = $"selecao/documentos-a-publicar/{processoSeletivoId:D}/{documento.Id:D}.{documento.Extensao}";
-        return Result<DocumentoAPublicar>.Success(documento);
+        return documento;
     }
 
     /// <summary>
@@ -162,8 +173,7 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
 
         if (Status != StatusArquivoEnviado.Pendente)
         {
-            return Result.Failure(new DomainError(
-                DocumentoAPublicarErrorCodes.StatusInvalidoParaConfirmacao, "Somente um documento pendente pode ser confirmado."));
+            return Result.Failure(StatusInvalidoParaConfirmacao);
         }
 
         TamanhoBytes = tamanhoBytes;
@@ -186,38 +196,46 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
     {
         ArgumentNullException.ThrowIfNull(conteudo);
 
+        DomainError? recusa = RecusaDoEnvio(tamanhoBytes, contentType);
+        return recusa is null ? ResultadoDoConteudo(conteudo) : Result.Failure(recusa);
+    }
+
+    private DomainError? RecusaDoEnvio(long tamanhoBytes, string contentType)
+    {
         if (tamanhoBytes > TamanhoMaximoBytes)
         {
-            return Result.Failure(TamanhoExcedido);
+            return TamanhoExcedido;
         }
 
         if (tamanhoBytes == 0)
         {
-            return Result.Failure(ArquivoVazio);
+            return ArquivoVazio;
         }
 
-        if (!string.Equals(contentType, TipoDeMidia, StringComparison.OrdinalIgnoreCase))
-        {
-            return ConteudoDiverge();
-        }
-
-        VeredictoDoPacote veredito = Formato switch
-        {
-            FormatoDeDocumento.Pdf => conteudo.AsSpan().StartsWith(AssinaturaPdf) ? VeredictoDoPacote.Valido : VeredictoDoPacote.Diverge,
-            FormatoDeDocumento.Docx => PacoteDeDocumentoDeTexto.ValidarDocx(conteudo),
-            _ => PacoteDeDocumentoDeTexto.ValidarOdt(conteudo),
-        };
-
-        return veredito switch
-        {
-            VeredictoDoPacote.Valido => Result.Success(),
-            VeredictoDoPacote.ContemMacro => Result.Failure(new DomainError(
-                DocumentoAPublicarErrorCodes.ContemMacro, "O documento não pode conter macro: ele é publicado com a chancela da instituição.")),
-            _ => ConteudoDiverge(),
-        };
+        return string.Equals(contentType, TipoDeMidia, StringComparison.OrdinalIgnoreCase) ? null : ConteudoDiverge();
     }
 
-    private Result ConteudoDiverge() => Result.Failure(new DomainError(
+    private Result ResultadoDoConteudo(byte[] conteudo) => VeredictoDoConteudo(conteudo) switch
+    {
+        VeredictoDoPacote.Valido => Result.Success(),
+        VeredictoDoPacote.ContemMacro => Result.Failure(ContemMacro),
+        _ => Result.Failure(ConteudoDiverge()),
+    };
+
+    private VeredictoDoPacote VeredictoDoConteudo(byte[] conteudo) => Formato switch
+    {
+        FormatoDeDocumento.Pdf => conteudo.AsSpan().StartsWith(AssinaturaPdf) ? VeredictoDoPacote.Valido : VeredictoDoPacote.Diverge,
+        FormatoDeDocumento.Docx => PacoteDeDocumentoDeTexto.ValidarDocx(conteudo),
+        _ => PacoteDeDocumentoDeTexto.ValidarOdt(conteudo),
+    };
+
+    private static DomainError StatusInvalidoParaConfirmacao { get; } = new(
+        DocumentoAPublicarErrorCodes.StatusInvalidoParaConfirmacao, "Somente um documento pendente pode ser confirmado.");
+
+    private static DomainError ContemMacro { get; } = new(
+        DocumentoAPublicarErrorCodes.ContemMacro, "O documento não pode conter macro: ele é publicado com a chancela da instituição.");
+
+    private DomainError ConteudoDiverge() => new(
         DocumentoAPublicarErrorCodes.ConteudoDivergeDoFormato,
-        $"O conteúdo do arquivo não corresponde a um documento {TipoDeMidia}."));
+        $"O conteúdo do arquivo não corresponde a um documento {TipoDeMidia}.");
 }

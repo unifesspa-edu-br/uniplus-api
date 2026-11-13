@@ -94,45 +94,54 @@ public sealed class ArquivoDaApresentacao : EntityBase
         ArgumentNullException.ThrowIfNull(exigencia);
         ArgumentNullException.ThrowIfNull(clock);
 
-        List<FieldError> erros = [];
         FormatoPermitido? formato = FormatoDoTipoDeMidia(tipoDeMidia);
-        FormatoPermitidoEntry? entrada = null;
-        bool aceito = formato is { } declarado
-            && (exigencia.FormatosPermitidos.Qualquer
-                || (entrada = exigencia.FormatosPermitidos.Lista!.FirstOrDefault(e => e.Formato == declarado)) is not null);
-        if (!aceito)
-        {
-            erros.Add(new FieldError("tipoDeMidia", new DomainError(
-                DocumentoDaInscricaoErrorCodes.FormatoNaoAceitoPelaExigencia,
-                "O formato do arquivo não é aceito por esta exigência. Envie um PDF, JPEG ou PNG que ela admita.")));
-        }
-
+        FormatoPermitidoEntry? entrada = formato is { } declarado ? EntradaDoFormato(exigencia, declarado) : null;
         long limite = LimiteEfetivo(exigencia, entrada);
+        List<FieldError> erros = [.. RecusasDoFormato(exigencia, formato, entrada), .. RecusasDoTamanho(tamanhoDeclaradoBytes, limite)];
+
+        return erros.Count > 0
+            ? Result<ArquivoDaApresentacao>.ValidationFailure(erros)
+            : Result<ArquivoDaApresentacao>.Success(Pendente(apresentacaoId, inscricaoId, formato!.Value, limite, clock.GetUtcNow().Add(ttl)));
+    }
+
+    private static FormatoPermitidoEntry? EntradaDoFormato(DocumentoExigido exigencia, FormatoPermitido formato) =>
+        exigencia.FormatosPermitidos.Qualquer
+            ? null
+            : exigencia.FormatosPermitidos.Lista!.FirstOrDefault(e => e.Formato == formato);
+
+    private static IEnumerable<FieldError> RecusasDoFormato(
+        DocumentoExigido exigencia, FormatoPermitido? formato, FormatoPermitidoEntry? entrada)
+    {
+        if (formato is not null && (exigencia.FormatosPermitidos.Qualquer || entrada is not null))
+            yield break;
+
+        yield return new FieldError("tipoDeMidia", new DomainError(
+            DocumentoDaInscricaoErrorCodes.FormatoNaoAceitoPelaExigencia,
+            "O formato do arquivo não é aceito por esta exigência. Envie um PDF, JPEG ou PNG que ela admita."));
+    }
+
+    private static IEnumerable<FieldError> RecusasDoTamanho(long tamanhoDeclaradoBytes, long limite)
+    {
         if (tamanhoDeclaradoBytes <= 0)
-        {
-            erros.Add(new FieldError("tamanhoBytes", ArquivoVazio));
-        }
+            yield return new FieldError("tamanhoBytes", ArquivoVazio);
         else if (tamanhoDeclaradoBytes > limite)
-        {
-            erros.Add(new FieldError("tamanhoBytes", TamanhoExcedidoAte(limite)));
-        }
+            yield return new FieldError("tamanhoBytes", TamanhoExcedidoAte(limite));
+    }
 
-        if (erros.Count > 0)
-        {
-            return Result<ArquivoDaApresentacao>.ValidationFailure(erros);
-        }
-
+    private static ArquivoDaApresentacao Pendente(
+        Guid apresentacaoId, Guid inscricaoId, FormatoPermitido formato, long limite, DateTimeOffset expiraEm)
+    {
         ArquivoDaApresentacao arquivo = new()
         {
             ApresentacaoId = apresentacaoId,
             InscricaoId = inscricaoId,
-            Formato = formato!.Value,
+            Formato = formato,
             TamanhoMaximoBytes = limite,
             Situacao = SituacaoDoArquivoDoCandidato.Pendente,
-            ExpiraEm = clock.GetUtcNow().Add(ttl),
+            ExpiraEm = expiraEm,
         };
         arquivo.ObjectKey = $"{PrefixoDasChaves}/{arquivo.Id:D}/envio";
-        return Result<ArquivoDaApresentacao>.Success(arquivo);
+        return arquivo;
     }
 
     /// <summary>Recusa o ETag ausente ou em branco: sem ele a confirmação não tem o que conferir no armazenamento.</summary>
@@ -150,17 +159,18 @@ public sealed class ArquivoDaApresentacao : EntityBase
             return etagValido;
         }
 
-        if (Situacao != SituacaoDoArquivoDoCandidato.Pendente)
-        {
-            return Result.Failure(StatusInvalidoParaConfirmacao);
-        }
+        return Situacao == SituacaoDoArquivoDoCandidato.Pendente
+            ? EntrarEmVerificacao(etag, clock.GetUtcNow(), politica ?? PoliticaDeRepublicacao.Padrao)
+            : Result.Failure(StatusInvalidoParaConfirmacao);
+    }
 
-        DateTimeOffset agora = clock.GetUtcNow();
+    private Result EntrarEmVerificacao(string etag, DateTimeOffset agora, PoliticaDeRepublicacao politica)
+    {
         ETag = etag.Trim();
         Situacao = SituacaoDoArquivoDoCandidato.EmVerificacao;
         ConfirmadoEm = agora;
         Publicacoes = 1;
-        ProximaPublicacaoEm = agora + (politica ?? PoliticaDeRepublicacao.Padrao).PrazoApos(Publicacoes);
+        ProximaPublicacaoEm = agora + politica.PrazoApos(Publicacoes);
         return Result.Success();
     }
 
