@@ -67,6 +67,17 @@ public sealed class ConteudoDoTermoTests
         ConteudoDoTermo.Criar(new string('a', ConteudoDoTermo.TextoMinLength - 1), Ato).IsFailure.Should().BeTrue();
     }
 
+    [Fact(DisplayName = "O caractere suplementar conta como um só nos limites, como o banco conta")]
+    public void Criar_CaractereSuplementar_ContaComoUm()
+    {
+        const string Suplementar = "\U0001F600";
+
+        ConteudoDoTermo.Criar(new string('a', ConteudoDoTermo.TextoMinLength - 2) + Suplementar, Ato).IsFailure.Should().BeTrue();
+        ConteudoDoTermo.Criar(new string('a', ConteudoDoTermo.TextoMinLength - 1) + Suplementar, Ato).IsSuccess.Should().BeTrue();
+        ConteudoDoTermo.Criar(new string('a', ConteudoDoTermo.TextoMaxLength - 1) + Suplementar, Ato).IsSuccess.Should().BeTrue();
+        ConteudoDoTermo.Criar(new string('a', ConteudoDoTermo.TextoMaxLength) + Suplementar, Ato).IsFailure.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "O ato vazio ou longo é recusado, e as violações do texto e do ato se acumulam")]
     public void Criar_AtoInvalido_AcumulaComOTexto()
     {
