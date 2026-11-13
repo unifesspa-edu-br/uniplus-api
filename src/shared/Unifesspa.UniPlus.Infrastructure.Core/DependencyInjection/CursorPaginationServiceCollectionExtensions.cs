@@ -22,12 +22,22 @@ public static class CursorPaginationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        RegistrarOpcoes(services, configuration);
+        RegistrarCodificadorDoCursor(services);
+        RegistrarFalhasDeBindingComoProblema(services);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Sem regras, <c>ValidateOnStart</c> é no-op e uma configuração inconsistente (<c>LimitMin &gt; LimitMax</c>, por
+    /// exemplo) só falharia em runtime dentro do <c>Math.Clamp</c> do binder, devolvendo 500.
+    /// </summary>
+    private static void RegistrarOpcoes(IServiceCollection services, IConfiguration configuration)
+    {
         services
             .AddOptions<CursorPaginationOptions>()
             .Bind(configuration.GetSection(CursorPaginationOptions.SectionName))
-            // Validators explícitos: ValidateOnStart sem regras é no-op e config
-            // inconsistente (LimitMin > LimitMax, etc.) só falharia em runtime
-            // dentro do Math.Clamp do binder, devolvendo 500.
             .Validate(static o => o.LimitMin >= 1, "CursorPaginationOptions.LimitMin deve ser >= 1.")
             .Validate(static o => o.LimitMax >= o.LimitMin, "CursorPaginationOptions.LimitMax deve ser >= LimitMin.")
             .Validate(static o => o.LimitDefault >= o.LimitMin && o.LimitDefault <= o.LimitMax,
@@ -35,23 +45,31 @@ public static class CursorPaginationServiceCollectionExtensions
             .Validate(static o => o.CursorTtl > TimeSpan.Zero, "CursorPaginationOptions.CursorTtl deve ser positivo.")
             .Validate(static o => !string.IsNullOrWhiteSpace(o.KeyName), "CursorPaginationOptions.KeyName é obrigatório.")
             .ValidateOnStart();
+    }
 
+    /// <summary>
+    /// <c>TryAdd</c> respeita o <see cref="TimeProvider"/> já registrado pelo host (testes determinísticos, relógio
+    /// controlado, replay); <c>AddSingleton</c> direto sobrescreveria esse override em silêncio.
+    /// </summary>
+    private static void RegistrarCodificadorDoCursor(IServiceCollection services)
+    {
         services.AddSingleton<CursorEncoder>();
-        // TryAdd: respeita TimeProvider já registrado pelo host (testes
-        // determinísticos, hosts com clock controlado, replay). AddSingleton
-        // direto sobrescreveria silenciosamente esse override.
         services.TryAddSingleton(TimeProvider.System);
+    }
+
+    /// <summary>
+    /// Compõe com o factory padrão do MVC: tenta primeiro o erro de binding de cursor e, se não for dele, delega ao
+    /// comportamento anterior.
+    /// </summary>
+    private static void RegistrarFalhasDeBindingComoProblema(IServiceCollection services)
+    {
         services.AddSingleton<Errors.IDomainErrorRegistration, PaginationDomainErrorRegistration>();
 
         services.PostConfigure<ApiBehaviorOptions>(options =>
         {
-            // Compõe com o factory default: tenta cursor binding error primeiro;
-            // se não for nosso, delega para o comportamento padrão MVC.
             Func<ActionContext, IActionResult> previous = options.InvalidModelStateResponseFactory;
             options.InvalidModelStateResponseFactory = context =>
                 CursorPaginationProblemFactory.TryBuild(context) ?? previous(context);
         });
-
-        return services;
     }
 }

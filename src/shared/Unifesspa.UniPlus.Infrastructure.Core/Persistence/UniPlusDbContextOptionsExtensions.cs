@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
+
 /// <summary>
 /// Helpers de configuração de <see cref="DbContext"/> consumidos pelos 3
 /// módulos (Selecao, Ingresso, Portal). Centraliza invariantes da camada de
@@ -55,50 +57,10 @@ public static class UniPlusDbContextOptionsExtensions
         ArgumentNullException.ThrowIfNull(serviceProvider);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
 
-        IConfiguration configuration = serviceProvider.GetRequiredService<IConfiguration>();
-        string? connectionString = configuration.GetConnectionString(connectionStringName);
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                $"ConnectionStrings:{connectionStringName} não configurada — defina via appsettings ou env var "
-                + $"`ConnectionStrings__{connectionStringName}`. Valores vazios/whitespace também são rejeitados.");
-        }
+        string connectionString = ConnectionStringObrigatoria(serviceProvider, connectionStringName);
 
-        options.UseNpgsql(connectionString, npgsqlOptions =>
-        {
-            npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
-
-            // EFCore.NamingConventions aplica snake_case também na tabela
-            // system `__EFMigrationsHistory` (issue efcore/EFCore.NamingConventions#108).
-            // Sem pin do nome, a convention pode renomear a tabela para
-            // `__ef_migrations_history`, criando drift quando outro pod
-            // (sem a convention) já criou com o nome PascalCase default
-            // do EF Core. Pin garante que todos os pods do rollout enxerguem
-            // a mesma tabela. As COLUNAS continuam sendo processadas pela
-            // convention — em rollouts mistos com pods sem convention, o
-            // drift de colunas ainda exige drop+recreate; este pin estabiliza
-            // apenas o nome da tabela.
-            //
-            // Monólito modular: quando `schema` é informado, a tabela de
-            // histórico vive no schema do módulo (banco único, schema-por-módulo).
-            // O default schema do modelo é fixado no `OnModelCreating` de cada
-            // DbContext via `HasDefaultSchema(Schema)` — aqui só alinhamos a
-            // tabela de histórico ao mesmo schema.
-            if (schema is null)
-            {
-                npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
-            }
-            else
-            {
-                npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
-            }
-        });
-
-        // snake_case automático em tabelas, colunas, índices e FKs (ADR-0054).
-        // Alinhado com as migrations regeneradas via `dotnet ef migrations add`
-        // usando `--startup-project = .API`.
+        options.UseNpgsql(connectionString, npgsqlOptions => ConfigurarMigrations<TContext>(npgsqlOptions, schema));
         options.UseSnakeCaseNamingConvention();
-
         options.AddInterceptors(
             serviceProvider.GetRequiredService<SoftDeleteInterceptor>(),
             serviceProvider.GetRequiredService<AuditableInterceptor>());
@@ -133,20 +95,37 @@ public static class UniPlusDbContextOptionsExtensions
         return new DbContextOptionsBuilder<TContext>()
             .UseNpgsql(
                 "Host=design-time-stub;Database=design_time_stub;Username=stub;Password=stub",
-                npgsqlOptions =>
-                {
-                    npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
-                    if (schema is null)
-                    {
-                        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
-                    }
-                    else
-                    {
-                        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
-                    }
-                })
+                npgsqlOptions => ConfigurarMigrations<TContext>(npgsqlOptions, schema))
             .UseSnakeCaseNamingConvention()
             .Options;
+    }
+
+    private static string ConnectionStringObrigatoria(IServiceProvider serviceProvider, string connectionStringName)
+    {
+        string? connectionString = serviceProvider
+            .GetRequiredService<IConfiguration>()
+            .GetConnectionString(connectionStringName);
+
+        return string.IsNullOrWhiteSpace(connectionString)
+            ? throw new InvalidOperationException(
+                $"ConnectionStrings:{connectionStringName} não configurada — defina via appsettings ou env var "
+                + $"`ConnectionStrings__{connectionStringName}`. Valores vazios/whitespace também são rejeitados.")
+            : connectionString;
+    }
+
+    /// <summary>
+    /// Fixa o assembly das migrations e o nome da tabela de histórico, que runtime e design-time precisam ver igual:
+    /// sem o nome fixado, o EFCore.NamingConventions pode renomear a tabela para <c>__ef_migrations_history</c>
+    /// (efcore/EFCore.NamingConventions#108), criando drift quando outro pod, sem a convention, já criou a de nome
+    /// PascalCase. As colunas continuam a cargo da convention; este pin estabiliza só o nome da tabela. No monólito
+    /// modular, o <paramref name="schema"/> do módulo abriga também a tabela de histórico (banco único,
+    /// schema-por-módulo); o schema padrão do modelo é fixado no <c>OnModelCreating</c> de cada DbContext.
+    /// </summary>
+    private static void ConfigurarMigrations<TContext>(NpgsqlDbContextOptionsBuilder npgsqlOptions, string? schema)
+        where TContext : DbContext
+    {
+        npgsqlOptions.MigrationsAssembly(typeof(TContext).Assembly.FullName);
+        npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", schema);
     }
 
     /// <summary>
@@ -156,22 +135,19 @@ public static class UniPlusDbContextOptionsExtensions
     /// (HttpUserContext) para preencher <c>DeletedBy</c> / <c>CreatedBy</c> /
     /// <c>UpdatedBy</c>. Singleton aqui causaria captive dependency.
     /// </summary>
+    /// <remarks>
+    /// Os interceptors dependem do <see cref="TimeProvider"/> para <c>CreatedAt</c>/<c>UpdatedAt</c>/<c>DeletedAt</c>;
+    /// <c>TryAdd</c> preserva override de teste (relógio fixo) e é idempotente com os demais pontos que já registram
+    /// o relógio. Cada módulo chama este método no seu <c>Add{Modulo}Infrastructure</c>, então no co-hosting (monólito
+    /// modular) ele roda N vezes no mesmo container: sem o <c>TryAdd</c>, o container acumularia N descritores idênticos
+    /// de cada interceptor. Eles não têm estado por módulo (resolvem <c>IUserContext</c> e <see cref="TimeProvider"/>
+    /// scoped), então um único registro serve a todos os DbContexts.
+    /// </remarks>
     public static IServiceCollection AddUniPlusEfInterceptors(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Relógio canônico (ADR de convenção de TimeProvider): os interceptors
-        // dependem dele para CreatedAt/UpdatedAt/DeletedAt. TryAdd preserva
-        // overrides de teste (TimeProvider fixo) e é idempotente com os demais
-        // pontos que já registram TimeProvider.System (paginação, idempotência).
         services.TryAddSingleton(TimeProvider.System);
-
-        // TryAdd: cada módulo chama AddUniPlusEfInterceptors no seu
-        // Add{Modulo}Infrastructure. No co-hosting (monólito modular) isso roda
-        // N vezes no mesmo container; sem o guard, o container acumularia N
-        // descritores idênticos de cada interceptor. Os interceptors não têm
-        // estado por módulo (resolvem IUserContext/TimeProvider scoped), então
-        // um único registro serve a todos os DbContexts.
         services.TryAddScoped<SoftDeleteInterceptor>();
         services.TryAddScoped<AuditableInterceptor>();
 
