@@ -95,6 +95,6 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
             "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
         table.HasCheckConstraint(
             $"ck_{tabela}_protecao_manifestacoes_contadas",
-            "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+            "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
     }
 }

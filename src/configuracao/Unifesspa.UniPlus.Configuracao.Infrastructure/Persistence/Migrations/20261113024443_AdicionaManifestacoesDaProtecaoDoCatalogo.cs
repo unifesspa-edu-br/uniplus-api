@@ -1339,7 +1339,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 name: "ck_tipo_documento_protecao_manifestacoes_contadas",
                 schema: "configuracao",
                 table: "tipo_documento",
-                sql: "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                sql: "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
             migrationBuilder.AddCheckConstraint(
                 name: "ck_rol_de_fatos_candidato_protecao_ciclo_positivo",
@@ -1357,7 +1357,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
                 name: "ck_rol_de_fatos_candidato_protecao_manifestacoes_contadas",
                 schema: "configuracao",
                 table: "rol_de_fatos_candidato",
-                sql: "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                sql: "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
             migrationBuilder.CreateIndex(
                 name: "ix_protecao_do_catalogo_atos_item_ciclo",

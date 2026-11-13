@@ -1314,7 +1314,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_manifestacoes_contadas", "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                            t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
                             t.HasCheckConstraint("ck_rol_de_fatos_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
@@ -4917,7 +4917,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tipo_documento_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_tipo_documento_protecao_manifestacoes_contadas", "(protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                            t.HasCheckConstraint("ck_tipo_documento_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
 
                             t.HasCheckConstraint("ck_tipo_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
 
