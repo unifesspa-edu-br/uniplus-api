@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// do catálogo de tipos de documento e de fatos do candidato e as providências sobre concessões, com cada leitura
 /// registrada pela permissão que a autorizou, e é recusado em toda fila de decisão e em toda operação que decide, revoga
 /// ou solicita a aprovação da proteção daquele catálogo, inclusive responder ou atender providência. Cecília Moura é a
-/// Encarregada.
+/// Encarregado de dados.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBase
@@ -176,7 +176,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }
 
-    // Os registros que uma só leitura da Encarregada mandou ao destino, conferida a página cheia.
+    // Os registros que uma só leitura do Encarregado mandou ao destino, conferida a página cheia.
     private async Task<IReadOnlyList<RegistroDecisaoAcesso>> RegistrosDaLeituraAsync(string rota)
     {
         using HttpClient cecilia = await EncarregadaAsync();

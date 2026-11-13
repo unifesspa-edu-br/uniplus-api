@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// O apoio dos testes da providência pelo endpoint real: Cecília Moura é a Encarregada de dados que solicita, Diogo Souza
+/// O apoio dos testes da providência pelo endpoint real: Cecília Moura é o Encarregado de dados que solicita, Diogo Souza
 /// e Isabella Figueiredo administram concessões e Leandro Viana é o beneficiário. Cada teste cria um perfil novo, e a
 /// concessão alvo é dele.
 /// </summary>
