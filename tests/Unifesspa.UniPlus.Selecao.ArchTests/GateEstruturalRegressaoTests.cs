@@ -74,7 +74,7 @@ public sealed class GateEstruturalRegressaoTests
     public void ContagemDePrazos_TemGatesNaRaizEProjecaoNoChecklist()
     {
         string prontidao = File.ReadAllText(CaminhoProntidao());
-        string checklist = File.ReadAllText(CaminhoChecklist());
+        string checklist = File.ReadAllText(CaminhoItensDaContagemDePrazos());
 
         Regex.Count(checklist, @"PendenciaDaLocalidade\(estado\)\s+is\s").Should().Be(1,
             "AvaliarConformidade(ContextoDeContagemDePrazos.SemCalendario) projeta o mesmo predicado que a prontidão aplica");
@@ -125,10 +125,10 @@ public sealed class GateEstruturalRegressaoTests
             Path.GetDirectoryName(origem)!, "..", "..",
             "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "ProcessosSeletivos", "Publicacao", "ProntidaoParaCongelar.cs"));
 
-    private static string CaminhoChecklist([CallerFilePath] string origem = "") =>
+    private static string CaminhoItensDaContagemDePrazos([CallerFilePath] string origem = "") =>
         Path.GetFullPath(Path.Join(
             Path.GetDirectoryName(origem)!, "..", "..",
-            "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "ProcessosSeletivos", "Conformidade", "ChecklistDeConformidade.cs"));
+            "src", "selecao", "Unifesspa.UniPlus.Selecao.Domain", "ProcessosSeletivos", "Conformidade", "ItensDaContagemDePrazos.cs"));
 
     private static string CaminhoHandler(string arquivo, [CallerFilePath] string origem = "") =>
         Path.GetFullPath(Path.Join(
