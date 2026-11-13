@@ -18,7 +18,7 @@ using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDeAvisos
 
 /// <summary>
 /// Os avisos do que a janela de migração fez: a migração e a revogação ao beneficiário, o lote com recusas, as migrações
-/// que aguardam a proteção de dados e o encerramento. Só personas fictícias do portal.
+/// que aguardam o Representante do controlador e o encerramento. Só personas fictícias do portal.
 /// </summary>
 public sealed class AvisosDosEfeitosDaJanelaTests
 {
@@ -49,8 +49,8 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         enviados.Should().HaveCount(4);
     }
 
-    [Fact(DisplayName = "As migrações que passam a aguardar a proteção de dados avisam só quem decide por ela, menos quem enviou o lote")]
-    public async Task Lote_QueAguardaAProtecao_AvisaAProtecaoDeDados()
+    [Fact(DisplayName = "As migrações que passam a aguardar o Representante do controlador avisam os Representantes e os gestores, menos quem enviou o lote")]
+    public async Task Lote_QueAguardaAProtecao_AvisaRepresentantesEGestores()
     {
         var cenario = new CenarioDeMigracao(protegido: true);
         Concessao deLeandro = cenario.Conceder(CenarioDeMigracao.Leandro, email: EmailLeandro);

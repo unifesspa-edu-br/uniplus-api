@@ -28,9 +28,9 @@ internal static class TextosDoAvisoDoPedido
             "Aguardando o gestor de acessos"),
         [SituacaoDoPedido.AguardandoProtecaoDeDados] = new(
             "pedido.fila_da_protecao_de_dados",
-            "Pedido de acesso aguarda a análise da proteção de dados",
-            "Um pedido de acesso aguarda a análise de adequação à proteção de dados.",
-            "Aguardando a proteção de dados"),
+            "Pedido de acesso aguarda a decisão do Representante do controlador",
+            "Um pedido de acesso aguarda a análise de adequação à proteção de dados, que cabe ao Representante do controlador.",
+            "Aguardando o Representante do controlador"),
         [SituacaoDoPedido.Aprovado] = new(
             "pedido.aprovado",
             "Pedido de acesso aprovado",

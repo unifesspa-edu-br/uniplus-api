@@ -82,7 +82,7 @@ internal static class DoublesDeAvisos
 
         public string DaJanela(Guid perfilId) => $"{DoPerfil(perfilId)}/janela";
 
-        public string DasConcessoes() => "https://uniplus.test/configuracao/concessoes";
+        public string DosPedidos() => "https://uniplus.test/configuracao/acessos/pedidos";
 
         public string DoNovoPedido() => "https://uniplus.test/configuracao/pedidos/novo";
     }

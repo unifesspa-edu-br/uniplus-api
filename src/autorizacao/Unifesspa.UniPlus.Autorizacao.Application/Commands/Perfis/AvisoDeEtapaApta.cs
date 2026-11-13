@@ -11,7 +11,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
-/// Avisa quem aprova a etapa em que a versão pendente ficou apta: no prazo, com o documento verificado e a etapa atual
+/// Avisa quem aprova a etapa em que a versão pendente ficou apta, os gestores de acessos ou os Representantes do
+/// controlador: no prazo, com o documento verificado e a etapa atual
 /// calculada como a fila a calcula. Pode ser chamado depois de toda transição que torna uma etapa apta; o aviso de uma
 /// mesma versão, ciclo e etapa sai uma vez só.
 /// </summary>
@@ -50,13 +51,9 @@ public sealed class AvisoDeEtapaApta
         VersaoDoPerfil versao = perfil.VersaoPendente!;
         EtapaDaVersao etapa = EtapaDaVersaoCodigo.FromCodigo(pendente!.EtapaAtual);
         List<DestinatarioDoAviso> aprovadores = await _grupos.ListarAsync(GruposDaGovernanca.DaEtapa(etapa), cancellationToken).ConfigureAwait(false);
-        ModeloDeAviso modelo = new(
-            TipoDeAviso.VersaoPendenteApta, perfil.Nome, versao.Numero, [.. pendente.Acrescimo.Select(static p => p.Nome)],
-            _link.DaVersao(perfil.Id, versao.Id), Prazo: versao.ExpiraEm, Etapa: etapa);
+        PedidoDeAviso pedido = new(Modelo(perfil, versao, pendente, etapa), versao.Id, $"{versao.CicloDeAprovacao}:{etapa.ToCodigo()}", aprovadores, Excluidos(versao));
 
-        return await _emissor
-            .EmitirAsync(new PedidoDeAviso(modelo, versao.Id, $"{versao.CicloDeAprovacao}:{etapa.ToCodigo()}", aprovadores, Excluidos(versao)), cancellationToken)
-            .ConfigureAwait(false);
+        return await _emissor.EmitirAsync(pedido, cancellationToken).ConfigureAwait(false);
     }
 
     private bool EstaApta(Perfil perfil, out VersaoPendenteDto? pendente)
@@ -68,7 +65,13 @@ public sealed class AvisoDeEtapaApta
             && perfil.DocumentoDe(perfil.VersaoPendente)?.Situacao == SituacaoDoAnexo.Verificado;
     }
 
-    // Quem criou a versão não aprova a própria, e quem a aprovou pela gestão não a aprova de novo pela proteção de dados.
+    private ModeloDeAviso Modelo(Perfil perfil, VersaoDoPerfil versao, VersaoPendenteDto pendente, EtapaDaVersao etapa) =>
+        new(
+            TipoDeAviso.VersaoPendenteApta, perfil.Nome, versao.Numero, [.. pendente.Acrescimo.Select(static p => p.Nome)],
+            _link.DaVersao(perfil.Id, versao.Id), Prazo: versao.ExpiraEm, Etapa: etapa);
+
+    // Quem criou a versão não aprova a própria, e o gestor de acessos que a aprovou não decide a etapa do Representante
+    // do controlador.
     private static Identidade[] Excluidos(VersaoDoPerfil versao) =>
         versao.DecisaoDaEtapa(EtapaDaVersao.GestaoDeAcessos) is { Resultado: ResultadoDaDecisao.Aprovado } gestao
             ? [versao.CriadaPor, gestao.Decisor]

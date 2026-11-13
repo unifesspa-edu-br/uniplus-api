@@ -3,11 +3,15 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+
+using TextoDoPedido = Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos.TextoDoAviso;
 
 public sealed class RedacaoDosAvisosTests
 {
     private const string Perfil = "Análise de atendimento";
+    private const string Representante = "Representante do controlador";
     private const string Link = "https://uniplus.test/acessos/perfis/1/janela";
 
     public static TheoryData<TipoDeAviso> Tipos => [.. Enum.GetValues<TipoDeAviso>()];
@@ -54,5 +58,19 @@ public sealed class RedacaoDosAvisosTests
         string corpo = RedacaoDoAviso.CorpoEmTexto(Modelo(TipoDeAviso.ConcessaoRevogada, forma: forma));
 
         corpo.Should().Contain(trecho);
+    }
+
+    [Fact(DisplayName = "Os avisos da etapa protegida nomeiam o Representante do controlador, no masculino genérico")]
+    public void EtapaProtegida_NomeiaORepresentante()
+    {
+        ModeloDeAviso migracoes = Modelo(TipoDeAviso.MigracoesAguardandoProtecaoDeDados, new ContagensDoAviso(Aguardando: 2));
+        ModeloDeAviso apta = Modelo(TipoDeAviso.VersaoPendenteApta) with { Etapa = EtapaDaVersao.ProtecaoDeDados };
+        TextoDoPedido pedido = TextosDoAvisoDoPedido.Da(SituacaoDoPedido.AguardandoProtecaoDeDados);
+
+        RedacaoDoAviso.Assunto(migracoes.Tipo).Should().Contain(Representante);
+        RedacaoDoAviso.CorpoEmTexto(migracoes).Should().Contain($"Aguardando o {Representante}: 2");
+        RedacaoDoAviso.CorpoEmTexto(apta).Should().Contain($"Etapa: {Representante}");
+        new[] { pedido.Assunto, pedido.Abertura, pedido.Situacao }.Should().OnlyContain(t => t.Contains(Representante, StringComparison.Ordinal));
+        pedido.Finalidade.Should().Be("pedido.fila_da_protecao_de_dados", "o código da finalidade não muda com o texto");
     }
 }

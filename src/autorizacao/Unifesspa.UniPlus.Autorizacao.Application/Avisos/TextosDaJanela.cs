@@ -29,8 +29,8 @@ internal static class TextosDaJanela
             "Você perderá o acesso ao perfil nas horas indicadas se a migração da sua concessão não for concluída até o prazo."),
         TextoDoAviso.Para(
             TipoDeAviso.MigracoesAguardandoProtecaoDeDados,
-            "Migrações de perfil de acesso aguardam a proteção de dados",
-            "A gestão de acessos migrou concessões cujo acréscimo exige a decisão da proteção de dados. Sem ela até o prazo, as concessões perdem o acesso."),
+            "Migrações de perfil de acesso aguardam o Representante do controlador",
+            "A gestão de acessos migrou concessões cujo acréscimo exige a decisão do Representante do controlador. Sem ela até o prazo, as concessões perdem o acesso."),
         TextoDoAviso.Para(
             TipoDeAviso.LoteEnviadoComRecusas,
             "Lote de migração de perfil de acesso enviado com recusas",

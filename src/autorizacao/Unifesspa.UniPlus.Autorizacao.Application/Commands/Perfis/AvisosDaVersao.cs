@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Os avisos da governança de versões do perfil: a remoção, o cancelamento da pendente por contenção e o descarte das
@@ -17,6 +16,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class AvisosDaVersao
 {
+    // Os gestores de acessos que mantêm perfis e os Representantes do controlador: quem a contenção avisa.
+    private static readonly GrupoDaGovernanca[] DaContencao = [GrupoDaGovernanca.Manutencao, GrupoDaGovernanca.RepresentanteDoControlador];
+
     private readonly EmissorDeAvisos _emissor;
     private readonly GruposDaGovernanca _grupos;
     private readonly ILinkDaGovernanca _link;
@@ -37,8 +39,8 @@ public sealed class AvisosDaVersao
     }
 
     /// <summary>
-    /// A remoção avisa quem mantém perfis, menos quem removeu, e, se tirou permissão pessoal ou acima, quem aprova pela
-    /// proteção de dados.
+    /// A remoção avisa os gestores de acessos que mantêm perfis e os Representantes do controlador, de toda permissão
+    /// removida, menos quem removeu (UNI-REQ-0359).
     /// </summary>
     public async Task<IReadOnlyList<EnviarEmail>> DaRemocaoAsync(
         Perfil perfil, TrocaDeVigencia troca, Identidade quemRemoveu, CancellationToken cancellationToken)
@@ -48,28 +50,28 @@ public sealed class AvisosDaVersao
         ArgumentNullException.ThrowIfNull(quemRemoveu);
 
         ModeloDeAviso modelo = Modelo(TipoDeAviso.PermissoesRemovidas, perfil, troca.Nova, troca.Removidas, _link.DoPerfil(perfil.Id));
-        IReadOnlyList<DestinatarioDoAviso> destinatarios = await DestinatariosDaRemocaoAsync(troca, cancellationToken).ConfigureAwait(false);
+        List<DestinatarioDoAviso> destinatarios = await _grupos.ListarAsync(DaContencao, cancellationToken).ConfigureAwait(false);
 
-        return await _emissor
-            .EmitirAsync(new PedidoDeAviso(modelo, troca.Nova.Id, string.Empty, destinatarios, [quemRemoveu]), cancellationToken)
-            .ConfigureAwait(false);
+        return await EmitirAsync(modelo, troca.Nova.Id, destinatarios, [quemRemoveu], cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>A pendente cancelada pela remoção avisa quem a criou, para submeter de novo.</summary>
+    /// <summary>
+    /// A pendente cancelada pela remoção avisa quem a criou, para submeter de novo, e os demais gestores de acessos e os
+    /// Representantes do controlador, menos quem removeu (UNI-REQ-0359).
+    /// </summary>
     public async Task<IReadOnlyList<EnviarEmail>> DoCancelamentoPorContencaoAsync(
-        Perfil perfil, VersaoDoPerfil cancelada, CancellationToken cancellationToken)
+        Perfil perfil, VersaoDoPerfil cancelada, Identidade quemRemoveu, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(cancelada);
+        ArgumentNullException.ThrowIfNull(quemRemoveu);
 
-        ModeloDeAviso modelo = Modelo(
-            TipoDeAviso.VersaoCanceladaPelaRemocao, perfil, cancelada, [], _link.DaVersao(perfil.Id, cancelada.Id));
+        ModeloDeAviso modelo = Modelo(TipoDeAviso.VersaoCanceladaPelaRemocao, perfil, cancelada, [], _link.DaVersao(perfil.Id, cancelada.Id));
         DestinatarioDoAviso? criador = await IndividualAsync(
             cancelada.CriadaPor, cancelada.CriadaPorEmail, GrupoDaGovernanca.Manutencao, cancellationToken).ConfigureAwait(false);
+        List<DestinatarioDoAviso> grupos = await _grupos.ListarAsync(DaContencao, cancellationToken).ConfigureAwait(false);
 
-        return await _emissor
-            .EmitirAsync(new PedidoDeAviso(modelo, cancelada.Id, string.Empty, Lista(criador), []), cancellationToken)
-            .ConfigureAwait(false);
+        return await EmitirAsync(modelo, cancelada.Id, [.. Lista(criador), .. grupos], [quemRemoveu], cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>As aprovações descartadas avisam quem as deu.</summary>
@@ -81,17 +83,9 @@ public sealed class AvisosDaVersao
         ArgumentNullException.ThrowIfNull(desfecho);
 
         ModeloDeAviso modelo = Modelo(TipoDeAviso.AprovacoesDescartadas, perfil, versao, [], _link.DaVersao(perfil.Id, versao.Id));
-        List<DestinatarioDoAviso> decisores = [];
-        foreach (DecisaoDaVersao decisao in desfecho.Descartadas)
-        {
-            DestinatarioDoAviso? decisor = await IndividualAsync(
-                decisao.Decisor, decisao.DecisorEmail, GruposDaGovernanca.DaEtapa(decisao.Etapa), cancellationToken).ConfigureAwait(false);
-            decisores.AddRange(Lista(decisor));
-        }
+        List<DestinatarioDoAviso> decisores = await DecisoresAsync(desfecho.Descartadas, cancellationToken).ConfigureAwait(false);
 
-        return await _emissor
-            .EmitirAsync(new PedidoDeAviso(modelo, desfecho.Recalculo!.Id, string.Empty, decisores, []), cancellationToken)
-            .ConfigureAwait(false);
+        return await EmitirAsync(modelo, desfecho.Recalculo!.Id, decisores, [], cancellationToken).ConfigureAwait(false);
     }
 
     private static DestinatarioDoAviso[] Lista(DestinatarioDoAviso? destinatario) => destinatario is null ? [] : [destinatario];
@@ -100,16 +94,21 @@ public sealed class AvisosDaVersao
         TipoDeAviso tipo, Perfil perfil, VersaoDoPerfil versao, IEnumerable<string> permissoes, string link) =>
         new(tipo, perfil.Nome, versao.Numero, [.. permissoes.Select(c => PerfilMapping.Descrever(c, _catalogo).Nome)], link);
 
-    private async Task<IReadOnlyList<DestinatarioDoAviso>> DestinatariosDaRemocaoAsync(
-        TrocaDeVigencia troca, CancellationToken cancellationToken)
+    private Task<IReadOnlyList<EnviarEmail>> EmitirAsync(
+        ModeloDeAviso modelo, Guid fatoId, IReadOnlyList<DestinatarioDoAviso> destinatarios, IReadOnlyCollection<Identidade> excluidos, CancellationToken cancellationToken) =>
+        _emissor.EmitirAsync(new PedidoDeAviso(modelo, fatoId, string.Empty, destinatarios, excluidos), cancellationToken);
+
+    private async Task<List<DestinatarioDoAviso>> DecisoresAsync(IEnumerable<DecisaoDaVersao> descartadas, CancellationToken cancellationToken)
     {
-        List<DestinatarioDoAviso> destinatarios = await _grupos.ListarAsync(GrupoDaGovernanca.Manutencao, cancellationToken).ConfigureAwait(false);
-        if (troca.Removidas.Any(c => PerfilMapping.SensibilidadeDe(c, _catalogo) >= ClassificacaoDeProtecao.Pessoal))
+        List<DestinatarioDoAviso> decisores = [];
+        foreach (DecisaoDaVersao decisao in descartadas)
         {
-            destinatarios.AddRange(await _grupos.ListarAsync(GrupoDaGovernanca.ProtecaoDeDados, cancellationToken).ConfigureAwait(false));
+            DestinatarioDoAviso? decisor = await IndividualAsync(
+                decisao.Decisor, decisao.DecisorEmail, GruposDaGovernanca.DaEtapa(decisao.Etapa), cancellationToken).ConfigureAwait(false);
+            decisores.AddRange(Lista(decisor));
         }
 
-        return destinatarios;
+        return decisores;
     }
 
     // O e-mail gravado no ato vale mesmo que a pessoa tenha perdido a permissão depois; sem ele, vale o da concessão

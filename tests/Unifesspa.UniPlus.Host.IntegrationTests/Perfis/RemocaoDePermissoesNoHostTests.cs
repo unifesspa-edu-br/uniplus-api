@@ -46,11 +46,12 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         (await VigenciasAsync(vigente.PerfilId)).Count(v => v.Aberta).Should().Be(1);
     }
 
-    [Fact(DisplayName = "A remoção cancela a versão pendente e avisa quem a criou para submeter de novo")]
+    [Fact(DisplayName = "A remoção cancela a versão pendente e avisa quem a criou, para submeter de novo, e o Representante do controlador")]
     public async Task Remocao_CancelaAPendenteEAvisaOCriador()
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
+        using HttpClient marlene = await ProtecaoAsync();
         using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
         Envio vigente = await PerfilVigenteAsync(diogo, Consultar, Sensivel);
         Envio pendente = await CriarVersaoAsync(betina, vigente.PerfilId, Nome(), Consultar, Sensivel);
@@ -60,6 +61,7 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         (await SituacaoDaVersaoNoBancoAsync(pendente.VersaoId)).Should().Be("cancelada");
         JsonElement aviso = await AguardarAvisoAsync(Betina, vigente.PerfilId, AssuntoDoCancelamento);
+        await AguardarAvisoAsync(Marlene, vigente.PerfilId, AssuntoDoCancelamento);
         aviso.GetProperty("Text").GetString().Should().NotContain(Motivo).And.NotContain(Diogo.Nome).And.NotContain(Diogo.Email);
     }
 
@@ -68,11 +70,8 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
-        using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
         using HttpClient isabella = await GestaoAsync();
-        Envio vigente = await PerfilVigenteAsync(diogo, Consultar, Sensivel);
-        Envio pendente = await CriarVersaoAsync(betina, vigente.PerfilId, Nome(), Consultar, Sensivel);
-        await ExecutarSqlAsync("UPDATE autorizacao.versoes_do_perfil SET expira_em = now() WHERE id = {0}", pendente.VersaoId);
+        (Envio vigente, Envio pendente) = await PendenteVencidaDeBetinaAsync(diogo);
 
         using HttpResponseMessage resposta = await RemoverBrutoAsync(diogo, vigente.PerfilId, [Sensivel]);
 
@@ -100,8 +99,8 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         (await MensagensAsync(Diogo, vigente.PerfilId)).Should().BeEmpty("quem removeu não é avisado");
     }
 
-    [Fact(DisplayName = "A remoção de permissão só interna não avisa a proteção de dados")]
-    public async Task RemocaoInterna_NaoAvisaAProtecaoDeDados()
+    [Fact(DisplayName = "A remoção de permissão só interna também avisa o Representante do controlador")]
+    public async Task RemocaoInterna_AvisaORepresentante()
     {
         await ResetarAsync();
         using HttpClient diogo = await GestorAsync();
@@ -112,7 +111,7 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         (await RemoverBrutoAsync(diogo, vigente.PerfilId, [Consultar])).Dispose();
 
         await AguardarAvisoAsync(Isabella, vigente.PerfilId, AssuntoDaRemocao);
-        (await MensagensAsync(Marlene, vigente.PerfilId)).Select(m => m.GetProperty("Subject").GetString()).Should().NotContain(m => m!.Contains(AssuntoDaRemocao, StringComparison.Ordinal));
+        await AguardarAvisoAsync(Marlene, vigente.PerfilId, AssuntoDaRemocao);
     }
 
     [Fact(DisplayName = "A segunda remoção também permite ler o documento instituidor, que é o da proposta")]
@@ -187,5 +186,16 @@ public sealed class RemocaoDePermissoesNoHostTests : AprovacaoDaVersaoNoHostTest
         using HttpResponseMessage resposta = await RemoverBrutoAsync(leandro, vigente.PerfilId, [Consultar]);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // Betina propõe uma versão sobre o perfil em vigor, e o prazo dela vence antes da remoção.
+    private async Task<(Envio Vigente, Envio Pendente)> PendenteVencidaDeBetinaAsync(HttpClient diogo)
+    {
+        using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
+        Envio vigente = await PerfilVigenteAsync(diogo, Consultar, Sensivel);
+        Envio pendente = await CriarVersaoAsync(betina, vigente.PerfilId, Nome(), Consultar, Sensivel);
+        await ExecutarSqlAsync("UPDATE autorizacao.versoes_do_perfil SET expira_em = now() WHERE id = {0}", pendente.VersaoId);
+
+        return (vigente, pendente);
     }
 }

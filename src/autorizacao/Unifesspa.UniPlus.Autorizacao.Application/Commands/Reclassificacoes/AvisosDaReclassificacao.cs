@@ -14,13 +14,14 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Os avisos dos fatos da reclassificação do catálogo. A subida de classe avisa quem aprova pela proteção de dados; a
-/// mudança de escopo e a divergência da governança avisam esse grupo e quem mantém perfis. A descida não avisa: fica só
+/// Os avisos dos fatos da reclassificação do catálogo de permissões. A subida de classe avisa os Representantes do
+/// controlador; a mudança de escopo e a divergência da governança avisam esse grupo e os gestores de acessos que mantêm
+/// perfis. A descida não avisa: fica só
 /// na trilha. O conteúdo é o modelo fixo, sem dado pessoal nem texto livre.
 /// </summary>
 public sealed class AvisosDaReclassificacao
 {
-    private static readonly GrupoDaGovernanca[] DosDoisGrupos = [GrupoDaGovernanca.ProtecaoDeDados, GrupoDaGovernanca.Manutencao];
+    private static readonly GrupoDaGovernanca[] DosDoisGrupos = [GrupoDaGovernanca.RepresentanteDoControlador, GrupoDaGovernanca.Manutencao];
 
     private readonly EmissorDeAvisos _emissor;
     private readonly GruposDaGovernanca _grupos;
@@ -100,7 +101,7 @@ public sealed class AvisosDaReclassificacao
 
         TipoDeAviso tipo = r.MudouEscopo ? TipoDeAviso.EscopoDaPermissaoAlterado : TipoDeAviso.PermissaoReclassificada;
 
-        return new FatoDoAviso(r.PerfilId, r.Codigo, tipo, MudancaDe(r), r.MudouEscopo ? DosDoisGrupos : [GrupoDaGovernanca.ProtecaoDeDados]);
+        return new FatoDoAviso(r.PerfilId, r.Codigo, tipo, MudancaDe(r), r.MudouEscopo ? DosDoisGrupos : [GrupoDaGovernanca.RepresentanteDoControlador]);
     }
 
     private async Task<FatoDoAviso?> DaDivergenciaAsync(Guid id, CancellationToken cancellationToken)

@@ -41,7 +41,7 @@ public enum TipoDeAviso
     /// <summary>Uma versão pendente ficou apta para a etapa de quem a aprova.</summary>
     VersaoPendenteApta = 12,
 
-    /// <summary>Migrações passaram a aguardar a decisão da proteção de dados.</summary>
+    /// <summary>Migrações passaram a aguardar a decisão do Representante do controlador.</summary>
     MigracoesAguardandoProtecaoDeDados = 13,
 
     /// <summary>O lote da gestão de acessos foi enviado com recusas.</summary>

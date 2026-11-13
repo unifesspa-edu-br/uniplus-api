@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 
 /// <summary>Quantidades de concessões a que um aviso se refere; cada uma só existe nos avisos que a usam.</summary>
 /// <param name="Pendentes">As que ainda esperam decisão.</param>
-/// <param name="Aguardando">As que passaram a aguardar a proteção de dados.</param>
+/// <param name="Aguardando">As que passaram a aguardar o Representante do controlador.</param>
 /// <param name="Migradas">As que migraram.</param>
 /// <param name="Revogadas">As que perderam o acesso.</param>
 public sealed record ContagensDoAviso(int? Pendentes = null, int? Aguardando = null, int? Migradas = null, int? Revogadas = null);

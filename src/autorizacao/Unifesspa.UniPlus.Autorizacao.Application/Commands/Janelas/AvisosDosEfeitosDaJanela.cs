@@ -11,13 +11,13 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 /// <summary>
 /// Os avisos do que a janela de migração fez às concessões e à versão anterior: a migração e a revogação, avisadas ao
-/// beneficiário uma vez por linha; as migrações que passam a aguardar a proteção de dados, o lote com recusas e as
+/// beneficiário uma vez por linha; as migrações que passam a aguardar o Representante do controlador, o lote com recusas e as
 /// revogações das decisões, avisados aos grupos de quem decide; e a versão anterior encerrada. Nenhum leva lista de
 /// beneficiários, motivo nem dado pessoal; o aviso nasce na transação que gravou o fato.
 /// </summary>
 public sealed class AvisosDosEfeitosDaJanela
 {
-    private static readonly GrupoDaGovernanca[] GestaoEProtecao = [GrupoDaGovernanca.Gestao, GrupoDaGovernanca.ProtecaoDeDados];
+    private static readonly GrupoDaGovernanca[] GestaoERepresentantes = [GrupoDaGovernanca.Gestao, GrupoDaGovernanca.RepresentanteDoControlador];
 
     private readonly EmissorDeAvisos _emissor;
     private readonly GruposDaGovernanca _grupos;
@@ -55,8 +55,8 @@ public sealed class AvisosDosEfeitosDaJanela
     }
 
     /// <summary>
-    /// Os avisos do fim da janela, quando a operação a encerrou: a quem perdeu o acesso pelo fim e aos grupos de gestão e
-    /// proteção de dados. Quem praticou o ato, se houve, não recebe o aviso do próprio ato.
+    /// Os avisos do fim da janela, quando a operação a encerrou: a quem perdeu o acesso pelo fim e aos gestores de acessos
+    /// e Representantes do controlador. Quem praticou o ato, se houve, não recebe o aviso do próprio ato.
     /// </summary>
     public async Task<IReadOnlyList<EnviarEmail>> DoFimAsync(
         JanelaDaOperacao janela, MudancasDaJanela mudancas, Identidade? ator, CancellationToken cancellationToken)
@@ -71,10 +71,8 @@ public sealed class AvisosDosEfeitosDaJanela
 
         FormaDoAviso forma = FormaDoFim(encerramento);
         IReadOnlyList<EnviarEmail> revogadas = await AosBeneficiariosAsync(janela, mudancas.RevogadasPeloFim, forma, cancellationToken).ConfigureAwait(false);
-        ContagensDoAviso contagens = new(Migradas: mudancas.TotalMigradas, Revogadas: mudancas.TotalRevogadas);
-        ModeloDeAviso modelo = new(
-            TipoDeAviso.VersaoEncerrada, janela.Perfil.Nome, NumeroDaVersaoAnterior(janela), [], _link.DoPerfil(janela.Perfil.Id), contagens, Forma: forma);
-        IReadOnlyList<EnviarEmail> encerrada = await AosGruposAsync(modelo, janela.Janela.Id, GestaoEProtecao, Excluir(ator), cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> encerrada = await AosGruposAsync(
+            DoEncerramento(janela, mudancas, forma), janela.Janela.Id, GestaoERepresentantes, Excluir(ator), cancellationToken).ConfigureAwait(false);
 
         return [.. revogadas, .. encerrada];
     }
@@ -89,7 +87,7 @@ public sealed class AvisosDosEfeitosDaJanela
 
         ModeloDeAviso modelo = new(TipoDeAviso.VersaoEncerrada, perfil.Nome, anterior.Numero, [], _link.DoPerfil(perfil.Id), Forma: forma);
 
-        return AosGruposAsync(modelo, anterior.Id, GestaoEProtecao, [autor], cancellationToken);
+        return AosGruposAsync(modelo, anterior.Id, GestaoERepresentantes, [autor], cancellationToken);
     }
 
     private static FormaDoAviso FormaDoFim(FormaDoEncerramento encerramento) => encerramento switch
@@ -98,6 +96,11 @@ public sealed class AvisosDosEfeitosDaJanela
         FormaDoEncerramento.Prazo => FormaDoAviso.FimDoPrazo,
         _ => FormaDoAviso.EncerramentoManual,
     };
+
+    private ModeloDeAviso DoEncerramento(JanelaDaOperacao janela, MudancasDaJanela mudancas, FormaDoAviso forma) =>
+        new(
+            TipoDeAviso.VersaoEncerrada, janela.Perfil.Nome, NumeroDaVersaoAnterior(janela), [], _link.DoPerfil(janela.Perfil.Id),
+            new ContagensDoAviso(Migradas: mudancas.TotalMigradas, Revogadas: mudancas.TotalRevogadas), Forma: forma);
 
     private static Identidade[] Excluir(Identidade? ator) => ator is null ? [] : [ator];
 
@@ -115,7 +118,7 @@ public sealed class AvisosDosEfeitosDaJanela
         foreach (MudancaNaLinha linha in mudancas.Migradas)
         {
             ModeloDeAviso modelo = new(
-                TipoDeAviso.ConcessaoMigrada, janela.Perfil.Nome, numeroDoAlvo, Nomes(linha.Acrescimo), _link.DasConcessoes());
+                TipoDeAviso.ConcessaoMigrada, janela.Perfil.Nome, numeroDoAlvo, Nomes(linha.Acrescimo), _link.DosPedidos());
             avisos.AddRange(await AoBeneficiarioAsync(modelo, linha, cancellationToken).ConfigureAwait(false));
         }
 
@@ -143,6 +146,7 @@ public sealed class AvisosDosEfeitosDaJanela
         return _emissor.EmitirAsync(new PedidoDeAviso(modelo, linha.LinhaId, string.Empty, beneficiario, []), cancellationToken);
     }
 
+    // As migrações que aguardam o Representante do controlador avisam também os gestores de acessos (UNI-REQ-0358).
     private Task<IReadOnlyList<EnviarEmail>> AguardandoAsync(
         JanelaDaOperacao janela, MudancasDaJanela mudancas, Identidade ator, CancellationToken cancellationToken)
     {
@@ -153,10 +157,10 @@ public sealed class AvisosDosEfeitosDaJanela
 
         ModeloDeAviso modelo = ModeloDaJanela(TipoDeAviso.MigracoesAguardandoProtecaoDeDados, janela, new ContagensDoAviso(Aguardando: mudancas.Aguardando.Count));
 
-        return AosGruposAsync(modelo, mudancas.NovoLoteId ?? mudancas.Aguardando[0].LinhaId, [GrupoDaGovernanca.ProtecaoDeDados], [ator], cancellationToken);
+        return AosGruposAsync(modelo, mudancas.NovoLoteId ?? mudancas.Aguardando[0].LinhaId, GestaoERepresentantes, [ator], cancellationToken);
     }
 
-    // O lote avisa gestão e proteção de dados; a retida e a etapa da proteção, só a gestão.
+    // O lote avisa os gestores de acessos e os Representantes do controlador; a retida e a etapa protegida, só os gestores.
     private Task<IReadOnlyList<EnviarEmail>> RecusasAsync(
         JanelaDaOperacao janela, MudancasDaJanela mudancas, OperacaoNaJanela operacao, Identidade ator, CancellationToken cancellationToken)
     {
@@ -170,7 +174,7 @@ public sealed class AvisosDosEfeitosDaJanela
             lote ? TipoDeAviso.LoteEnviadoComRecusas : TipoDeAviso.RevogacoesNaMigracao, janela, new ContagensDoAviso(Revogadas: mudancas.Recusadas.Count));
 
         return AosGruposAsync(
-            modelo, mudancas.NovoLoteId ?? mudancas.Recusadas[0].LinhaId, lote ? GestaoEProtecao : [GrupoDaGovernanca.Gestao], [ator], cancellationToken);
+            modelo, mudancas.NovoLoteId ?? mudancas.Recusadas[0].LinhaId, lote ? GestaoERepresentantes : [GrupoDaGovernanca.Gestao], [ator], cancellationToken);
     }
 
     private async Task<IReadOnlyList<EnviarEmail>> AosGruposAsync(

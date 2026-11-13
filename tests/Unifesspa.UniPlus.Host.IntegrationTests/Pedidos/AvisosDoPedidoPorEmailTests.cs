@@ -45,7 +45,7 @@ public sealed class AvisosDoPedidoPorEmailTests : PedidosDeConcessaoTestBase
         LerLog().Should().NotContain(link).And.NotContain(Leandro.Email).And.NotContain(Betina.Email);
     }
 
-    [Fact(DisplayName = "Pedido sensível avisa a proteção de dados sem quem aprovou como gestor, e a recusa avisa as partes sem o motivo")]
+    [Fact(DisplayName = "Pedido sensível avisa o Representante do controlador sem quem aprovou como gestor, e a recusa avisa as partes sem o motivo")]
     public async Task PedidoSensivel_AvisaAProtecaoDeDadosForaDoGestorQueAprovou()
     {
         (Guid perfil, Guid unidade) = await PerfilEUnidadeAsync(sensivel: true);
@@ -54,14 +54,14 @@ public sealed class AvisosDoPedidoPorEmailTests : PedidosDeConcessaoTestBase
         Guid id = await PedidoDeBetinaAceitoAsync(perfil, unidade);
         await AprovarComoGestorAsync(isabella, id);
 
-        SemDadosPessoais(await AguardarAvisoAsync(Marlene, id, "análise da proteção de dados"));
+        SemDadosPessoais(await AguardarAvisoAsync(Marlene, id, "decisão do Representante do controlador"));
         (await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/recusa", new { motivo = MotivoDaRecusa })).StatusCode.Should().Be(HttpStatusCode.OK);
 
         JsonElement recusado = await AguardarAvisoAsync(Leandro, id, "Pedido de acesso recusado");
         await AguardarAvisoAsync(Betina, id, "Pedido de acesso recusado");
         recusado.GetProperty("Text").GetString().Should().NotContain(MotivoDaRecusa);
         (await MensagensAsync(Isabella, id)).Select(m => m.GetProperty("Subject").GetString()).Should()
-            .NotContain(a => a!.Contains("proteção de dados", StringComparison.Ordinal), "quem aprovou como gestor não decide a segunda etapa");
+            .NotContain(a => a!.Contains("Representante do controlador", StringComparison.Ordinal), "quem aprovou como gestor não decide a segunda etapa");
     }
 
     [Fact(DisplayName = "O cancelamento avisa o beneficiário e não o solicitante")]

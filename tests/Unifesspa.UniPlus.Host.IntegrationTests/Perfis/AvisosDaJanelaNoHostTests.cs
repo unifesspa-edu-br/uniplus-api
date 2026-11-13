@@ -51,7 +51,7 @@ public sealed class AvisosDaJanelaNoHostTests : JanelaDeMigracaoNoHostTestBase
 
         Para(doLote, Revogada).Should().Equal(Betina.Email);
         Para(daEtapa, Migrada).Should().Equal(Leandro.Email);
-        Para(doLote, Aguardando).Should().Contain(Marlene.Email).And.NotContain(Isabella.Email);
+        Para(doLote, Aguardando).Should().Contain(Marlene.Email).And.Contain(Diogo.Email, "os gestores também são avisados").And.NotContain(Isabella.Email, "quem enviou o lote não é avisado");
         Mensagens(doLote, ComRecusas).Should().OnlyContain(m => SemDadoDosBeneficiarios(m));
     }
 
