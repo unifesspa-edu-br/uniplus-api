@@ -27,6 +27,7 @@ public static class ArquivosAdministrativos
             .. arquivos
                 .Where(a => a.ConfirmadoEm is not null && porId.ContainsKey(a.ApresentacaoId))
                 .OrderBy(static a => a.ConfirmadoEm)
+                .ThenBy(static a => a.Id)
                 .Select(a => Arquivo(a, porId[a.ApresentacaoId], grafo)),
         ];
     }
