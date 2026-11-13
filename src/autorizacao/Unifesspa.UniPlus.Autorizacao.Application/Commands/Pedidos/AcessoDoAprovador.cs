@@ -97,6 +97,21 @@ internal sealed record AcessoDoAprovador(
     }
 
     /// <summary>
+    /// A decisão que governa a leitura de quem é parte do pedido, sem gravar: a da consulta dos pedidos, quando a pessoa a
+    /// tem, como o Encarregado de dados, para que a leitura dos próprios pedidos entre na trilha como as demais
+    /// (UNI-REQ-0372). Nula para quem não tem a consulta, que lê os próprios pedidos por titularidade, sem registro
+    /// (issue #2389).
+    /// </summary>
+    /// <param name="pedidoId">O pedido lido, ou nulo na fila dos próprios pedidos.</param>
+    public static async Task<DecisaoPermitida?> GovernanteDaLeituraDaParteAsync(
+        IVerificadorDeAcesso verificador, Guid? pedidoId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+
+        return await AvaliarAsync(verificador, PermissaoConsultar, pedidoId, cancellationToken).ConfigureAwait(false) as DecisaoPermitida;
+    }
+
+    /// <summary>
     /// Registra a decisão que governou o desfecho, permitida ou negada. Pergunta pelo acesso a uma fila ou a uma etapa
     /// tem uma permissão só, e é essa que a trilha recebe.
     /// </summary>
