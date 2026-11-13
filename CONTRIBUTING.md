@@ -530,25 +530,33 @@ Conceito de domínio com significado próprio não trafega como `string`, `Guid`
 **Validação conforme a [ADR-0125](docs/adrs/0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md).** O `record` carrega os dados; a validação fica acumulada num único `errors[]` no agregado. Um value object que valide algo contribui para o mesmo lote, sem fail-fast: a criação devolve todos os erros de uma vez, nunca só o primeiro.
 
 ```csharp
-// Evite: primitivos soltos; e-mail, justificativa e validade sugerida não dizem o que são
+// Evite: primitivos soltos; e-mail do beneficiário, justificativa e validade sugerida não dizem o que são
 public static Result<PedidoDeConcessao> Criar(
     PessoaNoToken solicitante, string? emailDoBeneficiario, Perfil perfil, EscopoDaConcessao escopo,
     string? justificativa, IDominiosInstitucionais dominios, ICatalogoDePermissoesConsultavel catalogo,
     DateTimeOffset instante, DateTimeOffset? validaAteSugerida = null)
 
-// Prefira: o que o solicitante declara no pedido é um conceito, e anda junto
-public sealed record DeclaracaoDoPedido(string? EmailDoBeneficiario, string? Justificativa, DateTimeOffset? ValidaAteSugerida)
+// Prefira: cada grupo é um conceito do pedido, e os dados de cada um andam juntos.
+// Quem pede e para quem se pede: o solicitante e o e-mail do beneficiário
+public sealed record PartesDoPedido(PessoaNoToken Solicitante, string? EmailDoBeneficiario)
 {
     // Contribui para o lote do agregado; não interrompe no primeiro erro
-    public void Validar(IDominiosInstitucionais dominios, DateTimeOffset instante, List<DomainError> errors) { … }
+    public void Validar(IDominiosInstitucionais dominios, List<DomainError> errors) { … }
+}
+
+// O que o solicitante declara: a justificativa e a validade sugerida (e, quando houver, o documento anexado)
+public sealed record DeclaracaoDoPedido(string? Justificativa, DateTimeOffset? ValidaAteSugerida)
+{
+    public void Validar(DateTimeOffset instante, List<DomainError> errors) { … }
 }
 
 public static Result<PedidoDeConcessao> Criar(
-    PessoaNoToken solicitante, Perfil perfil, EscopoDaConcessao escopo, DeclaracaoDoPedido declaracao,
+    PartesDoPedido partes, Perfil perfil, EscopoDaConcessao escopo, DeclaracaoDoPedido declaracao,
     IDominiosInstitucionais dominios, ICatalogoDePermissoesConsultavel catalogo, DateTimeOffset instante)
 {
     List<DomainError> errors = [];
-    declaracao.Validar(dominios, instante, errors);
+    partes.Validar(dominios, errors);
+    declaracao.Validar(instante, errors);
     // … demais invariantes do agregado acumulam no mesmo errors[]
     return errors.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(errors) : …;
 }
