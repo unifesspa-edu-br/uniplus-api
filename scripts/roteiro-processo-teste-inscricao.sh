@@ -38,8 +38,10 @@
 #
 # O executor não recebe permissão do Keycloak: no início, o roteiro faz um
 # gestor conceder a ele os perfis de que precisa, pela API
-# (acessos-do-roteiro.sh). Numa segunda execução, as concessões são
-# reaproveitadas.
+# (acessos-do-roteiro.sh). Em seguida designa dois Representantes do
+# controlador e faz o primeiro aprovar a proteção do catálogo de tipos de
+# documento e de fatos do candidato (governanca-do-roteiro.sh). Numa segunda
+# execução, as concessões, as designações e as aprovações são reaproveitadas.
 #
 # Uso:
 #   scripts/roteiro-processo-teste-inscricao.sh
@@ -100,6 +102,9 @@ idem() { cat /proc/sys/kernel/random/uuid; }
 # As concessões que o executor precisa, pedidas e aprovadas pela API.
 # shellcheck source=acessos-do-roteiro.sh
 source "$(dirname "${BASH_SOURCE[0]}")/acessos-do-roteiro.sh"
+# Os Representantes do controlador e a proteção do catálogo aprovada.
+# shellcheck source=governanca-do-roteiro.sh
+source "$(dirname "${BASH_SOURCE[0]}")/governanca-do-roteiro.sh"
 
 # Falha alto quando um id de catálogo (criado ou reaproveitado via fallback
 # de busca) sai vazio, em vez de deixar "" descer em silêncio para o próximo
@@ -873,6 +878,8 @@ main() {
     [ -r /proc/sys/kernel/random/uuid ] || fail "precisa de /proc/sys/kernel/random/uuid (Linux)"
     obter_token
     garantir_acesso_institucional
+    garantir_representantes
+    garantir_protecao_do_catalogo
     setup_publicacoes
     setup_organizacao
     garantir_acesso_na_unidade "$UNIDADE_ID"
