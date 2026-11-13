@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Messaging;
 
 using System;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 
 using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado;
@@ -19,9 +20,10 @@ using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado
 public static class ProcessoPublicadoToAvroMapper
 {
     /// <summary>
-    /// Com <c>logicalType=timestamp-millis</c>, o Apache.Avro espera <see cref="DateTime"/> e o serializer o converte
-    /// para <see cref="long"/> (ms desde o epoch Unix UTC); <c>UtcDateTime</c> garante <c>Kind=Utc</c>, e as frações
-    /// de milissegundo são truncadas. O <c>SnapshotPublicacaoId</c> é, desde a ADR-0104, o identificador da
+    /// Com <c>logicalType=timestamp-micros</c>, o Apache.Avro espera <see cref="DateTime"/> e o serializer o converte
+    /// para <see cref="long"/> (µs desde o epoch Unix UTC), a precisão com que o instante é gravado; <c>UtcDateTime</c>
+    /// garante <c>Kind=Utc</c>. O instante já sai truncado em µs daqui, sem depender de como o serializer trata a
+    /// fração abaixo de µs. O <c>SnapshotPublicacaoId</c> é, desde a ADR-0104, o identificador da
     /// <c>VersaoConfiguracao</c> congelada na publicação: o nome do campo, no evento e no schema Avro, é o histórico
     /// que a fila durável já carrega.
     /// </summary>
@@ -32,7 +34,7 @@ public static class ProcessoPublicadoToAvroMapper
         return new ProcessoPublicadoAvro
         {
             EventId = evt.EventId.ToString(),
-            OccurredOn = evt.OccurredOn.UtcDateTime,
+            OccurredOn = evt.OccurredOn.TruncadoEmMicrossegundos().UtcDateTime,
             ProcessoSeletivoId = evt.ProcessoSeletivoId.ToString(),
             EditalId = evt.EditalId.ToString(),
             SnapshotPublicacaoId = evt.SnapshotPublicacaoId.ToString(),

@@ -13,9 +13,9 @@
       "name": "OccurredOn",
       "type": {
         "type": "long",
-        "logicalType": "timestamp-millis"
+        "logicalType": "timestamp-micros"
       },
-      "doc": "Instante de emissão UTC em milissegundos desde a epoch Unix."
+      "doc": "Instante de emissão UTC em microssegundos desde a epoch Unix, a mesma precisão com que o instante é gravado."
     },
     {
       "name": "ProcessoSeletivoId",

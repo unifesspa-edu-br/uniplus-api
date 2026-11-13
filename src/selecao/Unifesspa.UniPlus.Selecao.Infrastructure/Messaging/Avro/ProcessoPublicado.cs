@@ -66,9 +66,9 @@ public sealed class ProcessoPublicado : ISpecificRecord
     public string EventId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Instante de emissão UTC. O schema declara <c>{type:long, logicalType:timestamp-millis}</c>;
+    /// Instante de emissão UTC. O schema declara <c>{type:long, logicalType:timestamp-micros}</c>;
     /// Apache.Avro converte automaticamente entre <see cref="DateTime"/> (logical) e
-    /// <see cref="long"/> (base, ms desde epoch Unix) na serialização.
+    /// <see cref="long"/> (base, µs desde epoch Unix) na serialização.
     /// </summary>
     public DateTime OccurredOn { get; set; }
 
