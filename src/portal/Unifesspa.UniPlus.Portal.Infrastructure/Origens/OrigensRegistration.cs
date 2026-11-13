@@ -42,38 +42,46 @@ public static class OrigensRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        IConfigurationSection secao = configuration.GetSection(OrigensOptions.SectionName);
+        RegistrarOpcoes(services, configuration);
+        services.TryAddSingleton(TimeProvider.System);
+        RegistrarClienteDaOrigem<ISelecaoCertamePublicoApi>(services, PoliticaDeSelecao, static opcoes => opcoes.SelecaoBaseUrl);
+        RegistrarClienteDaOrigem<IPublicacoesAtosApi>(services, PoliticaDePublicacoes, static opcoes => opcoes.PublicacoesBaseUrl);
+        RegistrarComposicaoDaPagina(services);
 
+        return services;
+    }
+
+    private static void RegistrarOpcoes(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddOptions<OrigensOptions>()
-            .Bind(secao)
+            .Bind(configuration.GetSection(OrigensOptions.SectionName))
             .ValidateOnStart();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IValidateOptions<OrigensOptions>, OrigensOptionsValidator>());
+    }
 
-        services.TryAddSingleton(TimeProvider.System);
-
-        // Cliente gerado em tempo de compilação: falha na compilação, e não na primeira chamada,
-        // se a interface sair do que o gerador sabe montar.
-        services.AddRefitGeneratedClient<ISelecaoCertamePublicoApi>()
-            .ConfigureHttpClient((provedor, cliente) =>
-                ConfigurarCliente(provedor, cliente, opcoes => opcoes.SelecaoBaseUrl))
+    /// <summary>
+    /// O cliente é gerado em tempo de compilação: se a interface sair do que o gerador sabe montar, a falha vem na
+    /// compilação, e não na primeira chamada. Cada origem tem a política de resiliência própria, para que o circuito
+    /// aberto por uma não bloqueie a outra.
+    /// </summary>
+    private static void RegistrarClienteDaOrigem<TApi>(
+        IServiceCollection services, string politica, Func<OrigensOptions, string> endereco)
+        where TApi : class
+    {
+        services.AddRefitGeneratedClient<TApi>()
+            .ConfigureHttpClient((provedor, cliente) => ConfigurarCliente(provedor, cliente, endereco))
             .ConfigurePrimaryHttpMessageHandler(SemCredencialNemRedirecionamento)
             .RedactLoggedHeaders(CabecalhosOcultos)
-            .AddResilienceHandler(PoliticaDeSelecao, ConfigurarResiliencia);
+            .AddResilienceHandler(politica, ConfigurarResiliencia);
+    }
 
-        services.AddRefitGeneratedClient<IPublicacoesAtosApi>()
-            .ConfigureHttpClient((provedor, cliente) =>
-                ConfigurarCliente(provedor, cliente, opcoes => opcoes.PublicacoesBaseUrl))
-            .ConfigurePrimaryHttpMessageHandler(SemCredencialNemRedirecionamento)
-            .RedactLoggedHeaders(CabecalhosOcultos)
-            .AddResilienceHandler(PoliticaDePublicacoes, ConfigurarResiliencia);
-
+    private static void RegistrarComposicaoDaPagina(IServiceCollection services)
+    {
         services.AddScoped<IContratoPublicoDoCertame, ContratoPublicoDoCertameHttp>();
         services.AddScoped<IRegistroDeAtosDoCertame, RegistroDeAtosDoCertameHttp>();
         services.AddScoped<ComposicaoDaPaginaDoCertame>();
-
-        return services;
     }
 
     /// <summary>
@@ -117,7 +125,8 @@ public static class OrigensRegistration
     /// <remarks>
     /// O corte fica dentro da retentativa: aberto, ele faz a tentativa seguinte falhar na hora com
     /// um erro que a retentativa não repete, e o laço termina em vez de insistir numa origem que já
-    /// se declarou indisponível.
+    /// se declarou indisponível. O relógio é o do contêiner: os testes o trocam para exercitar espera
+    /// e expiração sem tempo real.
     /// </remarks>
     private static void ConfigurarResiliencia(
         ResiliencePipelineBuilder<HttpResponseMessage> construtor,
@@ -125,12 +134,19 @@ public static class OrigensRegistration
     {
         OrigensOptions opcoes = contexto.ServiceProvider.GetRequiredService<IOptions<OrigensOptions>>().Value;
 
-        // Relógio do contêiner: os testes o trocam para exercitar espera e expiração sem tempo real.
         construtor.TimeProvider = contexto.ServiceProvider.GetRequiredService<TimeProvider>();
-
         construtor.AddTimeout(TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos));
+        AdicionarRetentativa(construtor, opcoes);
+        construtor
+            .AddCircuitBreaker(CorteDeCircuito(opcoes))
+            .AddTimeout(TimeSpan.FromSeconds(opcoes.TimeoutPorTentativaEmSegundos));
+    }
 
-        // Zero retentativas desliga a estratégia: a biblioteca recusa montá-la com zero.
+    /// <summary>
+    /// Zero retentativas desliga a estratégia: a biblioteca recusa montá-la com zero.
+    /// </summary>
+    private static void AdicionarRetentativa(ResiliencePipelineBuilder<HttpResponseMessage> construtor, OrigensOptions opcoes)
+    {
         if (opcoes.MaximoDeRetentativas > 0)
         {
             construtor.AddRetry(new HttpRetryStrategyOptions
@@ -142,15 +158,14 @@ public static class OrigensRegistration
                 ShouldRetryAfterHeader = true,
             });
         }
-
-        construtor
-            .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
-            {
-                SamplingDuration = TimeSpan.FromSeconds(opcoes.JanelaDeAmostragemDoCorteEmSegundos),
-                MinimumThroughput = opcoes.ChamadasMinimasParaAvaliarCorte,
-                FailureRatio = opcoes.ProporcaoDeFalhaParaAbrirCorte,
-                BreakDuration = TimeSpan.FromSeconds(opcoes.DuracaoDoCorteEmSegundos),
-            })
-            .AddTimeout(TimeSpan.FromSeconds(opcoes.TimeoutPorTentativaEmSegundos));
     }
+
+    private static HttpCircuitBreakerStrategyOptions CorteDeCircuito(OrigensOptions opcoes) =>
+        new()
+        {
+            SamplingDuration = TimeSpan.FromSeconds(opcoes.JanelaDeAmostragemDoCorteEmSegundos),
+            MinimumThroughput = opcoes.ChamadasMinimasParaAvaliarCorte,
+            FailureRatio = opcoes.ProporcaoDeFalhaParaAbrirCorte,
+            BreakDuration = TimeSpan.FromSeconds(opcoes.DuracaoDoCorteEmSegundos),
+        };
 }
