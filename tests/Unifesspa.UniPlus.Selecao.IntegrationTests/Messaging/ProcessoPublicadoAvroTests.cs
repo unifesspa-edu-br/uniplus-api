@@ -26,10 +26,6 @@ using ProcessoPublicadoAvro = unifesspa.uniplus.selecao.events.ProcessoPublicado
 /// (compose local ou cluster standalone).
 /// </remarks>
 [Trait("Category", "Unit")]
-[System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "Performance",
-    "CA1859:Use concrete types when possible for improved performance",
-    Justification = "Testes do contrato ISpecificRecord — uso da interface é intencional para verificar a implementação dinâmica do Apache.Avro.")]
 public sealed class ProcessoPublicadoAvroTests
 {
     [Fact(DisplayName = "Schema é carregado do embedded resource em Selecao.Domain")]
@@ -47,28 +43,25 @@ public sealed class ProcessoPublicadoAvroTests
             ["EventId", "OccurredOn", "ProcessoSeletivoId", "EditalId", "SnapshotPublicacaoId", "HashConfiguracao", "HashEdital"]);
     }
 
+    // O campo SnapshotPublicacaoId preserva o nome histórico do schema (compatibilidade BACKWARD do Schema Registry): o
+    // mapper faz a ponte entre os dois vocabulários.
     [Fact(DisplayName = "Mapper Event → Avro preserva todos os campos")]
     public void Mapper_DeveMaperearTodosOsCampos()
     {
-        ProcessoPublicadoEvent evt = new(
-            ProcessoSeletivoId: Guid.CreateVersion7(),
-            EditalId: Guid.CreateVersion7(),
-            SnapshotPublicacaoId: Guid.CreateVersion7(),
-            HashConfiguracao: new string('a', 64),
-            HashEdital: new string('b', 64),
-            OccurredOn: new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
+        ProcessoPublicadoEvent evt = EventoEm(new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
 
         ProcessoPublicadoAvro avro = ProcessoPublicadoToAvroMapper.ToAvro(evt);
 
-        avro.EventId.Should().Be(evt.EventId.ToString());
-        avro.OccurredOn.Should().Be(evt.OccurredOn.UtcDateTime);
-        avro.ProcessoSeletivoId.Should().Be(evt.ProcessoSeletivoId.ToString());
-        avro.EditalId.Should().Be(evt.EditalId.ToString());
-        // O campo wire preserva o nome histórico (compat BACKWARD do Schema
-        // Registry) — o mapper faz a ponte entre os dois vocabulários.
-        avro.SnapshotPublicacaoId.Should().Be(evt.SnapshotPublicacaoId.ToString());
-        avro.HashConfiguracao.Should().Be(evt.HashConfiguracao);
-        avro.HashEdital.Should().Be(evt.HashEdital);
+        avro.Should().BeEquivalentTo(new
+        {
+            EventId = evt.EventId.ToString(),
+            OccurredOn = evt.OccurredOn.UtcDateTime,
+            ProcessoSeletivoId = evt.ProcessoSeletivoId.ToString(),
+            EditalId = evt.EditalId.ToString(),
+            SnapshotPublicacaoId = evt.SnapshotPublicacaoId.ToString(),
+            evt.HashConfiguracao,
+            evt.HashEdital,
+        });
     }
 
     [Fact(DisplayName = "Mapper rejeita null")]
@@ -81,40 +74,84 @@ public sealed class ProcessoPublicadoAvroTests
     [Fact(DisplayName = "Round-trip Avro binary preserva todos os campos")]
     public void RoundTrip_DevePreservarCampos()
     {
-        // Construímos o Avro a partir de um evento real para garantir que o
-        // schema usado na escrita seja exatamente o mesmo carregado do recurso —
-        // qualquer drift entre .avsc e a classe ISpecificRecord falhará aqui.
-        ProcessoPublicadoEvent evt = new(
+        // O Avro vem de um evento real, para que a escrita use o schema carregado do recurso: qualquer divergência entre
+        // o .avsc e a classe ISpecificRecord falha aqui.
+        ProcessoPublicadoAvro original = ProcessoPublicadoToAvroMapper.ToAvro(
+            EventoEm(new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero)));
+
+        ProcessoPublicadoAvro decoded = IdaEVolta(original);
+
+        decoded.Should().BeEquivalentTo(original);
+    }
+
+    [Fact(DisplayName = "O instante com 7 casas volta do Avro com 6, em UTC")]
+    public void RoundTrip_InstanteComSeteCasas_VoltaEmMicrossegundos()
+    {
+        DateTimeOffset instante = new DateTimeOffset(2026, 11, 13, 10, 0, 0, TimeSpan.FromHours(-3)).AddTicks(1_234_567);
+
+        ProcessoPublicadoAvro decoded = IdaEVolta(ProcessoPublicadoToAvroMapper.ToAvro(EventoEm(instante)));
+
+        decoded.OccurredOn.Should().Be(new DateTime(2026, 11, 13, 13, 0, 0, DateTimeKind.Utc).AddTicks(1_234_560));
+        decoded.OccurredOn.Kind.Should().Be(DateTimeKind.Utc);
+    }
+
+    [Fact(DisplayName = "O instante anterior à época Unix volta do Avro truncado em microssegundos")]
+    public void RoundTrip_InstanteAnteriorAEpoca_VoltaTruncado()
+    {
+        DateTimeOffset instante = new DateTimeOffset(1969, 12, 31, 23, 59, 59, TimeSpan.Zero).AddTicks(9_999_995);
+
+        ProcessoPublicadoAvro decoded = IdaEVolta(ProcessoPublicadoToAvroMapper.ToAvro(EventoEm(instante)));
+
+        decoded.OccurredOn.Should().Be(new DateTime(1969, 12, 31, 23, 59, 59, DateTimeKind.Utc).AddTicks(9_999_990));
+    }
+
+    // O leitor converte o long pela unidade do schema de quem gravou, não pela do seu: a mensagem publicada antes da
+    // troca para timestamp-micros continua lida no mesmo instante, na precisão de milissegundo que ela carregava.
+    [Fact(DisplayName = "A mensagem gravada com o schema em milissegundos é lida pelo schema novo no mesmo instante")]
+    public void SchemaAntigo_LidoPeloNovo_PreservaOInstante()
+    {
+        global::Avro.Schema schemaEmMilissegundos = global::Avro.Schema.Parse(
+            ProcessoPublicadoAvro.AvroSchema.ToString().Replace("timestamp-micros", "timestamp-millis", StringComparison.Ordinal));
+        DateTimeOffset instante = new DateTimeOffset(2026, 11, 13, 10, 0, 0, TimeSpan.Zero).AddTicks(1_234_567);
+
+        ProcessoPublicadoAvro decoded = IdaEVolta(ProcessoPublicadoToAvroMapper.ToAvro(EventoEm(instante)), schemaEmMilissegundos);
+
+        decoded.OccurredOn.Should().Be(new DateTime(2026, 11, 13, 10, 0, 0, DateTimeKind.Utc).AddTicks(1_230_000));
+    }
+
+    [Fact(DisplayName = "O schema declara o instante de emissão em timestamp-micros")]
+    public void Schema_OccurredOn_DeclaraTimestampMicros()
+    {
+        global::Avro.RecordSchema schema = (global::Avro.RecordSchema)ProcessoPublicadoAvro.AvroSchema;
+
+        global::Avro.LogicalSchema occurredOn = (global::Avro.LogicalSchema)schema.Fields.Single(f => f.Name == "OccurredOn").Schema;
+
+        occurredOn.LogicalTypeName.Should().Be("timestamp-micros");
+    }
+
+    private static ProcessoPublicadoEvent EventoEm(DateTimeOffset instante) =>
+        new(
             ProcessoSeletivoId: Guid.CreateVersion7(),
             EditalId: Guid.CreateVersion7(),
             SnapshotPublicacaoId: Guid.CreateVersion7(),
             HashConfiguracao: new string('c', 64),
             HashEdital: new string('d', 64),
-            OccurredOn: new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.Zero));
+            OccurredOn: instante);
 
-        ProcessoPublicadoAvro original = ProcessoPublicadoToAvroMapper.ToAvro(evt);
+    private static ProcessoPublicadoAvro IdaEVolta(ProcessoPublicadoAvro original) =>
+        IdaEVolta(original, ProcessoPublicadoAvro.AvroSchema);
 
-        SpecificDefaultWriter writer = new(ProcessoPublicadoAvro.AvroSchema);
+    private static ProcessoPublicadoAvro IdaEVolta(ProcessoPublicadoAvro original, global::Avro.Schema schemaDoProdutor)
+    {
+        SpecificDefaultWriter writer = new(schemaDoProdutor);
         using MemoryStream stream = new();
         BinaryEncoder encoder = new(stream);
         writer.Write(original, encoder);
         encoder.Flush();
 
         stream.Position = 0;
-        SpecificDefaultReader reader = new(ProcessoPublicadoAvro.AvroSchema, ProcessoPublicadoAvro.AvroSchema);
-        BinaryDecoder decoder = new(stream);
-        ProcessoPublicadoAvro? decoded = reader.Read(reuse: default(ProcessoPublicadoAvro), decoder);
-
-        decoded.Should().NotBeNull();
-        decoded.EventId.Should().Be(original.EventId);
-        // timestamp-millis trunca para ms — original tem ticks (precisão sub-ms),
-        // decoded vem só com ms. Comparar truncado.
-        decoded.OccurredOn.Should().BeCloseTo(original.OccurredOn, TimeSpan.FromMilliseconds(1));
-        decoded.ProcessoSeletivoId.Should().Be(original.ProcessoSeletivoId);
-        decoded.EditalId.Should().Be(original.EditalId);
-        decoded.SnapshotPublicacaoId.Should().Be(original.SnapshotPublicacaoId);
-        decoded.HashConfiguracao.Should().Be(original.HashConfiguracao);
-        decoded.HashEdital.Should().Be(original.HashEdital);
+        SpecificDefaultReader reader = new(schemaDoProdutor, ProcessoPublicadoAvro.AvroSchema);
+        return reader.Read(reuse: default(ProcessoPublicadoAvro), new BinaryDecoder(stream))!;
     }
 
     [Theory(DisplayName = "ISpecificRecord Get por posição retorna campos esperados")]
@@ -127,19 +164,10 @@ public sealed class ProcessoPublicadoAvroTests
     [InlineData(6, "HashEdital")]
     public void Get_DeveRetornarCampoCorreto(int fieldPos, string expectedFieldName)
     {
-        ProcessoPublicadoAvro avro = new()
-        {
-            EventId = "evt-id",
-            OccurredOn = new DateTime(2026, 5, 9, 12, 0, 0, DateTimeKind.Utc),
-            ProcessoSeletivoId = "processo-id",
-            EditalId = "edital-id",
-            SnapshotPublicacaoId = "snapshot-id",
-            HashConfiguracao = new string('a', 64),
-            HashEdital = new string('b', 64),
-        };
+        ProcessoPublicadoAvro avro = ProcessoPublicadoToAvroMapper.ToAvro(
+            EventoEm(new DateTimeOffset(2026, 5, 9, 12, 0, 0, TimeSpan.Zero)));
 
-        ISpecificRecord record = (ISpecificRecord)avro;
-        object value = record.Get(fieldPos);
+        object value = avro.Get(fieldPos);
 
         value.Should().NotBeNull();
 
@@ -152,8 +180,7 @@ public sealed class ProcessoPublicadoAvroTests
     public void Get_PosicaoInvalida_DeveLancar()
     {
         ProcessoPublicadoAvro avro = new();
-        ISpecificRecord record = (ISpecificRecord)avro;
-        Action act = () => record.Get(99);
+        Action act = () => avro.Get(99);
         act.Should().Throw<global::Avro.AvroRuntimeException>();
     }
 
@@ -161,8 +188,7 @@ public sealed class ProcessoPublicadoAvroTests
     public void Put_PosicaoInvalida_DeveLancar()
     {
         ProcessoPublicadoAvro avro = new();
-        ISpecificRecord record = (ISpecificRecord)avro;
-        Action act = () => record.Put(99, "x");
+        Action act = () => avro.Put(99, "x");
         act.Should().Throw<global::Avro.AvroRuntimeException>();
     }
 }
