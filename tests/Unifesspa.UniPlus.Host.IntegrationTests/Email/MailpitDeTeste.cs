@@ -12,8 +12,8 @@ internal static class MailpitDeTeste
     public const ushort PortaHttp = 8025;
 
     /// <summary>
-    /// Monta o Mailpit. Ele faz DNS reverso de cada conexão SMTP antes da saudação, e DNS externo lento trava a fila de
-    /// envio, que entrega uma mensagem por vez: por isso a consulta fica desligada.
+    /// Monta o Mailpit. Ele faz DNS reverso de cada conexão SMTP antes da saudação, e DNS externo lento atrasa a
+    /// saudação até o prazo de conexão do envio: por isso a consulta fica desligada.
     /// </summary>
     /// <param name="servidorDns">Servidor de DNS do contêiner; nulo mantém o padrão do Docker.</param>
     /// <param name="comDnsReverso">Religa a consulta, só para o teste que mostra o efeito dela.</param>
