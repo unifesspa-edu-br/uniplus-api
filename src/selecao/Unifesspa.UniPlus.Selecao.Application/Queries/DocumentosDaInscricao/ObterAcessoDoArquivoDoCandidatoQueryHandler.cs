@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -22,32 +21,30 @@ public static partial class ObterAcessoDoArquivoDoCandidatoQueryHandler
         ObterAcessoDoArquivoDoCandidatoQuery query,
         IInscricaoRepository inscricaoRepository,
         IDocumentoDaInscricaoRepository documentoRepository,
-        IArquivoDoCandidatoStorage storage,
+        EmissaoDoAcessoAoArquivo emissao,
         IUserContext userContext,
-        TimeProvider clock,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(storage);
+        ArgumentNullException.ThrowIfNull(emissao);
         ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(clock);
-        ArgumentNullException.ThrowIfNull(logger);
 
         Result<ArquivoDaApresentacao> encontrado = await AcessoAoDocumentoDaInscricao
             .ResolverArquivoDoDonoAsync(
                 query.ProcessoSeletivoId, query.ArquivoId, userContext, inscricaoRepository, documentoRepository, cancellationToken)
             .ConfigureAwait(false);
-        if (encontrado.IsFailure)
-        {
-            return Result<AcessoArquivoDoCandidatoDto>.Failure(encontrado.Error!);
-        }
 
-        ArquivoDaApresentacao arquivo = encontrado.Value!;
-        Result<AcessoArquivoDoCandidatoDto> acesso = await EmissaoDoAcessoAoArquivo
-            .EmitirAsync(arquivo, documentoRepository, storage, clock, cancellationToken)
-            .ConfigureAwait(false);
+        return encontrado.IsFailure
+            ? Result<AcessoArquivoDoCandidatoDto>.Failure(encontrado.Error!)
+            : await EmitirERegistrarAsync(encontrado.Value!, emissao, userContext, logger, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<AcessoArquivoDoCandidatoDto>> EmitirERegistrarAsync(
+        ArquivoDaApresentacao arquivo, EmissaoDoAcessoAoArquivo emissao, IUserContext userContext, ILogger logger, CancellationToken cancellationToken)
+    {
+        Result<AcessoArquivoDoCandidatoDto> acesso = await emissao.EmitirAsync(arquivo, cancellationToken).ConfigureAwait(false);
         if (acesso.IsSuccess)
         {
             LogAcessoEmitido(logger, userContext.UserId ?? string.Empty, arquivo.Id, acesso.Value!.ExpiraEm - PrazosDoArquivoEnviado.Leitura);

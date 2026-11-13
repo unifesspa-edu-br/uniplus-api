@@ -40,7 +40,8 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
 {
     /// <summary>
     /// Actions que decidem no handler, e não em atributo, porque a decisão depende de algo que só o handler carrega. A
-    /// decisão continua no ponto único, e o teste confere que o handler da mensagem recebe <see cref="IVerificadorDeAcesso"/>.
+    /// decisão continua no ponto único, e o teste confere que o handler da mensagem recebe <see cref="IVerificadorDeAcesso"/>,
+    /// direto ou pelo serviço de aplicação que o recebe no construtor.
     /// </summary>
     private static readonly Dictionary<string, Type> DecididasNoHandler = new(StringComparer.Ordinal)
     {
@@ -170,6 +171,11 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
             .Should().ContainSingle().Which.Should().Contain("Publicar");
         Sozinhas([typeof(FixturesDeAutorizacao.AcaoAdministrativaDecididaPeloPontoUnico)]).Should().BeEmpty();
         Sozinhas([typeof(FixturesDeAutorizacao.PoliticaDeIdentidade)]).Should().BeEmpty("a ação da instalação é identificada pela política");
+
+        RecebeOPontoDeDecisao(typeof(IVerificadorDeAcesso)).Should().BeTrue();
+        RecebeOPontoDeDecisao(typeof(FixturesDeAutorizacao.ServicoQueRecebeOVerificador)).Should().BeTrue();
+        RecebeOPontoDeDecisao(typeof(FixturesDeAutorizacao.ServicoQueNaoRecebeOVerificador)).Should().BeFalse(
+            "o handler decidido no handler só passa se o verificador chega a ele, direto ou pelo construtor do serviço");
     }
 
     private static void ConferirAsListasFechadas(IReadOnlyList<Type> controllers)
@@ -178,8 +184,13 @@ public sealed class AcaoAdministrativaDeclaraPermissaoTests
         DecididasNoHandler.Keys.Concat(DePessoaAutenticada).Concat(DoTitular).Should().BeSubsetOf(acoes,
             "a lista fechada só nomeia actions que existem; action removida ou renomeada sai da lista");
         DecididasNoHandler.Values.Should().AllSatisfy(static mensagem => HandlerDe(mensagem)
-            .GetParameters().Should().Contain(static p => p.ParameterType == typeof(IVerificadorDeAcesso)));
+            .GetParameters().Should().Contain(static p => RecebeOPontoDeDecisao(p.ParameterType)));
     }
+
+    /// <summary>O ponto de decisão chega ao handler direto ou pelo serviço de aplicação que o recebe no construtor.</summary>
+    private static bool RecebeOPontoDeDecisao(Type parametro) =>
+        parametro == typeof(IVerificadorDeAcesso)
+        || parametro.GetConstructors().Any(static c => c.GetParameters().Any(static p => p.ParameterType == typeof(IVerificadorDeAcesso)));
 
     private static List<string> Sozinhas(IEnumerable<Type> controllers)
         => [.. controllers.SelectMany(static t => ControllersDaSolucao.AcoesDe(t)

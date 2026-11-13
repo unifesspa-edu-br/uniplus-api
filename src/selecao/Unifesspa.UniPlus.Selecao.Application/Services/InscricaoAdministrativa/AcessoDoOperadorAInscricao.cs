@@ -16,21 +16,32 @@ public static class AcessoDoOperadorAInscricao
 {
     /// <summary>
     /// Decide o acesso à inscrição conferida. A recusa devolve o erro com que a rota responde: o 404 do que não alcança,
-    /// ou a identidade incompleta e o impedimento pelo que são.
+    /// ou a identidade incompleta e o impedimento pelo que são. <paramref name="naoEncontrada"/> é o 404 da rota que pede o acesso.
     /// </summary>
     public static async Task<Result<InscricaoAlcancada>> AlcancarAsync(
-        IVerificadorDeAcesso verificador, ConferenciaDoVinculo conferencia, Guid processoId, Guid inscricaoId, CancellationToken cancellationToken)
+        IVerificadorDeAcesso verificador,
+        ConferenciaDoVinculo conferencia,
+        Guid processoId,
+        Guid inscricaoId,
+        DomainError naoEncontrada,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(conferencia);
+        ArgumentNullException.ThrowIfNull(naoEncontrada);
 
         return conferencia is Vinculo conferido
-            ? await DecidirAcessoAsync(verificador, conferido, processoId, inscricaoId, cancellationToken).ConfigureAwait(false)
-            : await RecusarInexistenteAsync(verificador, conferencia, processoId, cancellationToken).ConfigureAwait(false);
+            ? await DecidirAcessoAsync(verificador, conferido, processoId, inscricaoId, naoEncontrada, cancellationToken).ConfigureAwait(false)
+            : await RecusarInexistenteAsync(verificador, conferencia, processoId, naoEncontrada, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<InscricaoAlcancada>> DecidirAcessoAsync(
-        IVerificadorDeAcesso verificador, Vinculo conferido, Guid processoId, Guid inscricaoId, CancellationToken cancellationToken)
+        IVerificadorDeAcesso verificador,
+        Vinculo conferido,
+        Guid processoId,
+        Guid inscricaoId,
+        DomainError naoEncontrada,
+        CancellationToken cancellationToken)
     {
         ResourceContext resource = AcessoAoProcesso.ResourceDaInscricao(conferido.UnidadeId, processoId, inscricaoId);
         AcessoNaInscricao acesso = await AcessoAInscricao
@@ -38,18 +49,22 @@ public static class AcessoDoOperadorAInscricao
             .ConfigureAwait(false);
 
         return acesso is Recusada recusada
-            ? Result<InscricaoAlcancada>.Failure(AcessoAInscricao.Erro(recusada, AcessoAInscricao.NaoEncontradaNoProcesso))
+            ? Result<InscricaoAlcancada>.Failure(AcessoAInscricao.Erro(recusada, naoEncontrada))
             : Result<InscricaoAlcancada>.Success(new InscricaoAlcancada(new ProcessoDaInscricaoDto(processoId, conferido.ProcessoNome), conferido.Inscricao, resource));
     }
 
     private static async Task<Result<InscricaoAlcancada>> RecusarInexistenteAsync(
-        IVerificadorDeAcesso verificador, ConferenciaDoVinculo conferencia, Guid processoId, CancellationToken cancellationToken)
+        IVerificadorDeAcesso verificador,
+        ConferenciaDoVinculo conferencia,
+        Guid processoId,
+        DomainError naoEncontrada,
+        CancellationToken cancellationToken)
     {
         await AcessoAInscricao
             .RegistrarNegativaDoInexistenteAsync(verificador, conferencia, processoId, [PermissaoSelecao.InscricoesConsultar.Requisito], cancellationToken)
             .ConfigureAwait(false);
 
-        return Result<InscricaoAlcancada>.Failure(AcessoAInscricao.NaoEncontradaNoProcesso);
+        return Result<InscricaoAlcancada>.Failure(naoEncontrada);
     }
 }
 

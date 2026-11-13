@@ -5,6 +5,7 @@ using System.Net;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
+using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
@@ -47,6 +48,8 @@ public sealed class AberturaDeDocumentosPorClassificacaoEndpointTests : IAsyncLi
 
         pessoalComPessoais.StatusCode.Should().Be(HttpStatusCode.OK, await pessoalComPessoais.Content.ReadAsStringAsync());
         laudoComPessoais.StatusCode.Should().Be(HttpStatusCode.NotFound, "documentos pessoais não abrem o laudo sensível");
+        _decisoes.DoDocumento(cenario).Should().ContainSingle(r => r.AtorSubject == PersonasDoAcesso.Leandro && !r.Permitido && r.ResourceId == cenario.Arquivos.Sensivel)
+            .Which.Permissao.Should().Be(PermissaoSelecao.DocumentosSensiveisConsultar.Codigo, "a recusa vem da permissão da classe, e não da falta de consultar as inscrições");
         laudoComSensiveis.StatusCode.Should().Be(HttpStatusCode.OK, await laudoComSensiveis.Content.ReadAsStringAsync());
         laudoComSensiveis.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
@@ -70,7 +73,7 @@ public sealed class AberturaDeDocumentosPorClassificacaoEndpointTests : IAsyncLi
     public async Task Documento_DeOutraInscricaoOuProcesso_404()
     {
         CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nameof(Documento_DeOutraInscricaoOuProcesso_404));
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosSensiveisConsultar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosSensiveisConsultar);
 
         using HttpResponseMessage outraInscricao = await _http.GetAsync(
             PersonasDoAcesso.Leandro, cenario.RotaDoAcessoDoArquivo(Guid.CreateVersion7(), cenario.Arquivos.Sensivel));
@@ -101,7 +104,7 @@ public sealed class AberturaDeDocumentosPorClassificacaoEndpointTests : IAsyncLi
     public async Task Documento_DeInscricaoEmRascunho_404()
     {
         CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nameof(Documento_DeInscricaoEmRascunho_404));
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosSensiveisConsultar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosSensiveisConsultar);
 
         using HttpResponseMessage rascunho = await _http.GetAsync(PersonasDoAcesso.Leandro, cenario.RotaDoAcessoDoRascunho());
         using HttpResponseMessage enviada = await _http.GetAsync(PersonasDoAcesso.Leandro, cenario.RotaDoAcesso(cenario.Arquivos.Pessoal));
@@ -110,11 +113,29 @@ public sealed class AberturaDeDocumentosPorClassificacaoEndpointTests : IAsyncLi
         enviada.StatusCode.Should().Be(HttpStatusCode.OK, "a inscrição enviada do mesmo processo continua aberta");
     }
 
+    [Fact(DisplayName = "Sem a permissão de consultar as inscrições, o documento é recusado como o inexistente, antes de decidir a classe, e só a negativa dessa permissão fica registrada")]
+    public async Task Documento_SemConsultarInscricoes_RecusadoAntesDaClasse()
+    {
+        CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nameof(Documento_SemConsultarInscricoes_RecusadoAntesDaClasse));
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.DocumentosPessoaisConsultar, PermissaoSelecao.DocumentosSensiveisConsultar);
+
+        using HttpResponseMessage existente = await _http.GetAsync(PersonasDoAcesso.Leandro, cenario.RotaDoAcesso(cenario.Arquivos.Pessoal));
+        using HttpResponseMessage inexistente = await _http.GetAsync(
+            PersonasDoAcesso.Leandro, cenario.RotaDoAcessoDoArquivo(cenario.InscricaoId, Guid.CreateVersion7()));
+
+        existente.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        inexistente.StatusCode.Should().Be(existente.StatusCode);
+        _decisoes.DoDocumento(cenario).Should().BeEmpty("nada foi decidido sobre o documento");
+        RegistroDecisaoAcesso negativa = _decisoes.DoAtor(PersonasDoAcesso.Leandro).Where(r => r.ProcessoId == cenario.Processo.Id).Should().ContainSingle().Subject;
+        negativa.Permissao.Should().Be(PermissaoSelecao.InscricoesConsultar.Codigo);
+        negativa.MotivoNegativa.Should().Be(ValoresCanonicos.De(MotivoNegativa.SemConcessaoAplicavel));
+    }
+
     private async Task<CenarioDeAcessoAosDados> SemearComPessoaisParaLeandroESensiveisParaBetinaAsync(string nome)
     {
         CenarioDeAcessoAosDados cenario = await _cenarios.SemearAsync(nome);
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.DocumentosPessoaisConsultar);
-        await _concessoes.ConcederAsync(PersonasDoAcesso.Betina, cenario.Processo.UnidadeId, PermissaoSelecao.DocumentosSensiveisConsultar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Leandro, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DocumentosPessoaisConsultar);
+        await _concessoes.ConcederAsync(PersonasDoAcesso.Betina, cenario.Processo.UnidadeId, PermissaoSelecao.InscricoesConsultar, PermissaoSelecao.DocumentosSensiveisConsultar);
         return cenario;
     }
 
