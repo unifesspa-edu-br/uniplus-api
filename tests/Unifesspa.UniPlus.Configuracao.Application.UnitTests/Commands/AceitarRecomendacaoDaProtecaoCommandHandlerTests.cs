@@ -28,7 +28,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
 
-    [Fact(DisplayName = "Aceitar a recomendação aprova o tipo como sensível, grava e avisa a proteção de dados")]
+    [Fact(DisplayName = "Aceitar a recomendação aprova o tipo como sensível, grava e avisa o Representante do controlador")]
     public async Task Tipo_AceitaARecomendacao()
     {
         TipoDocumento laudo = TipoComAjusteRecomendado(ClassificacaoDeProtecao.Sensivel);
@@ -43,6 +43,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         email.Destinatario.Should().Be(Caroline);
         email.Finalidade.Should().Be("catalogo.protecao.aceite");
         email.CorpoTexto.Should().Contain("Laudo médico complementar").And.Contain("sensível").And.NotContain(Isabella);
+        email.Assunto.Should().Be("Recomendação do Representante do controlador aceita no catálogo de tipos de documento e de fatos do candidato");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -87,24 +88,11 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
     [Fact(DisplayName = "O aceite vale para o fato de sistema e não muda o resto da definição")]
     public async Task Fato_DeSistema_AceitaARecomendacao()
     {
-        FatoCandidato corRaca = FatoCandidato.Criar(
-            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
-            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
-            HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
-        corRaca.SolicitarAprovacaoDaProtecao(Isabella, Agora);
-        corRaca.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Agora);
+        FatoCandidato corRaca = CorRacaComAjusteRecomendado();
         _fatos.ObterPorIdAsync(corRaca.Id, Arg.Any<CancellationToken>()).Returns(corRaca);
         _fatos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([corRaca]);
-        IPrecedenciaFaseRepository precedencias = Substitute.For<IPrecedenciaFaseRepository>();
-        precedencias.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
-        IModeloFormularioRepository modelos = Substitute.For<IModeloFormularioRepository>();
-        modelos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([]);
-        IModalidadeRepository modalidades = Substitute.For<IModalidadeRepository>();
-        modalidades.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
 
-        (Result resposta, IEnumerable<object> mensagens) = await AceitarRecomendacaoDoFatoCandidatoCommandHandler.Handle(
-            new AceitarRecomendacaoDoFatoCandidatoCommand(corRaca.Id, [Caroline]), _fatos, _atos, precedencias, modelos, modalidades,
-            _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
+        (Result resposta, IEnumerable<object> mensagens) = await AceitarFatoAsync(corRaca.Id);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         corRaca.Should().BeEquivalentTo(new { ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel, Sistema = true, Codigo = "COR_RACA" });
@@ -113,6 +101,33 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(ato =>
             ato.Ato == AtoDaProtecao.Aceite && ato.Cadastro == CadastroDoCatalogo.Fato && ato.ItemCodigo == "COR_RACA"
             && ato.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel));
+    }
+
+    private static FatoCandidato CorRacaComAjusteRecomendado()
+    {
+        FatoCandidato corRaca = FatoCandidato.Criar(
+            "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
+            null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
+            HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;
+        corRaca.SolicitarAprovacaoDaProtecao(Isabella, Agora);
+        corRaca.RecomendarAjusteDaProtecao(ClassificacaoDeProtecao.Sensivel, null, Caroline, Agora);
+
+        return corRaca;
+    }
+
+    // O fato aceito não tem precedência, modelo nem modalidade que o use.
+    private Task<(Result Resposta, IEnumerable<object> Mensagens)> AceitarFatoAsync(Guid fatoId)
+    {
+        IPrecedenciaFaseRepository precedencias = Substitute.For<IPrecedenciaFaseRepository>();
+        precedencias.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
+        IModeloFormularioRepository modelos = Substitute.For<IModeloFormularioRepository>();
+        modelos.ListarTodosAsync(Arg.Any<CancellationToken>()).Returns([]);
+        IModalidadeRepository modalidades = Substitute.For<IModalidadeRepository>();
+        modalidades.ListarVivasAsync(Arg.Any<CancellationToken>()).Returns([]);
+
+        return AceitarRecomendacaoDoFatoCandidatoCommandHandler.Handle(
+            new AceitarRecomendacaoDoFatoCandidatoCommand(fatoId, [Caroline]), _fatos, _atos, precedencias, modelos, modalidades,
+            _unitOfWork, UsuarioIsabella(), Relogio(), CancellationToken.None);
     }
 
     [Fact(DisplayName = "O aceite do tipo registra o ato com a classificação aplicada e quem aceitou")]

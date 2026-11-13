@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Monta os e-mails do circuito de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do
-/// candidato para quem tem a permissão de aprovar e para quem tem a de se manifestar. Os handlers devolvem o resultado
+/// candidato para os Representantes do controlador, que têm a permissão de aprovar, e para os Encarregados de dados, que
+/// têm a de se manifestar. Os textos nomeiam o papel, no masculino genérico (UNI-REQ-0360). Os handlers devolvem o resultado
 /// como mensagens de saída, que entram no outbox junto da gravação.
 /// </summary>
 /// <remarks>
@@ -18,40 +19,42 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 /// </remarks>
 internal static class AvisosDaProtecaoDoCatalogo
 {
+    /// <summary>O aviso da solicitação a quem decide: os Representantes do controlador (UNI-REQ-0205).</summary>
     public static IReadOnlyList<EnviarEmail> DaSolicitacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
     {
         string abertura =
-            $"Há itens do catálogo de tipos de documento e de fatos do candidato aguardando a aprovação da proteção de dados: {Itens(tiposDeDocumento, fatos)}.";
+            $"Há itens do catálogo de tipos de documento e de fatos do candidato aguardando a decisão do Representante do controlador sobre a proteção de dados: {Itens(tiposDeDocumento, fatos)}.";
         const string chamada =
             "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato para aprovar, recomendar ajuste ou reprovar cada um.";
 
         return Montar(
             destinatarios,
-            "Solicitação de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato",
+            "Itens do catálogo de tipos de documento e de fatos do candidato aguardam a decisão do Representante do controlador",
             $"{abertura}\n\n{chamada}",
             $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
             "catalogo.protecao.solicitacao");
     }
 
     /// <summary>
-    /// O aviso da solicitação a quem tem a permissão de se manifestar (UNI-REQ-0373): a manifestação técnica é opcional e
-    /// não decide.
+    /// O aviso da solicitação aos Encarregados de dados, que têm a permissão de se manifestar (UNI-REQ-0373): a
+    /// manifestação técnica é opcional e não decide.
     /// </summary>
     public static IReadOnlyList<EnviarEmail> DaSolicitacaoParaManifestacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
     {
         string abertura =
-            $"Há itens do catálogo de tipos de documento e de fatos do candidato com a aprovação da proteção de dados solicitada: {Itens(tiposDeDocumento, fatos)}.";
+            $"Há itens do catálogo de tipos de documento e de fatos do candidato com a decisão do Representante do controlador solicitada: {Itens(tiposDeDocumento, fatos)}.";
         const string chamada =
             "Abra no Uni+ a área de proteção de dados do catálogo de tipos de documento e de fatos do candidato se quiser registrar manifestação técnica sobre cada um; a decisão cabe ao Representante do controlador.";
 
         return Montar(
             destinatarios,
-            "Solicitação de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato aberta a manifestação",
+            "Itens do catálogo de tipos de documento e de fatos do candidato abertos à manifestação do Encarregado de dados",
             $"{abertura}\n\n{chamada}",
             $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
             "catalogo.protecao.solicitacao.manifestacao");
     }
 
+    /// <summary>O aviso do aceite da recomendação aos Representantes do controlador (UNI-REQ-0205).</summary>
     public static IReadOnlyList<EnviarEmail> DoAceite(
         IReadOnlyList<string> destinatarios, string cadastro, string nome, string codigo, ClassificacaoDeProtecao classificacao)
     {
