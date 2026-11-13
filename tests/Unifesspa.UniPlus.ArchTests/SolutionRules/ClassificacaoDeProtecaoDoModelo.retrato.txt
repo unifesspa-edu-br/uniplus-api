@@ -751,6 +751,7 @@ configuracao.protecao_do_catalogo_atos.item_codigo: Interno
 configuracao.protecao_do_catalogo_atos.item_id: Interno
 configuracao.protecao_do_catalogo_atos.item_nome: Interno
 configuracao.protecao_do_catalogo_atos.justificativa: Interno
+configuracao.protecao_do_catalogo_atos.ordem_de_registro: Interno
 configuracao.protecao_do_catalogo_manifestacoes.autor_emissor: Pessoal
 configuracao.protecao_do_catalogo_manifestacoes.autor_nome: Pessoal
 configuracao.protecao_do_catalogo_manifestacoes.autor_sub: Pessoal
@@ -759,6 +760,7 @@ configuracao.protecao_do_catalogo_manifestacoes.ciclo: Interno
 configuracao.protecao_do_catalogo_manifestacoes.id: Interno
 configuracao.protecao_do_catalogo_manifestacoes.instante: Interno
 configuracao.protecao_do_catalogo_manifestacoes.item_id: Interno
+configuracao.protecao_do_catalogo_manifestacoes.ordem_de_registro: Interno
 configuracao.protecao_do_catalogo_manifestacoes.parecer: Interno
 configuracao.protecao_do_catalogo_manifestacoes.substitui_id: Interno
 configuracao.protecao_do_catalogo_manifestacoes.texto: Interno

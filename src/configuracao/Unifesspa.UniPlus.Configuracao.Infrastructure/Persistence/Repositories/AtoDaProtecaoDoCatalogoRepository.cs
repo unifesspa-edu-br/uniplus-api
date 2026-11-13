@@ -39,7 +39,7 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
             .AsNoTracking()
             .Where(a => a.Cadastro == cadastro && a.ItemId == itemId)
             .OrderBy(a => a.Instante)
-            .ThenBy(a => a.Id)
+            .ThenBy(a => a.OrdemDeRegistro)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

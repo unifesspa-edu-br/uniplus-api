@@ -27,7 +27,7 @@ public sealed class ManifestacoesDoCiclo
 
     /// <summary>As manifestações vigentes do ciclo, das mais antigas para as mais recentes; uma cópia.</summary>
     public IReadOnlyList<ManifestacaoDaProtecaoDoCatalogo> Vigentes =>
-        [.. _eventos.Where(e => !_eventos.Any(outro => outro.SubstituiId == e.Id)).OrderBy(static e => e.Instante).ThenBy(static e => e.Id)];
+        [.. _eventos.Where(e => !_eventos.Any(outro => outro.SubstituiId == e.Id)).OrderBy(static e => e.Instante).ThenBy(static e => e.PosicaoNoInstante)];
 
     /// <summary>Se alguma manifestação vigente tem parecer recomenda ajuste ou inadequada.</summary>
     public bool HaDesfavoravelVigente => Vigentes.Any(static m => m.Desfavoravel);

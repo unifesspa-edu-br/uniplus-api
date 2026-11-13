@@ -65,6 +65,12 @@ public sealed class AtoDaProtecaoDoCatalogo : IForensicEntity
 
     public DateTimeOffset Instante { get; private init; }
 
+    /// <summary>
+    /// A ordem em que os atos foram registrados, dada pelo banco: desempata dois atos do mesmo instante sobre o mesmo
+    /// item, que a mudança na linha do item serializa pelo token de concorrência.
+    /// </summary>
+    public long OrdemDeRegistro { get; private set; }
+
     // Construtor de materialização do EF Core.
     private AtoDaProtecaoDoCatalogo()
     {
