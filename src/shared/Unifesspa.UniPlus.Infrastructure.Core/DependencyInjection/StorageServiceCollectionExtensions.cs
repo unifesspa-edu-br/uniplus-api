@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,66 +51,9 @@ public static class StorageServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
-        services.AddOptions<StorageOptions>()
-            .Bind(configuration.GetSection(StorageOptions.SectionName))
-            .Validate(
-                options => environment.IsDevelopment()
-                    || (!string.IsNullOrWhiteSpace(options.Endpoint)
-                        && !string.IsNullOrWhiteSpace(options.AccessKey)
-                        && !string.IsNullOrWhiteSpace(options.SecretKey)),
-                "Storage:Endpoint, Storage:AccessKey and Storage:SecretKey must be configured outside Development.")
-            .Validate(
-                options => string.IsNullOrWhiteSpace(options.Endpoint)
-                    || (!options.Endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                        && !options.Endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase)),
-                "Storage:Endpoint must be host:port without scheme — control HTTPS via Storage:UseSSL.")
-            .Validate(
-                options => string.IsNullOrWhiteSpace(options.PublicEndpoint)
-                    || (!options.PublicEndpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                        && !options.PublicEndpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase)),
-                "Storage:PublicEndpoint must be host:port without scheme — control HTTPS via Storage:PublicUseSSL.")
-            .ValidateOnStart();
-
-        // Ambos os clientes são registrados KEYED — inclusive o interno, que não tem
-        // motivo funcional para ser keyed sozinho. Achado de revisão (smoke test manual
-        // via Newman, Story #554): um consumidor com DOIS parâmetros de construtor do
-        // MESMO tipo (IMinioClient), um deles keyed via [FromKeyedServices] e o outro
-        // "ambient" (sem atributo, resolvido pelo registro AddSingleton<IMinioClient>
-        // não-keyed), faz o container de DI (Microsoft.Extensions.DependencyInjection)
-        // injetar a instância KEYED nos dois parâmetros — reproduzido de forma
-        // determinística (log de diagnóstico mostrou os dois campos com o mesmo
-        // GetHashCode(), sempre a instância "storage-public"). Nomear os dois registros
-        // evita a ambiguidade na raiz: nenhum consumidor injeta mais um IMinioClient
-        // "sem chave" que possa ser confundido com o keyed.
-        services.AddKeyedSingleton<IMinioClient>(StorageInternalClientKey, (sp, _) =>
-        {
-            StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
-            return BuildClient(opts, opts.Endpoint, opts.UseSSL);
-        });
-
-        // Cliente separado, keyed, usado só para ASSINAR URLs pre-assinadas
-        // devolvidas a clientes externos (browser fora da rede Docker/cluster).
-        // A assinatura SigV4 inclui o header Host — reescrever a URL depois de
-        // assinada com o endpoint interno invalidaria a assinatura, então este
-        // cliente assina do zero com PublicEndpoint/PublicUseSSL. Reusa a
-        // MESMA instância do cliente interno só quando host E esquema batem
-        // (endpoint igual mas esquema diferente é um caso real: HTTP dentro
-        // do cluster, HTTPS no mesmo hostname exposto por fora via ingress).
-        services.AddKeyedSingleton<IMinioClient>(StoragePublicClientKey, (sp, _) =>
-        {
-            StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
-            return ClienteDeAssinatura(opts, sp.GetRequiredKeyedService<IMinioClient>(StorageInternalClientKey));
-        });
-
-        // IHttpClientFactory — usado por MinioStorageService.DownloadLimitadoAsync
-        // para o GET com Range via URL pre-assinada (a API de alto nível do SDK
-        // MinIO não suporta range parcial). AddHttpClient() é idempotente.
-        services.AddHttpClient();
-
-        // A assinatura da cópia para o acervo público carimba o instante da requisição. TryAdd:
-        // quem já registrou um relógio continua com o seu.
-        services.TryAddSingleton(TimeProvider.System);
-        services.AddScoped<IStorageService, MinioStorageService>();
+        RegistrarOpcoes(services, configuration, environment);
+        RegistrarClientesDoMinio(services);
+        RegistrarServicoDeArmazenamento(services);
 
         return services;
     }
@@ -152,17 +93,7 @@ public static class StorageServiceCollectionExtensions
 
         StorageOptions geral = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
 
-        return CriarStorageComCredencialPropria(provider, new StorageOptions
-        {
-            Endpoint = geral.Endpoint,
-            UseSSL = geral.UseSSL,
-            Region = geral.Region,
-            PublicEndpoint = geral.PublicEndpoint,
-            PublicUseSSL = geral.PublicUseSSL,
-            AccessKey = accessKey,
-            SecretKey = secretKey,
-            CriaBucketAusente = false,
-        });
+        return CriarStorageComCredencialPropria(provider, OpcoesComCredencialPropria(geral, accessKey, secretKey));
     }
 
     /// <summary>Chave do <see cref="IMinioClient"/> keyed usado para assinar URLs devolvidas a clientes externos.</summary>
@@ -173,9 +104,87 @@ public static class StorageServiceCollectionExtensions
     /// Docker/cluster) — <c>Storage:Endpoint</c>. Keyed mesmo sendo o único consumidor "normal"
     /// porque um consumidor com este e o <see cref="StoragePublicClientKey"/> como dois
     /// parâmetros de construtor do mesmo tipo IMinioClient precisa que AMBOS sejam
-    /// inequivocamente identificados — ver a nota em <see cref="AddUniPlusStorage"/>.
+    /// inequivocamente identificados.
     /// </summary>
     public const string StorageInternalClientKey = "storage-internal";
+
+    private static void RegistrarOpcoes(IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    {
+        services.AddOptions<StorageOptions>()
+            .Bind(configuration.GetSection(StorageOptions.SectionName))
+            .Validate(
+                options => environment.IsDevelopment() || CredenciaisConfiguradas(options),
+                "Storage:Endpoint, Storage:AccessKey and Storage:SecretKey must be configured outside Development.")
+            .Validate(
+                static options => SemEsquema(options.Endpoint),
+                "Storage:Endpoint must be host:port without scheme — control HTTPS via Storage:UseSSL.")
+            .Validate(
+                static options => SemEsquema(options.PublicEndpoint),
+                "Storage:PublicEndpoint must be host:port without scheme — control HTTPS via Storage:PublicUseSSL.")
+            .ValidateOnStart();
+    }
+
+    private static bool CredenciaisConfiguradas(StorageOptions options) =>
+        !string.IsNullOrWhiteSpace(options.Endpoint)
+        && !string.IsNullOrWhiteSpace(options.AccessKey)
+        && !string.IsNullOrWhiteSpace(options.SecretKey);
+
+    private static bool SemEsquema(string? endereco) =>
+        string.IsNullOrWhiteSpace(endereco)
+        || (!endereco.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !endereco.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Os dois clientes são registrados KEYED, inclusive o interno, que não tem motivo funcional para ser keyed
+    /// sozinho: um consumidor com DOIS parâmetros de construtor do MESMO tipo (<see cref="IMinioClient"/>), um deles
+    /// via <c>[FromKeyedServices]</c> e o outro sem atributo, recebe a instância keyed nos dois — o container não
+    /// distingue o registro sem chave. Nomear os dois evita a ambiguidade na raiz.
+    /// </summary>
+    /// <remarks>
+    /// O cliente público assina as URLs pre-assinadas devolvidas a clientes externos (browser fora da rede
+    /// Docker/cluster). A assinatura SigV4 inclui o header Host, então reescrever a URL depois de assinada com o
+    /// endpoint interno a invalidaria: o cliente assina do zero com <c>PublicEndpoint</c>/<c>PublicUseSSL</c>. Ele
+    /// reusa a instância do interno só quando host E esquema batem.
+    /// </remarks>
+    private static void RegistrarClientesDoMinio(IServiceCollection services)
+    {
+        services.AddKeyedSingleton<IMinioClient>(StorageInternalClientKey, (sp, _) =>
+        {
+            StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            return BuildClient(opts, opts.Endpoint, opts.UseSSL);
+        });
+
+        services.AddKeyedSingleton<IMinioClient>(StoragePublicClientKey, (sp, _) =>
+        {
+            StorageOptions opts = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            return ClienteDeAssinatura(opts, sp.GetRequiredKeyedService<IMinioClient>(StorageInternalClientKey));
+        });
+    }
+
+    /// <summary>
+    /// O <see cref="IHttpClientFactory"/> serve ao GET com Range via URL pre-assinada de
+    /// <see cref="MinioStorageService"/>, que a API de alto nível do SDK não suporta. A assinatura da cópia para o
+    /// acervo público carimba o instante da requisição; <c>TryAdd</c> mantém o relógio de quem já registrou um.
+    /// </summary>
+    private static void RegistrarServicoDeArmazenamento(IServiceCollection services)
+    {
+        services.AddHttpClient();
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<IStorageService, MinioStorageService>();
+    }
+
+    private static StorageOptions OpcoesComCredencialPropria(StorageOptions geral, string accessKey, string secretKey) =>
+        new()
+        {
+            Endpoint = geral.Endpoint,
+            UseSSL = geral.UseSSL,
+            Region = geral.Region,
+            PublicEndpoint = geral.PublicEndpoint,
+            PublicUseSSL = geral.PublicUseSSL,
+            AccessKey = accessKey,
+            SecretKey = secretKey,
+            CriaBucketAusente = false,
+        };
 
     // O cliente de assinatura só é outro quando o endpoint público difere do interno em host ou esquema (HTTP dentro do
     // cluster, HTTPS no mesmo hostname por fora): a assinatura SigV4 inclui o Host.
@@ -192,10 +201,6 @@ public static class StorageServiceCollectionExtensions
         return BuildClient(opts, endpointResolvido, opts.PublicUseSSL ?? opts.UseSSL);
     }
 
-    [SuppressMessage(
-        "Reliability",
-        "CA2000:Dispose objects before losing scope",
-        Justification = "O cliente é devolvido ao caller (factory de DI), que o registra como singleton — o container é o dono do descarte, não este método.")]
     private static IMinioClient BuildClient(StorageOptions opts, string endpoint, bool useSSL)
     {
         IMinioClient client = new MinioClient()

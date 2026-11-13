@@ -44,34 +44,48 @@ public static class IdempotencyServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        RegistrarOpcoes(services, configuration);
+        RegistrarArmazenamento<TDbContext>(services);
+        AplicarFiltroAosControllersDoModulo<TDbContext, TApiMarker>(services);
+
+        return services;
+    }
+
+    private static void RegistrarOpcoes(IServiceCollection services, IConfiguration configuration)
+    {
         services
             .AddOptions<IdempotencyOptions>()
             .Bind(configuration.GetSection(IdempotencyOptions.SectionName))
             .Validate(static o => o.Ttl > TimeSpan.Zero, "IdempotencyOptions.Ttl deve ser positivo.")
             .Validate(static o => o.MaxBodyBytes > 0, "IdempotencyOptions.MaxBodyBytes deve ser positivo.")
             .ValidateOnStart();
+    }
 
+    /// <summary>
+    /// O store é concreto por módulo. A interface <c>IIdempotencyStore</c> não é registrada de propósito: o filtro
+    /// genérico recebe o tipo fechado <see cref="EfCoreIdempotencyStore{TDbContext}"/>, o que elimina o "último
+    /// registro vence" no co-hosting. O registro de erros usa <c>TryAddEnumerable</c>: cada módulo contribui o MESMO
+    /// registro, e sem o guard N módulos duplicariam o código no <c>IEnumerable&lt;IDomainErrorRegistration&gt;</c>.
+    /// </summary>
+    private static void RegistrarArmazenamento<TDbContext>(IServiceCollection services)
+        where TDbContext : DbContext
+    {
         services.TryAddSingleton(TimeProvider.System);
-
-        // Store concreto por módulo. Deliberadamente NÃO registramos
-        // IIdempotencyStore (interface) no container: o filtro genérico recebe o
-        // tipo fechado EfCoreIdempotencyStore<TDbContext>, eliminando a
-        // ambiguidade de "último registro vence" no co-hosting.
         services.AddScoped<EfCoreIdempotencyStore<TDbContext>>();
-
-        // TryAddEnumerable: cada módulo contribui o MESMO registro de erros; sem
-        // o guard, N módulos inflariam o IEnumerable<IDomainErrorRegistration>
-        // com duplicatas do mesmo código.
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<Errors.IDomainErrorRegistration, IdempotencyDomainErrorRegistration>());
+    }
 
-        // Aplica o filtro apenas aos controllers do assembly do módulo (não
-        // global), fechado em TDbContext. Idempotente por construção (a
-        // convention não readiciona se o controller já tem o filtro).
+    /// <summary>
+    /// O filtro vale só para os controllers do assembly do módulo, e não global, fechado em
+    /// <typeparamref name="TDbContext"/>. A convention é idempotente: não readiciona o filtro a um controller que já o
+    /// tem.
+    /// </summary>
+    private static void AplicarFiltroAosControllersDoModulo<TDbContext, TApiMarker>(IServiceCollection services)
+        where TDbContext : DbContext
+    {
         services.Configure<MvcOptions>(options =>
             options.Conventions.Add(
                 new IdempotencyControllerConvention<TDbContext>(typeof(TApiMarker).Assembly)));
-
-        return services;
     }
 }

@@ -67,35 +67,32 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
 
         // Lote com execuções diferentes é erro de quem o monta, e não falha de gravação: não vira 503.
         Guid execucaoId = ExecucaoDoLote(registros);
+        await PublicarAsync(execucaoId, registros, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task PublicarAsync(
+        Guid execucaoId, IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken)
+    {
         IProducer<string, string> produtor = ProdutorAtual();
 
         try
         {
-            // A chave de cada registro é calculada uma vez e serve ao valor da mensagem.
-            EntradaDoLote[] entradas = [.. registros.Select(static r => new EntradaDoLote(r.Chave, r))];
-
-            await produtor.ProduceAsync(
-                _topico,
-                new Message<string, string>
-                {
-                    Key = execucaoId.ToString(),
-                    Value = ValorDoLote(entradas),
-                    Headers = CabecalhosDoRegistroDeAcesso.De(registros, _relogio.GetUtcNow(), Activity.Current),
-                },
-                cancellationToken).ConfigureAwait(false);
+            await produtor.ProduceAsync(_topico, MensagemDoLote(execucaoId, registros), cancellationToken).ConfigureAwait(false);
         }
         catch (Exception falha) when (falha is not OperationCanceledException)
         {
-            // Após erro fatal o produtor idempotente não volta a funcionar: troca-o para as próximas requisições. A
-            // corrente responde 503 do mesmo jeito.
-            if (EhFatal(falha))
-            {
-                Recriar(produtor);
-            }
-
+            RecriarSeFatal(falha, produtor);
             throw new RegistroDeAcessoNaoGravadoException(falha);
         }
     }
+
+    private Message<string, string> MensagemDoLote(Guid execucaoId, IReadOnlyList<RegistroDecisaoAcesso> registros) =>
+        new()
+        {
+            Key = execucaoId.ToString(),
+            Value = ValorDoLote(registros),
+            Headers = CabecalhosDoRegistroDeAcesso.De(registros, _relogio.GetUtcNow(), Activity.Current),
+        };
 
     private static Guid ExecucaoDoLote(IReadOnlyList<RegistroDecisaoAcesso> registros)
     {
@@ -108,9 +105,7 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
 
     /// <summary>O valor da mensagem de um lote: o que o consumidor separa, registro a registro.</summary>
     internal static string ValorDoLote(IReadOnlyList<RegistroDecisaoAcesso> registros) =>
-        ValorDoLote([.. registros.Select(static r => new EntradaDoLote(r.Chave, r))]);
-
-    private static string ValorDoLote(EntradaDoLote[] entradas) => JsonSerializer.Serialize(entradas, Json);
+        JsonSerializer.Serialize(registros.Select(static r => new EntradaDoLote(r.Chave, r)).ToArray(), Json);
 
     /// <inheritdoc />
     public void Dispose()
@@ -175,29 +170,43 @@ public sealed partial class RegistroDeAcessoKafka : IRegistroOperacionalRestrito
         }
     }
 
-    // Troca o produtor sob a trava e descarta o antigo em segundo plano: as chamadas em voo terminam (com erro, e então
-    // 503) e a requisição corrente não espera o descarte. Falha ao criar o novo produtor também é falha de registro.
-    private void Recriar(IProducer<string, string> falho)
+    // Após erro fatal o produtor idempotente não volta a funcionar: troca-o para as próximas requisições e descarta o
+    // antigo em segundo plano. As chamadas em voo terminam (com erro, e então 503), e a requisição corrente, que responde
+    // 503 do mesmo jeito, não espera o descarte.
+    private void RecriarSeFatal(Exception falha, IProducer<string, string> falho)
+    {
+        if (EhFatal(falha) && TrocarProdutor(falho))
+        {
+            _ = Task.Run(() => Descartar(falho));
+        }
+    }
+
+    private bool TrocarProdutor(IProducer<string, string> falho)
     {
         lock (_trava)
         {
             // Outra requisição pode já ter trocado o produtor que falhou.
             if (!ReferenceEquals(_produtor, falho))
             {
-                return;
+                return false;
             }
 
-            try
-            {
-                _produtor = _fabrica();
-            }
-            catch (Exception falha) when (falha is not OperationCanceledException)
-            {
-                throw new RegistroDeAcessoNaoGravadoException(falha);
-            }
+            _produtor = NovoProdutor();
+            return true;
         }
+    }
 
-        _ = Task.Run(() => Descartar(falho));
+    // Falha ao criar o novo produtor também é falha de registro.
+    private IProducer<string, string> NovoProdutor()
+    {
+        try
+        {
+            return _fabrica();
+        }
+        catch (Exception falha) when (falha is not OperationCanceledException)
+        {
+            throw new RegistroDeAcessoNaoGravadoException(falha);
+        }
     }
 
     private void Descartar(IProducer<string, string> produtor)

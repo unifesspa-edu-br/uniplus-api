@@ -31,7 +31,19 @@ public static class AutorizacaoServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // O produtor do registro liga os logs do librdkafka ao ILogger.
+        RegistrarRegistroDeAcesso(services, configuration);
+        RegistrarDecisaoDeAcesso(services);
+        RegistrarProjecaoPorProtecao(services);
+        RegistrarCatalogoDePermissoes(services);
+
+        return services;
+    }
+
+    /// <summary>
+    /// O produtor do registro liga os logs do librdkafka ao <c>ILogger</c>, daí o <c>AddLogging</c>.
+    /// </summary>
+    private static void RegistrarRegistroDeAcesso(IServiceCollection services, IConfiguration configuration)
+    {
         services.AddLogging();
         services.AddOptions<RegistroDeAcessoKafkaOptions>()
             .Bind(configuration.GetSection(RegistroDeAcessoKafkaOptions.SectionName))
@@ -40,38 +52,46 @@ public static class AutorizacaoServiceCollectionExtensions
             ServiceDescriptor.Singleton<IValidateOptions<RegistroDeAcessoKafkaOptions>, RegistroDeAcessoKafkaOptionsValidator>());
         services.TryAddSingleton<IRegistroOperacionalRestrito, RegistroDeAcessoKafka>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ConferenciaDoRegistroDeAcessoNaSubida>());
+    }
 
+    /// <summary>
+    /// A verificação de concessão é o núcleo da decisão, não um item da lista de verificações contextuais: entra pelo
+    /// tipo concreto, e não como mais um <c>IPermissaoCheck</c>, para que nenhum registro adicional a substitua. O
+    /// impedimento por inscrição pergunta ao módulo dono das inscrições; onde não há inscrição, a pergunta tem sempre
+    /// a mesma resposta, e o módulo que as guarda substitui esta porta pela dele. A porta que os endpoints usam é uma
+    /// pergunta, uma resposta.
+    /// </summary>
+    private static void RegistrarDecisaoDeAcesso(IServiceCollection services)
+    {
         services.TryAddScoped<IAuthorizationSubjectResolver, HttpAuthorizationSubjectResolver>();
-
-        // A verificação de concessão é o núcleo da decisão, não um item da lista
-        // de verificações contextuais — entra pelo tipo concreto, e não como mais um
-        // IPermissaoCheck, para que nenhum registro adicional a substitua.
         services.TryAddSingleton<GrantEfetivoAplicavelCheck>();
-
-        // O impedimento por inscrição pergunta ao módulo dono das inscrições. Onde não há inscrição, a pergunta
-        // tem sempre a mesma resposta; o módulo que as guarda substitui esta porta pela dele.
         services.TryAddSingleton<IInscricaoDoSujeitoNoProcesso, SemInscricaoNoProcesso>();
         services.TryAddScoped<ImpedimentoPorInscricaoCheck>();
         services.TryAddScoped<IAuthorizationDecisionService, AuthorizationDecisionService>();
-
-        // A porta que os endpoints usam: uma pergunta, uma resposta.
         services.TryAddScoped<IVerificadorDeAcesso, VerificadorDeAcessoHttp>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<IPermissoesEfetivas, PermissoesEfetivasHttp>();
+    }
 
-        // O projetor decide cada item da resposta administrativa pela permissão do par (natureza, classificação)
-        // e guarda as decisões na requisição, de onde a serialização defensiva as lê (ADR-0153).
+    /// <summary>
+    /// O projetor decide cada item da resposta administrativa pela permissão do par (natureza, classificação) e guarda
+    /// as decisões na requisição, de onde a serialização defensiva as lê (ADR-0153). A defesa secundária é o
+    /// serializador omitir o campo classificado sem decisão permitida na requisição.
+    /// </summary>
+    private static void RegistrarProjecaoPorProtecao(IServiceCollection services)
+    {
         services.TryAddScoped<IDecisoesDaRequisicao, DecisoesDaRequisicaoHttp>();
         services.TryAddScoped<ProjetorDeItens>();
-
-        // Defesa secundária: o serializador omite o campo classificado sem decisão permitida na requisição.
         services.AddOmissaoDeCampoClassificado();
+    }
 
-        // O módulo de autorização declara as próprias permissões no mesmo formato dos
-        // demais; a conferência do conjunto roda na subida (ADR-0151).
+    /// <summary>
+    /// O módulo de autorização declara as próprias permissões no mesmo formato dos demais; a conferência do conjunto
+    /// roda na subida (ADR-0151).
+    /// </summary>
+    private static void RegistrarCatalogoDePermissoes(IServiceCollection services)
+    {
         services.AddCatalogoDePermissoes<PermissaoAutorizacao>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ConferenciaDoCatalogoNaSubida>());
-
-        return services;
     }
 }
