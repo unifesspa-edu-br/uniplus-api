@@ -71,7 +71,7 @@ A opção C (ID dual) foi descartada por complexidade desproporcional ao ganho �
 
 ## Confirmação
 
-1. **Fitness test solution-wide** — `DominioNaoUsaGuidNewGuidTests` em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/` varre por regex os arquivos `.cs` de `Kernel`, `Selecao.Domain` e `Ingresso.Domain` falhando o build se encontrar `Guid.NewGuid()`. Permitido em `*.Tests.*` (seeds) e em código fora de domínio (ex.: `Instance` de ProblemDetails em Infrastructure já usa `Guid.CreateVersion7()`, sem regressão). Vive no projeto centralizado `Unifesspa.UniPlus.ArchTests` em vez de duplicado entre os Selecao/Ingresso ArchTests porque a regra cobre o `Kernel` compartilhado.
+1. **Fitness test solution-wide** — `DominioNaoUsaGuidNewGuidTests` em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/` usa uma regra de chamada de membro do ArchUnitNET para proibir `Guid.NewGuid()` nos assemblies de domínio e no `Kernel`. Um canário no assembly de testes comprova que a regra reconhece a chamada. Código fora do domínio pode usar a API quando necessário.
 2. **Teste regressivo de cursor pagination** — cenário com IDs mistos (v4 antigos manualmente inseridos + v7 novos via factory) navegando cursor paginação; afirmar zero duplicação e zero omissão.
 3. **Code review checklist** — revisor confirma que entidades novas usam `Guid.CreateVersion7()` (ou herdam de `EntityBase` que faz isso). PR template lembra dessa verificação na próxima atualização.
 

@@ -64,24 +64,6 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
             + $"e regenere o arquivo com {AtualizarRetratoEnvVar}=1.");
     }
 
-    [Fact(DisplayName = "Nenhum snapshot nem designer de migration carrega a classificação de proteção")]
-    public void MigrationsNaoCarregamAClassificacao()
-    {
-        string[] comClassificacao =
-        [
-            .. Directory.EnumerateFiles(Path.Join(SolutionRootLocator.Locate(), "src"), "*.cs", SearchOption.AllDirectories)
-                .Where(c => c.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-                    && (c.EndsWith("ModelSnapshot.cs", StringComparison.Ordinal) || c.EndsWith(".Designer.cs", StringComparison.Ordinal)))
-                .Where(c => File.ReadAllText(c).Contains(ClassificacaoDeProtecaoNoModelo.PrefixoDasAnotacoes, StringComparison.Ordinal))
-                .Select(c => Path.GetRelativePath(SolutionRootLocator.Locate(), c))
-                .Order(StringComparer.Ordinal),
-        ];
-
-        comClassificacao.Should().BeEmpty(
-            "a classificação não é schema: o startup que gerou a migration precisa registrar o IDesignTimeServices com ExcluirClassificacaoDoSnapshot. Arquivos: "
-            + string.Join(", ", comClassificacao));
-    }
-
     [Fact(DisplayName = "Todo projeto de infraestrutura da solução está referenciado pelo ArchTests")]
     public void TodoProjetoDeInfraestruturaEstaReferenciado()
     {

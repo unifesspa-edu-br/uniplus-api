@@ -71,7 +71,7 @@ A questão a decidir é: **como tornar o acesso a relógio uniforme, testável e
 
 ## Confirmação
 
-1. **Fitness test solution-wide** — `RelogioViaTimeProviderTests` em `tests/Unifesspa.UniPlus.ArchTests/SolutionRules/` varre por regex os arquivos `.cs` de `src/` (excluindo `obj/`/`bin/`, com strip de comentários) e falha o build ao encontrar `DateTime`/`DateTimeOffset` `.UtcNow`/`.Now`. Espelha `DominioNaoUsaGuidNewGuidTests` ([ADR-0032](0032-guid-v7-para-identidade-de-entidades.md)) — mesma abordagem textual, justificada porque ArchUnitNET enxerga dependência de tipo, não chamada de membro.
+1. **Regra de relógio pendente de substituição** — o antigo `RelogioViaTimeProviderTests` lia C# como texto e foi removido conforme a orientação de revisão. A [issue #2423](https://github.com/unifesspa-edu-br/uniplus-api/issues/2423) acompanha a avaliação de uma regra declarativa do ArchUnitNET para as chamadas estáticas, com canário, e dos testes de comportamento necessários. Até sua conclusão, novas leituras de `DateTime`/`DateTimeOffset` `.UtcNow`/`.Now` são conferidas no diff.
 2. **Compilador** — `TimeProvider` obrigatório (sem default) faz o build falhar em qualquer caller que omita o relógio; `ArgumentNullException.ThrowIfNull(clock)` cobre passagem de `null` em runtime.
 3. **Code review** — revisor confirma que código novo recebe `TimeProvider` por injeção e que `TimeProvider.System` aparece apenas em composition roots ou em teste.
 

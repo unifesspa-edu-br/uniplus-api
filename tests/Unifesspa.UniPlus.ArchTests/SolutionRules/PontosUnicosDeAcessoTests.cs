@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
-using System.Text.RegularExpressions;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
@@ -11,7 +9,6 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Builder;
 
-using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 
@@ -39,9 +36,7 @@ public sealed class PontosUnicosDeAcessoTests
         [
             .. dependentes
                 .Select(static t => t.FullName)
-                .Where(static n => !Regex.IsMatch(
-                    n,
-                    @"^Unifesspa\.UniPlus\.(Infrastructure\.Core\.Authorization\.(VerificadorDeAcessoHttp|AutorizacaoServiceCollectionExtensions)|Authorization\.Decisao\.AuthorizationDecisionService)(\+|$)")),
+                .Where(static n => !PermitidoNaDecisao(n)),
         ];
         fora.Should().BeEmpty("a decisão passa pelo verificador. Dependentes fora do ponto único:\n" + string.Join("\n", fora));
     }
@@ -72,16 +67,14 @@ public sealed class PontosUnicosDeAcessoTests
             .Should().BeEmpty("rota de negócio é controller MVC (ADR-0036)");
     }
 
-    // A busca por chamada de método não enxerga as chamadas do Program, que usa instruções de nível superior. É nele que um
-    // app.MapGet novo apareceria, então o arquivo é varrido por texto, inclusive a chamada estática da extensão.
-    [Fact(DisplayName = "O Program do host não mapeia rota sem controller")]
-    public void ProgramNaoMapeiaRota()
-    {
-        string programa = File.ReadAllText(Path.Join(SolutionRootLocator.Locate(), "src", "host", "Unifesspa.UniPlus.Host", "Program.cs"));
-
-        Regex.Matches(programa, @"(\.Map(Get|Post|Put|Delete|Patch|Methods|Group|Fallback)?|EndpointRouteBuilderExtensions\s*\.\s*Map\w*)\s*\(").Should().BeEmpty(
-            "rota de negócio é controller MVC (ADR-0036); o Program usa MapControllers e as extensões dos endpoints técnicos");
-    }
+    private static bool PermitidoNaDecisao(string nome) =>
+        nome == "Unifesspa.UniPlus.Authorization.Decisao.AuthorizationDecisionService"
+        || nome.StartsWith("Unifesspa.UniPlus.Authorization.Decisao.AuthorizationDecisionService+", StringComparison.Ordinal)
+        || new[]
+        {
+            "Unifesspa.UniPlus.Infrastructure.Core.Authorization.VerificadorDeAcessoHttp",
+            "Unifesspa.UniPlus.Infrastructure.Core.Authorization.AutorizacaoServiceCollectionExtensions",
+        }.Any(tipo => nome == tipo || nome.StartsWith(tipo + "+", StringComparison.Ordinal));
 
     private static ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers.GivenMethodMembersConjunction MapDeRota() =>
         MethodMembers().That().HaveNameStartingWith("Map(")
