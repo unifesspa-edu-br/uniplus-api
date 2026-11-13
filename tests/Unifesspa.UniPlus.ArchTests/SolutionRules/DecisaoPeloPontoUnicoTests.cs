@@ -9,6 +9,8 @@ using ArchUnitNET.Loader;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Authorization;
+
 using Unifesspa.UniPlus.ArchTests.Fixtures;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
@@ -68,6 +70,25 @@ public sealed class DecisaoPeloPontoUnicoTests
             "fora do ponto de decisão e da leitura do token, o módulo pergunta a IVerificadorDeAcesso e não lê papel nem claim do principal");
     }
 
+    [Fact(DisplayName = "Só a política técnica de instalação chama RequireRole")]
+    public void RequireRole_SoNaPoliticaDeInstalacao()
+    {
+        const string configuracao = "Unifesspa.UniPlus.Infrastructure.Core.Authentication.OidcAuthenticationConfiguration";
+        ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers.GivenMethodMembersConjunction chamada = MethodMembers().That().AreDeclaredIn(typeof(AuthorizationPolicyBuilder))
+            .And().HaveNameStartingWith("RequireRole(");
+
+        Types().That().HaveFullName(configuracao).And().CallAny(chamada)
+            .GetObjects(Arquitetura).Should().NotBeEmpty("a exceção técnica deve existir e ser detectada");
+
+        List<string> violacoes = [];
+        Verificar(
+            Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.(?!ArchTests)")
+                .And().DoNotHaveFullNameMatching(@"^Unifesspa\.UniPlus\.Infrastructure\.Core\.Authentication\.OidcAuthenticationConfiguration(\+|$)")
+                .Should().NotCallAny(chamada),
+            violacoes);
+        violacoes.Should().BeEmpty("papel fixo só configura a política técnica de instalação");
+    }
+
     private static List<string> Violacoes(string escopo)
     {
         List<string> violacoes = [];
@@ -99,6 +120,7 @@ public sealed class DecisaoPeloPontoUnicoTests
         [
             // O ArchUnitNET só enxerga a chamada a um membro cujo assembly foi carregado.
             typeof(ClaimsPrincipal).Assembly,
+            typeof(AuthorizationPolicyBuilder).Assembly,
             .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
                 .Where(static c => !Path.GetFileName(c).Contains("Tests", StringComparison.Ordinal)
                     || Path.GetFileName(c) == "Unifesspa.UniPlus.ArchTests.dll")

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
 using ArchUnitNET.Domain;
@@ -15,11 +13,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
-using ReflectionAssembly = System.Reflection.Assembly;
 
 /// <summary>
-/// As fronteiras do agregado <see cref="ProcessoSeletivo"/>: as regras vivem em políticas puras que
-/// recebem uma vista somente leitura, e só a raiz muda as coleções, e os planos que ela aplica só atualizam no lugar as partes que continuam.
+/// Verifica as dependências entre as políticas e as camadas, o formato estático das políticas
+/// e a localização das partes do agregado <see cref="ProcessoSeletivo"/>.
+/// A restrição dos chamadores dos mutadores é acompanhada na issue #2423.
 /// </summary>
 public sealed class FronteirasDoProcessoSeletivoTests
 {
@@ -31,28 +29,6 @@ public sealed class FronteirasDoProcessoSeletivoTests
         typeof(ProcessoSeletivo).Assembly,
         typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
         typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly).Build();
-
-    /// <summary>
-    /// Os únicos tipos fora da raiz que chamam mutadores de partes do processo: os que atualizam no lugar
-    /// uma parte que continua viva ou vinculam a finalidade ao que entra, e os registros que os carregam.
-    /// </summary>
-    private static readonly string[] Planos =
-    [
-        "RegrasDoCronograma", "PlanoDoCronograma",
-        "AplicacaoDeModeloDeFormulario", "PlanoDaCopiaDoModelo",
-        "RegrasDaColeta", "PlanoDaRecopiaDoCatalogo",
-        "ReposicaoDaConfiguracao",
-        "PlanoDaProtecaoVigente",
-        "RegrasDosFormularios", "PlanoDoFormulario",
-        "AlinhamentoDasBancasDaEtapa",
-    ];
-
-    private static readonly string[] OperacoesDeVinculoEMutacao =
-    [
-        "VincularProcesso", "VincularProcessoSeletivo", "VincularFinalidade", "Substituir", "AtualizarDados",
-        "ReporDe", "AtualizarDe", "RemapearFase", "RemapearAncora", "RemapearDocumentoExigido",
-        "RecopiarDoCatalogo", "RecopiarApresentacaoDoCatalogo",
-    ];
 
     [Fact(DisplayName = "A1: nenhuma política depende da raiz, salvo a fábrica da vista")]
     public void A1_PoliticasNaoDependemDaRaiz()
@@ -78,39 +54,6 @@ public sealed class FronteirasDoProcessoSeletivoTests
         naoEstaticas.Should().BeEmpty("a política é função pura da vista; estado vive na raiz");
     }
 
-    [Fact(DisplayName = "A4: fora dos planos, ninguém vincula, substitui, repõe nem altera partes do processo")]
-    public void A4_SoOsPlanosVinculamEMutam()
-    {
-        (string Dono, string Tipo, string Nome)[] controles =
-        [
-            (typeof(ProcessoSeletivo).FullName!, ParteFullName, "VincularProcesso"),
-            (NamespaceDasPoliticas + ".Restauracao.ReposicaoDaConfiguracao", "Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", "ReporDe"),
-            (NamespaceDasPoliticas + ".Exigencias.PlanoDaProtecaoVigente", "Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", "RecongelarProtecao"),
-        ];
-        foreach ((string dono, string tipo, string nome) in controles)
-        {
-            ChamadasNoDomain()
-                .Any(c => DonoDe(c.Caller.FullName!) == dono && c.Callee.DeclaringType!.FullName == tipo && c.Callee.Name == nome)
-                .Should().BeTrue($"a leitura do IL tem de enxergar {dono} chamando {tipo}.{nome}, inclusive pela interface");
-        }
-
-        MethodInfo mutadorQueDevolveValor = typeof(ProcessoSeletivo).Assembly.GetType("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao")!
-            .GetMethod("AlterarMotivo", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
-        mutadorQueDevolveValor.ReturnType.Should().NotBe(typeof(void), "o controle é um mutador que devolve Result");
-        AlteraAParte(mutadorQueDevolveValor).Should().BeTrue("a detecção cobre o mutador com retorno, e não só o void");
-
-        string[] infratores = [.. ChamadasNoDomain()
-            .Where(static c => c.Callee.DeclaringType is { } tipo
-                && (tipo.FullName is ParteFullName || tipo.Namespace == typeof(ProcessoSeletivo).Namespace)
-                && (EhOperacaoDeVinculoOuMutacao(c.Callee.Name) || AlteraAParte(c.Callee)))
-            .Select(static c => DonoDe(c.Caller.FullName!) + " -> " + c.Callee.DeclaringType!.Name + "." + c.Callee.Name)
-            .Where(static dono => dono.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal) && !EhPlanoOuRaiz(dono.Split(" -> ")[0]))
-            .Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal)];
-
-        infratores.Should().BeEmpty("quem altera uma parte do processo, devolvendo valor ou não, é a raiz ou o plano que ela aplica");
-    }
-
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]
     public void A5_DomainNaoDependeDeCamadasExternas()
     {
@@ -134,28 +77,11 @@ public sealed class FronteirasDoProcessoSeletivoTests
         fora.Should().BeEmpty("o vínculo com o processo é da entidade filha, não de um tipo de política");
     }
 
-    private static bool AlteraAParte(MethodBase metodo) => LeitorDeIl.EscreveEstado(metodo);
-
-    private static bool EhOperacaoDeVinculoOuMutacao(string nome) =>
-        OperacoesDeVinculoEMutacao.Any(op => nome.EndsWith(op, StringComparison.Ordinal));
-
-    private static bool EhPlanoOuRaiz(string dono) =>
-        dono == typeof(ProcessoSeletivo).FullName
-        || Planos.Contains(dono[(dono.LastIndexOf('.') + 1)..], StringComparer.Ordinal);
-
     private static bool EhRegistro(System.Type tipo) => tipo.GetMethod("<Clone>$") is not null;
-
-    private static string DonoDe(string nomeCompleto)
-    {
-        int aninhado = nomeCompleto.IndexOf('+', StringComparison.Ordinal);
-        return aninhado < 0 ? nomeCompleto : nomeCompleto[..aninhado];
-    }
 
     private static IEnumerable<System.Type> TiposDasPoliticas() =>
         typeof(ProcessoSeletivo).Assembly.GetTypes()
             .Where(static t => t.Namespace is { } ns && ns.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal))
             .Where(static t => !System.Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)));
 
-    private static IEnumerable<(System.Type Caller, MethodBase Callee)> ChamadasNoDomain() =>
-        LeitorDeIl.ChamadasDoAssembly(typeof(ProcessoSeletivo).Assembly);
 }

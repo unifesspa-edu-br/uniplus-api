@@ -55,11 +55,10 @@ structural and verifiable, while a `[Trait("Category", "Integration")]` on
 every class depends on someone remembering to add it and silently rots as new
 classes are created. The trait still exists on some classes and stays valid
 for a future integration test that lives outside those projects, but it is no
-longer what separates the two `dotnet test` runs above. An ArchTests fitness
-function (`ContainerFixtureRestritaAProjetoDeIntegracaoTests`) fails the build
-if a class outside `tests/*.IntegrationTests` references Testcontainers
-directly, closing the one way the structural filter could go wrong. Domain and
-Application coverage should stay at or above 80%.
+longer what separates the two `dotnet test` runs above. Keep Testcontainers
+references inside `tests/*.IntegrationTests`; review new references until
+the declarative replacement tracked in issue #2423 is implemented. Domain
+and Application coverage should stay at or above 80%.
 
 ## Commit & Pull Request Guidelines
 Use Conventional Commits in pt-BR:

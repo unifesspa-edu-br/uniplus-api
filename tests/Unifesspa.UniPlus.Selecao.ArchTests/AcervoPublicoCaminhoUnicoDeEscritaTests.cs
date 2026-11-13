@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.Runtime.CompilerServices;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
@@ -9,6 +7,7 @@ using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
@@ -30,6 +29,16 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
 
     private static readonly Architecture Arquitetura = new ArchLoader()
         .LoadAssemblies([typeof(IAcervoPublico).Assembly])
+        .Build();
+
+    private static readonly Architecture ArquiteturaDeStorage = new ArchLoader()
+        .LoadAssemblies(
+            [
+                typeof(IStorageService).Assembly,
+                .. Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.dll")
+                    .Where(static caminho => !Path.GetFileName(caminho).Contains("Tests", StringComparison.Ordinal))
+                    .Select(System.Reflection.Assembly.LoadFrom),
+            ])
         .Build();
 
     [Fact(DisplayName = "Só a materialização da divulgação depende do port de escrita no acervo público")]
@@ -76,35 +85,32 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
     private static string[] DependentesDe(string nomeCompleto) =>
     [
         .. Arquitetura.Types
-            .Where(static t => System.Text.RegularExpressions.Regex.IsMatch(t.FullName, CaminhoPrevisto))
+            .Where(static t => EhCaminhoPrevisto(t.FullName))
             .Where(t => t.Dependencies.Any(d => d.Target.FullName == nomeCompleto))
             .Select(static t => t.Name.Split('+')[0])
             .Distinct(),
     ];
 
-    [Fact(DisplayName = "Só a implementação do acervo de Seleção usa a cópia para objeto público do storage")]
-    public void SoOAcervoDeSelecaoUsaACopiaPublica()
+    private static bool EhCaminhoPrevisto(string nome)
     {
-        string[] usos = [.. Directory
-            .EnumerateFiles(Raiz("src"), "*.cs", SearchOption.AllDirectories)
-            .Where(static arquivo => !EhGerado(arquivo))
-            .Where(static arquivo => File.ReadAllText(arquivo).Contains("CopiarComoObjetoPublicoAsync", StringComparison.Ordinal))
-            .Select(static arquivo => Path.GetFileName(arquivo))
-            .Where(static nome => nome is not ("IStorageService.cs" or "MinioStorageService.cs"))
-            .Order(StringComparer.Ordinal)];
-
-        usos.Should().Equal(
-            ["AcervoPublicoService.cs"],
-            "nenhum outro ponto do sistema pode ter o bucket público como destino de escrita");
+        const string caminho = "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.";
+        return new[] { "DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo", "AcervoDaDivulgacao" }
+            .Any(tipo => nome == caminho + tipo || nome.StartsWith(caminho + tipo + "+", StringComparison.Ordinal));
     }
 
-    private static bool EhGerado(string arquivo) =>
-        arquivo.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
-        || arquivo.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal);
+    [Fact(DisplayName = "Só o serviço do acervo público copia para o bucket público")]
+    public void SoOAcervoDeSelecaoUsaACopiaPublica()
+    {
+        ArchUnitNET.Fluent.Syntax.Elements.Members.MethodMembers.GivenMethodMembersConjunction copia = MethodMembers().That().AreDeclaredIn(typeof(IStorageService))
+            .And().HaveNameStartingWith("CopiarComoObjetoPublicoAsync(");
+        const string servico = "Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices.AcervoPublicoService";
 
-    private static string Raiz(string primeiro, params string[] resto) =>
-        Path.GetFullPath(Path.Join([RaizDoRepositorio(), primeiro, .. resto]));
+        Types().That().HaveFullName(servico).And().CallAny(copia)
+            .GetObjects(ArquiteturaDeStorage).Should().NotBeEmpty("a chamada permitida deve ser detectada");
 
-    private static string RaizDoRepositorio([CallerFilePath] string origem = "") =>
-        Path.Join(Path.GetDirectoryName(origem)!, "..", "..");
+        Types().That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.")
+            .And().DoNotHaveFullNameMatching(@"^Unifesspa\.UniPlus\.Selecao\.Infrastructure\.ExternalServices\.AcervoPublicoService(\+|$)")
+            .Should().NotCallAny(copia)
+            .Check(ArquiteturaDeStorage);
+    }
 }

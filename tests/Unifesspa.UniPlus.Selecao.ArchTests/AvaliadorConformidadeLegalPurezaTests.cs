@@ -1,34 +1,17 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
-/// Fitness test da Story #853 (CA-01): <see cref="AvaliadorConformidadeLegal"/>
-/// avalia <c>ProcessoSeletivo</c> × <c>ObrigatoriedadeLegal</c> como função pura
-/// — sem repositório, DbContext ou relógio próprios. Toda entrada (inclusive a
-/// data de referência, via <c>ConferenciaDeConformidadeLegal</c> na Application)
-/// chega já resolvida pelo chamador.
+/// Verifica que <see cref="AvaliadorConformidadeLegal"/> não guarda estado de instância.
+/// Dependências de I/O e de relógio exigem outra garantia; ver issue #2423.
 /// </summary>
 public sealed class AvaliadorConformidadeLegalPurezaTests
 {
-    private static readonly string[] TokensProibidos =
-    [
-        "TimeProvider",
-        "DateTimeOffset.UtcNow",
-        "DateTimeOffset.Now",
-        "DateTime.UtcNow",
-        "DateTime.Now",
-        "DbContext",
-        "Repository",
-        "IQueryable",
-        "IServiceProvider",
-    ];
-
     [Fact(DisplayName = "AvaliadorConformidadeLegal é static, sem campos e sem construtor — não guarda estado nem dependências")]
     public void ClasseEstaticaSemEstado()
     {
@@ -42,26 +25,4 @@ public sealed class AvaliadorConformidadeLegalPurezaTests
             .Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "AvaliadorConformidadeLegal não referencia repositório, DbContext, relógio ou DI no código-fonte")]
-    public void FonteNaoReferenciaIoOuRelogio()
-    {
-        string fonte = File.ReadAllText(CaminhoAvaliador());
-
-        foreach (string token in TokensProibidos)
-        {
-            fonte.Should().NotContain(token,
-                "o avaliador recebe processo/regras já resolvidos pelo chamador — " + token + " indicaria I/O ou leitura de relógio embutida");
-        }
-    }
-
-    private static string CaminhoAvaliador([CallerFilePath] string origem = "") =>
-        Path.GetFullPath(Path.Join(
-            Path.GetDirectoryName(origem)!,
-            "..",
-            "..",
-            "src",
-            "selecao",
-            "Unifesspa.UniPlus.Selecao.Domain",
-            "Services",
-            "AvaliadorConformidadeLegal.cs"));
 }

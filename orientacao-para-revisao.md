@@ -26,56 +26,57 @@ Antes de escolher outra técnica, nesta ordem:
 3. **Ferramenta pronta e configurada garante?** Só com licença compatível com a política do workspace: MIT, Apache-2.0, BSD, MPL-2.0 ou LGPL, sem depender de plano pago. Analisador pronto configurado por arquivo é aceito. Analisador escrito no repositório não é.
 4. Se nada disso couber, a regra entra na lista "Conferido na revisão".
 
-## Transição da dívida existente
+## Remoção dos testes legados
 
-Ainda há testes de arquitetura legados que leem o fonte como texto. Eles continuam valendo até serem substituídos. A substituição segue estas regras:
+Os detectores que liam C# como texto, filtravam tipos com `Regex.IsMatch` ou liam IL manualmente foram retirados dos projetos `*ArchTests`. As garantias ainda sem substituto automático constam da [issue #2423](https://github.com/unifesspa-edu-br/uniplus-api/issues/2423). A remoção não significa que essas propriedades estejam comprovadas: até cada substituição ser implementada e executada, elas são critérios de revisão do PR.
 
-- Um teste legado só é removido no mesmo PR em que cada garantia automática necessária tem substituto implementado e verde. Quando a garantia não couber em teste profissional, o PR registra expressamente o critério de revisão que a assume antes de retirar o detector textual.
-- PR que altera um teste legado migra esse teste para a forma aceita. A regra é desta orientação; não deriva da seção "Dívida existente e CI" do `CONTRIBUTING.md`, que trata das métricas de tamanho e complexidade.
-- Classe legada com várias garantias só sai quando todas têm destino definido e aplicado. As classes já inventariadas estão abaixo.
-- Teste novo nasce na forma aceita.
-- ADR que prescreve teste textual é emendada no PR que faz a migração. É o caso da ADR-0032 (`Guid.NewGuid`) e da ADR-0068 (relógio).
+Continuam válidos os testes que leem **dados** versionados (JSON e retratos), inspecionam o modelo efetivo do EF Core ou usam reflexão de metadados. O deslocamento dos testes de dados para projetos apropriados também está na issue #2423.
 
-## Destino dos testes legados
+Substitutos já escritos nesta worktree:
 
-O destino abaixo é um plano de migração, não uma garantia já implantada. Há provas parciais, como o teste de integração da consulta crítica com `AsSplitQuery()` e a verificação de FK do schema de Autorização. Cada teste legado permanece até todas as garantias que carrega terem destino aplicado.
+- `DominioNaoUsaGuidNewGuidTests`: regra de chamada do ArchUnitNET, com canário que chama `Guid.NewGuid`.
+- `DecisaoPeloPontoUnicoTests`: regra de chamada de `RequireRole` com a exceção da política técnica de instalação.
+- `AcervoPublicoCaminhoUnicoDeEscritaTests`: regra de chamada de `CopiarComoObjetoPublicoAsync`, com a implementação permitida como controle positivo.
+- `InstanteEmBelemTests`: comportamento do offset resolvido pela zona em 1985 e 2026.
 
-| Regra | Teste legado que a protege hoje | Destino previsto |
-|---|---|---|
-| Ordem "salvar antes de apagar o rascunho" | `RascunhoMorreComOAtoTests` (texto) | Teste unitário da gravação da versão com `Received.InOrder`, com caso de falha no flush |
-| Rascunho não sobrevive à publicação, retificação ou fechamento | `RascunhoMorreComOAtoTests` (texto) | Teste de comportamento do fluxo de congelamento |
-| `FOR UPDATE` trava e carrega a sessão | `CarregamentoDeMutacaoTests.CarregamentoDeMutacao_TrazSessaoETrava` (texto) | Teste de integração (Testcontainers) com duas transações concorrentes |
-| Caller do carregamento de mutação não desliga a transação ambiente | `CarregamentoDeMutacaoTests.CarregamentoDeMutacao_NaoConviveComTransacaoDesligada` (texto) | Sem substituto definido: o teste de concorrência do repositório não prova a propriedade dos handlers. O teste legado permanece |
-| Handler de comando carrega a raiz pelo carregamento de mutação | `CarregamentoDeMutacaoTests.HandlersDeComando_NaoUsamCarregamentoDeLeitura` e `HandlersDeComando_UsamCarregamentoDeMutacao` (texto) | A proibição do carregamento de leitura vira regra do ArchUnitNET. Ela é parcial: não impede outro método de carregamento. A verificação positiva permanece no teste legado até haver forma declarativa |
-| Só os callers autorizados mutam etapa e encerram a sessão; descarte repõe antes de encerrar | `CarregamentoDeMutacaoTests.AtualizarDadosDeEtapa_SoPelosCallersAutorizados`, `EncerrarSessao_SoPelosCallersAutorizados` e `Descarte_RestauraAntesDeEncerrarASessao` (texto) | Restrição de chamador: candidata a regra do ArchUnitNET sobre quem chama o método, a confirmar na migração. Ordem do descarte: teste unitário com `Received.InOrder`. Sem substituto confirmado, o teste legado permanece |
-| Fora dos planos, ninguém vincula, repõe nem altera partes do processo | `FronteirasDoProcessoSeletivoTests.A4_SoOsPlanosVinculamEMutam` | `internal` não basta: impede outros assemblies, mas não outra política do próprio Domain. O teste permanece até haver substituto que preserve a fronteira dentro do Domain |
-| **Ausência** de gatilho próprio em `rol_de_regras` | `RolDeRegrasSemGatilhoTests` (texto da migration) | Teste de integração após aplicar as migrations: consultar `pg_trigger` para a tabela no schema da Seleção, excluindo gatilhos internos (`tgisinternal`) de restrições do PostgreSQL |
-| Ausência de FK entre schemas de módulos | `FatoCandidatoCatalogoTests.Migrations_SemFkCrossSchemaParaFatoCandidato` e outros detectores textuais | Completar a cobertura em testes de integração com `pg_constraint` e os schemas de origem e destino; `PersistenciaDoPerfilTests.Migration_NaoCriaFkEntreSchemas` já cobre Autorização |
-| `UpdateData` de migration não reescreve proteção aprovada | `SementeDoCatalogoNaoSobrescreveProtecaoAprovadaTests` (texto) | Teste de integração com `IMigrator.MigrateAsync(alvo)` antes e depois da aprovação |
-| Consulta com várias coleções usa divisão por padrão | `SelecaoRepositoriosUsamSplitQueryTests` (texto) | Configurar `SplitQuery` como padrão do `SelecaoDbContext` e testar essa opção; revisar cada `AsSingleQuery()` explícito |
-| `Program` não mapeia rota | `PontosUnicosDeAcessoTests.ProgramNaoMapeiaRota` (texto) | Revisão do diff de `Program.cs`: `EndpointDataSource` não revela quem registrou a rota. Retirar só esse detector quando o critério de revisão estiver incorporado ao fluxo do PR |
-| Seeds e contratos JSON | Testes de dados nos `*ArchTests` | Os mesmos testes, movidos para fora dos projetos `*ArchTests` |
+A compilação dos projetos afetados passou. Na sessão TEST, os projetos `Unifesspa.UniPlus.ArchTests` e `Unifesspa.UniPlus.Selecao.ArchTests` executaram, respectivamente, 124 e 48 testes sem falhas; `InstanteEmBelemTests` passou nos dois casos. Os controles positivos de `Guid.NewGuid`, `RequireRole` e `CopiarComoObjetoPublicoAsync` também passaram. A suíte geral de arquitetura levou cerca de 8,2 minutos; o custo das regras de chamada de membro deve ser observado em mudanças futuras.
 
-## Conferido na revisão (não vira teste)
+## Garantias a recompor
 
-O revisor confere estes pontos no diff. Nenhum deles tem forma declarativa ou ferramenta proporcional.
+| Propriedade | Destino |
+|---|---|
+| Salvar antes de apagar rascunho; ausência de rascunho após publicação, retificação e fechamento | Testes unitários e de integração dos fluxos, incluindo falha no flush |
+| `FOR UPDATE`, sessão carregada, transação ambiente, entrada de mutação e ordem do descarte | Teste de concorrência em PostgreSQL e testes de comportamento dos handlers |
+| Escrita das partes do agregado apenas pela raiz ou pelos planos autorizados | Reexaminar visibilidade e desenho; testes de comportamento ou regra declarativa com canário quando possível |
+| Ausência de gatilho próprio em `rol_de_regras` e de FK entre schemas | Testes de integração sobre `pg_trigger` e `pg_constraint` após migrations |
+| Migration não sobrescreve proteção aprovada | Teste de integração com migração entre duas versões e valor aprovado previamente |
+| Consultas com várias coleções usam `SplitQuery` | Padrão no `SelecaoDbContext`, teste da opção efetiva e manutenção do teste SQL da consulta crítica |
+| Chamadas proibidas de relógio estático e carregamento de leitura em comandos | Avaliar regras ArchUnitNET de membro com canários; quando não couber, teste de comportamento ou revisão |
+| Completude dos códigos de `DomainError` emitidos | Catálogo tipado antes de teste de completude; mapeamentos e status por reflexão permanecem testados |
+| Restrições de autorização, publicação, layout INEP, fixture de container e portões de conformidade | Avaliar cada uma por desenho, comportamento e ArchUnitNET; registrar o que permanecer revisão |
 
-1. **Quantas vezes e em que posição o fluxo chama cada portão de conformidade.** O orquestrador único do congelamento e os testes de recusa garantem o resultado. Na revisão, confira que nenhum handler volta a chamar portão fora dele.
-2. **"Quem carrega a raiz usa o carregamento de mutação."** A proibição do carregamento de leitura nos comandos é proteção parcial: não impede um método de carregamento novo. Enquanto a verificação positiva for só do teste legado, confira na revisão o carregamento usado em handler novo e recuse método de carregamento novo da raiz.
-3. **Literal de código de tipo de ato, de etapa ou de fase em C# e SQL, e literal institucional no portão do cronograma.** Literal não é dependência entre tipos. Na revisão, recuse regra presa a código fixo (o sistema é baseado em configuração).
-4. **Vocabulário "Edital" dentro de strings.** Só nomes de tipo e membro são conferidos automaticamente.
-5. **Literais `realm_access` e `resource_access`.** Hoje, `IsInRole` é proibido por regra do ArchUnitNET, com escopo e exceções próprios, e `RequireRole` só é detectado pelo teste legado textual `PapelFixoPorUnidadeTests`, que continua até ter substituto declarativo. O literal é conferido na revisão.
-6. **Offset de fuso escrito à mão e asserção tautológica em teste.** É estilo de teste.
-7. **Escrita de estado transitiva fora dos planos do agregado.** Há mutadores `internal` e também mutadores públicos necessários, como `EtapaProcesso.AtualizarDados`; a visibilidade não fecha sozinha essa fronteira. O teste legado `A4_SoOsPlanosVinculamEMutam` continua até a migração. Na revisão, confira o chamador de cada mutador novo e toda ampliação de visibilidade.
-8. **Código de `DomainError` escrito como literal ou interpolação.** Prefira os catálogos `*ErrorCodes` já existentes. Quando surgir um código novo, confira no diff se é estável, registrado no mapeamento HTTP quando necessário e coerente com os consumidores.
-9. **Mapeamento de rota no `Program.cs`.** Confira no diff que uma rota de negócio nova permanece em controller ou no ponto técnico autorizado pela ADR-0036. A lista de endpoints em runtime não informa qual arquivo registrou a rota.
+## Conferido na revisão
 
-O limite de linhas dos métodos é medido pela MA0051 (ADR-0161). Detectores-canário de regex saem junto com os detectores textuais; nenhum dos dois é item de revisão.
+Até que a issue #2423 esteja concluída, o revisor confere no diff:
+
+1. Nenhum handler chama portão de conformidade fora do orquestrador do congelamento.
+2. Handler de comando carrega a raiz pela entrada de mutação e não contorna a transação ambiente.
+3. Nenhuma regra usa código literal de tipo de ato, etapa, fase ou literal institucional no portão do cronograma.
+4. Nomes e strings novos não recolocam o vocabulário `Edital` fora do contexto permitido.
+5. Literais `realm_access` e `resource_access` não criam nova decisão por papel fora do ponto único. A chamada `RequireRole` tem regra declarativa; seu argumento literal permanece revisão.
+6. Testes novos não escrevem offset de fuso à mão nem fazem asserção tautológica.
+7. Mutadores de partes do agregado não ganham chamadores ou visibilidade sem justificativa e prova de comportamento.
+8. Códigos de `DomainError` novos são estáveis, registrados no mapeamento HTTP quando necessário e coerentes com os consumidores; não são montados por interpolação.
+9. `Program.cs` não registra rota de negócio fora de controller ou de endpoint técnico autorizado pela ADR-0036.
+10. Chamadas novas a relógio estático, `AsSingleQuery()` e carregamento de leitura em comando são revisadas até haver os substitutos da issue #2423.
+11. Mudanças em migrations, restauração, publicação, autorização, fixture de container e layout INEP mantêm as garantias descritas na issue #2423.
+
+O limite de linhas dos métodos é medido pela MA0051 (ADR-0161).
 
 ## Decisões
 
-- **Não adotar BannedApiAnalyzers neste momento.** A [versão estável 5.6.0 no NuGet](https://www.nuget.org/packages/Microsoft.CodeAnalysis.BannedApiAnalyzers) foi publicada em julho de 2026, com licença MIT; o [desenvolvimento dos analisadores](https://github.com/dotnet/roslyn-analyzers) foi transferido para o repositório Roslyn da Microsoft. A ferramenta é viável, mas `IsInRole` já tem dono no ArchUnitNET; `Guid.NewGuid` e `RequireRole` são candidatas a regras de chamada de membro nessa biblioteca e precisam ser validadas na migração. Há um `RequireRole` deliberado na política `Instalacao`, portanto a proibição geral por projeto seria ampla demais. Migrar primeiro os testes textuais para regras declarativas com escopo e exceções explícitos. Reavaliar a ferramenta se a regra não puder ser expressa de modo legível. Não há emenda à ADR-0155 por esta decisão.
-- **Consulta com várias coleções: adotar `SplitQuery` como padrão do `SelecaoDbContext`.** Testar a configuração efetiva e manter o teste de integração que verifica o SQL da consulta crítica. `AsSingleQuery()` pode sobrescrever o padrão; o revisor confere toda introdução dessa chamada no diff. A combinação com `MultipleCollectionIncludeWarning` não acrescenta cobertura, pois o [EF Core não emite esse aviso quando há configuração global](https://learn.microsoft.com/en-us/ef/core/querying/single-split-queries). A configuração altera número de comandos SQL e pode afetar consistência entre as leituras. Antes da troca, verificar também as consultas com uma coleção em `LoteDeNotasDoEnemRepository` e `AtoDoProcessoRepository`, hoje sem `AsSplitQuery()`, além dos fluxos sensíveis à concorrência. A remoção de `SelecaoRepositoriosUsamSplitQueryTests` ocorre no mesmo PR que implementa e valida o substituto.
+- **Não adotar BannedApiAnalyzers neste momento.** A [versão estável 5.6.0 no NuGet](https://www.nuget.org/packages/Microsoft.CodeAnalysis.BannedApiAnalyzers) foi publicada em julho de 2026, com licença MIT; o [desenvolvimento dos analisadores](https://github.com/dotnet/roslyn-analyzers) foi transferido para o repositório Roslyn da Microsoft. `IsInRole` já tem dono no ArchUnitNET. As regras de `Guid.NewGuid` e `RequireRole` foram escritas e executadas na mesma biblioteca, com escopo e exceção explícitos. Há um `RequireRole` deliberado na política `Instalacao`, portanto a proibição geral por projeto seria ampla demais. Reavaliar o analisador se alguma regra não puder ser expressa de modo legível. Não há emenda à ADR-0155 por esta decisão.
+- **Consulta com várias coleções: adotar `SplitQuery` como padrão do `SelecaoDbContext`.** Testar a configuração efetiva e manter o teste de integração que verifica o SQL da consulta crítica. `AsSingleQuery()` pode sobrescrever o padrão; o revisor confere toda introdução dessa chamada no diff. A combinação com `MultipleCollectionIncludeWarning` não acrescenta cobertura, pois o [EF Core não emite esse aviso quando há configuração global](https://learn.microsoft.com/en-us/ef/core/querying/single-split-queries). A configuração altera número de comandos SQL e pode afetar consistência entre as leituras. Antes da troca, verificar também as consultas com uma coleção em `LoteDeNotasDoEnemRepository` e `AtoDoProcessoRepository`, hoje sem `AsSplitQuery()`, além dos fluxos sensíveis à concorrência. O detector textual foi removido; a substituição está pendente na issue #2423. Até lá, o revisor confere as consultas alteradas.
 - **Códigos de `DomainError`: manter na revisão.** Vários módulos já têm catálogos `*ErrorCodes`; usá-los onde couber. Não impor um catálogo único nem migrar todos os códigos apenas para viabilizar um teste. Testar códigos que fazem parte de contrato por comportamento. Literais e interpolações restantes ficam no item 8 da revisão.
 
 ## Avaliadas e não adotadas
