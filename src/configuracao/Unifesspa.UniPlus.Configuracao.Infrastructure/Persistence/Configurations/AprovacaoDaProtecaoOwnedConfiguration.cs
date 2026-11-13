@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -14,7 +16,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Mapeamento EF Core compartilhado do circuito de aprovação da proteção de dados
 /// (<see cref="AprovacaoDaProtecao"/>) como owned type obrigatório, em colunas <c>protecao_*</c> da
 /// tabela do tipo de documento e do fato. Centralizado aqui para que os dois cadastros guardem o
-/// circuito do mesmo jeito.
+/// circuito do mesmo jeito. O ciclo e o estado das manifestações técnicas ficam na linha do item para a manifestação
+/// e a decisão disputarem o mesmo token de concorrência (ADR-0163).
 /// </summary>
 internal static class AprovacaoDaProtecaoOwnedConfiguration
 {
@@ -37,6 +40,11 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
             .HasMaxLength(SituacaoMaxLength)
             .IsRequired();
 
+        aprovacao.Property(a => a.Ciclo)
+            .HasColumnName("protecao_ciclo")
+            .HasConversion(ManifestacaoDaProtecaoConversores.Ciclo)
+            .IsRequired();
+
         aprovacao.Property(a => a.SolicitadaEm).HasColumnName("protecao_solicitada_em");
         aprovacao.Property(a => a.SolicitadaPor).HasColumnName("protecao_solicitada_por").HasMaxLength(AtorMaxLength)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
@@ -52,16 +60,20 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
 
         aprovacao.Property(a => a.Justificativa)
             .HasColumnName("protecao_justificativa")
-            .HasMaxLength(AprovacaoDaProtecao.JustificativaMaxLength);
+            .HasMaxLength(Fundamentacao.MaxLength);
 
         aprovacao.Property(a => a.AceitaEm).HasColumnName("protecao_aceita_em");
         aprovacao.Property(a => a.AceitaPor).HasColumnName("protecao_aceita_por").HasMaxLength(AtorMaxLength)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
+
+        aprovacao.Property(a => a.ManifestadaEm).HasColumnName("protecao_manifestada_em");
+        aprovacao.Property(a => a.ManifestacaoDesfavoravelVigente).HasColumnName("protecao_manifestacao_desfavoravel").IsRequired();
     }
 
     /// <summary>
-    /// Os CHECKs do circuito na tabela do dono: a situação pertence ao vocabulário, e o item com ajuste
-    /// recomendado carrega a classificação recomendada, e o reprovado carrega a justificativa.
+    /// Os CHECKs do circuito na tabela do dono: a situação pertence ao vocabulário, o item com ajuste recomendado
+    /// carrega a classificação recomendada, o reprovado carrega a justificativa, o ciclo começa em 1 e a manifestação
+    /// desfavorável vigente tem o instante da manifestação.
     /// </summary>
     public static void ConfigurarChecks<TEntity>(TableBuilder<TEntity> table, string tabela)
         where TEntity : class
@@ -76,5 +88,9 @@ internal static class AprovacaoDaProtecaoOwnedConfiguration
         table.HasCheckConstraint(
             $"ck_{tabela}_protecao_reprovada_com_justificativa",
             "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+        table.HasCheckConstraint($"ck_{tabela}_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+        table.HasCheckConstraint(
+            $"ck_{tabela}_protecao_desfavoravel_manifestada",
+            "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
     }
 }

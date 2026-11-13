@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -65,4 +66,14 @@ internal static class CatalogoDeProtecaoDeTeste
         FatoCandidato.CriarDoAdministrador(
             codigo, nome, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
+
+    /// <summary>O tipo no instante do ato, como o registro do ato o guarda.</summary>
+    public static RetratoDoItemDaProtecao Retrato(TipoDocumento tipo) =>
+        new(new ItemDaProtecao(CadastroDoCatalogo.TipoDocumento, tipo.Id), tipo.Codigo.Valor, tipo.Nome, tipo.Protecao,
+            tipo.Aprovacao.Ciclo, tipo.Aprovacao.ManifestacaoDesfavoravelVigente);
+
+    /// <summary>O fato no instante do ato, como o registro do ato o guarda.</summary>
+    public static RetratoDoItemDaProtecao Retrato(FatoCandidato fato) =>
+        new(new ItemDaProtecao(CadastroDoCatalogo.Fato, fato.Id), fato.Codigo, fato.Nome, fato.Protecao,
+            fato.Aprovacao.Ciclo, fato.Aprovacao.ManifestacaoDesfavoravelVigente);
 }

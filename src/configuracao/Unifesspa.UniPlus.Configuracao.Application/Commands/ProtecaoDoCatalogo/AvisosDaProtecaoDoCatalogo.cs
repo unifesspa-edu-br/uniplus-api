@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Monta os e-mails do circuito de aprovação da proteção de dados do catálogo para quem tem a permissão de
-/// aprovar. Os handlers devolvem o resultado como mensagens de saída, que entram no outbox junto da gravação.
+/// aprovar e para quem tem a de se manifestar. Os handlers devolvem o resultado como mensagens de saída, que entram no outbox junto da gravação.
 /// </summary>
 /// <remarks>
 /// O corpo traz só o que o próprio catálogo declara — quantidades, cadastro, nome e código do item, classificação —,
@@ -18,12 +18,7 @@ internal static class AvisosDaProtecaoDoCatalogo
 {
     public static IReadOnlyList<EnviarEmail> DaSolicitacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
     {
-        string itens = string.Join(" e ", new[]
-        {
-            tiposDeDocumento > 0 ? Quantidade(tiposDeDocumento, "tipo de documento", "tipos de documento") : null,
-            fatos > 0 ? Quantidade(fatos, "fato", "fatos") : null,
-        }.OfType<string>());
-        string abertura = $"Há itens do catálogo aguardando a aprovação da proteção de dados: {itens}.";
+        string abertura = $"Há itens do catálogo aguardando a aprovação da proteção de dados: {Itens(tiposDeDocumento, fatos)}.";
         const string chamada = "Abra a área de proteção de dados do catálogo no Uni+ para aprovar, recomendar ajuste ou reprovar cada um.";
 
         return Montar(
@@ -32,6 +27,23 @@ internal static class AvisosDaProtecaoDoCatalogo
             $"{abertura}\n\n{chamada}",
             $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
             "catalogo.protecao.solicitacao");
+    }
+
+    /// <summary>
+    /// O aviso da solicitação a quem tem a permissão de se manifestar (UNI-REQ-0373): a manifestação técnica é opcional e
+    /// não decide.
+    /// </summary>
+    public static IReadOnlyList<EnviarEmail> DaSolicitacaoParaManifestacao(IReadOnlyList<string> destinatarios, int tiposDeDocumento, int fatos)
+    {
+        string abertura = $"Há itens do catálogo com a aprovação da proteção de dados solicitada: {Itens(tiposDeDocumento, fatos)}.";
+        const string chamada = "Abra a área de proteção de dados do catálogo no Uni+ se quiser registrar manifestação técnica sobre cada um; a decisão cabe a quem aprova.";
+
+        return Montar(
+            destinatarios,
+            "Solicitação de aprovação da proteção de dados do catálogo aberta a manifestação",
+            $"{abertura}\n\n{chamada}",
+            $"<p>{WebUtility.HtmlEncode(abertura)}</p><p>{chamada}</p>",
+            "catalogo.protecao.solicitacao.manifestacao");
     }
 
     public static IReadOnlyList<EnviarEmail> DoAceite(
@@ -53,6 +65,13 @@ internal static class AvisosDaProtecaoDoCatalogo
             .Select(Email.Criar)
             .Where(email => email.IsSuccess)
             .Select(email => EnviarEmail.Para(email.Value!, assunto, corpoEmTexto, corpoEmHtml, finalidade))];
+
+    private static string Itens(int tiposDeDocumento, int fatos) =>
+        string.Join(" e ", new[]
+        {
+            tiposDeDocumento > 0 ? Quantidade(tiposDeDocumento, "tipo de documento", "tipos de documento") : null,
+            fatos > 0 ? Quantidade(fatos, "fato", "fatos") : null,
+        }.OfType<string>());
 
     private static string Quantidade(int quantidade, string singular, string plural) =>
         quantidade == 1 ? $"1 {singular}" : $"{quantidade} {plural}";

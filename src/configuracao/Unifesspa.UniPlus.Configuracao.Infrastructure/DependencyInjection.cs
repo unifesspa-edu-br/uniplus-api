@@ -11,9 +11,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Registra a infraestrutura do módulo Configuracao (DbContext + interceptors
-/// transversais soft delete + audit + repositórios dos cadastros Campus e
-/// LocalOferta, UNI-REQ #587). Wire-up centralizado em
+/// Registra a infraestrutura do módulo Configuracao: o DbContext com os interceptors transversais de soft delete e
+/// auditoria, a unidade de trabalho, os repositórios e os leitores cross-módulo (ADR-0056). Wire-up centralizado em
 /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0054).
 /// </summary>
 public static class ConfiguracaoInfrastructureRegistration
@@ -24,61 +23,97 @@ public static class ConfiguracaoInfrastructureRegistration
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddUniPlusEfInterceptors();
+        AdicionarPersistencia(services);
+        AdicionarRepositoriosDaOferta(services);
+        AdicionarRepositoriosDosDocumentosEDoAtendimento(services);
+        AdicionarRepositoriosDoProcesso(services);
+        AdicionarRepositoriosDoCatalogoDeFatos(services);
+        AdicionarLeitoresDosCadastros(services);
+        AdicionarLeitoresDoProcesso(services);
+        return services;
+    }
 
+    // A unidade de trabalho encaminha para a mesma instância do DbContext do escopo: uma segunda instância quebraria a
+    // atomicidade da gravação com o outbox (ADR-0004).
+    private static void AdicionarPersistencia(IServiceCollection services)
+    {
+        services.AddUniPlusEfInterceptors();
         services.AddDbContext<ConfiguracaoDbContext>((serviceProvider, options) =>
             options.UseUniPlusNpgsqlConventions<ConfiguracaoDbContext>(
                 serviceProvider, ConnectionStringName, schema: ConfiguracaoDbContext.Schema));
-
         services.AddScoped<IConfiguracaoUnitOfWork>(serviceProvider =>
             serviceProvider.GetRequiredService<ConfiguracaoDbContext>());
+    }
 
+    // Os cadastros da oferta de vagas: campi, locais, cursos, ofertas e modalidades, e as bases da reserva e do bônus.
+    private static void AdicionarRepositoriosDaOferta(IServiceCollection services)
+    {
         services.AddScoped<ICampusRepository, CampusRepository>();
         services.AddScoped<ILocalOfertaRepository, LocalOfertaRepository>();
+        services.AddScoped<ICursoRepository, CursoRepository>();
+        services.AddScoped<IOfertaCursoRepository, OfertaCursoRepository>();
+        services.AddScoped<IModalidadeRepository, ModalidadeRepository>();
         services.AddScoped<IReferenciaReservaDemograficaRepository, ReferenciaReservaDemograficaRepository>();
         services.AddScoped<IPesoAreaEnemRepository, PesoAreaEnemRepository>();
+        services.AddScoped<IBaseLegalBonusRegionalRepository, BaseLegalBonusRegionalRepository>();
+    }
+
+    private static void AdicionarRepositoriosDosDocumentosEDoAtendimento(IServiceCollection services)
+    {
         services.AddScoped<ITipoDocumentoRepository, TipoDocumentoRepository>();
         services.AddScoped<ICategoriaDocumentoRepository, CategoriaDocumentoRepository>();
         services.AddScoped<ICondicaoAtendimentoRepository, CondicaoAtendimentoRepository>();
         services.AddScoped<IRecursoAcessibilidadeRepository, RecursoAcessibilidadeRepository>();
         services.AddScoped<ITipoDeficienciaRepository, TipoDeficienciaRepository>();
-        services.AddScoped<IModalidadeRepository, ModalidadeRepository>();
+    }
+
+    // O desenho do processo seletivo: fases, bancas, tipos de processo e de etapa, calendário, termos e formulários.
+    private static void AdicionarRepositoriosDoProcesso(IServiceCollection services)
+    {
         services.AddScoped<IFaseCanonicaRepository, FaseCanonicaRepository>();
         services.AddScoped<ITipoBancaRepository, TipoBancaRepository>();
         services.AddScoped<ITipoProcessoRepository, TipoProcessoRepository>();
-        services.AddScoped<IFatoCandidatoRepository, FatoCandidatoRepository>();
-        services.AddScoped<IModeloFormularioRepository, ModeloFormularioRepository>();
         services.AddScoped<ITipoEtapaRepository, TipoEtapaRepository>();
-        services.AddScoped<ICursoRepository, CursoRepository>();
-        services.AddScoped<IOfertaCursoRepository, OfertaCursoRepository>();
         services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
         services.AddScoped<ICalendarioDiasUteisRepository, CalendarioDiasUteisRepository>();
         services.AddScoped<ITermoConsentimentoRepository, TermoConsentimentoRepository>();
-        services.AddScoped<IAtoDaProtecaoDoCatalogoRepository, AtoDaProtecaoDoCatalogoRepository>();
-        services.AddScoped<IBaseLegalBonusRegionalRepository, BaseLegalBonusRegionalRepository>();
+        services.AddScoped<IModeloFormularioRepository, ModeloFormularioRepository>();
+    }
 
-        // Readers cross-módulo (ADR-0056).
+    // Os fatos do candidato e os registros só acrescentados da aprovação da proteção do catálogo.
+    private static void AdicionarRepositoriosDoCatalogoDeFatos(IServiceCollection services)
+    {
+        services.AddScoped<IFatoCandidatoRepository, FatoCandidatoRepository>();
+        services.AddScoped<IAtoDaProtecaoDoCatalogoRepository, AtoDaProtecaoDoCatalogoRepository>();
+        services.AddScoped<IManifestacaoDaProtecaoRepository, ManifestacaoDaProtecaoRepository>();
+    }
+
+    // Leitores cross-módulo (ADR-0056) dos cadastros da oferta, dos documentos e do atendimento.
+    private static void AdicionarLeitoresDosCadastros(IServiceCollection services)
+    {
         services.AddScoped<IReferenciaReservaDemograficaReader, ReferenciaReservaDemograficaReader>();
         services.AddScoped<IPesoAreaEnemReader, PesoAreaEnemReader>();
+        services.AddScoped<IBaseLegalBonusRegionalReader, BaseLegalBonusRegionalReader>();
+        services.AddScoped<IModalidadeReader, ModalidadeReader>();
+        services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
         services.AddScoped<ITipoDocumentoReader, TipoDocumentoReader>();
         services.AddScoped<ICategoriaDocumentoReader, CategoriaDocumentoReader>();
         services.AddScoped<ICondicaoAtendimentoReader, CondicaoAtendimentoReader>();
         services.AddScoped<IRecursoAcessibilidadeReader, RecursoAcessibilidadeReader>();
         services.AddScoped<ITipoDeficienciaReader, TipoDeficienciaReader>();
-        services.AddScoped<IModalidadeReader, ModalidadeReader>();
+    }
+
+    // Leitores cross-módulo (ADR-0056) do desenho do processo seletivo e do catálogo de fatos do candidato.
+    private static void AdicionarLeitoresDoProcesso(IServiceCollection services)
+    {
         services.AddScoped<IFaseCanonicaReader, FaseCanonicaReader>();
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
         services.AddScoped<ITipoProcessoReader, TipoProcessoReader>();
         services.AddScoped<ITipoEtapaReader, TipoEtapaReader>();
-        services.AddScoped<IOfertaCursoReader, OfertaCursoReader>();
-        // Leitura cross-módulo do catálogo de fatos do candidato (ADR-0056).
-        services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
         services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();
-        services.AddScoped<IBaseLegalBonusRegionalReader, BaseLegalBonusRegionalReader>();
         services.AddScoped<ITermoConsentimentoReader, TermoConsentimentoReader>();
         services.AddScoped<IModeloFormularioReader, ModeloFormularioReader>();
-
-        return services;
+        services.AddScoped<IFatoCandidatoReader, FatoCandidatoReader>();
     }
 }

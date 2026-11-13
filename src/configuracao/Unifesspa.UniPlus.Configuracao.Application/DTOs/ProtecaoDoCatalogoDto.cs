@@ -6,15 +6,24 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 /// da decisão. Quem agiu fica registrado e não sai na resposta.
 /// </summary>
 /// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>.</param>
+/// <param name="Ciclo">O ciclo de aprovação corrente, que a manifestação informa ao se registrar.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação, quando o ajuste foi recomendado.</param>
-/// <param name="Justificativa">Motivo da decisão, quando a proteção de dados o escreveu; sempre presente na reprovação.</param>
+/// <param name="Justificativa">
+/// Motivo do ajuste ou da reprovação, quando a proteção de dados o escreveu; sempre presente na reprovação. A
+/// justificativa da aprovação sai no ato da decisão.
+/// </param>
+/// <param name="ManifestadaEm">Instante da última manifestação técnica do ciclo; nulo sem manifestação.</param>
+/// <param name="ManifestacaoDesfavoravel">Se há manifestação vigente recomenda ajuste ou inadequada no ciclo.</param>
 public sealed record AprovacaoDaProtecaoDto(
     string Situacao,
+    int Ciclo,
     DateTimeOffset? SolicitadaEm,
     DateTimeOffset? DecididaEm,
     string? ClassificacaoRecomendada,
     string? Justificativa,
-    DateTimeOffset? AceitaEm);
+    DateTimeOffset? AceitaEm,
+    DateTimeOffset? ManifestadaEm,
+    bool ManifestacaoDesfavoravel);
 
 /// <summary>Um tipo de documento ou fato do catálogo com a proteção que aguarda aprovação.</summary>
 /// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
@@ -46,6 +55,7 @@ public sealed record SolicitacaoDaProtecaoDto(int TiposDeDocumento, int Fatos);
 /// <param name="Fato">O que é o fato; nulo no tipo de documento.</param>
 /// <param name="TipoDocumento">O que o tipo de documento pede ao candidato; nulo no fato.</param>
 /// <param name="Atos">Todos os atos registrados do item, em ordem cronológica.</param>
+/// <param name="ManifestacoesVigentes">As manifestações técnicas vigentes do ciclo corrente, da mais antiga à mais recente.</param>
 public sealed record DetalheDaProtecaoDoCatalogoDto(
     string Tipo,
     Guid Id,
@@ -58,7 +68,8 @@ public sealed record DetalheDaProtecaoDoCatalogoDto(
     AprovacaoDaProtecaoDto Aprovacao,
     DetalheDoFatoDto? Fato,
     DetalheDoTipoDeDocumentoDto? TipoDocumento,
-    IReadOnlyList<AtoDaProtecaoDto> Atos);
+    IReadOnlyList<AtoDaProtecaoDto> Atos,
+    IReadOnlyList<ManifestacaoDaProtecaoDto> ManifestacoesVigentes);
 
 /// <summary>O fato, para quem avalia a proteção: o tipo do dado, como é exibido e os valores possíveis.</summary>
 /// <param name="Dominio">Token canônico do tipo do dado.</param>
@@ -90,17 +101,21 @@ public sealed record DetalheDoTipoDeDocumentoDto(string Categoria, string? Forma
 /// <param name="Ato">Token canônico: <c>SOLICITACAO</c>, <c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c>, <c>REPROVACAO</c> ou <c>ACEITE</c>.</param>
 /// <param name="AtorNome">Nome de quem agiu; nulo quando o token não trazia nome.</param>
 /// <param name="ClassificacaoProtecao">Classificação do item no instante do ato; na decisão, a que o aprovador conferiu.</param>
+/// <param name="Ciclo">O ciclo de aprovação em que o ato aconteceu.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação recomendada, só no ajuste recomendado.</param>
-/// <param name="Justificativa">Motivo da decisão, no ajuste recomendado (se escrito) e na reprovação.</param>
+/// <param name="Justificativa">Motivo da decisão: na reprovação, sempre; na aprovação e no ajuste, se escrito.</param>
+/// <param name="DianteDeManifestacaoDesfavoravel">Se a decisão foi tomada com manifestação desfavorável vigente.</param>
 public sealed record AtoDaProtecaoDto(
     string Ato,
     DateTimeOffset Instante,
     string? AtorNome,
+    int Ciclo,
     string ClassificacaoProtecao,
     string HipoteseLegal,
     string FinalidadeTratamento,
     string? ClassificacaoRecomendada,
-    string? Justificativa);
+    string? Justificativa,
+    bool DianteDeManifestacaoDesfavoravel);
 
 /// <summary>
 /// Uma decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) com o item a que se refere. O
@@ -115,8 +130,10 @@ public sealed record DecisaoDaProtecaoDto(
     string Ato,
     DateTimeOffset Instante,
     string? AtorNome,
+    int Ciclo,
     string ClassificacaoProtecao,
     string HipoteseLegal,
     string FinalidadeTratamento,
     string? ClassificacaoRecomendada,
-    string? Justificativa);
+    string? Justificativa,
+    bool DianteDeManifestacaoDesfavoravel);

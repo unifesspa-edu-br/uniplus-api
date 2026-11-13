@@ -14,7 +14,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <param name="HipoteseLegal">Token canônico da hipótese legal que o aprovador conferiu.</param>
 /// <param name="FinalidadeTratamento">A finalidade do tratamento que o aprovador conferiu.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação; obrigatório no ajuste e recusado nas demais decisões.</param>
-/// <param name="Justificativa">Motivo da decisão, de até 2.000 caracteres: opcional no ajuste, obrigatório na reprovação e recusado na aprovação.</param>
+/// <param name="Justificativa">
+/// Motivo da decisão, de até 2.000 caracteres: obrigatório na reprovação; na aprovação e no ajuste, opcional, salvo
+/// diante de manifestação técnica desfavorável vigente, que o exige (UNI-REQ-0374). Fica registrado no ato da decisão.
+/// </param>
 /// <remarks>
 /// <c>Cadastro</c>, <c>Decisao</c> e a proteção conferida são <c>string?</c> para que o campo ausente seja recusado no
 /// próprio campo, junto das demais violações (ADR-0125). A decisão vale sobre a proteção que o aprovador viu: se o

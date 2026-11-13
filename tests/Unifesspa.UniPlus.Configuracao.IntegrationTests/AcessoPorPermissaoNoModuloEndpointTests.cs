@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Cada cadastro do módulo decide o acesso pela permissão concedida, e não pelo papel do token: quem tem a concessão
 /// passa, o administrador da plataforma sem concessão e quem só tem a permissão de outro cadastro recebem 403, e sem
 /// login é 401. A rota administrativa de cada recurso sai do código da permissão (<c>configuracao:{recurso}:{ação}</c>):
-/// a manutenção é exercida por um POST e a consulta por um GET.
+/// a manutenção é exercida por um POST, a consulta por um GET e a manifestação pelo POST da sub-rota de manifestações.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
 public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
@@ -34,15 +34,12 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     public AcessoPorPermissaoNoModuloEndpointTests(ConfiguracaoEndpointFixture fixture) => _fixture = fixture;
 
-    // A matriz lista só as permissões que têm endpoint: manifestar entra no catálogo antes do endpoint, que a #2366 cria.
-    private static readonly PermissaoConfiguracao[] SemEndpoint = [PermissaoConfiguracao.ProtecaoDoCatalogoManifestar];
-
     public static TheoryData<PermissaoConfiguracao> Permissoes
     {
         get
         {
             TheoryData<PermissaoConfiguracao> dados = [];
-            foreach (PermissaoConfiguracao permissao in Enum.GetValues<PermissaoConfiguracao>().Except(SemEndpoint))
+            foreach (PermissaoConfiguracao permissao in Enum.GetValues<PermissaoConfiguracao>())
             {
                 dados.Add(permissao);
             }
@@ -131,9 +128,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     {
         bool consulta = permissao.Acao == "consultar";
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = new(
-            consulta ? HttpMethod.Get : HttpMethod.Post,
-            new Uri($"/api/configuracao/admin/{permissao.Resource}", UriKind.Relative))
+        using HttpRequestMessage request = new(consulta ? HttpMethod.Get : HttpMethod.Post, Rota(permissao))
         {
             Content = consulta ? null : JsonContent.Create(new { }),
         };
@@ -144,6 +139,11 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
         return await client.SendAsync(request);
     }
+
+    // A manifestação tem a sub-rota própria; sem ela, o POST cairia na decisão, que confere a permissão de aprovar.
+    private static Uri Rota(PermissaoConfiguracao permissao) => new(
+        permissao.Acao == "manifestar" ? $"/api/configuracao/admin/{permissao.Resource}/manifestacoes" : $"/api/configuracao/admin/{permissao.Resource}",
+        UriKind.Relative);
 
     private static void Autenticar(HttpRequestMessage request, string sub, string? papel)
     {

@@ -130,7 +130,43 @@ internal static class ProtecaoDoCatalogoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.dado_da_decisao_nao_cabe",
-                "A decisão traz classificação recomendada ou justificativa que ela não admite")),
+                "A decisão traz classificação recomendada que ela não admite")),
+
+        new(ProtecaoDoCatalogoErrorCodes.JustificativaExigidaPelaManifestacao,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.justificativa_exigida_pela_manifestacao",
+                "Aprovar ou recomendar ajuste diante de manifestação desfavorável vigente exige a justificativa")),
+
+        new(ProtecaoDoCatalogoErrorCodes.ParecerInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.parecer_invalido",
+                "Parecer fora do vocabulário da manifestação")),
+
+        new(ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_obrigatorio",
+                "Os pareceres recomenda ajuste e inadequada exigem o texto")),
+
+        new(ProtecaoDoCatalogoErrorCodes.TextoDaManifestacaoMuitoLongo,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.texto_da_manifestacao_muito_longo",
+                "O texto da manifestação passa do limite de 2.000 caracteres")),
+
+        new(ProtecaoDoCatalogoErrorCodes.CicloInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.ciclo_invalido",
+                "Ciclo de aprovação ausente ou inválido")),
+
+        new(ProtecaoDoCatalogoErrorCodes.CicloMudou,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.protecao_do_catalogo.ciclo_mudou",
+                "O ciclo de aprovação do item mudou depois de lido; releia o item")),
 
         new(ProtecaoDoCatalogoErrorCodes.AceiteDeItemReprovado,
             new DomainErrorMapping(

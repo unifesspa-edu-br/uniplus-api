@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,15 +18,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O circuito de aprovação da proteção de dados dos tipos de documento e dos fatos do catálogo (ADR-0153): o que
-/// aguarda a aprovação, a solicitação que o administrador envia e a decisão da proteção de dados. O aceite da
-/// recomendação fica no cadastro de cada item, que é de quem o mantém.
+/// aguarda a aprovação, a solicitação que o administrador envia, a manifestação técnica de quem fiscaliza e a decisão
+/// da proteção de dados (ADR-0163). O aceite da recomendação fica no cadastro de cada item, que é de quem o mantém.
 /// </summary>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class ProtecaoDoCatalogoController : ControllerBase
 {
     private const string DecisoesResourceTag = "protecao-do-catalogo-decisoes";
@@ -128,13 +122,37 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ObterDetalhe(string cadastro, Guid id, CancellationToken cancellationToken)
     {
-        CadastroDaProtecaoDoCatalogo origem = string.Equals(cadastro, "fatos", StringComparison.OrdinalIgnoreCase) ? CadastroDaProtecaoDoCatalogo.Fato : CadastroDaProtecaoDoCatalogo.TipoDocumento;
-
         DetalheDaProtecaoDoCatalogoDto? detalhe = await _queryBus
-            .Send(new ObterDetalheDaProtecaoDoCatalogoQuery(origem, id), cancellationToken)
+            .Send(new ObterDetalheDaProtecaoDoCatalogoQuery(CadastroDaRota(cadastro), id), cancellationToken)
             .ConfigureAwait(false);
 
         return detalhe is null ? NotFound() : Ok(detalhe);
+    }
+
+    /// <summary>
+    /// Todas as manifestações técnicas do item, de todos os ciclos, com a situação de cada uma: vigente, substituída ou
+    /// encerrada. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar ou pela de
+    /// consultar a proteção de dados do catálogo, e a leitura é registrada antes da resposta (sem o registro, 503).
+    /// </summary>
+    [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}/manifestacoes")]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.ProtecaoDoCatalogoAprovar,
+        ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-manifestacao", Versions = [1])]
+    [ProducesResponseType(typeof(IEnumerable<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> ListarManifestacoes(string cadastro, Guid id, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
+            .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaRota(cadastro), id), cancellationToken)
+            .ConfigureAwait(false);
+
+        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
     }
 
     /// <summary>
@@ -160,8 +178,33 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     }
 
     /// <summary>
+    /// A manifestação técnica sobre a proteção de um item que está numa solicitação, com o ciclo de aprovação lido no
+    /// item. A nova manifestação da mesma pessoa no ciclo substitui a vigente sem apagá-la; a manifestação não decide.
+    /// Exige a permissão de se manifestar sobre a proteção de dados do catálogo. Idempotency-Key obrigatório (ADR-0027).
+    /// </summary>
+    [HttpPost("admin/protecao-do-catalogo/manifestacoes")]
+    [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoManifestar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
+    [RequiresIdempotencyKey]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Manifestar([FromBody] RegistrarManifestacaoDaProtecaoRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Result resultado = await _commandBus.Send(request.ParaComando(), cancellationToken).ConfigureAwait(false);
+
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
     /// A proteção de dados aprova ou nega um item que está numa solicitação; a negativa exige a classificação
-    /// recomendada. Exige a permissão de aprovar a proteção de dados do catálogo. Idempotency-Key obrigatório (ADR-0027).
+    /// recomendada. Diante de manifestação técnica desfavorável vigente, aprovar ou recomendar ajuste exige a
+    /// justificativa. Exige a permissão de aprovar a proteção de dados do catálogo. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
@@ -181,4 +224,7 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
 
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
+
+    private static CadastroDaProtecaoDoCatalogo CadastroDaRota(string cadastro) =>
+        string.Equals(cadastro, "fatos", StringComparison.OrdinalIgnoreCase) ? CadastroDaProtecaoDoCatalogo.Fato : CadastroDaProtecaoDoCatalogo.TipoDocumento;
 }
