@@ -32,6 +32,9 @@ public sealed class AvisosDosEfeitosDaJanelaTests
     private static readonly Identidade Diogo = new(Emissor, "diogo.souza");
     private static readonly Identidade Betina = new(Emissor, "betina.neves");
 
+    // Quem envia o lote sem estar em grupo nenhum, para que todo gestor e todo Representante possam ser cobrados.
+    private static readonly Identidade Rebeca = new(Emissor, "rebeca.lima");
+
     [Fact(DisplayName = "O lote avisa quem migrou, quem foi recusado e os grupos de decisão, menos quem o enviou")]
     public async Task Lote_AvisaBeneficiariosEGrupos()
     {
@@ -41,7 +44,7 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         cenario.Abrir();
 
         IReadOnlyList<EnviarEmail> enviados = await AvisosDoLoteAsync(
-            cenario, true, (deLeandro, ResultadoDaMigracao.Migrar), (deBetina, ResultadoDaMigracao.Recusar));
+            cenario, Diogo, true, (deLeandro, ResultadoDaMigracao.Migrar), (deBetina, ResultadoDaMigracao.Recusar));
 
         Destinatarios(enviados, TipoDeAviso.ConcessaoMigrada).Should().BeEquivalentTo([EmailLeandro]);
         Destinatarios(enviados, TipoDeAviso.ConcessaoRevogada).Should().BeEquivalentTo([EmailBetina]);
@@ -49,16 +52,16 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         enviados.Should().HaveCount(4);
     }
 
-    [Fact(DisplayName = "As migrações que passam a aguardar o Representante do controlador avisam os Representantes e os gestores, menos quem enviou o lote")]
+    [Fact(DisplayName = "As migrações que passam a aguardar o Representante do controlador avisam também o gestor que não é Representante")]
     public async Task Lote_QueAguardaAProtecao_AvisaRepresentantesEGestores()
     {
         var cenario = new CenarioDeMigracao(protegido: true);
         Concessao deLeandro = cenario.Conceder(CenarioDeMigracao.Leandro, email: EmailLeandro);
         cenario.Abrir();
 
-        IReadOnlyList<EnviarEmail> enviados = await AvisosDoLoteAsync(cenario, false, (deLeandro, ResultadoDaMigracao.Migrar));
+        IReadOnlyList<EnviarEmail> enviados = await AvisosDoLoteAsync(cenario, Rebeca, false, (deLeandro, ResultadoDaMigracao.Migrar));
 
-        Destinatarios(enviados, TipoDeAviso.MigracoesAguardandoProtecaoDeDados).Should().BeEquivalentTo([EmailIsabella, EmailMarlene]);
+        Destinatarios(enviados, TipoDeAviso.MigracoesAguardandoProtecaoDeDados).Should().BeEquivalentTo([EmailDiogo, EmailIsabella, EmailMarlene], "Diogo só é gestor");
         enviados.Select(e => e.Destinatario).Should().NotContain(EmailLeandro);
     }
 
@@ -124,18 +127,18 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         Destinatarios(enviados, TipoDeAviso.VersaoEncerrada).Should().BeEquivalentTo([EmailIsabella, EmailMarlene]);
     }
 
-    // O lote é enviado por Diogo uma hora depois da abertura.
+    // O lote é enviado pelo ator uma hora depois da abertura.
     private static async Task<IReadOnlyList<EnviarEmail>> AvisosDoLoteAsync(
-        CenarioDeMigracao cenario, bool confirmou, params (Concessao Concessao, ResultadoDaMigracao Decisao)[] itens)
+        CenarioDeMigracao cenario, Identidade ator, bool confirmou, params (Concessao Concessao, ResultadoDaMigracao Decisao)[] itens)
     {
         JanelaDeMigracao janela = cenario.Janela!;
         DateTimeOffset agora = CenarioDeMigracao.Abertura.AddHours(1);
         EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(agora));
-        janela.EnviarLote(CenarioDeMigracao.Lote(confirmou, itens), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(agora))
+        janela.EnviarLote(CenarioDeMigracao.Lote(confirmou, itens), CenarioDeMigracao.Autoria(ator), cenario.Contexto(agora))
             .IsSuccess.Should().BeTrue();
 
         return await Efeitos().DaDecisaoAsync(
-            Operacao(cenario, agora), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(agora)), OperacaoNaJanela.Lote, Diogo, CancellationToken.None);
+            Operacao(cenario, agora), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(agora)), OperacaoNaJanela.Lote, ator, CancellationToken.None);
     }
 
     private static async Task<IReadOnlyList<EnviarEmail>> AvisosDoFimPeloPrazoAsync(CenarioDeMigracao cenario)
