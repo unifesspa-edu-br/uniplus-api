@@ -73,7 +73,7 @@ public sealed class DestinatariosPorPapelTests
         Destinatarios(avisos).Should().Equal(Ordenados(TitularesPorPapel.EmailDoAutor, EmailIsabella, EmailMarlene));
     }
 
-    [Fact(DisplayName = "O cancelamento por contenção avisa quem criou, os demais gestores e os Representantes, e não quem removeu")]
+    [Fact(DisplayName = "O cancelamento por contenção avisa quem criou, uma vez só mesmo estando no grupo, os demais gestores e os Representantes, e não quem removeu")]
     public async Task CancelamentoPorContencao_AvisaCriadorGestoresERepresentantes()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Análise de atendimento", "Analisa os pedidos.", [Interna], new CatalogoDeTeste());
@@ -82,6 +82,18 @@ public sealed class DestinatariosPorPapelTests
         IReadOnlyList<EnviarEmail> avisos = await Versao().DoCancelamentoPorContencaoAsync(perfil, cancelada, PerfisDeTeste.Gestor, CancellationToken.None);
 
         Destinatarios(avisos).Should().Equal(Ordenados(cancelada.CriadaPorEmail!, EmailIsabella, EmailMarlene), "o criador é avisado uma vez, pelo e-mail gravado na versão");
+    }
+
+    [Fact(DisplayName = "O cancelamento por contenção avisa quem criou mesmo quando ele não está em grupo nenhum")]
+    public async Task CancelamentoPorContencao_AvisaOCriadorForaDosGrupos()
+    {
+        Perfil perfil = PerfisDeTeste.Pendente("Análise de atendimento", "Analisa os pedidos.", [Interna], new CatalogoDeTeste());
+        VersaoDoPerfil cancelada = perfil.VersaoPendente!;
+
+        IReadOnlyList<EnviarEmail> avisos = await Versao(autorNosGrupos: false)
+            .DoCancelamentoPorContencaoAsync(perfil, cancelada, PerfisDeTeste.Gestor, CancellationToken.None);
+
+        Destinatarios(avisos).Should().Equal(Ordenados(cancelada.CriadaPorEmail!, EmailIsabella, EmailMarlene));
     }
 
     [Fact(DisplayName = "Sem Representante vigente, a versão apta à etapa protegida não avisa ninguém e a ausência soma no contador")]
@@ -125,11 +137,11 @@ public sealed class DestinatariosPorPapelTests
 
     private static AvisosDaContencao Contencao() => new(NovoEmissor(), new GruposDaGovernanca(new TitularesPorPapel()), new LinkDeTeste());
 
-    private static AvisosDaVersao Versao() =>
-        new(NovoEmissor(), new GruposDaGovernanca(new TitularesPorPapel()), new LinkDeTeste(), new CatalogoDaAplicacao([]));
+    private static AvisosDaVersao Versao(bool autorNosGrupos = true) =>
+        new(NovoEmissor(), new GruposDaGovernanca(new TitularesPorPapel(autorNosGrupos: autorNosGrupos)), new LinkDeTeste(), new CatalogoDaAplicacao([]));
 
     /// <summary>Os titulares por permissão, como a composição dos perfis de governança os dá.</summary>
-    private sealed class TitularesPorPapel(bool semRepresentante = false) : ITitularesDaPermissao
+    private sealed class TitularesPorPapel(bool semRepresentante = false, bool autorNosGrupos = true) : ITitularesDaPermissao
     {
         private static readonly string AprovarPelaProtecao = Codigo(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados);
 
@@ -153,8 +165,10 @@ public sealed class DestinatariosPorPapelTests
 
         public Task<IReadOnlyList<TitularDaPermissao>> ListarTitularesComEmailAsync(
             string codigoDaPermissao, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<TitularDaPermissao>>(
-                semRepresentante && codigoDaPermissao == AprovarPelaProtecao ? [] : PorPermissao.GetValueOrDefault(codigoDaPermissao, []));
+            Task.FromResult<IReadOnlyList<TitularDaPermissao>>([.. Titulares(codigoDaPermissao).Where(t => autorNosGrupos || t.Sub != PerfisDeTeste.Autor.Sub)]);
+
+        private TitularDaPermissao[] Titulares(string codigo) =>
+            semRepresentante && codigo == AprovarPelaProtecao ? [] : PorPermissao.GetValueOrDefault(codigo, []);
 
         private static string Codigo(PermissaoAutorizacao permissao) => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(permissao).Codigo;
     }
