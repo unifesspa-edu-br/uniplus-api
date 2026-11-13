@@ -21,5 +21,6 @@ public sealed record RegistrarManifestacaoDaProtecaoRequest(
     string? Parecer,
     string? Texto = null)
 {
-    public RegistrarManifestacaoDaProtecaoCommand ParaComando() => new(Cadastro, ItemId, Ciclo, Parecer, Texto);
+    // O corpo continua plano, porque é o contrato; o comando recebe as partes agrupadas, ainda não conferidas.
+    public RegistrarManifestacaoDaProtecaoCommand ParaComando() => new(new ItemInformado(Cadastro, ItemId), Ciclo, new ConteudoInformado(Parecer, Texto));
 }

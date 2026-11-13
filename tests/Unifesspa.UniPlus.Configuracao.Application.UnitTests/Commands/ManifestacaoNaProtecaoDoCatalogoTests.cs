@@ -116,7 +116,7 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
 
     private Task<Result> ManifestarAsync(string cadastro, Guid id, int? ciclo, string parecer, string? texto) =>
         RegistrarManifestacaoDaProtecaoCommandHandler.Handle(
-            new RegistrarManifestacaoDaProtecaoCommand(cadastro, id, ciclo, parecer, texto),
+            new RegistrarManifestacaoDaProtecaoCommand(new ItemInformado(cadastro, id), ciclo, new ConteudoInformado(parecer, texto)),
             new ManifestacaoNaProtecaoDoCatalogo(new ItensSobAprovacao(_tipos, _fatos), _manifestacoes, _unitOfWork, Relogio()),
             UsuarioIsabella(),
             CancellationToken.None);

@@ -184,9 +184,20 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
 
         Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR", classificacao: "SENSIVEL");
 
-        resultado.Errors.Select(static e => e.Error.Code).Should().Equal(
-            ProtecaoDoCatalogoErrorCodes.ProtecaoMudou, ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("classificacaoProtecao", ProtecaoDoCatalogoErrorCodes.ProtecaoMudou), ("manifestacoesNoCiclo", ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida));
         _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
+    }
+
+    [Fact(DisplayName = "A proteção editada depois da leitura sai com um conflito no campo de cada eixo que mudou")]
+    public async Task ProtecaoMudou_UmConflitoPorEixo()
+    {
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
+
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR", classificacao: "SENSIVEL", finalidade: "Outra finalidade.");
+
+        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
+            ("classificacaoProtecao", ProtecaoDoCatalogoErrorCodes.ProtecaoMudou), ("finalidadeTratamento", ProtecaoDoCatalogoErrorCodes.ProtecaoMudou));
     }
 
     [Fact(DisplayName = "O ciclo lido diferente do corrente recusa a decisão como manifestação não lida")]
@@ -195,7 +206,8 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
         _lida = (2, 0);
 
-        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR")).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR")).Errors.Should().ContainSingle().Which.Should().Match<FieldError>(e =>
+            e.Field == "ciclo" && e.Error.Code == ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
     }
 
     [Fact(DisplayName = "O item inexistente responde o não encontrado do cadastro; a forma inválida não lê nada")]
@@ -227,10 +239,14 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         (AtoDaProtecaoDoCatalogo)_atos.ReceivedCalls().Should().ContainSingle().Which.GetArguments()[0]!;
 
     private Task<Result> DecidirAsync(
-        string cadastro, Guid id, string decisao, string? recomendada = null, string? justificativa = null, string classificacao = "INTERNO") =>
+        string cadastro, Guid id, string decisao, string? recomendada = null, string? justificativa = null, string classificacao = "INTERNO",
+        string finalidade = Finalidade) =>
         DecidirProtecaoDoCatalogoCommandHandler.Handle(
             new DecidirProtecaoDoCatalogoCommand(
-                cadastro, id, decisao, classificacao, "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, _lida.Ciclo, _lida.Manifestacoes, recomendada, justificativa),
+                new ItemInformado(cadastro, id),
+                new DecisaoInformada(decisao, recomendada, justificativa),
+                new ProtecaoInformada(classificacao, "CUMPRIMENTO_OBRIGACAO_LEGAL", finalidade),
+                new LeituraInformada(_lida.Ciclo, _lida.Manifestacoes)),
             new DecisaoNaProtecaoDoCatalogo(new ItensSobAprovacao(_tipos, _fatos), _atos, _unitOfWork, Relogio()),
             UsuarioIsabella(),
             CancellationToken.None);

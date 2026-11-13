@@ -43,22 +43,22 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
         ArgumentNullException.ThrowIfNull(command);
 
         List<FieldError> erros = [];
-        ItemDaProtecao? item = ItemDaProtecao.Ler(command.Cadastro, command.ItemId, erros);
-        DecisaoFundamentada? decisao = LerDecisao(command, erros);
-        ProtecaoDeDados? conferida = LerProtecaoConferida(command, erros);
-        LeituraDoCircuito? lida = LeituraDoCircuito.Ler(command.Ciclo, command.ManifestacoesNoCiclo, erros);
+        ItemDaProtecao? item = ItemDaProtecao.Ler(command.Item.Cadastro, command.Item.ItemId, erros);
+        DecisaoFundamentada? decisao = LerDecisao(command.Decisao, erros);
+        ProtecaoDeDados? conferida = LerProtecaoConferida(command.ProtecaoConferida, erros);
+        LeituraDoCircuito? lida = LeituraDoCircuito.Ler(command.Lida.Ciclo, command.Lida.ManifestacoesNoCiclo, erros);
 
         return erros.Count > 0
             ? Result<PedidoDeDecisao>.ValidationFailure(erros)
             : Result<PedidoDeDecisao>.Success(new PedidoDeDecisao(item!.Value, decisao!, conferida!.Value, lida!.Value));
     }
 
-    private static DecisaoFundamentada? LerDecisao(DecidirProtecaoDoCatalogoCommand command, List<FieldError> erros)
+    private static DecisaoFundamentada? LerDecisao(DecisaoInformada informada, List<FieldError> erros)
     {
-        AtoDaProtecao? ato = LerAto(command.Decisao, erros);
-        ClassificacaoDeProtecao? recomendada = LerRecomendacao(ato, command.ClassificacaoRecomendada, erros);
+        AtoDaProtecao? ato = LerAto(informada.Decisao, erros);
+        ClassificacaoDeProtecao? recomendada = LerRecomendacao(ato, informada.ClassificacaoRecomendada, erros);
         Fundamentacao? justificativa = Fundamentacao.Ler(
-            command.Justificativa, obrigatoria: ato == AtoDaProtecao.Reprovacao, RecusasDaFundamentacao.DaJustificativa, erros);
+            informada.Justificativa, obrigatoria: ato == AtoDaProtecao.Reprovacao, RecusasDaFundamentacao.DaJustificativa, erros);
 
         return ato is null ? null : new DecisaoFundamentada(ato.Value, recomendada, justificativa);
     }
@@ -98,11 +98,11 @@ public sealed record PedidoDeDecisao(ItemDaProtecao Item, DecisaoFundamentada De
         return ato == AtoDaProtecao.AjusteRecomendado && valida ? lida : null;
     }
 
-    private static ProtecaoDeDados? LerProtecaoConferida(DecidirProtecaoDoCatalogoCommand command, List<FieldError> erros)
+    private static ProtecaoDeDados? LerProtecaoConferida(ProtecaoInformada informada, List<FieldError> erros)
     {
-        ClassificacaoDeProtecao? classificacao = TokensDoFato.Classificacao(command.ClassificacaoProtecao);
-        HipoteseLegalTratamento? hipotese = TokensDoFato.HipoteseLegal(command.HipoteseLegal);
-        string? finalidade = string.IsNullOrWhiteSpace(command.FinalidadeTratamento) ? null : command.FinalidadeTratamento.Trim();
+        ClassificacaoDeProtecao? classificacao = TokensDoFato.Classificacao(informada.ClassificacaoProtecao);
+        HipoteseLegalTratamento? hipotese = TokensDoFato.HipoteseLegal(informada.HipoteseLegal);
+        string? finalidade = string.IsNullOrWhiteSpace(informada.FinalidadeTratamento) ? null : informada.FinalidadeTratamento.Trim();
         int antes = erros.Count;
         ExigirConferida("classificacaoProtecao", classificacao is not null and not (ClassificacaoDeProtecao)TokensDoFato.ForaDoVocabulario, erros);
         ExigirConferida("hipoteseLegal", hipotese is not null and not (HipoteseLegalTratamento)TokensDoFato.ForaDoVocabulario, erros);
