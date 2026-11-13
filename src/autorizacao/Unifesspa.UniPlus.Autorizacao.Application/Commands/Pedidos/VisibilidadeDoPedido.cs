@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -8,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Quem vê o pedido: as partes (o solicitante e o beneficiário, este também pelo e-mail verificado antes de aceitar) e
 /// quem decide uma das etapas, administra concessões ou consulta os pedidos. Para os demais, o pedido não se distingue do
-/// inexistente.
+/// inexistente. O detalhe, a trilha e o anexo passam todos por aqui.
 /// </summary>
 internal static class VisibilidadeDoPedido
 {
@@ -21,16 +22,36 @@ internal static class VisibilidadeDoPedido
 
     /// <summary>
     /// Confere a visibilidade, ou devolve o erro que a borda responde: 401 para a identidade incompleta, 404 para
-    /// quem não vê. Quem não é parte tem a leitura registrada pela permissão que a deu ou, se nenhuma deu, pelas negativas.
+    /// quem não vê. Quem é parte tem a leitura registrada pela consulta dos pedidos, quando a tem; quem não é parte, pela
+    /// permissão que a deu ou, se nenhuma deu, pelas negativas.
     /// </summary>
     public static async Task<DomainError?> ConferirAsync(
         PedidoDeConcessao pedido, PessoaNoToken pessoa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         if (pedido.EhParte(pessoa))
         {
+            await RegistrarLeituraDaParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
             return null;
         }
 
+        return await ConferirQuemNaoEParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Sem a consulta dos pedidos, a parte lê por titularidade e nada se grava (issue #2389).
+    private static async Task RegistrarLeituraDaParteAsync(
+        PedidoDeConcessao pedido, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        DecisaoPermitida? governante = await AcessoDoAprovador
+            .GovernanteDaLeituraDaParteAsync(verificador, pedido.Id, cancellationToken).ConfigureAwait(false);
+        if (governante is not null)
+        {
+            await AcessoDoAprovador.RegistrarAsync(verificador, governante, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<DomainError?> ConferirQuemNaoEParteAsync(
+        PedidoDeConcessao pedido, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
         AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Leitura, pedido.Id, cancellationToken).ConfigureAwait(false);
         if (acesso is null)
         {

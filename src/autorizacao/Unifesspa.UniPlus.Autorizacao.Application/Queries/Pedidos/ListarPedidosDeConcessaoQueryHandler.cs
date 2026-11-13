@@ -15,9 +15,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler da listagem. A fila de uma etapa exige a permissão dela, e a fila de todos, a de uma das duas etapas ou a de
-/// consultar os pedidos; a lista de quem pergunta exige só a identidade. Nas filas, cada pedido exibido entra na trilha de
-/// acesso pela decisão permitida que governou a fila, antes de a página sair (ADR-0153). A mecânica de keyset vive no
-/// repositório.
+/// consultar os pedidos; a lista de quem pergunta exige só a identidade. Cada pedido exibido entra na trilha de acesso pela
+/// decisão permitida que governou a fila, antes de a página sair (ADR-0153). Na lista de quem pergunta, essa decisão é a
+/// da consulta dos pedidos, como a do Encarregado de dados (UNI-REQ-0372); sem ela, a lista sai sem registro. A mecânica
+/// de keyset vive no repositório.
 /// </summary>
 public static class ListarPedidosDeConcessaoQueryHandler
 {
@@ -45,15 +46,16 @@ public static class ListarPedidosDeConcessaoQueryHandler
     }
 
     /// <summary>
-    /// A decisão permitida que governa a fila pedida; nula na lista de quem pergunta, que não exige permissão. A fila
-    /// recusada responde 403 e a identidade incompleta, 401.
+    /// A decisão permitida que governa a fila pedida. A lista de quem pergunta não exige permissão: é governada pela
+    /// leitura de quem é parte, nula sem a consulta dos pedidos. A fila recusada responde 403 e a identidade incompleta, 401.
     /// </summary>
     private static async Task<Result<DecisaoPermitida?>> AutorizarFilaAsync(
         FilaDePedidos fila, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         if (fila == FilaDePedidos.Meus)
         {
-            return Result<DecisaoPermitida?>.Success(null);
+            return Result<DecisaoPermitida?>.Success(
+                await AcessoDoAprovador.GovernanteDaLeituraDaParteAsync(verificador, pedidoId: null, cancellationToken).ConfigureAwait(false));
         }
 
         AcessoDoAprovador? acesso = await AcessoDoAprovador.ConsultarAsync(verificador, FinalidadeDoAcesso.Fila, pedidoId: null, cancellationToken).ConfigureAwait(false);
