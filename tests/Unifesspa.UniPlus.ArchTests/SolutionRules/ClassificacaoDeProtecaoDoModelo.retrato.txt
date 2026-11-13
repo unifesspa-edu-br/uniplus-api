@@ -67,6 +67,7 @@ autorizacao.decisoes_da_migracao.instante: Pessoal
 autorizacao.decisoes_da_migracao.janela_id: Pessoal
 autorizacao.decisoes_da_migracao.lote_de_origem_etapa: Pessoal
 autorizacao.decisoes_da_migracao.lote_de_origem_id: Pessoal
+autorizacao.decisoes_da_migracao.ordem_de_registro: Pessoal
 autorizacao.decisoes_da_migracao.perfil_id: Pessoal
 autorizacao.decisoes_da_migracao.prazo: Pessoal
 autorizacao.decisoes_da_migracao.versao_avaliada_id: Pessoal
@@ -210,6 +211,7 @@ autorizacao.janelas_de_migracao.forma_do_encerramento: Pessoal
 autorizacao.janelas_de_migracao.id: Pessoal
 autorizacao.janelas_de_migracao.motivo_do_encerramento: Pessoal
 autorizacao.janelas_de_migracao.numero_da_versao_nova: Pessoal
+autorizacao.janelas_de_migracao.ordem_de_registro: Pessoal
 autorizacao.janelas_de_migracao.perfil_id: Pessoal
 autorizacao.janelas_de_migracao.prazo: Pessoal
 autorizacao.janelas_de_migracao.updated_at: Pessoal
@@ -284,6 +286,7 @@ autorizacao.pedido_decisoes.etapa: Pessoal
 autorizacao.pedido_decisoes.id: Pessoal
 autorizacao.pedido_decisoes.instante: Pessoal
 autorizacao.pedido_decisoes.motivo: Pessoal
+autorizacao.pedido_decisoes.ordem_de_registro: Pessoal
 autorizacao.pedido_decisoes.pedido_id: Pessoal
 autorizacao.pedido_decisoes.permissoes_avaliadas: Pessoal
 autorizacao.pedido_decisoes.resultado: Pessoal

@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
 using System.Globalization;
+using System.Linq.Expressions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -52,8 +54,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     }
 
     public async Task<PedidoDeConcessao?> ObterParaAlterarAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await _context.Pedidos
-            .Include(p => p.Decisoes)
+        await ComDecisoesEmOrdem(_context.Pedidos)
             .Include(p => p.Anexos)
             .Include(p => p.TrocasDeVersao)
             .AsSplitQuery()
@@ -70,8 +71,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
 
     public async Task<IReadOnlyList<PedidoDeConcessao>> ListarAtivosDoPerfilParaAlterarAsync(
         Guid perfilId, CancellationToken cancellationToken = default) =>
-        await _context.Pedidos
-            .Include(p => p.Decisoes)
+        await ComDecisoesEmOrdem(_context.Pedidos)
             .Include(p => p.TrocasDeVersao)
             .AsSplitQuery()
             .Where(p => p.PerfilId == perfilId && PedidoDeConcessao.SituacoesAtivas.Contains(p.Situacao))
@@ -80,9 +80,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
             .ConfigureAwait(false);
 
     public async Task<PedidoDeConcessao?> ObterParaLeituraAsync(Guid id, CancellationToken cancellationToken = default) =>
-        await _context.Pedidos
-            .AsNoTracking()
-            .Include(p => p.Decisoes)
+        await ComDecisoesEmOrdem(_context.Pedidos.AsNoTracking())
             .Include(p => p.Anexos)
             .Include(p => p.TrocasDeVersao)
             .AsSplitQuery()
@@ -117,62 +115,78 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     {
         ArgumentNullException.ThrowIfNull(filtro);
 
-        IQueryable<PedidoDeConcessao> consulta = _context.Pedidos.AsNoTracking();
-
-        string emissor = filtro.Pessoa.Emissor;
-        string sub = filtro.Pessoa.Sub;
-        string? email = filtro.EmailVerificado;
-        consulta = filtro.Fila switch
-        {
-            FilaDePedidos.Gestor => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoGestor),
-            FilaDePedidos.ProtecaoDeDados => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoProtecaoDeDados),
-            FilaDePedidos.Todos => consulta,
-            _ => consulta.Where(p =>
-                (p.SolicitanteEmissor == emissor && p.SolicitanteSub == sub)
-                || (p.BeneficiarioEmissor == emissor && p.BeneficiarioSub == sub)
-                || (p.BeneficiarioSub == null && email != null && p.BeneficiarioEmail == email)),
-        };
-
-        if (filtro.Situacao is { } situacao)
-        {
-            consulta = consulta.Where(p => p.Situacao == situacao);
-        }
-
+        IQueryable<PedidoDeConcessao> consulta = FiltrarPorSituacao(FiltrarPorFila(_context.Pedidos.AsNoTracking(), filtro), filtro.Situacao);
         OrderedKeysetPage<PedidoDeConcessao> page = await OrderedKeysetCursor
-            .ApplyAsync(
-                consulta,
-                b => b.Descending(p => p.CriadoEm).Descending(p => p.Id),
-                SortKeyDoInstante,
-                (sortKey, id) => new { CriadoEm = InstanteDaSortKey(sortKey), Id = id },
-                afterSortKey,
-                afterId,
-                limit,
-                direction,
-                cancellationToken)
+            .ApplyAsync(consulta, b => b.Descending(p => p.CriadoEm).Descending(p => p.Id), SortKeyDoInstante, ChaveDaPagina, afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
         return (await ComPerfilAsync(page.Items, cancellationToken).ConfigureAwait(false), page.Previous, page.Next);
     }
 
+    private static IQueryable<PedidoDeConcessao> FiltrarPorFila(IQueryable<PedidoDeConcessao> consulta, FiltroDePedidos filtro)
+    {
+        return filtro.Fila switch
+        {
+            FilaDePedidos.Gestor => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoGestor),
+            FilaDePedidos.ProtecaoDeDados => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoProtecaoDeDados),
+            FilaDePedidos.Todos => consulta,
+            _ => consulta.Where(EnvolvendoAPessoa(filtro)),
+        };
+    }
+
+    // Solicitante, beneficiário identificado ou, sem identificação, o beneficiário que tem o e-mail verificado da pessoa.
+    private static Expression<Func<PedidoDeConcessao, bool>> EnvolvendoAPessoa(FiltroDePedidos filtro)
+    {
+        string emissor = filtro.Pessoa.Emissor;
+        string sub = filtro.Pessoa.Sub;
+        string? email = filtro.EmailVerificado;
+
+        return p => (p.SolicitanteEmissor == emissor && p.SolicitanteSub == sub)
+            || (p.BeneficiarioEmissor == emissor && p.BeneficiarioSub == sub)
+            || (p.BeneficiarioSub == null && email != null && p.BeneficiarioEmail == email);
+    }
+
+    private static IQueryable<PedidoDeConcessao> FiltrarPorSituacao(IQueryable<PedidoDeConcessao> consulta, SituacaoDoPedido? situacao) =>
+        situacao is { } escolhida ? consulta.Where(p => p.Situacao == escolhida) : consulta;
+
+    private static object ChaveDaPagina(string sortKey, Guid id) => new { CriadoEm = InstanteDaSortKey(sortKey), Id = id };
+
     private async Task<IReadOnlyList<PedidoComPerfil>> ComPerfilAsync(
         IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
     {
-        Guid[] perfilIds = [.. pedidos.Select(p => p.PerfilId).Distinct()];
-        Guid[] versaoIds = [.. pedidos.Select(p => p.VersaoId).OfType<Guid>().Distinct()];
-        Dictionary<Guid, string> nomes = await _context.Perfis.AsNoTracking()
-            .Where(perfil => perfilIds.Contains(perfil.Id))
-            .ToDictionaryAsync(perfil => perfil.Id, perfil => perfil.Nome, cancellationToken)
-            .ConfigureAwait(false);
-        Dictionary<Guid, int> numeros = await _context.VersoesDosPerfis.AsNoTracking()
-            .Where(versao => versaoIds.Contains(versao.Id))
-            .ToDictionaryAsync(versao => versao.Id, versao => versao.Numero, cancellationToken)
-            .ConfigureAwait(false);
+        Dictionary<Guid, string> nomes = await NomesDosPerfisAsync(pedidos, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, int> numeros = await NumerosDasVersoesAsync(pedidos, cancellationToken).ConfigureAwait(false);
 
         return
         [
             .. pedidos.Select(p => new PedidoComPerfil(p, nomes[p.PerfilId], p.VersaoId is { } v ? numeros[v] : null) { Id = p.Id }),
         ];
     }
+
+    private async Task<Dictionary<Guid, string>> NomesDosPerfisAsync(IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
+    {
+        Guid[] perfilIds = [.. pedidos.Select(p => p.PerfilId).Distinct()];
+
+        return await _context.Perfis.AsNoTracking()
+            .Where(perfil => perfilIds.Contains(perfil.Id))
+            .ToDictionaryAsync(perfil => perfil.Id, perfil => perfil.Nome, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<Dictionary<Guid, int>> NumerosDasVersoesAsync(IReadOnlyList<PedidoDeConcessao> pedidos, CancellationToken cancellationToken)
+    {
+        Guid[] versaoIds = [.. pedidos.Select(p => p.VersaoId).OfType<Guid>().Distinct()];
+
+        return await _context.VersoesDosPerfis.AsNoTracking()
+            .Where(versao => versaoIds.Contains(versao.Id))
+            .ToDictionaryAsync(versao => versao.Id, versao => versao.Numero, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    // As decisões vêm na ordem do registro: o instante e, no mesmo instante, a ordem em que o banco as numerou.
+    private static IIncludableQueryable<PedidoDeConcessao, IEnumerable<DecisaoDoPedido>> ComDecisoesEmOrdem(
+        IQueryable<PedidoDeConcessao> pedidos) =>
+        pedidos.Include(p => p.Decisoes.OrderBy(d => d.Instante).ThenBy(d => d.OrdemDeRegistro));
 
     // A sort key é o instante em ISO-8601 de ida e volta: ordem lexicográfica e cronológica coincidem e ele é estável entre
     // culturas. Nunca nula (ADR-0095): criado_em é coluna obrigatória.

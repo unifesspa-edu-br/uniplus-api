@@ -30,6 +30,12 @@ public sealed class DecisaoDoPedido : IForensicEntity
 
     public DateTimeOffset Instante { get; private init; }
 
+    /// <summary>
+    /// A ordem em que as decisões foram registradas, dada pelo banco: desempata duas decisões do mesmo instante, que a
+    /// concorrência otimista do pedido serializa. Zero enquanto a decisão não foi gravada.
+    /// </summary>
+    public long OrdemDeRegistro { get; private set; }
+
     /// <summary>Códigos das permissões do perfil no instante da decisão, ordenados.</summary>
     public string[] PermissoesAvaliadas { get; private init; } = [];
 
@@ -48,23 +54,22 @@ public sealed class DecisaoDoPedido : IForensicEntity
     internal static DecisaoDoPedido Registrar(
         Guid pedidoId,
         EtapaDoPedido etapa,
-        Identidade decisor,
+        AtoDoAgente ato,
         ResultadoDaDecisao resultado,
         string? motivo,
         PerfilAvaliado perfil,
-        string? dispensa,
-        DateTimeOffset instante)
+        string? dispensa)
     {
         return new DecisaoDoPedido
         {
             PedidoId = pedidoId,
             Etapa = etapa,
-            DecisorEmissor = decisor.Emissor,
-            DecisorSub = decisor.Sub,
-            DecisorNome = decisor.Nome,
+            DecisorEmissor = ato.Agente.Emissor,
+            DecisorSub = ato.Agente.Sub,
+            DecisorNome = ato.Agente.Nome,
             Resultado = resultado,
             Motivo = motivo,
-            Instante = instante,
+            Instante = ato.Instante,
             PermissoesAvaliadas = [.. perfil.Permissoes],
             SensibilidadeAvaliada = perfil.Sensibilidade,
             Dispensa = dispensa,

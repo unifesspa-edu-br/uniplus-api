@@ -149,12 +149,13 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
         $"UPDATE autorizacao.concessoes SET {colunas} WHERE id = '{cenario.ConcessaoDeIsabella}'";
 
     // Copia a linha modelo com as colunas alteradas ("coluna = expressão, ..."), sempre com identificador novo: a gravação
-    // direta parte de uma linha que o agregado gravou e muda só o que o caso quer testar.
+    // direta parte de uma linha que o agregado gravou e muda só o que o caso quer testar. A coluna de identidade fica de fora: o
+    // banco gera o número da cópia.
     private async Task<string> CopiarLinhaAsync(string tabela, Guid modelo, string alteracoes)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         List<string> colunas = await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
-            .SqlQuery<string>($"SELECT column_name AS \"Value\" FROM information_schema.columns WHERE table_schema = 'autorizacao' AND table_name = {tabela} ORDER BY ordinal_position")
+            .SqlQuery<string>($"SELECT column_name AS \"Value\" FROM information_schema.columns WHERE table_schema = 'autorizacao' AND table_name = {tabela} AND is_identity = 'NO' ORDER BY ordinal_position")
             .ToListAsync();
         Dictionary<string, string> trocas = alteracoes.Split(", ").Select(t => t.Split(" = ", 2)).ToDictionary(t => t[0], t => t[1]);
         trocas.TryAdd("id", "gen_random_uuid()");
