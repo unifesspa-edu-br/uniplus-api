@@ -42,7 +42,7 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
 
     /// <summary>
     /// Categorias do catálogo de tipos de documento — cadastro administrado, e não
-    /// vocabulário fechado em código: a categoria organiza a navegação do catálogo
+    /// vocabulário fechado em código: a categoria organiza a navegação do catálogo de tipos de documento
     /// sem participar de nenhuma regra de negócio (UNI-REQ-0013).
     /// </summary>
     public DbSet<CategoriaDocumento> CategoriasDocumento => Set<CategoriaDocumento>();
@@ -103,12 +103,14 @@ public sealed class ConfiguracaoDbContext : DbContext, IConfiguracaoUnitOfWork
     public DbSet<PrecedenciaFase> PrecedenciasFase => Set<PrecedenciaFase>();
 
     /// <summary>
-    /// Atos do circuito de aprovação da proteção de dados do catálogo (ADR-0153), registro só acrescentado.
+    /// Atos do circuito de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato
+    /// (ADR-0153), registro só acrescentado.
     /// </summary>
     public DbSet<AtoDaProtecaoDoCatalogo> AtosDaProtecaoDoCatalogo => Set<AtoDaProtecaoDoCatalogo>();
 
     /// <summary>
-    /// Manifestações técnicas na proteção do catálogo (ADR-0163), registro só acrescentado de eventos por ciclo.
+    /// Manifestações técnicas na proteção do catálogo de tipos de documento e de fatos do candidato (ADR-0163), registro
+    /// só acrescentado de eventos por ciclo.
     /// </summary>
     public DbSet<ManifestacaoDaProtecaoDoCatalogo> ManifestacoesDaProtecaoDoCatalogo => Set<ManifestacaoDaProtecaoDoCatalogo>();
 

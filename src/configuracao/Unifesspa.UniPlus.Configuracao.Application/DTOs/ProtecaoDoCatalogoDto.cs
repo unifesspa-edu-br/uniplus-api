@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 /// <summary>
-/// Onde um item do catálogo está no circuito de aprovação da proteção de dados (ADR-0153): a situação,
-/// os instantes de cada passo, a classificação que a proteção de dados recomendou no ajuste e a justificativa
+/// Onde um tipo de documento ou fato do candidato está no circuito de aprovação da proteção de dados (ADR-0153): a
+/// situação, os instantes de cada passo, a classificação que a proteção de dados recomendou no ajuste e a justificativa
 /// da decisão. Quem agiu fica registrado e não sai na resposta.
 /// </summary>
 /// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>.</param>
@@ -25,7 +25,7 @@ public sealed record AprovacaoDaProtecaoDto(
     DateTimeOffset? ManifestadaEm,
     bool ManifestacaoDesfavoravel);
 
-/// <summary>Um tipo de documento ou fato do catálogo com a proteção que aguarda aprovação.</summary>
+/// <summary>Um tipo de documento ou fato do candidato com a proteção que aguarda aprovação.</summary>
 /// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
 public sealed record ItemDaProtecaoDoCatalogoDto(
     string Tipo,
@@ -37,7 +37,7 @@ public sealed record ItemDaProtecaoDoCatalogoDto(
     string HipoteseLegal,
     AprovacaoDaProtecaoDto Aprovacao);
 
-/// <summary>Um item do catálogo que o administrador escolheu enviar à proteção de dados.</summary>
+/// <summary>Um tipo de documento ou fato do candidato que o administrador escolheu enviar à proteção de dados.</summary>
 /// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>; comparado sem os espaços das pontas.</param>
 /// <param name="Id">Identificador do tipo de documento ou do fato.</param>
 public sealed record ItemParaSolicitarDto(string? Cadastro, Guid Id);
@@ -46,10 +46,10 @@ public sealed record ItemParaSolicitarDto(string? Cadastro, Guid Id);
 public sealed record SolicitacaoDaProtecaoDto(int TiposDeDocumento, int Fatos);
 
 /// <summary>
-/// O que a proteção de dados precisa ver para decidir sobre um item do catálogo (ADR-0153): a proteção proposta, a
-/// situação da aprovação e o que o item é. Exatamente um dos blocos <paramref name="Fato"/> e
-/// <paramref name="TipoDocumento"/> vem preenchido, conforme o <paramref name="Tipo"/>. Quem enviou ou decidiu
-/// fica registrado e não sai na resposta.
+/// O que a proteção de dados precisa ver para decidir sobre um tipo de documento ou fato do candidato (ADR-0153): a
+/// proteção proposta, a situação da aprovação e o que o item é. Exatamente um dos blocos <paramref name="Fato"/> e
+/// <paramref name="TipoDocumento"/> vem preenchido, conforme o <paramref name="Tipo"/>. Quem enviou ou decidiu fica
+/// registrado e não sai na resposta.
 /// </summary>
 /// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
 /// <param name="Fato">O que é o fato; nulo no tipo de documento.</param>
@@ -94,9 +94,9 @@ public sealed record DetalheDoValorDoFatoDto(string Codigo, string? Descricao, s
 public sealed record DetalheDoTipoDeDocumentoDto(string Categoria, string? FormatosAceitos, int? TamanhoMaximoMb);
 
 /// <summary>
-/// Um ato do circuito de aprovação da proteção de dados de um item do catálogo, registrado de forma permanente
-/// (ADR-0153). O nome de quem agiu é o que o token trazia no instante do ato; o identificador de quem agiu fica
-/// registrado e não sai na resposta.
+/// Um ato do circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato, registrado de
+/// forma permanente (ADR-0153). O nome de quem agiu é o que o token trazia no instante do ato; o identificador de quem
+/// agiu fica registrado e não sai na resposta.
 /// </summary>
 /// <param name="Ato">Token canônico: <c>SOLICITACAO</c>, <c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c>, <c>REPROVACAO</c> ou <c>ACEITE</c>.</param>
 /// <param name="AtorNome">Nome de quem agiu; nulo quando o token não trazia nome.</param>

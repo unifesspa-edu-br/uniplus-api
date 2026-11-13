@@ -21,11 +21,12 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class SolicitacaoDaProtecaoDoCatalogo
 {
     private static readonly DomainError SemItem = new(
-        ProtecaoDoCatalogoErrorCodes.SolicitacaoSemItem, "Selecione ao menos um item do catálogo para enviar à proteção de dados.");
+        ProtecaoDoCatalogoErrorCodes.SolicitacaoSemItem,
+        "Selecione ao menos um tipo de documento ou fato do candidato para enviar à proteção de dados.");
 
     private static readonly DomainError SemQuemAprove = new(
         ProtecaoDoCatalogoErrorCodes.SemQuemAprove,
-        "Ninguém tem a permissão de aprovar a proteção de dados do catálogo para receber a solicitação; conceda-a antes de enviar.");
+        "Ninguém tem a permissão de aprovar a proteção de dados do catálogo de tipos de documento e de fatos do candidato para receber a solicitação; conceda-a antes de enviar.");
 
     private readonly ITipoDocumentoRepository _tipos;
     private readonly IFatoCandidatoRepository _fatos;

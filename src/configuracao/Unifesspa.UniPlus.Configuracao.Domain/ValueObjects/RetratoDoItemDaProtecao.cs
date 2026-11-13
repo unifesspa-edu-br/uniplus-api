@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
-/// O item do catálogo no instante de um ato da proteção de dados: a identidade, o código e o nome, a proteção
-/// conferida e o estado do circuito (o ciclo e se havia manifestação desfavorável vigente). O ato guarda o retrato
+/// O tipo de documento ou fato do candidato no instante de um ato da proteção de dados: a identidade, o código e o
+/// nome, a proteção conferida e o estado do circuito (o ciclo e se havia manifestação desfavorável vigente). O ato guarda o retrato
 /// porque o item pode mudar depois.
 /// </summary>
 /// <param name="Item">O cadastro e o identificador do item.</param>

@@ -7,8 +7,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// A gravação da solicitação, da decisão e da manifestação no circuito de aprovação da proteção do catálogo: todas
-/// mudam a linha do item, condicionada ao token de concorrência dela (ADR-0163). A corrida perdida responde o mesmo
+/// A gravação da solicitação, da decisão e da manifestação no circuito de aprovação da proteção do catálogo de tipos
+/// de documento e de fatos do candidato: todas mudam a linha do item, condicionada ao token de concorrência dela
+/// (ADR-0163). A corrida perdida responde o mesmo
 /// conflito, com nova tentativa possível depois de reler o item.
 /// </summary>
 /// <remarks>
@@ -24,7 +25,7 @@ internal static class GravacaoDoCircuitoDaProtecao
 
     public static DomainError Conflito { get; } = new(
         ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia,
-        "O item do catálogo foi alterado concorrentemente; releia o item e tente de novo.");
+        "O tipo de documento ou fato do candidato foi alterado concorrentemente; releia o item e tente de novo.");
 
     public static async Task<Result> SalvarAsync(IConfiguracaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {

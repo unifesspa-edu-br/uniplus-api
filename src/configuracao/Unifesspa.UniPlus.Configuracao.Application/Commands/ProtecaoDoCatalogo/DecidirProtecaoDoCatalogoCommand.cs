@@ -4,8 +4,9 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// A decisão da proteção de dados sobre um item do catálogo que está numa solicitação (ADR-0153): aprova a
-/// proteção declarada, recomenda o ajuste indicando a classificação correta, ou a reprova com a justificativa.
+/// A decisão da proteção de dados sobre um tipo de documento ou fato do candidato que está numa solicitação
+/// (ADR-0153): aprova a proteção declarada, recomenda o ajuste indicando a classificação correta, ou a reprova com a
+/// justificativa.
 /// </summary>
 /// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
 /// <param name="ItemId">Identificador do tipo de documento ou do fato.</param>

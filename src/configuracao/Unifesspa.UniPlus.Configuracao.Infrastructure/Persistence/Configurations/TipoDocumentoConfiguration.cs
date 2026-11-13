@@ -146,7 +146,7 @@ public sealed class TipoDocumentoConfiguration
     /// disputam as mesmas linhas: editar um item desta lista faz o EF gerar um
     /// <c>UpdateData</c> que sobrescreve o que o administrador tiver mudado no tipo
     /// semeado. É o mesmo trade-off já aceito em <c>CategoriaDocumentoConfiguration</c>
-    /// e <c>PrecedenciaFaseConfiguration</c>, e o que faz o catálogo existir desde a
+    /// e <c>PrecedenciaFaseConfiguration</c>, e o que faz o catálogo de tipos de documento existir desde a
     /// migração, sem ato operacional pós-deploy.
     /// </remarks>
     private static IEnumerable<object> MaterializarSeed()

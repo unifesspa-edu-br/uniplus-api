@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 
 /// <summary>
-/// Corpo da decisão da proteção de dados sobre um item do catálogo. Declara no contrato o vocabulário do cadastro e da
-/// decisão; a recusa do valor fora dele continua sendo do handler.
+/// Corpo da decisão da proteção de dados sobre um tipo de documento ou fato do candidato. Declara no contrato o
+/// vocabulário do cadastro e da decisão; a recusa do valor fora dele continua sendo do handler.
 /// </summary>
 /// <param name="Justificativa">
 /// Obrigatória em <c>REPROVAR</c>; em <c>APROVAR</c> e <c>RECOMENDAR_AJUSTE</c>, opcional, salvo diante de manifestação

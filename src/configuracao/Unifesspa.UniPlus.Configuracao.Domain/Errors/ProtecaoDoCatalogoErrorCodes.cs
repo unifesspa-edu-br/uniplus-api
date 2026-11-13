@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Errors;
 
 /// <summary>
-/// Recusas do circuito de aprovação da proteção de dados do catálogo (ADR-0153), comuns ao tipo de
-/// documento e ao fato.
+/// Recusas do circuito de aprovação da proteção de dados do catálogo de tipos de documento e de fatos do candidato
+/// (ADR-0153), comuns aos dois cadastros.
 /// </summary>
 public static class ProtecaoDoCatalogoErrorCodes
 {

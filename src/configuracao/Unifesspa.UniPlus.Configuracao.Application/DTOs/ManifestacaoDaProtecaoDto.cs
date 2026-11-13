@@ -1,8 +1,9 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 /// <summary>
-/// Um evento de manifestação técnica sobre a proteção de um item do catálogo (UNI-REQ-0373). O nome de quem se
-/// manifestou é o que o token trazia no instante; o identificador da pessoa fica registrado e não sai na resposta.
+/// Um evento de manifestação técnica sobre a proteção de um tipo de documento ou fato do candidato (UNI-REQ-0373). O
+/// nome de quem se manifestou é o que o token trazia no instante; o identificador da pessoa fica registrado e não sai
+/// na resposta.
 /// </summary>
 /// <param name="Ciclo">O ciclo de aprovação a que a manifestação pertence.</param>
 /// <param name="Parecer">Token canônico: <c>ADEQUADA</c>, <c>RECOMENDA_AJUSTE</c> ou <c>INADEQUADA</c>.</param>

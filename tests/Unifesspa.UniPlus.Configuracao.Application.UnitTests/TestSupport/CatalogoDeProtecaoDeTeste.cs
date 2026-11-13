@@ -13,7 +13,10 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>Montagem comum dos testes do circuito de aprovação da proteção de dados do catálogo.</summary>
+/// <summary>
+/// Montagem comum dos testes do circuito de aprovação da proteção de dados do catálogo de tipos de documento e de fatos
+/// do candidato.
+/// </summary>
 internal static class CatalogoDeProtecaoDeTeste
 {
     public const string Isabella = "isabella.figueiredo";

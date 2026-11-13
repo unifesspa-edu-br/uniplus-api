@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O circuito de aprovação da proteção de dados dos tipos de documento e dos fatos do catálogo (ADR-0153): o que
+/// O circuito de aprovação da proteção de dados dos tipos de documento e dos fatos do candidato (ADR-0153): o que
 /// aguarda a aprovação, a solicitação que o administrador envia, a manifestação técnica de quem fiscaliza e a decisão
 /// da proteção de dados (ADR-0163). O aceite da recomendação fica no cadastro de cada item, que é de quem o mantém.
 /// </summary>
@@ -67,7 +67,8 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// <summary>
     /// As decisões que a proteção de dados registrou — aprovação, ajuste recomendado e reprovação —, paginadas por
     /// cursor opaco bidirecional (ADR-0026 + ADR-0094), das mais recentes para as mais antigas. Quem aprova ou consulta a
-    /// proteção de dados do catálogo vê todas, e a leitura é registrada antes da resposta (sem o registro, 503);
+    /// proteção de dados do catálogo de tipos de documento e de fatos do candidato vê todas, e a leitura é registrada
+    /// antes da resposta (sem o registro, 503);
     /// <c>minhas=true</c> restringe às de quem consulta. Os filtros <c>ato</c> (repetível), <c>cadastro</c>,
     /// <c>de</c> e <c>ate</c> (datas, inclusive) e <c>busca</c> (nome ou código do item, sem distinguir maiúsculas
     /// nem acentos) se combinam.
@@ -105,8 +106,10 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
 
     /// <summary>
     /// O item da fila com o que a proteção de dados precisa ver para decidir, em qualquer situação da aprovação, e
-    /// todos os atos registrados do item em ordem cronológica. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar ou pela de consultar a proteção de
-    /// dados do catálogo, sem abrir a consulta aos cadastros. A leitura é registrada antes da resposta (sem o registro, 503).
+    /// todos os atos registrados do item em ordem cronológica. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É
+    /// servido pela permissão de aprovar ou pela de consultar a proteção de dados do catálogo de tipos de documento e de
+    /// fatos do candidato, sem abrir a consulta aos cadastros. A leitura é registrada antes da resposta (sem o registro,
+    /// 503).
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}")]
     [ExigePermissao<PermissaoConfiguracao>(
@@ -132,7 +135,8 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// <summary>
     /// Todas as manifestações técnicas do item, de todos os ciclos, com a situação de cada uma: vigente, substituída ou
     /// encerrada. O cadastro é <c>tipos-documento</c> ou <c>fatos</c>. É servido pela permissão de aprovar ou pela de
-    /// consultar a proteção de dados do catálogo, e a leitura é registrada antes da resposta (sem o registro, 503).
+    /// consultar a proteção de dados do catálogo de tipos de documento e de fatos do candidato, e a leitura é registrada
+    /// antes da resposta (sem o registro, 503).
     /// </summary>
     [HttpGet("admin/protecao-do-catalogo/{cadastro:regex(^(tipos-documento|fatos)$)}/{id:guid}/manifestacoes")]
     [ExigePermissao<PermissaoConfiguracao>(
@@ -180,7 +184,8 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// <summary>
     /// A manifestação técnica sobre a proteção de um item que está numa solicitação, com o ciclo de aprovação lido no
     /// item. A nova manifestação da mesma pessoa no ciclo substitui a vigente sem apagá-la; a manifestação não decide.
-    /// Exige a permissão de se manifestar sobre a proteção de dados do catálogo. Idempotency-Key obrigatório (ADR-0027).
+    /// Exige a permissão de se manifestar sobre a proteção de dados do catálogo de tipos de documento e de fatos do
+    /// candidato. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo/manifestacoes")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoManifestar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]
@@ -204,7 +209,8 @@ public sealed class ProtecaoDoCatalogoController : ControllerBase
     /// <summary>
     /// A proteção de dados aprova ou nega um item que está numa solicitação; a negativa exige a classificação
     /// recomendada. Diante de manifestação técnica desfavorável vigente, aprovar ou recomendar ajuste exige a
-    /// justificativa. Exige a permissão de aprovar a proteção de dados do catálogo. Idempotency-Key obrigatório (ADR-0027).
+    /// justificativa. Exige a permissão de aprovar a proteção de dados do catálogo de tipos de documento e de fatos do
+    /// candidato. Idempotency-Key obrigatório (ADR-0027).
     /// </summary>
     [HttpPost("admin/protecao-do-catalogo")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.ProtecaoDoCatalogoAprovar, ResourceTipo = ResourceTiposConfiguracao.ProtecaoDoCatalogo)]

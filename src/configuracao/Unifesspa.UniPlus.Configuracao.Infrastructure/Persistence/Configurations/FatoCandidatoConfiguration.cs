@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Configuração EF Core do catálogo <see cref="FatoCandidato"/> — a tabela
+/// Configuração EF Core do catálogo de fatos do candidato (<see cref="FatoCandidato"/>) — a tabela
 /// <c>rol_de_fatos_candidato</c> (UNI-REQ-0077, ADR-0111).
 /// </summary>
 /// <remarks>

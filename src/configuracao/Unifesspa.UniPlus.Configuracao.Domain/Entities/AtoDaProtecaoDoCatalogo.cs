@@ -6,9 +6,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
 /// <summary>
-/// Um ato do circuito de aprovação da proteção de dados de um item do catálogo (ADR-0153): a solicitação, a
-/// aprovação, o ajuste recomendado, a reprovação e o aceite da recomendação. Só se acrescenta, nunca se altera nem
-/// se apaga: é evidência forense (ADR-0063) de que a proteção de dados exerceu a sua decisão, e sobrevive à
+/// Um ato do circuito de aprovação da proteção de dados de um tipo de documento ou fato do candidato (ADR-0153): a
+/// solicitação, a aprovação, o ajuste recomendado, a reprovação e o aceite da recomendação. Só se acrescenta, nunca se
+/// altera nem se apaga: é evidência forense (ADR-0063) de que a proteção de dados exerceu a sua decisão, e sobrevive à
 /// edição do item, que reinicia o circuito corrente (<see cref="AprovacaoDaProtecao"/>) mas não este registro.
 /// </summary>
 /// <remarks>

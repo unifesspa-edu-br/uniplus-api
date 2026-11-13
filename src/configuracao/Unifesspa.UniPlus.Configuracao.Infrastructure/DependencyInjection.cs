@@ -80,7 +80,8 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<IModeloFormularioRepository, ModeloFormularioRepository>();
     }
 
-    // Os fatos do candidato e os registros só acrescentados da aprovação da proteção do catálogo.
+    // Os fatos do candidato e os registros só acrescentados da aprovação da proteção do catálogo de tipos de documento
+    // e de fatos do candidato.
     private static void AdicionarRepositoriosDoCatalogoDeFatos(IServiceCollection services)
     {
         services.AddScoped<IFatoCandidatoRepository, FatoCandidatoRepository>();

@@ -12,8 +12,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core das manifestações técnicas na proteção do catálogo (ADR-0163), registro só acrescentado: sem
-/// chave estrangeira para o item, como o ato. As colunas de quem se manifestou são <c>Pessoal</c>; as demais, inclusive
+/// Configuração EF Core das manifestações técnicas na proteção do catálogo de tipos de documento e de fatos do
+/// candidato (ADR-0163), registro só acrescentado: sem chave estrangeira para o item, como o ato. As colunas de quem se manifestou são <c>Pessoal</c>; as demais, inclusive
 /// o texto, são <c>Interno</c>, como a justificativa da decisão.
 /// </summary>
 /// <remarks>
