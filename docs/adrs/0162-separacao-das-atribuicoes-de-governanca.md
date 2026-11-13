@@ -184,3 +184,7 @@ Não há produção. A base de HML é recriada nesta mudança, sem migração pr
 ## Emenda: manifestação técnica na proteção do catálogo de tipos de documento e de fatos do candidato (#2366)
 
 A regra "Manifestação na proteção do catálogo", sobre os tipos de documento e os fatos do candidato, é detalhada pela [ADR-0163](0163-manifestacao-tecnica-por-ciclo-na-protecao-do-catalogo.md), sem mudança no que esta ADR decide. A manifestação é evento só acrescentado por ciclo de aprovação. Ela é gravada junto do estado do circuito na linha do item, sob o mesmo controle de concorrência da decisão, e a justificativa exigida diante de manifestação desfavorável vigente fica registrada no ato da decisão, inclusive na aprovação.
+
+## Extensão: tramitação da providência sobre concessão (#2367)
+
+A atribuição do Encarregado de dados de solicitar providências sobre concessões, e a de quem administra concessões de respondê-las ou atendê-las pela revogação vinculada, são detalhadas pela [ADR-0164](0164-tramitacao-da-providencia-sobre-concessao.md), sem mudança no que esta ADR decide.
