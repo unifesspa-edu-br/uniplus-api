@@ -33,8 +33,8 @@ public static class ConcessaoMapping
             c.EstaAtiva(agora));
 
     /// <summary>
-    /// Eventos que a própria concessão sabe contar: a concessão e o que a encerrou, a revogação ou, derivado da vigência no
-    /// instante da leitura, o vencimento, que é do sistema.
+    /// Eventos que a própria concessão sabe contar: a concessão, o vencimento derivado da vigência no instante da leitura,
+    /// que é do sistema, e a revogação. O vencimento aparece também quando a concessão vencida foi revogada depois.
     /// </summary>
     public static IEnumerable<EventoDaTrilhaDto> EventosDaConcessao(Concessao c, DateTimeOffset agora)
     {
@@ -46,20 +46,26 @@ public static class ConcessaoMapping
             new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorSub, c.ConcedidaPorNome),
             $"Origem: {c.OrigemTipo.ToCodigo()} {c.OrigemId}.");
 
-        if (EventoDoEncerramento(c, agora) is { } encerramento)
+        foreach (EventoDaTrilhaDto fim in DoFim(c, agora))
         {
-            yield return encerramento;
+            yield return fim;
         }
     }
 
-    private static EventoDaTrilhaDto? EventoDoEncerramento(Concessao c, DateTimeOffset agora) =>
-        EncerramentoDaConcessao.De(c, agora) switch
+    private static IEnumerable<EventoDaTrilhaDto> DoFim(Concessao c, DateTimeOffset agora)
+    {
+        if (EncerramentoDaConcessao.VencimentoDe(c, agora) is { } vencidaEm)
         {
-            null => null,
-            { Causa: CausaDoEncerramento.Vencida, Em: var vencidaEm } => new("vencida", vencidaEm, null, "Fim da vigência.", "sistema"),
-            { Em: var revogadaEm } when c.RevogadaPelaJanelaId is not null => new("revogada_pela_migracao", revogadaEm, null, c.MotivoRevogacao, "sistema"),
-            { Em: var revogadaEm } => new("revogada", revogadaEm, RevogadaPorPessoa(c), c.MotivoRevogacao),
-        };
+            yield return new("vencida", vencidaEm, null, "Fim da vigência.", "sistema");
+        }
+
+        if (c.RevogadaEm is { } revogadaEm)
+        {
+            yield return c.RevogadaPelaJanelaId is null
+                ? new EventoDaTrilhaDto("revogada", revogadaEm, RevogadaPorPessoa(c), c.MotivoRevogacao)
+                : new EventoDaTrilhaDto("revogada_pela_migracao", revogadaEm, null, c.MotivoRevogacao, "sistema");
+        }
+    }
 
     // A revogação pela janela de migração é do sistema: não há pessoa a expor, e quem recusou fica na trilha da janela.
     private static IdentidadeDto? RevogadaPorPessoa(Concessao c) =>

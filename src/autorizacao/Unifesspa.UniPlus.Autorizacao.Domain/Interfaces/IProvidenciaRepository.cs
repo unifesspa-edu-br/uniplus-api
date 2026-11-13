@@ -48,10 +48,13 @@ public interface IProvidenciaRepository : IRepository<Providencia>
 
     /// <summary>
     /// As providências paginadas por cursor keyset bidirecional (ADR-0026 + ADR-0089), em ordem de abertura, a mais antiga
-    /// primeiro, com a situação filtrada no banco pelo mesmo critério de <see cref="Concessao.EstaAtiva"/>.
+    /// primeiro, com a situação filtrada no banco pelo mesmo critério de <see cref="Concessao.EstaAtiva"/>. A ordem é o
+    /// instante da abertura e, no empate, o <c>Id</c>; a âncora é o par, e as âncoras devolvidas são as dos extremos da
+    /// página, nulas quando não há página daquele lado.
     /// </summary>
-    Task<(IReadOnlyList<ProvidenciaComConcessao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    Task<(IReadOnlyList<ProvidenciaComConcessao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDeProvidencias filtro,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,

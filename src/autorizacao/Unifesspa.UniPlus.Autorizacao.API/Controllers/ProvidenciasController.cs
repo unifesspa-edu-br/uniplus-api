@@ -137,7 +137,8 @@ public sealed class ProvidenciasController : ControllerBase
         Resposta(await _queryBus.Send(new ObterProvidenciaQuery(id), cancellationToken).ConfigureAwait(false));
 
     /// <summary>
-    /// A fila das providências, paginada por cursor opaco bidirecional (ADR-0026 + ADR-0089), a mais antiga primeiro. Sem
+    /// A fila das providências, paginada por cursor opaco bidirecional (ADR-0026 + ADR-0089), em ordem de abertura, a mais
+    /// antiga primeiro; no mesmo instante, pelo identificador. Sem
     /// <c>situacao</c>, a fila prioritária: as abertas com concessão ativa. <c>situacao</c> aceita <c>aberta</c>,
     /// <c>respondida</c>, <c>atendida</c>, <c>prejudicada</c> ou <c>todas</c>; <c>concessao</c> restringe às de uma
     /// concessão. Os itens não trazem o fundamento nem o motivo do desfecho.
@@ -157,7 +158,7 @@ public sealed class ProvidenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
-        [FromCursor(ResourceTag)] PageRequest page,
+        [FromCursor(ResourceTag, RequireSortKey = true)] PageRequest page,
         [FromQuery] string? situacao = null,
         [FromQuery] Guid? concessao = null,
         CancellationToken cancellationToken = default)
@@ -171,8 +172,8 @@ public sealed class ProvidenciasController : ControllerBase
 
         ListarProvidenciasResult resultado = await _queryBus.Send(consulta, cancellationToken).ConfigureAwait(false);
 
-        return await this.OkPaginatedAsync(
-            resultado.Items, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await this.OkPaginatedOrdenadoAsync(
+            resultado.Items, resultado.Anterior, resultado.Proximo, page, ResourceTag, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     private IActionResult Resposta(Result<ProvidenciaDto> resultado) =>
@@ -182,9 +183,9 @@ public sealed class ProvidenciasController : ControllerBase
     private static ListarProvidenciasQuery? Consulta(PageRequest page, string? situacao, Guid? concessao) =>
         situacao?.Trim().ToLowerInvariant() switch
         {
-            null or "" => new(SituacaoDaProvidencia.Aberta, concessao, page.AfterId, page.Limit, page.Direction),
-            "todas" => new(null, concessao, page.AfterId, page.Limit, page.Direction),
-            var codigo when SituacaoDaProvidenciaCodigo.DoCodigo(codigo) is { } lida => new(lida, concessao, page.AfterId, page.Limit, page.Direction),
+            null or "" => new(SituacaoDaProvidencia.Aberta, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+            "todas" => new(null, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
+            var codigo when SituacaoDaProvidenciaCodigo.DoCodigo(codigo) is { } lida => new(lida, concessao, page.AfterSortKey, page.AfterId, page.Limit, page.Direction),
             _ => null,
         };
 

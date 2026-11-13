@@ -15,9 +15,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>A trilha da concessão montada na leitura, com a origem e as providências solicitadas sobre ela (UNI-REQ-0375).</summary>
+/// <summary>
+/// A trilha da concessão montada na leitura, com a origem e as providências solicitadas sobre ela (UNI-REQ-0375), cada
+/// providência exposta registrada no registro de acesso (ADR-0153).
+/// </summary>
 public sealed class TrilhaDaConcessaoTests
 {
+    private const string Administrar = "autorizacao:concessoes:administrar";
+    private const string Solicitar = "autorizacao:providencias:solicitar";
+
     private readonly IRevisaoDeAcessosRepository _revisoes = Substitute.For<IRevisaoDeAcessosRepository>();
     private readonly IJanelaDeMigracaoRepository _janelas = Substitute.For<IJanelaDeMigracaoRepository>();
     private readonly IProvidenciaRepository _providencias = Substitute.For<IProvidenciaRepository>();
@@ -44,16 +50,44 @@ public sealed class TrilhaDaConcessaoTests
     public async Task Obter_Inexistente_NaoEncontrada()
     {
         Result<IReadOnlyList<EventoDaTrilhaDto>> trilha = await ObterTrilhaDaConcessaoQueryHandler.Handle(
-            new ObterTrilhaDaConcessaoQuery(Guid.CreateVersion7()), _concessoes, Trilha(), CancellationToken.None);
+            new ObterTrilhaDaConcessaoQuery(Guid.CreateVersion7()), _concessoes, Trilha(), new VerificadorDeTeste("diogo.souza", [Administrar]), CancellationToken.None);
 
         trilha.Error!.Code.Should().Be(ConcessaoErrorCodes.NaoEncontrada);
     }
 
-    private Task<Result<IReadOnlyList<EventoDaTrilhaDto>>> ObterAsync(Concessao concessao)
+    [Fact(DisplayName = "Cada providência exposta na trilha é registrada pela permissão que dá a leitura das providências")]
+    public async Task Montar_RegistraCadaProvidencia()
+    {
+        ProvidenciaBuilder cenario = new();
+        Providencia[] providencias = [cenario.Respondida(), cenario.Aberta()];
+        _providencias.ListarDaConcessaoAsync(cenario.Concessao.Id, Arg.Any<CancellationToken>()).Returns(providencias);
+        VerificadorDeTeste verificador = new("cecilia.moura", [Solicitar]);
+
+        await ObterAsync(cenario.Concessao, verificador);
+
+        verificador.Gravados.Should().ContainSingle().Which.Select(static r => (r.Permissao, r.ResourceTipo, r.ResourceId)).Should().Equal(
+            providencias.Select(static p => (Solicitar, "providencia-sobre-concessao", (Guid?)p.Id)));
+    }
+
+    [Fact(DisplayName = "Quem não tem permissão de ler providências não as vê na trilha, e nada é registrado")]
+    public async Task Montar_SemPermissaoDeLerProvidencias_Omite()
+    {
+        ProvidenciaBuilder cenario = new();
+        _providencias.ListarDaConcessaoAsync(cenario.Concessao.Id, Arg.Any<CancellationToken>()).Returns([cenario.Aberta()]);
+        VerificadorDeTeste verificador = new("leitor.de.concessoes", ["autorizacao:concessoes:consultar"]);
+
+        Result<IReadOnlyList<EventoDaTrilhaDto>> trilha = await ObterAsync(cenario.Concessao, verificador);
+
+        trilha.Value!.Select(static e => e.Tipo).Should().NotContain("providencia_solicitada");
+        verificador.Gravados.Should().BeEmpty();
+    }
+
+    private Task<Result<IReadOnlyList<EventoDaTrilhaDto>>> ObterAsync(Concessao concessao, VerificadorDeTeste? verificador = null)
     {
         _concessoes.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, CenarioDaProvidencia.PerfilNome, 1));
 
-        return ObterTrilhaDaConcessaoQueryHandler.Handle(new ObterTrilhaDaConcessaoQuery(concessao.Id), _concessoes, Trilha(), CancellationToken.None);
+        return ObterTrilhaDaConcessaoQueryHandler.Handle(
+            new ObterTrilhaDaConcessaoQuery(concessao.Id), _concessoes, Trilha(), verificador ?? new VerificadorDeTeste("diogo.souza", [Administrar]), CancellationToken.None);
     }
 
     private TrilhaDaConcessao Trilha() =>

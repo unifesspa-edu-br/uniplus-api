@@ -44,8 +44,9 @@ public sealed class LeituraDaProvidencia
         ListarProvidenciasQuery query, IVerificadorDeAcesso verificador, Identidade? leitor, CancellationToken cancellationToken)
     {
         DateTimeOffset agora = _clock.GetUtcNow();
-        (IReadOnlyList<ProvidenciaComConcessao> itens, Guid? anterior, Guid? proximo) = await _providencias
-            .ListarPaginadoAsync(new FiltroDeProvidencias(agora, query.Situacao, query.ConcessaoId), query.AfterId, query.Limit, query.Direction, cancellationToken)
+        FiltroDeProvidencias filtro = new(agora, query.Situacao, query.ConcessaoId);
+        (IReadOnlyList<ProvidenciaComConcessao> itens, (string, Guid)? anterior, (string, Guid)? proximo) = await _providencias
+            .ListarPaginadoAsync(filtro, query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);
 
         await AcessoAProvidencia.RegistrarLeituraAsync(verificador, [.. itens.Select(static i => i.Id)], cancellationToken).ConfigureAwait(false);

@@ -82,8 +82,9 @@ public sealed class ProvidenciaRepository : IProvidenciaRepository
         return providencia is null ? null : (await ComAlvosAsync([providencia], cancellationToken).ConfigureAwait(false))[0];
     }
 
-    public async Task<(IReadOnlyList<ProvidenciaComConcessao> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
+    public async Task<(IReadOnlyList<ProvidenciaComConcessao> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarPaginadoAsync(
         FiltroDeProvidencias filtro,
+        string? afterSortKey,
         Guid? afterId,
         int limit,
         PaginationDirection direction,
@@ -91,12 +92,12 @@ public sealed class ProvidenciaRepository : IProvidenciaRepository
     {
         ArgumentNullException.ThrowIfNull(filtro);
 
-        // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena por Id, que é UUIDv7 e por isso a ordem de abertura.
-        CursorKeysetPage<Providencia> page = await CursorKeyset
-            .ApplyAsync(NaSituacao(filtro), afterId, limit, direction, cancellationToken)
+        // Sem OrderBy aqui: o motor keyset ordena por (aberta_em, id) nos dois sentidos (ADR-0089).
+        OrderedKeysetPage<Providencia> page = await OrderedKeysetCursor
+            .ApplyAsync(NaSituacao(filtro), OrdenacaoDasProvidencias.Montar(filtro), afterSortKey, afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
 
-        return (await ComAlvosAsync(page.Items, cancellationToken).ConfigureAwait(false), page.PrevAfterId, page.NextAfterId);
+        return (await ComAlvosAsync(page.Items, cancellationToken).ConfigureAwait(false), page.Previous, page.Next);
     }
 
     public async Task<IReadOnlyList<Providencia>> ListarDaConcessaoAsync(Guid concessaoId, CancellationToken cancellationToken = default) =>
