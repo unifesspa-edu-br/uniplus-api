@@ -20,6 +20,18 @@ public static class CamposDeContexto
     /// <summary>Campo do contexto que identifica a unidade dona do resource.</summary>
     public const string UnidadeProprietariaId = "unidadeProprietariaId";
 
+    /// <summary>Campo do contexto que identifica a fase em que a banca atua.</summary>
+    public const string FaseId = "faseId";
+
+    /// <summary>Campo do contexto que identifica a etapa em que o ato acontece.</summary>
+    public const string EtapaId = "etapaId";
+
+    /// <summary>Campo do contexto que identifica a banca à qual a pessoa precisa estar designada.</summary>
+    public const string BancaId = "bancaId";
+
+    /// <summary>Campo do contexto que identifica a inscrição a que o acesso se refere.</summary>
+    public const string InscricaoId = "inscricaoId";
+
     private static readonly FrozenDictionary<string, Func<ResourceContext, bool>> Presenca =
         new Dictionary<string, Func<ResourceContext, bool>>(StringComparer.Ordinal)
         {
@@ -31,6 +43,10 @@ public static class CamposDeContexto
             [UnidadeProprietariaId] = static resource => resource.UnidadeProprietariaId is not null,
             ["processoId"] = static resource => resource.ProcessoId is not null,
             ["chamadaId"] = static resource => resource.ChamadaId is not null,
+            [FaseId] = static resource => resource.Banca is not null,
+            [EtapaId] = static resource => resource.Banca?.EtapaId is not null,
+            [BancaId] = static resource => resource.Banca is not null,
+            [InscricaoId] = static resource => resource.InscricaoId is not null,
         }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>Nomes aceitos, que a conferência do catálogo na subida usa.</summary>

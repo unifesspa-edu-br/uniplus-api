@@ -139,4 +139,30 @@ internal static class CenariosDeDecisao
             return Task.FromResult(resultado);
         }
     }
+
+    /// <summary>Porta das designações com as bancas, no lugar que a designação vale, combinadas pelo teste; a resposta muda quando o teste a altera.</summary>
+    public sealed class DesignacoesEmMemoria : IDesignacaoDeBanca
+    {
+        private readonly HashSet<(Guid Processo, VinculosDaBanca Banca)> _designacoes = [];
+
+        public int Consultas { get; private set; }
+
+        public DesignacoesEmMemoria Designar(Guid processoId, VinculosDaBanca banca)
+        {
+            _designacoes.Add((processoId, banca));
+            return this;
+        }
+
+        public void Revogar(Guid processoId, VinculosDaBanca banca) => _designacoes.Remove((processoId, banca));
+
+        public Task<bool> TemDesignacaoVigenteAsync(
+            string emissor, string subject, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken)
+        {
+            Consultas++;
+            return Task.FromResult(_designacoes.Contains((processoId, banca)));
+        }
+
+        public Task<bool> ExisteDesignacaoVigenteAsync(Guid bancaId, CancellationToken cancellationToken) =>
+            Task.FromResult(_designacoes.Any(d => d.Banca.BancaId == bancaId));
+    }
 }

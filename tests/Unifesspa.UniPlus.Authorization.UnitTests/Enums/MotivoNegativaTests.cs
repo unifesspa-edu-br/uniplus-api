@@ -7,9 +7,9 @@ using Unifesspa.UniPlus.Authorization.Enums;
 public sealed class MotivoNegativaTests
 {
     [Fact]
-    public void MotivoNegativa_EhConjuntoFechadoDe15Valores()
+    public void MotivoNegativa_EhConjuntoFechadoDe16Valores()
     {
-        Enum.GetValues<MotivoNegativa>().Should().HaveCount(15,
+        Enum.GetValues<MotivoNegativa>().Should().HaveCount(16,
             "o conjunto de motivos de negativa é fechado: um motivo novo é decisão, e não detalhe");
     }
 

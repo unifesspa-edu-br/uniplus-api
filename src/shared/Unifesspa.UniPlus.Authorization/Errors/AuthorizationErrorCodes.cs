@@ -43,6 +43,7 @@ public static class AuthorizationErrorCodes
     public const string ResourceContextEscopoInvalido = "Authorization.ResourceContext.EscopoInvalido";
     public const string ResourceContextFatoInvalido = "Authorization.ResourceContext.FatoInvalido";
     public const string ResourceContextOcorrenciaInvalida = "Authorization.ResourceContext.OcorrenciaInvalida";
+    public const string VinculosDaBancaInvalidos = "Authorization.VinculosDaBanca.Invalidos";
 
     public const string AuthorizationRequestContextRequestIdObrigatorio = "Authorization.AuthorizationRequestContext.RequestIdObrigatorio";
     public const string AuthorizationRequestContextOnBehalfOfInvalido = "Authorization.AuthorizationRequestContext.OnBehalfOfInvalido";

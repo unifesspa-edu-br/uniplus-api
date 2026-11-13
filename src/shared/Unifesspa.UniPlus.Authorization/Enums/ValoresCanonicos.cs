@@ -40,6 +40,7 @@ public static class ValoresCanonicos
         [MotivoNegativa.MecanismoRevogacaoDegradado] = "mecanismo_revogacao_degradado",
         [MotivoNegativa.ImpedidoPorInscricaoNoProcesso] = "impedido_por_inscricao_no_processo",
         [MotivoNegativa.ConcessaoEmUnidadeExigida] = "concessao_em_unidade_exigida",
+        [MotivoNegativa.ForaDaDesignacao] = "fora_da_designacao",
     }.ToFrozenDictionary();
 
     /// <summary>Valor canônico do motivo de negativa.</summary>
