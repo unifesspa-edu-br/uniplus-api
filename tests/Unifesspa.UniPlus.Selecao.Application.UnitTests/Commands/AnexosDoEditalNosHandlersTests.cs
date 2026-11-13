@@ -17,8 +17,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static ConformidadeLegalGateTests;
+using static DublesDoCongelamentoDeTeste;
+using static PublicacaoDeTeste;
+using static RegrasLegaisDeTeste;
 
 /// <summary>
 /// Os anexos chegam ao envelope congelado: o handler da publicação entrega ao canonicalizador os

@@ -4,19 +4,17 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
-using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.DublesDoCongelamentoDeTeste;
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.RegrasLegaisDeTeste;
 
 /// <summary>
 /// Story #853: o gate legal — segunda dimensão de conformidade, ao lado da estrutural
@@ -27,535 +25,91 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class ConformidadeLegalGateTests
 {
-    internal static readonly string HashFixo = ProcessoSeletivoConformeBuilder.HashFixo;
-    internal static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-
-    private static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
-        ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: predicado,
-            descricaoHumana: "Regra de teste do gate",
-            baseLegal: "Lei de teste",
-            vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
-
-    // PROVA_OBJETIVA é o código do tipo congelado na única etapa de NovoProcessoConforme()
-    // (issue #1071: a avaliação compara pelo código do tipo, nunca pelo rótulo editorial da
-    // etapa) — exigir OUTRO código reprova; exigir o MESMO aprova. Suficiente para testar o
-    // fio do gate sem repetir as 7 variantes já cobertas por AvaliadorConformidadeLegalTests
-    // (Domain).
-    private static ObrigatoriedadeLegal RegraQueReprova() =>
-        NovaRegra("GATE-REPROVA", new EtapaObrigatoria("ETAPA_NAO_OFERTADA"));
-
-    internal static ObrigatoriedadeLegal RegraQueAprova() =>
-        NovaRegra("GATE-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
-
+    // O atalho não é só desempenho: sem ele, todo tipo de processo que ainda não tem
+    // obrigatoriedade legal cadastrada passa a depender da leitura de cinco cadastros
+    // que não vai usar.
     [Fact(DisplayName = "Processo sem regra vigente não consulta catálogo algum")]
     public async Task Publicar_SemRegraVigente_NaoConsultaCatalogos()
     {
-        // O atalho não é só desempenho: sem ele, todo tipo de processo que ainda não tem
-        // obrigatoriedade legal cadastrada passa a depender da leitura de cinco cadastros
-        // que não vai usar.
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
-        ITipoDocumentoReader tipoDocumentoReader = Substitute.For<ITipoDocumentoReader>();
+        DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
+        handlers.Modalidades = Substitute.For<IModalidadeReader>();
+        handlers.TiposDocumento = Substitute.For<ITipoDocumentoReader>();
 
-        (Result resposta, _) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            RepositorioCom(),
-            modalidadeReader,
-            tipoDocumentoReader,
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, _) = await handlers.PublicarAsync();
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        await modalidadeReader.DidNotReceive().ListarVivosAsync(Arg.Any<CancellationToken>());
-        await tipoDocumentoReader.DidNotReceive().ListarVivosAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Regra vigente que referencia tipo de documento inexistente recusa a publicação")]
-    public async Task Publicar_ComRegraQueReferenciaTipoDocumentoInexistente_Recusa()
-    {
-        // A cobertura de referência órfã existia só para modalidade — o dublê de cadastro
-        // de tipos de documento devolvia sempre o código citado, então este caminho nunca
-        // era exercitado. O gate recusa pelo mesmo motivo: uma regra que exige documento
-        // que não existe no cadastro não pode ser avaliada, e aprovar em silêncio seria
-        // publicar sob cláusula que ninguém pode cumprir.
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
-            NovaRegra("GATE-DOC-ORFAO", new DocumentoObrigatorioParaModalidade("LB_PPI", "TIPO_QUE_NAO_EXISTE")));
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
-        resposta.Error!.Message.Should().Contain("TIPO_QUE_NAO_EXISTE");
-        eventos.Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Regra vigente que referencia modalidade inexistente recusa a publicação em vez de aprovar em silêncio")]
-    public async Task Publicar_ComRegraQueReferenciaCadastroInexistente_Recusa()
-    {
-        // A regra é semeada direto no repositório, como uma que já estava gravada antes de a
-        // validação de escrita existir. O avaliador é domínio puro: "modalidade não ofertada"
-        // e "modalidade que não existe" são indistinguíveis para ele, e o ramo aprova vazio —
-        // era assim que o edital publicava sob cláusula impossível de cumprir.
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
-            NovaRegra("GATE-ORFA", new DocumentoObrigatorioParaModalidade("LB_PPl", "LAUDO_MEDICO")));
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
-        modalidadeReader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((ModalidadeView?)null);
-
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            modalidadeReader,
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
-        resposta.Error.Message.Should().Contain("LB_PPl", "a mensagem tem de dizer qual referência não existe");
-        eventos.Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Regra de modalidades mínimas gravada sem nenhum código é inavaliável, não cumprida")]
-    public async Task Publicar_ComRegraDeModalidadesMinimasVazia_Recusa()
-    {
-        // A escrita passou a recusar esta forma, mas nenhuma migração garante que as regras
-        // gravadas antes disso tenham conteúdo. O avaliador percorre zero exigências e aprova:
-        // a cláusula aparece cumprida sem exigir nada de ninguém — vacuidade idêntica à do
-        // código órfão, por outro caminho.
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
-            RegraGravadaSemPassarPelaFactory("GATE-VAZIA", new ModalidadesMinimas([])));
-
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
-        eventos.Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "Regra gravada com espaço no código é órfã, mesmo com o cadastro devolvendo a modalidade")]
-    public async Task Publicar_ComRegraCujoCodigoNaoCasaOrdinalmente_Recusa()
-    {
-        // Regra gravada antes de a escrita normalizar o código. O leitor apara o valor buscado
-        // e devolve a modalidade viva, então "existe" — mas quem avalia a conformidade compara
-        // por igualdade ordinal contra o código congelado no processo, e "LB_PPI " nunca casa
-        // com "LB_PPI". Sem conferir o código devolvido, o gate aprovaria a mesma cláusula
-        // vazia que ele existe para barrar.
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(
-            NovaRegra("GATE-ESPACO", new DocumentoObrigatorioParaModalidade("LB_PPI ", "LAUDO_MEDICO")));
-
-        IModalidadeReader modalidadeReader = Substitute.For<IModalidadeReader>();
-        modalidadeReader.ObterVivaPorCodigoAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(call => CadastrosVivos.Modalidade(call.Arg<string>().Trim()));
-
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            CanonicalizerSubstituto(), new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            modalidadeReader,
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.RegraLegalInavaliavel");
-        eventos.Should().BeEmpty();
+        await handlers.Modalidades.DidNotReceive().ListarVivosAsync(Arg.Any<CancellationToken>());
+        await handlers.TiposDocumento.DidNotReceive().ListarVivosAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "CA-12 (Publicar): regra legal vigente reprovada recusa ANTES da canonicalização")]
     public async Task Publicar_ComRegraLegalReprovada_RecusaSemCanonicalizar()
     {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(RegraQueReprova());
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
+        DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
+        handlers.ObrigatoriedadesLegais = RepositorioCom(RegraQueReprova());
 
-        (Result resposta, IEnumerable<object> eventos) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await handlers.PublicarAsync();
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeLegalInsuficiente");
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+        _ = handlers.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         eventos.Should().BeEmpty();
-        processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
+        handlers.Processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
     }
 
     [Fact(DisplayName = "CA-13 (Publicar): regra legal aprovada congela ResultadoConformidade no campo novo da entrada")]
     public async Task Publicar_ComRegraLegalAprovada_RepassaConformidadeParaCanonicalizador()
     {
-        ProcessoSeletivo processo = NovoProcessoConforme();
         ObrigatoriedadeLegal regra = RegraQueAprova();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(regra);
-
         EntradaCanonicalizacao? entradaCapturada = null;
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto(e => entradaCapturada = e);
+        DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.Para(PublicacaoDeTeste.NovoProcessoConforme());
+        handlers.ObrigatoriedadesLegais = RepositorioCom(regra);
+        handlers.Canonicalizer = CanonicalizerSubstituto(e => entradaCapturada = e);
 
-        (Result resposta, IEnumerable<object> _) = await PublicarProcessoSeletivoCommandHandler.Handle(
-            new PublicarProcessoSeletivoCommand(
-                processo.Id, "001/2026", null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            RepositorioDoProcesso(processo),
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> _) = await handlers.PublicarAsync();
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        entradaCapturada.Should().NotBeNull();
-        entradaCapturada!.Conformidade.Should().NotBeNull();
-        RegraAvaliada regraCongelada = entradaCapturada.Conformidade!.Regras.Should().ContainSingle().Subject;
-        regraCongelada.RegraId.Should().Be(regra.Id);
-        regraCongelada.RegraCodigo.Should().Be("GATE-APROVA");
-        regraCongelada.Aprovada.Should().BeTrue();
-        regraCongelada.Hash.Should().Be(regra.Hash);
+        ConferirRegraCongelada(entradaCapturada, regra);
     }
 
     [Fact(DisplayName = "CA-14 (Retificar): regra legal vigente reprovada recusa ANTES da canonicalização")]
     public async Task Retificar_ComRegraLegalReprovada_RecusaSemCanonicalizar()
     {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(RegraQueReprova());
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
+        DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.ParaProcessoPublicado();
+        handlers.ObrigatoriedadesLegais = RepositorioCom(RegraQueReprova());
 
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
-
-        (Result resposta, IEnumerable<object> eventos) = await RetificarProcessoSeletivoCommandHandler.Handle(
-            new RetificarProcessoSeletivoCommand(
-                processo.Id, "Correção do prazo", "001/2026-R1",
-                null, null,
-                DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()),
-            repositorio,
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await handlers.RetificarAsync();
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeLegalInsuficiente");
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+        _ = handlers.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         eventos.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "CA-14 (FecharRetificacao): regra legal vigente reprovada recusa e a sessão editorial permanece aberta")]
     public async Task FecharRetificacao_ComRegraLegalReprovada_RecusaESessaoPermaneceAberta()
     {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
+        DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.ParaProcessoEmRetificacao();
+        handlers.ObrigatoriedadesLegais = RepositorioCom(RegraQueReprova());
 
-        Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora);
-        rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
-        processo.DequeueDomainEvents();
-
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = RepositorioCom(RegraQueReprova());
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        IProcessoSeletivoRepository repositorio = RepositorioDoProcesso(processo);
-        repositorio.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versaoAtual);
-
-        (Result resposta, IEnumerable<object> eventos) = await FecharRetificacaoCommandHandler.Handle(
-            ComandoDeFechamentoDaRetificacao(processo.Id),
-            repositorio,
-            RepositorioDeDocumento(processo.Id),
-            Substitute.For<IRascunhoDePublicacaoRepository>(),
-            Substitute.For<IAtoDoProcessoRepository>(),
-            canonicalizer, new ResolvedorFusoDeTeste(),
-            Substitute.For<ISelecaoUnitOfWork>(),
-            UsuarioAutenticado(),
-            TipoDeAtoReader(),
-            Substitute.For<IVagaDeLinhagemReader>(),
-            obrigatoriedadeLegalRepository,
-            CadastrosVivos.Modalidades(),
-            CadastrosVivos.TiposDocumento(),
-            CadastrosVivos.TiposEtapa(),
-            CadastrosVivos.TiposDeficiencia(),
-            CadastrosVivos.RegrasDesempate(),
-            CadastrosVivos.CatalogoDeFatos(),
-            Substitute.For<ICalendarioVigenteReader>(),
-            ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(),
-            FasesIniciadasDeTeste.Nenhuma(),
-            new RelogioFixo(Agora),
-            CancellationToken.None);
+        (Result resposta, IEnumerable<object> eventos) = await handlers.FecharRetificacaoAsync();
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeLegalInsuficiente");
-        _ = canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+        _ = handlers.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         eventos.Should().BeEmpty();
-        processo.Rascunho.Should().NotBeNull(
+        handlers.Processo.Rascunho.Should().NotBeNull(
             "uma recusa de conformidade legal não destrói a sessão editorial — o administrador corrige e tenta de novo");
     }
 
-    // ══════════════════════════════════════════════════════════════════════════════
-
-    internal static IObrigatoriedadeLegalRepository RepositorioCom(params ObrigatoriedadeLegal[] regras)
+    private static void ConferirRegraCongelada(EntradaCanonicalizacao? entrada, ObrigatoriedadeLegal regra)
     {
-        IObrigatoriedadeLegalRepository repositorio = Substitute.For<IObrigatoriedadeLegalRepository>();
-        repositorio.ObterVigentesParaTipoProcessoAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(regras);
-        return repositorio;
-    }
-
-    internal static ISnapshotPublicacaoCanonicalizer CanonicalizerSubstituto(Action<EntradaCanonicalizacao>? captura = null)
-    {
-        ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
-        canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => captura?.Invoke(e)))
-            .Returns(new SnapshotCanonico("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1"));
-        return canonicalizer;
-    }
-
-    internal static IProcessoSeletivoRepository RepositorioDoProcesso(ProcessoSeletivo processo)
-    {
-        IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
-        repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        return repositorio;
-    }
-
-    internal static IDocumentoAPublicarRepository RepositorioDeDocumento(Guid processoSeletivoId, params DocumentoAPublicar[] anexos)
-    {
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processoSeletivoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-
-        IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
-        repositorio.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(documento);
-        repositorio.ListarDoProcessoAsync(processoSeletivoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(anexos);
-        return repositorio;
-    }
-
-    internal static ITipoAtoPublicadoReader TipoDeAtoReader()
-    {
-        ITipoAtoPublicadoReader reader = Substitute.For<ITipoAtoPublicadoReader>();
-        reader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
-            .Returns(new TipoAtoPublicadoView(
-                Codigo: "EDITAL_ABERTURA",
-                Nome: "Edital de abertura",
-                CongelaConfiguracao: true,
-                UnicoPorObjeto: false,
-                EfeitoIrreversivel: false,
-                EhResultado: false));
-        return reader.ComQualquerTipoDeclarado();
-    }
-
-    internal static IUserContext UsuarioAutenticado()
-    {
-        IUserContext contexto = Substitute.For<IUserContext>();
-        contexto.UserId.Returns("user-sub-1");
-        return contexto;
-    }
-
-    private static FecharRetificacaoCommand ComandoDeFechamentoDaRetificacao(Guid processoId) =>
-        new(processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga);
-
-    internal static DadosDoAto NovoAto() => new(
-        Orgao: "CEPS",
-        Serie: "EDITAL",
-        Ano: 2026,
-        DataPublicacao: new DateOnly(2026, 1, 1),
-        Assinante: "Diretor do CEPS",
-        TipoAtoCodigo: "EDITAL_ABERTURA");
-
-    /// <summary>Processo publicado (para os cenários de Retificar/FecharRetificacao), com a mesma configuração conforme.</summary>
-    internal static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado(byte[]? envelopeCongelado = null)
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        DadosEdital dados = DadosEdital.Criar(
-            "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
-
-        VersaoConfiguracao versao = processo.Publicar(
-            dados, envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", HashFixo, "user-sub-1",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
-        processo.DequeueDomainEvents();
-
-        return (processo, versao);
-    }
-
-    internal static ProcessoSeletivo NovoProcessoConforme() =>
-        ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
-
-    internal sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => instante;
-    }
-
-    /// <summary>
-    /// Regra com predicado que a factory recusa hoje, no estado em que o EF a reidrataria
-    /// a partir de uma linha gravada antes de a validação de forma existir.
-    /// </summary>
-    /// <remarks>
-    /// A propriedade é escrita por reflexão porque não há caminho legítimo até este estado:
-    /// a única factory da entidade recusa a forma, e é justamente isso que torna a linha
-    /// antiga invisível para quem só monta a regra pelo domínio. O EF chega lá todo dia, pelo
-    /// setter privado, ao materializar o que está no banco.
-    /// </remarks>
-    private static ObrigatoriedadeLegal RegraGravadaSemPassarPelaFactory(
-        string regraCodigo, PredicadoObrigatoriedade predicadoInvalido)
-    {
-        ObrigatoriedadeLegal regra = NovaRegra(regraCodigo, new EtapaObrigatoria("PROVA_OBJETIVA"));
-        typeof(ObrigatoriedadeLegal)
-            .GetProperty(nameof(ObrigatoriedadeLegal.Predicado))!
-            .SetValue(regra, predicadoInvalido);
-        return regra;
+        entrada.Should().NotBeNull();
+        entrada!.Conformidade.Should().NotBeNull();
+        RegraAvaliada regraCongelada = entrada.Conformidade!.Regras.Should().ContainSingle().Subject;
+        regraCongelada.RegraId.Should().Be(regra.Id);
+        regraCongelada.RegraCodigo.Should().Be("GATE-APROVA");
+        regraCongelada.Aprovada.Should().BeTrue();
+        regraCongelada.Hash.Should().Be(regra.Hash);
     }
 }

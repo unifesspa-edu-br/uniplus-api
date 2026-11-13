@@ -15,7 +15,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-using static ConformidadeLegalGateTests;
+using static DublesDoCongelamentoDeTeste;
+using static PublicacaoDeTeste;
 
 /// <summary>
 /// A troca de unidade e a remoção aceitas na edição do cronograma, quando a fase já começou antes do fechamento da
@@ -124,6 +125,6 @@ public sealed class FecharRetificacaoUnidadeDeFaseIniciadaTests
             Substitute.For<IObrigatoriedadeLegalRepository>(), CadastrosVivos.Modalidades(), CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposEtapa(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(),
             CadastrosVivos.CatalogoDeFatos(), Substitute.For<ICalendarioVigenteReader>(), ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste(),
-            CodecsDeTeste.QueReidrataSemTiposDeAto(), FasesIniciadasDeTeste.Com(iniciadas), new ConformidadeLegalGateTests.RelogioFixo(Agora), CancellationToken.None);
+            CodecsDeTeste.QueReidrataSemTiposDeAto(), FasesIniciadasDeTeste.Com(iniciadas), new RelogioFixo(Agora), CancellationToken.None);
     }
 }
