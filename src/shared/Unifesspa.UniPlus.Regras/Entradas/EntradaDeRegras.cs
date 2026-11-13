@@ -23,35 +23,65 @@ public static class EntradaDeRegras
             return Result<PredicadoDnf?>.Success(null);
         }
 
+        Result<List<(int Clausula, CondicaoDnf Condicao)>> linhas = CondicoesPorClausula(clausulas);
+        if (linhas.IsFailure)
+        {
+            return Result<PredicadoDnf?>.Failure(linhas.Error!);
+        }
+
+        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas.Value!);
+        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
+    }
+
+    private static Result<List<(int Clausula, CondicaoDnf Condicao)>> CondicoesPorClausula(
+        IReadOnlyList<IReadOnlyList<CondicaoPrecondicaoInput>> clausulas)
+    {
         List<(int Clausula, CondicaoDnf Condicao)> linhas = [];
         for (int c = 0; c < clausulas.Count; c++)
         {
-            if (clausulas[c] is not { Count: > 0 } condicoes)
+            Result<List<CondicaoDnf>> condicoes = CondicoesDaClausula(clausulas[c]);
+            if (condicoes.IsFailure)
             {
-                return Result<PredicadoDnf?>.Failure(new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
+                return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Failure(condicoes.Error!);
             }
 
-            foreach (CondicaoPrecondicaoInput? condicao in condicoes)
-            {
-                if (condicao is null)
-                {
-                    return Result<PredicadoDnf?>.Failure(new DomainError(
-                        PredicadoDnfErrorCodes.CondicaoNula, "O predicado contém uma condição nula."));
-                }
-
-                Result<CondicaoDnf> criada = CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
-                if (criada.IsFailure)
-                {
-                    return Result<PredicadoDnf?>.Failure(criada.Error!);
-                }
-
-                linhas.Add((c, criada.Value!));
-            }
+            linhas.AddRange(condicoes.Value!.Select(condicao => (c, condicao)));
         }
 
-        Result<PredicadoDnf> predicado = PredicadoDnf.CriarDeCondicoesAgrupadas(linhas);
-        return predicado.IsSuccess ? Result<PredicadoDnf?>.Success(predicado.Value) : Result<PredicadoDnf?>.Failure(predicado.Error!);
+        return Result<List<(int Clausula, CondicaoDnf Condicao)>>.Success(linhas);
     }
+
+    private static Result<List<CondicaoDnf>> CondicoesDaClausula(IReadOnlyList<CondicaoPrecondicaoInput>? condicoes)
+    {
+        if (condicoes is not { Count: > 0 })
+        {
+            return Result<List<CondicaoDnf>>.Failure(new DomainError("ClausulaDnf.ClausulaVazia", "Uma cláusula deve ter ao menos uma condição."));
+        }
+
+        return CriarCondicoes(condicoes);
+    }
+
+    private static Result<List<CondicaoDnf>> CriarCondicoes(IReadOnlyList<CondicaoPrecondicaoInput> condicoes)
+    {
+        List<CondicaoDnf> criadas = [];
+        foreach (CondicaoPrecondicaoInput? condicao in condicoes)
+        {
+            Result<CondicaoDnf> criada = CriarCondicao(condicao);
+            if (criada.IsFailure)
+            {
+                return Result<List<CondicaoDnf>>.Failure(criada.Error!);
+            }
+
+            criadas.Add(criada.Value!);
+        }
+
+        return Result<List<CondicaoDnf>>.Success(criadas);
+    }
+
+    private static Result<CondicaoDnf> CriarCondicao(CondicaoPrecondicaoInput? condicao) =>
+        condicao is null
+            ? Result<CondicaoDnf>.Failure(new DomainError(PredicadoDnfErrorCodes.CondicaoNula, "O predicado contém uma condição nula."))
+            : CondicaoDnf.Criar(condicao.Fato, OperadorCodigo.FromCodigo(condicao.Operador), condicao.Valor);
 
     /// <summary>
     /// A obrigatoriedade do token e do predicado: <c>SEMPRE</c> e <c>NUNCA</c> sem predicado,
@@ -84,11 +114,14 @@ public static class EntradaDeRegras
             return Result<Impedimento?>.Failure(quando.Error!);
         }
 
-        return quando.Value is { } condicao
-            ? Result<Impedimento?>.Success(new Formularios.Impedimento(condicao, FormaDoItem.TextoOpcional(input.Mensagem) ?? string.Empty))
-            : Result<Impedimento?>.Failure(new DomainError(
-                ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."));
+        return ImpedimentoSobre(quando.Value, input.Mensagem);
     }
+
+    private static Result<Impedimento?> ImpedimentoSobre(PredicadoDnf? condicao, string? mensagem) =>
+        condicao is null
+            ? Result<Impedimento?>.Failure(new DomainError(
+                ItemFormularioErrorCodes.ImpedimentoSemCondicao, "O impedimento tem a condição sobre a resposta do campo."))
+            : Result<Impedimento?>.Success(new Formularios.Impedimento(condicao, FormaDoItem.TextoOpcional(mensagem) ?? string.Empty));
 
     /// <summary>O impedimento na forma da entrada; nulo quando o campo não tem.</summary>
     public static ImpedimentoInput? ParaEntrada(Formularios.Impedimento? impedimento) =>
@@ -98,23 +131,29 @@ public static class EntradaDeRegras
     public static Result<RestricaoValor> Restricao(RestricaoValorInput input)
     {
         ArgumentNullException.ThrowIfNull(input);
+        IReadOnlyList<string> fatos = input.Fatos ?? [];
         return RestricaoValorJson.TipoDoToken(input.Tipo) switch
         {
             TipoRestricaoValor.FaixaNumerica => RestricoesDeValor.Faixa(input.Minimo, input.Maximo),
-            TipoRestricaoValor.TamanhoTexto => RestricaoValorJson.Inteiro(input.Minimo, out int? minimo)
-                    && RestricaoValorJson.Inteiro(input.Maximo, out int? maximo)
-                ? RestricoesDeValor.Tamanho(minimo, maximo)
-                : Result<RestricaoValor>.Failure(new DomainError(
-                    RestricaoValorErrorCodes.LimitesIncoerentes, "Os limites de tamanho de texto são números inteiros.")),
-            TipoRestricaoValor.OpcoesPermitidas => Opcoes(input.Entradas ?? []),
-            TipoRestricaoValor.OpcoesDasRespostas => RestricoesDeValor.DasRespostas(input.Fatos ?? []),
-            TipoRestricaoValor.MunicipiosDaUf => RestricoesDeValor.DaUf(input.Fatos ?? []),
+            TipoRestricaoValor.TamanhoTexto => LerTamanhoDeTexto(input.Minimo, input.Maximo),
+            TipoRestricaoValor.OpcoesPermitidas => Opcoes(input.Entradas),
+            TipoRestricaoValor.OpcoesDasRespostas => RestricoesDeValor.DasRespostas(fatos),
+            TipoRestricaoValor.MunicipiosDaUf => RestricoesDeValor.DaUf(fatos),
             TipoRestricaoValor.FaixaDeData => LerFaixaDeData(input.DataMinima, input.DataMaxima),
-            _ => Result<RestricaoValor>.Failure(new DomainError(
-                RestricaoValorErrorCodes.TipoDesconhecido,
-                "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS, OPCOES_DAS_RESPOSTAS, MUNICIPIOS_DA_UF ou FAIXA_DE_DATA.")),
+            _ => TipoDeRestricaoDesconhecido(),
         };
     }
+
+    private static Result<RestricaoValor> TipoDeRestricaoDesconhecido() =>
+        Result<RestricaoValor>.Failure(new DomainError(
+            RestricaoValorErrorCodes.TipoDesconhecido,
+            "O tipo da restrição é FAIXA_NUMERICA, TAMANHO_TEXTO, OPCOES_PERMITIDAS, OPCOES_DAS_RESPOSTAS, MUNICIPIOS_DA_UF ou FAIXA_DE_DATA."));
+
+    private static Result<RestricaoValor> LerTamanhoDeTexto(decimal? minimo, decimal? maximo) =>
+        RestricaoValorJson.Inteiro(minimo, out int? tamanhoMinimo) && RestricaoValorJson.Inteiro(maximo, out int? tamanhoMaximo)
+            ? RestricoesDeValor.Tamanho(tamanhoMinimo, tamanhoMaximo)
+            : Result<RestricaoValor>.Failure(new DomainError(
+                RestricaoValorErrorCodes.LimitesIncoerentes, "Os limites de tamanho de texto são números inteiros."));
 
     private static Result<RestricaoValor> LerFaixaDeData(LimiteDeDataInput? minima, LimiteDeDataInput? maxima)
     {
@@ -149,19 +188,22 @@ public static class EntradaDeRegras
             return Result<EnvioDasRespostas?>.Success(null);
         }
 
-        if (Fuso(input.Fuso) is not { } fuso)
-        {
-            return Result<EnvioDasRespostas?>.ValidationFailure([new FieldError("envio.fuso", new DomainError(
-                FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, $"A zona '{input.Fuso}' do envio não é reconhecida."))]);
-        }
-
-        EnvioDasRespostas envio = new(input.Instante, fuso);
-        return LimiteDeData.ComportaOsDeslocamentos(envio.Dia)
-            ? Result<EnvioDasRespostas?>.Success(envio)
-            : Result<EnvioDasRespostas?>.ValidationFailure([new FieldError("envio.instante", new DomainError(
-                FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario,
-                "O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam."))]);
+        return Fuso(input.Fuso) is { } fuso
+            ? EnvioDentroDoCalendario(new EnvioDasRespostas(input.Instante, fuso))
+            : EnvioRecusado(
+                "envio.fuso", FormularioPortavelErrorCodes.FusoDoEnvioDesconhecido, $"A zona '{input.Fuso}' do envio não é reconhecida.");
     }
+
+    private static Result<EnvioDasRespostas?> EnvioDentroDoCalendario(EnvioDasRespostas envio) =>
+        LimiteDeData.ComportaOsDeslocamentos(envio.Dia)
+            ? Result<EnvioDasRespostas?>.Success(envio)
+            : EnvioRecusado(
+                "envio.instante",
+                FormularioPortavelErrorCodes.InstanteDoEnvioForaDoCalendario,
+                "O instante do envio falta ou fica fora do calendário que os limites da faixa de data alcançam.");
+
+    private static Result<EnvioDasRespostas?> EnvioRecusado(string campo, string codigo, string mensagem) =>
+        Result<EnvioDasRespostas?>.ValidationFailure([new FieldError(campo, new DomainError(codigo, mensagem))]);
 
     private static TimeZoneInfo? Fuso(string? zona)
     {
@@ -188,27 +230,35 @@ public static class EntradaDeRegras
         _ => new(RestricaoValorJson.AncoraEnvio, Anos: limite.Anos, Dias: limite.Dias),
     };
 
-    private static Result<RestricaoValor> Opcoes(IReadOnlyList<OpcoesCondicionadasInput> entradas)
+    private static Result<RestricaoValor> Opcoes(IReadOnlyList<OpcoesCondicionadasInput>? entradas)
     {
         List<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lidas = [];
-        foreach (OpcoesCondicionadasInput? entrada in entradas)
+        foreach (OpcoesCondicionadasInput? entrada in entradas ?? [])
         {
-            if (entrada is null)
+            Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> lida = GrupoDeOpcoes(entrada);
+            if (lida.IsFailure)
             {
-                return Result<RestricaoValor>.Failure(new DomainError(
-                    RestricaoValorErrorCodes.OpcoesVazias, "As opções permitidas contêm um grupo nulo."));
+                return Result<RestricaoValor>.Failure(lida.Error!);
             }
 
-            Result<PredicadoDnf?> quando = Predicado(entrada.Quando);
-            if (quando.IsFailure)
-            {
-                return Result<RestricaoValor>.Failure(quando.Error!);
-            }
-
-            lidas.Add((quando.Value, entrada.Valores ?? []));
+            lidas.Add(lida.Value);
         }
 
         return RestricoesDeValor.Opcoes(lidas);
+    }
+
+    private static Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)> GrupoDeOpcoes(OpcoesCondicionadasInput? entrada)
+    {
+        if (entrada is null)
+        {
+            return Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.Failure(new DomainError(
+                RestricaoValorErrorCodes.OpcoesVazias, "As opções permitidas contêm um grupo nulo."));
+        }
+
+        Result<PredicadoDnf?> quando = Predicado(entrada.Quando);
+        return quando.IsFailure
+            ? Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.Failure(quando.Error!)
+            : Result<(PredicadoDnf? Quando, IReadOnlyCollection<string> Valores)>.Success((quando.Value, entrada.Valores ?? []));
     }
 
     /// <summary>
