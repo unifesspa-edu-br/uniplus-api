@@ -90,7 +90,7 @@ public abstract class ProtecaoDoCatalogoTestBase
         return await criar.Content.ReadFromJsonAsync<Guid>();
     }
 
-    // A decisão leva a proteção que o aprovador conferiu, como a listagem a mostra.
+    // A decisão leva a proteção que o Representante do controlador conferiu e o circuito que ele leu, como a listagem os mostra.
     private protected static async Task<HttpResponseMessage> DecidirAsync(
         HttpClient client, string cadastro, Guid itemId, string decisao, string? recomendada = null, bool protecaoDesatualizada = false, string? justificativa = null)
     {
@@ -105,7 +105,11 @@ public abstract class ProtecaoDoCatalogoTestBase
 
     private protected static DecisaoPedida CorpoDaDecisao(JsonElement item, string cadastro, string decisao) =>
         new(cadastro, item.GetProperty("id").GetGuid(), decisao, item.GetProperty("classificacaoProtecao").GetString(),
-            item.GetProperty("hipoteseLegal").GetString(), item.GetProperty("finalidadeTratamento").GetString());
+            item.GetProperty("hipoteseLegal").GetString(), item.GetProperty("finalidadeTratamento").GetString())
+        {
+            Ciclo = item.GetProperty("aprovacao").GetProperty("ciclo").GetInt32(),
+            ManifestacoesNoCiclo = item.GetProperty("aprovacao").GetProperty("manifestacoesNoCiclo").GetInt32(),
+        };
 
     private protected static Task<HttpResponseMessage> SolicitarAsync(HttpClient client, params (string Cadastro, Guid Id)[] itens) =>
         EnviarAsync(client, HttpMethod.Post, $"{Base}/solicitacoes", new { itens = itens.Select(i => new { cadastro = i.Cadastro, i.Id }) });
@@ -145,6 +149,10 @@ public abstract class ProtecaoDoCatalogoTestBase
     private protected sealed record DecisaoPedida(
         string Cadastro, Guid ItemId, string Decisao, string? ClassificacaoProtecao, string? HipoteseLegal, string? FinalidadeTratamento)
     {
+        public int Ciclo { get; init; }
+
+        public int ManifestacoesNoCiclo { get; init; }
+
         public string? ClassificacaoRecomendada { get; init; }
 
         public string? Justificativa { get; init; }

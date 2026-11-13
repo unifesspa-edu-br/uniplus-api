@@ -50,8 +50,9 @@ public sealed class ManifestacoesDoCiclo
     /// muda a situação da aprovação nem a proteção do item (ADR-0162).
     /// </summary>
     /// <returns>
-    /// O evento a gravar; falha <c>CicloMudou</c> quando o ciclo lido difere do corrente, ou
-    /// <c>ItemForaDeSolicitacao</c> quando o item não está em solicitação. Na falha, nada muda.
+    /// O evento a gravar; falha <c>CicloMudou</c> quando o ciclo lido difere do corrente, <c>DecisaoJaTomada</c> quando o
+    /// item já foi decidido no ciclo lido, ou <c>ItemForaDeSolicitacao</c> quando ele ainda não foi solicitado nesse
+    /// ciclo. Na falha, nada muda.
     /// </returns>
     /// <exception cref="InvalidOperationException">Se o circuito está em outro ciclo que não o destas manifestações.</exception>
     public Result<ManifestacaoDaProtecaoDoCatalogo> Registrar(
@@ -78,12 +79,18 @@ public sealed class ManifestacoesDoCiclo
             throw new InvalidOperationException("O circuito está em outro ciclo que não o das manifestações carregadas.");
         }
 
-        return (lido == circuito.Ciclo, circuito.Situacao) switch
-        {
-            (false, _) => new(ProtecaoDoCatalogoErrorCodes.CicloMudou, "O ciclo de aprovação do item mudou depois de lido; releia o item."),
-            (true, not SituacaoDaAprovacao.Solicitada) => new(
-                ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao, "Só o item que está numa solicitação recebe manifestação técnica."),
-            _ => null,
-        };
+        return lido == circuito.Ciclo
+            ? RecusaDaSituacao(circuito.Situacao)
+            : new(ProtecaoDoCatalogoErrorCodes.CicloMudou, "O ciclo de aprovação do item mudou depois de lido; releia o item.");
     }
+
+    // No ciclo lido, o item pendente nunca foi solicitado nele; o aprovado, o reprovado e o com ajuste recomendado já
+    // foram decididos depois da leitura (UNI-REQ-0374).
+    private static DomainError? RecusaDaSituacao(SituacaoDaAprovacao situacao) => situacao switch
+    {
+        SituacaoDaAprovacao.Solicitada => null,
+        SituacaoDaAprovacao.Pendente => new(
+            ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao, "Só o item que está numa solicitação recebe manifestação técnica."),
+        _ => new(ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada, "O item foi decidido depois da leitura; releia o item."),
+    };
 }

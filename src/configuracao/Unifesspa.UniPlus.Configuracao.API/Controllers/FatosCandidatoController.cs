@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.API.Controllers;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,18 +20,14 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o
-/// catálogo de fatos do candidato (UNI-REQ-0077, UNI-REQ-0143, ADR-0136), e a manutenção pelo
-/// permissão de manter: cadastro de fato declarado e de derivado por regra, edição de
-/// nome e descrição, desativação, valores de domínio, regras padrão do derivado e aceite da
-/// recomendação da proteção de dados.
+/// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o catálogo de fatos do candidato
+/// (UNI-REQ-0077, UNI-REQ-0143, ADR-0136) —, e a manutenção pelo administrador do cadastro de fatos, com a permissão de
+/// manter: cadastro de fato declarado e de derivado por regra, edição de nome e descrição, desativação, valores de
+/// domínio, regras padrão do derivado e aceite da recomendação de ajuste que o Representante do controlador fez na
+/// proteção de dados do fato. O administrador do cadastro lê também os atos e as manifestações técnicas da proteção.
 /// </summary>
 [ApiController]
 [Authorize]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public.")]
 public sealed class FatosCandidatoController : ControllerBase
 {
     private const string ResourceTagAdmin = "admin-fatos-candidato";
@@ -214,7 +208,7 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
-    /// Altera os eixos do fato que o administrador cadastrou — domínio, cardinalidade, fonte dos
+    /// Altera os eixos do fato que o administrador do cadastro cadastrou — domínio, cardinalidade, fonte dos
     /// valores, formato, escopo, ponto de resolução e proteção de dados —, no subconjunto que o tipo
     /// dele aceita. Código, origem e vínculo não mudam. A alteração que deixaria de valer uma regra
     /// padrão, um agregado, um modelo de formulário ou a regra de uma modalidade é recusada, com a
@@ -254,8 +248,8 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
-    /// Aceita a classificação que a proteção de dados recomendou ao negar o fato, inclusive o de sistema e o
-    /// semeado: o fato fica aprovado com ela, sem nova solicitação, e a proteção de dados é avisada.
+    /// Aceita a classificação que o Representante do controlador recomendou no ajuste do fato, inclusive o de sistema e o
+    /// semeado: o fato fica aprovado com ela, sem nova solicitação, e os Representantes do controlador são avisados.
     /// </summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/aceite-da-recomendacao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
@@ -300,7 +294,34 @@ public sealed class FatosCandidatoController : ControllerBase
         return atos is null ? NotFound() : Ok(atos);
     }
 
-    /// <summary>Reativa o fato do administrador, que volta a aceitar vínculos novos.</summary>
+    /// <summary>
+    /// Todas as manifestações técnicas sobre a proteção de dados do fato do candidato, de todos os ciclos, com o texto, o nome
+    /// de quem se manifestou e a situação de cada uma: vigente, substituída ou encerrada (UNI-REQ-0374). Quem consulta o cadastro de fatos do candidato as lê sem poder se manifestar nem decidir; o Encarregado de dados, pela permissão de consultar a proteção de dados.
+    /// A leitura é registrada antes da resposta conforme a classe da permissão que a autorizou; sem o registro, é
+    /// recusada com 503.
+    /// </summary>
+    [HttpGet("admin/fatos-candidato/{id:guid}/protecao/manifestacoes")]
+    [ExigePermissao<PermissaoConfiguracao>(
+        PermissaoConfiguracao.FatosCandidatoConsultar,
+        ResourceTipo = ResourceTiposConfiguracao.FatoCandidato,
+        OuPermissao = PermissaoConfiguracao.ProtecaoDoCatalogoConsultar)]
+    [VendorMediaType(Resource = "protecao-do-catalogo-manifestacao", Versions = [1])]
+    [ProducesResponseType(typeof(IReadOnlyList<ManifestacaoDaProtecaoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> ListarManifestacoesDaProtecao(Guid id, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<ManifestacaoDaProtecaoDto>? manifestacoes = await _queryBus
+            .Send(new ListarManifestacoesDoItemDaProtecaoQuery(CadastroDaProtecaoDoCatalogo.Fato, id), cancellationToken)
+            .ConfigureAwait(false);
+
+        return manifestacoes is null ? NotFound() : Ok(manifestacoes);
+    }
+
+    /// <summary>Reativa o fato cadastrado pelo administrador do cadastro, que volta a aceitar vínculos novos.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/ativacao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
@@ -314,7 +335,7 @@ public sealed class FatosCandidatoController : ControllerBase
         Enviar(new ReativarFatoCandidatoCommand(id), cancellationToken);
 
     /// <summary>
-    /// Desativa o fato do administrador: vínculos novos são recusados, e o processo que já o usa
+    /// Desativa o fato cadastrado pelo administrador do cadastro: vínculos novos são recusados, e o processo que já o usa
     /// continua com ele. O fato não é apagado.
     /// </summary>
     [HttpDelete("admin/fatos-candidato/{id:guid}")]
@@ -346,7 +367,7 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
-    /// Corrige a descrição e a orientação de um valor do fato do administrador. O código do valor
+    /// Corrige a descrição e a orientação de um valor do fato cadastrado pelo administrador do cadastro. O código do valor
     /// não muda: mudar o sentido de uma opção é acrescentar outro valor e desativar o antigo.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/valores/{codigo}")]
@@ -366,7 +387,7 @@ public sealed class FatosCandidatoController : ControllerBase
     }
 
     /// <summary>
-    /// Reordena os valores do fato do administrador pela lista completa de códigos, ativos e
+    /// Reordena os valores do fato cadastrado pelo administrador do cadastro pela lista completa de códigos, ativos e
     /// desativados. Fica fora de <c>valores/</c> porque colidiria com um valor de código ORDEM.
     /// </summary>
     [HttpPut("admin/fatos-candidato/{id:guid}/ordem-dos-valores")]
@@ -385,7 +406,7 @@ public sealed class FatosCandidatoController : ControllerBase
         return Enviar(new ReordenarValoresDominioCommand(id, request.Codigos), cancellationToken);
     }
 
-    /// <summary>Reativa um valor do fato do administrador.</summary>
+    /// <summary>Reativa um valor do fato cadastrado pelo administrador do cadastro.</summary>
     [HttpPost("admin/fatos-candidato/{id:guid}/valores/{codigo}/ativacao")]
     [ExigePermissao<PermissaoConfiguracao>(PermissaoConfiguracao.FatosCandidatoManter, ResourceTipo = ResourceTiposConfiguracao.FatoCandidato)]
     [RequiresIdempotencyKey]
@@ -399,7 +420,7 @@ public sealed class FatosCandidatoController : ControllerBase
         Enviar(new ReativarValorDominioCommand(id, codigo), cancellationToken);
 
     /// <summary>
-    /// Desativa um valor do fato do administrador: condição nova que o cite é recusada, e a que já o
+    /// Desativa um valor do fato cadastrado pelo administrador do cadastro: condição nova que o cite é recusada, e a que já o
     /// citava continua. O código do valor nunca é removido nem renomeado.
     /// </summary>
     [HttpDelete("admin/fatos-candidato/{id:guid}/valores/{codigo}")]

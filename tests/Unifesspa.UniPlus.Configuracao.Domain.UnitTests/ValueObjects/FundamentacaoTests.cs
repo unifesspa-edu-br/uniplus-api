@@ -62,6 +62,23 @@ public sealed class FundamentacaoTests
         erros.Select(static e => e.Error.Code).Should().Equal(esperados);
     }
 
+    [Theory(DisplayName = "O limite conta caracteres, e não unidades UTF-16: 2.000 emojis são aceitos; 2.001, recusados")]
+    [InlineData(2000, true)]
+    [InlineData(2001, false)]
+    public void Ler_LimiteEmCaracteres(int emojis, bool aceito)
+    {
+        List<FieldError> erros = [];
+        string texto = string.Concat(Enumerable.Repeat("\U0001F512", emojis));
+
+        Fundamentacao? lida = Fundamentacao.Ler(texto, obrigatoria: false, RecusasDaFundamentacao.DaJustificativa, erros);
+
+        (lida is not null, erros.Count).Should().Be((aceito, aceito ? 0 : 1));
+    }
+
+    [Fact(DisplayName = "A reidratação conta caracteres: o texto gravado com 2.000 emojis é aceito")]
+    public void Analisar_EmojisNoLimite_Aceita() =>
+        Fundamentacao.Analisar(string.Concat(Enumerable.Repeat("\U0001F512", 2000))).Valor.Should().HaveLength(4000);
+
     [Fact(DisplayName = "A reidratação aceita o texto gravado e falha alto no que não poderia ter sido gravado")]
     public void Analisar_TextoForaDaForma_Falha()
     {

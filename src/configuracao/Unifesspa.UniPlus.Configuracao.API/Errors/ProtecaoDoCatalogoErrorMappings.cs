@@ -38,7 +38,7 @@ internal static class ProtecaoDoCatalogoErrorMappings
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.sem_recomendacao_para_aceitar",
-                "O item não tem ajuste recomendado pela proteção de dados: não há recomendação a aceitar")),
+                "O item não tem ajuste recomendado pelo Representante do controlador: não há recomendação a aceitar")),
 
         new(ProtecaoDoCatalogoErrorCodes.RecomendacaoIncompativelComAHipoteseLegal,
             new DomainErrorMapping(
@@ -161,6 +161,24 @@ internal static class ProtecaoDoCatalogoErrorMappings
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.configuracao.protecao_do_catalogo.ciclo_invalido",
                 "Ciclo de aprovação ausente ou inválido")),
+
+        new(ProtecaoDoCatalogoErrorCodes.ManifestacoesNoCicloInvalida,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.protecao_do_catalogo.manifestacoes_no_ciclo_invalida",
+                "Contagem de manifestações lida no item ausente ou inválida")),
+
+        new(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.protecao_do_catalogo.manifestacao_nao_lida",
+                "Há manifestação técnica registrada depois da leitura; releia o item")),
+
+        new(ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada,
+            new DomainErrorMapping(
+                StatusCodes.Status409Conflict,
+                "uniplus.configuracao.protecao_do_catalogo.decisao_ja_tomada",
+                "O item foi decidido depois da leitura; releia o item")),
 
         new(ProtecaoDoCatalogoErrorCodes.CicloMudou,
             new DomainErrorMapping(

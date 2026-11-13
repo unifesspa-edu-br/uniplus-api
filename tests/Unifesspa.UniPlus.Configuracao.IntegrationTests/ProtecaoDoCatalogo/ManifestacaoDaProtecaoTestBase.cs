@@ -60,12 +60,16 @@ public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBa
         HttpClient client, Persona quem, string cadastro, Guid id, string decisao, string? justificativa = null, string? recomendada = null) =>
         DecidirAsync(client, quem, new(cadastro, id, decisao, Classificacao(cadastro), recomendada, justificativa));
 
+    /// <summary>A decisão de Betina, Representante do controlador, sobre o que ela leu antes, e não sobre o item de agora.</summary>
+    private protected static Task<HttpResponseMessage> DecidirSobreALeituraAsync(HttpClient client, Decisao decisao, LeituraDoCircuitoLida lida) =>
+        DecidirAsync(client, Betina, decisao with { Lida = lida });
+
     private protected static Task<HttpResponseMessage> AceitarAsync(HttpClient client, string cadastro, Guid id) =>
         Enviar(client, HttpMethod.Post, $"{(cadastro == "FATO" ? Fatos : Tipos)}/{id}/aceite-da-recomendacao", Isabella);
 
-    private protected static async Task<JsonElement> DetalheAsync(HttpClient client, string cadastro, Guid id)
+    private protected static async Task<JsonElement> DetalheAsync(HttpClient client, string cadastro, Guid id, Persona? quem = null)
     {
-        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/{Rota(cadastro)}/{id}", Betina);
+        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/{Rota(cadastro)}/{id}", quem ?? Betina);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
         return await resposta.Content.ReadFromJsonAsync<JsonElement>();
     }

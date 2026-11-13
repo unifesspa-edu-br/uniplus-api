@@ -90,18 +90,23 @@ public abstract class HistoricoDaProtecaoTestBase
     private protected static Task<HttpResponseMessage> SolicitarAsync(HttpClient client, Persona quem, string cadastro, Guid id) =>
         SolicitarAsync(client, quem, (cadastro, id));
 
-    private protected static Task<HttpResponseMessage> DecidirAsync(HttpClient client, Persona quem, Decisao decisao) =>
-        Enviar(client, HttpMethod.Post, Base, quem, new
-        {
-            cadastro = decisao.Cadastro,
-            itemId = decisao.ItemId,
-            decisao = decisao.Resultado,
-            classificacaoProtecao = decisao.Classificacao,
-            hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
-            finalidadeTratamento = Finalidade,
-            classificacaoRecomendada = decisao.Recomendada,
-            justificativa = decisao.Justificativa,
-        });
+    // A decisão leva o ciclo e a contagem de manifestações lidos no item; sem a leitura explícita, quem decide lê o
+    // detalhe logo antes de enviar.
+    private protected static async Task<HttpResponseMessage> DecidirAsync(HttpClient client, Persona quem, Decisao decisao) =>
+        await Enviar(client, HttpMethod.Post, Base, quem, CorpoDaDecisao(
+            decisao, decisao.Lida ?? await LerOCircuitoAsync(client, quem, decisao.Cadastro, decisao.ItemId)));
+
+    /// <summary>O ciclo e a contagem de manifestações do item, como o detalhe da proteção os mostra a <paramref name="quem"/>.</summary>
+    private protected static async Task<LeituraDoCircuitoLida> LerOCircuitoAsync(HttpClient client, Persona quem, string cadastro, Guid id)
+    {
+        HttpResponseMessage resposta = await Enviar(client, HttpMethod.Get, $"{Base}/{(cadastro == "FATO" ? "fatos" : "tipos-documento")}/{id}", quem);
+        JsonElement aprovacao = resposta.IsSuccessStatusCode
+            ? (await resposta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("aprovacao")
+            : default;
+        return aprovacao.ValueKind == JsonValueKind.Object
+            ? new(aprovacao.GetProperty("ciclo").GetInt32(), aprovacao.GetProperty("manifestacoesNoCiclo").GetInt32())
+            : new(1, 0);
+    }
 
     private protected static async Task<JsonElement> ObterFatoAsync(HttpClient client, Guid id)
     {
@@ -193,5 +198,25 @@ public abstract class HistoricoDaProtecaoTestBase
     private protected sealed record Persona(string Sub, string Nome);
 
     private protected sealed record Decisao(
-        string Cadastro, Guid ItemId, string Resultado, string Classificacao, string? Recomendada = null, string? Justificativa = null);
+        string Cadastro, Guid ItemId, string Resultado, string Classificacao, string? Recomendada = null, string? Justificativa = null)
+    {
+        /// <summary>A leitura do circuito que a decisão leva; nula para ler o detalhe logo antes de enviar.</summary>
+        public LeituraDoCircuitoLida? Lida { get; init; }
+    }
+
+    private protected sealed record LeituraDoCircuitoLida(int Ciclo, int Manifestacoes);
+
+    private static object CorpoDaDecisao(Decisao decisao, LeituraDoCircuitoLida lida) => new
+    {
+        cadastro = decisao.Cadastro,
+        itemId = decisao.ItemId,
+        decisao = decisao.Resultado,
+        classificacaoProtecao = decisao.Classificacao,
+        hipoteseLegal = "CUMPRIMENTO_OBRIGACAO_LEGAL",
+        finalidadeTratamento = Finalidade,
+        ciclo = lida.Ciclo,
+        manifestacoesNoCiclo = lida.Manifestacoes,
+        classificacaoRecomendada = decisao.Recomendada,
+        justificativa = decisao.Justificativa,
+    };
 }

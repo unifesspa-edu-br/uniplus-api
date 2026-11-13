@@ -23,7 +23,8 @@ internal static class ProtecaoDoCatalogoMapping
             aprovacao.Justificativa,
             aprovacao.AceitaEm,
             aprovacao.ManifestadaEm,
-            aprovacao.ManifestacaoDesfavoravelVigente);
+            aprovacao.ManifestacaoDesfavoravelVigente,
+            aprovacao.ManifestacoesNoCiclo);
     }
 
     public static ItemDaProtecaoDoCatalogoDto ToItemDaProtecao(this TipoDocumento tipo)

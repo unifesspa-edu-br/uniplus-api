@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -54,11 +55,11 @@ public sealed class PedidoDeDecisaoTests
         pedido.Errors.Select(static e => e.Error.Code).Should().Equal(aceita ? [] : new[] { ProtecaoDoCatalogoErrorCodes.JustificativaMuitoLonga });
     }
 
-    [Fact(DisplayName = "O cadastro, a decisão e a proteção conferida inválidos saem juntos, cada um no seu campo")]
+    [Fact(DisplayName = "O cadastro, a decisão, a proteção conferida e a leitura do circuito inválidos saem juntos, cada um no seu campo")]
     public void Ler_FormaInvalida_AcumulaRecusas()
     {
         Result<PedidoDeDecisao> pedido = PedidoDeDecisao.Ler(
-            new DecidirProtecaoDoCatalogoCommand("MODALIDADE", Guid.NewGuid(), null, "SECRETISSIMO", "NAO_EXISTE", " "));
+            new DecidirProtecaoDoCatalogoCommand("MODALIDADE", Guid.NewGuid(), null, "SECRETISSIMO", "NAO_EXISTE", " ", 0, -1));
 
         pedido.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -67,10 +68,22 @@ public sealed class PedidoDeDecisaoTests
             ("classificacaoProtecao", ProtecaoDoCatalogoErrorCodes.ProtecaoConferidaInvalida),
             ("hipoteseLegal", ProtecaoDoCatalogoErrorCodes.ProtecaoConferidaInvalida),
             ("finalidadeTratamento", ProtecaoDoCatalogoErrorCodes.ProtecaoConferidaInvalida),
+            ("ciclo", ProtecaoDoCatalogoErrorCodes.CicloInvalido),
+            ("manifestacoesNoCiclo", ProtecaoDoCatalogoErrorCodes.ManifestacoesNoCicloInvalida),
         ]);
     }
 
+    [Fact(DisplayName = "A decisão leva o ciclo e a contagem de manifestações que o Representante do controlador leu")]
+    public void Ler_LevaALeituraDoCircuito() =>
+        PedidoDeDecisao.Ler(Comando("APROVAR") with { Ciclo = 2, ManifestacoesNoCiclo = 3 }).Value!.Lida
+            .Should().Be(new LeituraDoCircuito(new CicloDaAprovacao(2), 3));
+
+    [Fact(DisplayName = "Sem o ciclo e a contagem de manifestações lidos, a decisão é recusada nos dois campos")]
+    public void Ler_SemLeituraDoCircuito_Recusa() =>
+        PedidoDeDecisao.Ler(Comando("APROVAR") with { Ciclo = null, ManifestacoesNoCiclo = null }).Errors.Select(static e => e.Field)
+            .Should().BeEquivalentTo("ciclo", "manifestacoesNoCiclo");
+
     private static DecidirProtecaoDoCatalogoCommand Comando(
         string decisao, Guid? id = null, string cadastro = "TIPO_DOCUMENTO", string? recomendada = null, string? justificativa = null) =>
-        new(cadastro, id ?? Guid.CreateVersion7(), decisao, "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, recomendada, justificativa);
+        new(cadastro, id ?? Guid.CreateVersion7(), decisao, "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, 1, 0, recomendada, justificativa);
 }

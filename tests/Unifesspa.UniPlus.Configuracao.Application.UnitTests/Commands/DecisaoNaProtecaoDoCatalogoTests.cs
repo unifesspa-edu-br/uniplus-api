@@ -20,8 +20,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using static Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport.CatalogoDeProtecaoDeTeste;
 
 /// <summary>
-/// A decisão da proteção de dados sobre o tipo de documento e o fato que estão numa solicitação (ADR-0153), diante das
-/// manifestações técnicas vigentes (UNI-REQ-0374).
+/// A decisão do Representante do controlador sobre o tipo de documento e o fato que estão numa solicitação (ADR-0153),
+/// diante das manifestações técnicas vigentes (UNI-REQ-0374).
 /// </summary>
 public sealed class DecisaoNaProtecaoDoCatalogoTests
 {
@@ -31,6 +31,9 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
     private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+
+    // O que o Representante do controlador leu do circuito do último item montado no cenário.
+    private (int Ciclo, int Manifestacoes) _lida = (1, 0);
 
     [Fact(DisplayName = "O ajuste do tipo muda o circuito e registra o ato com a recomendação, a justificativa e quem decidiu")]
     public async Task Ajuste_RegistraOAto()
@@ -159,6 +162,42 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
+    [Fact(DisplayName = "A manifestação registrada depois da leitura recusa a decisão por conflito, sem mudar nem gravar")]
+    public async Task ManifestacaoDepoisDaLeitura_Recusa()
+    {
+        ItemSobAprovacaoBuilder montagem = new ItemSobAprovacaoBuilder().Solicitado();
+        TipoDocumento laudo = Tipo(montagem.ComManifestacao("ADEQUADA", texto: null));
+        _lida = (1, 0);
+
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR");
+
+        resultado.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+        laudo.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Solicitada);
+        await _unitOfWork.DidNotReceiveWithAnyArgs().SalvarAlteracoesAsync(default);
+    }
+
+    [Fact(DisplayName = "A proteção editada e a manifestação registrada depois da leitura saem juntas no lote de conflitos")]
+    public async Task ProtecaoEManifestacaoDepoisDaLeitura_AcumulaOsConflitos()
+    {
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado().ComManifestacao("INADEQUADA"));
+        _lida = (1, 0);
+
+        Result resultado = await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR", classificacao: "SENSIVEL");
+
+        resultado.Errors.Select(static e => e.Error.Code).Should().Equal(
+            ProtecaoDoCatalogoErrorCodes.ProtecaoMudou, ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+        _atos.DidNotReceiveWithAnyArgs().Adicionar(default!);
+    }
+
+    [Fact(DisplayName = "O ciclo lido diferente do corrente recusa a decisão como manifestação não lida")]
+    public async Task CicloDiferenteDoLido_Recusa()
+    {
+        TipoDocumento laudo = Tipo(new ItemSobAprovacaoBuilder().Solicitado());
+        _lida = (2, 0);
+
+        (await DecidirAsync("TIPO_DOCUMENTO", laudo.Id, "APROVAR")).Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ManifestacaoNaoLida);
+    }
+
     [Fact(DisplayName = "O item inexistente responde o não encontrado do cadastro; a forma inválida não lê nada")]
     public async Task Inexistente_EFormaInvalida()
     {
@@ -172,6 +211,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         TipoDocumento tipo = montagem.Tipo();
         _tipos.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
+        _lida = (tipo.Aprovacao.Ciclo.Numero, tipo.Aprovacao.ManifestacoesNoCiclo);
         return tipo;
     }
 
@@ -179,6 +219,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     {
         FatoCandidato fato = montagem.Fato();
         _fatos.ObterPorIdAsync(fato.Id, Arg.Any<CancellationToken>()).Returns(fato);
+        _lida = (fato.Aprovacao.Ciclo.Numero, fato.Aprovacao.ManifestacoesNoCiclo);
         return fato;
     }
 
@@ -188,7 +229,8 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     private Task<Result> DecidirAsync(
         string cadastro, Guid id, string decisao, string? recomendada = null, string? justificativa = null, string classificacao = "INTERNO") =>
         DecidirProtecaoDoCatalogoCommandHandler.Handle(
-            new DecidirProtecaoDoCatalogoCommand(cadastro, id, decisao, classificacao, "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, recomendada, justificativa),
+            new DecidirProtecaoDoCatalogoCommand(
+                cadastro, id, decisao, classificacao, "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, _lida.Ciclo, _lida.Manifestacoes, recomendada, justificativa),
             new DecisaoNaProtecaoDoCatalogo(new ItensSobAprovacao(_tipos, _fatos), _atos, _unitOfWork, Relogio()),
             UsuarioIsabella(),
             CancellationToken.None);

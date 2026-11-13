@@ -12,13 +12,13 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// <summary>Item da solicitação que não existe ou que não está pendente de solicitação.</summary>
     public const string ItemNaoPendente = "ProtecaoDoCatalogo.ItemNaoPendente";
 
-    /// <summary>Decisão da proteção de dados sobre item que não está em solicitação.</summary>
+    /// <summary>Decisão do Representante do controlador sobre item que não está em solicitação.</summary>
     public const string ItemForaDeSolicitacao = "ProtecaoDoCatalogo.ItemForaDeSolicitacao";
 
     /// <summary>Ajuste recomendado sem a classificação recomendada, ou com uma fora do vocabulário.</summary>
     public const string RecomendacaoObrigatoria = "ProtecaoDoCatalogo.RecomendacaoObrigatoria";
 
-    /// <summary>Aceite da recomendação num item em que a proteção de dados não recomendou ajuste.</summary>
+    /// <summary>Aceite da recomendação num item em que o Representante do controlador não recomendou ajuste.</summary>
     public const string SemRecomendacaoParaAceitar = "ProtecaoDoCatalogo.SemRecomendacaoParaAceitar";
 
     /// <summary>
@@ -40,13 +40,13 @@ public static class ProtecaoDoCatalogoErrorCodes
     public const string ConflitoDeConcorrencia = "ProtecaoDoCatalogo.ConflitoDeConcorrencia";
 
     /// <summary>
-    /// A proteção que o aprovador conferiu ausente, ou com classificação ou hipótese legal fora do vocabulário: a
+    /// A proteção que o Representante do controlador conferiu ausente, ou com classificação ou hipótese legal fora do vocabulário: a
     /// decisão não chega a ser comparada com a proteção vigente.
     /// </summary>
     public const string ProtecaoConferidaInvalida = "ProtecaoDoCatalogo.ProtecaoConferidaInvalida";
 
     /// <summary>
-    /// A proteção vigente do item difere da que o aprovador conferiu: ele foi editado depois de visto. Reler o item e
+    /// A proteção vigente do item difere da que o Representante do controlador conferiu: ele foi editado depois de visto. Reler o item e
     /// decidir de novo resolve; repetir a mesma decisão nunca dá certo.
     /// </summary>
     public const string ProtecaoMudou = "ProtecaoDoCatalogo.ProtecaoMudou";
@@ -95,6 +95,23 @@ public static class ProtecaoDoCatalogoErrorCodes
     /// se manifesta não viu. Reler o item resolve; repetir a mesma manifestação nunca dá certo.
     /// </summary>
     public const string CicloMudou = "ProtecaoDoCatalogo.CicloMudou";
+
+    /// <summary>
+    /// A decisão sem a contagem de manifestações que o Representante do controlador leu no item, ou com ela negativa.
+    /// </summary>
+    public const string ManifestacoesNoCicloInvalida = "ProtecaoDoCatalogo.ManifestacoesNoCicloInvalida";
+
+    /// <summary>
+    /// Houve manifestação técnica registrada, ou reinício do ciclo, depois da leitura do item pelo Representante do
+    /// controlador: a decisão falaria do que ele não viu. Reler o item resolve; repetir a mesma decisão nunca dá certo.
+    /// </summary>
+    public const string ManifestacaoNaoLida = "ProtecaoDoCatalogo.ManifestacaoNaoLida";
+
+    /// <summary>
+    /// A manifestação chegou com o ciclo lido, mas o Representante do controlador já decidiu o item nesse ciclo depois da
+    /// leitura: a manifestação falaria de uma solicitação que não está mais aberta. Reler o item resolve.
+    /// </summary>
+    public const string DecisaoJaTomada = "ProtecaoDoCatalogo.DecisaoJaTomada";
 
     /// <summary>Aceite da recomendação num item reprovado: a reprovação não recomenda classificação, o item só se edita.</summary>
     public const string AceiteDeItemReprovado = "ProtecaoDoCatalogo.AceiteDeItemReprovado";

@@ -104,19 +104,19 @@ public sealed class ManifestacoesDoCicloTests
         tipo.Aprovacao.ManifestacaoDesfavoravelVigente.Should().BeFalse();
     }
 
-    [Theory(DisplayName = "O item fora de solicitação não recebe manifestação, e o circuito não muda")]
-    [InlineData(SituacaoDaAprovacao.Pendente)]
-    [InlineData(SituacaoDaAprovacao.Aprovada)]
-    [InlineData(SituacaoDaAprovacao.AjusteRecomendado)]
-    [InlineData(SituacaoDaAprovacao.Reprovada)]
-    public void Registrar_ForaDeSolicitacao_RecusaSemMudar(SituacaoDaAprovacao situacao)
+    [Theory(DisplayName = "O item decidido no ciclo lido recusa a manifestação por conflito; o pendente, por estar fora de solicitação; e o circuito não muda")]
+    [InlineData(SituacaoDaAprovacao.Pendente, ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao)]
+    [InlineData(SituacaoDaAprovacao.Aprovada, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
+    [InlineData(SituacaoDaAprovacao.AjusteRecomendado, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
+    [InlineData(SituacaoDaAprovacao.Reprovada, ProtecaoDoCatalogoErrorCodes.DecisaoJaTomada)]
+    public void Registrar_ForaDeSolicitacao_RecusaSemMudar(SituacaoDaAprovacao situacao, string codigo)
     {
         TipoDocumento tipo = Construir(situacao);
 
         Result<ManifestacaoDaProtecaoDoCatalogo> registrada = Do(tipo).Registrar(tipo.Aprovacao, CicloDaAprovacao.Primeiro, Inadequada(), Kevin, Instante);
 
-        registrada.Error!.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.ItemForaDeSolicitacao);
-        (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacaoDesfavoravelVigente).Should().Be(((DateTimeOffset?)null, false));
+        registrada.Error!.Code.Should().Be(codigo);
+        (tipo.Aprovacao.ManifestadaEm, tipo.Aprovacao.ManifestacoesNoCiclo).Should().Be(((DateTimeOffset?)null, 0));
     }
 
     [Fact(DisplayName = "Os eventos de outro item ou de outro ciclo, e o circuito em outro ciclo, são erro de programação")]

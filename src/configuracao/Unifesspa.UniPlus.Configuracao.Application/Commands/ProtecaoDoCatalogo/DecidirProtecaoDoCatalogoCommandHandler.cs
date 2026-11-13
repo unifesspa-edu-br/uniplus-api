@@ -5,9 +5,9 @@ using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Aplica a decisão da proteção de dados ao tipo de documento ou ao fato. A forma do comando é conferida antes de
-/// qualquer leitura (ADR-0125); a permissão de aprovar é do endpoint, e o item que não está numa solicitação é recusado
-/// pelo próprio circuito do item.
+/// Aplica a decisão do Representante do controlador ao tipo de documento ou ao fato. A forma do comando é conferida
+/// antes de qualquer leitura (ADR-0125); a permissão de aprovar é do endpoint, e o item que não está numa solicitação é
+/// recusado pelo próprio circuito do item.
 /// </summary>
 public static class DecidirProtecaoDoCatalogoCommandHandler
 {

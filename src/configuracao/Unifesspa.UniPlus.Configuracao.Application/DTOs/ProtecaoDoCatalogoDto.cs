@@ -2,18 +2,21 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 
 /// <summary>
 /// Onde um tipo de documento ou fato do candidato está no circuito de aprovação da proteção de dados (ADR-0153): a
-/// situação, os instantes de cada passo, a classificação que a proteção de dados recomendou no ajuste e a justificativa
-/// da decisão. Quem agiu fica registrado e não sai na resposta.
+/// situação, os instantes de cada passo, a classificação que o Representante do controlador recomendou no ajuste e a
+/// justificativa da decisão. Quem agiu fica registrado e não sai na resposta.
 /// </summary>
 /// <param name="Situacao">Token canônico: <c>PENDENTE</c>, <c>SOLICITADA</c>, <c>APROVADA</c>, <c>AJUSTE_RECOMENDADO</c> ou <c>REPROVADA</c>.</param>
-/// <param name="Ciclo">O ciclo de aprovação corrente, que a manifestação informa ao se registrar.</param>
+/// <param name="Ciclo">O ciclo de aprovação corrente, que a manifestação e a decisão informam ao se registrar.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação, quando o ajuste foi recomendado.</param>
 /// <param name="Justificativa">
-/// Motivo do ajuste ou da reprovação, quando a proteção de dados o escreveu; sempre presente na reprovação. A
-/// justificativa da aprovação sai no ato da decisão.
+/// Motivo do ajuste ou da reprovação, quando o Representante do controlador o escreveu; sempre presente na
+/// reprovação. A justificativa da aprovação sai no ato da decisão.
 /// </param>
 /// <param name="ManifestadaEm">Instante da última manifestação técnica do ciclo; nulo sem manifestação.</param>
 /// <param name="ManifestacaoDesfavoravel">Se há manifestação vigente recomenda ajuste ou inadequada no ciclo.</param>
+/// <param name="ManifestacoesNoCiclo">
+/// Quantas manifestações técnicas (registros e substituições) o ciclo recebeu; a decisão a informa como foi lida.
+/// </param>
 public sealed record AprovacaoDaProtecaoDto(
     string Situacao,
     int Ciclo,
@@ -23,7 +26,8 @@ public sealed record AprovacaoDaProtecaoDto(
     string? Justificativa,
     DateTimeOffset? AceitaEm,
     DateTimeOffset? ManifestadaEm,
-    bool ManifestacaoDesfavoravel);
+    bool ManifestacaoDesfavoravel,
+    int ManifestacoesNoCiclo);
 
 /// <summary>Um tipo de documento ou fato do candidato com a proteção que aguarda aprovação.</summary>
 /// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
@@ -37,7 +41,9 @@ public sealed record ItemDaProtecaoDoCatalogoDto(
     string HipoteseLegal,
     AprovacaoDaProtecaoDto Aprovacao);
 
-/// <summary>Um tipo de documento ou fato do candidato que o administrador escolheu enviar à proteção de dados.</summary>
+/// <summary>
+/// Um tipo de documento ou fato do candidato que o administrador do cadastro escolheu enviar à proteção de dados.
+/// </summary>
 /// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>; comparado sem os espaços das pontas.</param>
 /// <param name="Id">Identificador do tipo de documento ou do fato.</param>
 public sealed record ItemParaSolicitarDto(string? Cadastro, Guid Id);
@@ -46,10 +52,10 @@ public sealed record ItemParaSolicitarDto(string? Cadastro, Guid Id);
 public sealed record SolicitacaoDaProtecaoDto(int TiposDeDocumento, int Fatos);
 
 /// <summary>
-/// O que a proteção de dados precisa ver para decidir sobre um tipo de documento ou fato do candidato (ADR-0153): a
-/// proteção proposta, a situação da aprovação e o que o item é. Exatamente um dos blocos <paramref name="Fato"/> e
-/// <paramref name="TipoDocumento"/> vem preenchido, conforme o <paramref name="Tipo"/>. Quem enviou ou decidiu fica
-/// registrado e não sai na resposta.
+/// O que o Representante do controlador precisa ver para decidir sobre um tipo de documento ou fato do candidato
+/// (ADR-0153): a proteção proposta, a situação da aprovação e o que o item é. Exatamente um dos blocos <paramref
+/// name="Fato"/> e <paramref name="TipoDocumento"/> vem preenchido, conforme o <paramref name="Tipo"/>. Quem enviou ou
+/// decidiu fica registrado e não sai na resposta.
 /// </summary>
 /// <param name="Tipo"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
 /// <param name="Fato">O que é o fato; nulo no tipo de documento.</param>
@@ -100,7 +106,7 @@ public sealed record DetalheDoTipoDeDocumentoDto(string Categoria, string? Forma
 /// </summary>
 /// <param name="Ato">Token canônico: <c>SOLICITACAO</c>, <c>APROVACAO</c>, <c>AJUSTE_RECOMENDADO</c>, <c>REPROVACAO</c> ou <c>ACEITE</c>.</param>
 /// <param name="AtorNome">Nome de quem agiu; nulo quando o token não trazia nome.</param>
-/// <param name="ClassificacaoProtecao">Classificação do item no instante do ato; na decisão, a que o aprovador conferiu.</param>
+/// <param name="ClassificacaoProtecao">Classificação do item no instante do ato; na decisão, a que o Representante do controlador conferiu.</param>
 /// <param name="Ciclo">O ciclo de aprovação em que o ato aconteceu.</param>
 /// <param name="ClassificacaoRecomendada">Token canônico da classificação recomendada, só no ajuste recomendado.</param>
 /// <param name="Justificativa">Motivo da decisão: na reprovação, sempre; na aprovação e no ajuste, se escrito.</param>
@@ -118,8 +124,8 @@ public sealed record AtoDaProtecaoDto(
     bool DianteDeManifestacaoDesfavoravel);
 
 /// <summary>
-/// Uma decisão da proteção de dados (aprovação, ajuste recomendado ou reprovação) com o item a que se refere. O
-/// código e o nome são os do item no instante da decisão.
+/// Uma decisão do Representante do controlador (aprovação, ajuste recomendado ou reprovação) com o item a que se
+/// refere. O código e o nome são os do item no instante da decisão.
 /// </summary>
 /// <param name="Cadastro"><c>TIPO_DOCUMENTO</c> ou <c>FATO</c>.</param>
 public sealed record DecisaoDaProtecaoDto(
