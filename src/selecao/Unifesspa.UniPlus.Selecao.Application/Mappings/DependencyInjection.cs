@@ -8,6 +8,7 @@ using Services;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 /// <summary>
 /// Registra os recursos da camada Application do módulo Seleção. CQRS roda
@@ -29,6 +30,7 @@ public static class SelecaoApplicationServiceRegistration
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
+        services.AddScoped<IObterIndicadoresDoProcesso, ObterIndicadoresDoProcesso>();
 
         // A porta lida do catálogo do módulo, para o projetor saber qual permissão atende a cada par.
         services.AddSingleton<IPortaDePermissaoPorPar, PortaDePermissaoPorPar<PermissaoSelecao>>();

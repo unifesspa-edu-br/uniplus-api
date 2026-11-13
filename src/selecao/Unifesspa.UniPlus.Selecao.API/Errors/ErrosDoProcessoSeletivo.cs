@@ -13,6 +13,7 @@ internal static class ErrosDoProcessoSeletivo
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
+        new("Indicadores.ProcessoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.indicadores.processo_nao_encontrado", "Processo não encontrado")),
         // Acesso às operações do processo, decidido por concessão na unidade dona (ADR-0078, ADR-0151).
         new(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.forbidden", "Acesso negado")),
         // Tem a permissão, mas está inscrita no processo (Lei nº 9.784/1999, art. 18, I): atua nele só como candidata.

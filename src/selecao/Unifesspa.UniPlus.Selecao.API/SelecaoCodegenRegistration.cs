@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 
@@ -157,6 +158,10 @@ public static class SelecaoCodegenRegistration
         // Impedimento do servidor inscrito: a porta é registrada por fábrica, e os handlers que a alcançam pelo
         // ponto de decisão a resolvem por service location em vez de construí-la.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IInscricaoDoSujeitoNoProcesso>();
+
+        // Os indicadores usam uma implementação interna para manter a orquestração encapsulada na Application;
+        // o Wolverine resolve essa porta registrada por DI em vez de tentar gerar um construtor para o concreto.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<IObterIndicadoresDoProcesso>();
     }
 
     private static void OptInDasLeiturasDoCronograma(WolverineOptions opts)

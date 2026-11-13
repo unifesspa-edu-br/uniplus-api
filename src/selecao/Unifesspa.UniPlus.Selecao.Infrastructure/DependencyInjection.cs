@@ -108,6 +108,7 @@ public static class SelecaoInfrastructureRegistration
         services.Replace(ServiceDescriptor.Scoped<IInscricaoDoSujeitoNoProcesso>(
             static sp => new InscricaoDoSujeitoNoProcesso(sp.GetRequiredService<SelecaoDbContext>())));
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
+        services.AddScoped<IIndicadoresDoProcessoReader, IndicadoresDoProcessoReader>();
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IIndiceCegoDoCpf, CalculadorDoIndiceCegoDoCpf>();
         services.AddGeoClient();
