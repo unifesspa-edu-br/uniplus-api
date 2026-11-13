@@ -9,6 +9,7 @@ using Interfaces;
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -108,7 +109,8 @@ public sealed class DocumentoAPublicar : EntityBase, IArquivoEnviado
         return erros.Count > 0
             ? Result<DocumentoAPublicar>.ValidationFailure(erros)
             : Result<DocumentoAPublicar>.Success(
-                Pendente(processoSeletivoId, finalidade!.Value, nome!, formato!.Value, clock.GetUtcNow().Add(ttl)));
+                Pendente(
+                    processoSeletivoId, finalidade!.Value, nome!, formato!.Value, (clock.GetUtcNow() + ttl).TruncadoEmMicrossegundos()));
     }
 
     private static FieldError? RecusaDoFormato(FormatoDeDocumento? formato) => formato is not null

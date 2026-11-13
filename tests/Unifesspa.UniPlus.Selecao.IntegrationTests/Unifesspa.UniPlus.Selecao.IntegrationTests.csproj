@@ -59,6 +59,7 @@
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
+    <Compile Include="../Shared/RelogioControlado.cs" Link="RelogioControlado.cs" />
     <Compile Include="../Shared/CongelamentoDeTeste.cs" Link="CongelamentoDeTeste.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />

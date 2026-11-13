@@ -5,6 +5,7 @@ using Enums;
 using Errors;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using ValueObjects;
@@ -101,7 +102,8 @@ public sealed class ArquivoDaApresentacao : EntityBase
 
         return erros.Count > 0
             ? Result<ArquivoDaApresentacao>.ValidationFailure(erros)
-            : Result<ArquivoDaApresentacao>.Success(Pendente(apresentacaoId, inscricaoId, formato!.Value, limite, clock.GetUtcNow().Add(ttl)));
+            : Result<ArquivoDaApresentacao>.Success(Pendente(
+                apresentacaoId, inscricaoId, formato!.Value, limite, (clock.GetUtcNow() + ttl).TruncadoEmMicrossegundos()));
     }
 
     private static FormatoPermitidoEntry? EntradaDoFormato(DocumentoExigido exigencia, FormatoPermitido formato) =>
