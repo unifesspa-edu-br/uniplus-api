@@ -71,38 +71,45 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
         ArgumentNullException.ThrowIfNull(clock);
 
         FormatoDeDocumento? formatoDoModelo = FormatoDoToken(formato);
-        List<FieldError> erros = [];
-        if (formatoDoModelo is null)
-        {
-            erros.Add(new FieldError("formato", new DomainError(
-                ModeloDeDocumentoErrorCodes.FormatoNaoEditavel,
-                "O modelo é um documento editável: DOCX ou ODT. PDF e imagem não são editáveis.")));
-        }
-
         string? nome = NomeDeArquivoEnviado.Normalizar(
             nomeArquivo, formatoDoModelo is { } f ? FormatosDeDocumento.Extensao(f) : string.Empty);
+        List<FieldError> erros = [.. RecusasDoModelo(formatoDoModelo, nome)];
+
+        return erros.Count > 0
+            ? Result<ModeloDeDocumento>.ValidationFailure(erros)
+            : Result<ModeloDeDocumento>.Success(
+                Pendente(processoSeletivoId, nome!, formatoDoModelo!.Value, clock.GetUtcNow().Add(ttl)));
+    }
+
+    private static IEnumerable<FieldError> RecusasDoModelo(FormatoDeDocumento? formato, string? nome)
+    {
+        if (formato is null)
+        {
+            yield return new FieldError("formato", new DomainError(
+                ModeloDeDocumentoErrorCodes.FormatoNaoEditavel,
+                "O modelo é um documento editável: DOCX ou ODT. PDF e imagem não são editáveis."));
+        }
+
         if (nome is null)
         {
-            erros.Add(new FieldError("nomeArquivo", new DomainError(
+            yield return new FieldError("nomeArquivo", new DomainError(
                 ModeloDeDocumentoErrorCodes.NomeArquivoInvalido,
-                $"O nome do arquivo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}.")));
+                $"O nome do arquivo é obrigatório, tem até {NomeArquivoMaxLength} caracteres com a extensão e não tem separador de caminho, caractere de controle nem {NomeDeArquivoEnviado.CaracteresProibidos}."));
         }
+    }
 
-        if (erros.Count > 0)
-        {
-            return Result<ModeloDeDocumento>.ValidationFailure(erros);
-        }
-
+    private static ModeloDeDocumento Pendente(Guid processoSeletivoId, string nome, FormatoDeDocumento formato, DateTimeOffset expiraEm)
+    {
         ModeloDeDocumento modelo = new()
         {
             ProcessoSeletivoId = processoSeletivoId,
-            NomeArquivo = nome!,
-            Formato = formatoDoModelo!.Value,
+            NomeArquivo = nome,
+            Formato = formato,
             Status = StatusArquivoEnviado.Pendente,
-            ExpiraEm = clock.GetUtcNow().Add(ttl),
+            ExpiraEm = expiraEm,
         };
         modelo.ObjectKey = $"selecao/modelos-de-documento/{processoSeletivoId:D}/{modelo.Id:D}.{modelo.Extensao}";
-        return Result<ModeloDeDocumento>.Success(modelo);
+        return modelo;
     }
 
     /// <summary>
@@ -117,8 +124,7 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
 
         if (Status != StatusArquivoEnviado.Pendente)
         {
-            return Result.Failure(new DomainError(
-                ModeloDeDocumentoErrorCodes.StatusInvalidoParaConfirmacao, "Somente um modelo pendente pode ser confirmado."));
+            return Result.Failure(StatusInvalidoParaConfirmacao);
         }
 
         TamanhoBytes = tamanhoBytes;
@@ -144,20 +150,19 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
             return Result.Failure(TamanhoExcedido);
         }
 
-        if (!string.Equals(contentType, ContentType, StringComparison.OrdinalIgnoreCase))
-        {
-            return ConteudoDiverge();
-        }
-
-        return (Formato == FormatoDeDocumento.Docx
-            ? PacoteDeDocumentoDeTexto.ValidarDocx(conteudo)
-            : PacoteDeDocumentoDeTexto.ValidarOdt(conteudo)) switch
-        {
-            VeredictoDoPacote.Valido => Result.Success(),
-            VeredictoDoPacote.ContemMacro => ComMacro(),
-            _ => ConteudoDiverge(),
-        };
+        return string.Equals(contentType, ContentType, StringComparison.OrdinalIgnoreCase)
+            ? ResultadoDoPacote(conteudo)
+            : ConteudoDiverge();
     }
+
+    private Result ResultadoDoPacote(byte[] conteudo) => (Formato == FormatoDeDocumento.Docx
+        ? PacoteDeDocumentoDeTexto.ValidarDocx(conteudo)
+        : PacoteDeDocumentoDeTexto.ValidarOdt(conteudo)) switch
+    {
+        VeredictoDoPacote.Valido => Result.Success(),
+        VeredictoDoPacote.ContemMacro => ComMacro(),
+        _ => ConteudoDiverge(),
+    };
 
     /// <summary>O formato do token do contrato; nulo quando não é editável (DOCX ou ODT).</summary>
     public static FormatoDeDocumento? FormatoDoToken(string? token) => token switch
@@ -174,6 +179,9 @@ public sealed class ModeloDeDocumento : EntityBase, IArquivoEnviado
         FormatoDeDocumento.Odt => "ODT",
         _ => throw new ArgumentOutOfRangeException(nameof(formato), formato, "Formato de modelo sem token."),
     };
+
+    private static DomainError StatusInvalidoParaConfirmacao { get; } = new(
+        ModeloDeDocumentoErrorCodes.StatusInvalidoParaConfirmacao, "Somente um modelo pendente pode ser confirmado.");
 
     private Result ConteudoDiverge() => Result.Failure(new DomainError(
         ModeloDeDocumentoErrorCodes.ConteudoDivergeDoFormato,

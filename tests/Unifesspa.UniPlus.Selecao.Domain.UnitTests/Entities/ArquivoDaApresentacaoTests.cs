@@ -62,6 +62,13 @@ public sealed class ArquivoDaApresentacaoTests
             .Should().ContainSingle(e => e.Error.Code == DocumentoDaInscricaoErrorCodes.TamanhoExcedido);
     }
 
+    [Theory(DisplayName = "Arquivo sem conteúdo declarado é recusado como vazio")]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void IniciarPendente_TamanhoNaoPositivo_RecusaComoVazio(long tamanhoBytes) =>
+        Iniciar(Exigencia(), "application/pdf", tamanhoBytes).Errors
+            .Should().ContainSingle(e => e.Error.Code == DocumentoDaInscricaoErrorCodes.ArquivoVazio);
+
     private static ArquivoDaApresentacao EmVerificacao()
     {
         ArquivoDaApresentacao arquivo = Iniciar(Exigencia(), "application/pdf", 1024).Value!;
