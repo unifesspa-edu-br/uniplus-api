@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
+using System.Globalization;
+
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -58,14 +60,25 @@ public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidade
     public async Task<VersaoDoTermo?> ObterVersaoAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.VersoesDoTermo.AsNoTracking().SingleOrDefaultAsync(v => v.Id == id, cancellationToken).ConfigureAwait(false);
 
-    public async Task<(IReadOnlyList<VersaoDoTermo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarVersoesAsync(
-        Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default)
+    // O número da versão é a ordem que a ADR promete; o Id (UUIDv7) só desempata, porque dois relógios ou o mesmo
+    // milissegundo podem invertê-lo.
+    public async Task<(IReadOnlyList<VersaoDoTermo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarVersoesAsync(
+        string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default)
     {
-        CursorKeysetPage<VersaoDoTermo> page = await CursorKeyset
-            .ApplyAsync(_context.VersoesDoTermo.AsNoTracking(), afterId, limit, direction, cancellationToken)
+        OrderedKeysetPage<VersaoDoTermo> page = await OrderedKeysetCursor
+            .ApplyAsync(
+                _context.VersoesDoTermo.AsNoTracking(),
+                static b => b.Ascending(v => v.Numero).Ascending(v => v.Id),
+                static v => v.Numero.ToString(CultureInfo.InvariantCulture),
+                static (sortKey, id) => new { Numero = NumeroDaSortKey(sortKey), Id = id },
+                afterSortKey,
+                afterId,
+                limit,
+                direction,
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return (page.Items, page.PrevAfterId, page.NextAfterId);
+        return (page.Items, page.Previous, page.Next);
     }
 
     public async Task AdicionarVersaoAsync(VersaoDoTermo versao, CancellationToken cancellationToken = default)
@@ -82,6 +95,9 @@ public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidade
 
     public async Task<TermoNaInstalacao?> ObterExcecaoDaInstalacaoAsync(Guid instalacaoId, CancellationToken cancellationToken = default) =>
         await _context.TermosNaInstalacao.AsNoTracking().SingleOrDefaultAsync(t => t.InstalacaoId == instalacaoId, cancellationToken).ConfigureAwait(false);
+
+    private static int NumeroDaSortKey(string sortKey) =>
+        int.TryParse(sortKey, NumberStyles.None, CultureInfo.InvariantCulture, out int numero) ? numero : throw new CursorAnchorMismatchException();
 
     private Task<int> TravarAsync(string sql, CancellationToken cancellationToken) =>
         _context.Database.ExecuteSqlRawAsync(sql, [TermoDeResponsabilidade.RegistroUnicoId], cancellationToken);

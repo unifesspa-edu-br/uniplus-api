@@ -12,11 +12,11 @@ public sealed record ObterTermoVigenteQuery : IQuery<Result<VersaoDoTermoDto>>;
 public sealed record ObterVersaoDoTermoQuery(Guid Id) : IQuery<Result<VersaoDoTermoDto>>;
 
 /// <summary>O histórico das versões, paginado por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
-public sealed record ListarVersoesDoTermoQuery(Guid? AfterId, int Limit, PaginationDirection Direction)
+public sealed record ListarVersoesDoTermoQuery(string? AfterSortKey, Guid? AfterId, int Limit, PaginationDirection Direction)
     : IQuery<Result<ListarVersoesDoTermoResult>>;
 
-/// <summary>Resultado paginado: as âncoras são os <c>Id</c> de fronteira da janela.</summary>
+/// <summary>Resultado paginado: as âncoras são o número da versão e o <c>Id</c> de fronteira da janela.</summary>
 public sealed record ListarVersoesDoTermoResult(
     IReadOnlyList<VersaoDoTermoResumoDto> Items,
-    Guid? AnteriorAfterId,
-    Guid? ProximoAfterId);
+    (string SortKey, Guid Id)? Anterior,
+    (string SortKey, Guid Id)? Proximo);

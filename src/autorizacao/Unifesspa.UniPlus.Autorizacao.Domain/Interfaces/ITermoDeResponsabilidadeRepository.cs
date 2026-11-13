@@ -24,9 +24,12 @@ public interface ITermoDeResponsabilidadeRepository
 
     Task<VersaoDoTermo?> ObterVersaoAsync(Guid id, CancellationToken cancellationToken = default);
 
-    /// <summary>As versões em ordem de publicação, da primeira à mais recente, paginadas por cursor.</summary>
-    Task<(IReadOnlyList<VersaoDoTermo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarVersoesAsync(
-        Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// As versões em ordem crescente de número, da primeira à mais recente, paginadas por cursor cuja chave de ordenação é
+    /// o número da versão (o <c>Id</c> só desempata).
+    /// </summary>
+    Task<(IReadOnlyList<VersaoDoTermo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)> ListarVersoesAsync(
+        string? afterSortKey, Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken = default);
 
     Task AdicionarVersaoAsync(VersaoDoTermo versao, CancellationToken cancellationToken = default);
 

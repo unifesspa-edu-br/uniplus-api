@@ -19,7 +19,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// A vigência do termo entre a publicação e a criação de pedido protegido, com transações reais sobrepostas (ADR-0162): a
 /// criação lê a vigente com trava compartilhada e a publicação toma a exclusiva. Cada teste segura uma transação aberta,
 /// espera o banco registrar a outra bloqueada e só então confirma; sem a trava compartilhada da criação, os dois primeiros
-/// testes falham, porque nada espera.
+/// testes falham, porque nada espera. O segundo passa pela criação real, pela rota, e prova que o fluxo de criação toma a
+/// trava; o primeiro reproduz no banco os passos da criação para manter a transação dela aberta.
 /// </summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
 public sealed class ConcorrenciaDoTermoNoHostTests : TermoNoHostTestBase
@@ -78,22 +79,45 @@ public sealed class ConcorrenciaDoTermoNoHostTests : TermoNoHostTestBase
         (await ContarVersoesAsync()).Should().Be(2);
     }
 
-    [Fact(DisplayName = "A chave de idempotência guarda a publicação e o conflito; a reapresentação com chave nova cria o pedido")]
-    public async Task Idempotencia_GuardaAPublicacaoEOConflito()
+    [Fact(DisplayName = "A publicação repetida com a mesma chave devolve a resposta guardada, sem executar de novo")]
+    public async Task Idempotencia_DaPublicacao_Reproduz()
+    {
+        using HttpClient diogo = await PublicadorAsync();
+        string chave = Guid.NewGuid().ToString();
+        JsonElement nova = await CorpoAsync(await PublicarAsync(diogo, "segunda versão", Vigente!.Id, chave), HttpStatusCode.Created);
+
+        // Executada de novo, a publicação seria recusada: a vigente esperada já não é a vigente.
+        JsonElement repetida = await CorpoAsync(await PublicarAsync(diogo, "segunda versão", Vigente.Id, chave), HttpStatusCode.Created);
+
+        repetida.GetProperty("id").GetGuid().Should().Be(nova.GetProperty("id").GetGuid());
+        (await ContarVersoesAsync()).Should().Be(2, "a repetição não gravou outra versão");
+    }
+
+    [Fact(DisplayName = "O conflito de divergência libera a chave, que não grava pedido ao repetir; a reapresentação usa chave nova e cria o pedido")]
+    public async Task Idempotencia_DoConflito_LiberaAChave_EAReapresentacaoUsaChaveNova()
     {
         (Guid perfil, Guid unidade) = await CenarioAsync();
-        using HttpClient diogo = await PublicadorAsync();
         using HttpClient betina = Cliente(Betina);
-        string chaveDaPublicacao = Guid.NewGuid().ToString();
-        JsonElement nova = await CorpoAsync(await PublicarAsync(diogo, "segunda versão", Vigente!.Id, chaveDaPublicacao), HttpStatusCode.Created);
-        (await CorpoAsync(await PublicarAsync(diogo, "segunda versão", Vigente.Id, chaveDaPublicacao), HttpStatusCode.Created))
-            .GetProperty("id").GetGuid().Should().Be(nova.GetProperty("id").GetGuid());
+        string chave = Guid.NewGuid().ToString();
+        Guid anterior = Vigente!.Id;
+        await TermoNoHostDeTeste.PublicarAsync(Fixture.Factory.Services, "segunda versão");
+        await ConferirAsync(await PedirAsync(betina, perfil, unidade, anterior, chave: chave), HttpStatusCode.Conflict, "pedido.termo_divergente");
 
-        string chaveDoPedido = Guid.NewGuid().ToString();
-        await ConferirAsync(await PedirAsync(betina, perfil, unidade, Vigente.Id, chave: chaveDoPedido), HttpStatusCode.Conflict, "pedido.termo_divergente");
-        await ConferirAsync(await PedirAsync(betina, perfil, unidade, Vigente.Id, chave: chaveDoPedido), HttpStatusCode.Conflict, "pedido.termo_divergente");
-        (await PedirAsync(betina, perfil, unidade, nova.GetProperty("id").GetGuid())).StatusCode.Should().Be(HttpStatusCode.Created);
-        (await ContarVersoesAsync()).Should().Be(2);
+        // O 409 não grava nada e por isso não fica guardado na chave (ADR-0027): sem versão vigente, a mesma chave executa
+        // de novo e responde que não há termo publicado.
+        await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
+        await ConferirAsync(await PedirAsync(betina, perfil, unidade, anterior, chave: chave), HttpStatusCode.UnprocessableEntity, "pedido.sem_termo_vigente");
+        (await ContarPedidosAsync()).Should().Be(0);
+
+        await ReapresentarComChaveNovaAsync(betina, perfil, unidade);
+    }
+
+    // A reapresentação é outro pedido de gravação: a versão nova, com chave nova, cria o pedido.
+    private async Task ReapresentarComChaveNovaAsync(HttpClient betina, Guid perfil, Guid unidade)
+    {
+        VersaoDoTermo terceira = await TermoNoHostDeTeste.PublicarAsync(Fixture.Factory.Services, "terceira versão");
+        (await PedirAsync(betina, perfil, unidade, terceira.Id)).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await ContarPedidosAsync()).Should().Be(1);
     }
 
     // O efeito da criação de pedido protegido no banco, na ordem dela: o perfil sob trava compartilhada, a vigência do termo
