@@ -35,11 +35,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     {
         _repository.CodigoExisteAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Codigo, Arg.Any<CancellationToken>()).Returns(false);
 
-        Result<Guid> resultado = await CriarMotivoDeDecisaoCommandHandler.Handle(
-            Comando(SentidoDoMotivoCodigo.Desfavoravel),
-            _repository,
-            _unitOfWork,
-            CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivoCodigo.Desfavoravel));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await _repository.Received(1).AdicionarAsync(
@@ -56,11 +52,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     {
         _repository.CodigoExisteAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Codigo, Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<Guid> resultado = await CriarMotivoDeDecisaoCommandHandler.Handle(
-            Comando(SentidoDoMotivoCodigo.Desfavoravel),
-            _repository,
-            _unitOfWork,
-            CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivoCodigo.Desfavoravel));
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.CodigoJaExiste);
         await _repository.DidNotReceive().AdicionarAsync(
@@ -71,15 +63,36 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
     [Fact(DisplayName = "Sentido fora do vocabulário do wire é recusado como ausente")]
     public async Task Criar_SentidoForaDoVocabulario_Recusa()
     {
-        Result<Guid> resultado = await CriarMotivoDeDecisaoCommandHandler.Handle(
-            Comando("TALVEZ"),
-            _repository,
-            _unitOfWork,
-            CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(Comando("TALVEZ"));
 
         resultado.Errors.Should().ContainSingle()
             .Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.SentidoObrigatorio);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Criar recusa tipo fora do vocabulário como tipo inválido, sem tocar no repositório")]
+    public async Task Criar_TipoForaDoVocabulario_RecusaComoInvalido()
+    {
+        CriarMotivoDeDecisaoCommand comando = Comando(SentidoDoMotivoCodigo.Desfavoravel) with { Tipo = "RECURSO" };
+
+        Result<Guid> resultado = await CriarAsync(comando);
+
+        resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(erro =>
+            erro.Field == "tipo" && erro.Error.Code == MotivoDeDecisaoErrorCodes.TipoInvalido);
+        await _repository.DidNotReceive().CodigoExisteAsync(Arg.Any<TipoMotivoDeDecisao>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory(DisplayName = "Criar recusa tipo ausente ou em branco como tipo obrigatório")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Criar_TipoAusente_RecusaComoObrigatorio(string? tipo)
+    {
+        CriarMotivoDeDecisaoCommand comando = Comando(SentidoDoMotivoCodigo.Desfavoravel) with { Tipo = tipo };
+
+        Result<Guid> resultado = await CriarAsync(comando);
+
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(MotivoDeDecisaoErrorCodes.TipoObrigatorio);
     }
 
     [Fact(DisplayName = "Desativar aplica a desativação e salva")]
@@ -213,8 +226,7 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException("violação sintética", new ViolacaoDeUnicidade("ux_motivos_de_decisao_tipo_codigo")));
 
-        Result<Guid> resultado = await CriarMotivoDeDecisaoCommandHandler.Handle(
-            Comando(SentidoDoMotivoCodigo.Favoravel), _repository, _unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(Comando(SentidoDoMotivoCodigo.Favoravel));
 
         resultado.Error!.Code.Should().Be(MotivoDeDecisaoErrorCodes.CodigoJaExiste);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
@@ -233,12 +245,15 @@ public sealed class MotivoDeDecisaoCommandHandlersTests
         await criar.Should().ThrowAsync<DbUpdateException>();
     }
 
+    private Task<Result<Guid>> CriarAsync(CriarMotivoDeDecisaoCommand comando) =>
+        CriarMotivoDeDecisaoCommandHandler.Handle(comando, _repository, _unitOfWork, CancellationToken.None);
+
     private static CriarMotivoDeDecisaoCommand Comando(string sentido) =>
         new(TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, Codigo, Descricao, FundamentoIsencaoCodigo.CadastroUnico, sentido);
 
     private static MotivoDeDecisao MotivoValido() =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.IsencaoDaTaxa,
+            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
             Codigo,
             Descricao,
             FundamentoIsencaoCodigo.CadastroUnico,

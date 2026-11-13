@@ -6377,6 +6377,11 @@
       "titulo": "O tipo exige subclassificação"
     },
     {
+      "codigo": "uniplus.selecao.motivo_de_decisao.tipo_invalido",
+      "status": 422,
+      "titulo": "Tipo de decisão desconhecido"
+    },
+    {
       "codigo": "uniplus.selecao.motivo_de_decisao.tipo_obrigatorio",
       "status": 422,
       "titulo": "Tipo do motivo é obrigatório"

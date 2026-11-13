@@ -23,19 +23,14 @@ public static class CriarMotivoDeDecisaoCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        Result<MotivoDeDecisao> criar = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisaoCodigo.FromCodigo(command.Tipo),
-            command.Codigo,
-            command.Descricao,
-            command.Subclassificacao,
-            SentidoDoMotivoCodigo.FromCodigo(command.Sentido)));
-        if (criar.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(criar.Errors);
-        }
-
-        return await GravarAsync(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+        Result<MotivoDeDecisao> criar = MotivoDeDecisao.Criar(CamposDe(command));
+        return criar.IsFailure
+            ? Result<Guid>.ValidationFailure(criar.Errors)
+            : await GravarAsync(criar.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
+
+    private static CamposDoMotivo CamposDe(CriarMotivoDeDecisaoCommand command) =>
+        new(command.Tipo, command.Codigo, command.Descricao, command.Subclassificacao, SentidoDoMotivoCodigo.FromCodigo(command.Sentido));
 
     private static async Task<Result<Guid>> GravarAsync(
         MotivoDeDecisao motivo, IMotivoDeDecisaoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
@@ -46,6 +41,11 @@ public static class CriarMotivoDeDecisaoCommandHandler
         }
 
         await repository.AdicionarAsync(motivo, cancellationToken).ConfigureAwait(false);
+        return await SalvarAsync(motivo, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<Guid>> SalvarAsync(MotivoDeDecisao motivo, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

@@ -17,7 +17,7 @@ public static class ValidacaoDoMotivo
 
     /// <summary>
     /// Valida todos os campos e acumula as violações independentes: código malformado, descrição
-    /// fora do tamanho, tipo ausente e sentido ausente coexistem no mesmo <c>errors[]</c>. A
+    /// fora do tamanho, tipo ausente ou inválido e sentido ausente coexistem no mesmo <c>errors[]</c>. A
     /// subclassificação e o sentido admitido dependem do tipo e só são conferidos quando ele é válido.
     /// </summary>
     public static Result<CamposValidados> Validar(CamposDoMotivo campos)
@@ -27,37 +27,25 @@ public static class ValidacaoDoMotivo
         List<FieldError> erros = [];
         CodigoMotivoDecisao? codigo = Coletar(erros, "codigo", CodigoMotivoDecisao.Criar(campos.Codigo));
         string? descricao = Coletar(erros, "descricao", ValidarDescricao(campos.Descricao));
-        IPoliticaDoTipoDeMotivo? politica = ConferirTipo(erros, campos.Tipo);
-        string? subclassificacao = politica is null
-            ? null
-            : Coletar(erros, "subclassificacao", politica.ConferirSubclassificacao(campos.Subclassificacao));
+        TipoMotivoDeDecisao tipo = Coletar(erros, TipoDoMotivoInformado.Campo, TipoDoMotivoInformado.Converter(campos.TipoCodigo));
+        IPoliticaDoTipoDeMotivo? politica = PoliticasDosTiposDeMotivo.Do(tipo);
+        string? subclassificacao = ConferirSubclassificacao(erros, politica, campos.Subclassificacao);
         ConferirSentido(erros, politica, campos.Sentido);
 
         return erros.Count > 0
             ? Result<CamposValidados>.ValidationFailure(erros)
-            : Result<CamposValidados>.Success(new CamposValidados(campos.Tipo, codigo!, descricao!, subclassificacao, campos.Sentido));
+            : Result<CamposValidados>.Success(new CamposValidados(tipo, codigo!, descricao!, subclassificacao, campos.Sentido));
     }
 
     /// <summary>Valida e normaliza a descrição, único campo que a edição alcança.</summary>
     public static Result<string> ValidarDescricao(string? descricao)
     {
-        if (string.IsNullOrWhiteSpace(descricao))
-        {
-            return FalhaDaDescricao(MotivoDeDecisaoErrorCodes.DescricaoObrigatoria, "Descrição do motivo de decisão é obrigatória.");
-        }
+        string normalizada = descricao?.Trim() ?? string.Empty;
+        DomainError? recusa = RecusaDaDescricao(normalizada);
 
-        string normalizada = descricao.Trim();
-
-        // O caractere nulo não é espaço em branco e cabe no tamanho, mas a coluna textual do banco
-        // não o armazena: sem esta recusa o valor só falharia ao gravar, com 500 em vez de 422.
-        if (TemCaractereNulo(normalizada))
-        {
-            return FalhaDaDescricao(MotivoDeDecisaoErrorCodes.DescricaoCaractereInvalido, "Descrição do motivo não pode conter o caractere nulo.");
-        }
-
-        return normalizada.Length is < DescricaoMinLength or > DescricaoMaxLength
-            ? FalhaDaDescricao(MotivoDeDecisaoErrorCodes.DescricaoTamanho, $"Descrição do motivo deve ter entre {DescricaoMinLength} e {DescricaoMaxLength} caracteres.")
-            : Result<string>.Success(normalizada);
+        return recusa is null
+            ? Result<string>.Success(normalizada)
+            : Result<string>.ValidationFailure([new FieldError("descricao", recusa)]);
     }
 
     /// <summary>
@@ -71,21 +59,25 @@ public static class ValidacaoDoMotivo
         return texto.Contains('\0', StringComparison.Ordinal);
     }
 
-    private static Result<string> FalhaDaDescricao(string codigo, string mensagem) =>
-        Result<string>.ValidationFailure([new FieldError("descricao", new DomainError(codigo, mensagem))]);
-
-    private static IPoliticaDoTipoDeMotivo? ConferirTipo(List<FieldError> erros, TipoMotivoDeDecisao tipo)
+    private static DomainError? RecusaDaDescricao(string normalizada)
     {
-        IPoliticaDoTipoDeMotivo? politica = PoliticasDosTiposDeMotivo.Do(tipo);
-        if (politica is null)
+        if (normalizada.Length == 0)
         {
-            erros.Add(new FieldError("tipo", new DomainError(
-                MotivoDeDecisaoErrorCodes.TipoObrigatorio,
-                $"Tipo do motivo é obrigatório e deve ser um dos códigos aceitos: {TipoMotivoDeDecisaoCodigo.CodigosEmTexto}.")));
+            return new DomainError(MotivoDeDecisaoErrorCodes.DescricaoObrigatoria, "Descrição do motivo de decisão é obrigatória.");
         }
 
-        return politica;
+        if (TemCaractereNulo(normalizada))
+        {
+            return new DomainError(MotivoDeDecisaoErrorCodes.DescricaoCaractereInvalido, "Descrição do motivo não pode conter o caractere nulo.");
+        }
+
+        return normalizada.Length is < DescricaoMinLength or > DescricaoMaxLength
+            ? new DomainError(MotivoDeDecisaoErrorCodes.DescricaoTamanho, $"Descrição do motivo deve ter entre {DescricaoMinLength} e {DescricaoMaxLength} caracteres.")
+            : null;
     }
+
+    private static string? ConferirSubclassificacao(List<FieldError> erros, IPoliticaDoTipoDeMotivo? politica, string? subclassificacao) =>
+        politica is null ? null : Coletar(erros, "subclassificacao", politica.ConferirSubclassificacao(subclassificacao));
 
     private static void ConferirSentido(List<FieldError> erros, IPoliticaDoTipoDeMotivo? politica, SentidoDoMotivo sentido)
     {
@@ -99,7 +91,7 @@ public static class ValidacaoDoMotivo
         {
             erros.Add(new FieldError("sentido", new DomainError(
                 MotivoDeDecisaoErrorCodes.SentidoNaoAdmitido,
-                $"O tipo {politica.Tipo.ToCodigo()} não admite motivo {sentido.Rotulo()}.")));
+                "O sentido informado não é admitido para este tipo de motivo.")));
         }
     }
 

@@ -72,23 +72,26 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         (await CodigoDoErro(resposta)).Should().Be("uniplus.selecao.motivo_de_decisao.motivo_inativo");
     }
 
-    [Fact(DisplayName = "Publicar com motivo desativado depois de escolhido é recusado; trocado, publica e congela a cópia")]
-    public async Task Publicar_MotivoDesativadoDepois_RecusaAteATroca()
+    [Fact(DisplayName = "Publicar com motivo desativado depois de escolhido é recusado")]
+    public async Task Publicar_MotivoDesativadoDepois_Recusa()
     {
-        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoDesativadoDepois_RecusaAteATroca));
-        MotivoDeDecisao desativadoDepois = await SemearMotivoAsync();
-        MotivoDeDecisao substituto = await SemearMotivoAsync();
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoDesativadoDepois_Recusa));
         using HttpClient client = Cliente();
-        (await IncluirAsync(client, processoId, desativadoDepois.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await AlterarMotivoAsync(desativadoDepois.Id, static m => m.Desativar());
+        await EscolherEDesativarAsync(client, processoId);
 
         using HttpResponseMessage recusada = await PublicarAsync(client, processoId, documentoId);
+
         recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await CodigoDoErro(recusada)).Should().Be("uniplus.selecao.motivo_de_decisao.motivo_desativado");
+    }
 
-        (await RetirarAsync(client, processoId, desativadoDepois.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await IncluirAsync(client, processoId, substituto.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação vigente na publicação."));
+    [Fact(DisplayName = "Trocado o motivo desativado depois de escolhido, publica e congela a cópia")]
+    public async Task Publicar_MotivoTrocado_CongelaACopia()
+    {
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicar_MotivoTrocado_CongelaACopia));
+        using HttpClient client = Cliente();
+        MotivoDeDecisao desativado = await EscolherEDesativarAsync(client, processoId);
+        MotivoDeDecisao substituto = await TrocarMotivoDesativadoAsync(client, processoId, desativado);
 
         using HttpResponseMessage publicada = await PublicarAsync(client, processoId, documentoId);
         publicada.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicada.Content.ReadAsStringAsync());
@@ -118,6 +121,23 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         (await ListarAsync(client, processoId)).Should().ContainSingle();
     }
 
+    private async Task<MotivoDeDecisao> EscolherEDesativarAsync(HttpClient client, Guid processoId)
+    {
+        MotivoDeDecisao motivo = await SemearMotivoAsync();
+        (await IncluirAsync(client, processoId, motivo.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await AlterarMotivoAsync(motivo.Id, static m => m.Desativar());
+        return motivo;
+    }
+
+    private async Task<MotivoDeDecisao> TrocarMotivoDesativadoAsync(HttpClient client, Guid processoId, MotivoDeDecisao desativado)
+    {
+        MotivoDeDecisao substituto = await SemearMotivoAsync();
+        (await RetirarAsync(client, processoId, desativado.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await IncluirAsync(client, processoId, substituto.Id)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await AlterarMotivoAsync(substituto.Id, static m => m.Atualizar("Redação vigente na publicação."));
+        return substituto;
+    }
+
     private async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoAsync(string nome)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
@@ -127,10 +147,10 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         return (processo.Id, documento.Id);
     }
 
-    private async Task<MotivoDeDecisao> SemearMotivoAsync(bool ativo = true)
+    private static MotivoDeDecisao NovoMotivo(bool ativo)
     {
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.HomologacaoDasInscricoes,
+            TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes,
             $"TEST_MDP_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
             "Sem resultado no retorno do INEP para a edição indicada",
             null,
@@ -140,6 +160,12 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
             motivo.Desativar();
         }
 
+        return motivo;
+    }
+
+    private async Task<MotivoDeDecisao> SemearMotivoAsync(bool ativo = true)
+    {
+        MotivoDeDecisao motivo = NovoMotivo(ativo);
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.MotivosDeDecisao.Add(motivo);

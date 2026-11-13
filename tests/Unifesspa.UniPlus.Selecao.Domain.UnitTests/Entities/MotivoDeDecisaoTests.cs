@@ -94,7 +94,7 @@ public sealed class MotivoDeDecisaoTests
     public void Criar_PayloadInteiroInvalido_AcumulaViolacoes()
     {
         Result<MotivoDeDecisao> resultado = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.Nenhum, "código minúsculo", "  ", "QUALQUER", SentidoDoMotivo.Nenhum));
+            null, "código minúsculo", "  ", "QUALQUER", SentidoDoMotivo.Nenhum));
 
         resultado.Errors.Select(erro => erro.Error.Code).Should().BeEquivalentTo(
             [
@@ -235,5 +235,5 @@ public sealed class MotivoDeDecisaoTests
 
     private static Result<MotivoDeDecisao> Criar(
         TipoMotivoDeDecisao tipo, string? codigo, string? subclassificacao, SentidoDoMotivo sentido, string descricao = DescricaoValida) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo, codigo, descricao, subclassificacao, sentido));
+        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, descricao, subclassificacao, sentido));
 }
