@@ -35,7 +35,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
     private static CriterioDesempate DesempatePorArea(params string[] areas) => DesempatePorArea(1, areas);
 
-    private static CriterioDesempate DesempatePorArea(int ordem, params string[] areas) =>
+    internal static CriterioDesempate DesempatePorArea(int ordem, params string[] areas) =>
         CriterioDesempate.Criar(
             ordem, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(areas)).Value!;
 

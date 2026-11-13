@@ -26,6 +26,7 @@ public static class SelecaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
         AddDefinicaoDoCronogramaDeFases(services);
+        AddDefinicaoDasEtapas(services);
         AddCongelamentoDaVersao(services);
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
@@ -43,6 +44,15 @@ public static class SelecaoApplicationServiceRegistration
     {
         services.AddScoped<MontagemDasFases>();
         services.AddScoped<DefinicaoDoCronogramaDeFases>();
+    }
+
+    // As duas passadas da definição das etapas não guardam estado de uma edição para outra: as portas entram por
+    // construtor, e o handler recebe a definição pronta. A leitura das fases iniciadas é a mesma que o cronograma usa.
+    private static void AddDefinicaoDasEtapas(IServiceCollection services)
+    {
+        services.AddScoped<SubstituicaoDasEtapas>();
+        services.AddScoped<DefinicaoDasEtapas>();
+        services.AddScoped<LeituraDasFasesIniciadasNaEdicao>();
     }
 
     // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as

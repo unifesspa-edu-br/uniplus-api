@@ -24,7 +24,7 @@ internal static class RegrasDaClassificacao
         // As recusas de campo se acumulam (todas de uma vez para quem edita); a das etapas, que nenhum
         // campo deste comando corrige, sai depois delas porque o errors[] só carrega erro de campo.
         List<FieldError> erros = [.. EtapasDeEliminacaoRecusadas(estado, classificacao)];
-        DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(estado.Etapas, classificacao);
+        DomainError? erroDaEtapaDoEnem = new EtapasDoProcesso(estado.Etapas).RecusaDaEtapaDoEnem(classificacao);
         erros.AddRange(RecusasDoCalculoLocalEDoDesempate(estado, classificacao, erroDaEtapaDoEnem));
 
         List<OpcaoDeclaradaFato> edicoesARetirar = EdicoesDoEnemSemClassificacaoEnem(estado, classificacao);
@@ -95,25 +95,37 @@ internal static class RegrasDaClassificacao
             "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma edição do ENEM, que deixaria de existir com a classificação sem ENEM — ajuste ou remova a condição antes."))];
     }
 
+    internal static DomainError EtapaRefEliminacaoInexistente(Guid etapaRef) => new(
+        "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
+        $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo.");
+
     private static List<FieldError> EtapasDeEliminacaoRecusadas(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao)
     {
+        EtapasDoProcesso etapas = new(estado.Etapas);
         List<FieldError> erros = [];
         foreach ((RegraEliminacao regra, int indice) in classificacao.RegrasEliminacao.Select(static (regra, indice) => (regra, indice)))
         {
-            string campo = $"regrasEliminacao[{indice}].etapaRef";
-            if (regra.Args.EtapaReferenciada() is { } etapaRef && !estado.Etapas.Any(e => e.Id == etapaRef))
+            if (RecusaDaEtapaDaEliminacao(regra, etapas) is { } recusa)
             {
-                erros.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo (INV-B4).")));
-            }
-            else if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, estado.Etapas))
-            {
-                erros.Add(new(campo, RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()));
+                erros.Add(new($"regrasEliminacao[{indice}].etapaRef", recusa));
             }
         }
 
         return erros;
+    }
+
+    /// <summary>
+    /// A recusa da etapa que a regra de eliminação cita: a etapa não existe, ou é a etapa do ENEM,
+    /// cuja ausência já tem regra própria. A primeira que vale.
+    /// </summary>
+    internal static DomainError? RecusaDaEtapaDaEliminacao(RegraEliminacao regra, EtapasDoProcesso etapas)
+    {
+        if (regra.Args.EtapaReferenciada() is { } etapaRef && !etapas.Contem(etapaRef))
+        {
+            return EtapaRefEliminacaoInexistente(etapaRef);
+        }
+
+        return etapas.RecusaDaAusenciaNaEtapaDoEnem(regra.Args);
     }
 
     // Uma recusa por critério afetado, e não por área: a classificação é a mesma para todas.

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.Runtime.CompilerServices;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
@@ -15,7 +13,7 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 
 /// <summary>
-/// Verifica as dependências entre as políticas e as camadas, o formato estático das políticas
+/// Verifica as dependências entre as políticas e as camadas, a ausência de estado mutável nas políticas
 /// e a localização das partes do agregado <see cref="ProcessoSeletivo"/>.
 /// A restrição dos chamadores dos mutadores é acompanhada na issue #2423.
 /// </summary>
@@ -42,16 +40,38 @@ public sealed class FronteirasDoProcessoSeletivoTests
         regra.Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "A3: as classes das políticas são estáticas, salvo os registros")]
-    public void A3_PoliticasSaoEstaticas()
+    [Fact(DisplayName = "A3: as políticas não têm campo nem propriedade reatribuível")]
+    public void A3_PoliticasNaoGuardamEstadoMutavel() =>
+        ConferirQueNaoHaEstadoReatribuivel(Arquitetura, NamespaceDasPoliticas);
+
+    [Theory(DisplayName = "A3: a regra detecta o estado reatribuível")]
+    [InlineData("Unifesspa.UniPlus.Selecao.ArchTests.Amostras.ComCampo", "_contador")]
+    [InlineData("Unifesspa.UniPlus.Selecao.ArchTests.Amostras.ComPropriedade", "Nome")]
+    public void A3_RegraDetectaEstadoReatribuivel(string espacoDeNomes, string membro)
     {
-        TiposDasPoliticas().Count().Should().BeGreaterThan(30, "a varredura tem de encontrar as políticas");
+        Architecture amostra = new ArchLoader().LoadAssemblies(typeof(FronteirasDoProcessoSeletivoTests).Assembly).Build();
 
-        string[] naoEstaticas = [.. TiposDasPoliticas()
-            .Where(static t => t.IsClass && !(t.IsAbstract && t.IsSealed) && !EhRegistro(t))
-            .Select(static t => t.FullName!)];
+        Action conferir = () => ConferirQueNaoHaEstadoReatribuivel(amostra, espacoDeNomes);
 
-        naoEstaticas.Should().BeEmpty("a política é função pura da vista; estado vive na raiz");
+        conferir.Should().Throw<FailedArchRuleException>().Which.Message.Should().Contain(membro);
+    }
+
+    // A imutabilidade é a do membro: a lista somente leitura de uma política pode receber itens, e o que impede
+    // isso é a política não expor nem repassar a coleção, não esta regra.
+    private static void ConferirQueNaoHaEstadoReatribuivel(Architecture arquitetura, string espacoDeNomes)
+    {
+        IObjectProvider<IType> politicas = Types()
+            .That().ResideInNamespaceMatching($@"^{espacoDeNomes.Replace(".", @"\.", StringComparison.Ordinal)}(\.|$)")
+            .And().DoNotHaveNameContaining("<");
+
+        FieldMembers().That().AreDeclaredIn(politicas).And().AreNotStatic()
+            .Should().BeImmutable()
+            .Because("a política é função da vista: estática, registro ou selada de campos somente leitura; estado reatribuível vive na raiz")
+            .Check(arquitetura);
+        PropertyMembers().That().AreDeclaredIn(politicas)
+            .Should().BeImmutable()
+            .Because("a política não guarda propriedade reatribuível")
+            .Check(arquitetura);
     }
 
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]
@@ -76,12 +96,4 @@ public sealed class FronteirasDoProcessoSeletivoTests
 
         fora.Should().BeEmpty("o vínculo com o processo é da entidade filha, não de um tipo de política");
     }
-
-    private static bool EhRegistro(System.Type tipo) => tipo.GetMethod("<Clone>$") is not null;
-
-    private static IEnumerable<System.Type> TiposDasPoliticas() =>
-        typeof(ProcessoSeletivo).Assembly.GetTypes()
-            .Where(static t => t.Namespace is { } ns && ns.StartsWith(NamespaceDasPoliticas, StringComparison.Ordinal))
-            .Where(static t => !System.Attribute.IsDefined(t, typeof(CompilerGeneratedAttribute)));
-
 }

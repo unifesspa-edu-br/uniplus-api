@@ -221,8 +221,8 @@ internal static class ItensEstruturaisDeConformidade
     internal static bool EtapaTemNota(EstadoDaConfiguracao estado, EtapaProcesso etapa) =>
         etapa.ComponeNota
         || etapa.NotaMinima.HasValue
-        || RegrasDasEtapas.EtapaReferenciadaPorDesempate(estado, etapa.Id)
-        || RegrasDasEtapas.EliminacoesPorNotaMinimaDaEtapa(estado, etapa.Id).Any();
+        || CitacoesDasEtapas.EtapaCitadaPorDesempate(estado, etapa.Id)
+        || CitacoesDasEtapas.EliminacoesPorNotaMinimaQueCitam(estado, etapa.Id).Any();
 
     /// <summary>
     /// Só confere quando a etapa declara a nota máxima: a falta dela já é o item próprio, e dois
@@ -230,7 +230,7 @@ internal static class ItensEstruturaisDeConformidade
     /// </summary>
     internal static bool NotaMinimaDaRegraPassaDaNotaMaxima(EstadoDaConfiguracao estado, EtapaProcesso etapa) =>
         etapa.NotaMaxima is { } notaMaxima
-        && RegrasDasEtapas.EliminacoesPorNotaMinimaDaEtapa(estado, etapa.Id).Any(args => args.NotaMinima > notaMaxima);
+        && CitacoesDasEtapas.EliminacoesPorNotaMinimaQueCitam(estado, etapa.Id).Any(args => args.NotaMinima > notaMaxima);
 
     /// <summary>
     /// Item que identifica as etapas pendentes, em ordem estável, pelo mesmo motivo de

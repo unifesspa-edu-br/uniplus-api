@@ -164,7 +164,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     private DefinicaoDoCronogramaDeFases DefinicaoSobre(IProcessoSeletivoRepository repositorio) => new(
         new MontagemDasFases(FaseCanonicaReader, UnidadeResponsavel, TipoBancaReader, CategoriaDocumentoReader, RegraCatalogoReader),
-        PrecedenciaFaseReader, FasesIniciadas, TipoAtoPublicadoReader, repositorio, Codecs);
+        PrecedenciaFaseReader, new LeituraDasFasesIniciadasNaEdicao(FasesIniciadas), TipoAtoPublicadoReader, repositorio, Codecs);
 
     private static IProcessoSeletivoRepository RepositorioQueDevolve(ProcessoSeletivo processo)
     {

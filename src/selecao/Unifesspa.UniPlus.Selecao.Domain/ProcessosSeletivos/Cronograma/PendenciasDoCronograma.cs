@@ -19,10 +19,10 @@ public static class PendenciasDoCronograma
     /// nomeado. Avaliado pela prontidão do congelamento, sempre depois da conformidade.
     /// </summary>
     /// <remarks>
-    /// Cada <c>if</c> abaixo testa um predicado nomeado (<c>Ha*</c>) em vez de uma expressão inline, porque
+    /// Cada passo abaixo testa um predicado nomeado (<c>Ha*</c>) em vez de uma expressão inline, porque
     /// <see cref="ChecklistDeConformidade.AvaliarConformidade"/> chama os mesmos predicados para projetar um
     /// item por razão. A precedência (qual falha é devolvida primeiro) é decidida só aqui, pela ordem dos
-    /// <c>if</c>; o checklist não reordena nem filtra.
+    /// operandos de <c>??</c>; o checklist não reordena nem filtra.
     /// <para>
     /// Público porque o handler o antecipa antes de canonicalizar: sem isso, um
     /// processo com fase de coleta sem janela E referência temporal irresolvível receberia pelo
@@ -33,124 +33,95 @@ public static class PendenciasDoCronograma
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        // §3.5, direção "fase de avaliação sem etapa". Desde que a etapa passou a declarar a
-        // própria fase, a gravação do cronograma não recusa mais esse estado na hora — ele é
-        // legítimo enquanto se monta o certame, e quem o barra é este gate, na publicação.
-        if (HaFaseDeAvaliacaoSemEtapa(estado))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.AvaliacaoSemEtapa",
-                "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
-        }
-
-        if (RecusaDaEtapaSemFaseDeclarada(estado) is { } etapaSemFase)
-        {
-            return etapaSemFase;
-        }
-
-        // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
-        if (HaInscricaoPropriaSemFaseDeColeta(estado))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
-                "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição.");
-        }
-
-        // A fase que coleta inscrição declara o prazo que o Edital publica, então precisa de
-        // janela mesmo quando a origem da data é NA_EXECUCAO. Nas demais fases, "sem data" é estado válido, porque a data não é
-        // fixada no edital e a unidade responsável a define na execução. Um Edital que admite inscrição sem
-        // prazo definido, esse não se sustenta.
-        if (FaseQueColetaInscricaoSemJanela(estado) is { } faseSemJanela)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
-                $"A fase '{faseSemJanela.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período.");
-        }
-
-        if (FaseSemUnidadeResponsavel(estado) is { } faseSemUnidade)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.FaseSemUnidadeResponsavel",
-                $"A fase '{faseSemUnidade.Codigo}' não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.");
-        }
-
-        if (PendenciaDaJanelaDeIsencao(estado, fusoInstitucional) is { } pendenciaIsencao)
-        {
-            return pendenciaIsencao;
-        }
-
-        // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que
-        // produza resultado.
-        if (HaVagasSemFaseQueProduzResultado(estado))
-        {
-            return new DomainError(
-                "ProcessoSeletivo.VagasSemFaseQueProduzResultado",
-                "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.");
-        }
-
-        // A conclusão do ciclo recursal por matéria. DefinirCronogramaFases já a recusa na
-        // escrita, mas o estado violado é materializável pela hidratação do EF, que não
-        // passa pela fábrica — mesmo raciocínio que já sustenta o item da taxa de inscrição
-        // sem fundamento de isenção. Sem esta metade, um certame carregado do banco nesse
-        // estado seria publicado com o ciclo recursal em aberto.
-        if (CicloRecursalDoCronograma.PendenciaDaConclusaoDoCicloRecursal(estado) is { } pendenciaDaConclusao)
-        {
-            return pendenciaDaConclusao;
-        }
-
-        // A âncora do prazo de recurso, pela mesma razão: FaseCronograma.Criar a recusa na
-        // escrita, e o EF hidrata regras_recurso_fase e produtos_da_fase direto das linhas,
-        // sem passar pela fábrica. Sem esta metade, um certame carregado do banco com a
-        // âncora apontando para produto que não é preliminar seu congelaria uma versão cujo
-        // prazo de interposição não resolve — e a incoerência só apareceria na restauração,
-        // longe da causa.
-        if (CicloRecursalDoCronograma.PendenciaDaAncoraDoRecurso(estado) is { } pendenciaDaAncora)
-        {
-            return pendenciaDaAncora;
-        }
-
-        // A mesma conferência para a janela de cada etapa, pela mesma razão: o EF hidrata
-        // recursos_da_etapa e produtos_da_etapa direto das linhas, sem passar pela gravação das
-        // janelas. A etapa com a janela ancorada fora dos preliminares dela não resolveria o
-        // prazo de interposição.
-        if (CicloRecursalDoCronograma.PendenciaDaAncoraDoRecursoDasEtapas(estado) is { } pendenciaDaAncoraDaEtapa)
-        {
-            return pendenciaDaAncoraDaEtapa;
-        }
-
-        // O recorte de competência das bancas, pela mesma razão: FaseCronograma.Criar o
-        // recusa na escrita, e o EF hidrata bancas_requeridas e categorias_julgadas direto
-        // das linhas, sem passar pela fábrica. Sem esta metade, um certame carregado do
-        // banco com duas bancas do mesmo tipo indistinguíveis seria publicado sem dizer
-        // quem responde por qual matéria — e o defeito só apareceria no primeiro parecer ou
-        // no primeiro recurso, longe da causa.
-        if (CicloRecursalDoCronograma.PendenciaDoRecorteDeCompetencia(estado) is { } pendenciaDoRecorte)
-        {
-            return pendenciaDoRecorte;
-        }
-
-        // A etapa dentro da janela da fase que a abriga, pela mesma razão: as duas gravações
-        // a recusam na escrita, e o EF hidrata etapas_processo e fases_cronograma direto das
-        // linhas, sem passar por nenhuma das duas. Sem esta metade, um certame gravado antes
-        // de a invariante existir seria publicado com uma prova marcada para fora da fase que
-        // a contém — e o envelope congelaria a incoerência no que vai ao Diário Oficial.
-        if (JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(estado) is { } pendenciaDaJanelaDaEtapa)
-        {
-            return pendenciaDaJanelaDaEtapa;
-        }
-
-        return null;
+        return PendenciaDaAvaliacaoDasEtapas(estado)
+            ?? PendenciaDaInscricao(estado)
+            ?? RecusaDaFaseSemUnidadeResponsavel(estado)
+            ?? PendenciaDaJanelaDeIsencao(estado, fusoInstitucional)
+            ?? RecusaDasVagasSemFaseQueProduzResultado(estado)
+            ?? PendenciaDoRecursoEDasBancas(estado)
+            ?? JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(estado);
     }
 
-    /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
+    /// <summary>
+    /// A fase de avaliação sem etapa e a etapa sem fase declarada (§3.5). Desde que a etapa passou a
+    /// declarar a própria fase, a gravação do cronograma não recusa mais o primeiro estado na hora — ele é
+    /// legítimo enquanto se monta o certame, e quem o barra é este gate, na publicação.
+    /// </summary>
+    private static DomainError? PendenciaDaAvaliacaoDasEtapas(EstadoDaConfiguracao estado) =>
+        HaFaseDeAvaliacaoSemEtapa(estado) ? AvaliacaoSemEtapa() : RecusaDaEtapaSemFaseDeclarada(estado);
+
+    /// <summary>A origem por inscrição própria sem fase que coleta, e a fase que coleta sem janela.</summary>
+    private static DomainError? PendenciaDaInscricao(EstadoDaConfiguracao estado) =>
+        RecusaDaInscricaoPropriaSemFaseDeColeta(estado) ?? RecusaDaFaseQueColetaInscricaoSemJanela(estado);
+
+    // §3.4 — piso mínimo derivado da ORIGEM DOS CANDIDATOS, nunca do tipo.
+    private static DomainError? RecusaDaInscricaoPropriaSemFaseDeColeta(EstadoDaConfiguracao estado) =>
+        HaInscricaoPropriaSemFaseDeColeta(estado)
+            ? new DomainError(
+                "ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta",
+                "A origem dos candidatos é inscrição própria, e nenhuma fase do cronograma coleta inscrição.")
+            : null;
+
+    // A fase que coleta inscrição declara o prazo que o Edital publica, então precisa de janela mesmo
+    // quando a origem da data é NA_EXECUCAO. Nas demais fases, "sem data" é estado válido, porque a data
+    // não é fixada no edital e a unidade responsável a define na execução. Um Edital que admite inscrição
+    // sem prazo definido, esse não se sustenta.
+    private static DomainError? RecusaDaFaseQueColetaInscricaoSemJanela(EstadoDaConfiguracao estado) =>
+        FaseQueColetaInscricaoSemJanela(estado) is { } fase
+            ? new DomainError(
+                "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
+                $"A fase '{fase.Codigo}' coleta inscrição e precisa de início e fim definidos para que o Edital declare o período.")
+            : null;
+
+    private static DomainError? RecusaDaFaseSemUnidadeResponsavel(EstadoDaConfiguracao estado) =>
+        FaseSemUnidadeResponsavel(estado) is { } fase
+            ? new DomainError(
+                "ProcessoSeletivo.FaseSemUnidadeResponsavel",
+                $"A fase '{fase.Codigo}' não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.")
+            : null;
+
+    // §3.4 — havendo vagas ofertadas, o cronograma precisa de ao menos uma fase que produza resultado.
+    private static DomainError? RecusaDasVagasSemFaseQueProduzResultado(EstadoDaConfiguracao estado) =>
+        HaVagasSemFaseQueProduzResultado(estado)
+            ? new DomainError(
+                "ProcessoSeletivo.VagasSemFaseQueProduzResultado",
+                "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.")
+            : null;
+
+    /// <summary>
+    /// A conclusão do ciclo recursal por matéria, a âncora do prazo de recurso da fase e da etapa e o
+    /// recorte de competência das bancas.
+    /// </summary>
+    /// <remarks>
+    /// A gravação do cronograma e das etapas já recusa cada um, mas o estado violado é materializável pela
+    /// hidratação do EF, que não passa pelas fábricas e lê direto das linhas as regras de recurso, os
+    /// produtos, as bancas requeridas e os recursos da etapa. Sem esta metade, um certame carregado do banco
+    /// nesse estado seria publicado com o ciclo recursal em aberto, com o prazo de interposição sem
+    /// resolver ou com duas bancas do mesmo tipo indistinguíveis — e a incoerência só apareceria no
+    /// primeiro parecer ou na restauração, longe da causa.
+    /// </remarks>
+    private static DomainError? PendenciaDoRecursoEDasBancas(EstadoDaConfiguracao estado) =>
+        CicloRecursalDoCronograma.PendenciaDaConclusaoDoCicloRecursal(estado)
+        ?? CicloRecursalDoCronograma.PendenciaDaAncoraDoRecurso(estado)
+        ?? CicloRecursalDoCronograma.PendenciaDaAncoraDoRecursoDasEtapas(estado)
+        ?? CicloRecursalDoCronograma.PendenciaDoRecorteDeCompetencia(estado);
+
+    /// <summary>Há fase que agrupa etapas, e nenhuma etapa acontece nela (§3.5).</summary>
+    internal static bool HaFaseDeAvaliacaoSemEtapa(EstadoDaConfiguracao estado) =>
+        HaFaseDeAvaliacaoSemEtapa(estado.CronogramaFases, estado.Etapas);
+
     // §3.5 — a bicondicional por sinalizador sobrevive apenas para a etapa que NÃO
     // declara a própria fase. Quando a etapa declara (EtapaProcesso.FaseCodigo), o
     // vínculo é quem responde por onde ela vive, e qualquer fase pode subdividir-se —
     // não só a que o cadastro marcava como agrupadora.
-    internal static bool HaFaseDeAvaliacaoSemEtapa(EstadoDaConfiguracao estado) =>
-        estado.CronogramaFases.Any(f => f.AgrupaEtapas
-            && !estado.Etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
-            && !estado.Etapas.Any(static e => e.FaseCodigo is null));
+    internal static bool HaFaseDeAvaliacaoSemEtapa(IEnumerable<FaseCronograma> fases, IReadOnlyCollection<EtapaProcesso> etapas) =>
+        fases.Any(f => f.AgrupaEtapas
+            && !etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
+            && !etapas.Any(static e => e.FaseCodigo is null));
+
+    internal static DomainError AvaliacaoSemEtapa() => new(
+        "ProcessoSeletivo.AvaliacaoSemEtapa",
+        "Há uma fase que agrupa etapas no cronograma, mas nenhuma etapa acontece nela.");
 
     // A etapa segue a unidade da fase que a contém, então toda etapa publicada declara a fase em que
     // acontece; o rascunho a aceita sem fase. A etapa sem fase é recusada aqui, citando a etapa.

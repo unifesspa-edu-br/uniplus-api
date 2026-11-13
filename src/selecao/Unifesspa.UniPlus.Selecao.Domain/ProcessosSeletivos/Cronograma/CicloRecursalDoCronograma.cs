@@ -265,7 +265,7 @@ internal static class CicloRecursalDoCronograma
         List<FieldError> violacoes =
         [
             .. CicloRecursalDoCronograma.ConferirConclusaoDoCicloRecursal([.. estado.CronogramaFases]),
-            .. RegrasDasEtapas.ConferirFechamentoDoCicloDasEtapas([.. estado.Etapas]),
+            .. new EtapasDoProcesso(estado.Etapas).ViolacoesDoCiclo(),
         ];
 
         return violacoes.Count > 0 ? violacoes[0].Error : null;

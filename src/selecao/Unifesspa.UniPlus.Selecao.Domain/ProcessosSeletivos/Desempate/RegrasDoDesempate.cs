@@ -50,7 +50,7 @@ public static class RegrasDoDesempate
 
     /// <summary>
     /// As invariantes que um critério de desempate só cumpre diante do processo — ordem única,
-    /// <c>etapa_ref</c> existente (INV-B6) e área do ENEM presente no quadro de pesos por área
+    /// <c>etapa_ref</c> existente e área do ENEM presente no quadro de pesos por área
     /// da classificação —, acumuladas (ADR-0125), cada uma no campo do item:
     /// <c>criterios[i].ordem</c>, <c>criterios[i].etapaRef</c>, <c>criterios[i].areas[j]</c> e
     /// <c>criterios[i].regraCodigo</c> quando a classificação não tem quadro.
@@ -66,48 +66,69 @@ public static class RegrasDoDesempate
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(criterios);
 
-        List<FieldError> erros = ConferirQuantidadeDeCriteriosDesempate(criterios.Count);
-        if (erros.Count > 0)
-        {
-            return erros;
-        }
+        List<FieldError> excesso = ConferirQuantidadeDeCriteriosDesempate(criterios.Count);
+        return excesso.Count > 0
+            ? excesso
+            : [.. ConferirOrdemEEtapaDosCriterios(estado, criterios), .. ConferirAreasDosCriterios(estado.Classificacao, criterios)];
+    }
 
+    internal static DomainError OrdemDesempateDuplicada() => new(
+        "ProcessoSeletivo.OrdemDesempateDuplicada",
+        "Cada critério de desempate deve ter uma ordem única dentro do processo.");
+
+    internal static DomainError EtapaRefDesempateInexistente(int ordem, Guid etapaRef) => new(
+        "ProcessoSeletivo.EtapaRefDesempateInexistente",
+        $"O critério de desempate na ordem {ordem} referencia a etapa {etapaRef}, que não existe neste processo.");
+
+    private static List<FieldError> ConferirOrdemEEtapaDosCriterios(
+        EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempateInformado> criterios)
+    {
+        List<FieldError> erros = [];
         HashSet<int> ordensVistas = [];
         for (int indice = 0; indice < criterios.Count; indice++)
         {
-            CriterioDesempateInformado criterio = criterios[indice];
-            if (!ordensVistas.Add(criterio.Ordem))
-            {
-                erros.Add(new(CampoDoCriterioDesempate(indice, "ordem"), new DomainError(
-                    "ProcessoSeletivo.OrdemDesempateDuplicada",
-                    "Cada critério de desempate deve ter uma ordem única dentro do processo.")));
-            }
-
-            if (criterio.Args is ArgsDesempateMaiorNotaEtapa args && !estado.Etapas.Any(e => e.Id == args.EtapaRef))
-            {
-                erros.Add(new(CampoDoCriterioDesempate(indice, "etapaRef"), new DomainError(
-                    "ProcessoSeletivo.EtapaRefDesempateInexistente",
-                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo (INV-B6).")));
-            }
+            erros.AddRange(ErrosDeOrdemEEtapaDoCriterio(estado, criterios[indice], indice, ordensVistas));
         }
-
-        // O desempate é gravado antes da classificação no fluxo de configuração: num processo
-        // novo ela ainda é nula aqui, e só então a coerência com o quadro de pesos por área
-        // fica para DefinirClassificacao conferir.
-        List<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, estado.Classificacao);
-
-        // A área citada por outro critério e também fora do quadro recebe só a recusa do
-        // quadro, que traz a lista de aceitas: o mesmo campo não recebe duas.
-        erros.AddRange(AreasCitadasPorOutroCriterio(criterios)
-            .Where(v => !contraOQuadro.Any(q => q.IndiceCriterio == v.IndiceCriterio && q.IndiceArea == v.IndiceArea))
-            .Select(static v => new FieldError(CampoDoCriterioDesempate(v.IndiceCriterio, $"areas[{v.IndiceArea}]"), v.Erro)));
-
-        erros.AddRange(contraOQuadro.Select(static v => new FieldError(
-            CampoDoCriterioDesempate(v.IndiceCriterio, v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo"),
-            v.Erro)));
 
         return erros;
     }
+
+    private static IEnumerable<FieldError> ErrosDeOrdemEEtapaDoCriterio(
+        EstadoDaConfiguracao estado, CriterioDesempateInformado criterio, int indice, HashSet<int> ordensVistas)
+    {
+        if (!ordensVistas.Add(criterio.Ordem))
+        {
+            yield return new(CampoDoCriterioDesempate(indice, "ordem"), OrdemDesempateDuplicada());
+        }
+
+        if (criterio.Args is ArgsDesempateMaiorNotaEtapa args && !estado.Etapas.Any(e => e.Id == args.EtapaRef))
+        {
+            yield return new(CampoDoCriterioDesempate(indice, "etapaRef"), EtapaRefDesempateInexistente(criterio.Ordem, args.EtapaRef));
+        }
+    }
+
+    // O desempate é gravado antes da classificação no fluxo de configuração: num processo
+    // novo ela ainda é nula aqui, e só então a coerência com o quadro de pesos por área
+    // fica para DefinirClassificacao conferir.
+    private static List<FieldError> ConferirAreasDosCriterios(
+        ConfiguracaoClassificacao? classificacao, IReadOnlyList<CriterioDesempateInformado> criterios)
+    {
+        List<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, classificacao);
+        return [.. AreasRepetidasForaDoQuadro(criterios, contraOQuadro), .. AreasForaDoQuadro(contraOQuadro)];
+    }
+
+    // A área citada por outro critério e também fora do quadro recebe só a recusa do
+    // quadro, que traz a lista de aceitas: o mesmo campo não recebe duas.
+    private static IEnumerable<FieldError> AreasRepetidasForaDoQuadro(
+        IReadOnlyList<CriterioDesempateInformado> criterios, List<ViolacaoDoDesempatePorArea> contraOQuadro) =>
+        AreasCitadasPorOutroCriterio(criterios)
+            .Where(v => !contraOQuadro.Any(q => q.IndiceCriterio == v.IndiceCriterio && q.IndiceArea == v.IndiceArea))
+            .Select(static v => new FieldError(CampoDoCriterioDesempate(v.IndiceCriterio, $"areas[{v.IndiceArea}]"), v.Erro));
+
+    private static IEnumerable<FieldError> AreasForaDoQuadro(List<ViolacaoDoDesempatePorArea> contraOQuadro) =>
+        contraOQuadro.Select(static v => new FieldError(
+            CampoDoCriterioDesempate(v.IndiceCriterio, v.IndiceArea is { } indiceArea ? $"areas[{indiceArea}]" : "regraCodigo"),
+            v.Erro));
 
     /// <summary>
     /// Uma violação da coerência entre o desempate por área do ENEM e o quadro de pesos por

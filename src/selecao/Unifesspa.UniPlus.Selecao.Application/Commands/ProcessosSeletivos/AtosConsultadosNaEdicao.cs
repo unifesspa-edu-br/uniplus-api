@@ -33,16 +33,6 @@ internal sealed class AtosConsultadosNaEdicao
         Congelados = new ClassificacaoDosTiposNaEdicao(processoSeletivoRepository, registroCodecs, processoSeletivoId);
     }
 
-    public AtosConsultadosNaEdicao(
-        ITipoAtoPublicadoReader tipoAtoPublicadoReader,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        Guid processoSeletivoId,
-        TimeProvider timeProvider)
-        : this(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, processoSeletivoId, timeProvider.GetUtcNow())
-    {
-    }
-
     /// <summary>A classificação congelada na versão publicada e as âncoras que ela já tem.</summary>
     public ClassificacaoDosTiposNaEdicao Congelados { get; }
 

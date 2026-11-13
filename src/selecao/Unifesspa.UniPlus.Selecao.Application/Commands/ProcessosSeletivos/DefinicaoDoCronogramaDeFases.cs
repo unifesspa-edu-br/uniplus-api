@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 public sealed class DefinicaoDoCronogramaDeFases(
     MontagemDasFases montagem,
     IPrecedenciaFaseReader precedenciaFaseReader,
-    IFasesIniciadasDoProcesso fasesIniciadasDoProcesso,
+    LeituraDasFasesIniciadasNaEdicao fasesIniciadasNaEdicao,
     ITipoAtoPublicadoReader tipoAtoPublicadoReader,
     IProcessoSeletivoRepository processoSeletivoRepository,
     IRegistroCodecsEnvelope registroCodecs)
@@ -29,7 +29,7 @@ public sealed class DefinicaoDoCronogramaDeFases(
     internal async Task<Result> DefinirAsync(
         ProcessoSeletivo processo, DefinirCronogramaFasesCommand command, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        FasesIniciadas iniciadas = await IniciadasAsync(processo, agora, cancellationToken).ConfigureAwait(false);
+        FasesIniciadas iniciadas = await fasesIniciadasNaEdicao.DoProcessoAsync(processo, agora, cancellationToken).ConfigureAwait(false);
         AtosConsultadosNaEdicao atos = new(tipoAtoPublicadoReader, processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, agora);
         Result<List<FaseCronograma>> fases = await montagem.MontarAsync(processo, command.Fases, atos, cancellationToken).ConfigureAwait(false);
         if (fases.IsFailure)
@@ -40,11 +40,6 @@ public sealed class DefinicaoDoCronogramaDeFases(
         List<ArestaPrecedencia> precedencias = await PrecedenciasVivasAsync(cancellationToken).ConfigureAwait(false);
         return processo.DefinirCronogramaFases(fases.Value!, precedencias, command.Precondicao, iniciadas);
     }
-
-    private async Task<FasesIniciadas> IniciadasAsync(ProcessoSeletivo processo, DateTimeOffset agora, CancellationToken cancellationToken) =>
-        processo.Rascunho is null
-            ? FasesIniciadas.Nenhuma
-            : await fasesIniciadasDoProcesso.ObterAsync(processo.Id, agora, cancellationToken).ConfigureAwait(false);
 
     private async Task<List<ArestaPrecedencia>> PrecedenciasVivasAsync(CancellationToken cancellationToken)
     {
