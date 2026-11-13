@@ -145,7 +145,7 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, sub);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, $"{sub}@uniplus-test.local");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, $"{sub}@unifesspa.edu.br");
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailVerifiedHeader, "true");
 
         return client;
