@@ -201,7 +201,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
     // quem normaliza — e quem não normalizar recria a linha, girando o id.
     private static void RedeclararComOAcentoNaFormaComposta(EtapaProcesso etapa) =>
         etapa.DefinirBancas([.. etapa.Bancas.Select(b =>
-            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC)))])
+            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC), b.Nome))])
             .IsSuccess.Should().BeTrue();
 
     // O que fica guardado é o código da linha PRESERVADA — a forma decomposta original —, e

@@ -64,4 +64,83 @@ public sealed partial class EnvelopeFechadoE2ETests
         new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
         new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
+
+    private static object RegraDeDeliberacaoDaBanca() => new
+    {
+        modo = "colegiadaComVotacao",
+        integrantes = 3,
+        suplentes = 0,
+        quorum = 2,
+        criterio = "maioriaSimples",
+        desempate = "votoDaPresidencia",
+        encerramento = "presidenciaNoQuorum",
+    };
+
+    private static object[] CronogramaDeFases(CatalogosSemeados catalogos) =>
+    [
+        FaseDeInscricao(catalogos),
+        FaseDeResultadoPreliminar(catalogos),
+        FaseDeAvaliacao(catalogos),
+    ];
+
+    private static object FaseDeInscricao(CatalogosSemeados catalogos) => new
+    {
+        ordem = 1,
+        faseCanonicaId = catalogos.FaseInscricaoId,
+        inicio = new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
+        fim = new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
+        produtos = Array.Empty<object>(),
+        faseConcluinteCodigo = (string?)null,
+        emiteParecerIndividual = false,
+        bancasRequeridas = Array.Empty<object>(),
+        regraRecurso = (object?)null,
+        unidadeResponsavelId = catalogos.UnidadeId,
+    };
+
+    // A fase publica preliminar e definitiva da mesma matéria, com o mesmo tipo de ato, e por isso
+    // conclui a si mesma — não declara fase concluinte. O tipo é semeado à parte de TiposDeAtoSeeder,
+    // que só cobre os dois atos da sessão editorial.
+    private static object FaseDeResultadoPreliminar(CatalogosSemeados catalogos) => new
+    {
+        ordem = 2,
+        faseCanonicaId = catalogos.FaseResultadoPreliminarId,
+        inicio = new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
+        fim = new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
+        produtos = ProdutosDoResultado(),
+        faseConcluinteCodigo = (string?)null,
+        emiteParecerIndividual = true,
+        bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId) },
+        regraRecurso = (object?)null,
+        unidadeResponsavelId = catalogos.UnidadeId,
+    };
+
+    private static object[] ProdutosDoResultado() =>
+    [
+        new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Preliminar },
+        new { atoCodigo = CodigoAtoResultado, papel = PapelProdutoFaseCodigo.Definitivo },
+    ];
+
+    private static object BancaDoTipo(Guid tipoBancaId) => new
+    {
+        tipoBancaId,
+        categoriasDocumentoIds = Array.Empty<Guid>(),
+        regraDeDeliberacao = RegraDeDeliberacaoDaBanca(),
+    };
+
+    // A etapa pontuada exige a fase que agrupa etapas no mesmo cronograma
+    // (ProcessoSeletivo.EtapaSemFaseDeAvaliacao). No catálogo fechado, só a avaliação tem esse
+    // sinalizador — e ela não publica ato.
+    private static object FaseDeAvaliacao(CatalogosSemeados catalogos) => new
+    {
+        ordem = 3,
+        faseCanonicaId = catalogos.FaseAvaliacaoId,
+        inicio = new DateTimeOffset(2026, 3, 22, 8, 0, 0, TimeSpan.Zero),
+        fim = new DateTimeOffset(2026, 3, 22, 18, 0, 0, TimeSpan.Zero),
+        produtos = Array.Empty<object>(),
+        faseConcluinteCodigo = (string?)null,
+        emiteParecerIndividual = false,
+        bancasRequeridas = Array.Empty<object>(),
+        regraRecurso = (object?)null,
+        unidadeResponsavelId = catalogos.UnidadeId,
+    };
 }

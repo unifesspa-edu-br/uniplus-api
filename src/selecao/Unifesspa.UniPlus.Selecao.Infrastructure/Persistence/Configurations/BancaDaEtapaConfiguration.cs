@@ -20,6 +20,8 @@ public sealed class BancaDaEtapaConfiguration : IEntityTypeConfiguration<BancaDa
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
         builder.Property(b => b.Codigo).HasMaxLength(60).IsRequired();
+        builder.Property(b => b.Nome).HasMaxLength(200).IsRequired();
+        builder.OwnsOne(b => b.RegraDeDeliberacao, regra => regra.ConfigurarRegraDeDeliberacao());
         builder.Property(b => b.TipoBancaOrigemId).IsRequired();
 
         // O mesmo tipo de banca uma única vez por etapa — defesa atômica da guarda de domínio.

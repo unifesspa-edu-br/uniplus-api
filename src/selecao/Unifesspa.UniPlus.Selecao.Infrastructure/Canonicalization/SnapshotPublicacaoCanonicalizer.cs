@@ -43,7 +43,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
     /// <summary>
     /// Versão da forma do envelope (ADR-0109 D1). O codec é um só, reescrito no lugar quando a forma muda.
     /// </summary>
-    internal const string SchemaVersionAtual = "0.0.42";
+    internal const string SchemaVersionAtual = "0.0.43";
 
     /// <summary>
     /// Projeta o processo seletivo e os dados do edital no envelope canônico.

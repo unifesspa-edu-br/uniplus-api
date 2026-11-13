@@ -234,6 +234,7 @@ public sealed partial class FaseCronogramaTests
         BancaRequerida.Criar(
             Guid.CreateVersion7(),
             codigo,
+            "Banca de teste",
             [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     [Fact(DisplayName = "CA-02: duas bancas do mesmo tipo, uma sem recorte, é recusada com erro nomeado")]

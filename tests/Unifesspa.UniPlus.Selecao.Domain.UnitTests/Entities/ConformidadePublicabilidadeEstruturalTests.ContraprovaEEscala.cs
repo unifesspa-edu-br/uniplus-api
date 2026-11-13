@@ -132,7 +132,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
         faseConcluinteCodigo: "RESULTADO_FINAL",
         emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: RecursoEmHoras(), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()], regraRecurso: RecursoEmHoras(), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     private static FaseCronograma FaseFinal(int ordem) => FaseCronograma.Criar(
         ordem, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,

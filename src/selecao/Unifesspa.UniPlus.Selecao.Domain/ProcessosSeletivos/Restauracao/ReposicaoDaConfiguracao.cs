@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
@@ -161,6 +162,7 @@ internal static class ReposicaoDaConfiguracao
         }
 
         viva.ReporDe(congelada);
+        AlinhamentoDasBancasDaEtapa.Alinhar(viva.Bancas, congelada.Bancas);
         return viva;
     }
 

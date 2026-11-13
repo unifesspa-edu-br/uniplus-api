@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
@@ -9,10 +12,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class ItensDoCronograma
 {
     internal static IReadOnlyList<ItemConformidade> Avaliar(
-        EstadoDaConfiguracao estado, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
+        EstadoDaConfiguracao estado, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos, CorretoresDasEtapas corretores) =>
     [
         .. DaEstrutura(estado, contexto),
-        .. DoCicloRecursalEDasBancas(estado),
+        .. DoCicloRecursalEDasBancas(estado, corretores),
         .. DosTiposDeAto(estado, tiposDeAtoUnicos),
     ];
 
@@ -27,12 +30,13 @@ internal static class ItensDoCronograma
         new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !PendenciasDoCronograma.HaVagasSemFaseQueProduzResultado(estado)),
     ];
 
-    private static ItemConformidade[] DoCicloRecursalEDasBancas(EstadoDaConfiguracao estado) =>
+    private static ItemConformidade[] DoCicloRecursalEDasBancas(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores) =>
     [
         new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase ou a etapa que publica resultado preliminar tem o definitivo do mesmo tipo de ato, na própria fase ou etapa ou na fase concluinte declarada", CicloRecursalDoCronograma.PendenciaDaConclusaoDoCicloRecursal(estado) is null),
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecurso(estado) is null),
         new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecursoDasEtapas(estado) is null),
         new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", CicloRecursalDoCronograma.PendenciaDoRecorteDeCompetencia(estado) is null),
+        .. ItensDasBancas.Avaliar(estado, corretores),
         new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(estado) is null),
     ];
 

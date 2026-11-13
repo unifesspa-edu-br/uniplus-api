@@ -45,8 +45,8 @@ internal static partial class CorpusEnvelope
     /// <summary>
     /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
     /// resultado, atos distintos com o mesmo papel —, promete parecer individual, declara a
-    /// fase que a conclui, exige três bancas — duas do MESMO tipo, separadas pelo recorte de
-    /// competência — e admite recurso; os DOIS pares de
+    /// fase que a conclui, exige quatro bancas — duas do MESMO tipo, separadas pelo recorte de
+    /// competência, e a de análise de recursos — e admite recurso; os DOIS pares de
     /// suspensividade exercitados: a 1ª instância com valor (5 dias corridos), a 2ª
     /// <b>nula</b> (não bloqueia — o caso normal do Ingresso via judicial). É o ramo mais
     /// rico do bloco <c>cronogramaFases</c>.
@@ -79,26 +79,46 @@ internal static partial class CorpusEnvelope
         Ordem<BancaRequerida>([
             BancaDeAnaliseDocumentalDeRenda(),
             BancaDeAnaliseDocumentalDeIdentificacao(),
-            BancaRequerida.Criar(
-                new Guid("5555eeee-0000-4000-8000-000000000002"),
-                "BANCA_HETEROIDENTIFICACAO",
-                []),
+            BancaDeHeteroidentificacao(),
+            BancaDeAnaliseDeRecursos(),
         ], permutar);
 
     private static BancaRequerida BancaDeAnaliseDocumentalDeRenda() =>
         BancaRequerida.Criar(
             new Guid("5555eeee-0000-4000-8000-000000000001"),
             "BANCA_ANALISE_DOCUMENTAL",
-            [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")]);
+            "Banca de teste",
+            [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")],
+            BancasDeTeste.Regra());
 
     private static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao() =>
         BancaRequerida.Criar(
             new Guid("5555eeee-0000-4000-8000-000000000001"),
             "BANCA_ANALISE_DOCUMENTAL",
+            "Banca de teste",
             [
                 CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000003"), "IDENTIFICACAO"),
                 CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000002"), "ETNICO_RACIAL"),
-            ]);
+            ],
+            BancasDeTeste.Regra());
+
+    private static BancaRequerida BancaDeHeteroidentificacao() =>
+        BancaRequerida.Criar(
+            new Guid("5555eeee-0000-4000-8000-000000000002"),
+            "BANCA_HETEROIDENTIFICACAO",
+            "Banca de teste",
+            [],
+            BancasDeTeste.Regra());
+
+    // Quem julga o recurso da fase e o das etapas que ela abriga: o ciclo recursal do corpus só é
+    // publicável com a banca de análise de recursos declarada.
+    private static BancaRequerida BancaDeAnaliseDeRecursos() =>
+        BancaRequerida.Criar(
+            new Guid("5555eeee-0000-4000-8000-000000000003"),
+            TipoBancaCodigo.AnaliseDeRecursos,
+            "Banca de análise de recursos",
+            [],
+            BancasDeTeste.Regra());
 
     private static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
         RegraRecursoFase.Criar(

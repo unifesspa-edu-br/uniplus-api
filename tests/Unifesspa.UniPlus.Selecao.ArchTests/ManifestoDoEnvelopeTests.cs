@@ -43,7 +43,7 @@ public sealed class ManifestoDoEnvelopeTests
     private static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Manifesto = new()
     {
         [typeof(BancaDaEtapa)] = (
-            ["TipoBancaOrigemId", "Codigo"],
+            ["TipoBancaOrigemId", "Codigo", "Nome", "RegraDeDeliberacao"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(RecursoDaEtapa)] = (
@@ -267,8 +267,14 @@ public sealed class ManifestoDoEnvelopeTests
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(BancaRequerida)] = (
-            ["TipoBancaOrigemId", "Codigo", "RecorteDeCompetencia"],
+            ["TipoBancaOrigemId", "Codigo", "Nome", "RecorteDeCompetencia", "RegraDeDeliberacao"],
             [("FaseCronogramaId", "FK interna.")]),
+
+        // A regra de deliberação da banca, igual na banca da fase e na da etapa. Sem Id no
+        // envelope: é valor da banca que a carrega.
+        [typeof(RegraDeDeliberacao)] = (
+            ["Modo", "Integrantes", "Suplentes", "Quorum", "Criterio", "Desempate", "Encerramento", "SemUnanimidade"],
+            [("QuorumExigido", "Derivada de Quorum — o ato individual exige um titular; congelá-la duplicaria a fonte de verdade.")]),
 
         // O recorte de competência — o que distingue duas bancas do MESMO tipo na mesma
         // fase. Sem Id no envelope, como a banca que a carrega: nada aponta para a linha de

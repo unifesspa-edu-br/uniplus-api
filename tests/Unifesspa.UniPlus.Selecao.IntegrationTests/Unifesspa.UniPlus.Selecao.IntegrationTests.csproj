@@ -49,6 +49,7 @@
     <!-- Instantes construídos a partir da zona institucional resolvida (issue #1376). Compilado em
          cada projeto que precisa, em vez de copiado: três cópias divergiriam na primeira correção. -->
     <Compile Include="../Shared/ArquivosDeModeloDeTeste.cs" Link="ArquivosDeModeloDeTeste.cs" />
+    <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />

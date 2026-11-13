@@ -1,7 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -53,7 +55,8 @@ public static class ChecklistDeConformidade
     public static IReadOnlyList<ItemConformidade> AvaliarConformidade(
         EstadoDaConfiguracao estado,
         ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
-        ProtecaoVigenteDasExigencias? protecao = null)
+        ProtecaoVigenteDasExigencias? protecao = null,
+        CorretoresDasEtapas? corretores = null)
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(contexto);
@@ -64,7 +67,7 @@ public static class ChecklistDeConformidade
         [
             .. ItensDaContagemDePrazos.Avaliar(estado, contexto),
             .. ItensEstruturaisDeConformidade.Avaliar(estado),
-            .. ItensDoCronograma.Avaliar(estado, contexto, tiposDeAtoUnicos),
+            .. ItensDoCronograma.Avaliar(estado, contexto, tiposDeAtoUnicos, corretores ?? CorretoresDasEtapas.Nenhum),
             .. ItensDaCascata.Avaliar(estado),
             .. ItensDaPreCanonicalizacao.Avaliar(estado, fatosDeModalidade, protecao),
         ];

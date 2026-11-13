@@ -32,40 +32,24 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     public async Task DefinirCronograma_DuasBancasDoMesmoTipo_PersisteCadaRecorte()
     {
         Guid tipoUnico = Guid.CreateVersion7();
-        Guid categoriaRenda = Guid.CreateVersion7();
-        Guid categoriaEtnicoRacial = Guid.CreateVersion7();
-        Guid processoId;
+        Guid processoId = await GravarAsync(
+            "PS recorte", Guid.CreateVersion7(), BancaComRecorte(tipoUnico, "RENDA"), BancaComRecorte(tipoUnico, "ETNICO_RACIAL"));
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = NovoProcesso($"PS recorte {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [Fase(Guid.CreateVersion7(),
-                [
-                    BancaRequerida.Criar(tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(categoriaRenda, "RENDA")]),
-                    BancaRequerida.Criar(tipoUnico, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(categoriaEtnicoRacial, "ETNICO_RACIAL")]),
-                ])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        IReadOnlyCollection<BancaRequerida> bancas = (await CarregarAsync(db, processoId)).CronogramaFases.Single().BancasRequeridas;
 
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.SaveChangesAsync();
-            processoId = processo.Id;
-        }
+        bancas.Should().OnlyContain(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL" && b.TipoBancaOrigemId == tipoUnico);
+        ConferirQueCadaBancaGuardaOProprioRecorte(bancas);
+    }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-            IReadOnlyCollection<BancaRequerida> bancas = processo.CronogramaFases.Single().BancasRequeridas;
-
-            bancas.Should().HaveCount(2);
-            bancas.Should().OnlyContain(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL" && b.TipoBancaOrigemId == tipoUnico);
-            bancas.SelectMany(b => b.RecorteDeCompetencia).Select(c => c.Codigo)
-                .Should().BeEquivalentTo(["RENDA", "ETNICO_RACIAL"],
-                    "cada banca guarda o próprio recorte — é ele que separa uma da outra no snapshot publicado");
-            bancas.SelectMany(b => b.RecorteDeCompetencia)
-                .Should().OnlyContain(c => c.BancaRequeridaId != Guid.Empty);
-        }
+    private static void ConferirQueCadaBancaGuardaOProprioRecorte(IReadOnlyCollection<BancaRequerida> bancas)
+    {
+        bancas.Should().HaveCount(2);
+        bancas.SelectMany(b => b.RecorteDeCompetencia).Select(c => c.Codigo)
+            .Should().BeEquivalentTo(["RENDA", "ETNICO_RACIAL"],
+                "cada banca guarda o próprio recorte — é ele que separa uma da outra no snapshot publicado");
+        bancas.SelectMany(b => b.RecorteDeCompetencia)
+            .Should().OnlyContain(c => c.BancaRequeridaId != Guid.Empty);
     }
 
     [Fact(DisplayName = "Regravar o cronograma repõe o recorte sem deixar categoria órfã da banca que saiu")]
@@ -73,92 +57,73 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     {
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
         Guid tipoBanca = Guid.CreateVersion7();
-        Guid processoId;
+        Guid processoId = await GravarAsync("PS recorte reposto", faseCanonicaOrigemId, BancaComRecorte(tipoBanca, "RENDA"));
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = NovoProcesso($"PS recorte reposto {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId,
-                [
-                    BancaRequerida.Criar(tipoBanca, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]),
-                ])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        await RedefinirAsync(processoId, faseCanonicaOrigemId, BancaComRecorte(tipoBanca, "ESCOLARIDADE"));
 
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.SaveChangesAsync();
-            processoId = processo.Id;
-        }
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-
-            Result redefinicao = processo.DefinirCronogramaFases(
-                [Fase(faseCanonicaOrigemId,
-                [
-                    BancaRequerida.Criar(tipoBanca, "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "ESCOLARIDADE")]),
-                ])],
-                [],
-                PrecondicaoIfMatch.Curinga);
-
-            redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
-            await db.SaveChangesAsync();
-        }
-
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-
-            processo.CronogramaFases.Single().BancasRequeridas.Single()
-                .RecorteDeCompetencia.Should().ContainSingle()
-                .Which.Codigo.Should().Be("ESCOLARIDADE");
-
-            // A banca antiga foi removida com a reposição; o recorte dela não pode
-            // sobreviver ao pai, ou o certame passaria a declarar competência de uma banca
-            // que ninguém mais requer.
-            List<Guid> bancasVivas = await db.BancasRequeridas.Select(b => b.Id).ToListAsync();
-            (await db.Set<CategoriaJulgada>().CountAsync(c => !bancasVivas.Contains(c.BancaRequeridaId)))
-                .Should().Be(0, "nenhuma categoria julgada sobrevive à banca que a declarou");
-        }
+        processo.CronogramaFases.Single().BancasRequeridas.Single()
+            .RecorteDeCompetencia.Should().ContainSingle()
+            .Which.Codigo.Should().Be("ESCOLARIDADE");
+        await ConferirQueNenhumaCategoriaFicouOrfaAsync(db);
     }
 
     [Fact(DisplayName = "O índice único recusa a mesma categoria duas vezes na mesma banca, via SQL cru")]
     public async Task IndiceUnico_MesmaCategoriaDuasVezesNaMesmaBanca_Recusa()
     {
-        Guid processoId;
-        Guid bancaId;
+        Guid processoId = await GravarAsync("PS recorte unico", Guid.CreateVersion7(), BancaComRecorte(Guid.CreateVersion7(), "RENDA"));
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = NovoProcesso($"PS recorte unico {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [Fase(Guid.CreateVersion7(),
-                [
-                    BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")]),
-                ])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.SaveChangesAsync();
-            processoId = processo.Id;
-            bancaId = processo.CronogramaFases.Single().BancasRequeridas.Single().Id;
-        }
-
-        processoId.Should().NotBeEmpty();
+        await using SelecaoDbContext direto = _fixture.CreateDbContext();
+        Guid bancaId = (await CarregarAsync(direto, processoId)).CronogramaFases.Single().BancasRequeridas.Single().Id;
 
         // A recusa no agregado é check-then-act não-atômico: duas requisições concorrentes
         // sobre a mesma banca passariam as duas pela leitura. A constraint é a defesa que
         // não depende de ordem.
-        await using SelecaoDbContext direto = _fixture.CreateDbContext();
         Func<Task> inserirDuplicata = async () => await direto.Database.ExecuteSqlAsync(
             $"INSERT INTO selecao.categorias_julgadas (id, banca_requerida_id, categoria_documento_origem_id, codigo, created_at) VALUES ({Guid.CreateVersion7()}, {bancaId}, {Guid.CreateVersion7()}, {"RENDA"}, {DateTimeOffset.UtcNow})");
 
         Npgsql.PostgresException violacao = (await inserirDuplicata.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         violacao.SqlState.Should().Be("23505");
         violacao.ConstraintName.Should().Be("ux_categorias_julgadas_codigo");
+    }
+
+    // A banca antiga foi removida com a reposição; o recorte dela não pode
+    // sobreviver ao pai, ou o certame passaria a declarar competência de uma banca
+    // que ninguém mais requer.
+    private static async Task ConferirQueNenhumaCategoriaFicouOrfaAsync(SelecaoDbContext db)
+    {
+        List<Guid> bancasVivas = await db.BancasRequeridas.Select(b => b.Id).ToListAsync();
+        (await db.Set<CategoriaJulgada>().CountAsync(c => !bancasVivas.Contains(c.BancaRequeridaId)))
+            .Should().Be(0, "nenhuma categoria julgada sobrevive à banca que a declarou");
+    }
+
+    private static BancaRequerida BancaComRecorte(Guid tipoBanca, string categoriaCodigo) =>
+        BancaRequerida.Criar(
+            tipoBanca,
+            "BANCA_ANALISE_DOCUMENTAL",
+            "Banca de teste",
+            [CategoriaJulgada.Criar(Guid.CreateVersion7(), categoriaCodigo)]);
+
+    private async Task<Guid> GravarAsync(string nome, Guid faseCanonicaOrigemId, params BancaRequerida[] bancas)
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = NovoProcesso($"{nome} {Guid.CreateVersion7()}");
+        processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+        await db.ProcessosSeletivos.AddAsync(processo);
+        await db.SaveChangesAsync();
+        return processo.Id;
+    }
+
+    private async Task RedefinirAsync(Guid processoId, Guid faseCanonicaOrigemId, params BancaRequerida[] bancas)
+    {
+        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+        Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Curinga);
+        redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
+        await db.SaveChangesAsync();
     }
 
     private static ProcessoSeletivo NovoProcesso(string nome) => ProcessoSeletivo.Criar(

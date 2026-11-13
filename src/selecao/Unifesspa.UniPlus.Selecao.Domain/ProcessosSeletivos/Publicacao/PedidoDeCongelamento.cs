@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -24,6 +25,9 @@ public sealed record PedidoDeCongelamento
     public required FatosDeModalidade FatosDeModalidade { get; init; }
 
     public required TiposDeAtoUnicosPorObjeto TiposDeAtoUnicos { get; init; }
+
+    /// <summary>Os corretores que a regra de consolidação de cada etapa exige, para o mínimo de integrantes das bancas.</summary>
+    public CorretoresDasEtapas Corretores { get; init; } = CorretoresDasEtapas.Nenhum;
 }
 
 /// <summary>

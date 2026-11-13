@@ -44,6 +44,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
         "ReposicaoDaConfiguracao",
         "PlanoDaProtecaoVigente",
         "RegrasDosFormularios", "PlanoDoFormulario",
+        "AlinhamentoDasBancasDaEtapa",
     ];
 
     private static readonly string[] OperacoesDeVinculoEMutacao =

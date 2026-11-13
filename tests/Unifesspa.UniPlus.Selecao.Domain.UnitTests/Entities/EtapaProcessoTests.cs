@@ -41,10 +41,10 @@ public sealed partial class EtapaProcessoTests
             "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 1m).Value!;
 
         Guid tipoBanca = Guid.CreateVersion7();
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]).IsSuccess.Should().BeTrue();
         Guid idOriginal = etapa.Bancas.Single().Id;
 
-        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA")]).IsSuccess.Should().BeTrue();
+        etapa.DefinirBancas([BancaDaEtapa.Criar(tipoBanca, "BANCA_TECNICA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
         etapa.Bancas.Single().Id.Should().Be(idOriginal,
             "o código não mudou; recriar a linha gira o id e o CreatedAt sem que nada tenha mudado");

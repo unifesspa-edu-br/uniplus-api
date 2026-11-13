@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
+using Unifesspa.UniPlus.Kernel.Extensions;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;

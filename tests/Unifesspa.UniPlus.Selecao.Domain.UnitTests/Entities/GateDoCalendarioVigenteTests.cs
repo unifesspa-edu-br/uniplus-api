@@ -67,31 +67,34 @@ public sealed class GateDoCalendarioVigenteTests
     /// fecha com o resultado definitivo.
     /// </summary>
     private static FaseCronograma[] CronogramaComRecurso(UnidadePrazo unidade) =>
-    [
-        FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,             // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
-            // NA_EXECUCAO (issue #1350) — as demais fases deste cronograma seguem sem data.
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
-        FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
-            faseConcluinteCodigo: "RESULTADO_FINAL",
-            emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: Recurso(unidade), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
-        FaseCronograma.Criar(
-            3, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,             coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
-    ];
+        [FaseDeInscricao(), FasePreliminarComRecurso(unidade), FaseDoResultadoFinal()];
+
+    // A fase que coleta inscrição precisa de janela para publicar, mesmo com origem
+    // NA_EXECUCAO (issue #1350) — as demais fases deste cronograma seguem sem data.
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
+        agrupaEtapas: false, permiteComplementacao: false,
+        coletaInscricao: true, coletaSolicitacaoIsencao: false,
+        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+        fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
+        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+
+    private static FaseCronograma FasePreliminarComRecurso(UnidadePrazo unidade) => FaseCronograma.Criar(
+        2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
+        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+        produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
+        faseConcluinteCodigo: "RESULTADO_FINAL",
+        emiteParecerIndividual: false,
+        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()], regraRecurso: Recurso(unidade), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+
+    private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(
+        3, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
+        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
+        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
+        faseConcluinteCodigo: null,
+        emiteParecerIndividual: false,
+        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
     /// <summary>Processo conforme, com uma fase que aceita recurso e a convenção já declarada.</summary>
     private static ProcessoSeletivo ProcessoComRecurso(UnidadePrazo unidade)

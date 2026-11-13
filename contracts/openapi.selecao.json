@@ -13240,7 +13240,9 @@
         "required": [
           "id",
           "tipoBancaOrigemId",
-          "codigo"
+          "codigo",
+          "nome",
+          "regraDeDeliberacao"
         ],
         "type": "object",
         "properties": {
@@ -13254,6 +13256,19 @@
           },
           "codigo": {
             "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "regraDeDeliberacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraDeDeliberacaoDto"
+              }
+            ]
           }
         }
       },
@@ -13266,6 +13281,16 @@
           "tipoBancaId": {
             "type": "string",
             "format": "uuid"
+          },
+          "regraDeDeliberacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraDeDeliberacaoInput"
+              }
+            ]
           }
         }
       },
@@ -13274,6 +13299,8 @@
           "id",
           "tipoBancaOrigemId",
           "codigo",
+          "nome",
+          "regraDeDeliberacao",
           "recorteDeCompetencia"
         ],
         "type": "object",
@@ -13288,6 +13315,19 @@
           },
           "codigo": {
             "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "regraDeDeliberacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraDeDeliberacaoDto"
+              }
+            ]
           },
           "recorteDeCompetencia": {
             "type": "array",
@@ -13314,6 +13354,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "regraDeDeliberacao": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RegraDeDeliberacaoInput"
+              }
+            ]
           }
         }
       },
@@ -14871,6 +14921,15 @@
           }
         }
       },
+      "CriterioDeVotacao": {
+        "enum": [
+          "maioriaSimples",
+          "maioriaAbsoluta",
+          "unanimidade",
+          null
+        ],
+        "type": "string"
+      },
       "DadosDoAtoRequest": {
         "required": [
           "orgao",
@@ -15391,6 +15450,14 @@
             }
           }
         }
+      },
+      "DesempateDaVotacao": {
+        "enum": [
+          "votoDaPresidencia",
+          "novaVotacao",
+          null
+        ],
+        "type": "string"
       },
       "DestinoRemanejamentoDto": {
         "required": [
@@ -15977,6 +16044,14 @@
             }
           }
         }
+      },
+      "EncerramentoDaVotacao": {
+        "enum": [
+          "todosOsTitulares",
+          "presidenciaNoQuorum",
+          null
+        ],
+        "type": "string"
       },
       "EnvioDoComprovanteDto": {
         "required": [
@@ -19547,6 +19622,13 @@
           }
         }
       },
+      "ModoDeDeliberacao": {
+        "enum": [
+          "colegiadaComVotacao",
+          "atoIndividual"
+        ],
+        "type": "string"
+      },
       "MotivoDeDecisaoDto": {
         "required": [
           "id",
@@ -21965,6 +22047,147 @@
           }
         }
       },
+      "RegraDeDeliberacaoDto": {
+        "required": [
+          "modo",
+          "integrantes",
+          "suplentes",
+          "quorum",
+          "criterio",
+          "desempate",
+          "encerramento",
+          "semUnanimidade"
+        ],
+        "type": "object",
+        "properties": {
+          "modo": {
+            "$ref": "#/components/schemas/ModoDeDeliberacao"
+          },
+          "integrantes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "suplentes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quorum": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "criterio": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CriterioDeVotacao"
+              }
+            ]
+          },
+          "desempate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DesempateDaVotacao"
+              }
+            ]
+          },
+          "encerramento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EncerramentoDaVotacao"
+              }
+            ]
+          },
+          "semUnanimidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResultadoSemUnanimidade"
+              }
+            ]
+          }
+        }
+      },
+      "RegraDeDeliberacaoInput": {
+        "required": [
+          "modo",
+          "integrantes",
+          "suplentes"
+        ],
+        "type": "object",
+        "properties": {
+          "modo": {
+            "$ref": "#/components/schemas/ModoDeDeliberacao"
+          },
+          "integrantes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "suplentes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quorum": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "criterio": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CriterioDeVotacao"
+              }
+            ]
+          },
+          "desempate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DesempateDaVotacao"
+              }
+            ]
+          },
+          "encerramento": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EncerramentoDaVotacao"
+              }
+            ]
+          },
+          "semUnanimidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResultadoSemUnanimidade"
+              }
+            ]
+          }
+        }
+      },
       "RegraDerivacaoDto": {
         "required": [
           "ordem",
@@ -22372,6 +22595,15 @@
             ]
           }
         }
+      },
+      "ResultadoSemUnanimidade": {
+        "enum": [
+          "favoravel",
+          "desfavoravel",
+          "novaVotacao",
+          null
+        ],
+        "type": "string"
       },
       "RetificacaoCertameDto": {
         "required": [

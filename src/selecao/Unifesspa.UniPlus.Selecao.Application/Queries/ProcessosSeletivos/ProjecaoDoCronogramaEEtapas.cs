@@ -21,28 +21,30 @@ using Unifesspa.UniPlus.Regras.Formularios;
 internal static class ProjecaoDoCronogramaEEtapas
 {
     internal static EtapaProcessoDto ProjetarEtapa(EtapaProcesso e) => new(
-        e.Id,
-        e.Nome,
-        e.Carater,
+        e.Id, e.Nome, e.Carater,
         new TipoEtapaSnapshotDto(e.TipoEtapa.OrigemId, e.TipoEtapa.Codigo, e.TipoEtapa.Nome, e.TipoEtapa.NotaDeOrigemNoEnem),
-        e.Peso,
-        e.NotaMinima,
-        e.NotaMaxima,
-        e.PassoDoLancamento,
-        e.Ordem,
-        e.FaseCodigo,
+        e.Peso, e.NotaMinima, e.NotaMaxima, e.PassoDoLancamento,
+        e.Ordem, e.FaseCodigo,
         [.. e.Produtos.Select(pr => new ProdutoDaEtapaDto(pr.Id, pr.AtoCodigo, pr.Papel.ToCodigo()))],
-        e.Inicio,
-        e.Fim,
-        e.EmiteParecerIndividual,
-        [.. e.Bancas.Select(b => new BancaDaEtapaDto(b.Id, b.TipoBancaOrigemId, b.Codigo))],
+        e.Inicio, e.Fim, e.EmiteParecerIndividual,
+        [.. e.Bancas.Select(ProjetarBancaDaEtapa)],
         [.. e.Recursos.Select(r => ProjetarRecursoDaEtapa(e, r))],
         e.FormaDeAvaliacao.ToCodigo(),
         e.RegraConsolidacao is { } consolidacao ? ProjecaoDoProcessoSeletivo.Referencia(consolidacao) : null,
         [.. e.ItensDeAvaliacao.Select(i => new ItemDeAvaliacaoDto(i.Id, i.Rotulo, i.PontuacaoMaxima))],
+        ProjetarEscala(e));
+
+    private static BancaDaEtapaDto ProjetarBancaDaEtapa(BancaDaEtapa banca) => new(
+        banca.Id,
+        banca.TipoBancaOrigemId,
+        banca.Codigo,
+        banca.Nome,
+        ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao));
+
+    private static NivelDeAtendimentoDto[]? ProjetarEscala(EtapaProcesso e) =>
         e.EscalaDeAtendimento is { } escala
             ? [.. escala.Select(n => new NivelDeAtendimentoDto(n.Rotulo, n.Fracao))]
-            : null);
+            : null;
 
     // O código do ato âncora acompanha a leitura: sem ele, o cliente teria de cruzar o id do produto à
     // mão para reexibir contra o que o recurso corre.
@@ -95,6 +97,8 @@ internal static class ProjecaoDoCronogramaEEtapas
         banca.Id,
         banca.TipoBancaOrigemId,
         banca.Codigo,
+        banca.Nome,
+        ProjecaoDaRegraDeDeliberacao.De(banca.RegraDeDeliberacao),
         [.. banca.RecorteDeCompetencia
             .OrderBy(static c => c.Codigo, StringComparer.Ordinal)
             .Select(static c => new CategoriaJulgadaDto(c.Id, c.CategoriaDocumentoOrigemId, c.Codigo))]);

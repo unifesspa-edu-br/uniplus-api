@@ -179,7 +179,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
             fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
             produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
             faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", [])],
+            bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [])],
             regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }

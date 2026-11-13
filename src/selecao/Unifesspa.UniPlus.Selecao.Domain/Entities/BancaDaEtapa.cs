@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Uma banca que a <see cref="EtapaProcesso"/> requer (0..*) — snapshot-copy do
@@ -23,29 +24,55 @@ public sealed class BancaDaEtapa : EntityBase
     /// <summary>Código classificatório congelado (ex.: <c>"BANCA_HETEROIDENTIFICACAO"</c>).</summary>
     public string Codigo { get; private set; } = string.Empty;
 
+    /// <summary>Nome do tipo de banca, copiado do cadastro no congelamento (ADR-0061).</summary>
+    public string Nome { get; private set; } = string.Empty;
+
+    /// <summary>Como a banca é composta e delibera; ausente enquanto o rascunho não a declara.</summary>
+    public RegraDeDeliberacao? RegraDeDeliberacao { get; private set; }
+
     private BancaDaEtapa() { }
 
-    public static BancaDaEtapa Criar(Guid tipoBancaOrigemId, string codigo)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        if (tipoBancaOrigemId == Guid.Empty)
-        {
-            throw new ArgumentException("O id de origem do tipo de banca é obrigatório.", nameof(tipoBancaOrigemId));
-        }
-
-        return new BancaDaEtapa { TipoBancaOrigemId = tipoBancaOrigemId, Codigo = codigo.Trim() };
-    }
+    public static BancaDaEtapa Criar(
+        Guid tipoBancaOrigemId, string codigo, string nome, RegraDeDeliberacao? regraDeDeliberacao = null) =>
+        Montar(Guid.CreateVersion7(), tipoBancaOrigemId, codigo, nome, regraDeDeliberacao);
 
     /// <summary>Reidrata a banca preservando o <see cref="EntityBase.Id"/> congelado.</summary>
-    public static BancaDaEtapa Reidratar(Guid id, Guid tipoBancaOrigemId, string codigo)
+    public static BancaDaEtapa Reidratar(
+        Guid id, Guid tipoBancaOrigemId, string codigo, string nome, RegraDeDeliberacao? regraDeDeliberacao = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A banca reidratada deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        return new BancaDaEtapa { Id = id, TipoBancaOrigemId = tipoBancaOrigemId, Codigo = codigo.Trim() };
+        return Montar(id, tipoBancaOrigemId, codigo, nome, regraDeDeliberacao);
+    }
+
+    private static BancaDaEtapa Montar(
+        Guid id, Guid tipoBancaOrigemId, string codigo, string nome, RegraDeDeliberacao? regraDeDeliberacao)
+    {
+        (string codigoAparado, string nomeAparado) = OrigemDaBanca.Exigir(tipoBancaOrigemId, codigo, nome);
+
+        return new BancaDaEtapa
+        {
+            Id = id,
+            TipoBancaOrigemId = tipoBancaOrigemId,
+            Codigo = codigoAparado,
+            Nome = nomeAparado,
+            RegraDeDeliberacao = regraDeDeliberacao,
+        };
+    }
+
+    /// <summary>
+    /// Alinha nome e regra desta linha viva aos da declaração que a substitui: a etapa reaproveita a
+    /// linha de mesmo código, e o que não é a origem do tipo precisa acompanhá-la.
+    /// </summary>
+    internal void Redeclarar(BancaDaEtapa declarada)
+    {
+        ArgumentNullException.ThrowIfNull(declarada);
+
+        Nome = declarada.Nome;
+        RegraDeDeliberacao = declarada.RegraDeDeliberacao;
     }
 
     /// <summary>

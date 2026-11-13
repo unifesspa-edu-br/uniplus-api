@@ -99,6 +99,10 @@ public sealed partial class EnvelopeFechadoE2ETests
         "cronograma_resultado_declarado_com_papel",
         "cronograma_tipo_que_congela_nao_eh_resultado",
         "cronograma_tipo_de_ato_unico_declarado_uma_vez",
+        "cronograma_recurso_com_banca_de_analise",
+        "cronograma_banca_de_recursos_sem_recorte",
+        "cronograma_banca_com_regra_de_deliberacao",
+        "cronograma_banca_com_o_minimo_de_integrantes",
         // ── PendenciaDaCascata, detalhamento por razão ──
         "cascata_modalidade_fora_do_regime_federal",
         "cascata_origem_ausente",

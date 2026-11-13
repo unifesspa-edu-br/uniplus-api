@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação de <see cref="IRegraCatalogoReader"/>: leitura direta do
@@ -49,6 +50,9 @@ internal sealed class RegraCatalogoReader : IRegraCatalogoReader
             .FirstOrDefaultAsync(r => r.Codigo == codigo && r.Versao == versao, cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public Task<int> NumeroDeCorretoresAsync(ReferenciaRegra regra, CancellationToken cancellationToken = default) =>
+        Task.FromResult(0);
 
     public async Task<(IReadOnlyList<RegraCatalogo> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         TipoRegra? tipo,
