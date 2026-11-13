@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Application;
 using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
@@ -95,7 +94,6 @@ public static class AutorizacaoApplicationServiceRegistration
 
     private static void AdicionarMetricasDaGovernanca(IServiceCollection services)
     {
-        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<MetricasDaGovernancaDePerfis>();
         services.AddScoped<AmostragemDaGovernanca>();
     }
