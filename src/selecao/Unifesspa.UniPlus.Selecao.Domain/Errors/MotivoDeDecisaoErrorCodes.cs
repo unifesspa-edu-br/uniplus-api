@@ -10,6 +10,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 public static class MotivoDeDecisaoErrorCodes
 {
     public const string TipoObrigatorio = "MotivoDeDecisao.TipoObrigatorio";
+    public const string TipoInvalido = "MotivoDeDecisao.TipoInvalido";
     public const string CodigoObrigatorio = "MotivoDeDecisao.CodigoObrigatorio";
     public const string CodigoFormatoInvalido = "MotivoDeDecisao.CodigoFormatoInvalido";
     public const string CodigoJaExiste = "MotivoDeDecisao.CodigoJaExiste";

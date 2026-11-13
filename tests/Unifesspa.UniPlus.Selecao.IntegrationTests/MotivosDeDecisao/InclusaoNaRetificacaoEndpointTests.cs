@@ -33,6 +33,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
 {
     private const string Fundamento = "CADASTRO_UNICO";
     private const string Rota = "/api/selecao/processos-seletivos";
+    private const string JustificativaInterna = "Justificativa interna da administração";
     private readonly CascadingFixture _fixture;
 
     public InclusaoNaRetificacaoEndpointTests(CascadingFixture fixture) => _fixture = fixture;
@@ -58,8 +59,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
 
         using HttpResponseMessage semJustificativa = await IncluirAsync(processoId, outraHomologacao.Id, null, etag);
         using HttpResponseMessage aceita = await IncluirAsync(processoId, homologacao.Id, "Retorno do INEP passou a ser exigido pela norma.", etag);
-        string etagNovo = aceita.Headers.ETag!.Tag;
-        using HttpResponseMessage avaliacaoIniciada = await IncluirAsync(processoId, isencao.Id, "Motivo previsto em norma nova.", etagNovo);
+        using HttpResponseMessage avaliacaoIniciada = await IncluirAsync(processoId, isencao.Id, "Motivo previsto em norma nova.", aceita.Headers.ETag!.Tag);
 
         (await CodigoDoErro(semJustificativa)).Should().Be("uniplus.selecao.motivo_de_decisao.justificativa_obrigatoria");
         aceita.StatusCode.Should().Be(HttpStatusCode.NoContent, await aceita.Content.ReadAsStringAsync());
@@ -103,8 +103,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         Guid processoId = await SemearPublicadoComIsencaoAsync(nameof(Justificativa_NaoSaiEmLeituraPublica));
         string etag = await AbrirRetificacaoAsync(processoId);
         MotivoDeDecisao homologacao = await SemearMotivoAsync(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, SentidoDoMotivo.Desfavoravel);
-        const string justificativa = "Justificativa interna da administração";
-        (await IncluirAsync(processoId, homologacao.Id, justificativa, etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await IncluirAsync(processoId, homologacao.Id, JustificativaInterna, etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         using HttpResponseMessage anonimo = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: null, papel: null);
         using HttpResponseMessage candidata = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: "marlene.martins", papel: null);
@@ -113,27 +112,32 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
 
         anonimo.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         candidata.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound);
-        (await processoPublico.Content.ReadAsStringAsync()).Should().NotContain(justificativa);
-        (await quemConfigura.Content.ReadAsStringAsync()).Should().Contain(justificativa);
+        (await processoPublico.Content.ReadAsStringAsync()).Should().NotContain(JustificativaInterna);
+        (await quemConfigura.Content.ReadAsStringAsync()).Should().Contain(JustificativaInterna);
     }
 
-    private async Task<Guid> SemearPublicadoComIsencaoAsync(string nome)
+    private async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoComIsencaoAsync(string nome)
     {
-        Guid processoId;
-        Guid documentoId;
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                db, $"{nome} {Guid.CreateVersion7()}", complementar: HabilitarIsencao);
-            (processoId, documentoId) = (processo.Id, documento.Id);
-        }
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
+            db, $"{nome} {Guid.CreateVersion7()}", complementar: HabilitarIsencao);
+        return (processo.Id, documento.Id);
+    }
 
+    private async Task EscolherMotivosDaIsencaoAsync(Guid processoId)
+    {
         foreach (SentidoDoMotivo sentido in new[] { SentidoDoMotivo.Favoravel, SentidoDoMotivo.Desfavoravel })
         {
             MotivoDeDecisao motivo = await SemearMotivoAsync(TipoMotivoDeDecisao.IsencaoDaTaxa, Fundamento, sentido);
             (await IncluirAsync(processoId, motivo.Id, null, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
+    }
+
+    private async Task<Guid> SemearPublicadoComIsencaoAsync(string nome)
+    {
+        (Guid processoId, Guid documentoId) = await SemearProcessoComIsencaoAsync(nome);
+        await EscolherMotivosDaIsencaoAsync(processoId);
 
         using HttpResponseMessage publicada = await EnviarAsync(HttpMethod.Post, $"{Rota}/{processoId}/publicacao", CorpoDaPublicacao(documentoId), null);
         publicada.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicada.Content.ReadAsStringAsync());
@@ -168,7 +172,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
     private async Task<MotivoDeDecisao> SemearMotivoAsync(TipoMotivoDeDecisao tipo, string? subclassificacao, SentidoDoMotivo sentido)
     {
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            tipo, $"TEST_IRE_{Guid.NewGuid():N}"[..40].ToUpperInvariant(), "Motivo previsto pela comissão do processo", subclassificacao, sentido)).Value!;
+            tipo.ToCodigo(), $"TEST_IRE_{Guid.NewGuid():N}"[..40].ToUpperInvariant(), "Motivo previsto pela comissão do processo", subclassificacao, sentido)).Value!;
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.MotivosDeDecisao.Add(motivo);
@@ -215,6 +219,15 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri(url, UriKind.Relative));
+        Identificar(request, contaId, papel);
+
+        HttpResponseMessage resposta = await client.SendAsync(request);
+        await resposta.Content.LoadIntoBufferAsync();
+        return resposta;
+    }
+
+    private static void Identificar(HttpRequestMessage request, string? contaId, string? papel)
+    {
         if (contaId is not null || papel is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
@@ -229,10 +242,6 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         {
             request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
         }
-
-        HttpResponseMessage resposta = await client.SendAsync(request);
-        await resposta.Content.LoadIntoBufferAsync();
-        return resposta;
     }
 
     private async Task<IReadOnlyList<JsonElement>> EscolhidosAsync(Guid processoId)

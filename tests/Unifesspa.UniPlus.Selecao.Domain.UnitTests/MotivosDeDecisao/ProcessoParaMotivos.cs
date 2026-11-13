@@ -60,7 +60,7 @@ internal static class ProcessoParaMotivos
     }
 
     internal static MotivoDeDecisao Motivo(TipoMotivoDeDecisao tipo, string codigo, SentidoDoMotivo sentido, string? subclassificacao = null) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo, codigo, "Descrição do motivo " + codigo, subclassificacao, sentido)).Value!;
+        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, "Descrição do motivo " + codigo, subclassificacao, sentido)).Value!;
 
     internal static MotivoDeDecisao DaIsencao(string fundamento, SentidoDoMotivo sentido, string codigo = "RENDA_ACIMA_DO_LIMITE") =>
         Motivo(TipoMotivoDeDecisao.IsencaoDaTaxa, codigo, sentido, fundamento);

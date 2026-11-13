@@ -90,11 +90,14 @@ public sealed class MotivosDeDecisaoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        if (!FiltroDaListagemDeMotivos.TentarLer(tipo, subclassificacao, apenasAtivos, out FiltroDosMotivos filtro, out ProblemDetails? recusa))
-        {
-            return BadRequest(recusa);
-        }
+        Result<FiltroDosMotivos> filtro = FiltroDaListagemDeMotivos.Ler(tipo, subclassificacao, apenasAtivos);
+        return filtro.IsFailure
+            ? filtro.ToActionResult(_mapper)
+            : await ListarFiltradosAsync(page, filtro.Value!, cancellationToken).ConfigureAwait(false);
+    }
 
+    private async Task<IActionResult> ListarFiltradosAsync(PageRequest page, FiltroDosMotivos filtro, CancellationToken cancellationToken)
+    {
         ListarMotivosDeDecisaoResult resultado = await _queryBus
             .Send(new ListarMotivosDeDecisaoQuery(page.AfterId, page.Limit, page.Direction, filtro), cancellationToken)
             .ConfigureAwait(false);

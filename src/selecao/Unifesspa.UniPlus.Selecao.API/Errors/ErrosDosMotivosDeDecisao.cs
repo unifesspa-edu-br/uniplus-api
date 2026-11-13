@@ -19,6 +19,7 @@ internal static class ErrosDosMotivosDeDecisao
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CamposDoCadastro() =>
     [
         Recusa(MotivoDeDecisaoErrorCodes.TipoObrigatorio, "tipo_obrigatorio", "Tipo do motivo é obrigatório"),
+        Recusa(MotivoDeDecisaoErrorCodes.TipoInvalido, "tipo_invalido", "Tipo de decisão desconhecido"),
         Recusa(MotivoDeDecisaoErrorCodes.CodigoObrigatorio, "codigo_obrigatorio", "Código do motivo é obrigatório"),
         Recusa(MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido, "codigo_formato_invalido", "Código do motivo fora do formato aceito"),
         Mapear(MotivoDeDecisaoErrorCodes.CodigoJaExiste, StatusCodes.Status409Conflict, "codigo_ja_existe", "Já existe motivo com este código neste tipo"),

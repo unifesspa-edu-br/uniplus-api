@@ -59,7 +59,7 @@ public static class GravarEmDoisModulosHandler
 
     internal static MotivoDeDecisao NovoMotivo(string codigo) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.Classificacao, codigo, "Motivo de teste da transação.", Subclassificacao: null, SentidoDoMotivo.Favoravel)).Value!;
+            TipoMotivoDeDecisaoCodigo.Classificacao, codigo, "Motivo de teste da transação.", Subclassificacao: null, SentidoDoMotivo.Favoravel)).Value!;
 
     private static async Task<(Result, IEnumerable<object>)> ConcluirAsync(
         GravarEmDoisModulos comando, IUnitOfWork unidade, CancellationToken cancellationToken)

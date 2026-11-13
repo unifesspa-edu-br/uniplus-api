@@ -103,22 +103,26 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
 
     private async Task IncluirNovoMotivoAsync(HttpClient client, Guid processoId, SentidoDoMotivo sentido)
     {
-        MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.IsencaoDaTaxa,
-            $"TEST_CDM_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
-            "Situação no Cadastro Único conferida pela comissão",
-            Fundamento,
-            sentido)).Value!;
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        {
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            db.MotivosDeDecisao.Add(motivo);
-            await db.SaveChangesAsync();
-        }
+        MotivoDeDecisao motivo = await SemearMotivoAsync(sentido);
 
         using HttpResponseMessage inclusao = await EnviarAsync(
             client, HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/motivos-de-decisao/{motivo.Id}", new { justificativa = (string?)null });
         inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
+    }
+
+    private async Task<MotivoDeDecisao> SemearMotivoAsync(SentidoDoMotivo sentido)
+    {
+        MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
+            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+            $"TEST_CDM_{Guid.NewGuid():N}"[..40].ToUpperInvariant(),
+            "Situação no Cadastro Único conferida pela comissão",
+            Fundamento,
+            sentido)).Value!;
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        db.MotivosDeDecisao.Add(motivo);
+        await db.SaveChangesAsync();
+        return motivo;
     }
 
     private static Task<HttpResponseMessage> PublicarAsync(HttpClient client, Guid processoId, Guid documentoId) =>

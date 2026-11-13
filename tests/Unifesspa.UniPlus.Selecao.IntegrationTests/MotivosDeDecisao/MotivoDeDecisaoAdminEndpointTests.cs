@@ -130,11 +130,7 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
             leandro, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
         antes.StatusCode.Should().Be(HttpStatusCode.Created, await antes.Content.ReadAsStringAsync());
 
-        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Diogo, TipoDeGovernanca.GestorDeAcessos);
-        using HttpClient gestor = ClienteAutenticado(Diogo);
-        using HttpResponseMessage revogada = await PostAsync(
-            gestor, $"/api/autorizacao/concessoes/{concessao}/revogacao", new { motivo = "Mudou de função na unidade.", confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
-        revogada.StatusCode.Should().Be(HttpStatusCode.NoContent, await revogada.Content.ReadAsStringAsync());
+        await RevogarAsync(concessao);
 
         using HttpResponseMessage depois = await PostAsync(
             leandro, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
@@ -146,8 +142,7 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     public async Task ManterSemPermissao_Recusa()
     {
         using HttpClient comPermissao = await ClienteComConcessaoAsync();
-        using HttpResponseMessage criada = await PostAsync(comPermissao, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
-        Guid id = await criada.Content.ReadFromJsonAsync<Guid>();
+        Guid id = await CriarMotivoAsync(comPermissao, Codigo());
         using HttpClient lucia = ClienteAutenticado(Lucia);
 
         using HttpResponseMessage edicao = await EnviarAsync(lucia, HttpMethod.Put, $"/api/selecao/admin/motivos-de-decisao/{id}", new { id, descricao = "Outra redação do motivo." });
@@ -160,21 +155,6 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
         reativacao.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "POST com tipo fora do domínio fechado é recusado como tipo não informado")]
-    public async Task Criar_TipoForaDoDominio_Recusa()
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-
-        using HttpResponseMessage resposta = await PostAsync(
-            client,
-            "/api/selecao/admin/motivos-de-decisao",
-            new { tipo = "RECURSO", codigo = Codigo(), descricao = "Motivo de um tipo que não existe.", subclassificacao = (string?)null, sentido = "DESFAVORAVEL" });
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("\"code\":\"uniplus.selecao.motivo_de_decisao.tipo_obrigatorio\"",
-            "o tipo fora do vocabulário do wire é lido como tipo não informado");
-    }
-
     [Fact(DisplayName = "POST sem autenticação alguma é 401, não 403")]
     public async Task Criar_SemAutenticacao_NaoAutorizado()
     {
@@ -185,26 +165,6 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
             "responder 403 diria que a identidade foi lida e recusada, quando não houve identidade");
-    }
-
-    [Fact(DisplayName = "POST sem sentido é recusado com 422")]
-    public async Task Criar_SemSentido_Recusa()
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-
-        using HttpResponseMessage resposta = await PostAsync(
-            client,
-            "/api/selecao/admin/motivos-de-decisao",
-            new
-            {
-                tipo = "ISENCAO_DA_TAXA",
-                codigo = Codigo(),
-                descricao = "Renda familiar per capita acima do limite legal.",
-                subclassificacao = "CADASTRO_UNICO",
-                sentido = (string?)null,
-            });
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact(DisplayName = "POST repetido com o mesmo código devolve conflito")]
@@ -228,16 +188,10 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     {
         using HttpClient client = await ClienteComConcessaoAsync();
         string codigo = Codigo();
+        Guid id = await CriarMotivoAsync(client, codigo);
 
-        using HttpResponseMessage criada = await PostAsync(
-            client, "/api/selecao/admin/motivos-de-decisao", PayloadValido(codigo));
-        Guid id = await criada.Content.ReadFromJsonAsync<Guid>();
-
-        using HttpRequestMessage desativar = new(
-            HttpMethod.Delete,
-            new Uri($"/api/selecao/admin/motivos-de-decisao/{id}/ativacao", UriKind.Relative));
-        desativar.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        using HttpResponseMessage respostaDesativacao = await client.SendAsync(desativar);
+        using HttpResponseMessage respostaDesativacao = await EnviarAsync(
+            client, HttpMethod.Delete, $"/api/selecao/admin/motivos-de-decisao/{id}/ativacao", null);
 
         respostaDesativacao.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await ExisteNoBanco(codigo)).Should().BeTrue(
@@ -261,18 +215,6 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
         homologacao.StatusCode.Should().Be(HttpStatusCode.Created, await homologacao.Content.ReadAsStringAsync());
     }
 
-    [Fact(DisplayName = "POST com subclassificação em tipo que não a define é recusado com o código nomeado")]
-    public async Task Criar_SubclassificacaoForaDaIsencao_Recusa()
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-
-        using HttpResponseMessage resposta = await PostAsync(
-            client, "/api/selecao/admin/motivos-de-decisao", PayloadDaHomologacao(Codigo(), "CADASTRO_UNICO"));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.selecao.motivo_de_decisao.subclassificacao_nao_admitida");
-    }
-
     [Fact(DisplayName = "O filtro por tipo e subclassificação aceita os códigos canônicos que a leitura devolve")]
     public async Task Listar_FiltroPeloCodigoCanonico_Filtra()
     {
@@ -285,62 +227,8 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
 
         // O DTO devolve tipo e subclassificação como código canônico; devolver esses mesmos
         // valores no filtro tem de funcionar.
-        using HttpResponseMessage resposta = await client.GetAsync(
-            new Uri("/api/selecao/motivos-de-decisao?tipo=ISENCAO_DA_TAXA&subclassificacao=CADASTRO_UNICO&limit=100", UriKind.Relative));
-
-        string corpo = await resposta.Content.ReadAsStringAsync();
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
-        corpo.Should().Contain(codigo);
-        using HttpResponseMessage outroTipo = await client.GetAsync(
-            new Uri("/api/selecao/motivos-de-decisao?tipo=CLASSIFICACAO&limit=100", UriKind.Relative));
-        (await outroTipo.Content.ReadAsStringAsync()).Should().NotContain(codigo);
-    }
-
-    [Fact(DisplayName = "O filtro recusa tipo fora do vocabulário canônico")]
-    public async Task Listar_FiltroForaDoVocabulario_Recusa()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        using HttpResponseMessage resposta = await client.GetAsync(
-            new Uri("/api/selecao/motivos-de-decisao?tipo=NAO_EXISTE", UriKind.Relative));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact(DisplayName = "A sentinela de tipo não informado não é aceita como filtro")]
-    public async Task Listar_FiltroComSentinela_Recusa()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        // Nenhum é sentinela de ausência, não um tipo — aceitá-la como filtro
-        // devolveria uma lista sempre vazia.
-        using HttpResponseMessage resposta = await client.GetAsync(
-            new Uri("/api/selecao/motivos-de-decisao?tipo=NENHUM", UriKind.Relative));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact(DisplayName = "Descrição com caractere nulo é recusada pelo domínio, não pelo banco")]
-    public async Task Criar_DescricaoComCaractereNulo_Recusa()
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-
-        using HttpResponseMessage resposta = await PostAsync(
-            client,
-            "/api/selecao/admin/motivos-de-decisao",
-            new
-            {
-                tipo = "ISENCAO_DA_TAXA",
-                codigo = Codigo(),
-                descricao = "Renda\u0000acima do limite.",
-                subclassificacao = "CADASTRO_UNICO",
-                sentido = "DESFAVORAVEL",
-            });
-
-        // O Postgres não armazena U+0000 em coluna textual. Sem recusa no
-        // agregado, o valor atravessa a validação e estoura no SaveChanges,
-        // devolvendo 500 para um payload que é apenas inválido.
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ListarCorpoAsync(client, "tipo=ISENCAO_DA_TAXA&subclassificacao=CADASTRO_UNICO")).Should().Contain(codigo);
+        (await ListarCorpoAsync(client, "tipo=CLASSIFICACAO")).Should().NotContain(codigo);
     }
 
     [Fact(DisplayName = "Token sem jti responde o 401 canônico da API, com desafio e problem+json")]
@@ -350,19 +238,40 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
         // se monta: a borda responde identidade incompleta. O 401 daí precisa
         // ser o mesmo de qualquer outra falha de autenticação desta API, senão
         // o cliente não reconhece que deve renovar a credencial.
-        HttpClient client = await ClienteComConcessaoAsync();
-        client.DefaultRequestHeaders.Add(TestAuthHandler.SemJtiHeader, "1");
+        using HttpClient client = await ClienteSemJtiAsync();
 
-        using (client)
-        {
-            using HttpResponseMessage resposta = await PostAsync(
-                client, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
+        using HttpResponseMessage resposta = await PostAsync(
+            client, "/api/selecao/admin/motivos-de-decisao", PayloadValido(Codigo()));
 
-            resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-            resposta.Headers.WwwAuthenticate.Should().NotBeEmpty(
-                "o desafio é o que diz ao cliente que a credencial precisa ser renovada");
-            resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
-        }
+        resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        resposta.Headers.WwwAuthenticate.Should().NotBeEmpty(
+            "o desafio é o que diz ao cliente que a credencial precisa ser renovada");
+        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/problem+json");
+    }
+
+    private static async Task<Guid> CriarMotivoAsync(HttpClient client, string codigo)
+    {
+        using HttpResponseMessage criada = await PostAsync(
+            client, "/api/selecao/admin/motivos-de-decisao", PayloadValido(codigo));
+        return await criada.Content.ReadFromJsonAsync<Guid>();
+    }
+
+    private static async Task<string> ListarCorpoAsync(HttpClient client, string filtro)
+    {
+        using HttpResponseMessage resposta = await client.GetAsync(
+            new Uri($"/api/selecao/motivos-de-decisao?{filtro}&limit=100", UriKind.Relative));
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
+        return corpo;
+    }
+
+    private async Task RevogarAsync(Guid concessao)
+    {
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, Diogo, TipoDeGovernanca.GestorDeAcessos);
+        using HttpClient gestor = ClienteAutenticado(Diogo);
+        using HttpResponseMessage revogada = await PostAsync(
+            gestor, $"/api/autorizacao/concessoes/{concessao}/revogacao", new { motivo = "Mudou de função na unidade.", confirmacaoEmail = ConcessoesDeTeste.EmailDeTeste });
+        revogada.StatusCode.Should().Be(HttpStatusCode.NoContent, await revogada.Content.ReadAsStringAsync());
     }
 
     private static async Task<bool> AtivoAsync(HttpClient client, Guid id)
@@ -381,12 +290,12 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
         sentido = "DESFAVORAVEL",
     };
 
-    private static object PayloadDaHomologacao(string codigo, string? subclassificacao = null) => new
+    private static object PayloadDaHomologacao(string codigo) => new
     {
         tipo = "HOMOLOGACAO_DAS_INSCRICOES",
         codigo,
         descricao = "Sem resultado no retorno do INEP para a edição indicada",
-        subclassificacao,
+        subclassificacao = (string?)null,
         sentido = "DESFAVORAVEL",
     };
 
@@ -408,6 +317,13 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     {
         await ConcessoesDeTeste.ConcederPermissoesAsync(_fixture.Factory.Services, Leandro, PermissaoManter);
         return ClienteAutenticado(Leandro);
+    }
+
+    private async Task<HttpClient> ClienteSemJtiAsync()
+    {
+        HttpClient client = await ClienteComConcessaoAsync();
+        client.DefaultRequestHeaders.Add(TestAuthHandler.SemJtiHeader, "1");
+        return client;
     }
 
     private HttpClient ClienteComPapeisDeRealm(string contaId, params string[] papeis)

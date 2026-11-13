@@ -231,7 +231,7 @@ public sealed class MotivosDoProcessoCommandHandlersTests
 
     private static MotivoDeDecisao Motivo(
         TipoMotivoDeDecisao tipo = TipoMotivoDeDecisao.IsencaoDaTaxa, string codigo = "RENDA_ACIMA_DO_LIMITE", string? subclassificacao = FundamentoIsencaoCodigo.CadastroUnico) =>
-        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo, codigo, "Renda familiar per capita acima do limite legal.", subclassificacao, SentidoDoMotivo.Desfavoravel)).Value!;
+        MotivoDeDecisao.Criar(new CamposDoMotivo(tipo.ToCodigo(), codigo, "Renda familiar per capita acima do limite legal.", subclassificacao, SentidoDoMotivo.Desfavoravel)).Value!;
 
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar(

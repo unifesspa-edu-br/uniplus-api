@@ -22,11 +22,8 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
     {
         MotivoDeDecisao motivo = Motivo();
         FiltroDosMotivos filtro = new(TipoMotivoDeDecisao.IsencaoDaTaxa, FundamentoIsencaoCodigo.CadastroUnico, ApenasAtivos: true);
-        _repository.ListarPaginadoAsync(null, 20, PaginationDirection.Next, filtro, Arg.Any<CancellationToken>())
-            .Returns(([motivo], (Guid?)null, (Guid?)null));
 
-        ListarMotivosDeDecisaoResult resultado = await ListarMotivosDeDecisaoQueryHandler.Handle(
-            new ListarMotivosDeDecisaoQuery(null, 20, PaginationDirection.Next, filtro), _repository, CancellationToken.None);
+        ListarMotivosDeDecisaoResult resultado = await ListarAsync(filtro, motivo);
 
         resultado.Items.Should().ContainSingle().Which.Should().BeEquivalentTo(new
         {
@@ -60,7 +57,16 @@ public sealed class MotivosDeDecisaoQueryHandlersTests
         lido!.Codigo.Should().Be("RENDA_ACIMA_DO_LIMITE");
     }
 
+    private async Task<ListarMotivosDeDecisaoResult> ListarAsync(FiltroDosMotivos filtro, MotivoDeDecisao motivo)
+    {
+        _repository.ListarPaginadoAsync(null, 20, PaginationDirection.Next, filtro, Arg.Any<CancellationToken>())
+            .Returns(([motivo], (Guid?)null, (Guid?)null));
+
+        return await ListarMotivosDeDecisaoQueryHandler.Handle(
+            new ListarMotivosDeDecisaoQuery(null, 20, PaginationDirection.Next, filtro), _repository, CancellationToken.None);
+    }
+
     private static MotivoDeDecisao Motivo() =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
-            TipoMotivoDeDecisao.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", "Renda dentro do limite legal.", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)).Value!;
+            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, "RENDA_ACIMA_DO_LIMITE", "Renda dentro do limite legal.", FundamentoIsencaoCodigo.CadastroUnico, SentidoDoMotivo.Favoravel)).Value!;
 }
