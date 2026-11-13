@@ -99,15 +99,25 @@ internal sealed record AcessoDoAprovador(
     /// o id da rota, que é forjável e não existe: a trilha reconhece a sondagem pela ausência do id, e a resposta é a mesma
     /// de quem não tem a permissão. Quem tem a permissão errou o link, e nada se registra.
     /// </summary>
-    public static async Task RegistrarNegativasDoInexistenteAsync(
+    /// <returns>
+    /// A identidade incompleta quando o token não identifica o solicitante por completo, sem registro, como no pedido
+    /// existente, para que a resposta não revele se o pedido existe; nulo nos demais casos.
+    /// </returns>
+    public static async Task<DomainError?> RegistrarNegativasDoInexistenteAsync(
         IVerificadorDeAcesso verificador, FinalidadeDoAcesso finalidade, CancellationToken cancellationToken)
     {
         AcessoDoAprovador? acesso = await ConsultarAsync(verificador, finalidade, pedidoId: null, cancellationToken).ConfigureAwait(false);
+        if (acesso is null)
+        {
+            return PedidoHandlerErros.IdentidadeIncompleta();
+        }
 
-        if (acesso is not null && !acesso.Ve(finalidade))
+        if (!acesso.Ve(finalidade))
         {
             await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
         }
+
+        return null;
     }
 
     /// <summary>

@@ -46,7 +46,8 @@ public sealed class TitularidadeSoNoRegistroTests
             .That().ResideInNamespaceMatching(@"^Unifesspa\.UniPlus\.Authorization\.Decisao(\.|$)")
             .Or().HaveFullNameMatching(@"^Unifesspa\.UniPlus\.Infrastructure\.Core\.Authorization\.HttpAuthorizationSubjectResolver(\+|$)")
             .GetObjects(Arquitetura).ToList();
-        pontoDeDecisao.Should().Contain(static t => t.Name == "GrantEfetivoAplicavelCheck", "sem os tipos do ponto de decisão a conferência passaria vazia");
+        pontoDeDecisao.Should().Contain(static t => t.Name == "GrantEfetivoAplicavelCheck", "sem os tipos do ponto de decisão a conferência passaria vazia")
+            .And.Contain(static t => t.Name == "HttpAuthorizationSubjectResolver", "sem o assembly do resolvedor do sujeito a conferência das concessões efetivas passaria vazia");
 
         Types().That().CallAny(FabricaDaConcessaoEfetiva()).GetObjects(Arquitetura)
             .Intersect(pontoDeDecisao)

@@ -27,16 +27,12 @@ public static class ObterPedidoDeConcessaoQueryHandler
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        Result<PedidoDeConcessao> pedido = await ObterVisivelAsync(query.Id, repository, verificador, userContext, cancellationToken)
-            .ConfigureAwait(false);
-        if (pedido.IsFailure)
-        {
-            return Result<PedidoDeConcessaoDto>.Failure(pedido.Error!);
-        }
+        Result<PedidoDeConcessao> pedido = await ObterVisivelAsync(query.Id, repository, verificador, userContext, cancellationToken).ConfigureAwait(false);
 
-        Perfil? perfil = await perfis.ObterPorIdAsync(pedido.Value!.PerfilId, cancellationToken).ConfigureAwait(false);
-
-        return Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(pedido.Value, perfil));
+        return pedido.IsFailure
+            ? Result<PedidoDeConcessaoDto>.Failure(pedido.Error!)
+            : Result<PedidoDeConcessaoDto>.Success(PedidoMapping.ToDto(
+                pedido.Value!, await perfis.ObterPorIdAsync(pedido.Value!.PerfilId, cancellationToken).ConfigureAwait(false)));
     }
 
     public static async Task<Result<IReadOnlyList<EventoDaTrilhaDto>>> Handle(
@@ -51,17 +47,12 @@ public static class ObterPedidoDeConcessaoQueryHandler
         ArgumentNullException.ThrowIfNull(verificador);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        Result<PedidoDeConcessao> pedido = await ObterVisivelAsync(query.Id, repository, verificador, userContext, cancellationToken)
-            .ConfigureAwait(false);
-        if (pedido.IsFailure)
-        {
-            return Result<IReadOnlyList<EventoDaTrilhaDto>>.Failure(pedido.Error!);
-        }
+        Result<PedidoDeConcessao> pedido = await ObterVisivelAsync(query.Id, repository, verificador, userContext, cancellationToken).ConfigureAwait(false);
 
-        IReadOnlyList<LeituraDoAnexoDoPedido> leituras = await repository
-            .ListarLeiturasAsync(query.Id, cancellationToken).ConfigureAwait(false);
-
-        return Result<IReadOnlyList<EventoDaTrilhaDto>>.Success(EventosDoPedido.Montar(pedido.Value!, leituras));
+        return pedido.IsFailure
+            ? Result<IReadOnlyList<EventoDaTrilhaDto>>.Failure(pedido.Error!)
+            : Result<IReadOnlyList<EventoDaTrilhaDto>>.Success(EventosDoPedido.Montar(
+                pedido.Value!, await repository.ListarLeiturasAsync(query.Id, cancellationToken).ConfigureAwait(false)));
     }
 
     private static async Task<Result<PedidoDeConcessao>> ObterVisivelAsync(
@@ -69,22 +60,8 @@ public static class ObterPedidoDeConcessaoQueryHandler
         IPedidoDeConcessaoRepository repository,
         IVerificadorDeAcesso verificador,
         IUserContext userContext,
-        CancellationToken cancellationToken)
-    {
-        if (IdentidadeDoToken.PessoaDe(userContext) is not { } pessoa)
-        {
-            return Result<PedidoDeConcessao>.Failure(PedidoHandlerErros.IdentidadeIncompleta());
-        }
-
-        PedidoDeConcessao? pedido = await repository.ObterParaLeituraAsync(id, cancellationToken).ConfigureAwait(false);
-        if (pedido is null)
-        {
-            await VisibilidadeDoPedido.RegistrarInexistenteAsync(verificador, cancellationToken).ConfigureAwait(false);
-            return Result<PedidoDeConcessao>.Failure(PedidoHandlerErros.NaoEncontrado());
-        }
-
-        DomainError? recusa = await VisibilidadeDoPedido.ConferirAsync(pedido, pessoa, verificador, cancellationToken).ConfigureAwait(false);
-
-        return recusa is null ? Result<PedidoDeConcessao>.Success(pedido) : Result<PedidoDeConcessao>.Failure(recusa);
-    }
+        CancellationToken cancellationToken) =>
+        IdentidadeDoToken.PessoaDe(userContext) is { } pessoa
+            ? await VisibilidadeDoPedido.ObterAsync(id, pessoa, repository, verificador, cancellationToken).ConfigureAwait(false)
+            : Result<PedidoDeConcessao>.Failure(PedidoHandlerErros.IdentidadeIncompleta());
 }

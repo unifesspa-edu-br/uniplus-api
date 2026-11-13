@@ -66,6 +66,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<PublicacaoDoTermo>();
         services.AddScoped<GravacaoDoNovoPedido>();
         services.AddScoped<AceiteDoPedido>();
+        services.AddScoped<EmissaoDaLeituraDoAnexo>();
     }
 
     private static void AdicionarDecisoesDaGovernanca(IServiceCollection services)

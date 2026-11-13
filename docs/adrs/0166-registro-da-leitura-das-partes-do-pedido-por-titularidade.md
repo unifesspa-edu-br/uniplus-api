@@ -53,7 +53,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 
 **Solicitante e beneficiário não se distinguem no registro.** Há um único valor de fonte, `titularidade`. Quem leu está no ator (`atorEmissor` e `atorSubject`); o papel se deduz do pedido: o solicitante é sempre identificado pelo identificador do token, e qualquer outra parte que leu é o beneficiário. No pedido feito para si mesmo, o ator é as duas partes. Não há campo novo nem segundo valor de fonte.
 
-**Só o verificador cria a titularidade, e ela nunca entra no ponto de decisão.** A porta do verificador de acesso ganha uma operação que registra a leitura da parte para um conjunto de pedidos exibidos. A implementação monta a concessão efetiva de titularidade, sem unidade nem escopo, e a decisão permitida que a carrega, e reaproveita a política de registro por resource e a gravação em lote que as listagens já usam. A concessão de titularidade nunca está nas concessões efetivas do sujeito. Se estivesse, não satisfaria nada: a escolha da concessão aplicável recusa a que não tem unidade nem escopo institucional, então a falha seria fechada.
+**Só o verificador cria a titularidade, e ela nunca entra no ponto de decisão.** A porta do verificador de acesso ganha uma operação que registra a leitura da parte para um conjunto de pedidos exibidos. A implementação monta a concessão efetiva de titularidade, sem unidade nem escopo, e a decisão permitida que a carrega, e reaproveita a política de registro por resource e a gravação em lote que as listagens já usam. A concessão de titularidade nunca está nas concessões efetivas do sujeito. Se estivesse, não satisfaria nada: a escolha da concessão aplicável recusa explicitamente a fonte `titularidade`, qualquer que seja o escopo, e também a concessão sem unidade nem escopo institucional, então a falha é fechada em duas camadas.
 
 **Precedência: uma leitura, um registro.** A parte que tem `autorizacao:pedidos:consultar` continua registrada por essa permissão, com a fonte da concessão que a deu (issue #2406). A titularidade vale só para quem não a tem. A pergunta pela consulta dos pedidos é consulta de capacidade: a resposta negativa não é recusa e não grava negativa. Nenhuma outra permissão sobre pedidos (decidir uma etapa, administrar concessões) muda a precedência, porque só a consulta dos pedidos governa a leitura da parte. Token sem identidade completa responde 401 sem registro, antes de qualquer gravação.
 
@@ -70,7 +70,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 ### Positivas
 
 - Toda leitura de pedido de concessão fica na trilha, por quem quer que leia, e a futura consulta da proteção de dados separa o acesso do titular do acesso de terceiro pelo valor de `fonteGrant`, sem cruzar a base da aplicação.
-- O ponto de decisão, a concessão efetiva, o tipo do registro e o catálogo de permissões não mudam; a mudança fica na porta e na implementação do verificador de acesso, no vocabulário canônico da fonte e no módulo de autorização. Os outros módulos não são tocados.
+- A concessão efetiva, o tipo do registro e o catálogo de permissões não mudam, e o ponto de decisão só ganha a recusa explícita da fonte `titularidade`; a mudança fica na porta e na implementação do verificador de acesso, no vocabulário canônico da fonte e no módulo de autorização. Os outros módulos não são tocados.
 - O schema continua na `v1`, sem campo novo e sem versão nova.
 - A leitura da parte segue a mesma regra de lote atômico, idempotência por chave e recusa por indisponibilidade das demais leituras registradas: uma política só.
 
@@ -91,7 +91,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 
 ## Confirmação
 
-- Teste de arquitetura: só a implementação do verificador de acesso cria a fonte `titularidade` (além do mapeamento canônico do valor), e nem o serviço de decisão, nem a escolha da concessão aplicável, nem a montagem das concessões efetivas do sujeito a referenciam. A decisão permitida só é criada pelo serviço de decisão e pelo verificador.
+- Teste de arquitetura: só a implementação do verificador de acesso cria a fonte `titularidade` (além do mapeamento canônico do valor), nem o serviço de decisão nem a montagem das concessões efetivas do sujeito a criam, e a escolha da concessão aplicável só a cita para recusá-la. A decisão permitida só é criada pelo serviço de decisão e pelo verificador.
 - Teste do catálogo de permissões: `autorizacao:pedidos:ler-proprios` não está no catálogo de permissões e é recusado em perfil e em pedido.
 - Testes unitários da operação nova do verificador (registro permitido, fonte `titularidade`, campos da concessão nulos, sensibilidade `pessoal`) e do vocabulário canônico.
 - Teste do schema `v1`: o lote com registro por titularidade é válido e não serializa propriedade não declarada.

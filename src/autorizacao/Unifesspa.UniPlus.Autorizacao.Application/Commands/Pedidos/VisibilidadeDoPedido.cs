@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -14,11 +15,25 @@ using Unifesspa.UniPlus.Kernel.Results;
 internal static class VisibilidadeDoPedido
 {
     /// <summary>
-    /// Registra a negativa de quem pediu um pedido que não existe, para que a existência do pedido não apareça na
-    /// falha do registro: quem é recusado tem a mesma resposta nos dois casos.
+    /// O pedido que a pessoa vê, com a leitura registrada, ou a recusa que a borda responde. O pedido inexistente tem a
+    /// mesma resposta do pedido que a pessoa não vê: 404 a quem o token identifica, com a negativa registrada, e 401 a quem
+    /// não identifica, como no pedido existente. Assim nem a resposta nem a falha do registro revelam se o pedido existe.
     /// </summary>
-    public static Task RegistrarInexistenteAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
-        AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, FinalidadeDoAcesso.Leitura, cancellationToken);
+    public static async Task<Result<PedidoDeConcessao>> ObterAsync(
+        Guid id, PessoaNoToken pessoa, IPedidoDeConcessaoRepository repository, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+
+        PedidoDeConcessao? pedido = await repository.ObterParaLeituraAsync(id, cancellationToken).ConfigureAwait(false);
+        if (pedido is null)
+        {
+            return Result<PedidoDeConcessao>.Failure(await RecusaDoInexistenteAsync(verificador, cancellationToken).ConfigureAwait(false));
+        }
+
+        DomainError? recusa = await ConferirAsync(pedido, pessoa, verificador, cancellationToken).ConfigureAwait(false);
+
+        return recusa is null ? Result<PedidoDeConcessao>.Success(pedido) : Result<PedidoDeConcessao>.Failure(recusa);
+    }
 
     /// <summary>
     /// Confere a visibilidade, ou devolve o erro que a borda responde: 401 para a identidade incompleta, 404 para
@@ -31,6 +46,10 @@ internal static class VisibilidadeDoPedido
         pedido.EhParte(pessoa)
             ? await ConferirParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false)
             : await ConferirQuemNaoEParteAsync(pedido, verificador, cancellationToken).ConfigureAwait(false);
+
+    private static async Task<DomainError> RecusaDoInexistenteAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
+        await AcessoDoAprovador.RegistrarNegativasDoInexistenteAsync(verificador, FinalidadeDoAcesso.Leitura, cancellationToken).ConfigureAwait(false)
+        ?? PedidoHandlerErros.NaoEncontrado();
 
     private static async Task<DomainError?> ConferirParteAsync(
         PedidoDeConcessao pedido, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
