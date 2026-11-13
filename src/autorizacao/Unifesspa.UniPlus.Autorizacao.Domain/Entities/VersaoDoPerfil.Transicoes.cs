@@ -30,8 +30,9 @@ public sealed partial class VersaoDoPerfil
     public DecisaoDaVersao? DecisaoDaEtapa(EtapaDaVersao etapa) =>
         _decisoes.Find(d => d.Ciclo == CicloDeAprovacao && d.Etapa == etapa);
 
-    /// <summary>As decisões do ciclo atual.</summary>
-    public IReadOnlyList<DecisaoDaVersao> DecisoesDoCiclo() => [.. _decisoes.Where(d => d.Ciclo == CicloDeAprovacao)];
+    /// <summary>As decisões do ciclo atual, na ordem das etapas: cada etapa decide uma vez por ciclo, e a gestão vem antes.</summary>
+    public IReadOnlyList<DecisaoDaVersao> DecisoesDoCiclo() =>
+        [.. _decisoes.Where(d => d.Ciclo == CicloDeAprovacao).OrderBy(static d => d.Etapa)];
 
     /// <summary>A pendente que passou do prazo: de <see cref="ExpiraEm"/> em diante a versão não aprova mais.</summary>
     public bool Expirou(DateTimeOffset agora) => Pendente && ExpiraEm <= agora;

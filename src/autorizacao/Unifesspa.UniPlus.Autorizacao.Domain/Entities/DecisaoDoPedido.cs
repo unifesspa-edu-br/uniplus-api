@@ -36,6 +36,12 @@ public sealed class DecisaoDoPedido : IForensicEntity
     /// </summary>
     public long OrdemDeRegistro { get; private set; }
 
+    /// <summary>
+    /// A posição da decisão entre as do mesmo instante: a ainda não gravada é a mais recente, porque só se grava depois
+    /// das já existentes.
+    /// </summary>
+    public long PosicaoNoInstante => OrdemDeRegistro == 0 ? long.MaxValue : OrdemDeRegistro;
+
     /// <summary>Códigos das permissões do perfil no instante da decisão, ordenados.</summary>
     public string[] PermissoesAvaliadas { get; private init; } = [];
 
