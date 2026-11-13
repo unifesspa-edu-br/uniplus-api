@@ -25,7 +25,7 @@ dc ps --format '{{.Service}}\t{{.Image}}' | while IFS=$'\t' read -r s i; do
 
 ## 2. Stack própria com portas deslocadas
 
-A validação usa um projeto compose próprio, para não disputar containers, volumes e portas com outra stack da máquina. Os arquivos `docker/.env` e `docker/docker-compose.override.yml` são cópias locais dos exemplos, fora do git.
+A validação usa um projeto compose próprio, para não disputar containers, volumes e portas com outra stack da máquina. Os arquivos `docker/.env` e `docker/docker-compose.override.yml` são cópias locais dos exemplos, fora do git, com as portas e o CORS ajustados como abaixo.
 
 ```bash
 cp docker/.env.example docker/.env
@@ -52,6 +52,36 @@ No `docker/.env`, mude as portas publicadas (faixa +2000 sobre o padrão):
 | Web seleção, ingresso, portal, configuração | `*_WEB_PORT` | 4200-4203 | 6200-6203 |
 
 **Não use 10080 para o Keycloak.** A porta está na lista de portas bloqueadas do padrão Fetch: o navegador e o `fetch` do Node recusam a conexão (`TypeError: fetch failed`, causa `bad port`). Com `curl` ela funciona, o que esconde o problema até os E2E. Evite também 6000, 6566 e 6665-6669.
+
+**CORS do monólito nas portas novas da web.** O `uniplus-api` só aceita as origens 4200-4203 (`appsettings.Development.json`), e nem o compose nem o override de exemplo mudam isso. O app servido em 6200-6203 chama a API pelo gateway (`apiUrl` `http://localhost:7000`), sem proxy do dev server, então o navegador manda a origem nova e a API a recusaria. Antes de subir a stack, acrescente ao serviço `uniplus-api` do `docker/docker-compose.override.yml`, no bloco `environment` que já existe:
+
+```yaml
+  uniplus-api:
+    environment:
+      Cors__AllowedOrigins__0: "http://localhost:${SELECAO_WEB_PORT:-4200}"
+      Cors__AllowedOrigins__1: "http://localhost:${INGRESSO_WEB_PORT:-4201}"
+      Cors__AllowedOrigins__2: "http://localhost:${PORTAL_WEB_PORT:-4202}"
+      Cors__AllowedOrigins__3: "http://localhost:${CONFIGURACAO_WEB_PORT:-4203}"
+```
+
+O `portal-api` tem o mesmo problema (`appsettings.Development.json` com 4100, 4200-4203 e 4300). A validação acrescentou também ao `environment` dele no override, mantendo o índice 0 em 4100:
+
+```yaml
+  portal-api:
+    environment:
+      Cors__AllowedOrigins__1: "http://localhost:${SELECAO_WEB_PORT:-4200}"
+      Cors__AllowedOrigins__2: "http://localhost:${INGRESSO_WEB_PORT:-4201}"
+      Cors__AllowedOrigins__3: "http://localhost:${PORTAL_WEB_PORT:-4202}"
+      Cors__AllowedOrigins__4: "http://localhost:${CONFIGURACAO_WEB_PORT:-4203}"
+```
+
+A Geo não precisa de ajuste: o `docker-compose.yml` já monta as origens dela a partir das mesmas variáveis. Conferência depois da subida:
+
+```bash
+curl -s -o /dev/null -D - -X OPTIONS "http://localhost:7000/api/profile/me" \
+  -H "Origin: http://localhost:6203" -H "Access-Control-Request-Method: GET" | grep -i '^access-control-allow-origin'
+# esperado: access-control-allow-origin: http://localhost:6203
+```
 
 ### 2.1 Funções de apoio
 
