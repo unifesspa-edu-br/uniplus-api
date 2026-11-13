@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Dá permissão às personas dos testes de integração do jeito que a produção dá: gravando a
@@ -92,14 +91,14 @@ public static class ConcessoesDeTeste
     {
         Perfil perfil = await servicos.GetRequiredService<IConcessaoRepository>().ObterParaConcederAsync(perfilId)
             ?? throw new InvalidOperationException($"O perfil {perfilId} não existe.");
-        Result<Concessao> concessao = Concessao.Conceder(
-            beneficiario, perfil, alcance, new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()), ConcedidaPor,
-            servicos.GetRequiredService<TimeProvider>().GetUtcNow(), servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
-            dados.ValidaAte, dados.Email);
 
-        return concessao.IsSuccess
-            ? concessao.Value!
-            : throw new InvalidOperationException(string.Join("; ", concessao.Errors.Select(e => e.Error.Message)));
+        return ConcessaoBuilder.DoPerfil(perfil, servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(beneficiario, dados.Email)
+            .NoEscopo(alcance)
+            .ConcedidaPor(ConcedidaPor)
+            .Em(servicos.GetRequiredService<TimeProvider>().GetUtcNow())
+            .ValidaAte(dados.ValidaAte)
+            .Construir();
     }
 
     /// <summary>Apaga todas as concessões da pessoa, para o teste começar de uma pessoa sem acesso algum.</summary>

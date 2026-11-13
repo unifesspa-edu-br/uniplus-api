@@ -322,15 +322,12 @@ public abstract class PedidosDeConcessaoTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
         Perfil perfil = (await repositorio.ObterParaConcederAsync(perfilId))!;
-        Concessao concessao = Concessao.Conceder(
-                IdentidadeDe(beneficiario),
-                perfil,
-                escopo,
-                new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-                IdentidadeDe(Diogo),
-                DateTimeOffset.UtcNow,
-                scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
-            .Value!;
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(IdentidadeDe(beneficiario))
+            .NoEscopo(escopo)
+            .ConcedidaPor(IdentidadeDe(Diogo))
+            .Em(DateTimeOffset.UtcNow)
+            .Construir();
         await repositorio.AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }

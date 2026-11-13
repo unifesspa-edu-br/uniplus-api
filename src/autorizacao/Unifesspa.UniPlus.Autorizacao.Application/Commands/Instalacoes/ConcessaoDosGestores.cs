@@ -103,10 +103,11 @@ public sealed class ConcessaoDosGestores
     private Result<IReadOnlyList<Concessao>> Conceder(Instalacao instalacao, Perfil perfil, Identidade autor, DateTimeOffset agora)
     {
         OrigemDaConcessao origem = new(TipoDeOrigem.Instalacao, instalacao.Id);
+        AtoDoAgente ato = new(autor, agora);
         Result<Concessao>[] concedidas =
         [
             .. instalacao.Gestores.Select(g => Concessao.Conceder(
-                new Identidade(g.Emissor, g.Sub, g.Nome), perfil, EscopoDaConcessao.DaInstituicao(), origem, autor, agora, _catalogo, beneficiarioEmail: g.Email)),
+                new TitularDaConcessao(new Identidade(g.Emissor, g.Sub, g.Nome), g.Email), perfil, EscopoDaConcessao.DaInstituicao(), origem, ato, _catalogo)),
         ];
         FieldError[] erros = [.. concedidas.Where(static c => c.IsFailure).SelectMany(static c => c.Errors)];
 

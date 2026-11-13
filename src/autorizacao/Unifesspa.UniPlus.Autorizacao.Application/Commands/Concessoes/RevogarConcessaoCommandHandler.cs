@@ -60,7 +60,7 @@ public static class RevogarConcessaoCommandHandler
 
         Result revogada = await RevogacaoDaConcessao
             .AplicarAsync(
-                r.Concessao, r.Agora, () => r.Concessao.Revogar(r.Por, r.Command.Motivo, r.Agora), repository, unitOfWork, cancellationToken)
+                r.Concessao, r.Agora, () => r.Concessao.Revogar(new AtoDoAgente(r.Por, r.Agora), r.Command.Motivo), repository, unitOfWork, cancellationToken)
             .ConfigureAwait(false);
 
         return revogada.IsFailure ? revogada : await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);

@@ -11,6 +11,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Apoio;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -133,16 +134,13 @@ public abstract class PerfilEndpointTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
         Perfil perfil = (await repositorio.ObterParaConcederAsync(perfilId))!;
-        Identidade diogo = new(TestAuthHandler.DefaultIssuer, "diogo.souza");
 
-        Concessao concessao = Concessao.Conceder(
-            new Identidade(TestAuthHandler.DefaultIssuer, "leandro.viana"),
-            perfil,
-            escopo,
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            diogo,
-            DateTimeOffset.UtcNow,
-            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()).Value!;
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(new Identidade(TestAuthHandler.DefaultIssuer, "leandro.viana"))
+            .NoEscopo(escopo)
+            .ConcedidaPor(new Identidade(TestAuthHandler.DefaultIssuer, "diogo.souza"))
+            .Em(DateTimeOffset.UtcNow)
+            .Construir();
         await repositorio.AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }

@@ -12,7 +12,6 @@ using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
@@ -145,6 +144,15 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
         await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
 
+        List<Task<HttpResponseMessage>> disparadas = await DispararEmFilaAsync(trava, chamadas);
+        await trava.ConfirmarAsync();
+
+        return await Task.WhenAll(disparadas);
+    }
+
+    private static async Task<List<Task<HttpResponseMessage>>> DispararEmFilaAsync(
+        TransacaoRetidaDeTeste trava, Func<Task<HttpResponseMessage>>[] chamadas)
+    {
         List<Task<HttpResponseMessage>> disparadas = [];
         foreach (Func<Task<HttpResponseMessage>> chamada in chamadas)
         {
@@ -152,9 +160,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
             await trava.AguardarBloqueioAsync(disparadas.Count);
         }
 
-        await trava.ConfirmarAsync();
-
-        return await Task.WhenAll(disparadas);
+        return disparadas;
     }
 
     /// <summary>Dentro de uma chamada de <see cref="EmFilaSobATravaAsync"/>: espera o número de sessões bloqueadas pela trava que o teste segura.</summary>
@@ -321,15 +327,12 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     {
         IConcessaoRepository repositorio = servicos.GetRequiredService<IConcessaoRepository>();
         Perfil perfil = (await repositorio.ObterParaConcederAsync(perfilId))!;
-        Concessao concessao = Concessao.Conceder(
-                IdentidadeDe(beneficiario),
-                perfil,
-                escopo,
-                new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-                IdentidadeDe(Diogo),
-                DateTimeOffset.UtcNow,
-                servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>())
-            .Value!;
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(IdentidadeDe(beneficiario))
+            .NoEscopo(escopo)
+            .ConcedidaPor(IdentidadeDe(Diogo))
+            .Em(DateTimeOffset.UtcNow)
+            .Construir();
         await repositorio.AdicionarAsync(concessao);
         await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
 

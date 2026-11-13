@@ -20,6 +20,9 @@ public sealed class ConcessaoTests
     private static readonly Identidade Diogo = new(Emissor, "diogo.souza");
     private static readonly Identidade Isabella = new(Emissor, "isabella.figueiredo");
     private static readonly OrigemDaConcessao Origem = new(TipoDeOrigem.Pedido, Guid.NewGuid());
+    private static readonly TitularDaConcessao DeLeandro = new(Leandro, null);
+    private static readonly TitularDaConcessao DeIsabella = new(Isabella, null);
+    private static readonly AtoDoAgente DeDiogo = new(Diogo, Agora);
 
     private static readonly FakeCatalogo Catalogo = new();
 
@@ -29,7 +32,7 @@ public sealed class ConcessaoTests
         Guid unidade = Guid.NewGuid();
 
         Result<Concessao> resultado = Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(unidade), Origem, Diogo, Agora, Catalogo);
+            DeLeandro, PerfilComum(), EscopoDaConcessao.DaUnidade(unidade), Origem, DeDiogo, Catalogo);
 
         resultado.IsSuccess.Should().BeTrue();
         Concessao concessao = resultado.Value!;
@@ -46,20 +49,20 @@ public sealed class ConcessaoTests
         PerfisDeTeste.Desativar(perfil, Catalogo);
 
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            DeLeandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.PerfilInativo);
     }
 
     [Fact(DisplayName = "Perfil de governança com escopo de unidade é recusado")]
     public void Conceder_GovernancaNaUnidade_Recusa() =>
         CodigosDaRecusa(Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            DeIsabella, PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
 
     [Fact(DisplayName = "Perfil de governança aceita o escopo da instituição")]
     public void Conceder_GovernancaNaInstituicao_Aceita() =>
         Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo)
+            DeIsabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, DeDiogo, Catalogo)
             .IsSuccess.Should().BeTrue();
 
     [Fact(DisplayName = "Perfil sem versão em vigor não se concede")]
@@ -68,7 +71,7 @@ public sealed class ConcessaoTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo);
 
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            DeLeandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.PerfilSemVersaoEmVigor);
     }
 
@@ -77,27 +80,27 @@ public sealed class ConcessaoTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Motivos", "Descrição válida.", ["selecao:motivos:manter"], Catalogo);
 
-        Concessao.Conceder(Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo)
+        Concessao.Conceder(DeLeandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, DeDiogo, Catalogo)
             .IsSuccess.Should().BeTrue();
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            DeLeandro, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
     }
 
     [Fact(DisplayName = "Perfil comum com escopo da instituição é recusado")]
     public void Conceder_PerfilComumNaInstituicao_Recusa() =>
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo))
+            DeLeandro, PerfilComum(), EscopoDaConcessao.DaInstituicao(), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
 
     [Fact(DisplayName = "Escopo de unidade sem unidade e escopo da instituição com unidade são incoerentes")]
     public void Conceder_EscopoIncoerente_Recusa()
     {
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, PerfilComum(), new EscopoDaConcessao(TipoDeEscopo.Unidade, null), Origem, Diogo, Agora, Catalogo))
+            DeLeandro, PerfilComum(), new EscopoDaConcessao(TipoDeEscopo.Unidade, null), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
         CodigosDaRecusa(Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), new EscopoDaConcessao(TipoDeEscopo.Instituicao, Guid.NewGuid()), Origem, Diogo, Agora, Catalogo))
+            DeIsabella, PerfilDeGovernanca(), new EscopoDaConcessao(TipoDeEscopo.Instituicao, Guid.NewGuid()), Origem, DeDiogo, Catalogo))
             .Should().Equal(ConcessaoErrorCodes.EscopoInvalido);
     }
 
@@ -106,17 +109,17 @@ public sealed class ConcessaoTests
     [InlineData(-1)]
     public void Conceder_ValidadeNaoPosterior_Recusa(int minutos) =>
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo, Agora.AddMinutes(minutos)))
+            DeLeandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, DeDiogo, Catalogo, Agora.AddMinutes(minutos)))
             .Should().Equal(ConcessaoErrorCodes.ValidadeInvalida);
 
-    [Fact(DisplayName = "Perfil de governança não aceita concessão com prazo")]
-    public void Conceder_GovernancaComValidade_Recusa()
+    [Fact(DisplayName = "Perfil de gestor de acessos não aceita concessão com prazo")]
+    public void Conceder_GestorDeAcessosComValidade_Recusa()
     {
         Result<Concessao> resultado = Concessao.Conceder(
-            Isabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo, Agora.AddDays(30));
+            DeIsabella, PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), Origem, DeDiogo, Catalogo, Agora.AddDays(30));
 
         CodigosDaRecusa(resultado).Should().Equal(ConcessaoErrorCodes.ValidadeInvalida);
-        resultado.Errors.Single().Error.Message.Should().Contain("governança");
+        resultado.Errors.Single().Error.Message.Should().Be(MensagensDoPrazo.PerfilSemPrazo);
     }
 
     [Fact(DisplayName = "Violações independentes da concessão se acumulam")]
@@ -126,7 +129,7 @@ public sealed class ConcessaoTests
         PerfisDeTeste.Desativar(perfil, Catalogo);
 
         CodigosDaRecusa(Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo, Agora))
+            DeLeandro, perfil, EscopoDaConcessao.DaInstituicao(), Origem, DeDiogo, Catalogo, Agora))
             .Should().BeEquivalentTo(
                 ConcessaoErrorCodes.PerfilInativo, ConcessaoErrorCodes.EscopoInvalido, ConcessaoErrorCodes.ValidadeInvalida);
     }
@@ -134,7 +137,7 @@ public sealed class ConcessaoTests
     [Fact(DisplayName = "Concessão com vigência vencida deixa de estar ativa sem ser revogada")]
     public void EstaAtiva_VigenciaVencida_DeixaDeEstar()
     {
-        Concessao concessao = Concedida(validaAte: Agora.AddDays(1));
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora).ValidaAte(Agora.AddDays(1)).Construir();
 
         concessao.EstaAtiva(Agora).Should().BeTrue();
         concessao.EstaAtiva(Agora.AddDays(1)).Should().BeFalse();
@@ -144,10 +147,10 @@ public sealed class ConcessaoTests
     [Fact(DisplayName = "Revogar grava autor, instante e motivo e encerra a concessão")]
     public void Revogar_Valido_GravaAutorInstanteEMotivo()
     {
-        Concessao concessao = Concedida();
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora).Construir();
         DateTimeOffset depois = Agora.AddHours(2);
 
-        Result resultado = concessao.Revogar(Diogo, "  Mudou de função.  ", depois);
+        Result resultado = concessao.Revogar(new AtoDoAgente(Diogo, depois), "  Mudou de função.  ");
 
         resultado.IsSuccess.Should().BeTrue();
         concessao.EstaAtiva(depois).Should().BeFalse();
@@ -160,10 +163,10 @@ public sealed class ConcessaoTests
     [Fact(DisplayName = "Revogar concessão já revogada é recusado e preserva a primeira revogação")]
     public void Revogar_JaRevogada_Recusa()
     {
-        Concessao concessao = Concedida();
-        concessao.Revogar(Diogo, "Primeiro motivo.", Agora.AddHours(1));
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora).Construir();
+        concessao.Revogar(new AtoDoAgente(Diogo, Agora.AddHours(1)), "Primeiro motivo.");
 
-        Result resultado = concessao.Revogar(Isabella, "Segundo motivo.", Agora.AddHours(2));
+        Result resultado = concessao.Revogar(new AtoDoAgente(Isabella, Agora.AddHours(2)), "Segundo motivo.");
 
         resultado.Errors.Single().Error.Code.Should().Be(ConcessaoErrorCodes.JaRevogada);
         concessao.RevogadaPorSub.Should().Be(Diogo.Sub);
@@ -176,15 +179,15 @@ public sealed class ConcessaoTests
     [InlineData("Mot\0ivo")]
     public void Revogar_MotivoInvalido_Recusa(string? motivo)
     {
-        Concessao concessao = Concedida();
+        Concessao concessao = ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Em(Agora).Construir();
 
-        CodigosDaRecusa(concessao.Revogar(Diogo, motivo, Agora)).Should().Equal(ConcessaoErrorCodes.MotivoInvalido);
+        CodigosDaRecusa(concessao.Revogar(DeDiogo, motivo)).Should().Equal(ConcessaoErrorCodes.MotivoInvalido);
         concessao.RevogadaEm.Should().BeNull();
     }
 
     [Fact(DisplayName = "Motivo com mais de 500 caracteres é recusado")]
     public void Revogar_MotivoLongo_Recusa() =>
-        CodigosDaRecusa(Concedida().Revogar(Diogo, new string('a', 501), Agora))
+        CodigosDaRecusa(ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Construir().Revogar(DeDiogo, new string('a', 501)))
             .Should().Equal(ConcessaoErrorCodes.MotivoInvalido);
 
     [Theory(DisplayName = "O e-mail do beneficiário confirma sem diferenciar maiúsculas nem espaços nas pontas")]
@@ -194,20 +197,17 @@ public sealed class ConcessaoTests
     [InlineData("", false)]
     [InlineData(null, false)]
     public void ConfirmaEmailDoBeneficiario_ComparaSemCaixaNemEspacos(string? informado, bool esperado) =>
-        Concedida().ConfirmaEmailDoBeneficiario(informado).Should().Be(esperado);
+        ConcessaoBuilder.DoPerfil(PerfilComum(), Catalogo).Para(Leandro, Email).Construir()
+            .ConfirmaEmailDoBeneficiario(informado).Should().Be(esperado);
 
     [Fact(DisplayName = "Concessão sem e-mail gravado nunca confirma: não há com o que conferir")]
     public void ConfirmaEmailDoBeneficiario_SemEmailGravado_NaoConfirma()
     {
         Concessao antiga = Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo).Value!;
+            DeLeandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, DeDiogo, Catalogo).Value!;
 
         antiga.ConfirmaEmailDoBeneficiario(Email).Should().BeFalse();
     }
-
-    private static Concessao Concedida(DateTimeOffset? validaAte = null) =>
-        Concessao.Conceder(
-            Leandro, PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo, validaAte, Email).Value!;
 
     private static Perfil PerfilComum() =>
         PerfisDeTeste.Vigente("Analista", "Descrição válida.", ["selecao:processos:consultar"], Catalogo);

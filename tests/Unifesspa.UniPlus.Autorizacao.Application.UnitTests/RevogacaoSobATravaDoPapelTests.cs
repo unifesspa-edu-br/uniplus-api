@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Autorizacao.Apoio;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -89,9 +88,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
     private Concessao Preparar(Guid perfilId)
     {
         Perfil perfil = PerfisDeTeste.DeGovernanca("Perfil de teste", "Perfil de teste.", ["autorizacao:revisoes:conduzir"], new CatalogoLivre());
-        Concessao concessao = Concessao.Conceder(
-            Leandro, perfil, EscopoDaConcessao.DaInstituicao(), new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-            Diogo, DateTimeOffset.UtcNow, new CatalogoLivre(), beneficiarioEmail: EmailDoBeneficiario).Value!;
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, new CatalogoLivre()).Para(Leandro, EmailDoBeneficiario).ConcedidaPor(Diogo).Construir();
         typeof(Concessao).GetProperty(nameof(Concessao.PerfilId))!.SetValue(concessao, perfilId);
         _repositorio.ObterComPerfilAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(new ConcessaoComPerfil(concessao, perfil.Nome, null));
         _repositorio.ObterParaAlterarAsync(concessao.Id, Arg.Any<CancellationToken>()).Returns(concessao);

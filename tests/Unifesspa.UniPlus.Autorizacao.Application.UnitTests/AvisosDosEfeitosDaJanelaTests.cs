@@ -38,16 +38,10 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         var cenario = new CenarioDeMigracao(protegido: false);
         Concessao deLeandro = cenario.Conceder(CenarioDeMigracao.Leandro, email: EmailLeandro);
         Concessao deBetina = cenario.Conceder(Betina, email: EmailBetina);
-        JanelaDeMigracao janela = cenario.Abrir();
-        DateTimeOffset agora = CenarioDeMigracao.Abertura.AddHours(1);
-        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(agora));
-        janela.EnviarLote(
-            CenarioDeMigracao.Lote(true, (deLeandro, ResultadoDaMigracao.Migrar), (deBetina, ResultadoDaMigracao.Recusar)),
-            CenarioDeMigracao.Autoria(Diogo),
-            cenario.Contexto(agora)).IsSuccess.Should().BeTrue();
+        cenario.Abrir();
 
-        IReadOnlyList<EnviarEmail> enviados = await Efeitos().DaDecisaoAsync(
-            Operacao(cenario, agora), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(agora)), OperacaoNaJanela.Lote, Diogo, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> enviados = await AvisosDoLoteAsync(
+            cenario, true, (deLeandro, ResultadoDaMigracao.Migrar), (deBetina, ResultadoDaMigracao.Recusar));
 
         Destinatarios(enviados, TipoDeAviso.ConcessaoMigrada).Should().BeEquivalentTo([EmailLeandro]);
         Destinatarios(enviados, TipoDeAviso.ConcessaoRevogada).Should().BeEquivalentTo([EmailBetina]);
@@ -60,13 +54,9 @@ public sealed class AvisosDosEfeitosDaJanelaTests
     {
         var cenario = new CenarioDeMigracao(protegido: true);
         Concessao deLeandro = cenario.Conceder(CenarioDeMigracao.Leandro, email: EmailLeandro);
-        JanelaDeMigracao janela = cenario.Abrir();
-        DateTimeOffset agora = CenarioDeMigracao.Abertura.AddHours(1);
-        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(agora));
-        janela.EnviarLote(CenarioDeMigracao.Lote(false, (deLeandro, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(agora));
+        cenario.Abrir();
 
-        IReadOnlyList<EnviarEmail> enviados = await Efeitos().DaDecisaoAsync(
-            Operacao(cenario, agora), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(agora)), OperacaoNaJanela.Lote, Diogo, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> enviados = await AvisosDoLoteAsync(cenario, false, (deLeandro, ResultadoDaMigracao.Migrar));
 
         Destinatarios(enviados, TipoDeAviso.MigracoesAguardandoProtecaoDeDados).Should().BeEquivalentTo([EmailIsabella, EmailMarlene]);
         enviados.Select(e => e.Destinatario).Should().NotContain(EmailLeandro);
@@ -78,13 +68,9 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         var cenario = new CenarioDeMigracao(protegido: false);
         cenario.Conceder(CenarioDeMigracao.Leandro, email: EmailLeandro);
         cenario.Conceder(Betina, email: EmailBetina);
-        JanelaDeMigracao janela = cenario.Abrir();
-        DateTimeOffset corte = janela.Prazo;
-        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(corte));
-        janela.ConferirEstado(cenario.Contexto(corte));
+        cenario.Abrir();
 
-        IReadOnlyList<EnviarEmail> enviados = await Efeitos().DoFimAsync(
-            Operacao(cenario, corte), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(corte)), null, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> enviados = await AvisosDoFimPeloPrazoAsync(cenario);
 
         Destinatarios(enviados, TipoDeAviso.ConcessaoRevogada).Should().BeEquivalentTo([EmailLeandro, EmailBetina]);
         Destinatarios(enviados, TipoDeAviso.VersaoEncerrada).Should().BeEquivalentTo([EmailDiogo, EmailIsabella, EmailMarlene]);
@@ -99,7 +85,7 @@ public sealed class AvisosDosEfeitosDaJanelaTests
         cenario.Conceder(CenarioDeMigracao.Leandro, email: EmailLeandro);
         Concessao deBetina = cenario.Conceder(Betina, email: EmailBetina);
         JanelaDeMigracao janela = cenario.Abrir();
-        deBetina.Revogar(Diogo, "Revogação manual.", janela.Prazo.AddHours(3)).IsSuccess.Should().BeTrue();
+        deBetina.Revogar(new AtoDoAgente(Diogo, janela.Prazo.AddHours(3)), "Revogação manual.").IsSuccess.Should().BeTrue();
         DateTimeOffset depois = janela.Prazo.AddHours(10);
         EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(depois));
         janela.Materializar(cenario.Contexto(depois), FormaDoEncerramento.Prazo);
@@ -136,6 +122,31 @@ public sealed class AvisosDosEfeitosDaJanelaTests
             cenario.Perfil, cenario.VersaoAntiga, FormaDoAviso.SemConcessaoAMigrar, Diogo, CancellationToken.None);
 
         Destinatarios(enviados, TipoDeAviso.VersaoEncerrada).Should().BeEquivalentTo([EmailIsabella, EmailMarlene]);
+    }
+
+    // O lote é enviado por Diogo uma hora depois da abertura.
+    private static async Task<IReadOnlyList<EnviarEmail>> AvisosDoLoteAsync(
+        CenarioDeMigracao cenario, bool confirmou, params (Concessao Concessao, ResultadoDaMigracao Decisao)[] itens)
+    {
+        JanelaDeMigracao janela = cenario.Janela!;
+        DateTimeOffset agora = CenarioDeMigracao.Abertura.AddHours(1);
+        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(agora));
+        janela.EnviarLote(CenarioDeMigracao.Lote(confirmou, itens), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(agora))
+            .IsSuccess.Should().BeTrue();
+
+        return await Efeitos().DaDecisaoAsync(
+            Operacao(cenario, agora), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(agora)), OperacaoNaJanela.Lote, Diogo, CancellationToken.None);
+    }
+
+    private static async Task<IReadOnlyList<EnviarEmail>> AvisosDoFimPeloPrazoAsync(CenarioDeMigracao cenario)
+    {
+        JanelaDeMigracao janela = cenario.Janela!;
+        DateTimeOffset corte = janela.Prazo;
+        EstadoDaJanelaAntesDaOperacao antes = EstadoDaJanelaAntesDaOperacao.De(janela, cenario.Contexto(corte));
+        janela.ConferirEstado(cenario.Contexto(corte));
+
+        return await Efeitos().DoFimAsync(
+            Operacao(cenario, corte), MudancasDaJanela.Entre(antes, janela, cenario.Contexto(corte)), null, CancellationToken.None);
     }
 
     private static string[] Destinatarios(IReadOnlyList<EnviarEmail> enviados, TipoDeAviso tipo) =>

@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
@@ -99,24 +98,13 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
     private async Task SemearGestorComEmailAsync(Persona gestor)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
-        Perfil perfil = (await repositorio.ObterParaConcederAsync(PerfisDeSistema.GestorDeAcessosId))!;
-        await repositorio.AdicionarAsync(ConcessaoDeGestor(gestor, perfil, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>()));
+        // Com o e-mail do beneficiário, que a revogação exige como confirmação.
+        Concessao concessao = (await ConcessaoDeGestorAsync(scope, gestor))
+            .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString(), gestor.Username), gestor.Email)
+            .Construir();
+        await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
     }
-
-    // Com o e-mail do beneficiário, que a revogação exige como confirmação.
-    private static Concessao ConcessaoDeGestor(Persona gestor, Perfil perfil, ICatalogoDePermissoesConsultavel catalogo) =>
-        Concessao.Conceder(
-                new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString(), gestor.Username),
-                perfil,
-                EscopoDaConcessao.DaInstituicao(),
-                new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()),
-                new Identidade(TestAuthHandler.DefaultIssuer, Paulo.Sub.ToString()),
-                DateTimeOffset.UtcNow,
-                catalogo,
-                beneficiarioEmail: gestor.Email)
-            .Value!;
 
     private async Task<Guid> ConcessaoDeGestorAsync(Persona gestor)
     {

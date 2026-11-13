@@ -103,29 +103,34 @@ public sealed class Concessao : EntityBase
     /// endpoint. Acumula toda violação independente (ADR-0125). A concessão ativa repetida é do
     /// índice único, traduzido por quem grava.
     /// </summary>
+    /// <param name="titular">A pessoa a quem a concessão se dá, com o e-mail que a revogação pede de volta.</param>
+    /// <param name="perfil">O perfil concedido.</param>
+    /// <param name="escopo">A instituição ou a unidade em que a concessão vale.</param>
+    /// <param name="origem">O pedido ou a instalação que gerou a concessão.</param>
+    /// <param name="ato">Quem concede e quando.</param>
+    /// <param name="catalogo">O catálogo que dá o alcance das permissões do perfil.</param>
+    /// <param name="validaAte">Fim da vigência, quando a concessão é por prazo.</param>
     public static Result<Concessao> Conceder(
-        Identidade beneficiario,
+        TitularDaConcessao titular,
         Perfil perfil,
         EscopoDaConcessao escopo,
         OrigemDaConcessao origem,
-        Identidade concedidaPor,
-        DateTimeOffset instante,
+        AtoDoAgente ato,
         ICatalogoDePermissoesConsultavel catalogo,
-        DateTimeOffset? validaAte = null,
-        string? beneficiarioEmail = null)
+        DateTimeOffset? validaAte = null)
     {
-        ArgumentNullException.ThrowIfNull(beneficiario);
+        ArgumentNullException.ThrowIfNull(titular);
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(escopo);
         ArgumentNullException.ThrowIfNull(origem);
-        ArgumentNullException.ThrowIfNull(concedidaPor);
+        ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo), .. ErrosDaValidade(perfil, validaAte, instante)];
+        List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo), .. ErrosDaValidade(perfil, validaAte, ato.Instante)];
 
         return erros.Count > 0
             ? Result<Concessao>.ValidationFailure(erros)
-            : Result<Concessao>.Success(Nova(beneficiario, beneficiarioEmail, perfil, escopo, origem).ConcedidaPor(concedidaPor, instante, validaAte));
+            : Result<Concessao>.Success(Nova(titular, perfil, escopo, origem).ConcedidaPor(ato, validaAte));
     }
 
     /// <summary>
@@ -160,10 +165,7 @@ public sealed class Concessao : EntityBase
 
         foreach (PermissaoDaVersao permissao in sai.Permissoes.OrderBy(static p => p.Codigo, StringComparer.Ordinal))
         {
-            BaseDaPermissaoNaConcessao? nova = mantidos.Contains(permissao.Codigo)
-                ? BaseDoCodigoMantido(permissao, entra.Id, bases.Count)
-                : BaseDaPermissaoNaConcessao.DaSaida(PerfilId, Id, permissao.Codigo, entra.Id, bases.Count);
-            if (nova is not null)
+            if (BaseDaPermissaoNaTroca(permissao, mantidos, entra.Id, bases.Count) is { } nova)
             {
                 bases.Add(nova);
             }
@@ -171,6 +173,12 @@ public sealed class Concessao : EntityBase
 
         return bases;
     }
+
+    private BaseDaPermissaoNaConcessao? BaseDaPermissaoNaTroca(
+        PermissaoDaVersao permissao, HashSet<string> mantidos, Guid versaoAlvoId, int ordinal) =>
+        mantidos.Contains(permissao.Codigo)
+            ? BaseDoCodigoMantido(permissao, versaoAlvoId, ordinal)
+            : BaseDaPermissaoNaConcessao.DaSaida(PerfilId, Id, permissao.Codigo, versaoAlvoId, ordinal);
 
     private BaseDaPermissaoNaConcessao? BaseDoCodigoMantido(PermissaoDaVersao permissao, Guid versaoAlvoId, int ordinal) =>
         TemBaseAtiva(permissao.Codigo)
@@ -202,33 +210,37 @@ public sealed class Concessao : EntityBase
     /// Revoga a concessão, com efeito imediato. A recusa por concessão já revogada sai antes da
     /// do motivo: com a concessão encerrada, corrigir o motivo não leva a nada.
     /// </summary>
-    public Result Revogar(Identidade revogadaPor, string? motivo, DateTimeOffset instante)
+    /// <param name="ato">Quem revoga e quando.</param>
+    /// <param name="motivo">O motivo da revogação, que a trilha mostra.</param>
+    public Result Revogar(AtoDoAgente ato, string? motivo)
     {
-        ArgumentNullException.ThrowIfNull(revogadaPor);
+        ArgumentNullException.ThrowIfNull(ato);
 
         if (RevogadaEm is not null)
         {
-            return Result.Failure(new DomainError(
-                ConcessaoErrorCodes.JaRevogada,
-                "A concessão já foi revogada."));
+            return Result.Failure(new DomainError(ConcessaoErrorCodes.JaRevogada, "A concessão já foi revogada."));
         }
 
-        string? motivoNormalizado = NormalizarMotivo(motivo);
-        if (motivoNormalizado is null)
-        {
-            return Result.ValidationFailure([new FieldError("motivo", new DomainError(
-                ConcessaoErrorCodes.MotivoInvalido,
-                $"O motivo da revogação é obrigatório e deve ter até {MotivoMaxLength} caracteres."))]);
-        }
+        return NormalizarMotivo(motivo) is { } motivoNormalizado
+            ? RegistrarRevogacao(ato, motivoNormalizado)
+            : Result.ValidationFailure([MotivoDaRevogacaoInvalido()]);
+    }
 
-        RevogadaEm = instante;
-        RevogadaPorEmissor = revogadaPor.Emissor;
-        RevogadaPorSub = revogadaPor.Sub;
-        RevogadaPorNome = revogadaPor.Nome;
-        MotivoRevogacao = motivoNormalizado;
+    private Result RegistrarRevogacao(AtoDoAgente ato, string motivo)
+    {
+        RevogadaEm = ato.Instante;
+        RevogadaPorEmissor = ato.Agente.Emissor;
+        RevogadaPorSub = ato.Agente.Sub;
+        RevogadaPorNome = ato.Agente.Nome;
+        MotivoRevogacao = motivo;
 
         return Result.Success();
     }
+
+    private static FieldError MotivoDaRevogacaoInvalido() =>
+        new("motivo", new DomainError(
+            ConcessaoErrorCodes.MotivoInvalido,
+            $"O motivo da revogação é obrigatório e deve ter até {MotivoMaxLength} caracteres."));
 
     /// <summary>
     /// Revoga a concessão pelo sistema, em nome da janela de migração que a encerrou ou a recusou. Quem chama trava a
@@ -248,14 +260,13 @@ public sealed class Concessao : EntityBase
         MotivoRevogacao = motivo;
     }
 
-    private static Concessao Nova(
-        Identidade beneficiario, string? beneficiarioEmail, Perfil perfil, EscopoDaConcessao escopo, OrigemDaConcessao origem) =>
+    private static Concessao Nova(TitularDaConcessao titular, Perfil perfil, EscopoDaConcessao escopo, OrigemDaConcessao origem) =>
         new()
         {
-            BeneficiarioEmissor = beneficiario.Emissor,
-            BeneficiarioSub = beneficiario.Sub,
-            BeneficiarioNome = beneficiario.Nome,
-            BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(beneficiarioEmail),
+            BeneficiarioEmissor = titular.Pessoa.Emissor,
+            BeneficiarioSub = titular.Pessoa.Sub,
+            BeneficiarioNome = titular.Pessoa.Nome,
+            BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(titular.Email),
             PerfilId = perfil.Id,
             VersaoId = perfil.VersaoVigente?.Id,
             EscopoTipo = escopo.Tipo,
@@ -264,12 +275,12 @@ public sealed class Concessao : EntityBase
             OrigemId = origem.Id,
         };
 
-    private Concessao ConcedidaPor(Identidade concedidaPor, DateTimeOffset instante, DateTimeOffset? validaAte)
+    private Concessao ConcedidaPor(AtoDoAgente ato, DateTimeOffset? validaAte)
     {
-        ConcedidaEm = instante;
-        ConcedidaPorEmissor = concedidaPor.Emissor;
-        ConcedidaPorSub = concedidaPor.Sub;
-        ConcedidaPorNome = concedidaPor.Nome;
+        ConcedidaEm = ato.Instante;
+        ConcedidaPorEmissor = ato.Agente.Emissor;
+        ConcedidaPorSub = ato.Agente.Sub;
+        ConcedidaPorNome = ato.Agente.Nome;
         ValidaAte = validaAte;
 
         return this;
@@ -288,9 +299,7 @@ public sealed class Concessao : EntityBase
     {
         if (validaAte is not null && !perfil.AdmitePrazo)
         {
-            yield return new("validaAte", new DomainError(
-                ConcessaoErrorCodes.ValidadeInvalida,
-                "Perfil de governança não admite concessão com prazo: gestor de acessos e proteção de dados não têm vigência limitada."));
+            yield return new("validaAte", new DomainError(ConcessaoErrorCodes.ValidadeInvalida, MensagensDoPrazo.PerfilSemPrazo));
         }
         else if (validaAte is { } fim && fim <= instante)
         {

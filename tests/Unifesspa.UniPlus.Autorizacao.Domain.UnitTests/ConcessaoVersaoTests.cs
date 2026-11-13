@@ -24,7 +24,7 @@ public sealed class ConcessaoVersaoTests
     {
         Perfil perfil = PerfilNaVersao2();
 
-        Concessao concessao = Conceder(perfil);
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, Catalogo).Construir();
 
         concessao.VersaoId.Should().Be(perfil.VersaoVigente!.Id);
         perfil.VersaoVigente.Numero.Should().Be(2);
@@ -53,7 +53,7 @@ public sealed class ConcessaoVersaoTests
     public void MigrarParaVersao_Revogada_Recusa()
     {
         (Perfil perfil, Concessao concessao, Guid versao1) = ConcessaoNaVersao1();
-        concessao.Revogar(Diogo, "Fim da função.", Agora).IsSuccess.Should().BeTrue();
+        concessao.Revogar(new AtoDoAgente(Diogo, Agora), "Fim da função.").IsSuccess.Should().BeTrue();
 
         FluentActions.Invoking(() => concessao.MigrarParaVersao(perfil.Versoes.First(v => v.Id == versao1), perfil.VersaoVigente!))
             .Should().Throw<InvalidOperationException>();
@@ -94,24 +94,19 @@ public sealed class ConcessaoVersaoTests
     private static (Perfil Perfil, Concessao Concessao, Guid Versao1) ConcessaoNaVersao1(DateTimeOffset? validaAte = null)
     {
         Perfil perfil = PerfilNaVersao1();
-        Concessao concessao = Conceder(perfil, validaAte);
+        Concessao concessao = ConcessaoBuilder.DoPerfil(perfil, Catalogo).Para(Isabella).DaOrigem(Origem).Em(Agora).ValidaAte(validaAte).Construir();
         Guid versao1 = perfil.VersaoVigente!.Id;
         PerfisDeTeste.NovaVersaoVigente(perfil, ["selecao:processos:consultar", "selecao:processos:analisar"], Catalogo);
 
         return (perfil, concessao, versao1);
     }
 
-    private static Concessao Conceder(Perfil perfil, DateTimeOffset? validaAte = null) =>
-        Concessao.Conceder(
-            Isabella, perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), Origem, Diogo, Agora, Catalogo, validaAte).Value!;
-
     private static Concessao ConcessaoDeGovernanca()
     {
         Perfil governanca = PerfisDeTeste.DeGovernanca(
             "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo);
 
-        return Concessao.Conceder(
-            Isabella, governanca, EscopoDaConcessao.DaInstituicao(), Origem, Diogo, Agora, Catalogo).Value!;
+        return ConcessaoBuilder.DoPerfil(governanca, Catalogo).Construir();
     }
 
     private sealed class FakeCatalogo : ICatalogoDePermissoesConsultavel

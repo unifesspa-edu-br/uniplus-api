@@ -11,6 +11,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Autorizacao.Apoio;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -20,7 +21,6 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O apoio dos testes de concessão pelo endpoint real, contra Postgres efêmero. As concessões nascem pelo repositório,
@@ -126,14 +126,14 @@ public abstract class ConcessaoEndpointTestBase
         TimeProvider relogio = scope.ServiceProvider.GetRequiredService<TimeProvider>();
 
         Perfil perfil = (await repositorio.ObterParaConcederAsync(perfilId))!;
-        Result<Concessao> concessao = Concessao.Conceder(
-            beneficiario, perfil, escopo, new OrigemDaConcessao(TipoDeOrigem.Pedido, Guid.NewGuid()), Diogo, relogio.GetUtcNow(),
-            scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>(),
-            validaAteDaquiAMinutos is { } minutos ? relogio.GetUtcNow().AddMinutes(minutos) : null,
-            EmailDoBeneficiario);
 
-        concessao.IsSuccess.Should().BeTrue(string.Join("; ", concessao.Errors.Select(e => e.Error.Message)));
-        return concessao.Value!;
+        return ConcessaoBuilder.DoPerfil(perfil, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
+            .Para(beneficiario, EmailDoBeneficiario)
+            .NoEscopo(escopo)
+            .ConcedidaPor(Diogo)
+            .Em(relogio.GetUtcNow())
+            .ValidaAte(validaAteDaquiAMinutos is { } minutos ? relogio.GetUtcNow().AddMinutes(minutos) : null)
+            .Construir();
     }
 
     private protected async Task LimparConcessoesAsync(Guid perfilId)

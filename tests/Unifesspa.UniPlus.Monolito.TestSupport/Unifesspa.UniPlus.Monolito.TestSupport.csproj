@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\PerfisDeTeste.cs" Link="Apoio\PerfisDeTeste.cs" />
+    <Compile Include="..\Unifesspa.UniPlus.Autorizacao.Domain.UnitTests\ConcessaoBuilder.cs" Link="Apoio\ConcessaoBuilder.cs" />
     <Using Include="Xunit" />
     <Using Include="Unifesspa.UniPlus.Autorizacao.Apoio" />
   </ItemGroup>

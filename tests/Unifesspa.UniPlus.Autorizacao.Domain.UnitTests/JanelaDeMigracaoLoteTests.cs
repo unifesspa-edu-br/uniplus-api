@@ -39,7 +39,7 @@ public sealed class JanelaDeMigracaoLoteTests
         Concessao ativa = cenario.Conceder(Leandro);
         Concessao revogada = cenario.Conceder(Isabella);
         Concessao vencida = cenario.Conceder(Diogo, validaAte: CenarioDeMigracao.Abertura.AddHours(2));
-        revogada.Revogar(Diogo, "Teste de revogação.", CenarioDeMigracao.Abertura.AddMinutes(-1)).IsSuccess.Should().BeTrue();
+        revogada.Revogar(new AtoDoAgente(Diogo, CenarioDeMigracao.Abertura.AddMinutes(-1)), "Teste de revogação.").IsSuccess.Should().BeTrue();
         JanelaDeMigracao janela = cenario.Abrir();
         DateTimeOffset depoisDoVencimento = CenarioDeMigracao.Abertura.AddHours(3);
 
