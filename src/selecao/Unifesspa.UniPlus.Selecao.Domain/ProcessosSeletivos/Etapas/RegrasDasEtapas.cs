@@ -73,29 +73,46 @@ internal static class RegrasDasEtapas
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        List<Guid> novosIds = [.. etapas.Select(e => e.Id)];
-        Dictionary<string, FaseCronograma> fasesPorCodigo = JanelaDaEtapaNaFase.FasesPorCodigo(estado.CronogramaFases);
-
-        // A coerência com o ENEM vem antes da regra geral da nota: quem tem só a etapa do ENEM, sem
-        // peso, recebe a causa real. A classificação é gravada depois das etapas, e num processo novo
-        // ela ainda é nula aqui.
-        DomainError? recusa =
-            OrdemDuplicada(etapas)
-            ?? ConferirEtapaDeNotaDoEnem(etapas, estado.Classificacao)
-            ?? NenhumaEtapaComponeNota(etapas)
-            ?? EtapaCitadaPeloDesempate(estado, novosIds)
-            ?? EtapaCitadaPelaClassificacao(estado, etapas, novosIds)
-            ?? EtapaCitadaPelaExigenciaDocumental(estado, novosIds)
-            ?? EtapaQueMudouDeFaseDaExigencia(estado, etapas)
-            ?? EtapaSemFaseNoCronograma(etapas, fasesPorCodigo)
-            ?? JanelaDaEtapaNaFase.ViolacaoDaJanelaDaEtapaNaFase(etapas, fasesPorCodigo);
-        if (recusa is not null)
+        if (RecusaDaTroca(estado, etapas) is { } recusa)
         {
             return Result.Failure(recusa);
         }
 
         List<FieldError> violacoesDoCiclo = ConferirFechamentoDoCicloDasEtapas(etapas);
         return violacoesDoCiclo.Count > 0 ? Result.ValidationFailure(violacoesDoCiclo) : Result.Success();
+    }
+
+    /// <summary>
+    /// As recusas que só dependem do próprio conjunto de etapas e da classificação, na ordem em que
+    /// orientam: ordem única, coerência com a etapa de nota do ENEM e ao menos uma etapa que componha
+    /// a nota. A coerência com o ENEM vem antes da regra geral da nota: quem tem só a etapa do ENEM,
+    /// sem peso, recebe a causa real. A classificação é gravada depois das etapas, e num processo novo
+    /// ela ainda é nula aqui.
+    /// </summary>
+    internal static DomainError? RecusaDaColecao(IReadOnlyList<EtapaProcesso> etapas, ConfiguracaoClassificacao? classificacao) =>
+        OrdemDuplicada(etapas)
+        ?? ConferirEtapaDeNotaDoEnem(etapas, classificacao)
+        ?? NenhumaEtapaComponeNota(etapas);
+
+    private static DomainError? RecusaDaTroca(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas) =>
+        RecusaDaColecao(etapas, estado.Classificacao)
+        ?? RecusaDasReferenciasAEtapas(estado, etapas)
+        ?? RecusaDaFaseDasEtapas(estado, etapas);
+
+    private static DomainError? RecusaDasReferenciasAEtapas(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas)
+    {
+        List<Guid> novosIds = [.. etapas.Select(e => e.Id)];
+        return EtapaCitadaPeloDesempate(estado, novosIds)
+            ?? EtapaCitadaPelaClassificacao(estado, etapas, novosIds)
+            ?? EtapaCitadaPelaExigenciaDocumental(estado, novosIds)
+            ?? EtapaQueMudouDeFaseDaExigencia(estado, etapas);
+    }
+
+    private static DomainError? RecusaDaFaseDasEtapas(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas)
+    {
+        Dictionary<string, FaseCronograma> fasesPorCodigo = JanelaDaEtapaNaFase.FasesPorCodigo(estado.CronogramaFases);
+        return EtapaSemFaseNoCronograma(etapas, fasesPorCodigo)
+            ?? JanelaDaEtapaNaFase.ViolacaoDaJanelaDaEtapaNaFase(etapas, fasesPorCodigo);
     }
 
     private static DomainError? OrdemDuplicada(IReadOnlyList<EtapaProcesso> etapas)

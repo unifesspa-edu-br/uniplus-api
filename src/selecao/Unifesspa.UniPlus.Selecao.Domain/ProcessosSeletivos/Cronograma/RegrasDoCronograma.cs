@@ -25,8 +25,7 @@ internal static class RegrasDoCronograma
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(iniciadas);
 
-        DomainError? recusa = CronogramaVazio(fases) ?? OrdemRepetida(fases) ?? FaseCanonicaRepetida(fases)
-            ?? RecusaDaMudanca(estado, fases, precedencias, iniciadas);
+        DomainError? recusa = RecusaDaColecao(fases) ?? RecusaDaMudanca(estado, fases, precedencias, iniciadas);
 
         return recusa is not null
             ? Result<PlanoDoCronograma>.Failure(recusa)
@@ -124,6 +123,13 @@ internal static class RegrasDoCronograma
         MudancaDaConfiguracao poda = PodaDoCronograma.Planejar(estado, removidas);
         return new PlanoDoCronograma(retidas, poda with { CronogramaFases = Troca.Substituindo(estado.CronogramaFases, resultantes) });
     }
+
+    /// <summary>
+    /// As recusas que só dependem da própria lista de fases, na ordem em que orientam: cronograma
+    /// vazio, ordem repetida e fase canônica repetida.
+    /// </summary>
+    internal static DomainError? RecusaDaColecao(IReadOnlyList<FaseCronograma> fases) =>
+        CronogramaVazio(fases) ?? OrdemRepetida(fases) ?? FaseCanonicaRepetida(fases);
 
     private static DomainError? CronogramaVazio(IReadOnlyList<FaseCronograma> fases) =>
         fases.Count == 0

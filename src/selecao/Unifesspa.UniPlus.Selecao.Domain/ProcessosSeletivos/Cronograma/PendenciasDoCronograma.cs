@@ -38,9 +38,7 @@ public static class PendenciasDoCronograma
         // legítimo enquanto se monta o certame, e quem o barra é este gate, na publicação.
         if (HaFaseDeAvaliacaoSemEtapa(estado))
         {
-            return new DomainError(
-                "ProcessoSeletivo.AvaliacaoSemEtapa",
-                "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
+            return AvaliacaoSemEtapa();
         }
 
         if (RecusaDaEtapaSemFaseDeclarada(estado) is { } etapaSemFase)
@@ -143,14 +141,21 @@ public static class PendenciasDoCronograma
     }
 
     /// <summary>Fase que agrupa etapas existe, mas o processo não tem etapa pontuada (§3.5).</summary>
+    internal static bool HaFaseDeAvaliacaoSemEtapa(EstadoDaConfiguracao estado) =>
+        HaFaseDeAvaliacaoSemEtapa(estado.CronogramaFases, estado.Etapas);
+
     // §3.5 — a bicondicional por sinalizador sobrevive apenas para a etapa que NÃO
     // declara a própria fase. Quando a etapa declara (EtapaProcesso.FaseCodigo), o
     // vínculo é quem responde por onde ela vive, e qualquer fase pode subdividir-se —
     // não só a que o cadastro marcava como agrupadora.
-    internal static bool HaFaseDeAvaliacaoSemEtapa(EstadoDaConfiguracao estado) =>
-        estado.CronogramaFases.Any(f => f.AgrupaEtapas
-            && !estado.Etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
-            && !estado.Etapas.Any(static e => e.FaseCodigo is null));
+    internal static bool HaFaseDeAvaliacaoSemEtapa(IEnumerable<FaseCronograma> fases, IReadOnlyCollection<EtapaProcesso> etapas) =>
+        fases.Any(f => f.AgrupaEtapas
+            && !etapas.Any(e => string.Equals(e.FaseCodigo, f.Codigo, StringComparison.Ordinal))
+            && !etapas.Any(static e => e.FaseCodigo is null));
+
+    internal static DomainError AvaliacaoSemEtapa() => new(
+        "ProcessoSeletivo.AvaliacaoSemEtapa",
+        "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.");
 
     // A etapa segue a unidade da fase que a contém, então toda etapa publicada declara a fase em que
     // acontece; o rascunho a aceita sem fase. A etapa sem fase é recusada aqui, citando a etapa.

@@ -72,7 +72,7 @@ public sealed partial class ValidacaoDoGrafoPrecedenciaTests
             g => g.OfertasAdicionais.Add(Oferta(Id(100)))),
         [Violacao.OpcoesDeCursoForaDaFaixa] = new(
             "ProcessoSeletivo.OpcoesDeCursoInvalido",
-            "O número de opções de curso da configuração restaurada deve ser 1 ou 2.",
+            "O número de opções de curso deve ser 1 ou 2.",
             g => g.OpcoesDeCurso = 3),
         [Violacao.OpcoesDeCursoAcimaDasOfertas] = new(
             "ProcessoSeletivo.OpcoesDeCursoAcimaDasOfertas",
@@ -109,7 +109,7 @@ public sealed partial class ValidacaoDoGrafoPrecedenciaTests
             g => g.Criterios.AddRange([DesempatePorIdade(1), DesempatePorIdade(1)])),
         [Violacao.DesempateCitaEtapaInexistente] = new(
             "ProcessoSeletivo.EtapaRefDesempateInexistente",
-            $"O critério de desempate na ordem 2 referencia a etapa {Id(300)}, que não existe na configuração restaurada (INV-B6).",
+            $"O critério de desempate na ordem 2 referencia a etapa {Id(300)}, que não existe neste processo.",
             g => g.Criterios.Add(DesempatePelaNotaDaEtapa(2, Id(300)))),
         [Violacao.DesempatePorAreaSemQuadro] = new(
             "ProcessoSeletivo.DesempateAreaEnemSemQuadro",
@@ -117,7 +117,7 @@ public sealed partial class ValidacaoDoGrafoPrecedenciaTests
             g => g.Criterios.Add(DesempatePorArea(3, "REDACAO"))),
         [Violacao.EliminacaoCitaEtapaInexistente] = new(
             "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-            $"A regra de eliminação referencia a etapa {Id(310)}, que não existe na configuração restaurada (INV-B4).",
+            $"A regra de eliminação referencia a etapa {Id(310)}, que não existe neste processo.",
             g => g.Eliminacoes.Add(EliminacaoPorAusenciaNaEtapa(Id(310)))),
         [Violacao.AusenciaNaEtapaDoEnem] = new(
             "ProcessoSeletivo.AusenciaNaEtapaDoEnem",
@@ -137,7 +137,7 @@ public sealed partial class ValidacaoDoGrafoPrecedenciaTests
             g => g.FasesAdicionais.Add(Fase(2, Id(200), agrupaEtapas: false))),
         [Violacao.FaseAgrupadoraSemEtapa] = new(
             "ProcessoSeletivo.AvaliacaoSemEtapa",
-            "Há uma fase que agrupa etapas no cronograma restaurado, mas nenhuma etapa acontece nela.",
+            "Há uma fase que agrupa etapas no cronograma, mas o processo não tem nenhuma etapa pontuada.",
             g => g.FaseDasEtapas = FaseForaDoCronograma),
         [Violacao.EtapaSemFaseAlguma] = new(
             "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",

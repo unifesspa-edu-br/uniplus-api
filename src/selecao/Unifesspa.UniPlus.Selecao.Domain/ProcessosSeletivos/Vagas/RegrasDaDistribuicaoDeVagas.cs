@@ -18,16 +18,12 @@ public static class RegrasDaDistribuicaoDeVagas
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        HashSet<string> novosCodigos = [.. distribuicao.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)];
-
         // Sem campo: o corpo da operação é só a lista de ofertas, e o campo que se corrige é o
         // número de opções, em outra operação.
-        DomainError? recusa =
-            DistribuicaoVazia(distribuicao)
-            ?? OfertaDeCursoRepetida(distribuicao)
-            ?? (HaAcaoQuandoIndeferidoDivergenteEntreOfertas(distribuicao) ? AcaoQuandoIndeferidoDivergente() : null)
+        DomainError? recusa = RecusaDaColecao(distribuicao)
+            ?? AcaoQuandoIndeferidoDivergenteEntreOfertas(distribuicao)
             ?? RegraDeAplicabilidadeDivergenteEntreOfertas(distribuicao)
-            ?? ModalidadeCitadaPorExigenciaViva(estado, fatosDeModalidade, novosCodigos)
+            ?? ModalidadeCitadaPorExigenciaViva(estado, fatosDeModalidade, distribuicao)
             ?? (OpcoesDeCursoAcimaDasOfertas(estado.NumeroDeOpcoesDeCurso, distribuicao.Count)
                 ? ErroDeOpcoesDeCursoAcimaDasOfertas()
                 : null);
@@ -38,17 +34,22 @@ public static class RegrasDaDistribuicaoDeVagas
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        if (numero is < 1 or > ProcessoSeletivo.MaximoDeOpcoesDeCurso)
+        if (NumeroDeOpcoesForaDaFaixa(numero))
         {
-            return Result.ValidationFailure([new FieldError("numero", new DomainError(
-                ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
-                "O número de opções de curso deve ser 1 ou 2."))]);
+            return Result.ValidationFailure([new FieldError("numero", ErroDeOpcoesDeCursoInvalido())]);
         }
 
         return OpcoesDeCursoAcimaDasOfertas(numero, estado.DistribuicaoVagas.Count)
             ? Result.ValidationFailure([new FieldError("numero", ErroDeOpcoesDeCursoAcimaDasOfertas())])
             : Result.Success();
     }
+
+    /// <summary>
+    /// As recusas que só dependem da lista de ofertas, na ordem em que orientam: lista vazia e oferta
+    /// de curso com mais de uma distribuição.
+    /// </summary>
+    internal static DomainError? RecusaDaColecao(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao) =>
+        DistribuicaoVazia(distribuicao) ?? OfertaDeCursoRepetida(distribuicao);
 
     private static DomainError? DistribuicaoVazia(IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao) =>
         distribuicao.Count == 0
@@ -69,20 +70,37 @@ public static class RegrasDaDistribuicaoDeVagas
 
     // O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas
     // distintas. A restauração de envelope congelado reconstrói a distribuição fora desta escrita e
-    // precisa da mesma checagem, por isso a pergunta é compartilhada.
-    private static DomainError AcaoQuandoIndeferidoDivergente() => new(
-        "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
-        "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo.");
+    // precisa da mesma checagem, por isso a recusa é compartilhada.
+    internal static DomainError? AcaoQuandoIndeferidoDivergenteEntreOfertas(IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicaoVagas) =>
+        HaAcaoQuandoIndeferidoDivergenteEntreOfertas(distribuicaoVagas)
+            ? new DomainError(
+                "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente",
+                "O mesmo código de modalidade não pode ter ações divergentes de vaga quando indeferido em ofertas distintas do processo.")
+            : null;
 
     // Todo fato cujos valores são modalidades referencia por código, então a checagem é precisa: só
     // recusa se um código hoje referenciado por condição viva deixaria de existir.
     private static DomainError? ModalidadeCitadaPorExigenciaViva(
-        EstadoDaConfiguracao estado, FatosDeModalidade fatosDeModalidade, HashSet<string> novosCodigos) =>
-        fatosDeModalidade.Codigos.Any(fato => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, fato, novosCodigos))
+        EstadoDaConfiguracao estado,
+        FatosDeModalidade fatosDeModalidade,
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao)
+    {
+        HashSet<string> novosCodigos = [.. distribuicao.SelectMany(static d => d.Modalidades).Select(static m => m.Codigo)];
+        return fatosDeModalidade.Codigos.Any(fato => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, fato, novosCodigos))
             ? new DomainError(
                 "ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva",
                 "Existe condição de gatilho documental referenciando um código de modalidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a distribuição de vagas.")
             : null;
+    }
+
+    // Versão publicada sempre declarou o número, e ausência não vale por 1 opção: fora de 1 e 2, ou
+    // nulo, é número que o domínio não produziria.
+    internal static bool NumeroDeOpcoesForaDaFaixa(int? numero) =>
+        numero is not (>= 1 and <= ProcessoSeletivo.MaximoDeOpcoesDeCurso);
+
+    internal static DomainError ErroDeOpcoesDeCursoInvalido() => new(
+        ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido,
+        "O número de opções de curso deve ser 1 ou 2.");
 
     // Só vale com distribuição gravada: sem ela a pendência é a da distribuição ausente, e com
     // ao menos uma oferta o único número que a supera é 2.
