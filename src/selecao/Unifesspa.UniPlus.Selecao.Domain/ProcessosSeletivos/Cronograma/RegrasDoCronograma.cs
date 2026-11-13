@@ -197,7 +197,7 @@ internal static class RegrasDoCronograma
     private static DomainError? EtapaDaFaseCitadaPelaClassificacao(EstadoDaConfiguracao estado, FaseCronograma antiga) =>
         estado.Etapas.FirstOrDefault(e =>
             string.Equals(e.FaseCodigo, antiga.Codigo, StringComparison.Ordinal)
-            && RegrasDasEtapas.EtapaReferenciadaPorClassificacaoOuDesempate(estado, e.Id)) is { } etapa
+            && CitacoesDasEtapas.EtapaCitadaPorDesempateOuClassificacao(estado, e.Id)) is { } etapa
             ? new DomainError(
                 "FaseCronograma.EtapaDaFaseReferenciada",
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapa.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes.")

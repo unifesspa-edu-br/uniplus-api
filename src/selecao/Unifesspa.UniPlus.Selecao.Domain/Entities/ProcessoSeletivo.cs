@@ -222,7 +222,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ArgumentNullException.ThrowIfNull(etapas);
 
         return Editar(precondicao,
-            () => RegrasDasEtapas.ConferirSubstituicao(EstadoDaConfiguracao.De(this), etapas).Com(etapas),
+            () => new SubstituicaoDasEtapas(EstadoDaConfiguracao.De(this), etapas).Conferir().Com(etapas),
             novas => Substituir(_etapas, novas));
     }
 

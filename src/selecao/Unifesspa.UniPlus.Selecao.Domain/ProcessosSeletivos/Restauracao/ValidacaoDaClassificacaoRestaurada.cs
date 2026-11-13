@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Restauracao;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ValidacaoDaClassificacaoRestaurada
@@ -13,9 +14,10 @@ internal static class ValidacaoDaClassificacaoRestaurada
     // decodificação, antes da validação do grafo.
     internal static DomainError? Recusa(GrafoConfiguracao grafo)
     {
+        EtapasDoProcesso etapas = new(grafo.Etapas);
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
         {
-            if (RegrasDaClassificacao.RecusaDaEtapaDaEliminacao(regra, grafo.Etapas) is { } recusa)
+            if (RegrasDaClassificacao.RecusaDaEtapaDaEliminacao(regra, etapas) is { } recusa)
             {
                 return recusa;
             }

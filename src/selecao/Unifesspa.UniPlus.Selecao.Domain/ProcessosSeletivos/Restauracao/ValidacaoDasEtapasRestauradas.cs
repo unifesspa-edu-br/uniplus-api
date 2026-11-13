@@ -12,7 +12,7 @@ internal static class ValidacaoDasEtapasRestauradas
     internal static DomainError? Recusa(GrafoConfiguracao grafo) =>
         IdAusente(grafo)
         ?? IdDuplicado(grafo)
-        ?? RegrasDasEtapas.RecusaDaColecao(grafo.Etapas, grafo.Classificacao);
+        ?? new EtapasDoProcesso(grafo.Etapas).RecusaDaColecao(grafo.Classificacao);
 
     private static DomainError? IdAusente(GrafoConfiguracao grafo) =>
         grafo.Etapas.Any(static e => e.Id == Guid.Empty)

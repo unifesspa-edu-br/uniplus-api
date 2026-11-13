@@ -24,7 +24,7 @@ internal static class RegrasDaClassificacao
         // As recusas de campo se acumulam (todas de uma vez para quem edita); a das etapas, que nenhum
         // campo deste comando corrige, sai depois delas porque o errors[] só carrega erro de campo.
         List<FieldError> erros = [.. EtapasDeEliminacaoRecusadas(estado, classificacao)];
-        DomainError? erroDaEtapaDoEnem = RegrasDasEtapas.ConferirEtapaDeNotaDoEnem(estado.Etapas, classificacao);
+        DomainError? erroDaEtapaDoEnem = new EtapasDoProcesso(estado.Etapas).RecusaDaEtapaDoEnem(classificacao);
         erros.AddRange(RecusasDoCalculoLocalEDoDesempate(estado, classificacao, erroDaEtapaDoEnem));
 
         List<OpcaoDeclaradaFato> edicoesARetirar = EdicoesDoEnemSemClassificacaoEnem(estado, classificacao);
@@ -101,10 +101,11 @@ internal static class RegrasDaClassificacao
 
     private static List<FieldError> EtapasDeEliminacaoRecusadas(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao)
     {
+        EtapasDoProcesso etapas = new(estado.Etapas);
         List<FieldError> erros = [];
         foreach ((RegraEliminacao regra, int indice) in classificacao.RegrasEliminacao.Select(static (regra, indice) => (regra, indice)))
         {
-            if (RecusaDaEtapaDaEliminacao(regra, estado.Etapas) is { } recusa)
+            if (RecusaDaEtapaDaEliminacao(regra, etapas) is { } recusa)
             {
                 erros.Add(new($"regrasEliminacao[{indice}].etapaRef", recusa));
             }
@@ -117,14 +118,14 @@ internal static class RegrasDaClassificacao
     /// A recusa da etapa que a regra de eliminação cita: a etapa não existe, ou é a etapa do ENEM,
     /// cuja ausência já tem regra própria. A primeira que vale.
     /// </summary>
-    internal static DomainError? RecusaDaEtapaDaEliminacao(RegraEliminacao regra, IReadOnlyCollection<EtapaProcesso> etapas)
+    internal static DomainError? RecusaDaEtapaDaEliminacao(RegraEliminacao regra, EtapasDoProcesso etapas)
     {
-        if (regra.Args.EtapaReferenciada() is { } etapaRef && !etapas.Any(e => e.Id == etapaRef))
+        if (regra.Args.EtapaReferenciada() is { } etapaRef && !etapas.Contem(etapaRef))
         {
             return EtapaRefEliminacaoInexistente(etapaRef);
         }
 
-        return RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, etapas) ? RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada() : null;
+        return etapas.RecusaDaAusenciaNaEtapaDoEnem(regra.Args);
     }
 
     // Uma recusa por critério afetado, e não por área: a classificação é a mesma para todas.

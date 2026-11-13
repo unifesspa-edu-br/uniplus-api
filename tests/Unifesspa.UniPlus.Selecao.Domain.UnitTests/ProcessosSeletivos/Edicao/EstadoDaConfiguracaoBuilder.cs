@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -28,6 +29,18 @@ internal sealed class EstadoDaConfiguracaoBuilder
     internal EstadoDaConfiguracaoBuilder ComEtapas(params EtapaProcesso[] etapas)
     {
         _estado = _estado with { Etapas = etapas };
+        return this;
+    }
+
+    internal EstadoDaConfiguracaoBuilder ComClassificacao(ConfiguracaoClassificacao classificacao)
+    {
+        _estado = _estado with { Classificacao = classificacao };
+        return this;
+    }
+
+    internal EstadoDaConfiguracaoBuilder ComCriteriosDeDesempate(params CriterioDesempate[] criterios)
+    {
+        _estado = _estado with { CriteriosDesempate = criterios };
         return this;
     }
 
