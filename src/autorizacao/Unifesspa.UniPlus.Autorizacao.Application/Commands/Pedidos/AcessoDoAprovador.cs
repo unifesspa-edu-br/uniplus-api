@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que o solicitante da requisição pode fazer no fluxo dos pedidos: decidir cada etapa, administrar concessões e
@@ -100,15 +101,20 @@ internal sealed record AcessoDoAprovador(
     /// A decisão que governa a leitura de quem é parte do pedido, sem gravar: a da consulta dos pedidos, quando a pessoa a
     /// tem, como o Encarregado de dados, para que a leitura dos próprios pedidos entre na trilha como as demais
     /// (UNI-REQ-0372). Nula para quem não tem a consulta, que lê os próprios pedidos por titularidade, sem registro
-    /// (issue #2389).
+    /// (issue #2389). Sem sujeito na decisão, a falha é a identidade incompleta: a leitura não sai, porque não se sabe se
+    /// a pessoa tem a consulta e, portanto, se a leitura exige registro.
     /// </summary>
     /// <param name="pedidoId">O pedido lido, ou nulo na fila dos próprios pedidos.</param>
-    public static async Task<DecisaoPermitida?> GovernanteDaLeituraDaParteAsync(
+    public static async Task<Result<DecisaoPermitida?>> GovernanteDaLeituraDaParteAsync(
         IVerificadorDeAcesso verificador, Guid? pedidoId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        return await AvaliarAsync(verificador, PermissaoConsultar, pedidoId, cancellationToken).ConfigureAwait(false) as DecisaoPermitida;
+        DecisaoDeAcesso consulta = await AvaliarAsync(verificador, PermissaoConsultar, pedidoId, cancellationToken).ConfigureAwait(false);
+
+        return consulta is SemSujeito
+            ? Result<DecisaoPermitida?>.Failure(PedidoHandlerErros.IdentidadeIncompleta())
+            : Result<DecisaoPermitida?>.Success(consulta as DecisaoPermitida);
     }
 
     /// <summary>
