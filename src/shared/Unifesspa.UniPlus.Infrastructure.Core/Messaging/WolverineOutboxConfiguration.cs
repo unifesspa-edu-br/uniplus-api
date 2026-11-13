@@ -87,148 +87,12 @@ public static class WolverineOutboxConfiguration
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
         ArgumentException.ThrowIfNullOrWhiteSpace(kafkaConfigSection);
+        RecusarFormaLegadaDaSecaoDoKafka(kafkaConfigSection);
 
-        // Guarda contra a forma legada exata deste parâmetro (até o #343 era a chave inteira do
-        // bootstrap — `"Kafka:BootstrapServers"` — definida na const `DefaultKafkaConfigKey`).
-        // Bind silencioso dessa chave terminal como se fosse o nome de uma seção devolveria um
-        // `KafkaSettings` vazio e desligaria o transporte sem aviso. Restringimos a guarda ao
-        // sufixo `:BootstrapServers` para preservar paths legítimos de seção aninhada
-        // (ex.: `"Messaging:Kafka"`), que `IConfiguration.GetSection` suporta nativamente.
-        if (kafkaConfigSection.EndsWith(":BootstrapServers", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ArgumentException(
-                $"kafkaConfigSection '{kafkaConfigSection}' parece a forma legada do parâmetro (chave terminal `Kafka:BootstrapServers`). "
-                + "Passe o nome da seção (ex.: 'Kafka' ou 'Messaging:Kafka').",
-                nameof(kafkaConfigSection));
-        }
+        host.ConfigureServices(services => RegistrarOpcoesDoKafka(services, configuration, kafkaConfigSection));
 
-        // Bind + valida KafkaSettings via DI/IOptions. ValidateOnStart roda no host start,
-        // antes de qualquer hosted service consumir o Kafka. Mensagens de validação reportadas
-        // no formato canônico do .NET (OptionsValidationException com lista de campos faltantes).
-        host.ConfigureServices(services =>
-        {
-            services.AddOptions<KafkaSettings>()
-                .Bind(configuration.GetSection(kafkaConfigSection))
-                .ValidateOnStart();
-
-            services.AddSingleton<IValidateOptions<KafkaSettings>, KafkaSettingsValidator>();
-        });
-
-        return host.UseWolverine(opts =>
-        {
-            string? connectionString = configuration.GetConnectionString(connectionStringName);
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new InvalidOperationException(
-                    $"Connection string '{connectionStringName}' não configurada — Wolverine não pode inicializar o outbox.");
-            }
-
-            // Persistência do outbox no mesmo banco do módulo, schema isolado.
-            // EnableMessageTransport(_ => { }) ativa o transporte interno PG queue.
-            opts.PersistMessagesWithPostgresql(connectionString, PersistenceSchema)
-                .EnableMessageTransport(_ => { });
-
-            // Atomicidade write+evento: o handler que muta agregado e retorna
-            // cascading messages tem o envelope persistido na MESMA transação do
-            // SaveChanges, via IEnvelopeTransaction instalado por
-            // EnrollDbContextInTransaction.
-            opts.UseEntityFrameworkCoreTransactions();
-            opts.Policies.AutoApplyTransactions();
-            opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
-
-            // Política de service location do codegen (ADR-0098): NotAllowed adota cedo
-            // o default que o Wolverine 6.0 assume — qualquer chain de handler cuja árvore
-            // de dependências contenha uma lambda factory opaca (ou tipo concreto não
-            // público) passa a FALHAR a geração de código (InvalidServiceLocationException)
-            // em vez de cair silenciosamente em service location em runtime. Forward-compat
-            // com o 6.0 + guarda automática contra regressões: a suíte de integração (que
-            // sobe e exercita as chains dos 3 hosts) quebra se uma nova dependência opaca
-            // vazar para um handler. Os opt-ins por tipo justificados (UoW que encaminham
-            // para a MESMA instância de DbContext — ADR-0004) são declarados por cada
-            // módulo via AlwaysUseServiceLocationFor<T>() e compostos pelo host no
-            // configureRouting; este helper permanece agnóstico dos tipos de módulo.
-            opts.ServiceLocationPolicy = JasperFx.CodeGeneration.Model.ServiceLocationPolicy.NotAllowed;
-
-            // CorrelationIdEnvelopeMiddleware roda em TODOS os chains (inclusive
-            // event handlers consumidos de Kafka) — implementa o terceiro componente
-            // da ADR-0052. Registrado ANTES do AddCommandQueryMiddleware para que o
-            // escopo do LogContext esteja ativo quando o WolverineLoggingMiddleware
-            // emite a entrada inicial "Processando {RequestName}".
-            opts.AddCorrelationIdMiddleware();
-
-            // Middleware CQRS canônicos (logging + validação FluentValidation),
-            // restritos a chains de ICommand<>/IQuery<> — mensagens internas do
-            // Wolverine não atravessam esse pipeline.
-            opts.AddCommandQueryMiddleware();
-
-            // Propaga o header `uniplus.correlation-id` de qualquer envelope incoming
-            // (HTTP → Send, ou outbox/Kafka → consumer) para todas as outgoing messages
-            // do mesmo handler context — cascading, IMessageBus.PublishAsync, agendamentos.
-            // É o que fecha a propagação do CorrelationId via Kafka exigida pela ADR-0052.
-            // O CorrelationIdEnvelopeMiddleware acima garante que o header esteja sempre
-            // presente no incoming envelope (gera GUID caso ausente/inválido).
-            opts.Policies.PropagateIncomingHeaderToOutgoing(CorrelationIdEnvelopeMiddleware.HeaderName);
-
-            // Discovery do assembly Infrastructure.Core — handlers compartilhados ficam descobertos
-            // sem que cada Program.cs precise repetir o IncludeAssembly. Idempotente — assembly do
-            // entry já é scaneado por default; este registro é defensivo para handlers do Core.
-            opts.Discovery.IncludeAssembly(typeof(WolverineOutboxConfiguration).Assembly);
-
-            // Schema do Wolverine (tabelas wolverine_outgoing_envelopes, wolverine_incoming_envelopes,
-            // wolverine_node_assignments etc.) é auto-criado/atualizado no startup — issue #344.
-            // Idempotente: Wolverine inspeciona o schema atual e aplica apenas o delta. Múltiplas
-            // réplicas startando simultaneamente são coordenadas pelo lock interno do framework.
-            //
-            // Decisão (#344): em ambientes Uni+ não há orquestração de schema externa ao host
-            // (sem step de "dotnet ef database update" no Helm chart), então delegar a criação
-            // ao próprio host é o caminho mais simples e racional para destravar bring-up de
-            // pods com banco vazio (standalone/lab). EF Core migrations dos módulos são
-            // aplicadas em paralelo por ApplyMigrationsAsync<TContext> no Program.cs.
-            //
-            // A exceção é o modo `Skip` (ADR-0127): ali quem provisiona o schema — o das
-            // migrations EF e o do próprio Wolverine — é o Job de deploy, que roda antes do
-            // rollout. Deixar `CreateOrUpdate` no pod faria o Wolverine aplicar DDL no start
-            // mesmo assim, e uma falha nesse DDL voltaria a acontecer DEPOIS de o rollout ter
-            // começado — exatamente o que a separação existe para impedir, só que pelo schema
-            // da mensageria em vez do schema dos módulos.
-            opts.AutoBuildMessageStorageOnStartup =
-                DependencyInjection.MigrationExecutionModeExtensions.ProvisionamentoDeSchemaPara(
-                    DependencyInjection.MigrationExecutionModeExtensions.LerModoDeMigration(configuration));
-
-            // Lê a seção uma única vez aqui — ValidateOnStart no DI não atinge este callback
-            // (UseWolverine roda no Build, antes de StartAsync). Validação inline replica
-            // as regras essenciais para falhar antes do AutoProvision tentar conectar com
-            // config inválida; o IValidateOptions registrado acima garante o mesmo erro
-            // padronizado se outro consumidor resolver IOptions<KafkaSettings>.
-            KafkaSettings kafkaSettings = configuration.GetSection(kafkaConfigSection).Get<KafkaSettings>()
-                ?? new KafkaSettings();
-
-            if (string.IsNullOrWhiteSpace(kafkaSettings.BootstrapServers))
-            {
-                configureRouting?.Invoke(opts);
-                return;
-            }
-
-            ValidateOptionsResult validation = new KafkaSettingsValidator().Validate(name: null, kafkaSettings);
-            if (validation.Failed)
-            {
-                throw new InvalidOperationException(
-                    $"Configuração Kafka inválida: {string.Join(" | ", validation.Failures ?? [])}");
-            }
-
-            KafkaTransportExpression kafka = opts.UseKafka(kafkaSettings.BootstrapServers);
-
-            // ConfigureClient só quando há sobrescritas a aplicar — evita registrar callback
-            // que mexe em propriedades default do Confluent.Kafka.ClientConfig.
-            if (RequiresClientConfig(kafkaSettings))
-            {
-                kafka = kafka.ConfigureClient(config => KafkaSecurity.Apply(config, kafkaSettings));
-            }
-
-            kafka.AutoProvision();
-
-            configureRouting?.Invoke(opts);
-        });
+        return host.UseWolverine(
+            opts => ConfigurarWolverine(opts, configuration, connectionStringName, kafkaConfigSection, configureRouting));
     }
 
     internal static bool RequiresClientConfig(KafkaSettings settings) =>
@@ -238,4 +102,166 @@ public static class WolverineOutboxConfiguration
         || !string.IsNullOrWhiteSpace(settings.SaslPassword)
         || !string.IsNullOrWhiteSpace(settings.SslCaLocation)
         || !string.IsNullOrWhiteSpace(settings.SslCaPem);
+
+    private static void ConfigurarWolverine(
+        WolverineOptions opts,
+        IConfiguration configuration,
+        string connectionStringName,
+        string kafkaConfigSection,
+        Action<WolverineOptions>? configureRouting)
+    {
+        ConfigurarOutboxTransacional(opts, ConnectionStringDoOutbox(configuration, connectionStringName));
+        ConfigurarGeracaoDeCodigoEDescoberta(opts);
+        ConfigurarMiddlewaresDoPipeline(opts);
+        ConfigurarProvisionamentoDoSchema(opts, configuration);
+        ConfigurarTransporteKafka(opts, LerOpcoesDoKafka(configuration, kafkaConfigSection));
+        configureRouting?.Invoke(opts);
+    }
+
+    /// <summary>
+    /// Recusa a forma legada exata deste parâmetro: até o #343 era a chave inteira do bootstrap
+    /// (<c>Kafka:BootstrapServers</c>). Ligar essa chave terminal como se fosse o nome de uma seção devolveria um
+    /// <see cref="KafkaSettings"/> vazio e desligaria o transporte sem aviso. A recusa vale só para o sufixo
+    /// <c>:BootstrapServers</c>, preservando as seções aninhadas legítimas (<c>Messaging:Kafka</c>).
+    /// </summary>
+    private static void RecusarFormaLegadaDaSecaoDoKafka(string kafkaConfigSection)
+    {
+        if (kafkaConfigSection.EndsWith(":BootstrapServers", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(
+                $"kafkaConfigSection '{kafkaConfigSection}' parece a forma legada do parâmetro (chave terminal `Kafka:BootstrapServers`). "
+                + "Passe o nome da seção (ex.: 'Kafka' ou 'Messaging:Kafka').",
+                nameof(kafkaConfigSection));
+        }
+    }
+
+    /// <summary>
+    /// Liga e valida <see cref="KafkaSettings"/> pelo DI. O <c>ValidateOnStart</c> roda no start do host, antes de
+    /// qualquer hosted service consumir o Kafka, e reporta no formato canônico do .NET
+    /// (<see cref="OptionsValidationException"/> com a lista de campos faltantes).
+    /// </summary>
+    private static void RegistrarOpcoesDoKafka(IServiceCollection services, IConfiguration configuration, string kafkaConfigSection)
+    {
+        services.AddOptions<KafkaSettings>()
+            .Bind(configuration.GetSection(kafkaConfigSection))
+            .ValidateOnStart();
+
+        services.AddSingleton<IValidateOptions<KafkaSettings>, KafkaSettingsValidator>();
+    }
+
+    private static string ConnectionStringDoOutbox(IConfiguration configuration, string connectionStringName)
+    {
+        string? connectionString = configuration.GetConnectionString(connectionStringName);
+
+        return string.IsNullOrWhiteSpace(connectionString)
+            ? throw new InvalidOperationException(
+                $"Connection string '{connectionStringName}' não configurada — Wolverine não pode inicializar o outbox.")
+            : connectionString;
+    }
+
+    /// <summary>
+    /// Persiste o outbox no mesmo banco do módulo, em schema isolado; <c>EnableMessageTransport(_ => { })</c> ativa o
+    /// transporte interno da fila PostgreSQL. A atomicidade write+evento vem de o handler que muta agregado e retorna
+    /// cascading messages ter o envelope persistido na MESMA transação do <c>SaveChanges</c>, pelo
+    /// <c>IEnvelopeTransaction</c> instalado por <c>EnrollDbContextInTransaction</c>.
+    /// </summary>
+    private static void ConfigurarOutboxTransacional(WolverineOptions opts, string connectionString)
+    {
+        opts.PersistMessagesWithPostgresql(connectionString, PersistenceSchema)
+            .EnableMessageTransport(_ => { });
+
+        opts.UseEntityFrameworkCoreTransactions();
+        opts.Policies.AutoApplyTransactions();
+        opts.Policies.UseDurableOutboxOnAllSendingEndpoints();
+    }
+
+    /// <summary>
+    /// <c>NotAllowed</c> adota cedo o default do Wolverine 6.0 (ADR-0098): a chain de handler cuja árvore de
+    /// dependências contém uma lambda factory opaca, ou um tipo concreto não público, FALHA na geração de código
+    /// (<c>InvalidServiceLocationException</c>) em vez de cair em service location em runtime. A suíte de integração,
+    /// que sobe e exercita as chains dos hosts, quebra se uma dependência opaca vazar para um handler. Os opt-ins por
+    /// tipo (UoW que encaminham para a MESMA instância de DbContext, ADR-0004) são declarados por cada módulo via
+    /// <c>AlwaysUseServiceLocationFor&lt;T&gt;()</c> e compostos pelo host no <c>configureRouting</c>; este helper
+    /// permanece agnóstico dos tipos de módulo. O assembly Infrastructure.Core entra na descoberta para que os handlers
+    /// compartilhados sejam encontrados sem cada Program.cs repetir o <c>IncludeAssembly</c>; o assembly de entrada já
+    /// é varrido por padrão, então o registro é defensivo.
+    /// </summary>
+    private static void ConfigurarGeracaoDeCodigoEDescoberta(WolverineOptions opts)
+    {
+        opts.ServiceLocationPolicy = JasperFx.CodeGeneration.Model.ServiceLocationPolicy.NotAllowed;
+        opts.Discovery.IncludeAssembly(typeof(WolverineOutboxConfiguration).Assembly);
+    }
+
+    /// <summary>
+    /// O <c>CorrelationIdEnvelopeMiddleware</c> roda em TODOS os chains, inclusive event handlers consumidos do Kafka
+    /// (ADR-0052), e entra ANTES do middleware CQRS para o escopo do <c>LogContext</c> já estar ativo quando o
+    /// <c>WolverineLoggingMiddleware</c> emite a entrada inicial. O middleware CQRS (logging + validação
+    /// FluentValidation) vale só para chains de <c>ICommand&lt;&gt;</c>/<c>IQuery&lt;&gt;</c>. A propagação do header
+    /// <c>uniplus.correlation-id</c> do envelope incoming (HTTP, outbox ou Kafka) para todas as mensagens outgoing do
+    /// mesmo handler — cascading, <c>IMessageBus.PublishAsync</c>, agendamentos — fecha o CorrelationId via Kafka; o
+    /// middleware de correlação garante o header no incoming, gerando um GUID se ausente ou inválido.
+    /// </summary>
+    private static void ConfigurarMiddlewaresDoPipeline(WolverineOptions opts)
+    {
+        opts.AddCorrelationIdMiddleware();
+        opts.AddCommandQueryMiddleware();
+        opts.Policies.PropagateIncomingHeaderToOutgoing(CorrelationIdEnvelopeMiddleware.HeaderName);
+    }
+
+    /// <summary>
+    /// O schema do Wolverine (<c>wolverine_outgoing_envelopes</c>, <c>wolverine_incoming_envelopes</c>,
+    /// <c>wolverine_node_assignments</c> etc.) é criado e atualizado no startup: o Wolverine inspeciona o schema atual
+    /// e aplica só o delta, e réplicas subindo juntas são coordenadas pelo lock interno do framework. Os ambientes do
+    /// Uni+ não têm orquestração de schema externa ao host, e o host criar o schema destrava o bring-up de pods com
+    /// banco vazio. A exceção é o modo <c>Skip</c> (ADR-0127): ali quem provisiona o schema, o das migrations EF e o do
+    /// próprio Wolverine, é o Job de deploy, que roda antes do rollout. Manter <c>CreateOrUpdate</c> no pod aplicaria DDL
+    /// no start mesmo assim, e uma falha nesse DDL voltaria a acontecer DEPOIS de o rollout ter começado.
+    /// </summary>
+    private static void ConfigurarProvisionamentoDoSchema(WolverineOptions opts, IConfiguration configuration)
+    {
+        opts.AutoBuildMessageStorageOnStartup =
+            DependencyInjection.MigrationExecutionModeExtensions.ProvisionamentoDeSchemaPara(
+                DependencyInjection.MigrationExecutionModeExtensions.LerModoDeMigration(configuration));
+    }
+
+    /// <summary>
+    /// Lê a seção uma única vez, no callback: o <c>ValidateOnStart</c> do DI não atinge este ponto, porque o
+    /// <c>UseWolverine</c> roda no Build, antes de <c>StartAsync</c>.
+    /// </summary>
+    private static KafkaSettings LerOpcoesDoKafka(IConfiguration configuration, string kafkaConfigSection) =>
+        configuration.GetSection(kafkaConfigSection).Get<KafkaSettings>() ?? new KafkaSettings();
+
+    /// <summary>
+    /// Sem <c>BootstrapServers</c> o transporte Kafka não é registrado e só a fila PostgreSQL fica ativa. A validação
+    /// inline replica as regras essenciais para falhar antes de o <c>AutoProvision</c> tentar conectar com
+    /// configuração inválida; o <c>IValidateOptions</c> registrado no DI garante o mesmo erro padronizado a outro
+    /// consumidor de <c>IOptions&lt;KafkaSettings&gt;</c>. O <c>ConfigureClient</c> só entra quando há sobrescritas a
+    /// aplicar, para não registrar callback que mexe nas propriedades default do <c>ClientConfig</c>.
+    /// </summary>
+    private static void ConfigurarTransporteKafka(WolverineOptions opts, KafkaSettings kafkaSettings)
+    {
+        if (string.IsNullOrWhiteSpace(kafkaSettings.BootstrapServers))
+        {
+            return;
+        }
+
+        ExigirOpcoesDoKafkaValidas(kafkaSettings);
+        KafkaTransportExpression kafka = opts.UseKafka(kafkaSettings.BootstrapServers);
+        if (RequiresClientConfig(kafkaSettings))
+        {
+            kafka = kafka.ConfigureClient(config => KafkaSecurity.Apply(config, kafkaSettings));
+        }
+
+        kafka.AutoProvision();
+    }
+
+    private static void ExigirOpcoesDoKafkaValidas(KafkaSettings kafkaSettings)
+    {
+        ValidateOptionsResult validation = new KafkaSettingsValidator().Validate(name: null, kafkaSettings);
+        if (validation.Failed)
+        {
+            throw new InvalidOperationException(
+                $"Configuração Kafka inválida: {string.Join(" | ", validation.Failures ?? [])}");
+        }
+    }
 }
