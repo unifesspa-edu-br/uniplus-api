@@ -176,32 +176,33 @@ internal static class RegrasDoCronograma
     // coisa: quem a declara é uma exigência de outra fase, que só usa esta como marco temporal, e
     // apagá-la por tabela seria remover configuração alheia. A etapa e o formulário da fase também só
     // saem se ninguém de fora depende deles.
-    private static DomainError? RecusaDaFaseRemovida(EstadoDaConfiguracao estado, FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam)
-    {
-        DocumentoExigido? ancoraDeOutraFase = documentosQueFicam.Find(d => d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id);
-        if (ancoraDeOutraFase is not null)
-        {
-            return new DomainError(
+    private static DomainError? RecusaDaFaseRemovida(EstadoDaConfiguracao estado, FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
+        FaseUsadaComoAncoraDeOutraFase(antiga, documentosQueFicam)
+        ?? EtapaDaFaseCitadaPelaClassificacao(estado, antiga)
+        ?? FormularioRespondidoNaFase(estado, antiga);
+
+    private static DomainError? FaseUsadaComoAncoraDeOutraFase(FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
+        documentosQueFicam.Find(d => d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id) is { } ancora
+            ? new DomainError(
                 "FaseCronograma.ReferenciadaPorExigenciaViva",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{ancoraDeOutraFase.TipoDocumentoNome}', exigido em outra fase, usa a janela dela como âncora de idade máxima de emissão.");
-        }
+                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{ancora.TipoDocumentoNome}', exigido em outra fase, usa a janela dela como âncora de idade máxima de emissão.")
+            : null;
 
-        EtapaProcesso? etapaReferenciada = estado.Etapas.FirstOrDefault(e =>
+    private static DomainError? EtapaDaFaseCitadaPelaClassificacao(EstadoDaConfiguracao estado, FaseCronograma antiga) =>
+        estado.Etapas.FirstOrDefault(e =>
             string.Equals(e.FaseCodigo, antiga.Codigo, StringComparison.Ordinal)
-            && RegrasDasEtapas.EtapaReferenciadaPorClassificacaoOuDesempate(estado, e.Id));
-        if (etapaReferenciada is not null)
-        {
-            return new DomainError(
+            && RegrasDasEtapas.EtapaReferenciadaPorClassificacaoOuDesempate(estado, e.Id)) is { } etapa
+            ? new DomainError(
                 "FaseCronograma.EtapaDaFaseReferenciada",
-                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes.");
-        }
+                $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapa.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes.")
+            : null;
 
-        return estado.Formularios.FirstOrDefault(f => f.FaseId == antiga.Id) is { } formularioDaFase
+    private static DomainError? FormularioRespondidoNaFase(EstadoDaConfiguracao estado, FaseCronograma antiga) =>
+        estado.Formularios.FirstOrDefault(f => f.FaseId == antiga.Id) is { } formularioDaFase
             ? new DomainError(
                 FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario,
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {EstruturaFormulario.ParaToken(formularioDaFase.Finalidade)} é respondido nela — troque a fase do formulário antes.")
             : null;
-    }
 
     // Um extremo âncora que deixa de existir numa fase que continua: a conferência da exigência só
     // prova a coerência no instante da escrita dela, e sem esta recusa uma redefinição posterior do
