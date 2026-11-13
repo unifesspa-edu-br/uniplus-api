@@ -18,11 +18,11 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
 {
     // O item e o autor são gravados coluna a coluna; o domínio os expõe como value objects.
-    private CadastroDoCatalogo _cadastro;
-    private Guid _itemId;
-    private string _autorEmissor = string.Empty;
-    private string _autorSub = string.Empty;
-    private string? _autorNome;
+    private readonly CadastroDoCatalogo _cadastro;
+    private readonly Guid _itemId;
+    private readonly string _autorEmissor = string.Empty;
+    private readonly string _autorSub = string.Empty;
+    private readonly string? _autorNome;
 
     // Construtor de materialização do EF Core.
     private ManifestacaoDaProtecaoDoCatalogo()
