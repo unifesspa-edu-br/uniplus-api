@@ -21,6 +21,8 @@ public sealed class SmtpTransporteDeEmailTests
 {
     private static readonly TimeSpan Prazo = TimeSpan.FromMilliseconds(200);
 
+    private static readonly Action Nada = static () => { };
+
     private readonly Queue<ISmtpClient> _clientes = new();
 
     [Fact(DisplayName = "Relay que não completa a conexão estoura o prazo de conexão em vez de esperar indefinidamente")]
@@ -28,7 +30,7 @@ public sealed class SmtpTransporteDeEmailTests
     {
         ISmtpClient lento = ClienteQueNaoConecta();
 
-        Func<Task> envio = () => Transporte().EnviarAsync(NovaMensagem(), CancellationToken.None);
+        Func<Task> envio = () => Transporte().EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
 
         (await envio.Should().ThrowAsync<TimeoutException>()).Which.InnerException
             .Should().BeAssignableTo<OperationCanceledException>();
@@ -42,7 +44,7 @@ public sealed class SmtpTransporteDeEmailTests
         cliente.SendAsync(Arg.Any<MimeMessage>(), Arg.Any<CancellationToken>(), Arg.Any<ITransferProgress>())
             .Returns(c => EsperarCancelamento<string>(c.ArgAt<CancellationToken>(1)));
 
-        Func<Task> envio = () => Transporte().EnviarAsync(NovaMensagem(), CancellationToken.None);
+        Func<Task> envio = () => Transporte().EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
 
         await envio.Should().ThrowAsync<TimeoutException>();
     }
@@ -55,7 +57,7 @@ public sealed class SmtpTransporteDeEmailTests
         EmailSmtpOptions opcoes = Opcoes();
         opcoes.TempoLimiteDeConexao = TimeSpan.FromMinutes(1);
 
-        Func<Task> envio = () => Transporte(opcoes).EnviarAsync(NovaMensagem(), desligamento.Token);
+        Func<Task> envio = () => Transporte(opcoes).EnviarAsync(NovaMensagem(), Nada, desligamento.Token);
 
         await envio.Should().ThrowAsync<OperationCanceledException>();
     }
@@ -69,8 +71,8 @@ public sealed class SmtpTransporteDeEmailTests
         ISmtpClient rapido = NovoCliente();
         SmtpTransporteDeEmail transporte = Transporte(opcoes);
 
-        Task primeira = transporte.EnviarAsync(NovaMensagem(), CancellationToken.None);
-        await transporte.EnviarAsync(NovaMensagem(), CancellationToken.None);
+        Task primeira = transporte.EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
+        await transporte.EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
 
         primeira.IsCompleted.Should().BeFalse("a primeira conexão ainda está dentro do prazo");
         await rapido.Received(1).SendAsync(Arg.Any<MimeMessage>(), Arg.Any<CancellationToken>(), Arg.Any<ITransferProgress>());
@@ -85,8 +87,8 @@ public sealed class SmtpTransporteDeEmailTests
         SmtpTransporteDeEmail transporte = Transporte();
         EnviarEmail mensagem = NovaMensagem();
 
-        await transporte.Awaiting(t => t.EnviarAsync(mensagem, CancellationToken.None)).Should().ThrowAsync<TimeoutException>();
-        await transporte.EnviarAsync(mensagem, CancellationToken.None);
+        await transporte.Awaiting(t => t.EnviarAsync(mensagem, Nada, CancellationToken.None)).Should().ThrowAsync<TimeoutException>();
+        await transporte.EnviarAsync(mensagem, Nada, CancellationToken.None);
 
         await segundo.Received(1).SendAsync(
             Arg.Is<MimeMessage>(m => m.MessageId == mensagem.MensagemId.ToString("N") + "@unifesspa.edu.br"),
@@ -99,7 +101,7 @@ public sealed class SmtpTransporteDeEmailTests
     {
         ISmtpClient cliente = NovoCliente();
 
-        await Transporte().EnviarAsync(NovaMensagem(), CancellationToken.None);
+        await Transporte().EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
 
         cliente.Timeout.Should().Be((int)Prazo.TotalMilliseconds);
         await cliente.Received(1).ConnectAsync("relay.unifesspa.edu.br", 587, SecureSocketOptions.StartTls, Arg.Any<CancellationToken>())
@@ -112,7 +114,7 @@ public sealed class SmtpTransporteDeEmailTests
         ISmtpClient cliente = NovoCliente();
         cliente.DisconnectAsync(Arg.Any<bool>(), Arg.Any<CancellationToken>()).Returns(c => EsperarCancelamento(c.ArgAt<CancellationToken>(1)));
 
-        await Transporte().EnviarAsync(NovaMensagem(), CancellationToken.None);
+        await Transporte().EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
 
         await cliente.Received(1).SendAsync(Arg.Any<MimeMessage>(), Arg.Any<CancellationToken>(), Arg.Any<ITransferProgress>());
     }
@@ -125,7 +127,7 @@ public sealed class SmtpTransporteDeEmailTests
         opcoes.Usuario = "relay";
         opcoes.Senha = "segredo";
 
-        await Transporte(opcoes).EnviarAsync(NovaMensagem(), CancellationToken.None);
+        await Transporte(opcoes).EnviarAsync(NovaMensagem(), Nada, CancellationToken.None);
 
         await cliente.Received(1).AuthenticateAsync("relay", "segredo", Arg.Any<CancellationToken>());
     }

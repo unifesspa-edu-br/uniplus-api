@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Email;
 
-using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
@@ -19,10 +18,6 @@ using Wolverine;
 /// instantes existe desde a subida, antes de qualquer envio, e a entrega soma aceites e falhas por tipo.
 /// </summary>
 [Collection(MonolitoComMailpitCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class ColetaDasMetricasDeEmailNoHostTests : IClassFixture<HostComColetaDeMetricasDeEmail>
 {
     private readonly MonolitoComMailpitFixture _fixture;
@@ -49,11 +44,7 @@ public sealed class ColetaDasMetricasDeEmailNoHostTests : IClassFixture<HostComC
         TransporteFalso transporte = new();
         EntregaDeEmail entrega = ActivatorUtilities.CreateInstance<EntregaDeEmail>(_host.Obter(_fixture).Services, transporte);
 
-        await entrega.Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
-        transporte.Falha = new InvalidOperationException();
-        await ((Func<Task>)(() => entrega.Handle(NovaMensagem(), new Envelope(), CancellationToken.None))).Should().ThrowAsync<FalhaNoEnvioDeEmailException>();
-        transporte.Falha = new SmtpCommandException(SmtpErrorCode.RecipientNotAccepted, SmtpStatusCode.MailboxUnavailable, "550");
-        await ((Func<Task>)(() => entrega.Handle(NovaMensagem(), new Envelope(), CancellationToken.None))).Should().ThrowAsync<EnvioDeEmailRecusadoException>();
+        await EntregarUmAceiteEDuasFalhasAsync(entrega, transporte);
 
         IReadOnlyList<MedidaExportada> medidas = _host.Exportar(_fixture);
 
@@ -65,6 +56,15 @@ public sealed class ColetaDasMetricasDeEmailNoHostTests : IClassFixture<HostComC
             medidas.Single(m => m.Instrumento == "uniplus.email.ultimo_envio").Valor);
     }
 
+    private static async Task EntregarUmAceiteEDuasFalhasAsync(EntregaDeEmail entrega, TransporteFalso transporte)
+    {
+        await entrega.Handle(NovaMensagem(), new Envelope(), CancellationToken.None);
+        transporte.Falha = new InvalidOperationException();
+        await ((Func<Task>)(() => entrega.Handle(NovaMensagem(), new Envelope(), CancellationToken.None))).Should().ThrowAsync<FalhaNoEnvioDeEmailException>();
+        transporte.Falha = new SmtpCommandException(SmtpErrorCode.RecipientNotAccepted, SmtpStatusCode.MailboxUnavailable, "550");
+        await ((Func<Task>)(() => entrega.Handle(NovaMensagem(), new Envelope(), CancellationToken.None))).Should().ThrowAsync<EnvioDeEmailRecusadoException>();
+    }
+
     private static EnviarEmail NovaMensagem() => EnviarEmail.Para(
         Email.Criar("candidato@unifesspa.edu.br").Value!, "Teste", "Corpo em texto.", "<p>Corpo em HTML.</p>", "teste.metricas");
 
@@ -72,7 +72,16 @@ public sealed class ColetaDasMetricasDeEmailNoHostTests : IClassFixture<HostComC
     {
         public Exception? Falha { get; set; }
 
-        public Task EnviarAsync(EnviarEmail mensagem, CancellationToken cancellationToken) =>
-            Falha is null ? Task.CompletedTask : Task.FromException(Falha);
+        public Task EnviarAsync(EnviarEmail mensagem, Action aoAceitar, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(aoAceitar);
+            if (Falha is not null)
+            {
+                return Task.FromException(Falha);
+            }
+
+            aoAceitar();
+            return Task.CompletedTask;
+        }
     }
 }
