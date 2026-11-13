@@ -88,12 +88,15 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
         corpo.Should().Contain(codigo);
     }
 
-    /// <summary>A linha gravada da providência: o estado, a versão de sistema e o instante da última alteração.</summary>
+    /// <summary>
+    /// A linha gravada da providência: o estado, a versão de sistema e o instante da última alteração. Os nomes vão em
+    /// snake_case porque o <c>SqlQuery</c> mapeia as propriedades pela convenção de nomes do contexto.
+    /// </summary>
     private protected async Task<LinhaDaProvidencia> LinhaAsync(Guid providenciaId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
-            .SqlQuery<LinhaDaProvidencia>($"SELECT estado AS \"Estado\", xmin::text AS \"Versao\", updated_at AS \"AlteradaEm\", motivo_do_desfecho AS \"Motivo\" FROM autorizacao.providencias WHERE id = {providenciaId}")
+            .SqlQuery<LinhaDaProvidencia>($"SELECT estado, xmin::text AS versao, updated_at AS alterada_em, motivo_do_desfecho AS motivo FROM autorizacao.providencias WHERE id = {providenciaId}")
             .SingleAsync();
     }
 
