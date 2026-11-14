@@ -61,7 +61,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-            Description = "O objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) ou outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+            Description = "O objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) ou outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
             Guid processoSeletivoId,

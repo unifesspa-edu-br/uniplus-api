@@ -14,26 +14,26 @@ public sealed class CertameDivulgadoTests
     private static readonly FacetasDoCertameDivulgado Facetas = new("ps-2027", "PS 2027", null, ["AC"], Agora, Agora.AddDays(10));
 
     [Fact(DisplayName = "A entrada do ato nasce sem endereço")]
-    public void RegistrarEditalPendente_NasceSemEndereco()
+    public void AbrirEntradaDoAto_NasceSemEndereco()
     {
         CertameDivulgado divulgado = Novo();
         Guid ato = Guid.CreateVersion7();
 
-        divulgado.RegistrarEditalPendente(ato, 1);
+        divulgado.AbrirEntradaDoAto(ato, 1);
 
-        divulgado.EditaisDivulgados.Should().Equal(EditalDivulgado.Pendente(ato, 1));
-        divulgado.EditaisDivulgados[0].UrlDownload.Should().BeNull();
+        divulgado.AtosDivulgados.Should().Equal(AtoDivulgado.SemEndereco(ato, 1));
+        divulgado.AtosDivulgados[0].UrlDownload.Should().BeNull();
         divulgado.CopiouOsDocumentosDoAto(ato).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Registrar duas vezes a entrada do mesmo ato é erro de programação")]
-    public void RegistrarEditalPendente_DoMesmoAto_Lanca()
+    public void AbrirEntradaDoAto_DoMesmoAto_Lanca()
     {
         CertameDivulgado divulgado = Novo();
         Guid ato = Guid.CreateVersion7();
-        divulgado.RegistrarEditalPendente(ato, 1);
+        divulgado.AbrirEntradaDoAto(ato, 1);
 
-        Action repetir = () => divulgado.RegistrarEditalPendente(ato, 1);
+        Action repetir = () => divulgado.AbrirEntradaDoAto(ato, 1);
 
         repetir.Should().Throw<InvalidOperationException>();
     }
@@ -46,8 +46,8 @@ public sealed class CertameDivulgadoTests
 
         divulgado.RegistrarEnderecos(abertura, "https://acervo.teste/a.pdf", [principal]).Should().BeTrue();
 
-        divulgado.EditaisDivulgados.Should().BeEquivalentTo(
-            [new EditalDivulgado(abertura, 1, "https://acervo.teste/a.pdf", [principal]), EditalDivulgado.Pendente(retificacao, 2)],
+        divulgado.AtosDivulgados.Should().BeEquivalentTo(
+            [new AtoDivulgado(abertura, 1, "https://acervo.teste/a.pdf", [principal]), AtoDivulgado.SemEndereco(retificacao, 2)],
             opcoes => opcoes.WithStrictOrdering());
     }
 
@@ -67,13 +67,13 @@ public sealed class CertameDivulgadoTests
     {
         CertameDivulgado divulgado = Novo();
         Guid ato = Guid.CreateVersion7();
-        divulgado.RegistrarEditalPendente(ato, 1);
+        divulgado.AbrirEntradaDoAto(ato, 1);
         divulgado.RegistrarEnderecos(ato, "https://acervo.teste/a.pdf", []);
 
         bool mudou = divulgado.RegistrarEnderecos(ato, "https://acervo.teste/outro.pdf", []);
 
         mudou.Should().BeFalse();
-        divulgado.EditaisDivulgados[0].UrlDownload.Should().Be("https://acervo.teste/a.pdf", "o endereço do ato é imutável");
+        divulgado.AtosDivulgados[0].UrlDownload.Should().Be("https://acervo.teste/a.pdf", "o endereço do ato é imutável");
     }
 
     [Fact(DisplayName = "Registrar endereços de ato sem entrada é erro de programação")]
@@ -97,7 +97,7 @@ public sealed class CertameDivulgadoTests
 
         divulgado.NumeroVersao.Should().Be(2);
         divulgado.AtoCriadorId.Should().Be(ato);
-        divulgado.Certame.Should().Be("{\"v\":2}");
+        divulgado.DocumentoPublico.Should().Be("{\"v\":2}");
         divulgado.DivulgadoEm.Should().Be(depois);
     }
 
@@ -118,8 +118,8 @@ public sealed class CertameDivulgadoTests
         CertameDivulgado divulgado = Novo();
         Guid abertura = Guid.CreateVersion7();
         Guid retificacao = Guid.CreateVersion7();
-        divulgado.RegistrarEditalPendente(abertura, 1);
-        divulgado.RegistrarEditalPendente(retificacao, 2);
+        divulgado.AbrirEntradaDoAto(abertura, 1);
+        divulgado.AbrirEntradaDoAto(retificacao, 2);
 
         return (divulgado, abertura, retificacao);
     }

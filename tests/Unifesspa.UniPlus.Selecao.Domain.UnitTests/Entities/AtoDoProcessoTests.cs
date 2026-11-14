@@ -27,7 +27,7 @@ public sealed class AtoDoProcessoTests
             Numero: "3/2026",
             DataDoAto: new DateOnly(2026, 12, 10),
             Assinante: "Diretor do CEPS",
-            UnidadeAdministradora: "ceps",
+            SlugDaUnidadeAdministradora: "ceps",
             IdentificadorLegivelDoProcesso: "psm-medicina-2027",
             DocumentoPrincipalId: principal ?? Guid.CreateVersion7(),
             Anexos: anexos ?? [],

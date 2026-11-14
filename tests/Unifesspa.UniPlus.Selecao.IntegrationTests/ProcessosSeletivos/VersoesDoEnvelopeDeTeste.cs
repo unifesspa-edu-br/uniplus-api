@@ -28,7 +28,7 @@ internal static class VersoesDoEnvelopeDeTeste
     public static byte[] BytesComRetificacaoDe(Guid atoRetificadoId, string motivo) =>
         CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(
             CorpusEnvelope.ProcessoRico(),
-            new RetificacaoInfo(atoRetificadoId, motivo))).Bytes;
+            new RetificacaoDoEdital(atoRetificadoId, motivo))).Bytes;
 
     public static JsonObject EnvelopeDosBytes(byte[] bytes) =>
         JsonNode.Parse(Encoding.UTF8.GetString(bytes))!.AsObject();

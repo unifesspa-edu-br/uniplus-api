@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261114092914_Inicial")]
+    [Migration("20261114103301_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -9340,6 +9340,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<byte[]>("EncryptedResponseBody")
+                        .HasColumnType("bytea")
+                        .HasColumnName("encrypted_response_body");
+
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -9355,10 +9359,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("idempotency_key");
-
-                    b.Property<byte[]>("ResponseBodyCipher")
-                        .HasColumnType("bytea")
-                        .HasColumnName("response_body_cipher");
 
                     b.Property<string>("ResponseHeadersJson")
                         .HasColumnType("jsonb")
@@ -9382,11 +9382,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_idempotency_cache");
 
                     b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("idx_idempotency_expires_at");
+                        .HasDatabaseName("ix_idempotency_cache_expires_at");
 
                     b.HasIndex("Scope", "Endpoint", "IdempotencyKey")
                         .IsUnique()
-                        .HasDatabaseName("idx_idempotency_lookup");
+                        .HasDatabaseName("ux_idempotency_cache_scope_endpoint_key");
 
                     b.ToTable("idempotency_cache", "plataforma");
                 });
@@ -10169,65 +10169,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_ato_normativo_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
 
-                            t.HasCheckConstraint("ck_ato_normativo_versao_completa", "(versao_invocada_id IS NULL AND versao_invocada_hash IS NULL) OR (versao_invocada_id IS NOT NULL AND versao_invocada_hash IS NOT NULL)");
+                            t.HasCheckConstraint("ck_ato_normativo_versao_de_configuracao_completa", "(versao_de_configuracao_id IS NULL AND versao_de_configuracao_hash IS NULL) OR (versao_de_configuracao_id IS NOT NULL AND versao_de_configuracao_hash IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_ato_normativo_versao_hash", "versao_invocada_hash IS NULL OR versao_invocada_hash ~ '^[0-9a-f]{64}$'");
+                            t.HasCheckConstraint("ck_ato_normativo_versao_de_configuracao_hash", "versao_de_configuracao_hash IS NULL OR versao_de_configuracao_hash ~ '^[0-9a-f]{64}$'");
 
-                            t.HasCheckConstraint("ck_ato_normativo_versao_id_nao_zero", "versao_invocada_id IS NULL OR versao_invocada_id <> '00000000-0000-0000-0000-000000000000'");
-                        });
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.LinhagemUnicaPorObjeto", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AtoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("ato_id");
-
-                    b.Property<Guid>("EntidadeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("entidade_id");
-
-                    b.Property<string>("EntidadeTipo")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("entidade_tipo");
-
-                    b.Property<Guid>("RaizId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("raiz_id");
-
-                    b.Property<string>("TipoCodigo")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("tipo_codigo");
-
-                    b.HasKey("Id")
-                        .HasName("pk_linhagem_unica_por_objeto");
-
-                    b.HasIndex("AtoId")
-                        .HasDatabaseName("ix_linhagem_unica_por_objeto_ato_id");
-
-                    b.HasIndex("RaizId")
-                        .HasDatabaseName("ix_linhagem_unica_por_objeto_raiz_id");
-
-                    b.HasIndex("EntidadeTipo", "EntidadeId", "TipoCodigo")
-                        .IsUnique()
-                        .HasDatabaseName("ux_linhagem_unica_por_objeto");
-
-                    b.ToTable("linhagem_unica_por_objeto", "publicacoes", t =>
-                        {
-                            t.HasCheckConstraint("ck_linhagem_unica_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
-
-                            t.HasCheckConstraint("ck_linhagem_unica_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
-
-                            t.HasCheckConstraint("ck_linhagem_unica_raiz_nao_zero", "raiz_id <> '00000000-0000-0000-0000-000000000000'");
+                            t.HasCheckConstraint("ck_ato_normativo_versao_de_configuracao_id_nao_zero", "versao_de_configuracao_id IS NULL OR versao_de_configuracao_id <> '00000000-0000-0000-0000-000000000000'");
                         });
                 });
 
@@ -10329,6 +10275,60 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             t.HasCheckConstraint("ck_tipo_ato_publicado_codigo_formato", "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
 
                             t.HasCheckConstraint("ck_tipo_ato_publicado_vigencia", "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
+                        });
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.VagaDeLinhagem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ato_id");
+
+                    b.Property<Guid>("EntidadeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entidade_id");
+
+                    b.Property<string>("EntidadeTipo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("entidade_tipo");
+
+                    b.Property<Guid>("RaizId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("raiz_id");
+
+                    b.Property<string>("TipoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("tipo_codigo");
+
+                    b.HasKey("Id")
+                        .HasName("pk_vagas_de_linhagem");
+
+                    b.HasIndex("AtoId")
+                        .HasDatabaseName("ix_vagas_de_linhagem_ato_id");
+
+                    b.HasIndex("RaizId")
+                        .HasDatabaseName("ix_vagas_de_linhagem_raiz_id");
+
+                    b.HasIndex("EntidadeTipo", "EntidadeId", "TipoCodigo")
+                        .IsUnique()
+                        .HasDatabaseName("ux_vagas_de_linhagem_objeto_tipo");
+
+                    b.ToTable("vagas_de_linhagem", "publicacoes", t =>
+                        {
+                            t.HasCheckConstraint("ck_vagas_de_linhagem_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
+
+                            t.HasCheckConstraint("ck_vagas_de_linhagem_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+
+                            t.HasCheckConstraint("ck_vagas_de_linhagem_raiz_nao_zero", "raiz_id <> '00000000-0000-0000-0000-000000000000'");
                         });
                 });
 
@@ -10721,6 +10721,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("publicado_em");
 
+                    b.Property<string>("SlugDaUnidadeAdministradora")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("slug_da_unidade_administradora");
+
                     b.Property<string>("TipoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -10732,12 +10738,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("tipo_nome");
-
-                    b.Property<string>("UnidadeAdministradora")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("unidade_administradora");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10970,22 +10970,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("ato_criador_id");
 
-                    b.Property<string>("Certame")
+                    b.Property<string>("AtosDivulgados")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
-                        .HasColumnName("certame");
+                        .HasColumnName("atos_divulgados")
+                        .HasDefaultValueSql("'[]'::jsonb")
+                        .HasComment("Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público.");
 
                     b.Property<DateTimeOffset>("DivulgadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("divulgado_em");
 
-                    b.Property<string>("EditaisDivulgados")
+                    b.Property<string>("DocumentoPublico")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("jsonb")
-                        .HasColumnName("editais_divulgados")
-                        .HasDefaultValueSql("'[]'::jsonb")
-                        .HasComment("Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público.");
+                        .HasColumnName("documento_publico");
 
                     b.Property<string>("HashConfiguracao")
                         .IsRequired()
@@ -11057,7 +11057,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_certames_divulgados_ato_criador");
 
                     b.HasIndex("DivulgadoEm")
-                        .HasDatabaseName("ix_certames_divulgados_revisao");
+                        .HasDatabaseName("ix_certames_divulgados_divulgado_em");
 
                     b.HasIndex("IdentificadorLegivel")
                         .IsUnique()
@@ -17988,7 +17988,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_ato_normativo_ato_retificado");
 
-                    b.OwnsOne("Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects.ReferenciaVersaoConfiguracao", "VersaoInvocada", b1 =>
+                    b.OwnsOne("Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects.ReferenciaVersaoConfiguracao", "VersaoDeConfiguracao", b1 =>
                         {
                             b1.Property<Guid>("AtoNormativoId")
                                 .HasColumnType("uuid")
@@ -17998,12 +17998,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
-                                .HasColumnName("versao_invocada_hash")
+                                .HasColumnName("versao_de_configuracao_hash")
                                 .IsFixedLength();
 
                             b1.Property<Guid>("Id")
                                 .HasColumnType("uuid")
-                                .HasColumnName("versao_invocada_id");
+                                .HasColumnName("versao_de_configuracao_id");
 
                             b1.HasKey("AtoNormativoId");
 
@@ -18014,24 +18014,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_ato_normativo_ato_normativo_id");
                         });
 
-                    b.Navigation("VersaoInvocada");
+                    b.Navigation("VersaoDeConfiguracao");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.LinhagemUnicaPorObjeto", b =>
+            modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.VagaDeLinhagem", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", null)
                         .WithMany()
                         .HasForeignKey("AtoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_linhagem_unica_ato");
+                        .HasConstraintName("fk_vagas_de_linhagem_ato");
 
                     b.HasOne("Unifesspa.UniPlus.Publicacoes.Domain.Entities.AtoNormativo", null)
                         .WithMany()
                         .HasForeignKey("RaizId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_linhagem_unica_raiz");
+                        .HasConstraintName("fk_vagas_de_linhagem_raiz");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.VinculoAtoEntidade", b =>

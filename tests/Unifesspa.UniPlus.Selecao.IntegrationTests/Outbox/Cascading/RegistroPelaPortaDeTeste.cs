@@ -24,7 +24,7 @@ internal static class RegistroPelaPortaDeTeste
             Ano = 2026,
             Numero = numero,
             TipoCodigo = tipoCodigo,
-            TipoConferido = tipoConferido,
+            AtributosDoTipo = tipoConferido,
             DataDoAto = DateOnly.FromDateTime(DateTime.UtcNow),
             PublicadoEm = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero),
             DocumentoHash = new string('d', 64),

@@ -80,7 +80,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         resposta.IsSuccess.Should().BeTrue();
         gravado.Should().NotBeNull();
         resposta.Value!.AtoId.Should().Be(gravado!.Id);
-        gravado.UnidadeAdministradora.Should().Be("ceps", "a chave no acervo usa a unidade e o identificador da versão divulgada");
+        gravado.SlugDaUnidadeAdministradora.Should().Be("ceps", "a chave no acervo usa a unidade e o identificador da versão divulgada");
         gravado.IdentificadorLegivelDoProcesso.Should().Be("psm-medicina-2027");
         gravado.DocumentoPrincipalId.Should().Be(_principal.Id);
         gravado.Anexos.Should().ContainSingle().Which.NomeDeExibicao.Should().Be("Quadro de vagas.docx");
@@ -97,8 +97,8 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         entregue.Serie.Should().Be("AVISO");
         entregue.Ano.Should().Be(2026);
         entregue.DocumentoHash.Should().Be(_principal.HashSha256);
-        entregue.VersaoInvocada.Should().BeNull("o ato avulso não congela configuração");
-        entregue.Correcao.Should().BeNull();
+        entregue.VersaoDeConfiguracao.Should().BeNull("o ato avulso não congela configuração");
+        entregue.Retificacao.Should().BeNull();
         entregue.Vinculos.Should().ContainSingle().Which.EntidadeId.Should().Be(_processoId);
         entregue.Anexos.Should().ContainSingle().Which.Should().Be(
             new AnexoDoAtoPublicado("Quadro de vagas.docx", TiposDeMidiaDeDocumento.Docx, _anexo.HashSha256!));
@@ -141,7 +141,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
 
         resposta.IsSuccess.Should().BeTrue();
         await _registro.Received(1).RegistrarAsync(
-            Arg.Is<AtoNormativoPublicado>(a => a.Correcao == new CorrecaoDoAto(avisoId, "Data errada no cronograma")), Arg.Any<CancellationToken>());
+            Arg.Is<AtoNormativoPublicado>(a => a.Retificacao == new RetificacaoDoAto(avisoId, "Data errada no cronograma")), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A correção sem motivo é recusada no campo do motivo, antes de travar ou consultar o processo")]
@@ -246,14 +246,14 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
     [Fact(DisplayName = "O conflito que só a gravação enxerga e a porta reconhece devolve a recusa da porta e descarta o rastreado")]
     public async Task ConflitoDaGravacaoReconhecidoPelaPorta_DevolveARecusaDaPorta()
     {
-        DomainError raizRetificada = new("AtoNormativo.RaizJaRetificada", "O ato AVISO nº 1/2026 já foi retificado.");
+        DomainError atoJaRetificado = new("AtoNormativo.AtoJaRetificado", "O ato AVISO nº 1/2026 já foi retificado.");
         Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_ato_normativo_retificado");
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns<Task>(_ => throw violacao);
-        _registro.TraduzirConflitoDaGravacao(violacao).Returns(raizRetificada);
+        _registro.TraduzirConflitoDaGravacao(violacao).Returns(atoJaRetificado);
 
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando());
 
-        resposta.Error.Should().Be(raizRetificada);
+        resposta.Error.Should().Be(atoJaRetificado);
         mensagens.Should().BeEmpty();
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }

@@ -98,7 +98,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         entregue!.AtoId.Should().Be(gravado.Id);
         entregue.TipoCodigo.Should().Be(Materia);
         entregue.DocumentoHash.Should().Be(_principal.HashSha256);
-        entregue.Correcao.Should().BeNull();
+        entregue.Retificacao.Should().BeNull();
     }
 
     [Fact(DisplayName = "O item lê o relógio uma vez e usa o instante no ato gravado e no ato entregue à porta")]
@@ -219,7 +219,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         gravado.AtoCorrigidoId.Should().Be(original.Id);
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
         await _registro.Received(1).RegistrarAsync(
-            Arg.Is<AtoNormativoPublicado>(a => a.Correcao != null && a.Correcao.AtoRetificadoId == original.Id), Arg.Any<CancellationToken>());
+            Arg.Is<AtoNormativoPublicado>(a => a.Retificacao != null && a.Retificacao.AtoRetificadoId == original.Id), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A correção de um resultado sem a confirmação da política é recusada")]
@@ -338,7 +338,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         await _registro.Received(1).RegistrarAsync(
-            Arg.Is<AtoNormativoPublicado>(a => !a.TipoConferido.UnicoPorObjeto), Arg.Any<CancellationToken>());
+            Arg.Is<AtoNormativoPublicado>(a => !a.AtributosDoTipo.UnicoPorObjeto), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Ligar congelaConfiguracao no catálogo depois da publicação não muda a classe da correção do resultado")]
@@ -353,7 +353,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         await _registro.Received(1).RegistrarAsync(
-            Arg.Is<AtoNormativoPublicado>(a => !a.TipoConferido.CongelaConfiguracao), Arg.Any<CancellationToken>());
+            Arg.Is<AtoNormativoPublicado>(a => !a.AtributosDoTipo.CongelaConfiguracao), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Desligar ehResultado no catálogo depois da publicação não dispensa a confirmação da política de divulgação")]

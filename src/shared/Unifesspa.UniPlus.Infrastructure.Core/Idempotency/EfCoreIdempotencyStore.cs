@@ -99,7 +99,7 @@ public sealed class EfCoreIdempotencyStore : IIdempotencyStore
                 .SetProperty(e => e.Status, IdempotencyStatus.Completed)
                 .SetProperty(e => e.ResponseStatus, (int?)responseStatus)
                 .SetProperty(e => e.ResponseHeadersJson, responseHeadersJson)
-                .SetProperty(e => e.ResponseBodyCipher, responseBodyCipher),
+                .SetProperty(e => e.EncryptedResponseBody, responseBodyCipher),
                 cancellationToken)
             .ConfigureAwait(false);
     }

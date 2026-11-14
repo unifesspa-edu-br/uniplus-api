@@ -7,7 +7,7 @@ public static class AtoNormativoMapping
 {
     /// <summary>
     /// Projeta o ato em DTO. <c>Avisos</c> fica nulo — a recomputação do aviso de
-    /// numeração (AC4) é responsabilidade de quem monta a resposta de detalhe, para
+    /// numeração é responsabilidade de quem monta a resposta de detalhe, para
     /// não incorrer em N+1 na listagem.
     /// </summary>
     public static AtoNormativoDto ToDto(this AtoNormativo ato)
@@ -28,8 +28,8 @@ public static class AtoNormativoMapping
             ato.DocumentoHash,
             ato.Assinante,
             ato.PublicadoEm,
-            ato.VersaoInvocada?.Id,
-            ato.VersaoInvocada?.Hash,
+            ato.VersaoDeConfiguracao?.Id,
+            ato.VersaoDeConfiguracao?.Hash,
             ato.AtoRetificadoId,
             ato.MotivoRetificacao,
             [.. ato.Anexos

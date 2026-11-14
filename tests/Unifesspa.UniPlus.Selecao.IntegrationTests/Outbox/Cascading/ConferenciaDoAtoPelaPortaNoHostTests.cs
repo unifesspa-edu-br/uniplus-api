@@ -76,7 +76,7 @@ public sealed class ConferenciaDoAtoPelaPortaNoHostTests
     private static AtoNormativoPublicado EmendaNaoCongelante(Guid processoId, Guid abertura) =>
         AtoDoProcesso(processoId, "AVISO_NAO_CONGELANTE", "010/2026", new AtributosDoTipoAto(false, false, false, null)) with
         {
-            Correcao = new CorrecaoDoAto(abertura, "Tentativa de emendar um ato congelante com um não congelante"),
+            Retificacao = new RetificacaoDoAto(abertura, "Tentativa de emendar um ato congelante com um não congelante"),
         };
 
     private static AtoNormativoPublicado ComAnexosEmOrdem(AtoNormativoPublicado ato) =>

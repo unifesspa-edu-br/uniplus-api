@@ -37,15 +37,15 @@ internal sealed class RegistroDeAtoNormativoPeloDominio(MontagemDoAtoNormativo m
     private static RegistrarAtoNormativoCommand ComandoDe(AtoNormativoPublicado ato) =>
         IdentificacaoDe(ato) with
         {
-            VersaoInvocadaId = ato.VersaoInvocada?.Id,
-            VersaoInvocadaHash = ato.VersaoInvocada?.Hash,
-            AtoRetificadoId = ato.Correcao?.AtoRetificadoId,
-            MotivoRetificacao = ato.Correcao?.Motivo,
+            VersaoDeConfiguracaoId = ato.VersaoDeConfiguracao?.Id,
+            VersaoDeConfiguracaoHash = ato.VersaoDeConfiguracao?.Hash,
+            AtoRetificadoId = ato.Retificacao?.AtoRetificadoId,
+            MotivoRetificacao = ato.Retificacao?.Motivo,
             Vinculos = [.. ato.Vinculos.Select(static v => new VinculoEntidadeInput(v.EntidadeTipo, v.EntidadeId))],
             Anexos = [.. ato.Anexos.Select(static a => new AnexoDoAtoInput(a.Nome, a.TipoMidia, a.Hash))],
             AtoId = ato.AtoId,
-            AtributosDoTipo = ato.TipoConferido,
-            RegistroPeloDominio = true,
+            AtributosDoTipo = ato.AtributosDoTipo,
+            ChegouPeloDominioDono = true,
             PublicadoEm = ato.PublicadoEm,
         };
 

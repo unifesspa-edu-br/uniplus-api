@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
@@ -10,23 +11,16 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// </summary>
 /// <remarks>
 /// Este tipo é o dono dos nomes das constraints de Publicações: a linearidade da cadeia de
-/// retificação (ADR-0103) e a vaga do objeto (ADR-0107). Acessa <c>SqlState</c> e
-/// <c>ConstraintName</c> por reflection no inner exception; o shape é estável na API pública do
-/// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
-/// <see cref="System.Type.FullName"/> evita dependência direta do pacote
-/// <c>Microsoft.EntityFrameworkCore</c> nesta camada.
+/// retificação (ADR-0103) e a vaga do objeto (ADR-0107). O nome da constraint violada vem de
+/// <see cref="ConstraintVioladaNaGravacao"/>.
 /// </remarks>
 internal static class ConflitoNaGravacaoDoAto
 {
-    private const string UniqueViolationSqlState = "23505";
+    private const string IndiceDaRetificacaoUnica = "ux_ato_normativo_retificado";
 
-    private const string LinearidadeConstraint = "ux_ato_normativo_retificado";
+    private const string IndiceDaVagaDeLinhagem = "ux_vagas_de_linhagem_objeto_tipo";
 
-    private const string LinhagemUnicaConstraint = "ux_linhagem_unica_por_objeto";
-
-    private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
-
-    private const string RaizJaRetificadaConcorrenteMensagem =
+    private const string AtoJaRetificadoConcorrenteMensagem =
         "O ato retificado já foi retificado por outro ato registrado concorrentemente. "
         + "A cadeia é linear: retifique a cabeça da cadeia.";
 
@@ -39,31 +33,17 @@ internal static class ConflitoNaGravacaoDoAto
     /// A recusa que corresponde à violação, ou <see langword="null"/> quando a exceção não é uma
     /// violação das constraints do ato: quem chama deve propagá-la.
     /// </summary>
-    public static DomainError? Traduzir(Exception ex)
+    public static DomainError? Traduzir(Exception excecao)
     {
-        ArgumentNullException.ThrowIfNull(ex);
+        ArgumentNullException.ThrowIfNull(excecao);
 
-        return ConstraintViolada(ex) switch
+        return ConstraintVioladaNaGravacao.NomeDaConstraintViolada(excecao) switch
         {
-            LinearidadeConstraint => new DomainError(
-                AtoNormativoErrorCodes.RaizJaRetificada, RaizJaRetificadaConcorrenteMensagem),
-            LinhagemUnicaConstraint => new DomainError(
+            IndiceDaRetificacaoUnica => new DomainError(
+                AtoNormativoErrorCodes.AtoJaRetificado, AtoJaRetificadoConcorrenteMensagem),
+            IndiceDaVagaDeLinhagem => new DomainError(
                 AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo, VagaOcupadaConcorrenteMensagem),
             _ => null,
         };
-    }
-
-    private static string? ConstraintViolada(Exception ex)
-    {
-        if (!string.Equals(ex.GetType().FullName, DbUpdateExceptionFullName, StringComparison.Ordinal)
-            || ex.InnerException is not { } inner)
-        {
-            return null;
-        }
-
-        Type innerType = inner.GetType();
-        return innerType.GetProperty("SqlState")?.GetValue(inner) as string == UniqueViolationSqlState
-            ? innerType.GetProperty("ConstraintName")?.GetValue(inner) as string
-            : null;
     }
 }

@@ -67,15 +67,15 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     }
 
     [Fact(DisplayName = "Par de versão incompleto (só id) é recusado")]
-    public async Task Handle_ComVersaoInvocadaIncompleta_Falha()
+    public async Task Handle_ComVersaoDeConfiguracaoIncompleta_Falha()
     {
         VigenteComConsequencia(congela: false, efeito: false);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { VersaoInvocadaId = Guid.CreateVersion7(), VersaoInvocadaHash = null });
+            Comando() with { VersaoDeConfiguracaoId = Guid.CreateVersion7(), VersaoDeConfiguracaoHash = null });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VersaoInvocadaIncompleta);
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -169,8 +169,8 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Retificar a raiz de cadeia já retificada é recusado, nomeando o retificador")]
-    public async Task Handle_RetificaRaizJaRetificada_Falha()
+    [Fact(DisplayName = "Retificar um ato já retificado é recusado, nomeando o retificador")]
+    public async Task Handle_RetificaAtoJaRetificado_Falha()
     {
         VigenteComConsequencia(congela: false, efeito: false);
         AtoNormativo retificado = AtoExistente(congela: false);
@@ -182,7 +182,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo II" });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.RaizJaRetificada);
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.AtoJaRetificado);
         resultado.Error.Message.Should().Contain("EDITAL nº 13/2026").And.NotContain(jaRetificador.Id.ToString());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -384,7 +384,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Agora,
-            versaoInvocada: null);
+            versaoDeConfiguracao: null);
 
     private void SemConflitoDeNumero() =>
         _atos.ListarIdsComMesmaNumeracaoAsync(

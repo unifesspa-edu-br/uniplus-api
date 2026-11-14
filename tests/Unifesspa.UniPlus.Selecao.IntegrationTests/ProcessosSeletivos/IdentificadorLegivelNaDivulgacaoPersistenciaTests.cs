@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -50,7 +51,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         Func<Task> gravar = () => ctx.SaveChangesAsync();
         DbUpdateException falha = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
 
-        UniqueConstraintViolation.GetViolatedConstraint(falha).Should().Be("ux_certames_divulgados_identificador_legivel");
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(falha).Should().Be("ux_certames_divulgados_identificador_legivel");
     }
 
     [Fact(DisplayName = "Outra violação na gravação da divulgação não é tomada pelo índice do identificador legível")]
@@ -70,7 +71,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         Func<Task> gravar = () => ctx.SaveChangesAsync();
         DbUpdateException falha = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
 
-        UniqueConstraintViolation.GetViolatedConstraint(falha).Should().NotBe("ux_certames_divulgados_identificador_legivel");
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(falha).Should().NotBe("ux_certames_divulgados_identificador_legivel");
     }
 
     private static CertameDivulgado Divulgado(string identificador) => CertameDivulgado.Criar(

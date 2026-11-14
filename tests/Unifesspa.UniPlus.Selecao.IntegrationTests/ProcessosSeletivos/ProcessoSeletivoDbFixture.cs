@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>PrepararOBancoAsync</c>
 /// (Story #758) — valida ponta-a-ponta que a migration squash aplica sem
 /// erro contra Postgres real e que o agregado <c>ProcessoSeletivo</c>
 /// (raiz + 5 dimensões de configuração) persiste e recarrega corretamente
@@ -47,7 +47,7 @@ public sealed class ProcessoSeletivoDbFixture : IAsyncLifetime
         await _postgres.StartAsync().ConfigureAwait(false);
 
         await using UniPlusDbContext context = CreateDbContext();
-        await context.SubirOBancoAsync().ConfigureAwait(false);
+        await context.PrepararOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()

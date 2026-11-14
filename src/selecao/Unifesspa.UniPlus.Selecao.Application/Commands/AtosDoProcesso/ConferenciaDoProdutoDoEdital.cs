@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Confere, antes de enviar o ato, que o item pedido é um dos que a versão vigente do edital declara e
+/// Confere, antes de publicar o ato, que o item pedido é um dos que a versão vigente do edital declara e
 /// que ele pode sair agora: primeira publicação do item, ordem do preliminar para o definitivo, correção
 /// de uma publicação do próprio item e confirmação da política de divulgação.
 /// </summary>

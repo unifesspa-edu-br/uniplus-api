@@ -9,10 +9,10 @@ public static class AtoNormativoErrorCodes
     public const string TipoSemVersaoVigente = "AtoNormativo.TipoSemVersaoVigente";
 
     /// <summary>
-    /// O par <c>{versao_invocada_id, versao_invocada_hash}</c> veio pela metade —
+    /// O par <c>{versao_de_configuracao_id, versao_de_configuracao_hash}</c> veio pela metade —
     /// um identificador sem hash, ou um hash sem identificador. É completo ou ausente.
     /// </summary>
-    public const string VersaoInvocadaIncompleta = "AtoNormativo.VersaoInvocadaIncompleta";
+    public const string VersaoDeConfiguracaoIncompleta = "AtoNormativo.VersaoDeConfiguracaoIncompleta";
 
     /// <summary>O identificador da URL não corresponde a nenhum ato registrado.</summary>
     public const string NaoEncontrado = "AtoNormativo.NaoEncontrado";
@@ -34,9 +34,9 @@ public static class AtoNormativoErrorCodes
     /// <summary>
     /// O ato que se tentou retificar já foi retificado por outro: a cadeia é linear
     /// e empilha na cabeça (ADR-0103). Uma nova retificação deve emendar a cabeça da
-    /// cadeia, não uma raiz já retificada. A mensagem nomeia o ato que já a retificou.
+    /// cadeia, não um ato já retificado, seja ele a raiz ou um elo intermediário. A mensagem nomeia o ato que já o retificou.
     /// </summary>
-    public const string RaizJaRetificada = "AtoNormativo.RaizJaRetificada";
+    public const string AtoJaRetificado = "AtoNormativo.AtoJaRetificado";
 
     /// <summary>
     /// O tipo do ato admite um único ato vivo por objeto (<c>unico_por_objeto</c>), e a

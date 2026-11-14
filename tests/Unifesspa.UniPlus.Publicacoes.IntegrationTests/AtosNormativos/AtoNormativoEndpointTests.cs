@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 /// <summary>
 /// Endpoints de <c>AtoNormativo</c> contra o monólito real com Postgres efêmero:
 /// registro, autorização, idempotência, resolução do tipo vigente, cópia por
-/// valor, aviso de numeração (AC4) e o append-only exposto por HTTP.
+/// valor, aviso de numeração e o append-only exposto por HTTP.
 /// </summary>
 [Collection(PublicacoesEndpointCollection.Name)]
 [SuppressMessage(
@@ -132,7 +132,7 @@ public sealed class AtoNormativoEndpointTests
         Guid atoId = doc.RootElement.GetProperty("atoId").GetGuid();
         doc.RootElement.GetProperty("publicadoEm").GetDateTimeOffset().Should().NotBe(default);
 
-        // A consequência gravada é a do catálogo vigente, copiada por valor (AC5).
+        // A consequência gravada é a do catálogo vigente, copiada por valor.
         using JsonDocument detalhe = JsonDocument.Parse(
             await client.GetStringAsync(new Uri($"{BaseAtos}/{atoId}", UriKind.Relative)));
         detalhe.RootElement.GetProperty("congelaConfiguracao").GetBoolean().Should().BeTrue();
@@ -184,7 +184,7 @@ public sealed class AtoNormativoEndpointTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: DateTimeOffset.UtcNow,
-            versaoInvocada: null);
+            versaoDeConfiguracao: null);
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
             UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -226,7 +226,7 @@ public sealed class AtoNormativoEndpointTests
     }
 
     [Fact(DisplayName = "POST com par de versão incompleto retorna 422")]
-    public async Task Registrar_VersaoInvocadaIncompleta_Retorna422()
+    public async Task Registrar_VersaoDeConfiguracaoIncompleta_Retorna422()
     {
         string tipo = await CriarTipoVigenteAsync();
 
@@ -240,8 +240,8 @@ public sealed class AtoNormativoEndpointTests
             dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
-            versaoInvocadaId = Guid.CreateVersion7(),
-            versaoInvocadaHash = (string?)null,
+            versaoDeConfiguracaoId = Guid.CreateVersion7(),
+            versaoDeConfiguracaoHash = (string?)null,
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -251,7 +251,7 @@ public sealed class AtoNormativoEndpointTests
     }
 
     [Fact(DisplayName = "POST com id de versão zerado (Guid.Empty) retorna 422, não 500")]
-    public async Task Registrar_VersaoInvocadaIdVazio_Retorna422()
+    public async Task Registrar_VersaoDeConfiguracaoIdVazio_Retorna422()
     {
         string tipo = await CriarTipoVigenteAsync();
 
@@ -265,8 +265,8 @@ public sealed class AtoNormativoEndpointTests
             dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
-            versaoInvocadaId = Guid.Empty,
-            versaoInvocadaHash = HashValido,
+            versaoDeConfiguracaoId = Guid.Empty,
+            versaoDeConfiguracaoHash = HashValido,
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -296,8 +296,8 @@ public sealed class AtoNormativoEndpointTests
             dataDoAto = Publicacao,
             documentoHash = "nao-e-hash",
             assinante = "Jairo Belchior",
-            versaoInvocadaId = Guid.CreateVersion7(),
-            versaoInvocadaHash = (string?)null,
+            versaoDeConfiguracaoId = Guid.CreateVersion7(),
+            versaoDeConfiguracaoHash = (string?)null,
             vinculos = new[] { new { entidadeTipo = "minusculo", entidadeId = Guid.Empty } },
         };
 
@@ -318,13 +318,13 @@ public sealed class AtoNormativoEndpointTests
             ("serie", "uniplus.validacao.tamanho"),
             ("ano", "uniplus.validacao.faixa"),
             ("documentoHash", "uniplus.validacao.formato"),
-            ("versaoInvocadaHash", "uniplus.validacao.regra"),
+            ("versaoDeConfiguracaoHash", "uniplus.validacao.regra"),
             ("vinculos[0].entidadeTipo", "uniplus.validacao.formato"),
             ("vinculos[0].entidadeId", "uniplus.validacao.obrigatorio"),
         });
     }
 
-    // ── Aviso de numeração (AC4) ─────────────────────────────────────────────
+    // ── Aviso de numeração ─────────────────────────────────────────────
 
     [Fact(DisplayName = "Número já usado gera aviso no registro, sem impedir; detalhe recomputa")]
     public async Task Registrar_NumeroDuplicado_Avisa()
@@ -409,8 +409,8 @@ public sealed class AtoNormativoEndpointTests
             .Should().Contain("uniplus.publicacoes.ato_normativo.ato_retificado_nao_encontrado");
     }
 
-    [Fact(DisplayName = "POST que retifica uma raiz já retificada retorna 409")]
-    public async Task Registrar_RetificaRaizJaRetificada_Retorna409()
+    [Fact(DisplayName = "POST que retifica um ato já retificado retorna 409")]
+    public async Task Registrar_RetificaAtoJaRetificado_Retorna409()
     {
         string tipo = await CriarTipoVigenteAsync();
         string serie = SerieUnica();
@@ -424,7 +424,7 @@ public sealed class AtoNormativoEndpointTests
 
         segunda.StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await segunda.Content.ReadAsStringAsync())
-            .Should().Contain("uniplus.publicacoes.ato_normativo.raiz_ja_retificada");
+            .Should().Contain("uniplus.publicacoes.ato_normativo.ato_ja_retificado");
     }
 
     [Fact(DisplayName = "POST que retifica a cabeça da cadeia (R2 emenda R1) retorna 201")]

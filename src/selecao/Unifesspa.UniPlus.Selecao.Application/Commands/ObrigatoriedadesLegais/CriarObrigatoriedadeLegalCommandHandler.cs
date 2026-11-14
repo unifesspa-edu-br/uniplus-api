@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -93,20 +94,20 @@ public static class CriarObrigatoriedadeLegalCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint)
+        catch (Exception ex) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) is { } constraint)
         {
             // Race entre ExisteRegraCodigoAtivoAsync e o INSERT (check-then-act):
             // a constraint UNIQUE parcial sobre regra_codigo/hash dispara 23505,
             // viramos 409 ProblemDetails consistente com o caminho não-race.
             // Filtro do `when` garante que outras exceções não-23505 propagam
             // intactas (não engolimos falhas inesperadas).
-            if (UniqueConstraintViolation.IsRegraCodigoConflict(constraint))
+            if (ConstraintsDaRegraAtiva.EhConflitoDoCodigoDaRegra(constraint))
             {
                 return Result<Guid>.Failure(new DomainError(
                     "ObrigatoriedadeLegal.RegraCodigoDuplicada",
                     $"Já existe regra ativa com RegraCodigo '{command.RegraCodigo}'."));
             }
-            if (UniqueConstraintViolation.IsHashConflict(constraint))
+            if (ConstraintsDaRegraAtiva.EhConflitoDoHashDaRegra(constraint))
             {
                 return Result<Guid>.Failure(new DomainError(
                     "ObrigatoriedadeLegal.HashColisao",

@@ -25,7 +25,7 @@ internal static class LeituraDoEnvelope
         BlocosDaConfiguracao configuracao = LerConfiguracao(leitor, payload);
         BlocosDosDocumentos documentos = LerDocumentos(leitor, payload);
         BlocosDaPublicacao publicacao = LerPublicacao(leitor, payload, configuracao);
-        RetificacaoInfo? retificacao = temRetificacao ? LeituraDaRetificacao.LerRetificacao(leitor, payload) : null;
+        RetificacaoDoEdital? retificacao = temRetificacao ? LeituraDaRetificacao.LerRetificacao(leitor, payload) : null;
         if (leitor.Falhou)
         {
             return null;

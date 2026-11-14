@@ -21,13 +21,13 @@ public static partial class MigrationServiceCollectionExtensions
     /// Aplica todas as migrations EF Core pendentes do <typeparamref name="TContext"/>. Em banco
     /// já migrado (com a migration registrada em <c>__EFMigrationsHistory</c>), retorna sem efeito.
     /// Para bancos com schema pré-existente que ainda não foi rastreado pelo EF (caso de standalone
-    /// pré-#416), cada migration precisa ser explicitamente idempotente nos seus <c>Up()</c>
+    /// provisionado antes de o EF rastrear as migrations), cada migration precisa ser explicitamente idempotente nos seus <c>Up()</c>
     /// (ex.: <c>CREATE TABLE IF NOT EXISTS</c>) para evitar erro 42P07 — o EF não emite guards
     /// nativos. Coordenação entre réplicas concorrentes startando simultâneo é coberta pelo
     /// lock interno do provider Npgsql sobre <c>__EFMigrationsHistory</c>, não por garantia geral
     /// de idempotência deste método.
     /// </summary>
-    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, UniPlusDbContext, UniPlusDbContext).</typeparam>
+    /// <typeparam name="TContext">DbContext cujas migrations são aplicadas (ex.: <c>MonolitoDbContext</c>, <c>PortalDbContext</c>).</typeparam>
     /// <param name="services">
     /// <see cref="IServiceProvider"/> raiz (em <c>Program.cs</c>: <c>app.Services</c>).
     /// </param>
@@ -84,7 +84,7 @@ public static partial class MigrationServiceCollectionExtensions
     /// pipeline sem Postgres real (alinhado com a filtragem do <c>WolverineRuntime</c> em
     /// <c>ApiFactoryBase</c>).
     /// </summary>
-    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, UniPlusDbContext, UniPlusDbContext).</typeparam>
+    /// <typeparam name="TContext">DbContext cujas migrations são aplicadas (ex.: <c>MonolitoDbContext</c>, <c>PortalDbContext</c>).</typeparam>
     /// <param name="services">A coleção de serviços do host.</param>
     /// <returns>A própria <paramref name="services"/> para encadeamento fluente.</returns>
     public static IServiceCollection AddDbContextMigrationsOnStartup<TContext>(
@@ -147,7 +147,7 @@ public static partial class MigrationServiceCollectionExtensions
     /// Sobe o banco do contexto: com scripts registrados, pela subida sob trava; sem eles, só as migrations. A etapa
     /// posterior registrada roda por último.
     /// </summary>
-    internal static async Task MigrarEExecutarEtapaAsync<TContext>(
+    internal static async Task MigrarEExecutarEtapaPosteriorAsync<TContext>(
         this IServiceProvider services,
         CancellationToken cancellationToken)
         where TContext : DbContext
@@ -162,10 +162,10 @@ public static partial class MigrationServiceCollectionExtensions
             return;
         }
 
-        await SubirOBancoAsync(services, scripts, etapa, cancellationToken).ConfigureAwait(false);
+        await PrepararOBancoAsync(services, scripts, etapa, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task SubirOBancoAsync<TContext>(
+    private static async Task PrepararOBancoAsync<TContext>(
         IServiceProvider services,
         AssembliesDosScriptsDoContexto<TContext> scripts,
         EtapaPosteriorDaMigration<TContext>? etapa,
@@ -175,7 +175,7 @@ public static partial class MigrationServiceCollectionExtensions
         AsyncServiceScope escopo = services.CreateAsyncScope();
         await using (escopo.ConfigureAwait(false))
         {
-            await SubidaDoBanco
+            await PreparacaoDoBanco
                 .ExecutarAsync(
                     escopo.ServiceProvider.GetRequiredService<TContext>(),
                     escopo.ServiceProvider.GetRequiredService<ILogger<TContext>>(),
@@ -206,7 +206,7 @@ public static partial class MigrationServiceCollectionExtensions
         // coleção de hosted services — que traria junto warmup de criptografia, mensageria e
         // schema registry, e faria o Job falhar por configuração alheia ao schema.
         ObterRegistroDeContextos(services)
-            .Registrar(typeof(TContext), (provider, token) => provider.MigrarEExecutarEtapaAsync<TContext>(token));
+            .Registrar(typeof(TContext), (provider, token) => provider.MigrarEExecutarEtapaPosteriorAsync<TContext>(token));
 
         return services;
     }

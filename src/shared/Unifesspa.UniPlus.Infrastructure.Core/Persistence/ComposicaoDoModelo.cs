@@ -25,11 +25,11 @@ internal static class ComposicaoDoModelo
         modelBuilder.AplicarFiltroGlobalSoftDelete();
     }
 
-    // Sem este registro a consulta que chama PgFunctions.NormalizeForComparison não traduz, e o EF tentaria avaliá-la
+    // Sem este registro a consulta que chama FuncoesDaPlataforma.NormalizarParaComparacao não traduz, e o EF tentaria avaliá-la
     // no cliente, onde o stub lança.
     private static void RegistrarFuncoesDaPlataforma(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDbFunction(typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)
+        modelBuilder.HasDbFunction(typeof(FuncoesDaPlataforma).GetMethod(nameof(FuncoesDaPlataforma.NormalizarParaComparacao))!)
             .HasName("normalizar_para_comparacao")
             .HasSchema(UniPlusDbContext.EsquemaDaPlataforma);
     }

@@ -70,7 +70,7 @@ public static class ObterCertamePublicadoQueryHandler
             return NaoEncontrado();
         }
 
-        if (!LeituraDoDocumentoDivulgado.TentarLerProjecao(divulgado.Certame, out CertamePublicadoDto? certame))
+        if (!LeituraDoDocumentoDivulgado.TentarLerProjecao(divulgado.DocumentoPublico, out CertamePublicadoDto? certame))
         {
             return LeituraDoDocumentoDivulgado.RecusarDocumentoIlegivel();
         }
@@ -86,7 +86,7 @@ public static class ObterCertamePublicadoQueryHandler
     }
 
     private static List<EditalPublicadoCertameDto> EditaisServidos(CertameDivulgado divulgado) =>
-        [.. divulgado.EditaisDivulgados
+        [.. divulgado.AtosDivulgados
             .OrderBy(static e => e.NumeroVersao ?? int.MaxValue)
             .ThenBy(static e => e.AtoId)
             .Select(ServirEdital)
@@ -95,7 +95,7 @@ public static class ObterCertamePublicadoQueryHandler
     // Entrada com endereço ilegível fica de fora em vez de derrubar a página inteira: o evento correspondente só perde
     // o link, e o resto do certame continua servido. A entrada sem endereço ainda é servida: o ato existe, e o documento
     // está em preparação.
-    private static EditalPublicadoCertameDto? ServirEdital(EditalDivulgado edital)
+    private static EditalPublicadoCertameDto? ServirEdital(AtoDivulgado edital)
     {
         if (edital.UrlDownload is null)
         {
@@ -117,7 +117,7 @@ public static class ObterCertamePublicadoQueryHandler
     /// Os documentos do edital com endereço legível; o que não tem fica de fora, como o edital sem
     /// endereço, para um documento ruim não derrubar os demais.
     /// </summary>
-    private static List<DocumentoDoAtoCertameDto> DocumentosLegiveis(EditalDivulgado edital)
+    private static List<DocumentoDoAtoCertameDto> DocumentosLegiveis(AtoDivulgado edital)
     {
         List<DocumentoDoAtoCertameDto> documentos = [];
         foreach (DocumentoDivulgado documento in edital.Documentos ?? [])

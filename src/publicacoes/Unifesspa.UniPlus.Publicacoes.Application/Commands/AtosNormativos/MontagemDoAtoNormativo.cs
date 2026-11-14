@@ -42,7 +42,7 @@ public sealed class MontagemDoAtoNormativo(
     /// O ato que trata de objeto cujos atos pertencem ao domínio dele não nasce pelo endpoint:
     /// este registro não recebe o arquivo, e o ato ficaria sem documento.
     /// </summary>
-    private static DomainError? VinculoDeRegistroPeloDominio(IEnumerable<string> entidadesTipo) =>
+    private static DomainError? RecusaDoVinculoExclusivoDoDominio(IEnumerable<string> entidadesTipo) =>
         entidadesTipo
             .Select(t => t.Trim())
             .Where(EntidadesDeRegistroPeloDominio.Contem)
@@ -67,8 +67,8 @@ public sealed class MontagemDoAtoNormativo(
     /// </summary>
     private static DomainError? RecusaDaEntrada(RegistrarAtoNormativoCommand command)
     {
-        if (!command.RegistroPeloDominio
-            && VinculoDeRegistroPeloDominio(CadeiaDeRetificacaoDoAto.VinculosDeclarados(command).Select(v => v.EntidadeTipo))
+        if (!command.ChegouPeloDominioDono
+            && RecusaDoVinculoExclusivoDoDominio(CadeiaDeRetificacaoDoAto.VinculosDeclarados(command).Select(v => v.EntidadeTipo))
                 is { } declarado)
         {
             return declarado;
@@ -123,18 +123,18 @@ public sealed class MontagemDoAtoNormativo(
     /// O par {id, hash} é recebido por valor, completo ou ausente. Ausente devolve
     /// <see langword="null"/>: o ato não invoca configuração.
     /// </summary>
-    private static Result<ReferenciaVersaoConfiguracao>? ResolverVersaoInvocada(RegistrarAtoNormativoCommand command)
+    private static Result<ReferenciaVersaoConfiguracao>? ResolverVersaoDeConfiguracao(RegistrarAtoNormativoCommand command)
     {
-        bool temId = command.VersaoInvocadaId.HasValue;
-        if (!temId && command.VersaoInvocadaHash is null)
+        bool temId = command.VersaoDeConfiguracaoId.HasValue;
+        if (!temId && command.VersaoDeConfiguracaoHash is null)
         {
             return null;
         }
 
-        return temId != (command.VersaoInvocadaHash is not null)
+        return temId != (command.VersaoDeConfiguracaoHash is not null)
             ? Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoInvocadaIncompleta, AtoNormativoRegras.VersaoInvocadaIncompleta))
-            : CriarReferenciaDaVersao(command.VersaoInvocadaId!.Value, command.VersaoInvocadaHash!);
+                AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta, AtoNormativoRegras.VersaoDeConfiguracaoIncompleta))
+            : CriarReferenciaDaVersao(command.VersaoDeConfiguracaoId!.Value, command.VersaoDeConfiguracaoHash!);
     }
 
     /// <summary>
@@ -147,7 +147,7 @@ public sealed class MontagemDoAtoNormativo(
         Result<ReferenciaVersaoConfiguracao> versao = ReferenciaVersaoConfiguracao.Criar(id, hash);
         return versao.IsFailure
             ? Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoInvocadaIncompleta, versao.Error!.Message))
+                AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta, versao.Error!.Message))
             : versao;
     }
 
@@ -168,7 +168,7 @@ public sealed class MontagemDoAtoNormativo(
     private async Task<Result<DadosConferidos>> ConferirVersaoAsync(
         RegistrarAtoNormativoCommand command, TipoResolvido tipo, CancellationToken cancellationToken)
     {
-        Result<ReferenciaVersaoConfiguracao>? versao = ResolverVersaoInvocada(command);
+        Result<ReferenciaVersaoConfiguracao>? versao = ResolverVersaoDeConfiguracao(command);
         return versao is { IsFailure: true }
             ? Result<DadosConferidos>.Failure(versao.Error!)
             : await ConferirCadeiaAsync(command, tipo, versao?.Value, cancellationToken).ConfigureAwait(false);
@@ -194,8 +194,8 @@ public sealed class MontagemDoAtoNormativo(
         }
 
         LinhagemDoAto linhagem = await cadeia.ResolverAsync(command, cancellationToken).ConfigureAwait(false);
-        return !command.RegistroPeloDominio
-            && VinculoDeRegistroPeloDominio(linhagem.Vinculos.Select(v => v.EntidadeTipo)) is { } herdado
+        return !command.ChegouPeloDominioDono
+            && RecusaDoVinculoExclusivoDoDominio(linhagem.Vinculos.Select(v => v.EntidadeTipo)) is { } herdado
             ? Result<DadosConferidos>.Failure(herdado)
             : Result<DadosConferidos>.Success(new DadosConferidos(tipo, versao, linhagem));
     }

@@ -14,7 +14,7 @@ using Queries.ProcessosSeletivos;
 
 /// <summary>
 /// Copia para o acervo público o que a divulgação publica — o documento do edital, os anexos e os
-/// modelos que a versão congelou, e os documentos de um ato do processo — e monta o edital divulgado,
+/// modelos que a versão congelou, e os documentos de um ato do processo — e monta o ato divulgado,
 /// com os endereços, que a linha do certame registra depois da cópia.
 /// </summary>
 /// <remarks>
@@ -45,24 +45,24 @@ public sealed class AcervoDaDivulgacao
     private Uri EnderecoDe(string chave) => _endereco.De(chave);
 
     /// <summary>
-    /// Copia o edital, os anexos e os modelos para o acervo e devolve o edital divulgado.
+    /// Copia o edital, os anexos e os modelos para o acervo e devolve o ato divulgado.
     /// </summary>
-    internal async Task<EditalDivulgado> PublicarVersaoAsync(
+    internal async Task<AtoDivulgado> CopiarVersaoAoAcervoAsync(
         VersaoConfiguracao versao,
         AtoDoProcesso ato,
         JsonObject envelope,
         CancellationToken cancellationToken)
     {
-        DocumentoDivulgado principal = await PublicarEditalAsync(versao, AtoDaDivulgacao.De(ato), envelope, cancellationToken)
+        DocumentoDivulgado principal = await CopiarEditalAoAcervoAsync(versao, AtoDaDivulgacao.De(ato), envelope, cancellationToken)
             .ConfigureAwait(false);
-        IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosAsync(versao, envelope, cancellationToken)
+        IReadOnlyList<DocumentoDivulgado> anexos = await CopiarAnexosAoAcervoAsync(versao, envelope, cancellationToken)
             .ConfigureAwait(false);
-        await PublicarModelosAsync(versao, envelope, cancellationToken).ConfigureAwait(false);
+        await CopiarModelosAoAcervoAsync(versao, envelope, cancellationToken).ConfigureAwait(false);
 
-        return new EditalDivulgado(versao.AtoCriadorId, versao.NumeroVersao, principal.UrlDownload, [principal, .. anexos]);
+        return new AtoDivulgado(versao.AtoCriadorId, versao.NumeroVersao, principal.UrlDownload, [principal, .. anexos]);
     }
 
-    private async Task<DocumentoDivulgado> PublicarEditalAsync(
+    private async Task<DocumentoDivulgado> CopiarEditalAoAcervoAsync(
         VersaoConfiguracao versao,
         AtoDaDivulgacao ato,
         JsonObject envelope,
@@ -113,7 +113,7 @@ public sealed class AcervoDaDivulgacao
                     $"O documento do edital {edital.DocumentoEditalId}, congelado na versão {versao.NumeroVersao} do processo {versao.ProcessoSeletivoId}, não tem cópia selada com o conteúdo congelado.");
     }
 
-    private async Task<IReadOnlyList<DocumentoDivulgado>> PublicarAnexosAsync(
+    private async Task<IReadOnlyList<DocumentoDivulgado>> CopiarAnexosAoAcervoAsync(
         VersaoConfiguracao versao, JsonObject envelope, CancellationToken cancellationToken)
     {
         if (!LeituraDoCertameEdital.TentarAnexosCongelados(envelope, out List<AnexoDoEdital>? anexos))
@@ -134,13 +134,13 @@ public sealed class AcervoDaDivulgacao
         List<DocumentoDivulgado> divulgados = [];
         foreach (AnexoDoEdital anexo in anexos)
         {
-            divulgados.Add(await PublicarAnexoAsync(versao, anexo, cadastrados, cancellationToken).ConfigureAwait(false));
+            divulgados.Add(await CopiarAnexoAoAcervoAsync(versao, anexo, cadastrados, cancellationToken).ConfigureAwait(false));
         }
 
         return divulgados;
     }
 
-    private async Task<DocumentoDivulgado> PublicarAnexoAsync(
+    private async Task<DocumentoDivulgado> CopiarAnexoAoAcervoAsync(
         VersaoConfiguracao versao,
         AnexoDoEdital anexo,
         IReadOnlyList<DocumentoAPublicar> cadastrados,
@@ -172,7 +172,7 @@ public sealed class AcervoDaDivulgacao
             EnderecoDe(chave).OriginalString);
     }
 
-    private async Task PublicarModelosAsync(
+    private async Task CopiarModelosAoAcervoAsync(
         VersaoConfiguracao versao, JsonObject envelope, CancellationToken cancellationToken)
     {
         if (!LeituraDoCertameDocumentos.TentarModelosCongelados(envelope, out List<ModeloDaExigencia>? modelos))
@@ -192,11 +192,11 @@ public sealed class AcervoDaDivulgacao
 
         foreach (ModeloDaExigencia modelo in modelos)
         {
-            await PublicarModeloAsync(versao, modelo, cadastrados, cancellationToken).ConfigureAwait(false);
+            await CopiarModeloAoAcervoAsync(versao, modelo, cadastrados, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task PublicarModeloAsync(
+    private async Task CopiarModeloAoAcervoAsync(
         VersaoConfiguracao versao,
         ModeloDaExigencia modelo,
         IReadOnlyList<ModeloDeDocumento> cadastrados,
@@ -225,9 +225,9 @@ public sealed class AcervoDaDivulgacao
     }
 
     /// <summary>
-    /// Copia o principal e os anexos do ato do processo para o acervo e devolve o edital divulgado.
+    /// Copia o principal e os anexos do ato do processo para o acervo e devolve o ato divulgado.
     /// </summary>
-    internal async Task<EditalDivulgado> PublicarAtoAsync(AtoDoProcesso ato, CancellationToken cancellationToken)
+    internal async Task<AtoDivulgado> CopiarAtoAoAcervoAsync(AtoDoProcesso ato, CancellationToken cancellationToken)
     {
         IReadOnlyList<AnexoDoAtoDoProcesso> anexos = [.. ato.Anexos.OrderBy(static a => a.Ordem)];
         IReadOnlyList<DocumentoAPublicar> cadastrados = await _documentos
@@ -237,29 +237,29 @@ public sealed class AcervoDaDivulgacao
                 cancellationToken)
             .ConfigureAwait(false);
 
-        DocumentoDivulgado principal = await PublicarPrincipalDoAtoAsync(
+        DocumentoDivulgado principal = await CopiarPrincipalDoAtoAoAcervoAsync(
             ato, SeladoDoAto(ato, cadastrados, ato.DocumentoPrincipalId), cancellationToken)
             .ConfigureAwait(false);
 
         List<DocumentoDivulgado> documentos = [principal];
         foreach (AnexoDoAtoDoProcesso anexo in anexos)
         {
-            documentos.Add(await PublicarAnexoDoAtoAsync(
+            documentos.Add(await CopiarAnexoDoAtoAoAcervoAsync(
                 ato, anexo, SeladoDoAto(ato, cadastrados, anexo.DocumentoAPublicarId), cancellationToken)
                 .ConfigureAwait(false));
         }
 
-        return new EditalDivulgado(ato.Id, null, principal.UrlDownload, documentos);
+        return new AtoDivulgado(ato.Id, null, principal.UrlDownload, documentos);
     }
 
-    private async Task<DocumentoDivulgado> PublicarPrincipalDoAtoAsync(
+    private async Task<DocumentoDivulgado> CopiarPrincipalDoAtoAoAcervoAsync(
         AtoDoProcesso ato,
         DocumentoSelado documento,
         CancellationToken cancellationToken)
     {
         string chave = ChaveNoAcervoPublico.DoEdital(
             ato.DataDoAto.Year,
-            ato.UnidadeAdministradora,
+            ato.SlugDaUnidadeAdministradora,
             ato.TipoCodigo,
             ato.IdentificadorLegivelDoProcesso,
             ato.Id,
@@ -272,7 +272,7 @@ public sealed class AcervoDaDivulgacao
             .ConfigureAwait(false);
     }
 
-    private async Task<DocumentoDivulgado> PublicarAnexoDoAtoAsync(
+    private async Task<DocumentoDivulgado> CopiarAnexoDoAtoAoAcervoAsync(
         AtoDoProcesso ato,
         AnexoDoAtoDoProcesso anexo,
         DocumentoSelado documento,

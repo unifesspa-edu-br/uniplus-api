@@ -120,8 +120,8 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
 
         string padrao = "%" + termo + "%";
         return query.Where(a =>
-            EF.Functions.ILike(PgFunctions.NormalizeForComparison(a.ItemNome), padrao, EscapeDoLike)
-            || EF.Functions.ILike(PgFunctions.NormalizeForComparison(a.ItemCodigo), padrao, EscapeDoLike));
+            EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(a.ItemNome), padrao, EscapeDoLike)
+            || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(a.ItemCodigo), padrao, EscapeDoLike));
     }
 
     // O provedor só grava e compara instante com deslocamento zero.

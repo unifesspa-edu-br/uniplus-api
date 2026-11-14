@@ -244,7 +244,7 @@ public sealed class FaseCanonicaPersistenceTests
     /// </summary>
     /// <remarks>
     /// Desde que <c>FaseCanonica</c> passou a nascer semeada, todo código do vocabulário
-    /// já tem linha viva ao subir o banco de teste. Testes que exercitam a criação
+    /// já tem linha viva ao preparar o banco de teste. Testes que exercitam a criação
     /// precisam do slot livre; usar o soft-delete em vez de apagar a linha mantém o teste
     /// sobre o comportamento real do cadastro.
     /// </remarks>

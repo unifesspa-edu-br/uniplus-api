@@ -106,8 +106,8 @@ internal sealed class AcervoPublicoDeTeste
         return await leitura.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processoId);
     }
 
-    public async Task<IReadOnlyList<EditalDivulgado>> EditaisDivulgadosAsync(Guid processoId) =>
-        (await CertameDivulgadoAsync(processoId)).EditaisDivulgados;
+    public async Task<IReadOnlyList<AtoDivulgado>> AtosDivulgadosAsync(Guid processoId) =>
+        (await CertameDivulgadoAsync(processoId)).AtosDivulgados;
 
     public async Task GravarNoAcervoAsync(string chave, byte[] conteudo)
     {

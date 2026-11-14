@@ -50,7 +50,7 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         divulgado.DivulgadoEm.Should().Be(versao.VigenteAPartirDe).And.Be(ato.PublicadoEm);
         (await TransacaoDaVersaoAsync(api, publicado.ProcessoId)).Should().Be(
             await TransacaoDaDivulgacaoAsync(api, publicado.ProcessoId), "a versão e a divulgação foram gravadas pela mesma transação");
-        divulgado.EditaisDivulgados.Should().ContainSingle().Which.Should().Be(EditalDivulgado.Pendente(versao.AtoCriadorId, 1));
+        divulgado.AtosDivulgados.Should().ContainSingle().Which.Should().Be(AtoDivulgado.SemEndereco(versao.AtoCriadorId, 1));
     }
 
     [Fact(DisplayName = "Retificar avança a divulgação no mesmo commit da versão seguinte, com a entrada do novo ato sem endereço")]
@@ -67,7 +67,7 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
         divulgado.NumeroVersao.Should().Be(2);
         divulgado.AtoCriadorId.Should().Be(segunda.AtoCriadorId);
         divulgado.DivulgadoEm.Should().Be(segunda.VigenteAPartirDe);
-        divulgado.EditaisDivulgados.Should().HaveCount(2).And.OnlyContain(e => e.UrlDownload == null);
+        divulgado.AtosDivulgados.Should().HaveCount(2).And.OnlyContain(e => e.UrlDownload == null);
     }
 
     [Fact(DisplayName = "Identificador legível em uso recusa a publicação com 409, sem versão, ato, divulgação nem envelope, e preserva o rascunho")]
@@ -161,7 +161,7 @@ public sealed class DivulgacaoNoCommitDaPublicacaoTests
 
     private static async Task ConferirEnderecoComNovoSeloAsync(CascadingApiFactory api, ProcessoPublicado publicado, string seloAnterior)
     {
-        (await LerDivulgacaoAsync(api, publicado.ProcessoId)).EditaisDivulgados.Should().ContainSingle(
+        (await LerDivulgacaoAsync(api, publicado.ProcessoId)).AtosDivulgados.Should().ContainSingle(
             "a reentrega da cópia encontra a entrada preenchida e não cria outra");
         (string selo, JsonElement corpo) = await LerCertameAsync(publicado.Client, publicado.ProcessoId);
 

@@ -42,8 +42,8 @@ public sealed class SementePsrMedicina2027Tests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Depois da subida do banco, o tipo PSR, os termos promovidos e os fatos do administrador, com descrição e valores, são lidos")]
-    public async Task SubidaDoBanco_GravaOTipoOsTermosEOsFatos()
+    [Fact(DisplayName = "Depois da preparaÃ§Ã£o do banco, o tipo PSR, os termos promovidos e os fatos do administrador, com descrição e valores, são lidos")]
+    public async Task PreparacaoDoBanco_GravaOTipoOsTermosEOsFatos()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 

@@ -11,7 +11,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="Numero">Número do ato, quando o tipo o tem.</param>
 /// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
 /// <param name="Assinante">Quem assina o ato.</param>
-/// <param name="UnidadeAdministradora">
+/// <param name="SlugDaUnidadeAdministradora">
 /// Slug da unidade administradora da versão vigente divulgada — segmento da chave do documento no acervo.
 /// </param>
 /// <param name="IdentificadorLegivelDoProcesso">
@@ -38,7 +38,7 @@ public sealed record NovoAtoDoProcesso(
     string? Numero,
     DateOnly DataDoAto,
     string Assinante,
-    string UnidadeAdministradora,
+    string SlugDaUnidadeAdministradora,
     string IdentificadorLegivelDoProcesso,
     Guid DocumentoPrincipalId,
     IReadOnlyList<AnexoDeclarado> Anexos,

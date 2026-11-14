@@ -53,8 +53,8 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         divulgado.Should().NotBeNull();
         divulgado!.DivulgadoEm.Should().Be(preparo.Versao.VigenteAPartirDe).And.Be(preparo.AtoGravado().PublicadoEm);
-        divulgado.EditaisDivulgados.Should().ContainSingle()
-            .Which.Should().Be(EditalDivulgado.Pendente(preparo.Versao.AtoCriadorId, preparo.Versao.NumeroVersao));
+        divulgado.AtosDivulgados.Should().ContainSingle()
+            .Which.Should().Be(AtoDivulgado.SemEndereco(preparo.Versao.AtoCriadorId, preparo.Versao.NumeroVersao));
         await preparo.Servicos.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -89,7 +89,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
     public async Task Retificacao_OAtoGravadoEmendaOAnterior()
     {
         Preparo preparo = await Preparo.NovoAsync();
-        var retificacao = new RetificacaoInfo(Guid.CreateVersion7(), "Correção do prazo");
+        var retificacao = new RetificacaoDoEdital(Guid.CreateVersion7(), "Correção do prazo");
 
         await preparo.GravarAsync(retificacao);
 
@@ -103,7 +103,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
     {
         Preparo preparo = await Preparo.NovoAsync();
 
-        (Result resposta, IEnumerable<object> eventos) = await preparo.GravarAsync(new RetificacaoInfo(Guid.Empty, "Correção do prazo"));
+        (Result resposta, IEnumerable<object> eventos) = await preparo.GravarAsync(new RetificacaoDoEdital(Guid.Empty, "Correção do prazo"));
 
         resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("atoCorrigidoId");
         eventos.Should().BeEmpty();
@@ -222,7 +222,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
         public void FalharNoFlushCom(Exception falha) =>
             Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(falha);
 
-        public Task<(Result Resposta, IEnumerable<object> Eventos)> GravarAsync(RetificacaoInfo? retificacao = null) =>
+        public Task<(Result Resposta, IEnumerable<object> Eventos)> GravarAsync(RetificacaoDoEdital? retificacao = null) =>
             Servicos.Gravacao().GravarAsync(Processo, Versao, Conferidos, _dados, retificacao, CancellationToken.None);
 
         public AtoDoProcesso AtoGravado() => _gravado ?? throw new InvalidOperationException("Nenhum ato foi gravado.");

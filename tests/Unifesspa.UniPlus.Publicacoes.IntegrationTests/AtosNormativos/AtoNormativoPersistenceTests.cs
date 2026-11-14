@@ -42,8 +42,8 @@ public sealed class AtoNormativoPersistenceTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Persiste e relê os campos do ato, com a versão invocada por valor")]
-    public async Task Insert_PersisteCampos_ComVersaoInvocada()
+    [Fact(DisplayName = "Persiste e relê os campos do ato, com a versão de configuração por valor")]
+    public async Task Insert_PersisteCampos_ComVersaoDeConfiguracao()
     {
         ReferenciaVersaoConfiguracao versao = ReferenciaVersaoConfiguracao
             .Criar(Guid.CreateVersion7(), HashValido).Value!;
@@ -57,13 +57,13 @@ public sealed class AtoNormativoPersistenceTests
         persistido.Numero.Should().Be("13");
         persistido.DocumentoHash.Should().Be(HashValido);
         persistido.PublicadoEm.Should().Be(Registro);
-        persistido.VersaoInvocada.Should().NotBeNull();
-        persistido.VersaoInvocada!.Id.Should().Be(versao.Id);
-        persistido.VersaoInvocada.Hash.Should().Be(versao.Hash);
+        persistido.VersaoDeConfiguracao.Should().NotBeNull();
+        persistido.VersaoDeConfiguracao!.Id.Should().Be(versao.Id);
+        persistido.VersaoDeConfiguracao.Hash.Should().Be(versao.Hash);
     }
 
-    [Fact(DisplayName = "Ato sem versão invocada persiste com o par ausente (owned opcional)")]
-    public async Task Insert_SemVersaoInvocada_ParAusente()
+    [Fact(DisplayName = "Ato sem versão de configuração persiste com o par ausente (owned opcional)")]
+    public async Task Insert_SemVersaoDeConfiguracao_ParAusente()
     {
         AtoNormativo ato = Novo(numero: null, versao: null);
         await Gravar(ato);
@@ -72,7 +72,7 @@ public sealed class AtoNormativoPersistenceTests
         AtoNormativo persistido = await ctx.AtosNormativos.SingleAsync(a => a.Id == ato.Id);
 
         persistido.Numero.Should().BeNull();
-        persistido.VersaoInvocada.Should().BeNull();
+        persistido.VersaoDeConfiguracao.Should().BeNull();
     }
 
     [Fact(DisplayName = "UPDATE cru é bloqueado pelo trigger append-only")]
@@ -242,7 +242,7 @@ public sealed class AtoNormativoPersistenceTests
         PostgresException pg = (ex.InnerException as PostgresException)!;
         pg.SqlState.Should().Be(UniqueViolation);
         // O nome da constraint violada é exatamente o que ConflitoNaGravacaoDoAto
-        // procura para traduzir a corrida check-then-act em RaizJaRetificada (409).
+        // procura para traduzir a corrida check-then-act em AtoJaRetificado (409).
         pg.ConstraintName.Should().Be("ux_ato_normativo_retificado");
     }
 
@@ -451,7 +451,7 @@ public sealed class AtoNormativoPersistenceTests
             """
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em, versao_invocada_id, versao_invocada_hash,
+                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em, versao_de_configuracao_id, versao_de_configuracao_hash,
                  ato_retificado_id, motivo_retificacao)
             VALUES
                 (gen_random_uuid(), 'CEPS', 'EDITAL', @ano, '13', 'EDITAL_ABERTURA', false, false,
@@ -520,7 +520,7 @@ public sealed class AtoNormativoPersistenceTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Registro,
-            versaoInvocada: versao,
+            versaoDeConfiguracao: versao,
             atoRetificadoId: atoRetificadoId,
             motivoRetificacao: motivoRetificacao);
 }

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 using System.Reflection;
 
-/// <summary>De onde a subida do banco lê os scripts SQL embutidos.</summary>
+/// <summary>De onde a preparaÃ§Ã£o do banco lê os scripts SQL embutidos.</summary>
 public static class ScriptsDasContribuicoes
 {
     /// <summary>

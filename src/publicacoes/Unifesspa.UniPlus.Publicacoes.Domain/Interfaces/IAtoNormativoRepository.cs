@@ -40,7 +40,7 @@ public interface IAtoNormativoRepository
     /// Devolve os identificadores dos atos que compartilham a mesma numeração
     /// <c>(orgao, serie, ano, numero)</c>, excluindo <paramref name="excluirId"/>
     /// quando informado (o próprio ato, na recomputação do aviso durante a leitura).
-    /// Base do aviso de número duplicado (AC4) — diagnóstico do estado atual, não
+    /// Base do aviso de número duplicado — diagnóstico do estado atual, não
     /// prova imutável: entre esta consulta e um insert concorrente cabe uma corrida,
     /// tolerada porque o aviso não bloqueia o registro.
     /// </summary>
@@ -66,26 +66,26 @@ public interface IAtoNormativoRepository
     /// <summary>
     /// Devolve a raiz da cadeia de retificação a que <paramref name="atoId"/> pertence —
     /// o próprio <paramref name="atoId"/> quando ele não retifica ninguém. Identifica a
-    /// linhagem, que é a chave da vaga de <see cref="LinhagemUnicaPorObjeto"/>. Sobe pela
+    /// linhagem, que é a chave da vaga de <see cref="VagaDeLinhagem"/>. Sobe pela
     /// cadeia, que é linear e acíclica (ADR-0103).
     /// </summary>
     Task<Guid> ObterRaizDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Devolve a linhagem que ocupa a vaga do objeto
-    /// <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/> para o tipo de ato
-    /// <paramref name="tipoCodigo"/>, ou <see langword="null"/> se a vaga está livre.
+    /// Devolve a vaga que o objeto <paramref name="entidadeTipo"/>/<paramref name="entidadeId"/>
+    /// reservou para o tipo de ato <paramref name="tipoCodigo"/>, ou <see langword="null"/>
+    /// se a vaga está livre.
     /// Dá a mensagem legível no caso comum; a garantia dura contra a corrida
     /// check-then-act é o índice único da vaga, não esta consulta.
     /// </summary>
-    Task<LinhagemUnicaPorObjeto?> ObterLinhagemDoObjetoAsync(
+    Task<VagaDeLinhagem?> ObterVagaDoObjetoAsync(
         string entidadeTipo,
         Guid entidadeId,
         string tipoCodigo,
         CancellationToken cancellationToken);
 
     /// <summary>Reserva a vaga do objeto para uma linhagem. Persiste no <c>SalvarAlteracoesAsync</c> da unidade de trabalho.</summary>
-    Task AdicionarLinhagemAsync(LinhagemUnicaPorObjeto linhagem, CancellationToken cancellationToken);
+    Task ReservarVagaAsync(VagaDeLinhagem vaga, CancellationToken cancellationToken);
 
     /// <summary>
     /// Devolve os pares <c>(tipo, id)</c> das entidades a que <paramref name="atoId"/>
@@ -110,7 +110,7 @@ public interface IAtoNormativoRepository
     /// o tipo ainda <i>não</i> era único por objeto não reservou vaga alguma, e sem esta
     /// consulta um ato posterior, publicado depois de o atributo virar, encontraria a vaga
     /// livre e o objeto acabaria com duas linhagens vivas. A vaga
-    /// (<see cref="LinhagemUnicaPorObjeto"/>) continua sendo a garantia dura contra a
+    /// (<see cref="VagaDeLinhagem"/>) continua sendo a garantia dura contra a
     /// corrida entre transações concorrentes; esta consulta é a que enxerga o passado.
     /// </remarks>
     Task<AtoNormativo?> ObterAtoConflitanteNoObjetoAsync(

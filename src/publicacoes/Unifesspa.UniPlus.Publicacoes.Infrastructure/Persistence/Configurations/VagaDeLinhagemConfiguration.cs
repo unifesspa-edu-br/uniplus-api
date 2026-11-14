@@ -16,31 +16,31 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
-internal sealed class LinhagemUnicaPorObjetoConfiguration : IEntityTypeConfiguration<LinhagemUnicaPorObjeto>
+internal sealed class VagaDeLinhagemConfiguration : IEntityTypeConfiguration<VagaDeLinhagem>
 {
     private const int EntidadeTipoMaxLength = 60;
     private const int TipoCodigoMaxLength = 60;
 
-    public void Configure(EntityTypeBuilder<LinhagemUnicaPorObjeto> builder)
+    public void Configure(EntityTypeBuilder<VagaDeLinhagem> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "linhagem_unica_por_objeto",
+            "vagas_de_linhagem",
             t =>
             {
                 t.HasCheckConstraint(
-                    "ck_linhagem_unica_entidade_tipo_formato",
+                    "ck_vagas_de_linhagem_entidade_tipo_formato",
                     "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
 
                 t.HasCheckConstraint(
-                    "ck_linhagem_unica_entidade_id_nao_zero",
+                    "ck_vagas_de_linhagem_entidade_id_nao_zero",
                     "entidade_id <> '00000000-0000-0000-0000-000000000000'");
 
                 t.HasCheckConstraint(
-                    "ck_linhagem_unica_raiz_nao_zero",
+                    "ck_vagas_de_linhagem_raiz_nao_zero",
                     "raiz_id <> '00000000-0000-0000-0000-000000000000'");
             });
 
@@ -59,7 +59,7 @@ internal sealed class LinhagemUnicaPorObjetoConfiguration : IEntityTypeConfigura
         builder.HasOne<AtoNormativo>()
             .WithMany()
             .HasForeignKey(l => l.AtoId)
-            .HasConstraintName("fk_linhagem_unica_ato")
+            .HasConstraintName("fk_vagas_de_linhagem_ato")
             .OnDelete(DeleteBehavior.Restrict);
 
         // A raiz da linhagem é um ato, não um identificador solto: sem esta chave, uma
@@ -69,7 +69,7 @@ internal sealed class LinhagemUnicaPorObjetoConfiguration : IEntityTypeConfigura
         builder.HasOne<AtoNormativo>()
             .WithMany()
             .HasForeignKey(l => l.RaizId)
-            .HasConstraintName("fk_linhagem_unica_raiz")
+            .HasConstraintName("fk_vagas_de_linhagem_raiz")
             .OnDelete(DeleteBehavior.Restrict);
 
         // A garantia dura da invariante: um objeto tem, no máximo, UMA linhagem viva de
@@ -79,6 +79,6 @@ internal sealed class LinhagemUnicaPorObjetoConfiguration : IEntityTypeConfigura
         // check-then-act entre duas transações que reservem a mesma vaga.
         builder.HasIndex(l => new { l.EntidadeTipo, l.EntidadeId, l.TipoCodigo })
             .IsUnique()
-            .HasDatabaseName("ux_linhagem_unica_por_objeto");
+            .HasDatabaseName("ux_vagas_de_linhagem_objeto_tipo");
     }
 }

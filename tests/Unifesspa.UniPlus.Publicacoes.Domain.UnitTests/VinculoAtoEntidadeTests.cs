@@ -117,11 +117,11 @@ public sealed class VinculoAtoEntidadeTests
     }
 
     [Fact(DisplayName = "A vaga do objeto é reservada em nome da linhagem, não do ato")]
-    public void LinhagemUnicaPorObjeto_CriaComRaizDaLinhagem()
+    public void VagaDeLinhagem_CriaComRaizDaLinhagem()
     {
         AtoNormativo raiz = Novo(unicoPorObjeto: true, vinculos: [("PROCESSO_SELETIVO", Processo)]);
 
-        LinhagemUnicaPorObjeto vaga = LinhagemUnicaPorObjeto.Criar(
+        VagaDeLinhagem vaga = VagaDeLinhagem.Criar(
             raiz, raiz.Vinculos.Single(), raizId: raiz.Id);
 
         vaga.EntidadeTipo.Should().Be("PROCESSO_SELETIVO");
@@ -132,11 +132,11 @@ public sealed class VinculoAtoEntidadeTests
     }
 
     [Fact(DisplayName = "Um ato de tipo não único por objeto não reserva vaga alguma")]
-    public void LinhagemUnicaPorObjeto_AtoNaoUnico_Recusa()
+    public void VagaDeLinhagem_AtoNaoUnico_Recusa()
     {
         AtoNormativo ato = Novo(unicoPorObjeto: false, vinculos: [("PROCESSO_SELETIVO", Processo)]);
 
-        Action acao = () => LinhagemUnicaPorObjeto.Criar(ato, ato.Vinculos.Single(), raizId: ato.Id);
+        Action acao = () => VagaDeLinhagem.Criar(ato, ato.Vinculos.Single(), raizId: ato.Id);
 
         acao.Should().Throw<InvalidOperationException>();
     }
@@ -158,6 +158,6 @@ public sealed class VinculoAtoEntidadeTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Registro,
-            versaoInvocada: null,
+            versaoDeConfiguracao: null,
             vinculos: vinculos);
 }

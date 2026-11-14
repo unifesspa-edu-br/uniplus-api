@@ -173,7 +173,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     }
 
     /// <summary>
-    /// Obtém um ato pelo Id, com os avisos de numeração recomputados (AC4). Retorna
+    /// Obtém um ato pelo Id, com os avisos de numeração recomputados. Retorna
     /// 404 quando inexistente.
     /// </summary>
     [HttpGet("atos/{id:guid}")]
@@ -201,7 +201,7 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// quando o corpo traz o par <c>atoRetificadoId</c>/<c>motivoRetificacao</c>
     /// (ADR-0103). Exige a permissão de registro. <c>Idempotency-Key</c>
     /// obrigatório (ADR-0027). A resposta traz o Id, o instante forense de registro
-    /// e eventuais avisos de numeração (AC4). Uma retificação que quebra a cadeia
+    /// e eventuais avisos de numeração. Uma retificação que quebra a cadeia
     /// linear (o ato-alvo já foi retificado) responde 409. Um vínculo com objeto cujos
     /// atos pertencem ao seu domínio (o processo seletivo), declarado ou herdado do ato
     /// retificado, é recusado com 422: o endpoint não recebe o arquivo, e o ato desse

@@ -42,7 +42,7 @@ public sealed class IdempotencyEntry
     /// Response body cifrado at-rest via <c>IUniPlusEncryptionService</c> com
     /// chave nomeada <c>"idempotency"</c> (ADR-0027 §"Cifragem at-rest").
     /// </summary>
-    public byte[]? ResponseBodyCipher { get; set; }
+    public byte[]? EncryptedResponseBody { get; set; }
 
     public DateTimeOffset ExpiresAt { get; set; }
 

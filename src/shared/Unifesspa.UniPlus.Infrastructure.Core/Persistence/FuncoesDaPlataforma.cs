@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// Assinaturas que o EF Core mapeia para funções do banco. Nunca são executadas em C#: existem para que a consulta LINQ
 /// possa chamá-las e o tradutor emitir a função correspondente no SQL.
 /// </summary>
-public static class PgFunctions
+public static class FuncoesDaPlataforma
 {
     /// <summary>
     /// Mapeia <c>plataforma.normalizar_para_comparacao(text)</c>: o texto sem acento e em minúsculas, que é a forma pela
@@ -15,7 +15,7 @@ public static class PgFunctions
     /// ela, uma ponta da busca compararia a forma normalizada e a outra a forma crua, e procurar por um texto acentuado
     /// não acharia nada.
     /// </remarks>
-    public static string NormalizeForComparison(string? texto) =>
+    public static string NormalizarParaComparacao(string? texto) =>
         throw new InvalidOperationException(
-            "PgFunctions.NormalizeForComparison é um stub de EF Core e não pode ser chamado diretamente.");
+            "FuncoesDaPlataforma.NormalizarParaComparacao é um stub de EF Core e não pode ser chamado diretamente.");
 }

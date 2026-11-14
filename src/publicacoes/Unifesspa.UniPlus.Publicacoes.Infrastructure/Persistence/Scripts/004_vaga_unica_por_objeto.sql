@@ -1,7 +1,7 @@
 -- O que a vaga afirma sobre o ato tem de ser verdade (ADR-0107). Sem isto, uma linha forjada (tipo que não é o do ato,
 -- raiz que não é a da sua cadeia, objeto a que o ato não se vincula, ou ato de tipo que nem é único por objeto)
 -- ocuparia a vaga de um objeto sem que ato publicado algum o justificasse.
-CREATE OR REPLACE FUNCTION publicacoes.fn_linhagem_unica_coerente_com_ato()
+CREATE OR REPLACE FUNCTION publicacoes.fn_vagas_de_linhagem_coerente_com_ato()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -67,7 +67,7 @@ BEGIN
     v_raiz := publicacoes.fn_raiz_da_cadeia(NEW.ato_id);
 
     IF NOT EXISTS (
-        SELECT 1 FROM publicacoes.linhagem_unica_por_objeto l
+        SELECT 1 FROM publicacoes.vagas_de_linhagem l
         WHERE l.entidade_tipo = NEW.entidade_tipo
           AND l.entidade_id = NEW.entidade_id
           AND l.tipo_codigo = v_tipo_codigo
@@ -85,12 +85,12 @@ $$;
 
 -- DEFERRABLE INITIALLY DEFERRED nos dois: o ato, o vínculo e a vaga entram na mesma transação, e a ordem em que o EF
 -- emite os INSERTs não é contratual. No fim da transação, ambas as pontas já existem.
-DROP TRIGGER IF EXISTS trg_linhagem_unica_coerente_com_ato ON publicacoes.linhagem_unica_por_objeto;
-CREATE CONSTRAINT TRIGGER trg_linhagem_unica_coerente_com_ato
-    AFTER INSERT ON publicacoes.linhagem_unica_por_objeto
+DROP TRIGGER IF EXISTS trg_vagas_de_linhagem_coerente_com_ato ON publicacoes.vagas_de_linhagem;
+CREATE CONSTRAINT TRIGGER trg_vagas_de_linhagem_coerente_com_ato
+    AFTER INSERT ON publicacoes.vagas_de_linhagem
     DEFERRABLE INITIALLY DEFERRED
     FOR EACH ROW
-    EXECUTE FUNCTION publicacoes.fn_linhagem_unica_coerente_com_ato();
+    EXECUTE FUNCTION publicacoes.fn_vagas_de_linhagem_coerente_com_ato();
 
 DROP TRIGGER IF EXISTS trg_vinculo_exige_vaga_da_linhagem ON publicacoes.vinculo_ato_entidade;
 CREATE CONSTRAINT TRIGGER trg_vinculo_exige_vaga_da_linhagem

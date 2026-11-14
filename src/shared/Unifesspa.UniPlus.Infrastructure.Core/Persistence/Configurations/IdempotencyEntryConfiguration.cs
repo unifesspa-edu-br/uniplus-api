@@ -45,7 +45,7 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
             .IsRequired();
 
         // O corpo e os cabeçalhos cacheados são a resposta de qualquer endpoint idempotente e podem trazer dado de qualquer classe.
-        builder.Property(e => e.ResponseBodyCipher)
+        builder.Property(e => e.EncryptedResponseBody)
             .ClassificaComo(ClassificacaoDeProtecao.Sensivel);
 
         builder.Property(e => e.ResponseHeadersJson)
@@ -64,11 +64,11 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
         // concorrente (tratado pelo filter com aguarda + replay).
         builder.HasIndex(e => new { e.Scope, e.Endpoint, e.IdempotencyKey })
             .IsUnique()
-            .HasDatabaseName("idx_idempotency_lookup");
+            .HasDatabaseName("ux_idempotency_cache_scope_endpoint_key");
 
         // Suporta job de cleanup por TTL (não implementado nesta story; ADR-0027
         // §"Esta ADR não decide" — política de cleanup fica aberta).
         builder.HasIndex(e => e.ExpiresAt)
-            .HasDatabaseName("idx_idempotency_expires_at");
+            .HasDatabaseName("ix_idempotency_cache_expires_at");
     }
 }

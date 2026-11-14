@@ -148,7 +148,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
             SnapshotCanonico canonicoRetificacao = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
                 carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId,
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
+                new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion,

@@ -20,7 +20,7 @@ internal static partial class CorpusEnvelope
 {
     internal static EntradaCanonicalizacao Entrada(
         ProcessoSeletivo processo,
-        RetificacaoInfo? retificacao = null,
+        RetificacaoDoEdital? retificacao = null,
         ResultadoConformidade? conformidade = null,
         bool permutarValoresSelecionaveis = false) =>
         new(

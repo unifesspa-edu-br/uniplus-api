@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// A subida do banco para quem tem só o contexto, como as fixtures de teste. A subida padrão e o Job
+/// A preparaÃ§Ã£o do banco para quem tem só o contexto, como as fixtures de teste. A subida padrão e o Job
 /// <c>ApplyAndExit</c> passam pelo mesmo caminho, registrado em <c>AddDbContextMigrationsOnStartup</c>.
 /// </summary>
-public static class SubidaDoBancoExtensions
+public static class PreparacaoDoBancoExtensions
 {
     /// <summary>
     /// Aplica, sob a trava do banco, os scripts <c>Pre</c> de <paramref name="assembliesDosScripts"/>, as migrations do
@@ -21,7 +21,7 @@ public static class SubidaDoBancoExtensions
     /// <param name="assembliesDosScripts">Os assemblies que embutem os scripts, na ordem de aplicação.</param>
     /// <param name="cancellationToken">Token de cancelamento — opcional.</param>
     /// <exception cref="InvalidOperationException">Se um script falha.</exception>
-    public static async Task SubirOBancoAsync(
+    public static async Task PrepararOBancoAsync(
         this DbContext contexto,
         IReadOnlyList<Assembly> assembliesDosScripts,
         CancellationToken cancellationToken = default)
@@ -30,7 +30,7 @@ public static class SubidaDoBancoExtensions
         ArgumentNullException.ThrowIfNull(assembliesDosScripts);
 
         ILogger logger = contexto.GetService<ILoggerFactory>().CreateLogger(contexto.GetType());
-        await SubidaDoBanco
+        await PreparacaoDoBanco
             .ExecutarAsync(contexto, logger, assembliesDosScripts, etapaPosterior: null, cancellationToken)
             .ConfigureAwait(false);
     }

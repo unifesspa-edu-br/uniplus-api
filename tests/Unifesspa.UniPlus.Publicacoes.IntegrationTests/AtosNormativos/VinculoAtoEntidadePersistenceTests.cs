@@ -150,7 +150,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
         });
 
         erro.SqlState.Should().Be(UniqueViolation);
-        erro.ConstraintName.Should().Be("ux_linhagem_unica_por_objeto");
+        erro.ConstraintName.Should().Be("ux_vagas_de_linhagem_objeto_tipo");
         primeiro.Id.Should().NotBe(segundo.Id);
     }
 
@@ -278,7 +278,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         (await ctx.VinculosAtoEntidade.CountAsync(v => v.AtoId == ato.Id)).Should().Be(1);
-        (await ctx.LinhagensUnicasPorObjeto.AnyAsync(l => l.AtoId == ato.Id)).Should().BeFalse();
+        (await ctx.VagasDeLinhagem.AnyAsync(l => l.AtoId == ato.Id)).Should().BeFalse();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -289,8 +289,8 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
-        ctx.LinhagensUnicasPorObjeto.Add(
-            LinhagemUnicaPorObjeto.Criar(ato, ato.Vinculos.Single(), raizId: ato.Id));
+        ctx.VagasDeLinhagem.Add(
+            VagaDeLinhagem.Criar(ato, ato.Vinculos.Single(), raizId: ato.Id));
         await ctx.SaveChangesAsync();
 
         return ato;
@@ -339,7 +339,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private static string InsertVagaCru(Guid atoId, Guid raizId, string entidadeTipo, Guid entidadeId) =>
         $"""
-        INSERT INTO publicacoes.linhagem_unica_por_objeto
+        INSERT INTO publicacoes.vagas_de_linhagem
             (id, entidade_tipo, entidade_id, tipo_codigo, raiz_id, ato_id)
         VALUES ('{Guid.CreateVersion7()}', '{entidadeTipo}', '{entidadeId}', '{TipoUnico}', '{raizId}', '{atoId}')
         """;
@@ -361,6 +361,6 @@ public sealed class VinculoAtoEntidadePersistenceTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Registro,
-            versaoInvocada: null,
+            versaoDeConfiguracao: null,
             vinculos: vinculos);
 }

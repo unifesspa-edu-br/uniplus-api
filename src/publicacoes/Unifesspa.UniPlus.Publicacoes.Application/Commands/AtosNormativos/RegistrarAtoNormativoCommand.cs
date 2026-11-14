@@ -11,11 +11,11 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// escolhe o tipo: ele é resolvido no catálogo vigente no dia civil da publicação, no fuso institucional,
 /// e seus atributos de consequência (<c>congela_configuracao</c>, <c>efeito_irreversivel</c>) são
 /// copiados por valor server-side — o cliente não os informa, então não há como divergirem
-/// do catálogo (AC5).
+/// do catálogo.
 /// </summary>
 /// <remarks>
-/// <para>O par <see cref="VersaoInvocadaId"/>/<see cref="VersaoInvocadaHash"/> é
-/// recebido por valor, completo ou ausente (AC7): Publicações não resolve a
+/// <para>O par <see cref="VersaoDeConfiguracaoId"/>/<see cref="VersaoDeConfiguracaoHash"/> é
+/// recebido por valor, completo ou ausente: Publicações não resolve a
 /// versão de configuração — ela vive noutro módulo e chega já resolvida.</para>
 /// <para>O par <see cref="AtoRetificadoId"/>/<see cref="MotivoRetificacao"/> torna
 /// o registro uma retificação (ADR-0103), quando presente — simétrico (um existe
@@ -42,7 +42,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// não os herdasse sumiria da consulta do certame — que passaria a exibir a versão
 /// superada, escondendo a que a emenda. Declarar entidades novas continua permitido: o
 /// ato retificador pode passar a tratar de objeto que o retificado não declarava.</para>
-/// <para><see cref="RegistroPeloDominio"/> marca o registro que chega pela porta de escrita
+/// <para><see cref="ChegouPeloDominioDono"/> marca o registro que chega pela porta de escrita
 /// do domínio dono do objeto, o único que traz o arquivo do documento guardado. Fica FORA do
 /// wire (<c>JsonIgnore</c>) e vale <c>false</c> por padrão: todo outro chamador, o endpoint e
 /// qualquer um futuro, cai na recusa do ato que trata de objeto cujos atos pertencem ao seu
@@ -57,15 +57,15 @@ public sealed record RegistrarAtoNormativoCommand(
     DateOnly DataDoAto,
     string DocumentoHash,
     string Assinante,
-    Guid? VersaoInvocadaId = null,
-    string? VersaoInvocadaHash = null,
+    Guid? VersaoDeConfiguracaoId = null,
+    string? VersaoDeConfiguracaoHash = null,
     Guid? AtoRetificadoId = null,
     string? MotivoRetificacao = null,
     IReadOnlyList<VinculoEntidadeInput>? Vinculos = null,
     IReadOnlyList<AnexoDoAtoInput>? Anexos = null,
     [property: JsonIgnore] Guid? AtoId = null,
     [property: JsonIgnore] AtributosDoTipoAto? AtributosDoTipo = null,
-    [property: JsonIgnore] bool RegistroPeloDominio = false,
+    [property: JsonIgnore] bool ChegouPeloDominioDono = false,
     [property: JsonIgnore] DateTimeOffset? PublicadoEm = null) : ICommand<Result<RegistrarAtoNormativoResult>>;
 
 /// <summary>

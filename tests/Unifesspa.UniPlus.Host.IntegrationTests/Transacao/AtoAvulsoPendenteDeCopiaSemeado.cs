@@ -61,7 +61,7 @@ internal sealed record AtoAvulsoPendenteDeCopiaSemeado(Guid ProcessoId, Guid Ato
             processo.Id, numeroVersao: 1, Guid.CreateVersion7(), new string('a', 64), "teste",
             new FacetasDoCertameDivulgado(processo.IdentificadorLegivel!.Value.Valor, processo.Nome, "001/2026", ["AC"], agora.AddDays(-1), agora.AddDays(20)),
             "{}", agora);
-        divulgado.RegistrarEditalPendente(atoId, numeroVersao: null);
+        divulgado.AbrirEntradaDoAto(atoId, numeroVersao: null);
 
         return divulgado;
     }

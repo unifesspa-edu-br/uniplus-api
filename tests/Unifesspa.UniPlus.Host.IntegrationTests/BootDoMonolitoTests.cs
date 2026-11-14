@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// Prova de boot do monólito modular (P4 em runtime): o composition root sobe
-/// como um processo único e, no <c>StartAsync</c>, a subida do banco (scripts, a
+/// como um processo único e, no <c>StartAsync</c>, a preparaÃ§Ã£o do banco (scripts, a
 /// migration única e as etapas dos módulos) cria os schemas no banco <c>uniplus</c> e
 /// o Wolverine provisiona o outbox no schema <c>wolverine</c> — tudo sobre a MESMA connection.
 /// </summary>
@@ -50,7 +50,7 @@ public sealed class BootDoMonolitoTests
 
         schemas.Should().Contain(
             schema,
-            "a subida do banco (módulos) e o AutoBuildMessageStorageOnStartup (Wolverine) "
+            "a preparaÃ§Ã£o do banco (módulos) e o AutoBuildMessageStorageOnStartup (Wolverine) "
             + "devem materializar o schema no boot do processo único");
     }
 

@@ -66,7 +66,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         {
             ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(fechamento, processoId);
             SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(
-                tracked, new RetificacaoInfo(versao.AtoCriadorId, tracked.Rascunho!.Motivo)));
+                tracked, new RetificacaoDoEdital(versao.AtoCriadorId, tracked.Rascunho!.Motivo)));
 
             Result<VersaoConfiguracao> fechar = tracked.FecharRetificacao(
                 CorpusEnvelope.DadosRicos(), versao, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,

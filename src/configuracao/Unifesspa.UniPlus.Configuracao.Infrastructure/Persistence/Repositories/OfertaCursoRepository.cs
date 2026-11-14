@@ -96,8 +96,8 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             string padrao = "%" + termo + "%";
             query = query.Where(o =>
                 EF.Functions.ILike(o.NomeOrdenacao, padrao, EscapeDoLike)
-                || EF.Functions.ILike(PgFunctions.NormalizeForComparison(o.Codigo), padrao, EscapeDoLike)
-                || EF.Functions.ILike(PgFunctions.NormalizeForComparison(o.UnidadeSigla), padrao, EscapeDoLike));
+                || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.Codigo), padrao, EscapeDoLike)
+                || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.UnidadeSigla), padrao, EscapeDoLike));
         }
 
         // Contagem sobre a MESMA consulta que produziu a página (ADR-0026): o recorte por

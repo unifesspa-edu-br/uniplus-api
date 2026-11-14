@@ -24,7 +24,7 @@ internal static class ConsultasDaTransacaoNoBanco
 
     internal static Task<int> VagasDoObjetoAsync(IServiceProvider servicos, Guid objetoId) =>
         ConsultarAsync(servicos, contexto => contexto.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.linhagem_unica_por_objeto WHERE entidade_id = {objetoId}").SingleAsync());
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.vagas_de_linhagem WHERE entidade_id = {objetoId}").SingleAsync());
 
     /// <summary>As sessões que seguram alguma escrita em tabela do esquema do registro de atos, a transação retida do teste inclusive.</summary>
     internal static Task<int> EscritasEmPublicacoesAsync(IServiceProvider servicos) =>

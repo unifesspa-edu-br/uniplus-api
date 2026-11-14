@@ -18,6 +18,6 @@ internal sealed record BlocosDoEnvelope(
     BlocosDaConfiguracao Configuracao,
     BlocosDosDocumentos Documentos,
     BlocosDaPublicacao Publicacao,
-    RetificacaoInfo? Retificacao,
+    RetificacaoDoEdital? Retificacao,
     IReadOnlyList<NoExigencia> Raizes,
     BlocosDeColeta Coleta);

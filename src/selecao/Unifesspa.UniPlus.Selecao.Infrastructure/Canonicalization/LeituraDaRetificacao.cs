@@ -27,7 +27,7 @@ internal static class LeituraDaRetificacao
     internal static DomainError? VerificarCoerenciaComAVersao(
         VersaoConfiguracao versao,
         string hashDocumento,
-        RetificacaoInfo? retificacao)
+        RetificacaoDoEdital? retificacao)
     {
         if (!string.Equals(hashDocumento, versao.AtoCriadorHash, StringComparison.Ordinal))
         {
@@ -53,7 +53,7 @@ internal static class LeituraDaRetificacao
 
     private static DomainError Incoerente(string mensagem) => new(ErrosCodecEnvelope.EnvelopeIncoerenteComAVersao, mensagem);
 
-    internal static RetificacaoInfo? LerRetificacao(LeitorEnvelope leitor, JsonObject payload)
+    internal static RetificacaoDoEdital? LerRetificacao(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "retificacao", "$");
         leitor.ExigirChaves(bloco, "retificacao", "editalRetificadoId", "motivo");
@@ -61,6 +61,6 @@ internal static class LeituraDaRetificacao
         Guid atoRetificado = leitor.Identificador(bloco, "editalRetificadoId", "retificacao");
         string motivo = leitor.TextoNaoVazio(bloco, "motivo", "retificacao");
 
-        return leitor.Falhou ? null : new RetificacaoInfo(atoRetificado, motivo);
+        return leitor.Falhou ? null : new RetificacaoDoEdital(atoRetificado, motivo);
     }
 }

@@ -79,14 +79,14 @@ public sealed class CertameDivulgado : IIdentificavel
     /// evita uma coluna nova a cada campo que o contrato ganhe — e a forma continua declarada, pelo
     /// tipo que a projetou.
     /// </summary>
-    public string Certame { get; private set; } = null!;
+    public string DocumentoPublico { get; private set; } = null!;
 
     /// <summary>
     /// Os documentos de cada ato divulgado do processo, identificados pelo ato: o edital de cada versão,
     /// pelo ato que a criou, e o documento de cada ato que não cria versão. Fica fora do documento
-    /// <see cref="Certame"/> — que descreve só a versão vigente — e cresce a cada divulgação.
+    /// <see cref="DocumentoPublico"/> — que descreve só a versão vigente — e cresce a cada divulgação.
     /// </summary>
-    public IReadOnlyList<EditalDivulgado> EditaisDivulgados { get; private set; } = [];
+    public IReadOnlyList<AtoDivulgado> AtosDivulgados { get; private set; } = [];
 
     /// <summary>Instante em que esta divulgação foi materializada.</summary>
     public DateTimeOffset DivulgadoEm { get; private set; }
@@ -98,7 +98,7 @@ public sealed class CertameDivulgado : IIdentificavel
         string hashConfiguracao,
         string versaoProjecao,
         FacetasDoCertameDivulgado facetas,
-        string certame,
+        string documentoPublico,
         DateTimeOffset divulgadoEm)
     {
         ArgumentNullException.ThrowIfNull(facetas);
@@ -119,7 +119,7 @@ public sealed class CertameDivulgado : IIdentificavel
             ModalidadesOfertadas = [.. facetas.ModalidadesOfertadas],
             InscricoesDe = facetas.InscricoesDe,
             InscricoesAte = facetas.InscricoesAte,
-            Certame = certame,
+            DocumentoPublico = documentoPublico,
             DivulgadoEm = divulgadoEm,
         };
     }
@@ -134,7 +134,7 @@ public sealed class CertameDivulgado : IIdentificavel
         string hashConfiguracao,
         string versaoProjecao,
         FacetasDoCertameDivulgado facetas,
-        string certame,
+        string documentoPublico,
         DateTimeOffset divulgadoEm)
     {
         ArgumentNullException.ThrowIfNull(facetas);
@@ -155,7 +155,7 @@ public sealed class CertameDivulgado : IIdentificavel
         ModalidadesOfertadas = [.. facetas.ModalidadesOfertadas];
         InscricoesDe = facetas.InscricoesDe;
         InscricoesAte = facetas.InscricoesAte;
-        Certame = certame;
+        DocumentoPublico = documentoPublico;
         DivulgadoEm = divulgadoEm;
     }
 
@@ -163,16 +163,16 @@ public sealed class CertameDivulgado : IIdentificavel
     /// Registra a entrada do ato que o comando acabou de divulgar, ainda sem endereço. Um ato divulga uma
     /// vez: repetir a entrada é erro de programação.
     /// </summary>
-    public void RegistrarEditalPendente(Guid atoId, int? numeroVersao)
+    public void AbrirEntradaDoAto(Guid atoId, int? numeroVersao)
     {
-        if (EditaisDivulgados.Any(e => e.AtoId == atoId))
+        if (AtosDivulgados.Any(e => e.AtoId == atoId))
         {
             throw new InvalidOperationException($"O ato {atoId} já tem entrada na divulgação do processo {Id}.");
         }
 
         // Lista nova, e não mutação da atual: o rastreador detecta a mudança por comparação do
         // valor, e a instância antiga pode estar compartilhada com quem a leu.
-        EditaisDivulgados = [.. EditaisDivulgados, EditalDivulgado.Pendente(atoId, numeroVersao)];
+        AtosDivulgados = [.. AtosDivulgados, AtoDivulgado.SemEndereco(atoId, numeroVersao)];
     }
 
     /// <summary>
@@ -190,16 +190,16 @@ public sealed class CertameDivulgado : IIdentificavel
             return false;
         }
 
-        EditaisDivulgados = [.. EditaisDivulgados.Select(e => e.AtoId == atoId ? e with { UrlDownload = urlDownload, Documentos = documentos } : e)];
+        AtosDivulgados = [.. AtosDivulgados.Select(e => e.AtoId == atoId ? e with { UrlDownload = urlDownload, Documentos = documentos } : e)];
 
         return true;
     }
 
-    private EditalDivulgado EntradaDoAto(Guid atoId) =>
-        EditaisDivulgados.SingleOrDefault(e => e.AtoId == atoId)
+    private AtoDivulgado EntradaDoAto(Guid atoId) =>
+        AtosDivulgados.SingleOrDefault(e => e.AtoId == atoId)
         ?? throw new InvalidOperationException($"O ato {atoId} não tem entrada na divulgação do processo {Id}.");
 
     /// <summary>Se a cópia ao acervo dos documentos do ato já registrou o endereço.</summary>
     public bool CopiouOsDocumentosDoAto(Guid atoId) =>
-        EditaisDivulgados.Any(e => e.AtoId == atoId && e.UrlDownload is not null);
+        AtosDivulgados.Any(e => e.AtoId == atoId && e.UrlDownload is not null);
 }

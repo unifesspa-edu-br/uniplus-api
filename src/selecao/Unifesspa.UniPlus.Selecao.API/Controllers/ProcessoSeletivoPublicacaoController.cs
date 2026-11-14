@@ -72,7 +72,7 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-        Description = "Outra publicação concorrente congelou uma versão da configuração entre a leitura e a gravação desta (reler o processo e resubmeter), o identificador legível já é de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+        Description = "Outra publicação concorrente congelou uma versão da configuração entre a leitura e a gravação desta (reler o processo e resubmeter), o identificador legível já é de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
         Guid id,

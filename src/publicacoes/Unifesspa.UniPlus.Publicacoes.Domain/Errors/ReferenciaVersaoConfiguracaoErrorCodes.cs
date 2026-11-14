@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Códigos de erro do value object <c>ReferenciaVersaoConfiguracao</c>. O
-/// agregado traduz a falha para <c>AtoNormativo.VersaoInvocadaIncompleta</c>
+/// agregado traduz a falha para <c>AtoNormativo.VersaoDeConfiguracaoIncompleta</c>
 /// antes de devolvê-la, mas os códigos ficam registrados para que a propagação
 /// direta responda 422 em vez do 500 genérico do mapper.
 /// </summary>

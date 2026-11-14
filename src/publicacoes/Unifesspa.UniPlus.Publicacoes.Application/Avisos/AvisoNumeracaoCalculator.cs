@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
 /// <summary>
-/// Computa o aviso de número duplicado (AC4) de um ato — diagnóstico do estado
+/// Computa o aviso de número duplicado de um ato — diagnóstico do estado
 /// atual, derivado na leitura, nunca persistido. Compartilhado entre o registro e
 /// o detalhe; o conjunto <c>excluir</c> tira do diagnóstico os atos que não são
 /// colisão: o próprio ato (no detalhe) e o ato que este retifica (uma

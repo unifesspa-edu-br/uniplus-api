@@ -68,8 +68,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     documento_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    versao_invocada_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    versao_invocada_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
+                    versao_de_configuracao_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    versao_de_configuracao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
                     ato_retificado_id = table.Column<Guid>(type: "uuid", nullable: true),
                     motivo_retificacao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
                 },
@@ -80,9 +80,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_ato_normativo_documento_hash", "documento_hash ~ '^[0-9a-f]{64}$'");
                     table.CheckConstraint("ck_ato_normativo_nao_autorretifica", "ato_retificado_id IS NULL OR ato_retificado_id <> id");
                     table.CheckConstraint("ck_ato_normativo_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
-                    table.CheckConstraint("ck_ato_normativo_versao_completa", "(versao_invocada_id IS NULL AND versao_invocada_hash IS NULL) OR (versao_invocada_id IS NOT NULL AND versao_invocada_hash IS NOT NULL)");
-                    table.CheckConstraint("ck_ato_normativo_versao_hash", "versao_invocada_hash IS NULL OR versao_invocada_hash ~ '^[0-9a-f]{64}$'");
-                    table.CheckConstraint("ck_ato_normativo_versao_id_nao_zero", "versao_invocada_id IS NULL OR versao_invocada_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.CheckConstraint("ck_ato_normativo_versao_de_configuracao_completa", "(versao_de_configuracao_id IS NULL AND versao_de_configuracao_hash IS NULL) OR (versao_de_configuracao_id IS NOT NULL AND versao_de_configuracao_hash IS NOT NULL)");
+                    table.CheckConstraint("ck_ato_normativo_versao_de_configuracao_hash", "versao_de_configuracao_hash IS NULL OR versao_de_configuracao_hash ~ '^[0-9a-f]{64}$'");
+                    table.CheckConstraint("ck_ato_normativo_versao_de_configuracao_id_nao_zero", "versao_de_configuracao_id IS NULL OR versao_de_configuracao_id <> '00000000-0000-0000-0000-000000000000'");
                     table.ForeignKey(
                         name: "fk_ato_normativo_ato_retificado",
                         column: x => x.ato_retificado_id,
@@ -251,8 +251,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     modalidades_ofertadas = table.Column<string[]>(type: "text[]", nullable: false),
                     inscricoes_de = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     inscricoes_ate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    certame = table.Column<string>(type: "jsonb", nullable: false),
-                    editais_divulgados = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público."),
+                    documento_publico = table.Column<string>(type: "jsonb", nullable: false),
+                    atos_divulgados = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público."),
                     divulgado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     nome_ordenacao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, collation: "C"),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
@@ -400,7 +400,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     status = table.Column<short>(type: "smallint", nullable: false),
                     response_status = table.Column<int>(type: "integer", nullable: true),
                     response_headers_json = table.Column<string>(type: "jsonb", nullable: true),
-                    response_body_cipher = table.Column<byte[]>(type: "bytea", nullable: true),
+                    encrypted_response_body = table.Column<byte[]>(type: "bytea", nullable: true),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
@@ -1322,7 +1322,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "linhagem_unica_por_objeto",
+                name: "vagas_de_linhagem",
                 schema: "publicacoes",
                 columns: table => new
                 {
@@ -1335,19 +1335,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_linhagem_unica_por_objeto", x => x.id);
-                    table.CheckConstraint("ck_linhagem_unica_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
-                    table.CheckConstraint("ck_linhagem_unica_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
-                    table.CheckConstraint("ck_linhagem_unica_raiz_nao_zero", "raiz_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.PrimaryKey("pk_vagas_de_linhagem", x => x.id);
+                    table.CheckConstraint("ck_vagas_de_linhagem_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.CheckConstraint("ck_vagas_de_linhagem_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                    table.CheckConstraint("ck_vagas_de_linhagem_raiz_nao_zero", "raiz_id <> '00000000-0000-0000-0000-000000000000'");
                     table.ForeignKey(
-                        name: "fk_linhagem_unica_ato",
+                        name: "fk_vagas_de_linhagem_ato",
                         column: x => x.ato_id,
                         principalSchema: "publicacoes",
                         principalTable: "ato_normativo",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_linhagem_unica_raiz",
+                        name: "fk_vagas_de_linhagem_raiz",
                         column: x => x.raiz_id,
                         principalSchema: "publicacoes",
                         principalTable: "ato_normativo",
@@ -3424,7 +3424,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
                     publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    slug_da_unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     identificador_legivel_do_processo = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     item_do_edital = table.Column<string>(type: "character varying(160)", maxLength: 160, nullable: true),
                     documento_principal_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -5729,6 +5729,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_certames_divulgados_divulgado_em",
+                schema: "selecao",
+                table: "certames_divulgados",
+                column: "divulgado_em");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_certames_divulgados_modalidades",
                 schema: "selecao",
                 table: "certames_divulgados",
@@ -5746,12 +5752,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "certames_divulgados",
                 columns: new[] { "inscricoes_ate", "id" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_certames_divulgados_revisao",
-                schema: "selecao",
-                table: "certames_divulgados",
-                column: "divulgado_em");
 
             migrationBuilder.CreateIndex(
                 name: "ux_certames_divulgados_ato_criador",
@@ -6258,13 +6258,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "configuracao_classificacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "idx_idempotency_expires_at",
+                name: "ix_idempotency_cache_expires_at",
                 schema: "plataforma",
                 table: "idempotency_cache",
                 column: "expires_at");
 
             migrationBuilder.CreateIndex(
-                name: "idx_idempotency_lookup",
+                name: "ux_idempotency_cache_scope_endpoint_key",
                 schema: "plataforma",
                 table: "idempotency_cache",
                 columns: new[] { "scope", "endpoint", "idempotency_key" },
@@ -6413,25 +6413,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao",
                 table: "liberacoes_da_reclassificacao",
                 column: "ordem_na_trilha",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_linhagem_unica_por_objeto_ato_id",
-                schema: "publicacoes",
-                table: "linhagem_unica_por_objeto",
-                column: "ato_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_linhagem_unica_por_objeto_raiz_id",
-                schema: "publicacoes",
-                table: "linhagem_unica_por_objeto",
-                column: "raiz_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_linhagem_unica_por_objeto",
-                schema: "publicacoes",
-                table: "linhagem_unica_por_objeto",
-                columns: new[] { "entidade_tipo", "entidade_id", "tipo_codigo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7223,6 +7204,25 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "unidade_id", "tipo_identificador", "vigencia_inicio" });
 
             migrationBuilder.CreateIndex(
+                name: "ix_vagas_de_linhagem_ato_id",
+                schema: "publicacoes",
+                table: "vagas_de_linhagem",
+                column: "ato_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_vagas_de_linhagem_raiz_id",
+                schema: "publicacoes",
+                table: "vagas_de_linhagem",
+                column: "raiz_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_vagas_de_linhagem_objeto_tipo",
+                schema: "publicacoes",
+                table: "vagas_de_linhagem",
+                columns: new[] { "entidade_tipo", "entidade_id", "tipo_codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_vagas_ofertadas_configuracao_modalidade",
                 schema: "selecao",
                 table: "vagas_ofertadas",
@@ -7602,10 +7602,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "linhagem_unica_por_objeto",
-                schema: "publicacoes");
-
-            migrationBuilder.DropTable(
                 name: "migracoes_da_concessao",
                 schema: "autorizacao");
 
@@ -7800,6 +7796,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "unidade_identificador_historico",
                 schema: "organizacao");
+
+            migrationBuilder.DropTable(
+                name: "vagas_de_linhagem",
+                schema: "publicacoes");
 
             migrationBuilder.DropTable(
                 name: "vagas_ofertadas",

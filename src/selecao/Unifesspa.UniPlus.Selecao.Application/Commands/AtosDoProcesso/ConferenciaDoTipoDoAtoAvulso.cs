@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Confere no catálogo de Publicações, antes de enviar o ato, que o tipo declarado serve a um ato
+/// Confere no catálogo de Publicações, antes de publicar o ato, que o tipo declarado serve a um ato
 /// avulso: vigora no dia da publicação, não congela configuração e o catálogo o declara publicável
 /// como documento avulso.
 /// </summary>

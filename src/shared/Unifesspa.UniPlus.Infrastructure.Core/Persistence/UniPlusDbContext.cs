@@ -18,22 +18,22 @@ public abstract class UniPlusDbContext : DbContext, IUnitOfWork
     {
     }
 
-    protected abstract IReadOnlyList<IContribuicaoDoModulo> Modulos { get; }
+    protected abstract IReadOnlyList<IContribuicaoDoModulo> Contribuicoes { get; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        ComposicaoDoModelo.Compor(modelBuilder, Modulos);
+        ComposicaoDoModelo.Compor(modelBuilder, Contribuicoes);
         base.OnModelCreating(modelBuilder);
     }
 
     /// <summary>
-    /// Sobe o banco do contexto: scripts <c>Pre</c>, migrations e scripts pós, sob a trava do banco. As etapas posteriores
-    /// das contribuições pedem o provider da aplicação e rodam só pela subida do host.
+    /// Prepara o banco do contexto: scripts <c>Pre</c>, migrations e scripts pós, sob a trava do banco. As etapas posteriores
+    /// das contribuições pedem o provider da aplicação e rodam só pela preparação do host.
     /// </summary>
-    public Task SubirOBancoAsync(CancellationToken cancellationToken = default) =>
-        SubidaDoBancoExtensions.SubirOBancoAsync(this, ScriptsDasContribuicoes.Assemblies(Modulos), cancellationToken);
+    public Task PrepararOBancoAsync(CancellationToken cancellationToken = default) =>
+        PreparacaoDoBancoExtensions.PrepararOBancoAsync(this, ScriptsDasContribuicoes.Assemblies(Contribuicoes), cancellationToken);
 
     public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
     {

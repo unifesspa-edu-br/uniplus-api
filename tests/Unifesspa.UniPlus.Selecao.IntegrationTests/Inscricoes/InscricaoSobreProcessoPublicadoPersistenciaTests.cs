@@ -190,7 +190,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         DadosEdital dados,
         string hash64,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos,
-        RetificacaoInfo? retificacao = null)
+        RetificacaoDoEdital? retificacao = null)
     {
         // O conjunto básico do candidato (sempre presente num formulário de inscrição) traz onze
         // fatos de seleção (nacionalidade, órgão emissor e UF do RG, estado civil, sexo, sexo civil, identidade de
@@ -1503,7 +1503,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         string hash = new('4', 64);
         ProcessoSeletivoRepository processos = new(db, TimeProvider.System);
         VersaoConfiguracao anterior = (await processos.ObterVersoesAsync(processoId, CancellationToken.None)).MaxBy(static v => v.NumeroVersao)!;
-        SnapshotCanonico congelado = CongelarProcesso(retificado, dados, hash, valoresDosCampos: null, new RetificacaoInfo(anterior.AtoCriadorId, "Retificação de teste"));
+        SnapshotCanonico congelado = CongelarProcesso(retificado, dados, hash, valoresDosCampos: null, new RetificacaoDoEdital(anterior.AtoCriadorId, "Retificação de teste"));
         VersaoConfiguracao sucessora = VersaoConfiguracao.Suceder(
             anterior, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, Guid.CreateVersion7(), hash,
             anterior.AtoCriadorId, "integration-test-user", TimeProvider.System.GetUtcNow());

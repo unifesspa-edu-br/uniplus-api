@@ -60,23 +60,23 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Guarda a versão invocada e o ato retificado quando o ato os declara")]
+    [Fact(DisplayName = "Guarda a versão de configuração e o ato retificado quando o ato os declara")]
     public async Task Registrar_ComVersaoECorrecao_GuardaOsDois()
     {
         AtoNormativo retificado = AtoExistente(Tipo, congela: true);
         _atos.ObterPorIdParaLeituraAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificado);
         AtoNormativo? adicionado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => adicionado = a), Arg.Any<CancellationToken>());
-        VersaoInvocadaDoAto versao = new(Guid.CreateVersion7(), Hash);
+        VersaoDeConfiguracaoDoAto versao = new(Guid.CreateVersion7(), Hash);
 
         Result resultado = await _porta.RegistrarAsync(
-            Ato() with { VersaoInvocada = versao, Correcao = new(retificado.Id, "corrige o anexo II") },
+            Ato() with { VersaoDeConfiguracao = versao, Retificacao = new(retificado.Id, "corrige o anexo II") },
             CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         adicionado!.AtoRetificadoId.Should().Be(retificado.Id);
         adicionado.MotivoRetificacao.Should().Be("corrige o anexo II");
-        adicionado.VersaoInvocada!.Id.Should().Be(versao.Id);
+        adicionado.VersaoDeConfiguracao!.Id.Should().Be(versao.Id);
     }
 
     [Fact(DisplayName = "Recusa a vaga ocupada pelo ato do mesmo tipo e o nomeia pela numeração, sem gravar")]
@@ -92,15 +92,15 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo);
         resultado.Error.Message.Should().Contain("EDITAL nº 13/2026").And.NotContain(ocupante.Id.ToString());
         await _atos.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
-        await _atos.DidNotReceiveWithAnyArgs().AdicionarLinhagemAsync(default!, default);
+        await _atos.DidNotReceiveWithAnyArgs().ReservarVagaAsync(default!, default);
     }
 
     [Fact(DisplayName = "Recusa a vaga ocupada por outra linhagem e nomeia o ato que a abriu pela numeração")]
     public async Task Registrar_VagaDeOutraLinhagem_RecusaCitandoARaiz()
     {
         AtoNormativo raiz = AtoExistente(Tipo, congela: true);
-        _atos.ObterLinhagemDoObjetoAsync(Objeto, Arg.Any<Guid>(), Tipo, Arg.Any<CancellationToken>())
-            .Returns(LinhagemUnicaPorObjeto.Criar(raiz, raiz.Vinculos.First(), raiz.Id));
+        _atos.ObterVagaDoObjetoAsync(Objeto, Arg.Any<Guid>(), Tipo, Arg.Any<CancellationToken>())
+            .Returns(VagaDeLinhagem.Criar(raiz, raiz.Vinculos.First(), raiz.Id));
         _atos.ObterPorIdParaLeituraAsync(raiz.Id, Arg.Any<CancellationToken>()).Returns(raiz);
 
         Result resultado = await _porta.RegistrarAsync(Ato(unicoPorObjeto: true), CancellationToken.None);
@@ -109,8 +109,8 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         resultado.Error.Message.Should().Contain("EDITAL nº 13/2026").And.NotContain(raiz.Id.ToString());
     }
 
-    [Fact(DisplayName = "Recusa a retificação da raiz já retificada e nomeia o retificador pela numeração, sem GUID")]
-    public async Task Registrar_RaizJaRetificada_RecusaCitandoORetificador()
+    [Fact(DisplayName = "Recusa a retificação do ato já retificado e nomeia o retificador pela numeração, sem GUID")]
+    public async Task Registrar_AtoJaRetificado_RecusaCitandoORetificador()
     {
         AtoNormativo retificado = AtoExistente(Tipo, congela: true);
         AtoNormativo retificador = AtoExistente(Tipo, congela: true, numero: "14");
@@ -118,9 +118,9 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         _atos.ObterRetificadorAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificador);
 
         Result resultado = await _porta.RegistrarAsync(
-            Ato() with { Correcao = new(retificado.Id, "corrige o anexo II") }, CancellationToken.None);
+            Ato() with { Retificacao = new(retificado.Id, "corrige o anexo II") }, CancellationToken.None);
 
-        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.RaizJaRetificada);
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.AtoJaRetificado);
         resultado.Error.Message.Should().Contain("EDITAL nº 14/2026")
             .And.NotContain(retificado.Id.ToString()).And.NotContain(retificador.Id.ToString());
         await _atos.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
@@ -137,8 +137,8 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
     }
 
     [Theory(DisplayName = "Traduz a violação de unicidade do registro de atos na recusa que a nomeia")]
-    [InlineData("ux_linhagem_unica_por_objeto", AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo)]
-    [InlineData("ux_ato_normativo_retificado", AtoNormativoErrorCodes.RaizJaRetificada)]
+    [InlineData("ux_vagas_de_linhagem_objeto_tipo", AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo)]
+    [InlineData("ux_ato_normativo_retificado", AtoNormativoErrorCodes.AtoJaRetificado)]
     public void TraduzirConflitoDaGravacao_ConstraintDoRegistro_NomeiaARecusa(string constraint, string codigo)
     {
         DbUpdateException violacao = new("falha", PostgresExceptionFactory.Create("23505", constraint));
@@ -166,7 +166,7 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
             Ano = 2026,
             Numero = "13",
             TipoCodigo = Tipo,
-            TipoConferido = new(CongelaConfiguracao: true, unicoPorObjeto, EfeitoIrreversivel: false, "Edital de abertura"),
+            AtributosDoTipo = new(CongelaConfiguracao: true, unicoPorObjeto, EfeitoIrreversivel: false, "Edital de abertura"),
             DataDoAto = DataDoAto,
             PublicadoEm = PublicadoEm,
             DocumentoHash = Hash,
@@ -180,5 +180,5 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         AtoNormativo.Registrar(
             Guid.CreateVersion7(), "CEPS", "EDITAL", 2026, numero, tipo,
             congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: true,
-            DataDoAto, Hash, "Jairo Belchior", PublicadoEm, versaoInvocada: null, vinculos: [(Objeto, ProcessoDoTeste)]);
+            DataDoAto, Hash, "Jairo Belchior", PublicadoEm, versaoDeConfiguracao: null, vinculos: [(Objeto, ProcessoDoTeste)]);
 }

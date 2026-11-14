@@ -121,3 +121,13 @@ O módulo continua, com as tabelas no esquema `publicacoes`, a rota `/api/public
 - [ADR-0004](0004-outbox-transacional-via-wolverine.md) — outbox transacional
 - [ADR-0042](0042-application-nao-depende-diretamente-de-dbcontext.md) — a aplicação não depende do contexto
 - [ADR-0097](0097-topologia-de-deploy-em-tres-apis-monolito-modular.md) — topologia do monólito
+
+## Emenda 1 (2026-11-14) — gravação única e conflito traduzido pelo dono da regra
+
+Quando um comando chama uma porta de escrita, a gravação é uma só, no fim, e nenhuma escrita direta (`ExecuteUpdate`, `ExecuteDelete`, SQL cru) a antecede: o descarte das alterações não desfaz o que foi escrito por fora do rastreador. Toda recusa por unicidade aflora nessa gravação. Quem chama traduz a violação pela própria porta, que é dona dos nomes das suas restrições, descarta as alterações não salvas e devolve a recusa nomeada, sem nada gravado e sem evento.
+
+A recusa `AtoNormativo.AtoJaRetificado`, que a ADR-0107 cita como `RaizJaRetificada`, vale para qualquer ato da cadeia que já tenha retificador, e não só para a raiz: a cadeia é linear, e a nova retificação emenda a cabeça. Na ADR-0107, a tabela da vaga passa a se chamar `publicacoes.vagas_de_linhagem`.
+
+O efeito posterior que escreve na linha de um processo, como a cópia ao acervo, trava o processo antes de tocar a linha, na ordem desta ADR, e faz o trabalho externo fora da trava.
+
+**Consequências.** A recusa sem resíduo vale por construção. A tradução do conflito vive num lugar só. O efeito posterior não disputa a linha com quem publica.

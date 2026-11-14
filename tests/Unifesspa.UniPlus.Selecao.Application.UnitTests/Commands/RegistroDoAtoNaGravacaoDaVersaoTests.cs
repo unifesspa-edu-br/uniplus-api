@@ -21,9 +21,9 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
 {
     private const string IndiceDoNumeroDaVersao = "ux_versoes_configuracao_processo_numero";
     private const string IndiceDoIdentificadorLegivelDivulgado = "ux_certames_divulgados_identificador_legivel";
-    private const string IndiceDaVagaDoObjeto = "ux_linhagem_unica_por_objeto";
+    private const string IndiceDaVagaDoObjeto = "ux_vagas_de_linhagem_objeto_tipo";
 
-    private static readonly DomainError RaizJaRetificada = new("AtoNormativo.RaizJaRetificada", "O ato EDITAL nº 1/2026 já foi retificado.");
+    private static readonly DomainError AtoJaRetificado = new("AtoNormativo.AtoJaRetificado", "O ato EDITAL nº 1/2026 já foi retificado.");
 
     public static TheoryData<OperacaoQueCongela> Atos() =>
         [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar, OperacaoQueCongela.FecharRetificacao];
@@ -48,7 +48,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         });
     }
 
-    [Theory(DisplayName = "A porta recebe o ato da versão gravada, com o instante, a versão invocada, o vínculo e a retificação")]
+    [Theory(DisplayName = "A porta recebe o ato da versão gravada, com o instante, a versão de configuração, o vínculo e a retificação")]
     [MemberData(nameof(Atos))]
     public async Task Sucesso_EntregaAPortaOAtoDaVersao(OperacaoQueCongela operacao)
     {
@@ -58,10 +58,10 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
 
         entregue.AtoId.Should().Be(gravada.AtoCriadorId);
         entregue.PublicadoEm.Should().Be(gravada.VigenteAPartirDe);
-        entregue.VersaoInvocada.Should().Be(new VersaoInvocadaDoAto(gravada.Id, gravada.HashConfiguracao));
+        entregue.VersaoDeConfiguracao.Should().Be(new VersaoDeConfiguracaoDoAto(gravada.Id, gravada.HashConfiguracao));
         entregue.Vinculos.Should().ContainSingle().Which.Should().Be(
             new VinculoDoAtoPublicado(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, cenario.Processo.Id));
-        (entregue.Correcao is null).Should().Be(operacao == OperacaoQueCongela.Publicar);
+        (entregue.Retificacao is null).Should().Be(operacao == OperacaoQueCongela.Publicar);
     }
 
     private static async Task<(VersaoConfiguracao Gravada, AtoNormativoPublicado Entregue)> ExecutarCapturandoAsync(CenarioDeRecusaNoCongelamento cenario)
@@ -84,11 +84,11 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         cenario.Servicos.Registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(RaizJaRetificada));
+            .Returns(Result.Failure(AtoJaRetificado));
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
 
-        resposta.Error.Should().Be(RaizJaRetificada);
+        resposta.Error.Should().Be(AtoJaRetificado);
         eventos.Should().BeEmpty();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await cenario.Servicos.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -101,7 +101,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         cenario.Servicos.Registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(RaizJaRetificada));
+            .Returns(Result.Failure(AtoJaRetificado));
 
         await cenario.ExecutarAsync();
 
@@ -115,11 +115,11 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade(IndiceDaVagaDoObjeto);
         cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(violacao);
-        cenario.Servicos.Registro.TraduzirConflitoDaGravacao(violacao).Returns(RaizJaRetificada);
+        cenario.Servicos.Registro.TraduzirConflitoDaGravacao(violacao).Returns(AtoJaRetificado);
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
 
-        resposta.Error.Should().Be(RaizJaRetificada);
+        resposta.Error.Should().Be(AtoJaRetificado);
         eventos.Should().BeEmpty();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());

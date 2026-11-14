@@ -63,8 +63,8 @@ public sealed class MontagemDoAtoNormativoTests
         await _tipos.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
     }
 
-    [Fact(DisplayName = "Recusa a retificação de uma raiz que já foi retificada")]
-    public async Task Montar_RaizJaRetificada_Recusa()
+    [Fact(DisplayName = "Recusa a retificação de um ato que já foi retificado")]
+    public async Task Montar_AtoJaRetificado_Recusa()
     {
         TipoVigente(unicoPorObjeto: false);
         AtoNormativo retificado = AtoExistente(unicoPorObjeto: false);
@@ -74,7 +74,7 @@ public sealed class MontagemDoAtoNormativoTests
         Result<AtoMontado> montado = await Montar(
             Comando() with { AtoRetificadoId = retificado.Id, MotivoRetificacao = "corrige o anexo" });
 
-        montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.RaizJaRetificada);
+        montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.AtoJaRetificado);
     }
 
     [Fact(DisplayName = "Recusa a vaga do objeto ocupada por outro ato vivo do mesmo tipo, sem reservar vaga")]
@@ -89,7 +89,7 @@ public sealed class MontagemDoAtoNormativoTests
         Result<AtoMontado> montado = await Montar(Comando() with { Vinculos = [new("OBJETO_A", Guid.CreateVersion7())] });
 
         montado.Error!.Code.Should().Be(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo);
-        await _atos.DidNotReceive().AdicionarLinhagemAsync(Arg.Any<LinhagemUnicaPorObjeto>(), Arg.Any<CancellationToken>());
+        await _atos.DidNotReceive().ReservarVagaAsync(Arg.Any<VagaDeLinhagem>(), Arg.Any<CancellationToken>());
     }
 
     private Task<Result<AtoMontado>> Montar(RegistrarAtoNormativoCommand comando) =>
@@ -108,7 +108,7 @@ public sealed class MontagemDoAtoNormativoTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto,
-            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoInvocada: null);
+            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoDeConfiguracao: null);
 
     private static RegistrarAtoNormativoCommand Comando() =>
         new(

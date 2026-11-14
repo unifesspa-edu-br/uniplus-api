@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 /// não se transfere nem se libera — não há revogação de ato publicado.
 /// </para>
 /// </remarks>
-public sealed class LinhagemUnicaPorObjeto : IForensicEntity
+public sealed class VagaDeLinhagem : IForensicEntity
 {
     public Guid Id { get; private init; } = Guid.CreateVersion7();
 
@@ -57,7 +57,7 @@ public sealed class LinhagemUnicaPorObjeto : IForensicEntity
     public Guid AtoId { get; private init; }
 
     // EF Core materialization
-    private LinhagemUnicaPorObjeto()
+    private VagaDeLinhagem()
     {
     }
 
@@ -67,7 +67,7 @@ public sealed class LinhagemUnicaPorObjeto : IForensicEntity
     /// <paramref name="ato"/> — não são recebidos soltos, e por isso não podem divergir
     /// dele.
     /// </summary>
-    public static LinhagemUnicaPorObjeto Criar(AtoNormativo ato, VinculoAtoEntidade vinculo, Guid raizId)
+    public static VagaDeLinhagem Criar(AtoNormativo ato, VinculoAtoEntidade vinculo, Guid raizId)
     {
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(vinculo);
@@ -83,7 +83,7 @@ public sealed class LinhagemUnicaPorObjeto : IForensicEntity
                 "Só um ato de tipo único por objeto reserva a vaga de um objeto.");
         }
 
-        return new LinhagemUnicaPorObjeto
+        return new VagaDeLinhagem
         {
             EntidadeTipo = vinculo.EntidadeTipo,
             EntidadeId = vinculo.EntidadeId,

@@ -44,7 +44,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IRegistroCodecsEnvelope registroCodecs,
         ITipoAtoPublicadoReader tipoDeAtoReader,
-        IRegistroDeAtoNormativo registroDeAtos,
+        IRegistroDeAtoNormativo registroCentralDeAtos,
         IUserContext userContext,
         IUnitOfWork unitOfWork,
         LeituraDoInstanteDaPublicacao leituraDoInstante,
@@ -57,7 +57,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
-        ArgumentNullException.ThrowIfNull(registroDeAtos);
+        ArgumentNullException.ThrowIfNull(registroCentralDeAtos);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(leituraDoInstante);
@@ -76,7 +76,7 @@ public static class PublicarProdutoDoEditalCommandHandler
             .TravarAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        Result<ProcessoDivulgadoConferido> conferenciaDoProcesso = await EnvioDoAtoDoProcesso
+        Result<ProcessoDivulgadoConferido> conferenciaDoProcesso = await PublicacaoDoAtoDoProcesso
             .ConferirProcessoDivulgadoAsync(processoSeletivoRepository, certameDivulgadoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoProcesso.IsFailure)
@@ -84,14 +84,14 @@ public static class PublicarProdutoDoEditalCommandHandler
             return Recusa(conferenciaDoProcesso.Error!);
         }
 
-        Result<InstanteDaPublicacao> publicacao = leituraDoInstante.Ler();
-        if (publicacao.IsFailure)
+        Result<InstanteDaPublicacao> instante = leituraDoInstante.Ler();
+        if (instante.IsFailure)
         {
-            return Recusa(publicacao.Error!);
+            return Recusa(instante.Error!);
         }
 
         Result<GrafoVigente> vigente = await GrafoVigenteDoProcesso
-            .LerAsync(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, publicacao.Value.Instante, cancellationToken)
+            .LerAsync(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, instante.Value.Instante, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {
@@ -109,7 +109,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         ProjecaoDosProdutosPrevistos.Declarado produto = conferenciaDoProduto.Value!;
 
         Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoProdutoDoEdital
-            .TipoAsync(tipoDeAtoReader, produto, vigente.Value!.TiposDeAto, publicacao.Value.Dia, cancellationToken)
+            .TipoAsync(tipoDeAtoReader, produto, vigente.Value!.TiposDeAto, instante.Value.Dia, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoTipo.IsFailure)
         {
@@ -146,15 +146,15 @@ public static class PublicarProdutoDoEditalCommandHandler
             return Recusa(conferenciaDosDocumentos.Error!);
         }
 
-        return await EnvioDoAtoDoProcesso
-            .EnviarAsync(
-                new AtoAEnviar(
+        return await PublicacaoDoAtoDoProcesso
+            .PublicarAsync(
+                new AtoAPublicar(
                     command.ProcessoSeletivoId,
                     conferenciaDoProcesso.Value!,
                     tipo,
                     command.Numero,
                     command.DataDoAto,
-                    publicacao.Value.Instante,
+                    instante.Value.Instante,
                     command.Assinante,
                     conferenciaDosDocumentos.Value!,
                     command.AtoCorrigidoId,
@@ -162,7 +162,7 @@ public static class PublicarProdutoDoEditalCommandHandler
                     ItemDoEdital: produto.Item,
                     PoliticaConfirmadaPorSub: conferenciaDaPolitica.Value),
                 atoDoProcessoRepository,
-                registroDeAtos,
+                registroCentralDeAtos,
                 unitOfWork,
                 cancellationToken)
             .ConfigureAwait(false);

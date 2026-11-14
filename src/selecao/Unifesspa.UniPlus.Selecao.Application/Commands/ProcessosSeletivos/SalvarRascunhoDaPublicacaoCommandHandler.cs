@@ -5,11 +5,12 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 // O detector de conflito de gravação mora no slice dos motivos de isenção, onde nasceu;
 // reconhece a exceção do EF pelo nome do tipo para não trazer o ORM à camada Application.
 
-using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 
 /// <summary>
 /// Handler de <see cref="SalvarRascunhoDaPublicacaoCommand"/>.
@@ -103,7 +104,7 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (string.Equals(
-            UniqueConstraintViolation.GetViolatedConstraint(ex), IndiceDoOperador, StringComparison.Ordinal))
+            ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex), IndiceDoOperador, StringComparison.Ordinal))
         {
             // Duas gravações do mesmo operador chegaram juntas: ambas leram que não havia
             // rascunho e ambas inseriram. O índice deixa passar uma — e a perda desta corrida

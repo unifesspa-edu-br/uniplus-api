@@ -51,18 +51,18 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoEAVagaAsync(
         Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, CancellationToken cancellationToken)
     {
-        Result<InstanteDaPublicacao> publicacao = instantes.Ler();
+        Result<InstanteDaPublicacao> instante = instantes.Ler();
 
-        return publicacao.IsFailure
-            ? Result<AtoEDocumentoConferidos>.Failure(publicacao.Error!)
-            : await ConferirOTipoNoDiaAsync(processoId, ato, documento, publicacao.Value, cancellationToken).ConfigureAwait(false);
+        return instante.IsFailure
+            ? Result<AtoEDocumentoConferidos>.Failure(instante.Error!)
+            : await ConferirOTipoNoDiaAsync(processoId, ato, documento, instante.Value, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoNoDiaAsync(
-        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, InstanteDaPublicacao publicacao, CancellationToken cancellationToken)
+        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, InstanteDaPublicacao instante, CancellationToken cancellationToken)
     {
         Result<TipoAtoPublicadoView> tipoDoAto = await ConferenciaDoTipoDeAto
-            .CongelaConfiguracaoAsync(tiposDeAto, ato, publicacao.Dia, cancellationToken)
+            .CongelaConfiguracaoAsync(tiposDeAto, ato, instante.Dia, cancellationToken)
             .ConfigureAwait(false);
         if (tipoDoAto.IsFailure)
         {
@@ -73,6 +73,6 @@ public sealed class ConferenciaDoAtoEDoDocumento(
             .ObterAtosCriadoresAsync(processoId, cancellationToken)
             .ConfigureAwait(false);
 
-        return Result<AtoEDocumentoConferidos>.Success(new(ato, documento, tipoDoAto.Value!, atosDaLinhagem, publicacao));
+        return Result<AtoEDocumentoConferidos>.Success(new(ato, documento, tipoDoAto.Value!, atosDaLinhagem, instante));
     }
 }

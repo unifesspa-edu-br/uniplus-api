@@ -222,7 +222,7 @@ Os arquivos são recursos embutidos (`<EmbeddedResource Include="Persistence\Scr
 
 Os objetos compartilhados existem **uma vez só**, no conjunto `Infrastructure.Core/Persistence/Scripts/Pre`, que roda primeiro: `btree_gist` e a função `plataforma.normalizar_para_comparacao`. **Script de um módulo não referencia o esquema de outro.** Sementes por código (as que dependem de regra da aplicação) ficam na etapa posterior do módulo (`IContribuicaoDoModulo.ExecutarEtapaPosteriorDaMigrationAsync`), depois dos scripts pós.
 
-Para subir um banco de teste por inteiro (scripts `Pre`, migration e scripts pós), as fixtures chamam `UniPlusDbContext.SubirOBancoAsync()`.
+Para subir um banco de teste por inteiro (scripts `Pre`, migration e scripts pós), as fixtures chamam `UniPlusDbContext.PrepararOBancoAsync()`.
 
 ### Em produção / standalone
 

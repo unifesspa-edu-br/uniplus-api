@@ -188,7 +188,7 @@ public sealed class UnidadeRepository : IUnidadeRepository
     // decompõe em NFD e descarta NonSpacingMark (diacríticos). Usado para
     // normalizar o TERMO de busca em C# antes de montá-lo como padrão ILIKE,
     // evitando uma chamada de DB function no lado do parâmetro. Os campos da
-    // entidade passam por immutable_unaccent() server-side via PgFunctions.
+    // entidade passam por immutable_unaccent() server-side via FuncoesDaPlataforma.
     private static string RemoverDiacriticos(string texto)
     {
         string decomposto = texto.Normalize(NormalizationForm.FormD);

@@ -19,7 +19,7 @@ public sealed record SnapshotCanonico(byte[] Bytes, string SchemaVersion, string
 /// <see langword="null"/> na publicação de abertura — o envelope de abertura
 /// mantém exatamente os 33 blocos, sem o bloco de retificação.
 /// </summary>
-public sealed record RetificacaoInfo(Guid EditalRetificadoId, string Motivo);
+public sealed record RetificacaoDoEdital(Guid EditalRetificadoId, string Motivo);
 
 /// <summary>
 /// Um valor do conjunto fechado de um fato categórico estático, congelado junto do
@@ -179,7 +179,7 @@ public sealed record EntradaCanonicalizacao(
     /// mudaria de resultado quando o padrão institucional mudasse.
     /// </summary>
     string FusoHorario,
-    RetificacaoInfo? Retificacao = null,
+    RetificacaoDoEdital? Retificacao = null,
     ResultadoConformidade? Conformidade = null,
     IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados = null,
     IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados = null,

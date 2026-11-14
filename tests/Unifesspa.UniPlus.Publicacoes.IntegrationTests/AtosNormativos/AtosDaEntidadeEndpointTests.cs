@@ -444,7 +444,7 @@ public sealed class AtosDaEntidadeEndpointTests
                 Ano = 2026,
                 Numero = numero,
                 TipoCodigo = tipoCodigo,
-                TipoConferido = new AtributosDoTipoAto(true, false, false, "Tipo de teste"),
+                AtributosDoTipo = new AtributosDoTipoAto(true, false, false, "Tipo de teste"),
                 DataDoAto = new DateOnly(2026, 3, 13),
                 PublicadoEm = new DateTimeOffset(2026, 3, 13, 15, 0, 0, TimeSpan.Zero),
                 DocumentoHash = HashValido,

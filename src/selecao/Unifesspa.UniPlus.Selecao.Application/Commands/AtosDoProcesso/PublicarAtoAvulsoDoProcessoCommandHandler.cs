@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <b>Quem recusa o quê.</b> A Seleção confere o que é dela, antes de qualquer escrita. O que é do registro
 /// central — a vaga do objeto e a cadeia de retificação — é recusado pela porta, na mesma transação, com erro
 /// nomeado e nada gravado. O que o documento avulso e a publicação de um item do edital partilham — gravar o
-/// registro e entregá-lo à porta — está em <see cref="EnvioDoAtoDoProcesso"/>.
+/// registro e entregá-lo à porta — está em <see cref="PublicacaoDoAtoDoProcesso"/>.
 /// </remarks>
 public static class PublicarAtoAvulsoDoProcessoCommandHandler
 {
@@ -32,7 +32,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         IAtoDoProcessoRepository atoDoProcessoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         ITipoAtoPublicadoReader tipoDeAtoReader,
-        IRegistroDeAtoNormativo registroDeAtos,
+        IRegistroDeAtoNormativo registroCentralDeAtos,
         IUnitOfWork unitOfWork,
         LeituraDoInstanteDaPublicacao leituraDoInstante,
         CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
-        ArgumentNullException.ThrowIfNull(registroDeAtos);
+        ArgumentNullException.ThrowIfNull(registroCentralDeAtos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(leituraDoInstante);
 
@@ -61,7 +61,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             .TravarAsync(command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        Result<ProcessoDivulgadoConferido> conferenciaDoProcesso = await EnvioDoAtoDoProcesso
+        Result<ProcessoDivulgadoConferido> conferenciaDoProcesso = await PublicacaoDoAtoDoProcesso
             .ConferirProcessoDivulgadoAsync(processoSeletivoRepository, certameDivulgadoRepository, command.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoProcesso.IsFailure)
@@ -69,14 +69,14 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             return Recusa(conferenciaDoProcesso.Error!);
         }
 
-        Result<InstanteDaPublicacao> publicacao = leituraDoInstante.Ler();
-        if (publicacao.IsFailure)
+        Result<InstanteDaPublicacao> instante = leituraDoInstante.Ler();
+        if (instante.IsFailure)
         {
-            return Recusa(publicacao.Error!);
+            return Recusa(instante.Error!);
         }
 
         Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoTipoDoAtoAvulso
-            .ConferirAsync(tipoDeAtoReader, command.TipoAtoCodigo, publicacao.Value.Dia, cancellationToken)
+            .ConferirAsync(tipoDeAtoReader, command.TipoAtoCodigo, instante.Value.Dia, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoTipo.IsFailure)
         {
@@ -115,21 +115,21 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             return Recusa(conferenciaDosDocumentos.Error!);
         }
 
-        return await EnvioDoAtoDoProcesso
-            .EnviarAsync(
-                new AtoAEnviar(
+        return await PublicacaoDoAtoDoProcesso
+            .PublicarAsync(
+                new AtoAPublicar(
                     command.ProcessoSeletivoId,
                     conferenciaDoProcesso.Value!,
                     tipo,
                     command.Numero,
                     command.DataDoAto,
-                    publicacao.Value.Instante,
+                    instante.Value.Instante,
                     command.Assinante,
                     conferenciaDosDocumentos.Value!,
                     command.AtoCorrigidoId,
                     command.MotivoDaCorrecao),
                 atoDoProcessoRepository,
-                registroDeAtos,
+                registroCentralDeAtos,
                 unitOfWork,
                 cancellationToken)
             .ConfigureAwait(false);

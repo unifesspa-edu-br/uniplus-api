@@ -52,7 +52,7 @@ public sealed class RestauradorDeConfiguracao(IRegistroCodecsEnvelope registro) 
         // corrente emitiria bytes de 1.2, e a comparação com uma 1.1 congelada acusaria uma
         // divergência que nada tem a ver com a fidelidade da reidratação.
         //
-        // A RetificacaoInfo é a ORIGINAL, recuperada do próprio bloco `retificacao`: ela não
+        // A RetificacaoDoEdital é a ORIGINAL, recuperada do próprio bloco `retificacao`: ela não
         // vem do agregado (é parâmetro externo da canonicalização), e sem ela a versão N>1
         // recanonicalizaria sem o bloco retificacao, que a acrescenta aos blocos da abertura.
         //

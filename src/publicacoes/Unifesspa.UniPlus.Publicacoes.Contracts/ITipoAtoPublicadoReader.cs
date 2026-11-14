@@ -12,23 +12,23 @@ namespace Unifesspa.UniPlus.Publicacoes.Contracts;
 public interface ITipoAtoPublicadoReader
 {
     /// <summary>
-    /// Versão vigente do tipo na <paramref name="dataPublicacao"/>, ou
+    /// Versão vigente do tipo na <paramref name="diaDaPublicacao"/>, ou
     /// <see langword="null"/> quando o catálogo não tem versão vigente do código nessa data
     /// — a mesma resolução que Publicações faz ao registrar.
     /// </summary>
     Task<TipoAtoPublicadoView?> ObterVigenteAsync(
         string codigo,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// As versões vigentes na <paramref name="dataPublicacao"/> dos tipos de
+    /// As versões vigentes na <paramref name="diaDaPublicacao"/> dos tipos de
     /// <paramref name="codigos"/>, numa só leitura. O código sem versão vigente não aparece no
     /// resultado; a resolução é a mesma de <see cref="ObterVigenteAsync"/>.
     /// </summary>
     Task<IReadOnlyList<TipoAtoPublicadoView>> ListarVigentesAsync(
         IReadOnlyCollection<string> codigos,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken = default);
 }
 

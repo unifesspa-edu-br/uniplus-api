@@ -164,7 +164,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
                 $"A cadeia de retificação do ato {atoId} não tem raiz única — a linearidade foi violada no banco.");
     }
 
-    public Task<LinhagemUnicaPorObjeto?> ObterLinhagemDoObjetoAsync(
+    public Task<VagaDeLinhagem?> ObterVagaDoObjetoAsync(
         string entidadeTipo,
         Guid entidadeId,
         string tipoCodigo,
@@ -176,17 +176,17 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         string tipoNorm = entidadeTipo.Trim();
         string codigoNorm = tipoCodigo.Trim();
 
-        return _dbContext.LinhagensUnicasPorObjeto
+        return _dbContext.VagasDeLinhagem
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 l => l.EntidadeTipo == tipoNorm && l.EntidadeId == entidadeId && l.TipoCodigo == codigoNorm,
                 cancellationToken);
     }
 
-    public async Task AdicionarLinhagemAsync(LinhagemUnicaPorObjeto linhagem, CancellationToken cancellationToken)
+    public async Task ReservarVagaAsync(VagaDeLinhagem vaga, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(linhagem);
-        await _dbContext.LinhagensUnicasPorObjeto.AddAsync(linhagem, cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(vaga);
+        await _dbContext.VagasDeLinhagem.AddAsync(vaga, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<(string EntidadeTipo, Guid EntidadeId)>> ListarVinculosDoAtoAsync(
