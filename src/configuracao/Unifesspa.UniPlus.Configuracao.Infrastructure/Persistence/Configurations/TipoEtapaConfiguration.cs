@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -43,6 +44,12 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
         builder.Property(tipo => tipo.Ativo).IsRequired();
         builder.Property(tipo => tipo.AdmitePontuacao).IsRequired();
         builder.Property(tipo => tipo.AdmiteEliminacao).IsRequired();
+
+        // Token de concorrência otimista na coluna de sistema `xmin` do Postgres (shadow property
+        // `uint` + IsRowVersion, sem coluna nem migration própria). O PUT substitui o conjunto de
+        // conceitos admitidos; sem o token, duas edições concorrentes do mesmo tipo gravariam sem
+        // saber uma da outra. Quem confirma por último recebe DbUpdateConcurrencyException (ADR-0119).
+        builder.Property<uint>("Version").IsRowVersion();
         builder.Property(tipo => tipo.NotaDeOrigemNoEnem)
             .IsRequired()
             .HasComment("Nota das etapas deste tipo vem do ENEM; definido só pela carga do cadastro, nunca pela API.");
@@ -73,7 +80,7 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
                 juncao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
                 juncao.ToTable(JuncaoDosConceitosAdmitidos, tabela => tabela.HasComment(
                     "Tipos de conceito com que as etapas de um tipo de etapa podem ser avaliadas."));
-                juncao.HasKey("TipoEtapaId", "TipoConceitoId");
+                juncao.HasKey("TipoEtapaId", "TipoConceitoId").HasName(RestricoesDoBanco.TipoDeEtapaConceitoAdmitidoChave);
                 juncao.IndexerProperty<Guid>("TipoEtapaId").HasComment("Tipo de etapa que admite o conceito.");
                 juncao.IndexerProperty<Guid>("TipoConceitoId").HasComment("Tipo de conceito admitido pelo tipo de etapa.");
             });

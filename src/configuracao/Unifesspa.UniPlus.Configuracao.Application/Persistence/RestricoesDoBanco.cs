@@ -41,6 +41,14 @@ public static class RestricoesDoBanco
 
     public const string ReferenciaDemograficaCensoVivo = "ix_referencias_demograficas_censo_vivo";
 
+    public const string TipoDeConceitoValorCodigoUnico = "ix_valores_tipo_conceito_codigo";
+
+    public const string TipoDeConceitoValorRotuloUnico = "ix_valores_tipo_conceito_rotulo";
+
+    public const string TipoDeConceitoValorPosicaoUnica = "ix_valores_tipo_conceito_posicao";
+
+    public const string TipoDeEtapaConceitoAdmitidoChave = "pk_tipos_etapa_conceitos";
+
     public const string TipoDeBancaCodigoVivo = "ix_tipos_de_banca_codigo_vivo";
 
     public const string TipoDeDeficienciaCodigoVivo = "ix_tipos_de_deficiencia_codigo_vivo";

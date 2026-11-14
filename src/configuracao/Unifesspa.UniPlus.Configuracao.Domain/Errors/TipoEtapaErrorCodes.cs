@@ -23,4 +23,5 @@ public static class TipoEtapaErrorCodes
     public const string NotaDeOrigemNoEnemNaoDesativa = "TipoEtapa.NotaDeOrigemNoEnemNaoDesativa";
     public const string NaoEncontrado = "TipoEtapa.NaoEncontrado";
     public const string JaDesativado = "TipoEtapa.JaDesativado";
+    public const string ConflitoDeConcorrencia = "TipoEtapa.ConflitoDeConcorrencia";
 }

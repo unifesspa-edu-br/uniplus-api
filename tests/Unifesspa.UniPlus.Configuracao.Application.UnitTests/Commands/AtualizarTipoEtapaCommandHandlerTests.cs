@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
@@ -167,5 +170,20 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         existente.ConceitosAdmitidos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) ao substituir os conceitos descarta o rastreamento e devolve o conflito")]
+    public async Task Handle_ConflitoDeConcorrencia_DescartaRastreamentoEDevolveConflito()
+    {
+        TipoEtapa existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(existente.Id, "Nome atualizado", true, true, []));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoEtapaErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 }
