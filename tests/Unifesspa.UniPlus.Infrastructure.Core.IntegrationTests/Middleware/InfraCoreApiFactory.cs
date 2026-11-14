@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 //   - TestAuthHandler plugado (scheme "Test")
 //   - ICacheService trocado por FakeInMemoryCacheService (sem Redis)
 //   - UseEnvironment("Development") — reusa appsettings.Development.json do host
-//   - 5 connection strings fake + Auth metadata fornecidos pela base, que o host
+//   - connection string fake (`UniPlusDb`) + Auth metadata fornecidos pela base, que o host
 //     lê em boot (rejeita whitespace) sem nunca abrir conexão real.
 [SuppressMessage(
     "Performance",

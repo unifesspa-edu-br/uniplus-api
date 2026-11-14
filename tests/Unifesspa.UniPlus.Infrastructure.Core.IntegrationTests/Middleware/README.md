@@ -52,7 +52,7 @@ public sealed class MeuMiddlewareSmokeTests : IClassFixture<InfraCoreApiFactory>
 Se o middleware exigir configuração específica (ex.: feature flag, header
 adicional, scheme de auth diferente), derivar uma fixture nova:
 
-A `MonolitoApiFactory` já fornece as 5 connection strings + Auth dummy e troca o
+A `MonolitoApiFactory` já fornece a connection string (`UniPlusDb`) + Auth dummy e troca o
 cache por um fake. Para overrides extras, sobrescrever o hook `OverridesAdicionais`
 (aplicado depois dos defaults, vence chaves duplicadas):
 
