@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 
 using System.Diagnostics.CodeAnalysis;
 
-// DisableParallelization=true protege a env var ConnectionStrings__ConfiguracaoDb
+// DisableParallelization=true protege a env var ConnectionStrings__UniPlusDb
 // contra interleaving com outras coleções de teste no mesmo processo.
 [CollectionDefinition(Name, DisableParallelization = true)]
 [SuppressMessage(

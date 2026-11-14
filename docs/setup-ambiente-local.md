@@ -116,7 +116,7 @@ cd ..
 dotnet run --project src/host/Unifesspa.UniPlus.Host
 ```
 
-A API usa o `appsettings.Development.json` do Host, com connection strings de todos os módulos apontando para `localhost`.
+A API usa o `appsettings.Development.json` do Host, com a connection string única (`UniPlusDb`) dos módulos internos apontando para `localhost`.
 
 A instalação dos gestores só aceita e-mail em domínio institucional: antes do `dotnet run`, exporte no mesmo shell
 as três chaves `Autorizacao__Instalacao__DominiosInstitucionais__0..2` com `unifesspa.edu.br`,

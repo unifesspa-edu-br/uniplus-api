@@ -31,7 +31,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE DATABASE keycloak;
 
 -- ISOLAMENTO — decisão em aberto para o ADR ("role-por-schema vs role única"):
--- por ora, as 6 connection strings do host usam o superusuário `uniplus` (dono
+-- por ora, a connection string do host (`UniPlusDb`) usa o superusuário `uniplus` (dono
 -- do banco), o que basta para bootar e provar o monólito. A variante recomendada
 -- (role-por-schema: `uniplus_<modulo>` com USAGE/CREATE apenas no seu schema +
 -- `search_path` dedicado, e um role de outbox no schema `wolverine`) fica para o
