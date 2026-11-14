@@ -39,6 +39,7 @@ internal sealed class ConfiguracaoDomainErrorRegistration : IDomainErrorRegistra
         .. TipoProcessoErrorMappings.Todos,
         .. ModeloFormularioErrorMappings.Todos,
         .. TipoEtapaErrorMappings.Todos,
+        .. TipoConceitoErrorMappings.Todos,
         .. CursoErrorMappings.Todos,
         .. OfertaCursoErrorMappings.Todos,
         .. CalendarioDiasUteisErrorMappings.Todos,

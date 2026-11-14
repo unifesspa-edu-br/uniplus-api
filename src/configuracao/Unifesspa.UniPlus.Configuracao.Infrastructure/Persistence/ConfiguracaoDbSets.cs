@@ -40,6 +40,8 @@ public static class ConfiguracaoDbSets
 
         public DbSet<TipoEtapa> TiposEtapa => contexto.Set<TipoEtapa>();
 
+        public DbSet<TipoConceito> TiposConceito => contexto.Set<TipoConceito>();
+
         public DbSet<Curso> Cursos => contexto.Set<Curso>();
 
         public DbSet<OfertaCurso> OfertasCurso => contexto.Set<OfertaCurso>();
