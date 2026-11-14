@@ -53,6 +53,6 @@ public static class ObterAtoDoProcessoQueryHandler
             ? Result<AtoDoProcesso>.Success(ato)
             : Result<AtoDoProcesso>.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.NaoEncontrado,
-                $"Ato {query.AtoId} não encontrado no processo {query.ProcessoSeletivoId}."));
+                "Ato do processo não encontrado."));
     }
 }

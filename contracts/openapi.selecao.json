@@ -331,7 +331,7 @@
             }
           },
           "404": {
-            "description": "O processo n\u00E3o existe ou o ato n\u00E3o existe nele (uniplus.selecao.ato_do_processo.nao_encontrado); o ato de outro processo responde igual ao inexistente.",
+            "description": "O processo n\u00E3o existe (uniplus.selecao.processo_seletivo.nao_encontrado) ou o ato n\u00E3o existe nele (uniplus.selecao.ato_do_processo.nao_encontrado); o ato de outro processo responde igual ao inexistente.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
