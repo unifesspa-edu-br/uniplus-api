@@ -890,6 +890,7 @@ configuracao.tipos_etapa.nome: Interno
 configuracao.tipos_etapa.nota_de_origem_no_enem: Interno
 configuracao.tipos_etapa.updated_at: Interno
 configuracao.tipos_etapa.updated_by: Pessoal
+configuracao.tipos_etapa.xmin: Interno
 configuracao.tipos_etapa_conceitos.tipo_conceito_id: Interno
 configuracao.tipos_etapa_conceitos.tipo_etapa_id: Interno
 configuracao.tipos_processo.ativo: Interno

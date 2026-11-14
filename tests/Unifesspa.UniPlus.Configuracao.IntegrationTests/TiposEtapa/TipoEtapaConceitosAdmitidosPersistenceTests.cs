@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -79,9 +80,62 @@ public sealed class TipoEtapaConceitosAdmitidosPersistenceTests
         erro.SqlState.Should().Be(PostgresErrorCodes.RestrictViolation, "ON DELETE RESTRICT recusa o delete: o tipo de conceito se desativa, não se apaga");
     }
 
+    [Fact(DisplayName = "Duas edições que só trocam os conceitos admitidos, a partir da mesma leitura: a segunda é recusada em vez de se combinar com a primeira")]
+    public async Task EdicaoConcorrenteSoDosConceitos_ASegundaEhRecusada()
+    {
+        TipoConceito primeiro = Conceito(TiposConceitoHttpDeTeste.CodigoUnico());
+        TipoConceito segundo = Conceito(TiposConceitoHttpDeTeste.CodigoUnico());
+        TipoEtapa tipo = await GravarTipoComConceitosNoCatalogoAsync(primeiro, segundo);
+
+        Exception? recusa = await SubstituirEmDuasLeiturasAsync(tipo.Id, primeiro.Id, segundo.Id);
+
+        recusa.Should().BeAssignableTo<DbUpdateException>("a segunda edição não pode gravar por cima da primeira");
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
+        (await CodigosAdmitidosAsync(leitura, tipo.Id)).Should().Equal(primeiro.Codigo);
+    }
+
+    [Fact(DisplayName = "Duas edições que admitem o mesmo conceito a partir da mesma leitura: a colisão vem pela chave da junção, a que o tradutor reconhece")]
+    public async Task EdicaoConcorrenteDoMesmoConceito_ColidePelaChaveDaJuncao()
+    {
+        TipoConceito conceito = Conceito(TiposConceitoHttpDeTeste.CodigoUnico());
+        TipoEtapa tipo = await GravarTipoComConceitosNoCatalogoAsync(conceito);
+
+        Exception? recusa = await SubstituirEmDuasLeiturasAsync(tipo.Id, conceito.Id, conceito.Id);
+
+        PostgresException violacao = recusa.Should().BeOfType<DbUpdateException>().Which.InnerException.Should().BeOfType<PostgresException>().Which;
+        (violacao.SqlState, violacao.ConstraintName).Should().Be((PostgresErrorCodes.UniqueViolation, RestricoesDoBanco.TipoDeEtapaConceitoAdmitidoChave));
+    }
+
+    private async Task<TipoEtapa> GravarTipoComConceitosNoCatalogoAsync(params TipoConceito[] conceitos)
+    {
+        await GravarConceitosAsync(conceitos);
+        return await GravarTipoAsync();
+    }
+
+    // As duas leituras acontecem antes de qualquer gravação; devolve o que a segunda gravação lançou, se lançou.
+    private async Task<Exception?> SubstituirEmDuasLeiturasAsync(Guid tipoEtapaId, Guid conceitoDaPrimeira, Guid conceitoDaSegunda)
+    {
+        await using UniPlusDbContext contextoA = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext contextoB = _fixture.CreateDbContext(userId: null);
+        TipoEtapa lidoA = await contextoA.TiposEtapa.Include(t => t.ConceitosAdmitidos).SingleAsync(t => t.Id == tipoEtapaId);
+        TipoEtapa lidoB = await contextoB.TiposEtapa.Include(t => t.ConceitosAdmitidos).SingleAsync(t => t.Id == tipoEtapaId);
+
+        lidoA.SubstituirConceitosAdmitidos([await contextoA.Set<TipoConceito>().SingleAsync(c => c.Id == conceitoDaPrimeira)]);
+        await contextoA.SaveChangesAsync();
+        lidoB.SubstituirConceitosAdmitidos([await contextoB.Set<TipoConceito>().SingleAsync(c => c.Id == conceitoDaSegunda)]);
+        return await Record.ExceptionAsync(() => contextoB.SaveChangesAsync());
+    }
+
     private static TipoConceito Conceito(string codigo) => TipoConceito.Criar(
         codigo,
         new DefinicaoInformada("Nota da entrevista", null, "numerico", new EscalaInformada(0m, 10m, 2), null)).Value!;
+
+    private async Task GravarConceitosAsync(params TipoConceito[] conceitos)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+        ctx.Set<TipoConceito>().AddRange(conceitos);
+        await ctx.SaveChangesAsync();
+    }
 
     private async Task<TipoEtapa> GravarTipoAsync(params TipoConceito[] conceitos)
     {

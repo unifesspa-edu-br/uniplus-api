@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -73,7 +75,24 @@ public static class AtualizarTipoEtapaCommandHandler
         }
 
         tipo.SubstituirConceitosAdmitidos(admitidos);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result.Success();
+        return await Salvar(unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Endpoint com [RequiresIdempotencyKey]: o conflito do xmin não propaga (ADR-0119). O descarte
+    // impede que o SaveChangesAsync do outbox reencontre a substituição da junção depois do retorno.
+    private static async Task<Result> Salvar(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
+        }
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex) || ColisaoDeSubstituicaoConcorrente.Ocorreu(ex))
+        {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result.Failure(new DomainError(
+                TipoEtapaErrorCodes.ConflitoDeConcorrencia,
+                "Este tipo de etapa foi alterado concorrentemente. Tente novamente."));
+        }
     }
 }
