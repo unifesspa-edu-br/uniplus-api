@@ -9,7 +9,7 @@ using Kernel.Results;
 
 /// <summary>
 /// Fecha a sessão editorial (ADR-0110): congela a versão N+1 <b>com a
-/// configuração editada</b>, registra o ato por mensagem durável e encerra a sessão — tudo
+/// configuração editada</b>, registra o ato em Publicações e encerra a sessão — tudo
 /// na mesma transação.
 /// </summary>
 /// <remarks>
@@ -19,10 +19,10 @@ using Kernel.Results;
 /// documento.
 /// </para>
 /// <para>
-/// As conferências são <b>as mesmas</b> do atalho atômico, e pela mesma razão: o ato é
-/// registrado depois, por mensagem durável (ADR-0108), então o que o catálogo de Publicações
-/// recusaria tem de ser recusado <b>aqui</b>, com 422, antes de qualquer escrita — senão a
-/// versão sai congelada, o cliente recebe 204, e a recusa vira dead letter.
+/// As conferências são <b>as mesmas</b> do atalho atômico, e pela mesma razão: o que o catálogo de
+/// Publicações recusaria tem de ser recusado <b>aqui</b>, antes de qualquer escrita. A recusa do
+/// registro central, como a vaga do objeto ocupada ou o ato já retificado, vem da porta, na mesma
+/// transação, e desfaz tudo.
 /// </para>
 /// <para>
 /// <b>Uma recusa não destrói a sessão.</b> Se o congelamento for negado — conformidade

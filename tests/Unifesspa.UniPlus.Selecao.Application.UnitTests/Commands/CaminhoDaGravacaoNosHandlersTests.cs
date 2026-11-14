@@ -5,8 +5,8 @@ using AwesomeAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
+using Unifesspa.UniPlus.Kernel.Domain.Events;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -40,9 +40,9 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         });
     }
 
-    [Theory(DisplayName = "No sucesso a resposta traz o registro do ato da versão gravada e a cópia dos documentos do mesmo ato, e só eles nos eventos do ato")]
+    [Theory(DisplayName = "No sucesso os eventos são os do agregado e a cópia dos documentos do ato gravado, e nenhuma mensagem de registro")]
     [MemberData(nameof(Atos))]
-    public async Task Sucesso_RespondeComORegistroDoAtoDaVersaoGravada(OperacaoQueCongela operacao)
+    public async Task Sucesso_RespondeComOsEventosDoAgregadoEACopiaAoAcervo(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         VersaoConfiguracao? gravada = null;
@@ -51,11 +51,9 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
 
         (_, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
 
-        RegistrarAtoNormativoRequisicao requisicao = eventos.Should().ContainSingle(static e => e is RegistrarAtoNormativoRequisicao)
-            .Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>().Subject;
         eventos.Last().Should().Be(new CopiarDocumentosDoAtoAoAcervo(cenario.Processo.Id, gravada!.AtoCriadorId));
-        requisicao.AtoId.Should().Be(gravada.AtoCriadorId);
-        (requisicao.AtoRetificadoId is null).Should().Be(operacao == OperacaoQueCongela.Publicar);
+        eventos.OfType<CopiarDocumentosDoAtoAoAcervo>().Should().ContainSingle();
+        eventos.Where(static e => e is not CopiarDocumentosDoAtoAoAcervo).Should().OnlyContain(static e => e is IDomainEvent);
     }
 
     [Theory(DisplayName = "O flush que viola a unicidade do número da versão recusa e não apaga o rascunho")]

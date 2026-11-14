@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
@@ -14,6 +15,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -23,15 +25,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// compartilhado, depois o processo, depois o ato.
 /// </summary>
 /// <remarks>
-/// <para><b>O que garante hoje.</b> Um handler de teste, que segue a ordem, trava uma linha do catálogo da Configuração, o
-/// processo (<c>IProcessoSeletivoRepository.TravarAsync</c>) e só então grava em Publicações. Uma segunda transação, que o teste
-/// mantém aberta, faz o handler esperar num ponto conhecido, e a conferência vê, por <c>FOR UPDATE NOWAIT</c> noutra sessão, o
-/// que ele já tinha travado: esperando pelo ato, ele mantém o recurso e o processo; esperando pelo processo, mantém o
-/// recurso. A ordem inversa apareceria como trava ainda livre.</para>
-/// <para><b>O que depende da porta de escrita.</b> A porta de escrita no <c>Contracts</c> de Publicações ainda não existe, e
-/// nenhuma operação do produto trava o recurso compartilhado. Por isso o handler é do teste, e o teste não prova que as
-/// operações reais seguem a ordem: quando a porta existir, cada operação que grava em Publicações a atravessa depois de
-/// travar o processo, e a mesma conferência passa a rodar sobre o handler real, no lugar deste.</para>
+/// <para><b>O que garante.</b> Um handler de teste, que segue a ordem, trava uma linha do catálogo da Configuração, o
+/// processo (<c>IProcessoSeletivoRepository.TravarAsync</c>) e só então registra o ato pela porta de escrita de Publicações.
+/// Uma segunda transação, que o teste mantém aberta, faz o handler esperar num ponto conhecido, e a conferência vê, por
+/// <c>FOR UPDATE NOWAIT</c> noutra sessão, o que ele já tinha travado: esperando pelo ato, ele mantém o recurso e o
+/// processo; esperando pelo processo, mantém o recurso e ainda não tocou nenhuma tabela de Publicações. A ordem inversa
+/// apareceria como trava ainda livre, ou como escrita em Publicações antes da trava do processo.</para>
+/// <para><b>O limite.</b> O handler é do teste: ele prova que a porta cabe na ordem, e a ordem de cada operação do produto é
+/// conferida nos testes de cada uma.</para>
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
 [SuppressMessage(
@@ -56,30 +57,34 @@ public sealed class OrdemDeTravasEntreModulosNoHostTests : IClassFixture<HostCom
     public async Task EsperandoPeloAto_JaTravouORecursoEOProcesso()
     {
         Guid processoId = await SemearProcessoAsync();
-        string codigo = NovoCodigo();
+        string tipo = await SemearTipoAsync();
 
         Result resultado = await ExecutarEsperandoAsync(
-            new GravarNaOrdemDasTravas(processoId, codigo),
-            dona => GravarTipoSemConfirmarAsync(dona, codigo),
+            new GravarNaOrdemDasTravas(processoId, NovoCodigo(), tipo),
+            dona => RegistrarSemConfirmarAsync(dona, processoId, tipo),
             async () => await ConferirTravadasAsync(TravaDoRecursoSemEspera, TravaDoProcessoSemEspera(processoId)));
 
-        resultado.IsSuccess.Should().BeTrue();
-        (await ConsultasDaTransacaoNoBanco.TiposAsync(_servicos, codigo)).Should().Be(1);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        (await ConsultasDaTransacaoNoBanco.VagasDoObjetoAsync(_servicos, processoId)).Should().Be(1, "o ato do comando reservou a vaga depois que a transação retida soltou");
     }
 
-    [Fact(DisplayName = "Quem espera pelo processo já travou o recurso compartilhado")]
-    public async Task EsperandoPeloProcesso_JaTravouORecurso()
+    [Fact(DisplayName = "Quem espera pelo processo já travou o recurso compartilhado e ainda não escreveu em Publicações")]
+    public async Task EsperandoPeloProcesso_JaTravouORecurso_ENaoEscreveuEmPublicacoes()
     {
         Guid processoId = await SemearProcessoAsync();
-        string codigo = NovoCodigo();
+        string tipo = await SemearTipoAsync();
 
         Result resultado = await ExecutarEsperandoAsync(
-            new GravarNaOrdemDasTravas(processoId, codigo),
+            new GravarNaOrdemDasTravas(processoId, NovoCodigo(), tipo),
             dona => TravarProcessoSemConfirmarAsync(dona, processoId),
-            async () => await ConferirTravadasAsync(TravaDoRecursoSemEspera));
+            async () =>
+            {
+                await ConferirTravadasAsync(TravaDoRecursoSemEspera);
+                (await ConsultasDaTransacaoNoBanco.EscritasEmPublicacoesAsync(_servicos)).Should().Be(0, "nenhuma escrita em Publicações antes da trava do processo");
+            });
 
-        resultado.IsSuccess.Should().BeTrue();
-        (await ConsultasDaTransacaoNoBanco.TiposAsync(_servicos, codigo)).Should().Be(1);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        (await ConsultasDaTransacaoNoBanco.VagasDoObjetoAsync(_servicos, processoId)).Should().Be(1);
     }
 
     private static string NovoCodigo() => CodigoDeTesteDaTransacao.Novo("TRAVAS");
@@ -102,11 +107,23 @@ public sealed class OrdemDeTravasEntreModulosNoHostTests : IClassFixture<HostCom
         return processo.Id;
     }
 
-    private static async Task GravarTipoSemConfirmarAsync(TransacaoRetidaDeTeste dona, string codigo)
+    private async Task<string> SemearTipoAsync()
     {
-        UniPlusDbContext contexto = dona.Servicos.GetRequiredService<UniPlusDbContext>();
-        contexto.Set<Unifesspa.UniPlus.Publicacoes.Domain.Entities.TipoAtoPublicado>().Add(GravarEmDoisModulosHandler.NovoTipo(codigo));
-        await contexto.SaveChangesAsync();
+        string tipo = CodigoDeTesteDaTransacao.Novo("TIPO_TRAVAS");
+        await CatalogoDeAtosDeTeste.SemearTipoAsync(_servicos, tipo, unicoPorObjeto: true);
+
+        return tipo;
+    }
+
+    /// <summary>Registra, na transação retida, o ato que ocupa a vaga do processo: o comando que chegar depois espera por ela.</summary>
+    private static async Task RegistrarSemConfirmarAsync(TransacaoRetidaDeTeste dona, Guid processoId, string tipo)
+    {
+        Result registrado = await dona.Servicos.GetRequiredService<IRegistroDeAtoNormativo>().RegistrarAsync(
+            RegistrarAtoPelaPortaHandler.AtoDe(new RegistrarAtoPelaPorta(
+                CodigoDeTesteDaTransacao.Novo("DONA"), Guid.CreateVersion7(), processoId, tipo, UnicoPorObjeto: true, DesfechoDaGravacao.Sucesso)),
+            CancellationToken.None);
+        registrado.IsSuccess.Should().BeTrue(registrado.Error?.Message);
+        await dona.Servicos.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync(CancellationToken.None);
     }
 
     /// <summary>

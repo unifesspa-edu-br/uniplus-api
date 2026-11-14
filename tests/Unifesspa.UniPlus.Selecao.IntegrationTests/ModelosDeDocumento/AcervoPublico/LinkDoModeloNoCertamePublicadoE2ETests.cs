@@ -52,7 +52,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
             publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
         }
 
-        await EsperaDeAtoRegistrado.AguardarAsync(api, await AtoDaVersaoAsync(api, processoId), "ato da abertura", processoId);
+        await AtoNoRegistroCentral.LerAsync(api, await AtoDaVersaoAsync(api, processoId));
         using JsonDocument certame = await CertameDivulgadoAsync(client, processoId);
         Uri urlDoModelo = new(certame.RootElement.GetProperty("documentosExigidos").EnumerateArray()
             .Single()
@@ -158,20 +158,33 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
     /// O contrato público do certame, lido sem credencial. A divulgação chega pela fila depois do
     /// registro do ato, então o certame pode ainda responder 404 por alguns instantes.
     /// </summary>
+    /// <summary>O certame existe com a publicação, mas o endereço dos documentos só chega quando a cópia ao acervo termina.</summary>
     private static async Task<JsonDocument> CertameDivulgadoAsync(HttpClient client, Guid processoId)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
         while (true)
         {
-            using HttpResponseMessage resposta = await client.GetAsync(
-                new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative), CancellationToken.None);
-            if (resposta.StatusCode == HttpStatusCode.OK)
+            using HttpResponseMessage resposta = await client.GetAsync(new Uri($"/api/selecao/certames/{processoId}", UriKind.Relative));
+            JsonDocument? certame = resposta.StatusCode == HttpStatusCode.OK ? await ComEnderecoDoEditalAsync(resposta) : null;
+            if (certame is not null)
             {
-                return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+                return certame;
             }
 
-            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a divulgação do certame não chegou depois do registro do ato");
+            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a cópia dos documentos ao acervo público não terminou depois da publicação");
             await Task.Delay(TimeSpan.FromMilliseconds(300));
         }
+    }
+
+    private static async Task<JsonDocument?> ComEnderecoDoEditalAsync(HttpResponseMessage resposta)
+    {
+        JsonDocument certame = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        if (certame.RootElement.GetProperty("documentoEdital").GetProperty("urlDownload").ValueKind == JsonValueKind.String)
+        {
+            return certame;
+        }
+
+        certame.Dispose();
+        return null;
     }
 }

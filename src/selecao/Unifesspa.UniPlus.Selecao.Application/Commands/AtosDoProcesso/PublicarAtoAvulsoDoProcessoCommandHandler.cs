@@ -14,14 +14,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Publica um ato avulso do processo: confere tudo o que o Publicações recusaria depois, grava o
-/// registro do ato do processo e enfileira a requisição de registro, na mesma transação (ADR-0108).
+/// Publica um ato avulso do processo: confere o tipo, a correção e os documentos, grava o registro do ato
+/// do processo e o entrega à porta de escrita do registro central, na mesma transação (ADR-0170).
 /// </summary>
 /// <remarks>
-/// <b>Por que conferir aqui.</b> O Publicações só responde o sucesso; a recusa vai para a fila de
-/// mensagens que falharam. Cada regra que o catálogo ou o registro central aplicariam é antecipada com
-/// erro nomeado, antes de qualquer escrita. O que o documento avulso e a publicação de um item do edital
-/// partilham — gravar o registro e enfileirar a requisição — está em <see cref="EnvioDoAtoDoProcesso"/>.
+/// <b>Quem recusa o quê.</b> A Seleção confere o que é dela, antes de qualquer escrita. O que é do registro
+/// central — a vaga do objeto e a cadeia de retificação — é recusado pela porta, na mesma transação, com erro
+/// nomeado e nada gravado. O que o documento avulso e a publicação de um item do edital partilham — gravar o
+/// registro e entregá-lo à porta — está em <see cref="EnvioDoAtoDoProcesso"/>.
 /// </remarks>
 public static class PublicarAtoAvulsoDoProcessoCommandHandler
 {
@@ -32,7 +32,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         IAtoDoProcessoRepository atoDoProcessoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         ITipoAtoPublicadoReader tipoDeAtoReader,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IRegistroDeAtoNormativo registroDeAtos,
         IUnitOfWork unitOfWork,
         LeituraDoInstanteDaPublicacao leituraDoInstante,
         CancellationToken cancellationToken)
@@ -43,7 +43,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
-        ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
+        ArgumentNullException.ThrowIfNull(registroDeAtos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(leituraDoInstante);
 
@@ -92,7 +92,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         }
 
         Result<IReadOnlyList<Guid>> conferenciaDoCorrigido = await ConferenciaDoAtoCorrigido
-            .ConferirAsync(atoDoProcessoRepository, processoSeletivoRepository, vagaDeLinhagemReader, command.ProcessoSeletivoId, command.AtoCorrigidoId, cancellationToken)
+            .ConferirAsync(atoDoProcessoRepository, processoSeletivoRepository, command.ProcessoSeletivoId, command.AtoCorrigidoId, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoCorrigido.IsFailure)
         {
@@ -105,23 +105,6 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         if (conferenciaDoItem.IsFailure)
         {
             return Recusa(conferenciaDoItem.Error!);
-        }
-
-        // O ato que corrige integra a linhagem do corrigido, e a vaga do objeto é da linhagem.
-        Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
-            .VagaDoObjetoAsync(vagaDeLinhagemReader, tipo, command.ProcessoSeletivoId, conferenciaDoCorrigido.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVaga.IsFailure)
-        {
-            return Recusa(conferenciaDaVaga.Error!);
-        }
-
-        Result conferenciaDaVagaLocal = await ConferenciaDoTipoDoAtoAvulso
-            .VagaNoRegistroLocalAsync(atoDoProcessoRepository, tipo, command.ProcessoSeletivoId, conferenciaDoCorrigido.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVagaLocal.IsFailure)
-        {
-            return Recusa(conferenciaDaVagaLocal.Error!);
         }
 
         Result<DocumentosDoAtoConferidos> conferenciaDosDocumentos = await ConferenciaDosDocumentosDoAto
@@ -146,6 +129,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
                     command.AtoCorrigidoId,
                     command.MotivoDaCorrecao),
                 atoDoProcessoRepository,
+                registroDeAtos,
                 unitOfWork,
                 cancellationToken)
             .ConfigureAwait(false);

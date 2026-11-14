@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using Enums;
-
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -11,25 +9,20 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Registro, na Seleção, de um ato que o processo publicou — o edital de abertura e de retificação,
 /// que criam versão de configuração, e o aviso, a errata, o resultado declarado no edital e
-/// semelhantes, que não criam (ADR-0108, emenda 1; ADR-0132, emenda 1).
+/// semelhantes, que não criam (ADR-0105, emenda 1; ADR-0132, emenda 1).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Por que existe.</b> <c>AtoNormativoRegistrado</c> leva só o ato, o ano e o tipo: não diz a que
-/// processo o ato pertence nem quais arquivos tem. Para o edital a Seleção chega ao processo pela
-/// versão que o ato criou; o ato que não cria versão não deixa esse rastro, e este registro é a fonte
-/// de que a divulgação precisa. O ato que cria versão também é registrado, para que a consulta dos atos
-/// do processo tenha uma fonte única, com tipo, número, data e assinante de todos.
+/// <b>Por que existe.</b> O ato registrado em Publicações não diz a que processo pertence nem quais arquivos tem.
+/// Para o edital a Seleção chega ao processo pela versão que o ato criou; o ato que não cria versão não deixa esse
+/// rastro, e este registro é a fonte de que a divulgação precisa. O ato que cria versão também é registrado, para que a
+/// consulta dos atos do processo tenha uma fonte única, com tipo, número, data e assinante de todos.
 /// </para>
 /// <para>
-/// <b>Nasce junto do envio.</b> É gravado na mesma transação em que a requisição de registro entra no
-/// outbox: ou os dois existem, ou nenhum. A identidade é o <c>AtoId</c> que a Seleção decidiu, e é por
-/// ela que a confirmação do Publicações encontra o registro.
-/// </para>
-/// <para>
-/// <b>Imutável depois de gravado</b>, salvo a transição <see cref="SituacaoDoRegistroDoAto.Pendente"/>
-/// para <see cref="SituacaoDoRegistroDoAto.Registrado"/>. Não é evidência forense: o ato em si é do
-/// Publicações, e aqui fica o que a Seleção precisa para divulgá-lo.
+/// <b>Nasce junto da publicação.</b> É gravado na mesma transação que grava o ato em Publicações, a divulgação do
+/// certame e, quando há, a versão: ou tudo existe, ou nada. A identidade é o <c>AtoId</c> que a Seleção decidiu. Imutável
+/// depois de gravado; não é evidência forense, porque o ato em si é de Publicações, e aqui fica o que a Seleção precisa
+/// para divulgá-lo.
 /// </para>
 /// <para>
 /// A unidade e o identificador legível do processo ficam gravados porque a chave do documento no
@@ -73,7 +66,7 @@ public sealed class AtoDoProcesso : EntityBase
 
     /// <summary>
     /// O instante da divulgação, lido uma só vez do relógio pelo comando que publica: o mesmo que a versão
-    /// de configuração grava como vigente a partir dele e que a requisição de registro leva ao Publicações.
+    /// de configuração grava como vigente a partir dele e que o registro do ato leva a Publicações.
     /// </summary>
     public DateTimeOffset PublicadoEm { get; private set; }
 
@@ -101,11 +94,6 @@ public sealed class AtoDoProcesso : EntityBase
     /// <summary>Sub do usuário que confirmou a política de divulgação; nulo quando não foi pedida.</summary>
     public string? PoliticaDeDivulgacaoConfirmadaPorSub { get; private set; }
 
-    public SituacaoDoRegistroDoAto Situacao { get; private set; }
-
-    /// <summary>Instante em que o Publicações confirmou o ato; nulo enquanto pendente.</summary>
-    public DateTimeOffset? RegistradoEm { get; private set; }
-
     public IReadOnlyList<AnexoDoAtoDoProcesso> Anexos => _anexos;
 
     private AtoDoProcesso() { }
@@ -128,8 +116,7 @@ public sealed class AtoDoProcesso : EntityBase
     }
 
     /// <summary>
-    /// Cria o registro pendente que acompanha o envio da requisição de registro do ato, publicado em
-    /// <paramref name="publicadoEm"/>. Devolve falha nomeada quando o par ato corrigido e motivo é incoerente.
+    /// Cria o registro do ato que o processo publica em <paramref name="publicadoEm"/>. Devolve falha nomeada quando o par ato corrigido e motivo é incoerente.
     /// </summary>
     public static Result<AtoDoProcesso> Registrar(NovoAtoDoProcesso novo, DateTimeOffset publicadoEm)
     {
@@ -142,26 +129,7 @@ public sealed class AtoDoProcesso : EntityBase
             return Result<AtoDoProcesso>.ValidationFailure(correcao.Errors);
         }
 
-        return Result<AtoDoProcesso>.Success(AtoPendenteDe(ConferirDeclaracao(novo), publicadoEm));
-    }
-
-    /// <summary>
-    /// Passa o registro a <see cref="SituacaoDoRegistroDoAto.Registrado"/>. Idempotente: a mensagem de
-    /// confirmação é entregue pelo menos uma vez, e a repetição não muda nada.
-    /// </summary>
-    /// <returns><see langword="true"/> quando a situação mudou.</returns>
-    public bool ConfirmarRegistro(TimeProvider clock)
-    {
-        ArgumentNullException.ThrowIfNull(clock);
-
-        if (Situacao == SituacaoDoRegistroDoAto.Registrado)
-        {
-            return false;
-        }
-
-        Situacao = SituacaoDoRegistroDoAto.Registrado;
-        RegistradoEm = clock.GetUtcNow();
-        return true;
+        return Result<AtoDoProcesso>.Success(AtoDe(ConferirDeclaracao(novo), publicadoEm));
     }
 
     private static FieldError? ErroDoAtoCorrigido(Guid? atoCorrigidoId, bool temMotivo) => (atoCorrigidoId, temMotivo) switch
@@ -207,7 +175,7 @@ public sealed class AtoDoProcesso : EntityBase
         MotivoDaCorrecao = novo.MotivoDaCorrecao.EmBrancoViraNulo(),
     };
 
-    private static AtoDoProcesso AtoPendenteDe(NovoAtoDoProcesso declarado, DateTimeOffset publicadoEm)
+    private static AtoDoProcesso AtoDe(NovoAtoDoProcesso declarado, DateTimeOffset publicadoEm)
     {
         AtoDoProcesso ato = Declarar(declarado, publicadoEm);
         ato.VincularDocumentos(declarado);
@@ -230,7 +198,6 @@ public sealed class AtoDoProcesso : EntityBase
         UnidadeAdministradora = declarado.UnidadeAdministradora,
         IdentificadorLegivelDoProcesso = declarado.IdentificadorLegivelDoProcesso,
         ItemDoEdital = declarado.ItemDoEdital?.Chave,
-        Situacao = SituacaoDoRegistroDoAto.Pendente,
     };
 
     private void VincularDocumentos(NovoAtoDoProcesso declarado)

@@ -55,7 +55,7 @@ internal static class EmissaoDeVersao
     }
 
     // O id nasce no agregado, e não em Publicacoes, porque a versão precisa referenciá-lo antes de o
-    // ato existir (ADR-0108); a reentrega da fila tenta gravar o mesmo id, e a chave primária a recusa.
+    // ato existir (ADR-0061): ele é gravado na mesma transação, e a versão o referencia por valor.
     private static Guid NovoIdDeAto(DateTimeOffset instante) => Guid.CreateVersion7(instante);
 
     // O nome do membro EditalId é contrato do envelope durável e do schema Avro; o valor é o do ato criador.

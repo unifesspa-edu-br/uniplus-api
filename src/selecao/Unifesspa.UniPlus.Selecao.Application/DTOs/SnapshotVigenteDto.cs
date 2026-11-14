@@ -27,20 +27,9 @@ using System.Text.Json.Nodes;
 /// identidade endereçável por conteúdo (integridade/ETag).
 /// </para>
 /// <para>
-/// <b>Consistência do ato.</b> O registro em <c>Publicacoes</c> acontece por mensagem
-/// durável (ADR-0108), depois do commit da publicação. Entre o 204 e a drenagem do
-/// outbox, <see cref="AtoId"/> já é válido e estável aqui, mas o <c>GET</c> do ato
-/// pode ainda responder 404. A atomicidade que importa — configuração congelada e
-/// requisição do ato na MESMA transação — está garantida: o ato não se perde.
-/// </para>
-/// <para>
-/// A janela normalmente fecha em segundos. Ela <b>não</b> fecha quando o registro é
-/// recusado no consumo (tipo removido do catálogo, vaga de linhagem tomada por fora): a
-/// mensagem esgota as retentativas e vai para a dead letter, e aí o <see cref="AtoId"/>
-/// aponta para um ato que não existirá. Não é silencioso — a dead letter é o alarme, e
-/// as conferências prévias dos handlers existem justamente para tornar esse caminho
-/// raro. Quem consome este contrato deve tratar o 404 do ato como transitório, não como
-/// "certame sem configuração": a configuração está aqui, congelada, e é ela que governa.
+/// <b>Consistência do ato.</b> O ato nasce em <c>Publicacoes</c> na mesma transação que congela a
+/// configuração, pela porta de escrita do registro central (ADR-0170): a versão e o ato existem
+/// juntos, ou nenhum dos dois, e o <c>GET</c> do <see cref="AtoId"/> responde assim que a publicação confirma.
 /// </para>
 /// </summary>
 public sealed record SnapshotVigenteDto(

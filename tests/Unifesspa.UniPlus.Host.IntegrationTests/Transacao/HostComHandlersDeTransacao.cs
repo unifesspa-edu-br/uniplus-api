@@ -50,6 +50,7 @@ public sealed class HostComHandlersDeTransacao : IDisposable
     {
         opcoes.Discovery.IncludeType(typeof(GravarEmDoisModulosHandler));
         opcoes.Discovery.IncludeType(typeof(GravarNaOrdemDasTravasHandler));
+        opcoes.Discovery.IncludeType(typeof(RegistrarAtoPelaPortaHandler));
         opcoes.PublishMessage<GravacaoEmDoisModulosConcluida>().ToPostgresqlQueue(Fila);
     }
 }

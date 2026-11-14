@@ -35,6 +35,17 @@ internal static class TiposDeAtoSeeder
         await db.SaveChangesAsync();
     }
 
+    /// <summary>Semeia um tipo avulso ao catálogo, com a classe de congelamento e a unicidade que o cenário precisa.</summary>
+    public static async Task SemearTipoAsync(IServiceProvider services, string codigo, bool unicoPorObjeto, bool congela = true)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        await using AsyncServiceScope scope = services.CreateAsyncScope();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await GarantirAsync(db, codigo, codigo, unicoPorObjeto, congela);
+        await db.SaveChangesAsync();
+    }
+
     private static async Task GarantirAsync(UniPlusDbContext db, string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao = true, bool publicavelComoAvulso = false, bool ehResultado = false)
     {
         if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))

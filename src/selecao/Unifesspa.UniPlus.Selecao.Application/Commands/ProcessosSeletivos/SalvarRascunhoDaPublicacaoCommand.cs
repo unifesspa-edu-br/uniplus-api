@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <remarks>
 /// <para>
 /// <b><see cref="Conteudo"/> atravessa sem interpretação.</b> Seleção não conhece os campos do
-/// ato (ADR-0108) e não ganha esse conhecimento por guardar o bloco — o documento é opaco na
+/// ato e não ganha esse conhecimento por guardar o bloco — o documento é opaco na
 /// ida e na volta. É por isso que acrescentar um campo ao ato não muda uma linha deste lado.
 /// </para>
 /// <para>

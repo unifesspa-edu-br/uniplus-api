@@ -22,12 +22,12 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// se e somente se o outro existe). É o mesmo comando de publicar: retificar é
 /// publicar um ato que emenda outro.</para>
 /// <para><see cref="AtoId"/> é o id que o DOMÍNIO que publica decidiu para o ato, quando
-/// o registro chega por mensagem durável (ADR-0108) — é o que torna a reentrega da fila
-/// idempotente. Fica FORA do wire HTTP (<c>JsonIgnore</c>): quem publica pelo endpoint é o
+/// o registro chega pela porta de escrita (ADR-0170) — é o que lhe permite referenciar o ato
+/// por valor antes de ele existir. Fica FORA do wire HTTP (<c>JsonIgnore</c>): quem publica pelo endpoint é o
 /// operador em Publicações, não há domínio remoto a quem o id pertença, e aceitá-lo do
 /// cliente deixaria forjar a identidade de um ato. Ausente, Publicações o gera.</para>
 /// <para><see cref="PublicadoEm"/> é o instante da divulgação que o sistema leu uma só vez antes de
-/// chamar Publicações, e que o registro por mensagem durável traz da operação que o decidiu. Fica FORA
+/// chamar Publicações, e que o registro pela porta de escrita traz da operação que o decidiu. Fica FORA
 /// do wire (<c>JsonIgnore</c>): quem publica pelo endpoint não o informa, e o handler lê o relógio
 /// quando ele está ausente. Publicações o guarda e nunca o define por conta própria.</para>
 /// <para><see cref="Vinculos"/> liga o ato às entidades de que ele trata (ADR-0105).
@@ -42,7 +42,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// não os herdasse sumiria da consulta do certame — que passaria a exibir a versão
 /// superada, escondendo a que a emenda. Declarar entidades novas continua permitido: o
 /// ato retificador pode passar a tratar de objeto que o retificado não declarava.</para>
-/// <para><see cref="RegistroPeloDominio"/> marca o registro que chega pela requisição durável
+/// <para><see cref="RegistroPeloDominio"/> marca o registro que chega pela porta de escrita
 /// do domínio dono do objeto, o único que traz o arquivo do documento guardado. Fica FORA do
 /// wire (<c>JsonIgnore</c>) e vale <c>false</c> por padrão: todo outro chamador, o endpoint e
 /// qualquer um futuro, cai na recusa do ato que trata de objeto cujos atos pertencem ao seu

@@ -47,8 +47,6 @@ public sealed class AtoDoProcessoTests
         AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, Agora).Value!;
 
         ato.Id.Should().Be(novo.AtoId, "o registro é identificado pelo ato que a Seleção decidiu");
-        ato.Situacao.Should().Be(SituacaoDoRegistroDoAto.Pendente);
-        ato.RegistradoEm.Should().BeNull();
         ato.PoliticaDeDivulgacaoConfirmadaEm.Should().Be(Agora);
         ato.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be("sub-do-usuario");
         ato.Anexos.Select(a => (a.Ordem, a.DocumentoAPublicarId, a.NomeDeExibicao))
@@ -72,18 +70,6 @@ public sealed class AtoDoProcessoTests
         Func<Result<AtoDoProcesso>> registrar = () => AtoDoProcesso.Registrar(Novo(), default);
 
         registrar.Should().Throw<ArgumentOutOfRangeException>();
-    }
-
-    [Fact(DisplayName = "Confirmar o registro marca o instante uma vez só: a repetição não muda nada")]
-    public void ConfirmarRegistro_Repetido_NaoMudaNada()
-    {
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(Novo(), Agora).Value!;
-
-        ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(1))).Should().BeTrue();
-        ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(9))).Should().BeFalse();
-
-        ato.Situacao.Should().Be(SituacaoDoRegistroDoAto.Registrado);
-        ato.RegistradoEm.Should().Be(Agora.AddMinutes(1));
     }
 
     [Fact(DisplayName = "Ato corrigido sem motivo é recusado com falha nomeada no campo do motivo")]

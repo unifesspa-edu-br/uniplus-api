@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>
 /// <b>Seleção guarda, não modela.</b> O conteúdo é um documento JSON <b>opaco</b>: não há
 /// aqui propriedade que nomeie órgão, série, assinante ou tipo de ato. A fronteira da
-/// ADR-0108 — o ato pertence a Publicações, e Seleção só referencia o <c>AtoCriadorId</c>
+/// ADR-0105 — o ato pertence a Publicações, e Seleção só referencia o <c>AtoCriadorId</c>
 /// depois de publicado — deixa de depender da disciplina de quem escreve o handler e passa a
 /// ser sustentada pelo tipo: não existe membro para ler por engano.
 /// </para>

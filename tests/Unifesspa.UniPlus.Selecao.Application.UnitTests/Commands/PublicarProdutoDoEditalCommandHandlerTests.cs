@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -44,7 +45,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     private readonly IDocumentoAPublicarRepository _documentos = Substitute.For<IDocumentoAPublicarRepository>();
     private readonly IRegistroCodecsEnvelope _codecs = Substitute.For<IRegistroCodecsEnvelope>();
     private readonly ITipoAtoPublicadoReader _tipos = Substitute.For<ITipoAtoPublicadoReader>();
-    private readonly IVagaDeLinhagemReader _vagas = Substitute.For<IVagaDeLinhagemReader>();
+    private readonly IRegistroDeAtoNormativo _registro = ServicosDoCongelamentoDeTeste.RegistroQueAceita();
     private readonly IUserContext _usuario = Substitute.For<IUserContext>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
@@ -75,12 +76,14 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     }
 
     [Fact(DisplayName = "O preliminar de um resultado, com a política confirmada, grava o registro com o item e quem confirmou, e envia o ato com o hash do PDF")]
-    public async Task Preliminar_ComPoliticaConfirmada_GravaORegistroDoItemEEnviaOAto()
+    public async Task Preliminar_ComPoliticaConfirmada_GravaORegistroDoItemEEntregaOAtoAPorta()
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
         AtoDoProcesso? gravado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
+        AtoNormativoPublicado? entregue = null;
+        _registro.RegistrarAsync(Arg.Do<AtoNormativoPublicado>(a => entregue = a), Arg.Any<CancellationToken>()).Returns(Result.Success());
 
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id));
 
@@ -91,16 +94,15 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         gravado.AtoCorrigidoId.Should().BeNull();
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
         gravado.PoliticaDeDivulgacaoConfirmadaEm.Should().Be(Agora);
-        gravado.Situacao.Should().Be(SituacaoDoRegistroDoAto.Pendente);
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
-        requisicao.AtoId.Should().Be(gravado.Id);
-        requisicao.TipoCodigo.Should().Be(Materia);
-        requisicao.DocumentoHash.Should().Be(_principal.HashSha256);
-        requisicao.AtoRetificadoId.Should().BeNull();
+        mensagens.Should().ContainSingle().Which.Should().Be(new CopiarDocumentosDoAtoAoAcervo(_processoId, gravado.Id));
+        entregue!.AtoId.Should().Be(gravado.Id);
+        entregue.TipoCodigo.Should().Be(Materia);
+        entregue.DocumentoHash.Should().Be(_principal.HashSha256);
+        entregue.Correcao.Should().BeNull();
     }
 
-    [Fact(DisplayName = "O item lê o relógio uma vez e usa o instante no ato gravado e na mensagem de registro")]
-    public async Task Item_LeORelogioUmaVez_EOInstanteVaiParaOAtoEAMensagem()
+    [Fact(DisplayName = "O item lê o relógio uma vez e usa o instante no ato gravado e no ato entregue à porta")]
+    public async Task Item_LeORelogioUmaVez_EOInstanteVaiParaOAtoEParaAPorta()
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
@@ -108,12 +110,12 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         AtoDoProcesso? gravado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id), relogio);
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id), relogio);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         relogio.Leituras.Should().Be(1);
         gravado!.PublicadoEm.Should().Be(Agora);
-        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Which.PublicadoEm.Should().Be(Agora);
+        await _registro.Received(1).RegistrarAsync(Arg.Is<AtoNormativoPublicado>(a => a.PublicadoEm == Agora), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O tipo do item é consultado no dia do instante, e a data que o documento declara não entra na consulta")]
@@ -162,30 +164,25 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         await DeveRecusar(Comando(definitivo.Id), AtoDoProcessoErrorCodes.PreliminarNaoPublicado);
     }
 
-    [Fact(DisplayName = "O definitivo com o preliminar ainda aguardando o registro é recusado, e com o preliminar registrado é aceito")]
-    public async Task Definitivo_ComPreliminarPendenteERegistrado()
+    [Fact(DisplayName = "O definitivo com o preliminar já publicado é aceito")]
+    public async Task Definitivo_ComPreliminarPublicado_EAceito()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
-        AtoDoProcesso publicadoPreliminar = Publicado(Materia, preliminar.Id, registrado: false);
+        Publicado(Materia, preliminar.Id);
 
-        await DeveRecusar(Comando(definitivo.Id), AtoDoProcessoErrorCodes.PreliminarAguardaRegistro);
-
-        publicadoPreliminar.ConfirmarRegistro(new RelogioFixo(Agora));
         (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(definitivo.Id));
-        resposta.IsSuccess.Should().BeTrue();
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
     }
 
-    [Fact(DisplayName = "Publicar de novo um item já publicado ou pendente é recusado, cada um com o seu erro")]
-    public async Task Produto_JaPublicadoOuPendente_ERecusado()
+    [Fact(DisplayName = "Publicar de novo um item já publicado é recusado")]
+    public async Task Produto_JaPublicado_ERecusado()
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        Publicado(Materia, preliminar.Id, registrado: false);
+        Publicado(Materia, preliminar.Id);
 
-        await DeveRecusar(Comando(preliminar.Id), AtoDoProcessoErrorCodes.ProdutoAguardaRegistro);
-
-        _atosDoProcesso.Single().ConfirmarRegistro(new RelogioFixo(Agora));
         await DeveRecusar(Comando(preliminar.Id), AtoDoProcessoErrorCodes.ProdutoJaPublicado);
     }
 
@@ -206,23 +203,23 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         gravado!.PoliticaDeDivulgacaoConfirmadaPorSub.Should().BeNull();
     }
 
-    [Fact(DisplayName = "A errata de uma lista publicada é aceita, leva o item e a política confirmada, e aponta o ato corrigido")]
+    [Fact(DisplayName = "A errata de uma lista publicada é aceita, leva o item e a política confirmada, e a porta recebe o ato corrigido")]
     public async Task Errata_DeItemPublicado_EAceita()
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        AtoDoProcesso original = Publicado(Materia, preliminar.Id, registrado: true);
+        AtoDoProcesso original = Publicado(Materia, preliminar.Id);
         AtoDoProcesso? gravado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
 
         resposta.IsSuccess.Should().BeTrue();
         gravado!.ItemDoEdital.Should().Be(_itensDoCronograma[preliminar.Id].Chave);
         gravado.AtoCorrigidoId.Should().Be(original.Id);
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
-        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle()
-            .Which.AtoRetificadoId.Should().Be(original.Id);
+        await _registro.Received(1).RegistrarAsync(
+            Arg.Is<AtoNormativoPublicado>(a => a.Correcao != null && a.Correcao.AtoRetificadoId == original.Id), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A correção de um resultado sem a confirmação da política é recusada")]
@@ -230,7 +227,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        AtoDoProcesso original = Publicado(Materia, preliminar.Id, registrado: true);
+        AtoDoProcesso original = Publicado(Materia, preliminar.Id);
 
         await DeveRecusar(Comando(preliminar.Id, politica: false, corrige: original.Id), AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada);
     }
@@ -240,8 +237,8 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
-        AtoDoProcesso doPreliminar = Publicado(Materia, preliminar.Id, registrado: true);
-        Publicado(Materia, definitivo.Id, registrado: true);
+        AtoDoProcesso doPreliminar = Publicado(Materia, preliminar.Id);
+        Publicado(Materia, definitivo.Id);
 
         await DeveRecusar(Comando(definitivo.Id, corrige: doPreliminar.Id), AtoDoProcessoErrorCodes.AtoCorrigidoNaoEhDoProduto);
     }
@@ -251,12 +248,12 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
-        AtoDoProcesso doPreliminar = Publicado(Materia, preliminar.Id, registrado: true);
+        AtoDoProcesso doPreliminar = Publicado(Materia, preliminar.Id);
 
         (Result<AtoPublicadoDto> antes, _) = await Publicar(Comando(preliminar.Id, corrige: doPreliminar.Id));
         antes.IsSuccess.Should().BeTrue("antes do definitivo, a correção do preliminar é aceita");
 
-        AtoDoProcesso doDefinitivo = Publicado(Materia, definitivo.Id, registrado: true);
+        AtoDoProcesso doDefinitivo = Publicado(Materia, definitivo.Id);
 
         (Result<AtoPublicadoDto> depois, _) = await Publicar(Comando(preliminar.Id, corrige: doPreliminar.Id));
         depois.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.PreliminarFechadoPeloDefinitivo);
@@ -278,9 +275,9 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
             FaseQueConclui("ABRE_B", 2, "FECHA_D", preliminarB),
             Fase("FECHA_C", 3, definitivoC),
             Fase("FECHA_D", 4, definitivoD));
-        AtoDoProcesso doA = Publicado(Materia, preliminarA.Id, registrado: true);
-        AtoDoProcesso doB = Publicado(Materia, preliminarB.Id, registrado: true);
-        Publicado(Materia, definitivoC.Id, registrado: true);
+        AtoDoProcesso doA = Publicado(Materia, preliminarA.Id);
+        AtoDoProcesso doB = Publicado(Materia, preliminarB.Id);
+        Publicado(Materia, definitivoC.Id);
 
         await DeveRecusar(Comando(preliminarA.Id, corrige: doA.Id), AtoDoProcessoErrorCodes.PreliminarFechadoPeloDefinitivo);
         (Result<AtoPublicadoDto> outroCiclo, _) = await Publicar(Comando(preliminarB.Id, corrige: doB.Id));
@@ -297,16 +294,36 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         await DeveRecusar(Comando(preliminar.Id), AtoDoProcessoErrorCodes.TipoCongelaConfiguracao);
     }
 
-    [Fact(DisplayName = "Item de tipo único por objeto com o ato anterior ainda pendente na Seleção é recusado")]
-    public async Task Tipo_UnicoComVagaOcupadaNoRegistroLocal_ERecusado()
+    [Fact(DisplayName = "A recusa da porta, como a vaga do objeto ocupada, devolve a recusa nomeada, descarta o rastreado e não grava")]
+    public async Task RecusaDaPorta_DevolveADescartaENaoGrava()
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        _congelado = _congelado with { UnicoPorObjeto = true };
-        _atos.ExisteAtoDoTipoForaDaCadeiaAsync(_processoId, Materia, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        DomainError vagaOcupada = new("AtoNormativo.ObjetoJaTemAtoVivoDoTipo", "O objeto já tem o ato RESULTADO_HOMOLOGACAO nº 1/2027 vivo.");
+        _registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>()).Returns(Result.Failure(vagaOcupada));
 
-        await DeveRecusar(Comando(preliminar.Id), "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo");
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id));
+
+        resposta.Error.Should().Be(vagaOcupada);
+        mensagens.Should().BeEmpty();
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O item publicado por outra requisição na corrida é recusado pela Seleção, e a porta nem é consultada")]
+    public async Task ItemPublicadoNaCorrida_EDaSelecaoENaoConsultaAPorta()
+    {
+        (ProdutoDaFase preliminar, _) = Par();
+        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_atos_do_processo_item_original"));
+
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id));
+
+        resposta.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.ProdutoJaPublicado);
+        mensagens.Should().BeEmpty();
+        _registro.DidNotReceive().TraduzirConflitoDaGravacao(Arg.Any<Exception>());
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     [Fact(DisplayName = "Marcar o tipo como único no catálogo depois do preliminar não impede o definitivo: vale a marcação congelada na versão publicada")]
@@ -314,19 +331,14 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
-        Publicado(Materia, preliminar.Id, registrado: true);
+        Publicado(Materia, preliminar.Id);
         Tipo(Materia, resultado: true, unico: true);
-        _atos.ExisteAtoDoTipoForaDaCadeiaAsync(_processoId, Materia, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-        _vagas.ObjetoJaTemAtoDeOutraLinhagemAsync(
-                EntidadesDeRegistroPeloDominio.ProcessoSeletivo, _processoId, Materia, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(definitivo.Id));
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(definitivo.Id));
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle()
-            .Which.AtributosDoTipo.UnicoPorObjeto.Should().BeFalse("o registro no Publicações leva a marcação congelada, e não a do catálogo de hoje");
+        await _registro.Received(1).RegistrarAsync(
+            Arg.Is<AtoNormativoPublicado>(a => !a.TipoConferido.UnicoPorObjeto), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Ligar congelaConfiguracao no catálogo depois da publicação não muda a classe da correção do resultado")]
@@ -334,14 +346,14 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         (ProdutoDaFase preliminar, _) = Par();
         Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
-        AtoDoProcesso original = Publicado(Materia, preliminar.Id, registrado: true);
+        AtoDoProcesso original = Publicado(Materia, preliminar.Id);
         Tipo(Materia, resultado: true, congela: true);
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle()
-            .Which.AtributosDoTipo.CongelaConfiguracao.Should().BeFalse("a correção tem a classe do ato corrigido, que o edital congelou");
+        await _registro.Received(1).RegistrarAsync(
+            Arg.Is<AtoNormativoPublicado>(a => !a.TipoConferido.CongelaConfiguracao), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Desligar ehResultado no catálogo depois da publicação não dispensa a confirmação da política de divulgação")]
@@ -363,14 +375,14 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be(codigoEsperado);
-        mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao Publicações");
+        mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao registro central");
         await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
     private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null) =>
         PublicarProdutoDoEditalCommandHandler.Handle(
-            comando, _processos, _divulgados, _atos, _documentos, _codecs, _tipos, _vagas, _usuario, _unitOfWork,
+            comando, _processos, _divulgados, _atos, _documentos, _codecs, _tipos, _registro, _usuario, _unitOfWork,
             new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
 
     private PublicarProdutoDoEditalCommand Comando(Guid produtoId, bool politica = true, Guid? corrige = null) =>
@@ -413,7 +425,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         (ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo));
 
     /// <summary>Um ato já publicado do item, registrado na Seleção e conhecido como ato do processo.</summary>
-    private AtoDoProcesso Publicado(string tipo, Guid produtoId, bool registrado)
+    private AtoDoProcesso Publicado(string tipo, Guid produtoId)
     {
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
@@ -421,11 +433,6 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
                 Guid.CreateVersion7(), [], ItemDoEdital: _itensDoCronograma[produtoId]),
             Agora).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-60 + _atosDoProcesso.Count));
-        if (registrado)
-        {
-            ato.ConfirmarRegistro(new RelogioFixo(Agora));
-        }
-
         _atosDoProcesso.Add(ato);
         _atos.ObterProcessoDoAtoAsync(ato.Id, Arg.Any<CancellationToken>()).Returns(_processoId);
         _atos.ListarCadeiaDeCorrecaoAsync(ato.Id, Arg.Any<CancellationToken>()).Returns([ato.Id]);

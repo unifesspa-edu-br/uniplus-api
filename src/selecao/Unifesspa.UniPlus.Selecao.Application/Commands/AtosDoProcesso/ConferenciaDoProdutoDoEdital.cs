@@ -182,9 +182,7 @@ internal static class ConferenciaDoProdutoDoEdital
         motivo switch
         {
             ImpedimentoDoProduto.JaPublicado => AtoDoProcessoErrorCodes.ProdutoJaPublicado,
-            ImpedimentoDoProduto.AguardaConfirmacaoDoRegistro => AtoDoProcessoErrorCodes.ProdutoAguardaRegistro,
             ImpedimentoDoProduto.PreliminarNaoPublicado => AtoDoProcessoErrorCodes.PreliminarNaoPublicado,
-            ImpedimentoDoProduto.PreliminarAguardaConfirmacao => AtoDoProcessoErrorCodes.PreliminarAguardaRegistro,
             ImpedimentoDoProduto.TipoDeAtoNaoVigente => "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
             _ => throw new ArgumentOutOfRangeException(nameof(motivo), motivo, "Impedimento do item sem código de erro."),
         };

@@ -31,9 +31,7 @@ public static class AtoDoProcessoErrorCodes
     public const string MotivoDaCorrecaoObrigatorio = "AtoDoProcesso.MotivoDaCorrecaoObrigatorio";
     public const string ProdutoNaoDeclarado = "AtoDoProcesso.ProdutoNaoDeclarado";
     public const string ProdutoJaPublicado = "AtoDoProcesso.ProdutoJaPublicado";
-    public const string ProdutoAguardaRegistro = "AtoDoProcesso.ProdutoAguardaRegistro";
     public const string PreliminarNaoPublicado = "AtoDoProcesso.PreliminarNaoPublicado";
-    public const string PreliminarAguardaRegistro = "AtoDoProcesso.PreliminarAguardaRegistro";
     public const string PoliticaDeDivulgacaoNaoConfirmada = "AtoDoProcesso.PoliticaDeDivulgacaoNaoConfirmada";
     public const string UsuarioNaoIdentificado = "AtoDoProcesso.UsuarioNaoIdentificado";
     public const string AtoCorrigidoNaoEhDoProduto = "AtoDoProcesso.AtoCorrigidoNaoEhDoProduto";

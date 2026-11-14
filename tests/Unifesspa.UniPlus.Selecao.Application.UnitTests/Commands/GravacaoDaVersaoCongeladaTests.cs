@@ -23,7 +23,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
 {
     private const string IndiceDoNumeroDaVersao = "ux_versoes_configuracao_processo_numero";
 
-    [Fact(DisplayName = "No sucesso grava a versão e o ato, salva e só então apaga o rascunho, e devolve a mensagem do ato")]
+    [Fact(DisplayName = "No sucesso grava a versão e o ato, salva e só então apaga o rascunho, e devolve os eventos")]
     public async Task Sucesso_GravaSalvaEApagaNessaOrdem()
     {
         Preparo preparo = await Preparo.NovoAsync();

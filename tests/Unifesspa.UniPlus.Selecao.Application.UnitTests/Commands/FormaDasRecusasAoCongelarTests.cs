@@ -43,14 +43,6 @@ public sealed class FormaDasRecusasAoCongelarTests
         eventos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "A vaga de linhagem já retificada recusa com erro único e sem campo")]
-    public async Task AtoJaRetificado_ChegaSemCampo()
-    {
-        (Result resposta, _) = await Para(OperacaoQueCongela.Retificar).Com(DefeitoDoCongelamento.AtoJaRetificado).ExecutarAsync();
-
-        resposta.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
-    }
-
     [Fact(DisplayName = "O ciclo recursal aberto chega com os erros que a conferência produziu, sem perder nenhum")]
     public async Task CicloRecursal_ChegaComOsErrosDaConferencia()
     {

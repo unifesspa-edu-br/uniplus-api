@@ -18,10 +18,32 @@ internal static class ConsultasDaTransacaoNoBanco
         ConsultarAsync(servicos, contexto => contexto.Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.tipo_ato_publicado WHERE codigo = {codigo}").SingleAsync());
 
+    internal static Task<int> AtosAsync(IServiceProvider servicos, Guid atoId) =>
+        ConsultarAsync(servicos, contexto => contexto.Database
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.ato_normativo WHERE id = {atoId}").SingleAsync());
+
+    internal static Task<int> VagasDoObjetoAsync(IServiceProvider servicos, Guid objetoId) =>
+        ConsultarAsync(servicos, contexto => contexto.Database
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.linhagem_unica_por_objeto WHERE entidade_id = {objetoId}").SingleAsync());
+
+    /// <summary>As sessões que seguram alguma escrita em tabela do esquema do registro de atos, a transação retida do teste inclusive.</summary>
+    internal static Task<int> EscritasEmPublicacoesAsync(IServiceProvider servicos) =>
+        ConsultarAsync(servicos, contexto => contexto.Database
+            .SqlQuery<int>($"""
+                SELECT count(*)::int AS "Value" FROM pg_locks l
+                JOIN pg_class c ON c.oid = l.relation
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'publicacoes' AND l.locktype = 'relation' AND l.mode = 'RowExclusiveLock' AND l.pid <> pg_backend_pid()
+                """).SingleAsync());
+
     /// <summary>A transação que gravou a linha: duas linhas com o mesmo valor foram gravadas pela mesma transação.</summary>
     internal static Task<long> TransacaoDoMotivoAsync(IServiceProvider servicos, string codigo) =>
         ConsultarAsync(servicos, contexto => contexto.Database
             .SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM selecao.motivos_de_decisao WHERE codigo = {codigo}").SingleAsync());
+
+    internal static Task<long> TransacaoDoAtoAsync(IServiceProvider servicos, Guid atoId) =>
+        ConsultarAsync(servicos, contexto => contexto.Database
+            .SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM publicacoes.ato_normativo WHERE id = {atoId}").SingleAsync());
 
     internal static Task<long> TransacaoDoTipoAsync(IServiceProvider servicos, string codigo) =>
         ConsultarAsync(servicos, contexto => contexto.Database

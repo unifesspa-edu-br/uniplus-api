@@ -36,6 +36,16 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return endereco;
     }
 
+    /// <summary>A porta de escrita do registro central que confere e aceita o ato, sem reconhecer conflito algum na gravação.</summary>
+    public static IRegistroDeAtoNormativo RegistroQueAceita()
+    {
+        IRegistroDeAtoNormativo registro = Substitute.For<IRegistroDeAtoNormativo>();
+        registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>()).Returns(Result.Success());
+        registro.TraduzirConflitoDaGravacao(Arg.Any<Exception>()).Returns((DomainError?)null);
+
+        return registro;
+    }
+
     public IProcessoSeletivoRepository Repositorio { get; private set; } = Substitute.For<IProcessoSeletivoRepository>();
 
     public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
@@ -54,7 +64,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public ITipoAtoPublicadoReader TiposDeAto { get; private set; } = TipoDeAtoReader();
 
-    public IVagaDeLinhagemReader Vagas { get; private set; } = Substitute.For<IVagaDeLinhagemReader>();
+    public IRegistroDeAtoNormativo Registro { get; private set; } = RegistroQueAceita();
 
     public IObrigatoriedadeLegalRepository ObrigatoriedadesLegais { get; private set; } = Substitute.For<IObrigatoriedadeLegalRepository>();
 
@@ -143,9 +153,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public ServicosDoCongelamentoDeTeste ComVagasDeLinhagem(IVagaDeLinhagemReader vagas)
+    public ServicosDoCongelamentoDeTeste ComRegistroDeAtos(IRegistroDeAtoNormativo registro)
     {
-        Vagas = vagas;
+        Registro = registro;
 
         return this;
     }
@@ -224,9 +234,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public LeituraDoInstanteDaPublicacao LeituraDoInstante() => new(Relogio, Fuso);
 
-    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, Vagas, LeituraDoInstante());
+    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, LeituraDoInstante());
 
-    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Vagas, Atos, Codecs, FasesIniciadas);
+    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs, FasesIniciadas);
 
     public LeituraDasVersoesPublicadas VersoesPublicadas() => new(Repositorio, Codecs);
 
@@ -252,7 +262,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public GravacaoDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
 
-    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Divulgacao(), UnitOfWork);
+    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Registro, Divulgacao(), UnitOfWork);
 
     public CongelamentoDaVersao Congelamento() => new(Conferencia(), Montagem(), Gravacao(), UnitOfWork);
 

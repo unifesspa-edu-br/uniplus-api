@@ -4,17 +4,15 @@ using Domain.Errors;
 using Domain.Interfaces;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Confere o ato que um novo ato corrige (ADR-0103; UNI-REQ-0156): é do mesmo processo, é da mesma
 /// classe de congelamento e ainda não foi corrigido por ninguém.
 /// </summary>
 /// <remarks>
-/// A conferência vem antes do envio porque o Publicações recusaria a mesma violação depois, na fila de
-/// mensagens que falharam. Ela lê duas fontes, e cada uma vê o que a outra não vê: o registro da
-/// Seleção enxerga a correção ainda pendente, que o Publicações desconhece; o Publicações enxerga a
-/// correção que lhe chegou por outro caminho.
+/// A conferência dá a recusa nomeada no caso comum, antes de qualquer escrita. A correção de um ato que o
+/// endpoint administrativo de Publicações já corrigiu é recusada pelo registro do ato, na mesma transação, e a que
+/// só a gravação enxerga, pela unicidade.
 /// </remarks>
 internal static class ConferenciaDoAtoCorrigido
 {
@@ -25,14 +23,12 @@ internal static class ConferenciaDoAtoCorrigido
     public static async Task<Result<IReadOnlyList<Guid>>> ConferirAsync(
         IAtoDoProcessoRepository atoDoProcessoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
         Guid processoSeletivoId,
         Guid? atoCorrigidoId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
 
         if (atoCorrigidoId is not { } corrigidoId)
         {
@@ -71,10 +67,7 @@ internal static class ConferenciaDoAtoCorrigido
         Guid? corretor = await atoDoProcessoRepository
             .ObterAtoQueCorrigeAsync(corrigidoId, cancellationToken)
             .ConfigureAwait(false);
-        bool corrigidoNoRegistroCentral = corretor is null && await vagaDeLinhagemReader
-            .AtoJaFoiRetificadoAsync(corrigidoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (corretor is not null || corrigidoNoRegistroCentral)
+        if (corretor is not null)
         {
             return Falha(AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido, MensagemDoAtoJaCorrigido(corrigidoId, corretor));
         }

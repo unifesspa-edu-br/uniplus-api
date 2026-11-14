@@ -136,14 +136,11 @@ internal sealed class CenarioDeRetificacaoPublicada
     private static AtoDoProcesso PreliminarJaPublicado(Guid processoId, FaseCronograma fase, ProdutoDaFase preliminar)
     {
         RelogioFixo relogio = new(Agora);
-        AtoDoProcesso publicado = AtoDoProcesso.Registrar(
+        return AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), processoId, "RESULTADO_PROVA", "Resultado da prova", "1/2026", new DateOnly(2026, 1, 20),
                 "Diretor do CEPS", "ceps", "ps-eixos", Guid.CreateVersion7(), [], ItemDoEdital: IdentidadeDoItemDoEdital.DaFase(fase, preliminar)),
             relogio.GetUtcNow()).Value!;
-        publicado.ConfirmarRegistro(relogio);
-
-        return publicado;
     }
 
     private EnvelopeReidratado EnvelopeDaVersaoComAFase(FaseCronograma fase)

@@ -45,7 +45,6 @@ public static class SelecaoModuleRegistration
         RegistrarAplicacaoEInfraestrutura(services);
         RegistrarRemocaoDeArquivosPendentes(services, configuration);
         RegistrarReconciliacaoDaVerificacao(services, configuration);
-        RegistrarAtosDoProcesso(services, configuration);
 
         return services;
     }
@@ -110,15 +109,5 @@ public static class SelecaoModuleRegistration
                 $"{ReconciliacaoDaVerificacaoOptions.SectionName}: Prazo de pelo menos {ReconciliacaoDaVerificacaoOptions.PrazoMinimo} e PrazoMaximo não menor que ele, Intervalo de pelo menos {ReconciliacaoDaVerificacaoOptions.IntervaloMinimo} e TamanhoDoLote positivo.")
             .ValidateOnStart();
         services.AddHostedService<ReconciliacaoDaVerificacaoHostedService>();
-    }
-
-    private static void RegistrarAtosDoProcesso(IServiceCollection services, IConfiguration configuration)
-    {
-        services.AddOptions<AtosDoProcessoOptions>()
-            .Bind(configuration.GetSection(AtosDoProcessoOptions.SectionName))
-            .Validate(
-                static options => options.LimiarDePendencia >= AtosDoProcessoOptions.LimiarMinimo,
-                $"{AtosDoProcessoOptions.SectionName}:LimiarDePendencia deve ser de pelo menos {AtosDoProcessoOptions.LimiarMinimo}.")
-            .ValidateOnStart();
     }
 }

@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Queries;
 
 using AwesomeAssertions;
 
-using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
@@ -107,7 +106,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         return documento;
     }
 
-    private AtoDoProcesso Publicar(string tipo, Guid? produtoId, bool registrado, Guid? corrige = null)
+    private AtoDoProcesso Publicar(string tipo, Guid? produtoId, Guid? corrige = null)
     {
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
@@ -116,11 +115,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
                 ItemDoEdital: produtoId is { } id ? _itensDoCronograma[id] : null, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação"),
             Agora.AddMinutes(-10)).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-10 + _atosDoProcesso.Count));
-        if (registrado)
-        {
-            ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(-5)));
-        }
-
         _atosDoProcesso.Add(ato);
         return ato;
     }
@@ -129,7 +123,6 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         await ListarProdutosPrevistosDoProcessoQueryHandler.Handle(
             new ListarProdutosPrevistosDoProcessoQuery(_processoId),
             _processos, _atos, _documentos, _codecs, _tipos, _fuso,
-            Options.Create(new AtosDoProcessoOptions()),
             new RelogioFixo(Agora),
             CancellationToken.None);
 
@@ -183,7 +176,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Guid origem = Guid.CreateVersion7();
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma([FaseDeOrigem(origem, "INSCRICAO", 1, null, preliminar, definitivo)]);
-        AtoDoProcesso ato = Publicar(Materia, preliminar.Id, registrado: true);
+        AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
         (ProdutoDaFase preliminarRecriado, ProdutoDaFase definitivoRecriado) = Par();
         Cronograma([Fase("HOMOLOGACAO", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
 
@@ -201,7 +194,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
-        AtoDoProcesso ato = Publicar(Materia, preliminar.Id, registrado: true);
+        AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
 
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivo.Id);
@@ -217,29 +210,13 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         doDefinitivo.Impedimento.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Preliminar enviado e sem confirmação está pendente e ainda não libera o definitivo")]
-    public async Task Handle_PreliminarPendente_NaoLiberaODefinitivo()
-    {
-        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
-        Publicar(Materia, preliminar.Id, registrado: false);
-
-        ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
-        ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivo.Id);
-
-        doPreliminar.Situacao.Should().Be(SituacaoDoProdutoPrevisto.Pendente);
-        doPreliminar.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.AguardaConfirmacaoDoRegistro);
-        doDefinitivo.PodePublicar.Should().BeFalse();
-        doDefinitivo.Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarAguardaConfirmacao);
-    }
-
     [Fact(DisplayName = "O preliminar de outra matéria não libera o definitivo")]
     public async Task Handle_PreliminarDeOutraMateria_NaoLibera()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         (ProdutoDaFase outroPreliminar, ProdutoDaFase outroDefinitivo) = Par(OutraMateria);
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo, outroPreliminar, outroDefinitivo)]);
-        Publicar(OutraMateria, outroPreliminar.Id, registrado: true);
+        Publicar(OutraMateria, outroPreliminar.Id);
 
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
         (await ItemDaFase(outroDefinitivo.Id)).PodePublicar.Should().BeTrue();
@@ -251,7 +228,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         ProdutoDaFase definitivoDaOutraFase = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Definitivo);
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo), Fase("ISENCAO", 2, definitivoDaOutraFase)]);
-        Publicar(Materia, preliminar.Id, registrado: true);
+        Publicar(Materia, preliminar.Id);
 
         // Sem preliminar declarado na própria fase, o definitivo não espera nada.
         (await ItemDaFase(definitivoDaOutraFase.Id)).PodePublicar.Should().BeTrue();
@@ -268,11 +245,11 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
 
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
 
-        Publicar(OutraMateria, preliminarOutroTipo.Id, registrado: true);
+        Publicar(OutraMateria, preliminarOutroTipo.Id);
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(
             ImpedimentoDoProduto.PreliminarNaoPublicado, "o preliminar de outro tipo de ato não libera o definitivo");
 
-        Publicar(Materia, preliminar.Id, registrado: true);
+        Publicar(Materia, preliminar.Id);
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
     }
 
@@ -289,10 +266,10 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
             Fase("RESULTADO", 3, definitivo),
         ]);
 
-        Publicar(Materia, primeiroPreliminar.Id, registrado: true);
+        Publicar(Materia, primeiroPreliminar.Id);
         (await ItemDaFase(definitivo.Id)).Impedimento!.Motivo.Should().Be(ImpedimentoDoProduto.PreliminarNaoPublicado);
 
-        Publicar(Materia, segundoPreliminar.Id, registrado: true);
+        Publicar(Materia, segundoPreliminar.Id);
         (await ItemDaFase(definitivo.Id)).PodePublicar.Should().BeTrue();
     }
 
@@ -322,9 +299,9 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
         Cronograma([Fase("INSCRICAO", 1, preliminar, definitivo)]);
-        AtoDoProcesso primeira = Publicar(Materia, preliminar.Id, registrado: true);
-        AtoDoProcesso errata = Publicar("ERRATA", null, registrado: true, corrige: primeira.Id);
-        AtoDoProcesso retificacao = Publicar("RETIFICACAO", null, registrado: false, corrige: errata.Id);
+        AtoDoProcesso primeira = Publicar(Materia, preliminar.Id);
+        AtoDoProcesso errata = Publicar("ERRATA", null, corrige: primeira.Id);
+        AtoDoProcesso retificacao = Publicar("RETIFICACAO", null, corrige: errata.Id);
 
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminar.Id);
 

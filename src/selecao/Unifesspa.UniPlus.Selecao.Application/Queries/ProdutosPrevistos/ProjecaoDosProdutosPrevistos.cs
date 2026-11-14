@@ -158,12 +158,7 @@ internal static class ProjecaoDosProdutosPrevistos
 
     /// <summary>A situação do item, dada a primeira publicação dele.</summary>
     internal static SituacaoDoProdutoPrevisto SituacaoDe(AtoDoProcesso? primeiraPublicacao) =>
-        primeiraPublicacao switch
-        {
-            null => SituacaoDoProdutoPrevisto.Aberto,
-            { Situacao: SituacaoDoRegistroDoAto.Registrado } => SituacaoDoProdutoPrevisto.Publicado,
-            _ => SituacaoDoProdutoPrevisto.Pendente,
-        };
+        primeiraPublicacao is null ? SituacaoDoProdutoPrevisto.Aberto : SituacaoDoProdutoPrevisto.Publicado;
 
     /// <summary>
     /// O que impede o item de ser publicado agora, ou nulo quando pode sair: é a mesma pergunta que a
@@ -176,12 +171,9 @@ internal static class ProjecaoDosProdutosPrevistos
         CadeiasDosProdutosPrevistos cadeias,
         bool tipoVigente)
     {
-        switch (situacao)
+        if (situacao == SituacaoDoProdutoPrevisto.Publicado)
         {
-            case SituacaoDoProdutoPrevisto.Publicado:
-                return new(ImpedimentoDoProduto.JaPublicado, MensagemDoItemJaPublicado);
-            case SituacaoDoProdutoPrevisto.Pendente:
-                return new(ImpedimentoDoProduto.AguardaConfirmacaoDoRegistro, "O item foi enviado ao Publicações e aguarda a confirmação do registro.");
+            return new(ImpedimentoDoProduto.JaPublicado, MensagemDoItemJaPublicado);
         }
 
         if (produto.Papel == PapelProdutoFase.Definitivo && ImpedimentoDoPreliminar(produto, grafo, cadeias) is { } doPreliminar)
@@ -199,19 +191,11 @@ internal static class ProjecaoDosProdutosPrevistos
         Dictionary<Guid, IdentidadeDoItemDoEdital> itens = IdentidadeDoItemDoEdital.Dos(grafo.CronogramaFases, grafo.Etapas);
         foreach (Guid preliminarId in PreliminaresDaMateria.Esperados(grafo, definitivo.Id))
         {
-            AtoDoProcesso? ato = cadeias.PrimeiraPublicacaoDe(itens[preliminarId]);
-            if (ato is null)
+            if (cadeias.PrimeiraPublicacaoDe(itens[preliminarId]) is null)
             {
                 return new(
                     ImpedimentoDoProduto.PreliminarNaoPublicado,
                     "O resultado definitivo só pode ser publicado depois do preliminar da mesma matéria, que ainda não foi publicado.");
-            }
-
-            if (ato.Situacao != SituacaoDoRegistroDoAto.Registrado)
-            {
-                return new(
-                    ImpedimentoDoProduto.PreliminarAguardaConfirmacao,
-                    "O resultado preliminar da mesma matéria foi enviado ao Publicações e aguarda a confirmação do registro.");
             }
         }
 

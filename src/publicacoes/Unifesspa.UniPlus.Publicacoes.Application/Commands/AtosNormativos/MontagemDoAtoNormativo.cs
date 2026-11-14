@@ -62,7 +62,7 @@ public sealed class MontagemDoAtoNormativo(
 
     /// <summary>
     /// Os anexos são conferidos antes de qualquer ida ao banco: a recusa não depende de estado
-    /// gravado, e o registro por mensagem durável, que não passa pelo validator, recebe a mesma
+    /// gravado, e o registro pela porta de escrita, que não passa pelo validator, recebe a mesma
     /// recusa nomeada. A recusa do vínculo declarado vem antes de tudo.
     /// </summary>
     private static DomainError? RecusaDaEntrada(RegistrarAtoNormativoCommand command)
@@ -81,7 +81,7 @@ public sealed class MontagemDoAtoNormativo(
 
     /// <summary>
     /// Os atributos de consequência do tipo ou vêm CONFERIDOS pelo domínio que publicou (registro
-    /// por mensagem durável, ADR-0108/0061), ou se resolvem agora no catálogo (registro pelo
+    /// pela porta de escrita, ADR-0061), ou se resolvem agora no catálogo (registro pelo
     /// endpoint, em que quem publica está aqui, neste instante). Quando vêm conferidos o catálogo
     /// NÃO é relido: o cadastro é editável, e reler faria um edital publicado como congelante ser
     /// registrado com um tipo que já não congela. O nome do tipo segue o mesmo caminho, porque é
@@ -201,7 +201,7 @@ public sealed class MontagemDoAtoNormativo(
     }
 
     /// <summary>
-    /// O id vem do domínio que publicou, quando o registro chega por mensagem durável (ADR-0108).
+    /// O id vem do domínio que publicou, quando o registro chega pela porta de escrita (ADR-0170).
     /// No caminho HTTP não há domínio remoto a quem ele pertença: <see cref="Guid.Empty"/> faz a
     /// factory gerá-lo.
     /// </summary>

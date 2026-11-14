@@ -12,9 +12,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// a retificação do edital.
 /// </summary>
 /// <remarks>
-/// O registro nasce junto da versão e da requisição de registro do ato, na mesma transação. Tem o
+/// O registro nasce junto da versão e do ato em Publicações, na mesma transação. Tem o
 /// mesmo formato do registro do ato que não cria versão, e é o que dá à consulta dos atos do processo
-/// uma fonte única. O ato é publicado no instante em que a versão passa a vigorar, o mesmo da mensagem de registro.
+/// uma fonte única. O ato é publicado no instante em que a versão passa a vigorar, o mesmo do ato entregue ao registro central.
 /// A unidade e o identificador legível são os do processo no instante da publicação;
 /// o documento principal é o do edital e os anexos são os da versão que nasce, na ordem em que o edital os
 /// declara — os herdados, quando a retificação não traz lista nova.

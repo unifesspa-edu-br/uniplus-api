@@ -207,7 +207,6 @@ public sealed class ValoresSelecionaveisResolverTests
         IDocumentoAPublicarRepository DocumentoRepository,
         ISnapshotPublicacaoCanonicalizer Canonicalizer,
         ITipoAtoPublicadoReader TipoDeAtoReader,
-        IVagaDeLinhagemReader VagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository ObrigatoriedadeLegalRepository,
         IFatoCandidatoReader FatoCandidatoReader);
 
@@ -242,7 +241,6 @@ public sealed class ValoresSelecionaveisResolverTests
             documentoRepository,
             canonicalizer,
             tipoDeAtoReader,
-            Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
             Substitute.For<IFatoCandidatoReader>()), documento);
     }
@@ -262,7 +260,6 @@ public sealed class ValoresSelecionaveisResolverTests
             .ComCanonicalizer(mocks.Canonicalizer)
             .ComUsuario(userContext)
             .ComTiposDeAto(mocks.TipoDeAtoReader)
-            .ComVagasDeLinhagem(mocks.VagaDeLinhagemReader)
             .ComObrigatoriedadesLegais(mocks.ObrigatoriedadeLegalRepository)
             .ComCatalogoDeFatos(mocks.FatoCandidatoReader)
             .ComRelogio(TimeProvider.System);

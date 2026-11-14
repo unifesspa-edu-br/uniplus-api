@@ -8,12 +8,10 @@ using FluentValidation;
 /// Valida o bloco documental do ato ANTES de a publicação ser gravada.
 /// </summary>
 /// <remarks>
-/// A ordem importa: o registro do ato acontece depois, por mensagem durável (ADR-0108).
-/// Sem estas regras, um <c>ano: 0</c> ou um órgão em branco passariam pela publicação, o
-/// Edital seria gravado, o cliente receberia 204 — e só então a requisição morreria na
-/// dead letter, deixando Seleção publicada sem o ato correspondente. O que o formato do
-/// documento pode recusar tem de ser recusado com 422, na hora, e não virar incidente
-/// operacional depois.
+/// A ordem importa: o formato que o registro central recusaria é recusado aqui, com 422 no
+/// campo, antes de a transação rastrear a versão, o ato e a divulgação. Sem estas regras, um
+/// <c>ano: 0</c> ou um órgão em branco só seriam recusados pela porta, no fim, sem apontar o
+/// campo.
 /// <para>
 /// Os limites espelham os de <c>AtoNormativo</c> em Publicações. Duplicá-los aqui é o
 /// preço de os módulos não compartilharem entidade — e é preferível a publicar um edital

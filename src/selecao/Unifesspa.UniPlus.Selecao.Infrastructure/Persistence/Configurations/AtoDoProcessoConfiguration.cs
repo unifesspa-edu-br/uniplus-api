@@ -32,7 +32,6 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.SubMaxLength);
         builder.Property(a => a.ItemDoEdital).HasMaxLength(IdentidadeDoItemDoEdital.ChaveMaxLength);
         builder.Property(a => a.PublicadoEm).IsRequired();
-        builder.Property(a => a.Situacao).HasConversion<int>().IsRequired();
 
         // A ordem de registro é do banco, e o registro sob a trava do processo a torna a ordem real entre os atos dele.
         builder.Property(a => a.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();

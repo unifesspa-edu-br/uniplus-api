@@ -74,8 +74,8 @@ public static class ObterSnapshotVigenteQueryHandler
     /// <summary>
     /// Projeta a versão congelada no DTO. O identificador forense devolvido é o da VERSÃO — a mesma
     /// referência durável que o <c>ProcessoPublicadoEvent</c> carrega. O ato entra por VALOR, com o par
-    /// <c>{id, hash}</c> que a versão já guarda: nenhuma consulta a Publicações, e portanto nenhuma
-    /// espera pela drenagem do outbox (ADR-0108).
+    /// <c>{id, hash}</c> que a versão já guarda: nenhuma consulta a Publicações no caminho da
+    /// requisição.
     /// </summary>
     internal static SnapshotVigenteDto Projetar(VersaoConfiguracao versao) =>
         new(

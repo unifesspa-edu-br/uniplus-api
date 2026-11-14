@@ -48,8 +48,8 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
     /// <summary>
     /// Publica o processo (congelamento dos parâmetros na publicação, UNI-REQ-0019): valida a conformidade, congela a versão 1 da
     /// configuração (append-only) e transita o status para Publicado, tudo na mesma
-    /// transação — junto da requisição durável que registra o ato em Publicações
-    /// (ADR-0108). Toda recusa 422 é reavaliada contra o checklist estrutural:
+    /// transação — junto do registro do ato em Publicações, que a Seleção chama na mesma
+    /// gravação (ADR-0170). Toda recusa 422 é reavaliada contra o checklist estrutural:
     /// havendo item vermelho no estado atual, o corpo carrega
     /// <c>Extensions["pendencias"]</c>, qualquer que seja o código do erro que
     /// efetivamente recusou.
@@ -72,7 +72,7 @@ public sealed class ProcessoSeletivoPublicacaoController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-        Description = "Outra publicação concorrente congelou uma versão da configuração entre a leitura e a gravação desta. Reler o processo e resubmeter. Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+        Description = "Outra publicação concorrente congelou uma versão da configuração entre a leitura e a gravação desta (reler o processo e resubmeter), o identificador legível já é de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
         Guid id,

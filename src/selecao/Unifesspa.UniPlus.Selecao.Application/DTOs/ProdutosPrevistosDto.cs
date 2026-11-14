@@ -6,10 +6,7 @@ public enum SituacaoDoProdutoPrevisto
     /// <summary>Nenhum ato do processo cumpre o item.</summary>
     Aberto,
 
-    /// <summary>O ato foi enviado ao registro central e a confirmação ainda não chegou.</summary>
-    Pendente,
-
-    /// <summary>O registro central confirmou o ato.</summary>
+    /// <summary>Um ato do processo cumpre o item.</summary>
     Publicado,
 }
 
@@ -19,14 +16,8 @@ public enum ImpedimentoDoProduto
     /// <summary>O item já foi publicado: corrigi-lo é uma errata ou retificação do ato.</summary>
     JaPublicado,
 
-    /// <summary>O item foi enviado e aguarda a confirmação do registro.</summary>
-    AguardaConfirmacaoDoRegistro,
-
     /// <summary>O definitivo de uma matéria só sai depois do preliminar dela, que ainda não foi publicado.</summary>
     PreliminarNaoPublicado,
-
-    /// <summary>O preliminar da matéria foi enviado e aguarda a confirmação do registro.</summary>
-    PreliminarAguardaConfirmacao,
 
     /// <summary>O catálogo de Publicações não tem versão vigente do tipo do ato.</summary>
     TipoDeAtoNaoVigente,
@@ -45,7 +36,7 @@ public sealed record ImpedimentoDoProdutoDto(ImpedimentoDoProduto Motivo, string
 /// <param name="TipoCodigo">Código do tipo do ato que o item publica.</param>
 /// <param name="TipoNome">Nome do tipo do ato; nulo quando o catálogo não o tem vigente e nenhum ato o registrou.</param>
 /// <param name="Papel">Token canônico (<c>PRELIMINAR</c> abre o prazo de recurso, <c>DEFINITIVO</c> o encerra); nulo quando o ato não é resultado.</param>
-/// <param name="Situacao">Aberto, pendente ou publicado.</param>
+/// <param name="Situacao">Aberto ou publicado.</param>
 /// <param name="Ato">O ato que cumpre o item (a primeira publicação); nulo enquanto aberto.</param>
 /// <param name="Correcoes">Os atos que corrigem o ato do item, do mais antigo para o mais recente.</param>
 /// <param name="PodePublicar">Se o item pode ser publicado agora.</param>

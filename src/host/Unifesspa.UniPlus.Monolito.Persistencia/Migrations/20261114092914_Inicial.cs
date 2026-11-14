@@ -3432,8 +3432,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     politica_de_divulgacao_confirmada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    situacao = table.Column<int>(type: "integer", nullable: false),
-                    registrado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },

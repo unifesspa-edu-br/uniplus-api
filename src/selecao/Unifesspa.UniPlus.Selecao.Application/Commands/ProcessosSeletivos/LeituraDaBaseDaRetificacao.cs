@@ -9,8 +9,6 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Publicacoes.Contracts;
-
 /// <summary>
 /// O que a retificação de ato único e o fechamento da sessão conferem sobre a cadeia de versões antes de
 /// canonicalizar: a versão corrente, o ato que seria emendado e o ciclo de recurso em aberto. A versão de configuração
@@ -20,7 +18,6 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 public sealed class LeituraDaBaseDaRetificacao(
     IProcessoSeletivoRepository processos,
-    IVagaDeLinhagemReader vagasDeLinhagem,
     IAtoDoProcessoRepository atos,
     IRegistroCodecsEnvelope registroCodecs,
     IFasesIniciadasDoProcesso fasesIniciadas)
@@ -74,19 +71,12 @@ public sealed class LeituraDaBaseDaRetificacao(
         return iniciadas.RecusaDaAlteracao(processo.CronogramaFases) ?? iniciadas.RecusaDaRemocaoDaEtapa(processo.Etapas);
     }
 
-    // A cadeia de atos é linear: o ato que esta retificação emendaria pode já ter sido emendado pelo endpoint
-    // administrativo de Publicações, e o registro recusaria depois de publicado. A versão nova é coerente sozinha, mas
-    // não pode desfazer o ciclo de recurso que um preliminar já publicado abriu e que o definitivo ainda não fechou.
+    // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um preliminar já publicado abriu e
+    // que o definitivo ainda não fechou. A linearidade da cadeia de atos é conferida pelo registro do ato, que enxerga o
+    // que o endpoint administrativo de Publicações já emendou.
     private async Task<Result<BaseDaRetificacao>> ConferirAsync(
         ProcessoSeletivo processo, VersaoConfiguracao versaoAtual, string motivo, CancellationToken cancellationToken)
     {
-        if (await vagasDeLinhagem.AtoJaFoiRetificadoAsync(versaoAtual.AtoCriadorId, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<BaseDaRetificacao>.Failure(new DomainError(
-                "ProcessoSeletivo.AtoJaRetificado",
-                "O ato que esta retificação emendaria já foi retificado — a cadeia de atos é linear."));
-        }
-
         Result cicloRecursal = await ConferenciaDoCicloRecursalAberto
             .ConferirAsync(atos, registroCodecs, processo, versaoAtual, cancellationToken)
             .ConfigureAwait(false);

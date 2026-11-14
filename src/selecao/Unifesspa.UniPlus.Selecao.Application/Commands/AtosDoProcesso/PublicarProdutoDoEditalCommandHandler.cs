@@ -19,14 +19,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Publica um item que a versão vigente do edital declara: confere tudo o que o Publicações recusaria
-/// depois e o que o edital exige, grava o registro do ato do processo com o item e enfileira a requisição
-/// de registro, na mesma transação (ADR-0108).
+/// Publica um item que a versão vigente do edital declara: confere o que o edital exige, grava o registro
+/// do ato do processo com o item e o entrega à porta de escrita do registro central, na mesma transação
+/// (ADR-0170).
 /// </summary>
 /// <remarks>
 /// <para>
-/// O item só conta como publicado quando o Publicações confirma o registro: até lá o ato fica pendente, e
-/// nem a segunda publicação do item nem o definitivo que espera o preliminar passam por ele.
+/// O item conta como publicado assim que a transação confirma: o definitivo que espera o preliminar passa a
+/// poder sair, e a segunda publicação do item é recusada.
 /// </para>
 /// <para>
 /// A primeira publicação do item é a que não corrige ato algum, e o índice único por processo e item a
@@ -44,7 +44,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IRegistroCodecsEnvelope registroCodecs,
         ITipoAtoPublicadoReader tipoDeAtoReader,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
+        IRegistroDeAtoNormativo registroDeAtos,
         IUserContext userContext,
         IUnitOfWork unitOfWork,
         LeituraDoInstanteDaPublicacao leituraDoInstante,
@@ -57,7 +57,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         ArgumentNullException.ThrowIfNull(documentoAPublicarRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
-        ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
+        ArgumentNullException.ThrowIfNull(registroDeAtos);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(leituraDoInstante);
@@ -124,7 +124,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(atos);
 
         Result<IReadOnlyList<Guid>> conferenciaDoCorrigido = await ConferirPublicacaoOuCorrecaoAsync(
-            command, produto, grafo, cadeias, atoDoProcessoRepository, processoSeletivoRepository, vagaDeLinhagemReader, cancellationToken)
+            command, produto, grafo, cadeias, atoDoProcessoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoCorrigido.IsFailure)
         {
@@ -136,23 +136,6 @@ public static class PublicarProdutoDoEditalCommandHandler
         if (conferenciaDaPolitica.IsFailure)
         {
             return Recusa(conferenciaDaPolitica.Error!);
-        }
-
-        // O ato que corrige integra a linhagem do corrigido, e a vaga do objeto é da linhagem.
-        Result conferenciaDaVaga = await ConferenciaDoTipoDeAto
-            .VagaDoObjetoAsync(vagaDeLinhagemReader, tipo, command.ProcessoSeletivoId, conferenciaDoCorrigido.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVaga.IsFailure)
-        {
-            return Recusa(conferenciaDaVaga.Error!);
-        }
-
-        Result conferenciaDaVagaLocal = await ConferenciaDoTipoDoAtoAvulso
-            .VagaNoRegistroLocalAsync(atoDoProcessoRepository, tipo, command.ProcessoSeletivoId, conferenciaDoCorrigido.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (conferenciaDaVagaLocal.IsFailure)
-        {
-            return Recusa(conferenciaDaVagaLocal.Error!);
         }
 
         Result<DocumentosDoAtoConferidos> conferenciaDosDocumentos = await ConferenciaDosDocumentosDoAto
@@ -179,6 +162,7 @@ public static class PublicarProdutoDoEditalCommandHandler
                     ItemDoEdital: produto.Item,
                     PoliticaConfirmadaPorSub: conferenciaDaPolitica.Value),
                 atoDoProcessoRepository,
+                registroDeAtos,
                 unitOfWork,
                 cancellationToken)
             .ConfigureAwait(false);
@@ -192,7 +176,6 @@ public static class PublicarProdutoDoEditalCommandHandler
         CadeiasDosProdutosPrevistos cadeias,
         IAtoDoProcessoRepository atoDoProcessoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IVagaDeLinhagemReader vagaDeLinhagemReader,
         CancellationToken cancellationToken)
     {
         if (command.AtoCorrigidoId is not { } atoCorrigidoId)
@@ -204,7 +187,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         }
 
         Result<IReadOnlyList<Guid>> corrigido = await ConferenciaDoAtoCorrigido
-            .ConferirAsync(atoDoProcessoRepository, processoSeletivoRepository, vagaDeLinhagemReader, command.ProcessoSeletivoId, atoCorrigidoId, cancellationToken)
+            .ConferirAsync(atoDoProcessoRepository, processoSeletivoRepository, command.ProcessoSeletivoId, atoCorrigidoId, cancellationToken)
             .ConfigureAwait(false);
         if (corrigido.IsFailure)
         {

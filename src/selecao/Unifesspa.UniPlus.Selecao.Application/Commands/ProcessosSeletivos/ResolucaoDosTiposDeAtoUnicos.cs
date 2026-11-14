@@ -36,10 +36,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// </para>
 /// <para>
 /// <b>As vagas ocupadas vêm do registro local dos atos.</b> O registro do ato da versão é gravado na
-/// mesma transação da versão e da mensagem durável (ADR-0108), enquanto Publicações só conhece o ato
-/// depois de consumi-la. Perguntar a Publicações deixaria uma janela, entre o commit e o consumo, em
-/// que o tipo do ato anterior não aparece como ocupado. Os gates e o checklist leem do mesmo lugar,
-/// para que concordem.
+/// mesma transação da versão e do ato em Publicações. Os gates e o checklist leem do mesmo lugar, para
+/// que concordem; a vaga do objeto no registro central é conferida pela porta de escrita, na gravação.
 /// </para>
 /// </remarks>
 public sealed class ResolucaoDosTiposDeAtoUnicos(

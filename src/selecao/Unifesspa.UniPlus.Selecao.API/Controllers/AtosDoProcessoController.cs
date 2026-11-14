@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
 /// <summary>
 /// Atos do processo seletivo na visão administrativa: o edital, as retificações e os demais atos
-/// publicados, com a situação do registro e os documentos de cada um.
+/// publicados, com os documentos de cada um.
 /// </summary>
 [ApiController]
 [Route("processos-seletivos/{processoSeletivoId:guid}/atos")]
@@ -46,22 +46,22 @@ public sealed class AtosDoProcessoController : ControllerBase
     /// <summary>
     /// Publica um ato avulso do processo — aviso, comunicado, errata e semelhantes —, com o documento
     /// principal em PDF e os anexos já enviados, e, quando corrige um ato publicado, a indicação dele e o
-    /// motivo (ADR-0103). Tudo o que o registro central recusaria depois é conferido antes, com 422: a
-    /// recusa tardia iria para a fila de mensagens que falharam, onde ninguém a recebe.
+    /// motivo (ADR-0103). O ato entra no registro central na mesma transação que grava o ato do processo, e a
+    /// recusa do registro volta nomeada, sem nada gravado.
     /// </summary>
     /// <remarks>
-    /// Responde 202: o registro no Publicações e a cópia ao acervo público acontecem depois, por mensagem
-    /// durável. O ato aparece como pendente na consulta dos atos do processo até o registro se confirmar.
-    /// Convocação e chamada não são documento avulso: pertencem ao Ingresso.
+    /// Responde 201 com o ato publicado e divulgado: a cópia dos documentos ao acervo público é o único efeito posterior,
+    /// por mensagem durável. A vaga do objeto já ocupada e o ato já retificado respondem 409, com a série, o número e o ano
+    /// do ato que a ocupa. Convocação e chamada não são documento avulso: pertencem ao Ingresso.
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpPost]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-            Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+            Description = "O objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) ou outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
             Guid processoSeletivoId,
@@ -85,13 +85,13 @@ public sealed class AtosDoProcessoController : ControllerBase
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return resultado.IsSuccess ? StatusCode(StatusCodes.Status202Accepted, resultado.Value) : resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess
+            ? CreatedAtAction(nameof(Listar), new { processoSeletivoId }, resultado.Value)
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
-    /// Lista os atos do processo, do mais recente para o mais antigo. O ato pendente há mais tempo
-    /// que o limiar configurado vem com <c>pendenciaAcimaDoLimiar</c>: o Publicações não responde a
-    /// recusa do registro, então é por aqui que a pendência chega a quem a resolve.
+    /// Lista os atos do processo, do mais recente para o mais antigo, com o instante em que cada um foi divulgado.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet]

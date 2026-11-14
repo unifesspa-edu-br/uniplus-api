@@ -5,6 +5,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Registra recursos da camada Application do módulo Publicações. Os handlers são
@@ -22,6 +23,9 @@ public static class PublicacoesApplicationServiceRegistration
         services.AddScoped<ReservaDasVagasDoObjeto>();
         services.AddScoped<CadeiaDeRetificacaoDoAto>();
         services.AddScoped<MontagemDoAtoNormativo>();
+
+        // A porta de escrita do registro de atos (ADR-0170): o domínio que publica a chama na própria transação.
+        services.AddScoped<IRegistroDeAtoNormativo, RegistroDeAtoNormativoPeloDominio>();
 
         return services;
     }

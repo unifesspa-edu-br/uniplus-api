@@ -14,32 +14,31 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.CenarioDeR
 
 /// <summary>
 /// O comando que congela uma versão lê o relógio uma só vez, depois da trava do processo: a vigência da versão, o
-/// registro do ato e a mensagem de registro valem o mesmo instante, e o tipo de ato vigente é o do dia desse instante
+/// ato entregue ao registro central e a divulgação valem o mesmo instante, e o tipo de ato vigente é o do dia desse instante
 /// no fuso institucional, não o da data que o documento declara.
 /// </summary>
 public sealed class InstanteUnicoNaPublicacaoTests
 {
     private static readonly DateTimeOffset UmaDoisMinutosDepoisDaMeiaNoiteEmBelem = new(2026, 3, 14, 3, 2, 0, TimeSpan.Zero);
 
-    [Theory(DisplayName = "O comando lê o relógio uma vez e usa o mesmo instante na versão, no ato e na mensagem de registro")]
+    [Theory(DisplayName = "O comando lê o relógio uma vez e usa o mesmo instante na versão, no ato e no ato entregue à porta")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
     [InlineData(OperacaoQueCongela.FecharRetificacao)]
-    public async Task Congelamento_LeORelogioUmaVez_EOInstanteVaiParaAVersaoOAtoEAMensagem(OperacaoQueCongela operacao)
+    public async Task Congelamento_LeORelogioUmaVez_EOInstanteVaiParaAVersaoOAtoEAPorta(OperacaoQueCongela operacao)
     {
         RelogioDeLeituraContada relogio = new(UmaDoisMinutosDepoisDaMeiaNoiteEmBelem);
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         cenario.Servicos.ComRelogio(relogio);
         Gravacao gravado = await Gravacao.CapturarAsync(cenario.Servicos);
 
-        (Result resposta, IEnumerable<object> mensagens) = await cenario.ExecutarAsync();
+        (Result resposta, _) = await cenario.ExecutarAsync();
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
         relogio.Leituras.Should().Be(1);
         gravado.Versao!.VigenteAPartirDe.Should().Be(UmaDoisMinutosDepoisDaMeiaNoiteEmBelem);
         gravado.Ato!.PublicadoEm.Should().Be(UmaDoisMinutosDepoisDaMeiaNoiteEmBelem);
-        requisicao.PublicadoEm.Should().Be(UmaDoisMinutosDepoisDaMeiaNoiteEmBelem);
+        gravado.Entregue!.PublicadoEm.Should().Be(UmaDoisMinutosDepoisDaMeiaNoiteEmBelem);
     }
 
     [Theory(DisplayName = "O tipo de ato é consultado no dia do instante em Belém, e a data declarada pelo documento não entra na consulta")]
@@ -101,11 +100,15 @@ public sealed class InstanteUnicoNaPublicacaoTests
 
         public AtoDoProcesso? Ato { get; private set; }
 
+        public AtoNormativoPublicado? Entregue { get; private set; }
+
         public static async Task<Gravacao> CapturarAsync(ServicosDoCongelamentoDeTeste servicos)
         {
             Gravacao gravacao = new();
             await servicos.Repositorio.AdicionarVersaoConfiguracaoAsync(Arg.Do<VersaoConfiguracao>(v => gravacao.Versao = v), Arg.Any<CancellationToken>());
             await servicos.Atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravacao.Ato = a), Arg.Any<CancellationToken>());
+            servicos.Registro.RegistrarAsync(Arg.Do<AtoNormativoPublicado>(a => gravacao.Entregue = a), Arg.Any<CancellationToken>())
+                .Returns(Result.Success());
 
             return gravacao;
         }

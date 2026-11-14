@@ -35,7 +35,7 @@ public sealed class RascunhoRetificacao : EntityBase
     /// <summary>
     /// Teto do motivo, aferido sobre o valor <b>normalizado</b>. É o menor dos dois
     /// limites que ele atravessa: a coluna de Seleção comportaria mais, mas no fechamento
-    /// este mesmo motivo viaja para o ato em Publicações (ADR-0108), onde o limite é 1000.
+    /// este mesmo motivo viaja para o ato em Publicações, onde o limite é 1000.
     /// Aceitar aqui um motivo que o fechamento recusaria abriria uma sessão condenada —
     /// o administrador só descobriria ao tentar fechá-la.
     /// </summary>

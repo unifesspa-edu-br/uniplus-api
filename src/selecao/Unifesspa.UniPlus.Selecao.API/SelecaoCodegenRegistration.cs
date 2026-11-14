@@ -63,11 +63,14 @@ public static class SelecaoCodegenRegistration
         // reader intra-módulo (não cross-módulo como os demais acima).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IRegraCatalogoReader>();
 
-        // Catálogo de tipos de ato (ADR-0056/0108): a conferência do tipo declarado acontece
-        // antes de publicar. Mesmo motivo dos readers de Configuracao acima — o contrato é
-        // público, o concreto vive na Infrastructure do outro módulo.
+        // Catálogo de tipos de ato (ADR-0056): a conferência do tipo declarado acontece antes de publicar. Mesmo
+        // motivo dos readers de Configuracao acima — o contrato é público, o concreto vive na Infrastructure do outro
+        // módulo.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.ITipoAtoPublicadoReader>();
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IVagaDeLinhagemReader>();
+
+        // Porta de escrita do registro de atos (ADR-0170): o domínio que publica a chama na própria transação. O
+        // concreto é internal à Application de Publicações, e o codegen não constrói tipo não público.
+        opts.CodeGeneration.AlwaysUseServiceLocationFor<Unifesspa.UniPlus.Publicacoes.Contracts.IRegistroDeAtoNormativo>();
 
         // Projeção pública do certame: concreto internal na Infrastructure de Seleção, injetado
         // tanto no handler que divulga quanto nos dois de leitura.

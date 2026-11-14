@@ -10718,14 +10718,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("publicado_em");
 
-                    b.Property<DateTimeOffset?>("RegistradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("registrado_em");
-
-                    b.Property<int>("Situacao")
-                        .HasColumnType("integer")
-                        .HasColumnName("situacao");
-
                     b.Property<string>("TipoCodigo")
                         .IsRequired()
                         .HasMaxLength(60)

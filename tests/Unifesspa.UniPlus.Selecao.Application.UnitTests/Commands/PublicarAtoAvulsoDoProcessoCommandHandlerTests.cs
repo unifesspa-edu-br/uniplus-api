@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
@@ -21,7 +22,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A publicação do ato avulso: cada recusa da conferência tem erro nomeado e acontece antes de
-/// qualquer escrita, e o ato aceito grava o registro e enfileira a requisição de registro.
+/// qualquer escrita, e o ato aceito passa pela porta do registro central e grava o registro do ato do processo na mesma
+/// transação.
 /// </summary>
 public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
 {
@@ -36,7 +38,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
     private readonly IAtoDoProcessoRepository _atos = Substitute.For<IAtoDoProcessoRepository>();
     private readonly IDocumentoAPublicarRepository _documentos = Substitute.For<IDocumentoAPublicarRepository>();
     private readonly ITipoAtoPublicadoReader _tipos = Substitute.For<ITipoAtoPublicadoReader>();
-    private readonly IVagaDeLinhagemReader _vagas = Substitute.For<IVagaDeLinhagemReader>();
+    private readonly IRegistroDeAtoNormativo _registro = ServicosDoCongelamentoDeTeste.RegistroQueAceita();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private readonly DocumentoAPublicar _principal = Documento(FinalidadeDoDocumento.DocumentoDeAto, TiposDeMidiaDeDocumento.Pdf, "aviso.pdf", 'a');
@@ -65,50 +67,56 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
             .Returns(new HashSet<Guid>());
     }
 
-    [Fact(DisplayName = "O aviso com um anexo grava o registro pendente e enfileira o registro do ato com o hash do principal e a lista de anexos")]
-    public async Task Aviso_ComAnexo_GravaORegistroEEnfileiraARequisicao()
+    [Fact(DisplayName = "O aviso com um anexo grava o registro do ato e o entrega à porta com o hash do principal e a lista de anexos, antes de salvar")]
+    public async Task Aviso_ComAnexo_GravaORegistroEEntregaAPorta()
     {
         AtoDoProcesso? gravado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
+        AtoNormativoPublicado? entregue = null;
+        _registro.RegistrarAsync(Arg.Do<AtoNormativoPublicado>(a => entregue = a), Arg.Any<CancellationToken>()).Returns(Result.Success());
 
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(anexos: [new AnexoSolicitadoDoAto(_anexo.Id, "Quadro de vagas")]));
 
         resposta.IsSuccess.Should().BeTrue();
         gravado.Should().NotBeNull();
         resposta.Value!.AtoId.Should().Be(gravado!.Id);
-        gravado.Situacao.Should().Be(SituacaoDoRegistroDoAto.Pendente);
         gravado.UnidadeAdministradora.Should().Be("ceps", "a chave no acervo usa a unidade e o identificador da versão divulgada");
         gravado.IdentificadorLegivelDoProcesso.Should().Be("psm-medicina-2027");
         gravado.DocumentoPrincipalId.Should().Be(_principal.Id);
         gravado.Anexos.Should().ContainSingle().Which.NomeDeExibicao.Should().Be("Quadro de vagas.docx");
-        await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        mensagens.Should().ContainSingle().Which.Should().Be(new CopiarDocumentosDoAtoAoAcervo(_processoId, gravado.Id));
+        Received.InOrder(() =>
+        {
+            _ = _atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
+            _ = _registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>());
+            _ = _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        });
 
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
-        requisicao.AtoId.Should().Be(gravado.Id);
-        requisicao.Orgao.Should().Be("CEPS");
-        requisicao.Serie.Should().Be("AVISO");
-        requisicao.Ano.Should().Be(2026);
-        requisicao.DocumentoHash.Should().Be(_principal.HashSha256);
-        requisicao.VersaoInvocadaId.Should().BeNull("o ato avulso não congela configuração");
-        requisicao.AtoRetificadoId.Should().BeNull();
-        requisicao.Vinculos.Should().ContainSingle().Which.EntidadeId.Should().Be(_processoId);
-        requisicao.Anexos.Should().ContainSingle().Which.Should().Be(
-            new AnexoDoAtoRequisicao("Quadro de vagas.docx", TiposDeMidiaDeDocumento.Docx, _anexo.HashSha256!));
+        entregue!.AtoId.Should().Be(gravado.Id);
+        entregue.Orgao.Should().Be("CEPS");
+        entregue.Serie.Should().Be("AVISO");
+        entregue.Ano.Should().Be(2026);
+        entregue.DocumentoHash.Should().Be(_principal.HashSha256);
+        entregue.VersaoInvocada.Should().BeNull("o ato avulso não congela configuração");
+        entregue.Correcao.Should().BeNull();
+        entregue.Vinculos.Should().ContainSingle().Which.EntidadeId.Should().Be(_processoId);
+        entregue.Anexos.Should().ContainSingle().Which.Should().Be(
+            new AnexoDoAtoPublicado("Quadro de vagas.docx", TiposDeMidiaDeDocumento.Docx, _anexo.HashSha256!));
     }
 
-    [Fact(DisplayName = "O ato avulso lê o relógio uma vez e usa o instante no registro gravado e na mensagem de registro")]
-    public async Task Avulso_LeORelogioUmaVez_EOInstanteVaiParaORegistroEAMensagem()
+    [Fact(DisplayName = "O ato avulso lê o relógio uma vez e usa o instante no registro gravado e no ato entregue à porta")]
+    public async Task Avulso_LeORelogioUmaVez_EOInstanteVaiParaORegistroEParaAPorta()
     {
         RelogioDeLeituraContada relogio = new(Agora);
         AtoDoProcesso? gravado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(), relogio);
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(), relogio);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         relogio.Leituras.Should().Be(1);
         gravado!.PublicadoEm.Should().Be(Agora);
-        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Which.PublicadoEm.Should().Be(Agora);
+        await _registro.Received(1).RegistrarAsync(Arg.Is<AtoNormativoPublicado>(a => a.PublicadoEm == Agora), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O tipo do ato avulso é consultado no dia do instante, e a data que o documento declara não entra na consulta")]
@@ -123,18 +131,17 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         await _tipos.DidNotReceive().ObterVigenteAsync("AVISO", declarada, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A errata que aponta um aviso publicado é aceita com o motivo, e a requisição leva o ato corrigido")]
+    [Fact(DisplayName = "A errata que aponta um aviso publicado é aceita com o motivo, e a porta recebe o ato corrigido")]
     public async Task Errata_ApontandoAvisoPublicado_EAceita()
     {
         Guid avisoId = AtoPublicadoDoProcesso(_processoId);
         _atos.ListarCadeiaDeCorrecaoAsync(avisoId, Arg.Any<CancellationToken>()).Returns([avisoId]);
 
-        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(atoCorrigidoId: avisoId, motivo: "Data errada no cronograma"));
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(atoCorrigidoId: avisoId, motivo: "Data errada no cronograma"));
 
         resposta.IsSuccess.Should().BeTrue();
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
-        requisicao.AtoRetificadoId.Should().Be(avisoId);
-        requisicao.MotivoRetificacao.Should().Be("Data errada no cronograma");
+        await _registro.Received(1).RegistrarAsync(
+            Arg.Is<AtoNormativoPublicado>(a => a.Correcao == new CorrecaoDoAto(avisoId, "Data errada no cronograma")), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A correção sem motivo é recusada no campo do motivo, antes de travar ou consultar o processo")]
@@ -222,26 +229,59 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         resposta.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Tipo único por objeto com o primeiro ato ainda pendente na Seleção recusa o segundo")]
-    public async Task VagaDoObjetoOcupadaPorAtoPendente_Recusa()
+    [Fact(DisplayName = "A recusa da porta, como a vaga do objeto ocupada, devolve a recusa nomeada, descarta o rastreado e não grava")]
+    public async Task RecusaDaPorta_DevolveADescartaENaoGrava()
     {
-        Tipo(congela: false, unico: true);
-        _atos.ExisteAtoDoTipoForaDaCadeiaAsync(_processoId, "AVISO", Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        DomainError vagaOcupada = new("AtoNormativo.ObjetoJaTemAtoVivoDoTipo", "O objeto já tem o ato AVISO nº 1/2026 vivo.");
+        _registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>()).Returns(Result.Failure(vagaOcupada));
 
-        await ExigirRecusa(Comando(), "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo");
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando());
+
+        resposta.Error.Should().Be(vagaOcupada);
+        mensagens.Should().BeEmpty();
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Tipo único por objeto com a vaga tomada por outra linhagem é recusado")]
-    public async Task VagaDoObjetoTomada_Recusa()
+    [Fact(DisplayName = "O conflito que só a gravação enxerga e a porta reconhece devolve a recusa da porta e descarta o rastreado")]
+    public async Task ConflitoDaGravacaoReconhecidoPelaPorta_DevolveARecusaDaPorta()
     {
-        _tipos.ObterVigenteAsync("AVISO", DataDoAto, Arg.Any<CancellationToken>()).Returns(
-            new TipoAtoPublicadoView("AVISO", "Aviso", false, true, false, false, PublicavelComoAvulso: true));
-        _vagas.ObjetoJaTemAtoDeOutraLinhagemAsync(
-            EntidadesDeRegistroPeloDominio.ProcessoSeletivo, _processoId, "AVISO", Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        DomainError raizRetificada = new("AtoNormativo.RaizJaRetificada", "O ato AVISO nº 1/2026 já foi retificado.");
+        Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_ato_normativo_retificado");
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns<Task>(_ => throw violacao);
+        _registro.TraduzirConflitoDaGravacao(violacao).Returns(raizRetificada);
 
-        await ExigirRecusa(Comando(), "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo");
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando());
+
+        resposta.Error.Should().Be(raizRetificada);
+        mensagens.Should().BeEmpty();
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "O conflito da correção única é da Seleção e vem antes da porta, que nem é consultada")]
+    public async Task ConflitoDaCorrecaoUnica_EDaSelecaoENaoConsultaAPorta()
+    {
+        Guid aviso = AtoPublicadoDoProcesso(_processoId);
+        _atos.ListarCadeiaDeCorrecaoAsync(aviso, Arg.Any<CancellationToken>()).Returns([aviso]);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task>(_ => throw ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_atos_do_processo_ato_corrigido"));
+
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(atoCorrigidoId: aviso, motivo: "Erro"));
+
+        resposta.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido);
+        _registro.DidNotReceive().TraduzirConflitoDaGravacao(Arg.Any<Exception>());
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "A exceção que nem a Seleção nem a porta reconhecem propaga")]
+    public async Task ExcecaoNaoReconhecida_Propaga()
+    {
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns<Task>(_ => throw new InvalidOperationException("Conexão perdida."));
+
+        Func<Task> publicar = () => Publicar(Comando());
+
+        await publicar.Should().ThrowAsync<InvalidOperationException>();
+        _registro.Received(1).TraduzirConflitoDaGravacao(Arg.Any<InvalidOperationException>());
     }
 
     [Fact(DisplayName = "O ato corrigido sem registro na Seleção é recusado")]
@@ -281,8 +321,8 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         await NadaFoiEscrito();
     }
 
-    [Fact(DisplayName = "A segunda correção do mesmo ato é recusada quando a primeira ainda está pendente na Seleção")]
-    public async Task SegundaCorrecaoComAPrimeiraPendente_Recusa()
+    [Fact(DisplayName = "A segunda correção do mesmo ato é recusada, e a recusa orienta a corrigir a cabeça da cadeia")]
+    public async Task SegundaCorrecao_Recusa()
     {
         Guid aviso = AtoPublicadoDoProcesso(_processoId);
         _atos.ObterAtoQueCorrigeAsync(aviso, Arg.Any<CancellationToken>()).Returns(Guid.CreateVersion7());
@@ -292,15 +332,6 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         resposta.Error!.Code.Should().Be(AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido);
         resposta.Error.Message.Should().Contain("mais recente da cadeia", "a recusa orienta a corrigir a cabeça da cadeia");
         await NadaFoiEscrito();
-    }
-
-    [Fact(DisplayName = "A segunda correção do mesmo ato é recusada quando a primeira já está no registro central")]
-    public async Task SegundaCorrecaoComAPrimeiraRegistrada_Recusa()
-    {
-        Guid aviso = AtoPublicadoDoProcesso(_processoId);
-        _vagas.AtoJaFoiRetificadoAsync(aviso, Arg.Any<CancellationToken>()).Returns(true);
-
-        await ExigirRecusa(Comando(atoCorrigidoId: aviso, motivo: "Erro"), AtoDoProcessoErrorCodes.AtoCorrigidoJaCorrigido);
     }
 
     [Fact(DisplayName = "Documento inexistente ou de outro processo é recusado")]
@@ -388,7 +419,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be(codigoEsperado);
-        mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao Publicações");
+        mensagens.Should().BeEmpty("a recusa acontece antes de qualquer envio ao registro central");
         await NadaFoiEscrito();
     }
 
@@ -400,7 +431,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
 
     private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarAtoAvulsoDoProcessoCommand comando, TimeProvider? relogio = null) =>
         PublicarAtoAvulsoDoProcessoCommandHandler.Handle(
-            comando, _processos, _divulgados, _atos, _documentos, _tipos, _vagas, _unitOfWork,
+            comando, _processos, _divulgados, _atos, _documentos, _tipos, _registro, _unitOfWork,
             new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
 
     private PublicarAtoAvulsoDoProcessoCommand Comando(

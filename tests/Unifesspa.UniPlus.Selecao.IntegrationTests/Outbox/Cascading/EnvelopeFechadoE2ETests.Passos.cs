@@ -235,7 +235,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     // IDENTIDADE da versão que o ato guarda por valor, não pela existência dela.
     private static async Task ConfirmarAtoV1Async(Cenario c)
     {
-        AtoNormativo ato = await EsperaDeAtoRegistrado.AguardarAsync(c.Api, c.AtoV1Id, "ato V1 (abertura)", c.Ctx.ProcessoId);
+        AtoNormativo ato = await AtoNoRegistroCentral.LerAsync(c.Api, c.AtoV1Id);
         ato.TipoCodigo.Should().Be("EDITAL_ABERTURA");
 
         (string hashV1, Guid versaoV1Id) = await LerIdentidadeDaVersaoAsync(c.Api, c.AtoV1Id);
@@ -296,8 +296,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     // processo": é a barreira que o plano nomeia como bloqueante.
     private static async Task ConfirmarAtoV2Async(Cenario c)
     {
-        AtoNormativo ato = await EsperaDeAtoRegistrado.AguardarAsync(
-            c.Api, c.AtoV2Id, "ato V2 (fechamento da sessão)", c.Ctx.ProcessoId, atoPredecessorId: c.AtoV1Id);
+        AtoNormativo ato = await AtoNoRegistroCentral.LerAsync(c.Api, c.AtoV2Id);
 
         ato.AtoRetificadoId.Should().Be(c.AtoV1Id, "no ato registrado em Publicações, a relação de retificação espelha a de Seleção");
         ato.TipoCodigo.Should().Be("EDITAL_RETIFICACAO");

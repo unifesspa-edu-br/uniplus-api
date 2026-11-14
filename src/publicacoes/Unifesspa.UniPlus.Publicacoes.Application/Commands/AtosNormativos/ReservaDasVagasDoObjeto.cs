@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
-using System.Globalization;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
@@ -96,19 +94,20 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
         LinhagemUnicaPorObjeto? vaga = await atos
             .ObterLinhagemDoObjetoAsync(vinculo.EntidadeTipo, vinculo.EntidadeId, ato.TipoCodigo, cancellationToken)
             .ConfigureAwait(false);
-        return ExaminarVaga(ato, vinculo, vaga, raizDaLinhagem, aReservar);
+        return await ExaminarVagaAsync(ato, vinculo, vaga, raizDaLinhagem, aReservar, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// A vaga existe: só a própria linhagem pode reencontrá-la. A consulta ao histórico já teria
     /// barrado qualquer outra, e esta é a rede de segurança.
     /// </summary>
-    private static DomainError? ExaminarVaga(
+    private async Task<DomainError?> ExaminarVagaAsync(
         AtoNormativo ato,
         VinculoAtoEntidade vinculo,
         LinhagemUnicaPorObjeto? vaga,
         Guid raizDaLinhagem,
-        List<LinhagemUnicaPorObjeto> aReservar)
+        List<LinhagemUnicaPorObjeto> aReservar,
+        CancellationToken cancellationToken)
     {
         if (vaga is null)
         {
@@ -118,7 +117,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
 
         return vaga.RaizId == raizDaLinhagem
             ? null
-            : Ocupada(ObjetoJaTemAtoVivoPorLinhagemMensagem(vinculo, ato.TipoCodigo, vaga));
+            : Ocupada(await MensagemDaVagaDeOutraLinhagemAsync(vinculo, ato.TipoCodigo, vaga, cancellationToken).ConfigureAwait(false));
     }
 
     private async Task ReservarTodasAsync(
@@ -135,24 +134,18 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
 
     private static string ObjetoJaTemAtoVivoMensagem(
         VinculoAtoEntidade vinculo, string tipoCodigo, AtoNormativo conflitante) =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "O tipo de ato '{0}' admite um único ato vivo por objeto, e a entidade {1}/{2} já é "
-            + "tratada pelo ato {3}. Para publicar outra versão, retifique a linhagem existente.",
-            tipoCodigo,
-            vinculo.EntidadeTipo,
-            vinculo.EntidadeId,
-            conflitante.Id);
+        $"O tipo de ato '{tipoCodigo}' admite um único ato vivo por objeto, e o objeto vinculado ('{vinculo.EntidadeTipo}') "
+        + $"já é tratado pelo ato {NumeracaoDoAto.Descrever(conflitante)}. "
+        + "Para publicar outra versão, retifique a linhagem existente.";
 
-    private static string ObjetoJaTemAtoVivoPorLinhagemMensagem(
-        VinculoAtoEntidade vinculo, string tipoCodigo, LinhagemUnicaPorObjeto vaga) =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "O tipo de ato '{0}' admite um único ato vivo por objeto, e a entidade {1}/{2} já é "
-            + "tratada pela linhagem de atos que nasce em {3}. Para publicar outra versão, "
-            + "retifique essa linhagem.",
-            tipoCodigo,
-            vinculo.EntidadeTipo,
-            vinculo.EntidadeId,
-            vaga.RaizId);
+    // A raiz da linhagem que ocupa a vaga é um ato registrado; só a leitura que falha em achá-lo deixa a recusa sem nomeá-lo.
+    private async Task<string> MensagemDaVagaDeOutraLinhagemAsync(
+        VinculoAtoEntidade vinculo, string tipoCodigo, LinhagemUnicaPorObjeto vaga, CancellationToken cancellationToken)
+    {
+        AtoNormativo? raiz = await atos.ObterPorIdParaLeituraAsync(vaga.RaizId, cancellationToken).ConfigureAwait(false);
+        string ocupante = raiz is null ? "por outra linhagem de atos" : $"pela linhagem do ato {NumeracaoDoAto.Descrever(raiz)}";
+
+        return $"O tipo de ato '{tipoCodigo}' admite um único ato vivo por objeto, e o objeto vinculado ('{vinculo.EntidadeTipo}') "
+            + $"já é tratado {ocupante}. Para publicar outra versão, retifique essa linhagem.";
+    }
 }

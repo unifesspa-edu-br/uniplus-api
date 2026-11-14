@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
-
 /// <summary>
 /// Documento de um ato do processo, como a consulta administrativa o mostra. Nada aqui endereça o
 /// armazenamento: o arquivo se abre pelo acesso do documento a publicar.
@@ -20,7 +18,7 @@ public sealed record DocumentoDoAtoDto(
 
 /// <summary>
 /// Um ato do processo na consulta administrativa: o edital de abertura, a retificação, o aviso, a
-/// errata ou o resultado, com a situação do registro no registro central de atos.
+/// errata ou o resultado.
 /// </summary>
 /// <param name="Id">Identificador do ato.</param>
 /// <param name="TipoCodigo">Código do tipo do ato.</param>
@@ -29,12 +27,6 @@ public sealed record DocumentoDoAtoDto(
 /// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
 /// <param name="PublicadoEm">Instante em que o ato foi publicado, pelo relógio do sistema — o que ordena a lista.</param>
 /// <param name="Assinante">Quem assina o ato.</param>
-/// <param name="Situacao">Pendente até o registro central confirmar o ato.</param>
-/// <param name="RegistradoEm">Instante da confirmação; nulo enquanto pendente.</param>
-/// <param name="PendenciaAcimaDoLimiar">
-/// <see langword="true"/> quando o ato está pendente há mais que o limiar configurado — a pendência
-/// que pede atenção, porque a confirmação nunca vem sozinha depois de uma recusa.
-/// </param>
 /// <param name="AtoCorrigidoId">O ato que este corrige ou retifica.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção.</param>
 /// <param name="PoliticaDeDivulgacaoConfirmada">A política de divulgação foi confirmada na publicação.</param>
@@ -48,9 +40,6 @@ public sealed record AtoDoProcessoDto(
     DateOnly DataDoAto,
     DateTimeOffset PublicadoEm,
     string Assinante,
-    SituacaoDoRegistroDoAto Situacao,
-    DateTimeOffset? RegistradoEm,
-    bool PendenciaAcimaDoLimiar,
     Guid? AtoCorrigidoId,
     string? MotivoDaCorrecao,
     bool PoliticaDeDivulgacaoConfirmada,

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
 
-using Microsoft.Extensions.Options;
-
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -9,13 +7,12 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Mappings;
-using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// Lista os itens que a versão vigente do edital declara publicar, com a situação de cada um.
+/// Lista os itens que a versão vigente do edital declara publicar, e diz de cada um se está aberto ou publicado.
 /// </summary>
 /// <remarks>
 /// As declarações vêm da versão congelada; a situação vem do registro do ato do processo, que
@@ -32,7 +29,6 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
         IRegistroCodecsEnvelope registroCodecs,
         ITipoAtoPublicadoReader tipoAtoReader,
         IResolvedorFusoInstitucional resolvedorFuso,
-        IOptions<AtosDoProcessoOptions> opcoes,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -43,7 +39,6 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(tipoAtoReader);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(opcoes);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
@@ -68,8 +63,7 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
         CadeiasDosProdutosPrevistos cadeias = CadeiasDosProdutosPrevistos.De(atos);
         AtoDoProcesso[] atosDosProdutos = [.. cadeias.AtosDe(ProjecaoDosProdutosPrevistos.ItensDeclarados(grafo))];
 
-        // Só os documentos dos atos que os itens mostram: o histórico de envios inclui pendentes e
-        // documentos que nenhum ato usou.
+        // Só os documentos dos atos que os itens mostram: o histórico de envios inclui documentos que nenhum ato usou.
         Guid[] idsDosDocumentos =
         [
             .. atosDosProdutos
@@ -90,13 +84,12 @@ public static class ListarProdutosPrevistosDoProcessoQueryHandler
                 cancellationToken)
             .ConfigureAwait(false);
 
-        DateTimeOffset limite = agora - opcoes.Value.LimiarDePendencia;
         return Result<ProdutosPrevistosDoProcessoDto>.Success(ProjecaoDosProdutosPrevistos.Projetar(
             vigente.Value.NumeroDaVersao,
             grafo,
             cadeias,
             tipos.GroupBy(static t => t.Codigo, StringComparer.Ordinal)
                 .ToDictionary(static g => g.Key, static g => g.First().Nome, StringComparer.Ordinal),
-            ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId, AtoDoProcessoMapping.PendenciaAcimaDoLimiar(ato, limite))));
+            ato => AtoDoProcessoMapping.ToDto(ato, documentosPorId)));
     }
 }
