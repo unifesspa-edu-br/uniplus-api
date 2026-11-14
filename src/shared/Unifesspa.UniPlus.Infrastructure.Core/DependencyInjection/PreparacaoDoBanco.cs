@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
+using Npgsql;
+
 /// <summary>
 /// A preparaÃ§Ã£o do banco, sempre na mesma ordem e sob a trava do banco: scripts <c>Pre</c>, migrations do EF, scripts pós e,
 /// por fim, a etapa posterior. Roda também sem migration pendente.
@@ -73,9 +75,29 @@ internal static class PreparacaoDoBanco
         IRelationalDatabaseCreator criador = contexto.GetService<IRelationalDatabaseCreator>();
         if (!await criador.ExistsAsync(cancellationToken).ConfigureAwait(false))
         {
-            await criador.CreateAsync(cancellationToken).ConfigureAwait(false);
+            await CriarAceitandoACorridaAsync(criador, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private static async Task CriarAceitandoACorridaAsync(IRelationalDatabaseCreator criador, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await criador.CreateAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (PostgresException excecao) when (EhCorridaDaCriacaoDoBanco(excecao))
+        {
+            // Outra réplica criou o banco entre a verificação e a criação: com o banco existindo, a trava serializa o resto.
+            if (!await criador.ExistsAsync(cancellationToken).ConfigureAwait(false))
+            {
+                throw;
+            }
+        }
+    }
+
+    // Banco duplicado, ou a violação de unicidade do catálogo quando duas criações simultâneas colidem.
+    private static bool EhCorridaDaCriacaoDoBanco(PostgresException excecao) =>
+        excecao.SqlState is PostgresErrorCodes.DuplicateDatabase or PostgresErrorCodes.UniqueViolation;
 
     // A cadeia configurada, e não a da conexão do EF: depois de aberta, a conexão do Npgsql omite a senha.
     private static string CadeiaDeConexaoDe(DbContext contexto) =>
