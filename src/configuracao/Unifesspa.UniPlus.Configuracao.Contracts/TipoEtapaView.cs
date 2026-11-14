@@ -12,6 +12,10 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <paramref name="NotaDeOrigemNoEnem"/> diz que a nota das etapas do tipo vem do ENEM. O Seleção
 /// o congela junto com a identidade, quando o vínculo da etapa é criado ou trocado.
 /// </para>
+/// <para>
+/// <paramref name="ConceitosAdmitidos"/> traz os tipos de conceito com que as etapas do tipo podem ser
+/// avaliadas, ordenados pelo código; a lista vazia diz que o tipo não admite nenhum.
+/// </para>
 /// </remarks>
 public sealed record TipoEtapaView(
     Guid Id,
@@ -20,4 +24,8 @@ public sealed record TipoEtapaView(
     string? Descricao,
     bool AdmitePontuacao,
     bool AdmiteEliminacao,
-    bool NotaDeOrigemNoEnem);
+    bool NotaDeOrigemNoEnem,
+    IReadOnlyList<ConceitoAdmitidoView> ConceitosAdmitidos);
+
+/// <summary>Um tipo de conceito admitido pelo tipo de etapa; a natureza usa o nome do contrato REST (<c>numerico</c> ou <c>categorico</c>).</summary>
+public sealed record ConceitoAdmitidoView(string Codigo, string Nome, string Natureza);

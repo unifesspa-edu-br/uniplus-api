@@ -7,36 +7,63 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Valida os campos sem I/O antes de buscar o tipo: a violação de campo vence o "não
-/// encontrado", e um payload mal formado não consulta o repositório (ADR-0125, item 5). Por
-/// isso a recusa que depende do tipo só aparece quando os campos estão válidos.
+/// Valida os campos e os conceitos admitidos, acumulando no mesmo lote, antes de buscar o tipo: a violação
+/// de campo vence o "não encontrado", e um payload mal formado não consulta o repositório do tipo (ADR-0125,
+/// item 5). Por isso a recusa que depende do tipo só aparece quando os campos estão válidos.
 /// </summary>
 public static class AtualizarTipoEtapaCommandHandler
 {
     public static async Task<Result> Handle(
         AtualizarTipoEtapaCommand command,
         ITipoEtapaRepository repository,
+        ITipoConceitoRepository conceitos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(conceitos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result<IReadOnlyList<TipoConceito>> admitidos = await ConferirCampos(command, conceitos, cancellationToken).ConfigureAwait(false);
+        return admitidos.IsFailure
+            ? Result.ValidationFailure(admitidos.Errors)
+            : await AtualizarSeExistir(command, admitidos.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result> AtualizarSeExistir(
+        AtualizarTipoEtapaCommand command,
+        IReadOnlyList<TipoConceito> admitidos,
+        ITipoEtapaRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        TipoEtapa? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        return tipo is null
+            ? Result.Failure(new DomainError(TipoEtapaErrorCodes.NaoEncontrado, "Tipo de etapa não encontrado."))
+            : await Aplicar(tipo, command, admitidos, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Os conceitos resolvidos, ou todas as violações dos campos e dos conceitos no mesmo lote.
+    private static async Task<Result<IReadOnlyList<TipoConceito>>> ConferirCampos(
+        AtualizarTipoEtapaCommand command, ITipoConceitoRepository conceitos, CancellationToken cancellationToken)
+    {
         Result<(string Nome, string? Descricao, bool AdmitePontuacao, bool AdmiteEliminacao)> campos =
             TipoEtapa.ValidarCamposEditaveis(
                 command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
-        if (campos.IsFailure)
-        {
-            return Result.ValidationFailure(campos.Errors);
-        }
+        Result<IReadOnlyList<TipoConceito>> admitidos = await ResolucaoDosConceitosAdmitidos
+            .Resolver(command.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
+        FieldError[] erros = [.. campos.Errors, .. admitidos.Errors];
+        return erros.Length > 0 ? Result<IReadOnlyList<TipoConceito>>.ValidationFailure(erros) : admitidos;
+    }
 
-        TipoEtapa? tipo = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
-        if (tipo is null)
-        {
-            return Result.Failure(new DomainError(TipoEtapaErrorCodes.NaoEncontrado, "Tipo de etapa não encontrado."));
-        }
-
+    private static async Task<Result> Aplicar(
+        TipoEtapa tipo,
+        AtualizarTipoEtapaCommand command,
+        IReadOnlyList<TipoConceito> admitidos,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         // Com os campos já confirmados, só a regra que depende do próprio tipo pode recusar
         // aqui, e o tipo recusa antes de mutar.
         Result atualizar = tipo.Atualizar(command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
@@ -45,6 +72,7 @@ public static class AtualizarTipoEtapaCommandHandler
             return atualizar;
         }
 
+        tipo.SubstituirConceitosAdmitidos(admitidos);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }

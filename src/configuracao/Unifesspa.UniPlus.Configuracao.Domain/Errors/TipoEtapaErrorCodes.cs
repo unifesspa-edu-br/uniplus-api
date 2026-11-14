@@ -15,6 +15,10 @@ public static class TipoEtapaErrorCodes
     public const string AdmitePontuacaoObrigatorio = "TipoEtapa.AdmitePontuacaoObrigatorio";
     public const string AdmiteEliminacaoObrigatorio = "TipoEtapa.AdmiteEliminacaoObrigatorio";
     public const string SemCaraterAdmitido = "TipoEtapa.SemCaraterAdmitido";
+    public const string ConceitosAdmitidosObrigatorio = "TipoEtapa.ConceitosAdmitidosObrigatorio";
+    public const string ConceitoInexistente = "TipoEtapa.ConceitoInexistente";
+    public const string ConceitoInativo = "TipoEtapa.ConceitoInativo";
+    public const string ConceitoDuplicado = "TipoEtapa.ConceitoDuplicado";
     public const string NotaDeOrigemNoEnemExigePontuacao = "TipoEtapa.NotaDeOrigemNoEnemExigePontuacao";
     public const string NotaDeOrigemNoEnemNaoDesativa = "TipoEtapa.NotaDeOrigemNoEnemNaoDesativa";
     public const string NaoEncontrado = "TipoEtapa.NaoEncontrado";

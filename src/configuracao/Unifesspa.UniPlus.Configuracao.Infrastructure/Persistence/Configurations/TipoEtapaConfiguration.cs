@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
     Justification = "Instanciada pelo EF Core via reflection.")]
 internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtapa>
 {
+    private const string JuncaoDosConceitosAdmitidos = "tipos_etapa_conceitos";
+
     public void Configure(EntityTypeBuilder<TipoEtapa> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -53,5 +55,27 @@ internal sealed class TipoEtapaConfiguration : IEntityTypeConfiguration<TipoEtap
             .HasDatabaseName("ix_tipos_etapa_codigo");
         builder.HasIndex(tipo => tipo.Ativo)
             .HasDatabaseName("ix_tipos_etapa_ativo");
+
+        ConfigurarConceitosAdmitidos(builder);
+    }
+
+    // O conjunto de conceitos admitidos é substituído por inteiro a cada edição. A junção só guarda o par:
+    // apagar um tipo de etapa leva os pares, e um tipo de conceito com par não pode ser apagado — ele é
+    // desativado, nunca removido.
+    private static void ConfigurarConceitosAdmitidos(EntityTypeBuilder<TipoEtapa> builder)
+    {
+        builder.HasMany(tipo => tipo.ConceitosAdmitidos).WithMany().UsingEntity<Dictionary<string, object>>(
+            JuncaoDosConceitosAdmitidos,
+            conceito => conceito.HasOne<TipoConceito>().WithMany().HasForeignKey("TipoConceitoId").OnDelete(DeleteBehavior.Restrict),
+            tipo => tipo.HasOne<TipoEtapa>().WithMany().HasForeignKey("TipoEtapaId").OnDelete(DeleteBehavior.Cascade),
+            juncao =>
+            {
+                juncao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+                juncao.ToTable(JuncaoDosConceitosAdmitidos, tabela => tabela.HasComment(
+                    "Tipos de conceito com que as etapas de um tipo de etapa podem ser avaliadas."));
+                juncao.HasKey("TipoEtapaId", "TipoConceitoId");
+                juncao.IndexerProperty<Guid>("TipoEtapaId").HasComment("Tipo de etapa que admite o conceito.");
+                juncao.IndexerProperty<Guid>("TipoConceitoId").HasComment("Tipo de conceito admitido pelo tipo de etapa.");
+            });
     }
 }

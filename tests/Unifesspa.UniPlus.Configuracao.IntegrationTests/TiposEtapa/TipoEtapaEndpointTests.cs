@@ -125,6 +125,7 @@ public sealed class TipoEtapaEndpointTests
             codigo,
             nome = "Seleção de teste",
             descricao = "Descrição inicial",
+            conceitosAdmitidos = Array.Empty<string>(),
             admitePontuacao = true,
             admiteEliminacao = true,
         });
@@ -145,6 +146,7 @@ public sealed class TipoEtapaEndpointTests
             id,
             nome = "Seleção renomeada",
             descricao = "Descrição atualizada",
+            conceitosAdmitidos = Array.Empty<string>(),
             admitePontuacao = false,
             admiteEliminacao = true,
         });
@@ -166,9 +168,9 @@ public sealed class TipoEtapaEndpointTests
         string invalido = $"valor{(char)0}invalido";
         object payload = campo switch
         {
-            "codigo" => new { codigo = invalido, nome = "Nome válido", descricao = "Descrição válida", admitePontuacao = true, admiteEliminacao = true },
-            "nome" => new { codigo = CodigoUnico(), nome = invalido, descricao = "Descrição válida", admitePontuacao = true, admiteEliminacao = true },
-            "descricao" => new { codigo = CodigoUnico(), nome = "Nome válido", descricao = invalido, admitePontuacao = true, admiteEliminacao = true },
+            "codigo" => new { codigo = invalido, nome = "Nome válido", descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
+            "nome" => new { codigo = CodigoUnico(), nome = invalido, descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
+            "descricao" => new { codigo = CodigoUnico(), nome = "Nome válido", descricao = invalido, conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
             _ => throw new InvalidOperationException($"Campo de teste inesperado: {campo}"),
         };
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -189,6 +191,7 @@ public sealed class TipoEtapaEndpointTests
             codigo = CodigoUnico(),
             nome = "Nome válido",
             descricao = "Descrição válida",
+            conceitosAdmitidos = Array.Empty<string>(),
             admitePontuacao = true,
             admiteEliminacao = true,
         });
@@ -196,8 +199,8 @@ public sealed class TipoEtapaEndpointTests
         string invalido = $"valor{(char)0}invalido";
         object payload = campo switch
         {
-            "nome" => new { id, nome = invalido, descricao = "Descrição válida", admitePontuacao = true, admiteEliminacao = true },
-            "descricao" => new { id, nome = "Nome válido", descricao = invalido, admitePontuacao = true, admiteEliminacao = true },
+            "nome" => new { id, nome = invalido, descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
+            "descricao" => new { id, nome = "Nome válido", descricao = invalido, conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
             _ => throw new InvalidOperationException($"Campo de teste inesperado: {campo}"),
         };
 
@@ -209,7 +212,7 @@ public sealed class TipoEtapaEndpointTests
     [Fact(DisplayName = "ADR-0125: POST com código e nome ausentes ao mesmo tempo devolve as duas violações em errors[], campo em camelCase")]
     public async Task Criar_CodigoENomeAusentes_DevolveAsDuasViolacoesEmErrors()
     {
-        var body = new { codigo = "", nome = "", admitePontuacao = true, admiteEliminacao = true };
+        var body = new { codigo = "", nome = "", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -257,7 +260,7 @@ public sealed class TipoEtapaEndpointTests
         Guid id = Guid.NewGuid();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPutAdmin(client, id, new { id, nome = "", admitePontuacao = true, admiteEliminacao = true });
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, new { id, nome = "", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -268,7 +271,7 @@ public sealed class TipoEtapaEndpointTests
         string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Seleção temporária", admitePontuacao = true, admiteEliminacao = true });
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Seleção temporária", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true });
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
         HttpResponseMessage desativar = await EnviarDeleteAdmin(client, id);
@@ -277,7 +280,7 @@ public sealed class TipoEtapaEndpointTests
         HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-etapa/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.NotFound, "a API pública só expõe itens ativos");
 
-        HttpResponseMessage recriar = await EnviarPostAdmin(client, new { codigo, nome = "Tentativa de reuso", admitePontuacao = true, admiteEliminacao = true });
+        HttpResponseMessage recriar = await EnviarPostAdmin(client, new { codigo, nome = "Tentativa de reuso", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true });
         recriar.StatusCode.Should().Be(HttpStatusCode.Conflict, "desativar não libera a identidade regulatória do código");
     }
 
@@ -291,6 +294,7 @@ public sealed class TipoEtapaEndpointTests
         {
             codigo,
             nome = "Tentativa de nota do ENEM",
+            conceitosAdmitidos = Array.Empty<string>(),
             admitePontuacao = true,
             admiteEliminacao = true,
             notaDeOrigemNoEnem = true,
@@ -315,6 +319,7 @@ public sealed class TipoEtapaEndpointTests
             id,
             nome,
             descricao,
+            conceitosAdmitidos = Array.Empty<string>(),
             admitePontuacao = true,
             admiteEliminacao = true,
             notaDeOrigemNoEnem = false,
@@ -331,6 +336,7 @@ public sealed class TipoEtapaEndpointTests
             id,
             nome,
             descricao,
+            conceitosAdmitidos = Array.Empty<string>(),
             admitePontuacao = false,
             admiteEliminacao = true,
         });
