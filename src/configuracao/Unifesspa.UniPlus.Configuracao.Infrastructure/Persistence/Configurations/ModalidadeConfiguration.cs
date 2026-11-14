@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -40,7 +41,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("modalidade", ConfigurarChecks);
+        builder.ToTable("modalidades", ConfigurarChecks);
 
         builder.HasKey(m => m.Id);
 
@@ -101,7 +102,7 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
         builder.HasIndex(m => m.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_modalidade_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.ModalidadeCodigoVivo);
 
         builder.HasData(MaterializarSeed());
     }
@@ -138,30 +139,30 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
     {
         // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
         table.HasCheckConstraint(
-            "ck_modalidade_natureza_legal",
+            "ck_modalidades_natureza_legal",
             $"natureza_legal IN ({TokensSql(NaturezasLegais.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_modalidade_composicao_vagas",
+            "ck_modalidades_composicao_vagas",
             $"composicao_vagas IN ({TokensSql(ComposicoesVagas.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_modalidade_regra_remanejamento",
+            "ck_modalidades_regra_remanejamento",
             $"regra_remanejamento IS NULL OR regra_remanejamento IN ({TokensSql(RegrasRemanejamento.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_modalidade_acao_quando_indeferido",
+            "ck_modalidades_acao_quando_indeferido",
             $"acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ({TokensSql(AcoesQuandoIndeferido.TokensCanonicos)})");
 
         // Formato fechado do código — alinhado ao value object CodigoModalidade.
         table.HasCheckConstraint(
-            "ck_modalidade_codigo_formato",
+            "ck_modalidades_codigo_formato",
             "codigo ~ '^[A-Z0-9_]+$'");
 
         // Equivalência exata RETIRA_DE ⟺ composicao_origem preenchida (invariante 4),
         // como igualdade de dois booleanos — null-safe (ambos os lados nunca são null).
         table.HasCheckConstraint(
-            "ck_modalidade_retira_de_origem",
+            "ck_modalidades_retira_de_origem",
             "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
     }
 

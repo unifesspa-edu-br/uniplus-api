@@ -450,7 +450,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         // A escrita concorrente segura a linha do fato sem commitar; a alteração lê o xmin antigo e
         // bloqueia ao gravar, e o commit torna o xmin que ela leu obsoleto.
         await concorrente.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.rol_de_fatos_candidato SET updated_at = now() WHERE id = {id}");
+            $"UPDATE configuracao.fatos_do_candidato SET updated_at = now() WHERE id = {id}");
         int pid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);
 
         Task<HttpResponseMessage> alteracao = EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}/definicao", DefinicaoCategorica());

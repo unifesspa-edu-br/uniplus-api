@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -84,7 +85,7 @@ public sealed class TipoDeficienciaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_tipo_deficiencia_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaCodigoVivo);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo tipo vivo com mesmo nome")]
@@ -108,7 +109,7 @@ public sealed class TipoDeficienciaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_tipo_deficiencia_nome_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDeficienciaNomeVivo);
     }
 
     [Fact(DisplayName = "Código e nome distintos são aceitos")]
@@ -131,7 +132,7 @@ public sealed class TipoDeficienciaPersistenceTests
         // contra escrita fora do fluxo da aplicação.
         Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
             """
-            INSERT INTO configuracao.tipo_deficiencia
+            INSERT INTO configuracao.tipos_de_deficiencia
                 (id, codigo, nome, descricao, created_at, is_deleted)
             VALUES ({0}, 'codigo_minusculo', {1}, 'Descrição de teste', now(), false)
             """,
@@ -140,7 +141,7 @@ public sealed class TipoDeficienciaPersistenceTests
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
-        pg.ConstraintName.Should().Be("ck_tipo_deficiencia_codigo_formato");
+        pg.ConstraintName.Should().Be("ck_tipos_de_deficiencia_codigo_formato");
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera os slots das UNIQUE parciais")]

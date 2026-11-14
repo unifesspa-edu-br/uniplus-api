@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
@@ -77,7 +78,7 @@ public sealed class CategoriaDocumentoPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_categoria_documento_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CategoriaDeDocumentoCodigoVivo);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -130,7 +131,7 @@ public sealed class CategoriaDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.categoria_documento (id, codigo, nome, ordem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"renda"}, {"Renda"}, {0}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.categorias_de_documento (id, codigo, nome, ordem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"renda"}, {"Renda"}, {0}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de formato do código (UPPER_SNAKE iniciando por letra) impede o INSERT direto");
@@ -142,7 +143,7 @@ public sealed class CategoriaDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.categoria_documento (id, codigo, nome, ordem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"Renda"}, {-1}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.categorias_de_documento (id, codigo, nome, ordem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"Renda"}, {-1}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "a ordem de exibição é posição no catálogo e não admite valor negativo");

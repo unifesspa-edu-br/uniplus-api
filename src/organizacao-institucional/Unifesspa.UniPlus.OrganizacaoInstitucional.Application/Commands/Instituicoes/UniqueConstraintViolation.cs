@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
+
 /// <summary>
 /// Helper para mapear violações 23505 do índice único parcial do singleton da
 /// Instituição para o <c>DomainError</c> apropriado. Acessa <c>SqlState</c> e
@@ -20,7 +22,7 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string SingletonConstraint = "ix_instituicao_singleton_vivo";
+    private const string SingletonConstraint = RestricoesDoBanco.InstituicaoSingletonVivo;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

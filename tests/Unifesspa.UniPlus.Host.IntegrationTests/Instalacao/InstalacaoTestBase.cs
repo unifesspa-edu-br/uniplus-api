@@ -266,13 +266,13 @@ public abstract partial class InstalacaoTestBase
     private protected async Task ResetarAsync()
     {
         await Fixture.ProvisionarBucketsAsync();
-        await ExecutarSqlAsync("DELETE FROM autorizacao.revisao_itens");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.itens_da_revisao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_de_acessos");
         await ExecutarSqlAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_concedida");
         await ExecutarSqlAsync(
             "DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", PerfisDeSistema.GestorDeAcessosId);
-        await ExecutarSqlAsync("DELETE FROM autorizacao.instalacao_tentativas");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.tentativas_de_instalacao");
         await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
         await ExecutarSqlAsync("DELETE FROM autorizacao.instalacoes");
         await LimparCaixaAsync();

@@ -15,7 +15,7 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("idempotency_cache");
+        builder.ToTable("chaves_de_idempotencia");
 
         builder.HasKey(e => e.Id);
 
@@ -64,11 +64,11 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
         // concorrente (tratado pelo filter com aguarda + replay).
         builder.HasIndex(e => new { e.Scope, e.Endpoint, e.IdempotencyKey })
             .IsUnique()
-            .HasDatabaseName("ux_idempotency_cache_scope_endpoint_key");
+            .HasDatabaseName("ux_chaves_de_idempotencia_scope_endpoint_key");
 
         // Suporta job de cleanup por TTL (não implementado nesta story; ADR-0027
         // §"Esta ADR não decide" — política de cleanup fica aberta).
         builder.HasIndex(e => e.ExpiresAt)
-            .HasDatabaseName("ix_idempotency_cache_expires_at");
+            .HasDatabaseName("ix_chaves_de_idempotencia_expires_at");
     }
 }

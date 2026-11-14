@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775): resolve cada regra no catálogo
-/// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args
+/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args
 /// tipados de cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
 /// congela as referências — a invariante ENEM×eliminação e a coerência de arredondamento são
 /// validadas por <see cref="ConfiguracaoClassificacao.Criar"/>, que depende da regra de
@@ -259,7 +259,7 @@ public static class DefinirClassificacaoCommandHandler
         {
             return Result<ReferenciaRegra>.Failure(new DomainError(
                 "ConfiguracaoClassificacao.RegraNaoEncontrada",
-                $"Regra {codigo}/{versao} não encontrada no rol_de_regras."));
+                $"Regra {codigo}/{versao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != tipoEsperado)
@@ -284,7 +284,7 @@ public static class DefinirClassificacaoCommandHandler
         {
             return Result<RegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.RegraNaoEncontrada",
-                $"Regra de eliminação {input.RegraCodigo}/{input.RegraVersao} não encontrada no rol_de_regras."));
+                $"Regra de eliminação {input.RegraCodigo}/{input.RegraVersao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != TipoRegra.RegraEliminacao)

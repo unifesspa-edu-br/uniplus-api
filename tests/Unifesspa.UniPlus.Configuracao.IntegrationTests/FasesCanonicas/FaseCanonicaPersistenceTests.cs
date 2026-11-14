@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -85,7 +86,7 @@ public sealed class FaseCanonicaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_fase_canonica_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.FaseCanonicaCodigoVivo);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]
@@ -144,7 +145,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de conjunto canônico impede o INSERT direto");
@@ -156,7 +157,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z_]+$' impede o INSERT direto");
@@ -168,7 +169,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência agrupa_etapas ⇒ avaliação impede o INSERT direto");
@@ -180,7 +181,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de coerência permite_complementacao ⇒ fases permitidas impede o INSERT direto");
@@ -192,7 +193,7 @@ public sealed class FaseCanonicaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.fases_canonicas (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de origem_data impede o INSERT direto");
@@ -256,7 +257,7 @@ public sealed class FaseCanonicaPersistenceTests
         // `Contains` sobre ele nao traduz para SQL. O filtro pelo prefixo do id
         // restringe o apagamento as linhas do seed.
         const string comando =
-            "DELETE FROM configuracao.fase_canonica " +
+            "DELETE FROM configuracao.fases_canonicas " +
             "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = ANY(@p0)";
 
         await ctx.Database.ExecuteSqlRawAsync(comando, new NpgsqlParameter("p0", codigos));

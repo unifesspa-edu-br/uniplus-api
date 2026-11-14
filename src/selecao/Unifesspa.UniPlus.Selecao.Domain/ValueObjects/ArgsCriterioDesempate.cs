@@ -7,14 +7,14 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// Args aplicados de um <see cref="Entities.CriterioDesempate"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
-/// <c>rol_de_regras</c> (<c>tipo=criterio_desempate</c>), tipados por
+/// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>), tipados por
 /// variante conforme o <c>esquema_args</c> de cada código. Discriminated union
 /// no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058).
 /// </summary>
 /// <remarks>
 /// <para>
 /// Forma fechada por design: as 5 variantes espelham as 5 regras semeadas em
-/// <c>rol_de_regras</c> — <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>,
+/// <c>regras_do_catalogo</c> — <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>,
 /// <c>DESEMPATE-MAIOR-IDADE</c>, <c>DESEMPATE-IDOSO</c>,
 /// <c>DESEMPATE-PREDICADO-FATO</c> e <c>DESEMPATE-MAIOR-NOTA-AREA-ENEM</c>. Uma
 /// regra de desempate nova exige nova variante tipada explícita.
@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// strings soltas — fecha o gap que a modelagem da classificação documentava
 /// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
 /// fatos do candidato): <c>CriterioDesempate.Criar</c> agora confere a
-/// condição contra o vocabulário resolvido do catálogo <c>rol_de_fatos_candidato</c>
+/// condição contra o vocabulário resolvido do catálogo <c>fatos_do_candidato</c>
 /// (#846), fechando o INV-B6.
 /// </para>
 /// </remarks>

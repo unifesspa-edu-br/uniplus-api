@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
@@ -29,7 +30,7 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("tipo_banca", ConfigurarChecks);
+        builder.ToTable("tipos_de_banca", ConfigurarChecks);
 
         builder.HasKey(b => b.Id);
 
@@ -43,7 +44,7 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
 
         builder.Property(b => b.Nome).HasMaxLength(NomeMaxLength).IsRequired();
 
-        // fase_tipica: rótulo de texto orientativo (NÃO é FK para fase_canonica).
+        // fase_tipica: rótulo de texto orientativo (NÃO é FK para fases_canonicas).
         builder.Property(b => b.FaseTipica).HasMaxLength(FaseTipicaMaxLength);
 
         builder.Property(b => b.Descricao).HasMaxLength(DescricaoMaxLength);
@@ -56,19 +57,19 @@ internal sealed class TipoBancaConfiguration : IEntityTypeConfiguration<TipoBanc
         builder.HasIndex(b => b.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_tipo_banca_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.TipoDeBancaCodigoVivo);
     }
 
     private static void ConfigurarChecks(TableBuilder<TipoBanca> table)
     {
         // Formato fechado do código — alinhado ao value object CodigoBanca.
         table.HasCheckConstraint(
-            "ck_tipo_banca_codigo_formato",
+            "ck_tipos_de_banca_codigo_formato",
             "codigo ~ '^[A-Z_]+$'");
 
         // Domínio fechado das seis bancas canônicas (defesa em profundidade).
         table.HasCheckConstraint(
-            "ck_tipo_banca_codigo_canonico",
+            "ck_tipos_de_banca_codigo_canonico",
             $"codigo IN ({TokensSql(TipoBancaCatalogo.Codigos)})");
     }
 

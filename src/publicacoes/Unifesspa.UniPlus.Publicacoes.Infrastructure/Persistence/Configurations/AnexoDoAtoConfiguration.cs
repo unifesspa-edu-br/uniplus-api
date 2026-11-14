@@ -22,16 +22,16 @@ internal sealed class AnexoDoAtoConfiguration : IEntityTypeConfiguration<AnexoDo
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "anexo_do_ato",
+            "anexos_do_ato",
             t =>
             {
                 // Defesa em profundidade contra insert cru; a factory já recusa.
-                t.HasCheckConstraint("ck_anexo_do_ato_hash", "hash ~ '^[0-9a-f]{64}$'");
-                t.HasCheckConstraint("ck_anexo_do_ato_nome", "btrim(nome) <> ''");
+                t.HasCheckConstraint("ck_anexos_do_ato_hash", "hash ~ '^[0-9a-f]{64}$'");
+                t.HasCheckConstraint("ck_anexos_do_ato_nome", "btrim(nome) <> ''");
                 t.HasCheckConstraint(
-                    "ck_anexo_do_ato_tipo_midia",
+                    "ck_anexos_do_ato_tipo_midia",
                     "tipo_midia ~ '^[a-z0-9][a-z0-9.+_-]*/[a-z0-9][a-z0-9.+_-]*$'");
-                t.HasCheckConstraint("ck_anexo_do_ato_ordem", "ordem >= 0");
+                t.HasCheckConstraint("ck_anexos_do_ato_ordem", "ordem >= 0");
             });
 
         builder.HasKey(a => a.Id);
@@ -47,17 +47,17 @@ internal sealed class AnexoDoAtoConfiguration : IEntityTypeConfiguration<AnexoDo
         builder.HasOne<AtoNormativo>()
             .WithMany(a => a.Anexos)
             .HasForeignKey(a => a.AtoId)
-            .HasConstraintName("fk_anexo_do_ato_ato")
+            .HasConstraintName("fk_anexos_do_ato_ato")
             .OnDelete(DeleteBehavior.Cascade);
 
         // O nome distingue o anexo dentro do ato, e a posição o ordena na leitura: repetir
         // qualquer um dos dois deixaria o ato com anexos indistinguíveis.
         builder.HasIndex(a => new { a.AtoId, a.Nome })
             .IsUnique()
-            .HasDatabaseName("ux_anexo_do_ato_nome");
+            .HasDatabaseName("ux_anexos_do_ato_nome");
 
         builder.HasIndex(a => new { a.AtoId, a.Ordem })
             .IsUnique()
-            .HasDatabaseName("ux_anexo_do_ato_ordem");
+            .HasDatabaseName("ux_anexos_do_ato_ordem");
     }
 }

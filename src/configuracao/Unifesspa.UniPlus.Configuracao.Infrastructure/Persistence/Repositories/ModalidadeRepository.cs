@@ -147,7 +147,7 @@ public sealed class ModalidadeRepository : IModalidadeRepository
         // traduz acesso aos campos internos em LINQ. O query filter global de
         // soft-delete é aplicado por composição sobre o FromSql.
         FormattableString sql = $@"
-            SELECT * FROM configuracao.modalidade
+            SELECT * FROM configuracao.modalidades
             WHERE composicao_origem = {codigoNorm}
                OR remanejamento_args ->> 'destino' = {codigoNorm}
                OR remanejamento_args ->> 'par' = {codigoNorm}

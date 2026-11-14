@@ -319,7 +319,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         Func<Task> duplicar = () => ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO selecao.grupos_peso_area_enem_congelados (id, configuracao_classificacao_id, grupo_area_enem_codigo, grupo_area_enem_rotulo, base_legal, created_at) VALUES ({Guid.CreateVersion7()}, {grupo.ConfiguracaoClassificacaoId}, {grupo.GrupoAreaEnem.Codigo}, {grupo.GrupoAreaEnem.Rotulo}, {grupo.BaseLegal}, {DateTimeOffset.UtcNow})");
+            $"INSERT INTO selecao.grupos_do_quadro_de_pesos (id, configuracao_classificacao_id, grupo_area_enem_codigo, grupo_area_enem_rotulo, base_legal, created_at) VALUES ({Guid.CreateVersion7()}, {grupo.ConfiguracaoClassificacaoId}, {grupo.GrupoAreaEnem.Codigo}, {grupo.GrupoAreaEnem.Rotulo}, {grupo.BaseLegal}, {DateTimeOffset.UtcNow})");
 
         (await duplicar.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(PostgresErrorCodes.UniqueViolation);
     }
@@ -334,7 +334,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         Func<Task> inserir = () => ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO selecao.areas_peso_area_enem_congeladas (id, grupo_peso_area_enem_congelado_id, codigo, rotulo, peso, corte, created_at) VALUES ({Guid.CreateVersion7()}, {grupo.Id}, {"AREA_EXTRA"}, {"Área extra"}, {(decimal)peso}, {(decimal?)corte}, {DateTimeOffset.UtcNow})");
+            $"INSERT INTO selecao.areas_do_quadro_de_pesos (id, grupo_peso_area_enem_congelado_id, codigo, rotulo, peso, corte, created_at) VALUES ({Guid.CreateVersion7()}, {grupo.Id}, {"AREA_EXTRA"}, {"Área extra"}, {(decimal)peso}, {(decimal?)corte}, {DateTimeOffset.UtcNow})");
 
         (await inserir.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be(PostgresErrorCodes.CheckViolation);
     }
@@ -373,7 +373,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         return await ctx.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM selecao.grupos_peso_area_enem_congelados WHERE configuracao_classificacao_id = {classificacaoId}")
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM selecao.grupos_do_quadro_de_pesos WHERE configuracao_classificacao_id = {classificacaoId}")
             .SingleAsync();
     }
 
@@ -384,7 +384,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         foreach (Guid grupoId in grupoIds)
         {
             total += await ctx.Database
-                .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM selecao.areas_peso_area_enem_congeladas WHERE grupo_peso_area_enem_congelado_id = {grupoId}")
+                .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM selecao.areas_do_quadro_de_pesos WHERE grupo_peso_area_enem_congelado_id = {grupoId}")
                 .SingleAsync();
         }
 

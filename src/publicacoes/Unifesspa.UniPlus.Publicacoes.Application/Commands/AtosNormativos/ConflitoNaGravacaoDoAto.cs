@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
@@ -16,9 +17,9 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// </remarks>
 internal static class ConflitoNaGravacaoDoAto
 {
-    private const string IndiceDaRetificacaoUnica = "ux_ato_normativo_retificado";
+    private const string IndiceDaRetificacaoUnica = RestricoesDoBanco.AtoNormativoRetificadoUnico;
 
-    private const string IndiceDaVagaDeLinhagem = "ux_vagas_de_linhagem_objeto_tipo";
+    private const string IndiceDaVagaDeLinhagem = RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica;
 
     private const string AtoJaRetificadoConcorrenteMensagem =
         "O ato retificado já foi retificado por outro ato registrado concorrentemente. "

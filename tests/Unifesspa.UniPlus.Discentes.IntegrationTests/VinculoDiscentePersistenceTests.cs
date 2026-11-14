@@ -91,7 +91,7 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         await connection.OpenAsync();
 
         await using NpgsqlCommand command = new(
-            "SELECT cpf_ciphertext FROM discentes.vinculo_discente WHERE id_discente_sigaa = 1002",
+            "SELECT cpf_ciphertext FROM discentes.vinculos_de_discentes WHERE id_discente_sigaa = 1002",
             connection);
 
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();

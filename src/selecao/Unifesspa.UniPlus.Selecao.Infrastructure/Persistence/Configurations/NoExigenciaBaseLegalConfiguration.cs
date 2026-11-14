@@ -28,7 +28,7 @@ public sealed class NoExigenciaBaseLegalConfiguration : IEntityTypeConfiguration
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("nos_exigencia_base_legal");
+        builder.ToTable("bases_legais_dos_nos");
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 

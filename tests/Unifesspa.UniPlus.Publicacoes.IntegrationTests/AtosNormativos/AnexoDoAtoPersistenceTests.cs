@@ -64,7 +64,7 @@ public sealed class AnexoDoAtoPersistenceTests
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"UPDATE publicacoes.anexo_do_ato SET hash = '{OutroHash}' WHERE ato_id = '{ato.Id}'"));
+            $"UPDATE publicacoes.anexos_do_ato SET hash = '{OutroHash}' WHERE ato_id = '{ato.Id}'"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -76,7 +76,7 @@ public sealed class AnexoDoAtoPersistenceTests
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"DELETE FROM publicacoes.anexo_do_ato WHERE ato_id = '{ato.Id}'"));
+            $"DELETE FROM publicacoes.anexos_do_ato WHERE ato_id = '{ato.Id}'"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -85,7 +85,7 @@ public sealed class AnexoDoAtoPersistenceTests
     public async Task Truncate_DoAnexo_Bloqueado()
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            "TRUNCATE publicacoes.anexo_do_ato"));
+            "TRUNCATE publicacoes.anexos_do_ato"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -98,7 +98,7 @@ public sealed class AnexoDoAtoPersistenceTests
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
-            INSERT INTO publicacoes.anexo_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
+            INSERT INTO publicacoes.anexos_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
             VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 0, 'Tardio.pdf', 'application/pdf', '{OutroHash}')
             """));
 
@@ -117,12 +117,12 @@ public sealed class AnexoDoAtoPersistenceTests
         comando.Transaction = transacao;
         comando.CommandText =
             $"""
-            INSERT INTO publicacoes.ato_normativo
+            INSERT INTO publicacoes.atos_normativos
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
                  unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
             VALUES ('{ato.Id}', 'CEPS', 'EDITAL', 2026, NULL, 'EDITAL_ABERTURA', false, false, false,
                     DATE '2026-03-13', '{HashValido}', 'Jairo Belchior', now());
-            INSERT INTO publicacoes.anexo_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
+            INSERT INTO publicacoes.anexos_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
             VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 0, 'Anexo I.pdf', 'application/pdf', '{OutroHash}');
             """;
         await comando.ExecuteNonQueryAsync();

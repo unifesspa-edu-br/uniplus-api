@@ -20,7 +20,7 @@ internal sealed class UnidadeIdentificadorHistoricoConfiguration
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("unidade_identificador_historico");
+        builder.ToTable("identificadores_da_unidade");
         builder.HasKey(h => h.Id);
 
         // EntityBase gera UUIDv7 no cliente. Sem explicitar isso, o EF trata
@@ -37,7 +37,7 @@ internal sealed class UnidadeIdentificadorHistoricoConfiguration
 
         // Índice para consultas históricas por unidade + tipo + período
         builder.HasIndex(h => new { h.UnidadeId, h.TipoIdentificador, h.VigenciaInicio })
-            .HasDatabaseName("ix_uid_hist_unidade_tipo_inicio");
+            .HasDatabaseName("ix_identificadores_da_unidade_unidade_tipo_inicio");
 
         // Histórico é append-only — sem query filter de soft-delete
     }

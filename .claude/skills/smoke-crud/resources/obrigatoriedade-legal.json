@@ -12,7 +12,7 @@
     "errorCodeSuffix": "regra_codigo_duplicada"
   },
   "historico": {
-    "table": "obrigatoriedade_legal_historico",
+    "table": "historicos_da_obrigatoriedade",
     "regraIdColumn": "regra_id",
     "snapshotAtColumn": "snapshot_at",
     "database": "uniplus_selecao"

@@ -16,7 +16,7 @@ public sealed class OfertaTipoDeficienciaConfiguration : IEntityTypeConfiguratio
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("ofertas_tipo_deficiencia");
+        builder.ToTable("deficiencias_atendidas");
         builder.HasKey(t => t.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
@@ -13,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="PrecedenciaFase"/> — a tabela
-/// <c>precedencia_fase</c> (UNI-REQ-0139, story #851). CRUD-administrado (como
+/// <c>precedencias_entre_fases</c> (UNI-REQ-0139, story #851). CRUD-administrado (como
 /// <c>FaseCanonica</c>) e <b>seed-governado</b> (como <c>RegraCatalogo</c>/
 /// <c>FatoCandidato</c>): as seis arestas estruturais de §3.3 são materializadas
 /// via <c>HasData</c>, e o CRUD admin continua disponível para
@@ -34,7 +35,7 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("precedencia_fase", ConfigurarChecks);
+        builder.ToTable("precedencias_entre_fases", ConfigurarChecks);
 
         builder.HasKey(p => p.Id);
 
@@ -53,7 +54,7 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
         builder.HasIndex(p => new { p.AntecessoraCodigo, p.SucessoraCodigo })
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_precedencia_fase_par_vivo");
+            .HasDatabaseName(RestricoesDoBanco.PrecedenciaEntreFasesParVivo);
 
         builder.HasData(MaterializarSeed());
     }
@@ -62,26 +63,26 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
     {
         // Formato fechado dos códigos — alinhado ao value object CodigoFase.
         table.HasCheckConstraint(
-            "ck_precedencia_fase_antecessora_formato",
+            "ck_precedencias_entre_fases_antecessora_formato",
             "antecessora_codigo ~ '^[A-Z_]+$'");
 
         table.HasCheckConstraint(
-            "ck_precedencia_fase_sucessora_formato",
+            "ck_precedencias_entre_fases_sucessora_formato",
             "sucessora_codigo ~ '^[A-Z_]+$'");
 
         // Domínio fechado das fases canônicas (defesa em profundidade).
         table.HasCheckConstraint(
-            "ck_precedencia_fase_antecessora_canonica",
+            "ck_precedencias_entre_fases_antecessora_canonica",
             $"antecessora_codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
 
         table.HasCheckConstraint(
-            "ck_precedencia_fase_sucessora_canonica",
+            "ck_precedencias_entre_fases_sucessora_canonica",
             $"sucessora_codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
 
         // Defesa em profundidade contra self-loop via insert cru (a guarda
         // primária é a factory PrecedenciaFase.Criar).
         table.HasCheckConstraint(
-            "ck_precedencia_fase_sem_self_loop",
+            "ck_precedencias_entre_fases_sem_self_loop",
             "antecessora_codigo <> sucessora_codigo");
     }
 

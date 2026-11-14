@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Um fato do candidato no catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0143, ADR-0136):
+/// Um fato do candidato no catálogo <c>fatos_do_candidato</c> (UNI-REQ-0143, ADR-0136):
 /// o que o sistema sabe perguntar ou derivar sobre um candidato. Para cada fato, o seu
 /// <see cref="Dominio"/>, a sua <see cref="Origem"/>, a sua <see cref="Cardinalidade"/>, a
 /// <see cref="FonteValores"/> do categórico, o <see cref="PontoResolucao"/>, o

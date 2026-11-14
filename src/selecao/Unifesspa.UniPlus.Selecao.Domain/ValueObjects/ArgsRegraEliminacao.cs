@@ -5,14 +5,14 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Args aplicados de uma <see cref="Entities.RegraEliminacao"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
-/// <c>rol_de_regras</c> (<c>tipo=regra_eliminacao</c>), tipados por variante
+/// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>), tipados por variante
 /// conforme o <c>esquema_args</c> de cada código.
 /// Discriminated union no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058)
 /// e de <c>ArgsCriterioDesempate</c> (Story #774).
 /// </summary>
 /// <remarks>
 /// Forma fechada por design: as variantes espelham as regras de eliminação semeadas em
-/// <c>rol_de_regras</c> — <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-EM-AREA</c>,
+/// <c>regras_do_catalogo</c> — <c>ELIM-NOTA-MINIMA-ETAPA</c>, <c>ELIM-CORTE-EM-AREA</c>,
 /// <c>ELIM-ZERO-EM-AREA</c>, <c>ELIM-FALTA-EM-DIA-DE-PROVA-ENEM</c> e
 /// <c>ELIM-AUSENCIA-NA-ETAPA</c>.
 /// </remarks>

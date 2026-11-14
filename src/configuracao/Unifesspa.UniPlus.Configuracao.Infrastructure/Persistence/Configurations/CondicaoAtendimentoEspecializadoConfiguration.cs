@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -26,14 +27,14 @@ internal sealed class CondicaoAtendimentoEspecializadoConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "condicao_atendimento_especializado",
+            "condicoes_de_atendimento",
             t =>
             {
                 // Formato fechado do código (UPPER_SNAKE iniciando por letra) — defesa
                 // em profundidade do invariante de domínio (CodigoCondicao) contra
                 // inserts crus. Case-sensitive, alinhado ao value object.
                 t.HasCheckConstraint(
-                    "ck_condicao_atendimento_especializado_codigo_formato",
+                    "ck_condicoes_de_atendimento_codigo_formato",
                     "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
             });
 
@@ -59,6 +60,6 @@ internal sealed class CondicaoAtendimentoEspecializadoConfiguration
         builder.HasIndex(c => c.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_condicao_atendimento_especializado_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.CondicaoDeAtendimentoCodigoVivo);
     }
 }

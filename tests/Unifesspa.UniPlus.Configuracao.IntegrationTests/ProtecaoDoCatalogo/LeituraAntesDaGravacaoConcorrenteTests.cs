@@ -123,7 +123,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
     private static Task<int> InserirManifestacao(TravaDaLinhaDoItem trava, string cadastro, Guid id) =>
         trava.Contexto.Database.ExecuteSqlInterpolatedAsync(
             $"""
-            INSERT INTO configuracao.protecao_do_catalogo_manifestacoes
+            INSERT INTO configuracao.manifestacoes_da_protecao
                 (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_sub, autor_nome, instante)
             VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'INADEQUADA', 'O dado é sensível.', NULL,
                     {TestAuthHandler.DefaultIssuer}, {Kevin.Sub}, {Kevin.Nome}, now())
@@ -132,7 +132,7 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
     private static Task<int> InserirAprovacao(TravaDaLinhaDoItem trava, string cadastro, Guid id) =>
         trava.Contexto.Database.ExecuteSqlInterpolatedAsync(
             $"""
-            INSERT INTO configuracao.protecao_do_catalogo_atos
+            INSERT INTO configuracao.atos_da_protecao_do_catalogo
                 (id, cadastro, item_id, item_codigo, item_nome, ato, classificacao_protecao, hipotese_legal, finalidade_tratamento,
                  ciclo, classificacao_recomendada, justificativa, diante_de_manifestacao_desfavoravel, ator_emissor, ator_sub, ator_nome, instante)
             VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 'CONTROLE', 'Controle', 'APROVACAO', {Classificacao(cadastro)},

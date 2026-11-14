@@ -63,7 +63,7 @@ public interface ICalendarioDiasUteisRepository
     /// concorrente do MESMO dataset não vira conflito: o <c>INSERT</c> do filho
     /// sucede porque a FK só exige que a linha física do pai exista, não que
     /// ela esteja viva (<c>is_deleted = false</c>) — deixando uma linha
-    /// <c>dia_nao_util</c> inalcançável sob um calendário já escondido.</para>
+    /// <c>dias_nao_uteis</c> inalcançável sob um calendário já escondido.</para>
     /// </remarks>
     void RegistrarInclusaoDeDiaNaoUtil(CalendarioDiasUteis calendario, DiaNaoUtil dia);
 }

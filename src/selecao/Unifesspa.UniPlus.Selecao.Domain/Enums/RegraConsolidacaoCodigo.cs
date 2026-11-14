@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Código canônico das regras de <c>tipo=regra_consolidacao</c> do <c>rol_de_regras</c>: como as
+/// Código canônico das regras de <c>tipo=regra_consolidacao</c> do <c>regras_do_catalogo</c>: como as
 /// notas lançadas pelos avaliadores de uma etapa de avaliação humana viram a nota da etapa.
 /// </summary>
 /// <remarks>

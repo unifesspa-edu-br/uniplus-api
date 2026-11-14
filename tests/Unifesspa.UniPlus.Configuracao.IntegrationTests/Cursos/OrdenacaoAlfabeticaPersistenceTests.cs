@@ -43,7 +43,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
                 SELECT is_generated AS ""Value""
                 FROM information_schema.columns
                 WHERE table_schema = 'configuracao'
-                  AND table_name = 'curso'
+                  AND table_name = 'cursos'
                   AND column_name = 'nome_ordenacao'")
             .SingleOrDefaultAsync();
 
@@ -60,7 +60,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
                 SELECT is_nullable AS ""Value""
                 FROM information_schema.columns
                 WHERE table_schema = 'configuracao'
-                  AND table_name = 'curso'
+                  AND table_name = 'cursos'
                   AND column_name = 'nome_ordenacao'")
             .SingleOrDefaultAsync();
 
@@ -77,7 +77,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
                 SELECT indexdef AS ""Value""
                 FROM pg_indexes
                 WHERE schemaname = 'configuracao'
-                  AND indexname = 'ix_curso_ordenacao_alfabetica'")
+                  AND indexname = 'ix_cursos_ordenacao_alfabetica'")
             .SingleOrDefaultAsync();
 
         definicao.Should().NotBeNull("sem o índice, a listagem ordena por varredura completa");
@@ -107,7 +107,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
         string? chave = await leitura.Database
             .SqlQuery<string?>($@"
                 SELECT nome_ordenacao AS ""Value""
-                FROM configuracao.curso
+                FROM configuracao.cursos
                 WHERE codigo = {codigo}")
             .SingleOrDefaultAsync();
 
@@ -118,7 +118,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
         string? nomeGravado = await leitura.Database
             .SqlQuery<string?>($@"
                 SELECT nome AS ""Value""
-                FROM configuracao.curso
+                FROM configuracao.cursos
                 WHERE codigo = {codigo}")
             .SingleOrDefaultAsync();
 

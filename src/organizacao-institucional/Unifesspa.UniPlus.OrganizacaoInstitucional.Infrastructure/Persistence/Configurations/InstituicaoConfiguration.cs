@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Configurations;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -27,15 +28,15 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         // registro_vivo_sentinela = false e burlar o índice único parcial — duas
         // Instituições vivas (uma true, uma false) passariam. Com o CHECK, a coluna
         // só admite true, então o índice único parcial garante de fato o singleton.
-        builder.ToTable("instituicao", t =>
+        builder.ToTable("instituicoes", t =>
         {
-            t.HasCheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true");
+            t.HasCheckConstraint("ck_instituicoes_singleton_sentinela", "registro_vivo_sentinela = true");
 
             // CHECK de coerência cidade↔CEP (ADR-0096): NULL-safe — a cidade
             // da sede é opcional, mas quando há endereço o domínio garante a cidade
             // presente; o CHECK barra divergência de código IBGE/UF.
             t.HasCheckConstraint(
-                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("instituicao"),
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("instituicoes"),
                 EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
 
             // Espelha no banco a invariante de domínio "endereço presente ⇒ cidade
@@ -45,18 +46,18 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             // cidade_codigo_ibge nulo. Em Campus/LocalOferta a cidade é NOT NULL, então
             // a invariante já vale estruturalmente e este CHECK é específico da Instituicao.
             t.HasCheckConstraint(
-                "ck_instituicao_cidade_obrigatoria_com_endereco",
+                "ck_instituicoes_cidade_obrigatoria_com_endereco",
                 "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
 
             // Completude all-or-nothing dos campos obrigatórios do endereço (owned type).
             t.HasCheckConstraint(
-                EnderecoGeoOwnedConfiguration.CompletudeCheckName("instituicao"),
+                EnderecoGeoOwnedConfiguration.CompletudeCheckName("instituicoes"),
                 EnderecoGeoOwnedConfiguration.CompletudeCheckSql);
 
             // Trio de cidade da sede all-or-nothing (opcional): espelha no banco a
             // regra de domínio — ou o trio completo, ou ausente por completo.
             t.HasCheckConstraint(
-                "ck_instituicao_cidade_completa",
+                "ck_instituicoes_cidade_completa",
                 "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) "
                 + "OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
         });
@@ -108,7 +109,7 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(i => i.UnidadeRaizId)
-            .HasDatabaseName("ix_instituicao_unidade_raiz_id");
+            .HasDatabaseName("ix_instituicoes_unidade_raiz_id");
 
         // Salvaguarda física do singleton: a sentinela é uma propriedade real
         // sempre true (a entidade a inicializa), então o EF grava true de forma
@@ -122,10 +123,10 @@ internal sealed class InstituicaoConfiguration : IEntityTypeConfiguration<Instit
         builder.HasIndex(i => i.RegistroVivoSentinela)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_instituicao_singleton_vivo");
+            .HasDatabaseName(RestricoesDoBanco.InstituicaoSingletonVivo);
 
         // Índice de relatório/filtro pela cidade da sede (ADR-0090).
         builder.HasIndex(i => i.CidadeCodigoIbge)
-            .HasDatabaseName("ix_instituicao_cidade_codigo_ibge");
+            .HasDatabaseName("ix_instituicoes_cidade_codigo_ibge");
     }
 }

@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 
 /// <summary>
-/// POCO mapeado para a tabela <c>idempotency_cache</c> (ADR-0027), no esquema da
+/// POCO mapeado para a tabela <c>chaves_de_idempotencia</c> (ADR-0027), no esquema da
 /// plataforma do contexto único; lido e gravado pelo <c>EfCoreIdempotencyStore</c>.
 /// Entries persistidas e atualizadas pelo <c>IdempotencyFilter</c> em
 /// transações curtas separadas da transação do agregado (trade-off

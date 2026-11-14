@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+
 /// <summary>
 /// Helper para mapear violações 23P01 (exclusion_violation) da exclusion constraint
-/// GiST <c>ex_calendario_dias_uteis_vigente_unico</c> (issue #1016) para o
+/// GiST <c>ex_calendarios_de_dias_uteis_vigente_unico</c> (issue #1016) para o
 /// <c>DomainError</c> de conflito. A inspeção do tipo da exceção por
 /// <see cref="Type.FullName"/> evita dependência direta de <c>Npgsql</c>/
 /// <c>Microsoft.EntityFrameworkCore</c> na camada Application (mantém Clean Arch).
@@ -20,7 +22,7 @@ internal static class ExclusionConstraintViolation
 {
     private const string ExclusionViolationSqlState = "23P01";
 
-    private const string VigenteConstraint = "ex_calendario_dias_uteis_vigente_unico";
+    private const string VigenteConstraint = RestricoesDoBanco.CalendarioDeDiasUteisVigenteUnico;
 
     private const string PostgresExceptionFullName = "Npgsql.PostgresException";
 

@@ -122,7 +122,7 @@ internal static class ConsequenciaDeIndeferimento
     /// <see cref="DocumentoExigido.ConsequenciaIndeferimento"/> usa <c>RECLASSIFICA_AC</c>, mas
     /// <see cref="ModalidadeSelecionada.AcaoQuandoIndeferido"/> — snapshot-copy do cadastro
     /// de <c>Modalidade</c> no módulo Configuração
-    /// (<c>ck_modalidade_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
+    /// (<c>ck_modalidades_acao_quando_indeferido</c>) — usa <c>RECLASSIFICAR_AC</c>. É o
     /// MESMO conceito com grafias diferentes, nunca unificadas entre os dois módulos;
     /// comparar os tokens crus reprovaria sempre o único caso de reclassificação
     /// realmente coerente que existe.

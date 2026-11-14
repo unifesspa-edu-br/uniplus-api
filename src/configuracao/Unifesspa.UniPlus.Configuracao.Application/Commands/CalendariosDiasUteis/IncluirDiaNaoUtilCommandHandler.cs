@@ -87,7 +87,7 @@ public static class IncluirDiaNaoUtilCommandHandler
             // mudou a linha, este UPDATE afeta 0 linhas e o EF Core lança aqui.
             // Sem o Modified explícito no pai, esta corrida nunca apareceria:
             // o INSERT do filho sozinho não checa nada do pai, e uma remoção
-            // concorrente deixaria uma linha dia_nao_util inalcançável sob um
+            // concorrente deixaria uma linha dias_nao_uteis inalcançável sob um
             // calendário já escondido (is_deleted = true).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<CalendarioDiasUteisDto>.Failure(new DomainError(

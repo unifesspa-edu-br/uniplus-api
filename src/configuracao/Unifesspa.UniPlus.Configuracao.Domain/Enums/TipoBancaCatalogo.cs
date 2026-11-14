@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// <summary>
 /// Catálogo do domínio fechado das <b>seis bancas</b> da seleção (UNI-REQ-0139).
 /// Fonte única dos códigos aceitos na guarda de domínio (<c>TipoBanca.Criar</c>),
-/// no validator e no CHECK de banco <c>ck_tipo_banca_codigo_canonico</c>.
+/// no validator e no CHECK de banco <c>ck_tipos_de_banca_codigo_canonico</c>.
 /// </summary>
 public static class TipoBancaCatalogo
 {

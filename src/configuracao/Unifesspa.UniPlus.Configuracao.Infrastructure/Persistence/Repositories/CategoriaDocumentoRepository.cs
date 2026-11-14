@@ -38,7 +38,7 @@ public sealed class CategoriaDocumentoRepository : ICategoriaDocumentoRepository
     public async Task<IReadOnlyList<CategoriaDocumento>> ListarVivasOrdenadasAsync(CancellationToken cancellationToken)
     {
         // Ordem de exibição decidida pelo operador, com o código como desempate —
-        // é a ordenação que o índice ix_categoria_documento_ordem_codigo cobre.
+        // é a ordenação que o índice ix_categorias_de_documento_ordem_codigo cobre.
         List<CategoriaDocumento> categorias = await _dbContext.CategoriasDocumento
             .AsNoTracking()
             .OrderBy(c => c.Ordem)

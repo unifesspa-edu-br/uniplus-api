@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -34,7 +35,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("fase_canonica", ConfigurarChecks);
+        builder.ToTable("fases_canonicas", ConfigurarChecks);
 
         builder.HasKey(f => f.Id);
 
@@ -81,7 +82,7 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         builder.HasIndex(f => f.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_fase_canonica_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.FaseCanonicaCodigoVivo);
 
         builder.HasData(MaterializarSeed());
     }
@@ -125,27 +126,27 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
     {
         // Formato fechado do código — alinhado ao value object CodigoFase.
         table.HasCheckConstraint(
-            "ck_fase_canonica_codigo_formato",
+            "ck_fases_canonicas_codigo_formato",
             "codigo ~ '^[A-Z_]+$'");
 
         // Domínio fechado das fases canônicas (defesa em profundidade).
         table.HasCheckConstraint(
-            "ck_fase_canonica_codigo_canonico",
+            "ck_fases_canonicas_codigo_canonico",
             $"codigo IN ({TokensSql(FaseCanonicaCatalogo.Codigos)})");
 
         // Domínio fechado da origem da data (dois valores).
         table.HasCheckConstraint(
-            "ck_fase_canonica_origem_data",
+            "ck_fases_canonicas_origem_data",
             $"origem_data IN ({TokensSql(OrigensDataFase.TokensCanonicos)})");
 
         // Coerência: agrupa_etapas verdadeiro apenas para a fase de avaliação.
         table.HasCheckConstraint(
-            "ck_fase_canonica_agrupa_etapas",
+            "ck_fases_canonicas_agrupa_etapas",
             $"agrupa_etapas = false OR codigo = '{FaseCanonicaCatalogo.CodigoAvaliacao}'");
 
         // Coerência: permite_complementacao verdadeiro apenas nas fases legalmente permitidas.
         table.HasCheckConstraint(
-            "ck_fase_canonica_complementacao",
+            "ck_fases_canonicas_complementacao",
             $"permite_complementacao = false OR codigo IN ({TokensSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
     }
 

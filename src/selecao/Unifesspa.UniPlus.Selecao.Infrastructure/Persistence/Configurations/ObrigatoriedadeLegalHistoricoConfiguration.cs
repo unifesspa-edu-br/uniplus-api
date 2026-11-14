@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Configuração EF Core da tabela append-only
-/// <c>obrigatoriedade_legal_historico</c> (CA-03 da Story #460). Sem
+/// <c>historicos_da_obrigatoriedade</c> (CA-03 da Story #460). Sem
 /// soft-delete, sem audit fields, sem updates — qualquer mutação fora de
 /// <c>INSERT</c> é incidente operacional.
 /// </summary>
@@ -30,7 +30,7 @@ internal sealed class ObrigatoriedadeLegalHistoricoConfiguration : IEntityTypeCo
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("obrigatoriedade_legal_historico");
+        builder.ToTable("historicos_da_obrigatoriedade");
         builder.HasKey(h => h.Id);
 
         builder.Property(h => h.RegraId).IsRequired();
@@ -58,20 +58,20 @@ internal sealed class ObrigatoriedadeLegalHistoricoConfiguration : IEntityTypeCo
         // Qualquer DELETE físico (DBA bypass) precisa explicitamente lidar
         // com o histórico antes — invariante de integridade forense.
         // Nome do constraint explícito porque o derivado pelo EF
-        // (`fk_obrigatoriedade_legal_historico_obrigatoriedades_legais_regra_id`)
+        // (`fk_historicos_da_obrigatoriedade_obrigatoriedades_legais_regra_id`)
         // estoura o limite de 63 chars do PostgreSQL e é truncado de forma
         // pouco legível.
         builder.HasOne<ObrigatoriedadeLegal>()
             .WithMany()
             .HasForeignKey(h => h.RegraId)
             .OnDelete(DeleteBehavior.Restrict)
-            .HasConstraintName("fk_obrigatoriedade_legal_historico_regra_id");
+            .HasConstraintName("fk_historicos_da_obrigatoriedade_regra_id");
 
         // Consulta "evolução desta regra" é o caso principal — index por
         // (regra_id, snapshot_at DESC) suporta paginação descendente. Também
         // serve o lookup de FK (regra_id como leading column).
         builder.HasIndex(h => new { h.RegraId, h.SnapshotAt })
             .IsDescending(false, true)
-            .HasDatabaseName("ix_obrigatoriedade_legal_historico_regra_snapshot_at");
+            .HasDatabaseName("ix_historicos_da_obrigatoriedade_regra_snapshot_at");
     }
 }

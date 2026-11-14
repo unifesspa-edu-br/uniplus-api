@@ -339,7 +339,7 @@ public static class SementePsrMedicina2027
             semente.TermoId, semente.VersaoId, semente.Nome, semente.Texto, semente.BaseLegal, AutorDaSemente, Instante, NomeDaSemente);
 
     private static string ComandoDoFato(Guid id, FatoCandidato fato) =>
-        Inserir("rol_de_fatos_candidato", "id", [.. ColunasDoFato(id, fato), .. ColunasDaAprovacao(fato.Aprovacao)]);
+        Inserir("fatos_do_candidato", "id", [.. ColunasDoFato(id, fato), .. ColunasDaAprovacao(fato.Aprovacao)]);
 
     private static (string Coluna, string Valor)[] ColunasDoFato(Guid id, FatoCandidato fato) =>
     [
@@ -367,7 +367,7 @@ public static class SementePsrMedicina2027
     ];
 
     private static string ComandoDoValor(Guid id, Guid fatoId, FatoValorDominio valor) =>
-        Inserir("fato_valor_dominio", "id",
+        Inserir("valores_de_dominio_do_fato", "id",
             ("id", Uuid(id)), ("fato_candidato_id", Uuid(fatoId)), ("codigo", Texto(valor.Codigo)),
             ("descricao", Texto(valor.Descricao)), ("ordem", valor.Ordem.ToString(CultureInfo.InvariantCulture)),
             ("ativo", Logico(valor.Ativo)), ("created_at", Momento(Instante)));

@@ -1014,7 +1014,7 @@ public sealed class ProcessoSeletivoPublicarTests
         // DocumentoExigido.ConsequenciaIndeferimento aceita "RECLASSIFICA_AC" (rol fechado
         // desde a PR #895), mas ModalidadeSelecionada.AcaoQuandoIndeferido — snapshot-copy do
         // cadastro real de Modalidade — só aceita "RECLASSIFICAR_AC"/"RECLASSIFICAR_REGRA_EDITAL"
-        // (ck_modalidade_acao_quando_indeferido, módulo Configuração). Comparar os tokens
+        // (ck_modalidades_acao_quando_indeferido, módulo Configuração). Comparar os tokens
         // crus sempre reprovaria o único caso de reclassificação coerente que existe.
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
             "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICAR_AC");

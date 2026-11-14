@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -83,7 +84,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_recurso_acessibilidade_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoVivo);
     }
 
     [Fact(DisplayName = "UNIQUE parcial do nome rejeita segundo recurso vivo com mesmo nome")]
@@ -107,7 +108,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_recurso_acessibilidade_nome_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.RecursoDeAcessibilidadeNomeVivo);
     }
 
     [Fact(DisplayName = "Nome distinto é aceito")]

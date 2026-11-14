@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Códigos canônicos das regras de <c>tipo=regra_distribuicao_vagas</c> do
-/// <c>rol_de_regras</c> (Story #772) que o domínio de distribuição de vagas
+/// <c>regras_do_catalogo</c> (Story #772) que o domínio de distribuição de vagas
 /// (Story #773) precisa reconhecer para aplicar invariantes específicas —
 /// ex.: só o ramo federal exige referência demográfica (INV-5) e as 8
 /// modalidades federais + AC (INV-6).

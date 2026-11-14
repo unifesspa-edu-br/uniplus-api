@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Entrada da biblioteca <c>rol_de_regras</c> — uma regra TIPADA e VERSIONADA
+/// Entrada da biblioteca <c>regras_do_catalogo</c> — uma regra TIPADA e VERSIONADA
 /// que a configuração do Processo Seletivo referencia e o snapshot de
 /// publicação congela por <c>(codigo, versao, hash)</c> (congelamento dos parâmetros na publicação, UNI-REQ-0019). Materializa a
 /// tese "configurável, não programável": o comportamento (fórmula da nota,
@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="EntityBase"/> puro (sem soft-delete). O append-only é imposto por
 /// <em>convenção</em> — ausência de API de mutação, leitura por
 /// <c>IRegraCatalogoReader</c> e fitness test —, não por gatilho de banco: não
-/// há <c>trigger</c> sobre <c>rol_de_regras</c> em migration alguma. A própria
+/// há <c>trigger</c> sobre <c>regras_do_catalogo</c> em migration alguma. A própria
 /// linhagem de versões é a trilha de auditoria (sem histórico forense adicional).
 /// </para>
 /// <para>

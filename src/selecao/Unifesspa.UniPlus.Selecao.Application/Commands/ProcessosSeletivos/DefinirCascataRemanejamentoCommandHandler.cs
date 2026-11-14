@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// (cascata de remanejamento de cotas, UNI-REQ-0056, Story #575): campos todos nulos remove a cascata
 /// (<see cref="ProcessoSeletivo.DefinirCascataRemanejamento"/> com
 /// <see langword="null"/>); todos presentes valida a forma de cada destino e a
-/// coerência entre eles (cascata de remanejamento de cotas, UNI-REQ-0056) ANTES de consultar o <c>rol_de_regras</c>
+/// coerência entre eles (cascata de remanejamento de cotas, UNI-REQ-0056) ANTES de consultar o <c>regras_do_catalogo</c>
 /// (ADR-0125: validação sempre precede I/O) e só então compara célula a célula
 /// contra o <c>esquema_args</c> congelado da regra resolvida (conteúdo —
 /// vínculo com a regra versionada da cascata de remanejamento de cotas, UNI-REQ-0056) — ver §4 da story para o porquê da ordem entre forma e conteúdo.
@@ -76,7 +76,7 @@ public static class DefinirCascataRemanejamentoCommandHandler
         }
 
         // Validação sempre precede I/O (ADR-0125, ponto 5): confirma fallback + forma de cada
-        // destino + coerência entre destinos ANTES de consultar o rol_de_regras — um payload
+        // destino + coerência entre destinos ANTES de consultar o catálogo de regras — um payload
         // malformado não pode "vencer" pela sorte de a regra também não existir, nem o inverso.
         // Acumula (ADR-0125) as violações de TODOS os itens em vez de parar no primeiro — um
         // payload com vários destinos malformados reporta todos de uma vez, cada um com o
@@ -134,7 +134,7 @@ public static class DefinirCascataRemanejamentoCommandHandler
         {
             return Result<MutacaoAceita>.Failure(new DomainError(
                 "ConfiguracaoCascataRemanejamento.RegraNaoEncontrada",
-                $"Regra de remanejamento {command.RegraCodigo}/{command.RegraVersao} não encontrada no rol_de_regras."));
+                $"Regra de remanejamento {command.RegraCodigo}/{command.RegraVersao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != TipoRegra.CriterioRemanejamento)

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Códigos canônicos das regras de <c>tipo=criterio_desempate</c> do
-/// <c>rol_de_regras</c> (Story #772) reconhecidas pela configuração de
+/// <c>regras_do_catalogo</c> (Story #772) reconhecidas pela configuração de
 /// desempate (Story #774).
 /// </summary>
 public static class CriterioDesempateCodigo

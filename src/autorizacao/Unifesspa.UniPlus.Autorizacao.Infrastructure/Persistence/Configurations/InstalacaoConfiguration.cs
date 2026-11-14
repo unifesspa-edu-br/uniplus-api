@@ -70,7 +70,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
         builder.OwnsMany(i => i.Gestores, gestor =>
         {
             gestor.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
-            gestor.ToTable("instalacao_gestores");
+            gestor.ToTable("gestores_da_instalacao");
             gestor.WithOwner().HasForeignKey("InstalacaoId");
             gestor.Property<Guid>("InstalacaoId");
             gestor.Property(g => g.Emissor).HasMaxLength(IdentidadeMaxLength).IsRequired();

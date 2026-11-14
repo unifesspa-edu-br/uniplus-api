@@ -24,20 +24,20 @@ internal sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<T
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "tipo_ato_publicado",
+            "tipos_de_ato_publicado",
             t =>
             {
                 // Fim da vigência é exclusivo: uma janela cujo fim iguala o início
                 // não contém dia algum, e o daterange correspondente seria vazio —
                 // vazio não intercepta nada, e escaparia da exclusion constraint.
                 t.HasCheckConstraint(
-                    "ck_tipo_ato_publicado_vigencia",
+                    "ck_tipos_de_ato_publicado_vigencia",
                     "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
 
                 // Defesa em profundidade do formato do código contra inserts crus
                 // (o guard de domínio já recusa). Caixa alta e underscore interno.
                 t.HasCheckConstraint(
-                    "ck_tipo_ato_publicado_codigo_formato",
+                    "ck_tipos_de_ato_publicado_codigo_formato",
                     "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
             });
 
@@ -69,6 +69,6 @@ internal sealed class TipoAtoPublicadoConfiguration : IEntityTypeConfiguration<T
         // este acesso por igualdade.
         builder.HasIndex(t => t.Codigo)
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_tipo_ato_publicado_codigo_vivo");
+            .HasDatabaseName("ix_tipos_de_ato_publicado_codigo_vivo");
     }
 }

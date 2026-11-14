@@ -86,7 +86,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         // qualquer outra transação que tente escrever na mesma linha bloqueia
         // aqui até txB liberar.
         await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {id}");
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET updated_at = now() WHERE id = {id}");
         int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
@@ -120,7 +120,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     /// o filho nunca compararia o <c>xmin</c> do <see cref="CalendarioDiasUteis"/>
     /// — uma remoção (soft-delete) concorrente do MESMO dataset não viraria
     /// conflito, porque a FK só exige que a linha física do pai exista, não que
-    /// ela esteja viva. O resultado seria uma linha <c>dia_nao_util</c>
+    /// ela esteja viva. O resultado seria uma linha <c>dias_nao_uteis</c>
     /// inalcançável sob um calendário já escondido.
     /// </summary>
     [Fact(DisplayName =
@@ -150,7 +150,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         // SoftDeleteInterceptor) emitiria, sem commitar ainda — trava a linha
         // do pai para qualquer outro escritor concorrente.
         await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendario_dias_uteis SET is_deleted = true, updated_at = now() WHERE id = {id}");
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET is_deleted = true, updated_at = now() WHERE id = {id}");
         int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
@@ -173,7 +173,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int diasComANovaData = await readDb.Database.SqlQuery<int>(
             $"""
-            SELECT count(*)::int AS "Value" FROM configuracao.dia_nao_util
+            SELECT count(*)::int AS "Value" FROM configuracao.dias_nao_uteis
             WHERE calendario_dias_uteis_id = {id} AND data = {novaData}
             """).SingleAsync();
         diasComANovaData.Should().Be(0,
@@ -185,7 +185,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
     /// em memória de <c>CalendarioDiasUteis.IncluirDiaNaoUtil</c> só compara contra
     /// o que já está carregado no agregado — ela NÃO alcança uma linha inserida por
     /// outra transação ainda não commitada. A defesa real contra a corrida é o
-    /// índice único <c>ix_dia_nao_util_unicidade</c> (sem token de concorrência no
+    /// índice único <c>ix_dias_nao_uteis_unicidade</c> (sem token de concorrência no
     /// pai: inserir um filho não muta o pai, então nada aqui depende de <c>xmin</c>
     /// — ver <see cref="IncluirDiaNaoUtilCommandHandler"/>).
     /// </summary>
@@ -218,7 +218,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         // só o índice único, checado no momento do INSERT de busA, protege aqui.
         await dbB.Database.ExecuteSqlInterpolatedAsync(
             $"""
-            INSERT INTO configuracao.dia_nao_util
+            INSERT INTO configuracao.dias_nao_uteis
                 (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, uf, data, descricao, created_at)
             VALUES
                 (gen_random_uuid(), {id}, 'ESTADUAL', NULL, 'PA', {novaData}, 'Feriado estadual (txB)', now())
@@ -245,7 +245,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int totalNaCombinacao = await readDb.Database.SqlQuery<int>(
             $"""
-            SELECT count(*)::int AS "Value" FROM configuracao.dia_nao_util
+            SELECT count(*)::int AS "Value" FROM configuracao.dias_nao_uteis
             WHERE calendario_dias_uteis_id = {id} AND data = {novaData} AND abrangencia = 'ESTADUAL' AND uf = 'PA'
             """).SingleAsync();
         totalNaCombinacao.Should().Be(1, "só a linha de txB persiste — busA perdeu a corrida e nada seu foi gravado");

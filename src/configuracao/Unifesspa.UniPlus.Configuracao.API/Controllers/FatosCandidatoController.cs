@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Endpoints públicos de leitura do catálogo <c>rol_de_fatos_candidato</c> — o catálogo de fatos do candidato
+/// Endpoints públicos de leitura do catálogo <c>fatos_do_candidato</c> — o catálogo de fatos do candidato
 /// (UNI-REQ-0077, UNI-REQ-0143, ADR-0136) —, e a manutenção pelo administrador do cadastro de fatos, com a permissão de
 /// manter: cadastro de fato declarado e de derivado por regra, edição de nome e descrição, desativação, valores de
 /// domínio, regras padrão do derivado e aceite da recomendação de ajuste que o Representante do controlador fez na

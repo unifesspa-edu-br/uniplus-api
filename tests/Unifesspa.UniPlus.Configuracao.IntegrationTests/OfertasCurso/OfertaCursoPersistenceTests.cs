@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Integração ponta-a-ponta da OfertaCurso contra Postgres real (story #588,
 /// issue #749): persistência com owned type <c>unidade_oft_*</c> (roundtrip do
-/// snapshot ADR-0061), FKs intra-schema reais (curso/local_oferta, RESTRICT),
+/// snapshot ADR-0061), FKs intra-schema reais (curso/locais_de_oferta, RESTRICT),
 /// CHECKs de domínio via SQL cru (programa/formato/regime/turnos/vagas/base legal
 /// condicional), soft-delete e o EXISTS real de
 /// <c>CursoRepository.ReferenciadoPorOfertaCursoVivaAsync</c>.
@@ -173,7 +173,7 @@ public sealed class OfertaCursoPersistenceTests
 
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23503", "curso_id tem FK intra-schema real para configuracao.curso");
+        pg.SqlState.Should().Be("23503", "curso_id tem FK intra-schema real para configuracao.cursos");
     }
 
     [Fact(DisplayName = "FK real: oferta apontando local de oferta inexistente é rejeitada pelo banco (23503)")]
@@ -189,7 +189,7 @@ public sealed class OfertaCursoPersistenceTests
 
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23503", "local_oferta_id tem FK intra-schema real para configuracao.local_oferta");
+        pg.SqlState.Should().Be("23503", "local_oferta_id tem FK intra-schema real para configuracao.locais_de_oferta");
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita programa de oferta fora do domínio via SQL cru")]
@@ -201,7 +201,7 @@ public sealed class OfertaCursoPersistenceTests
             cursoId, localId, programa: "PROUNI", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: "Lei X");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_programa_de_oferta impede o INSERT direto");
+            "o CHECK ck_ofertas_de_curso_programa_de_oferta impede o INSERT direto");
     }
 
     [Theory(DisplayName = "CHECK de banco rejeita token de turno fora do domínio via SQL cru")]
@@ -217,7 +217,7 @@ public sealed class OfertaCursoPersistenceTests
             regime: "REGULAR", turnos: [token], vagas: null, baseLegal: null);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_turnos_dominio impede token fora do domínio");
+            "o CHECK ck_ofertas_de_curso_turnos_dominio impede token fora do domínio");
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita elemento nulo dentro do array de turnos")]
@@ -243,7 +243,7 @@ public sealed class OfertaCursoPersistenceTests
             regime: "PARCIAL", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_regime_de_turno impede token fora do domínio");
+            "o CHECK ck_ofertas_de_curso_regime_de_turno impede token fora do domínio");
     }
 
     [Theory(DisplayName = "CHECK de banco espelha a cardinalidade que cada regime exige")]
@@ -262,7 +262,7 @@ public sealed class OfertaCursoPersistenceTests
             regime: regime, turnos: turnos, vagas: null, baseLegal: null);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_turnos_regime espelha a invariante do agregado");
+            "o CHECK ck_ofertas_de_curso_turnos_regime espelha a invariante do agregado");
     }
 
     [Theory(DisplayName = "CHECK de banco rejeita regime de funcionamento fora do domínio via SQL cru")]
@@ -280,7 +280,7 @@ public sealed class OfertaCursoPersistenceTests
             funcionamento: token);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_regime_de_funcionamento impede token fora do domínio");
+            "o CHECK ck_ofertas_de_curso_regime_de_funcionamento impede token fora do domínio");
     }
 
     [Fact(DisplayName = "CHECK de banco recusa a oferta intensiva com regime de turno regular")]
@@ -294,7 +294,7 @@ public sealed class OfertaCursoPersistenceTests
             funcionamento: "INTENSIVO");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_funcionamento_regime_de_turno espelha a invariante do agregado");
+            "o CHECK ck_ofertas_de_curso_funcionamento_regime_de_turno espelha a invariante do agregado");
     }
 
     [Theory(DisplayName = "CHECK de banco aceita as cinco combinações válidas de funcionamento e regime de turno")]
@@ -324,7 +324,7 @@ public sealed class OfertaCursoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = () => ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.oferta_curso
+            INSERT INTO configuracao.ofertas_de_curso
                 (id, curso_id, local_oferta_id,
                  unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
                  programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
@@ -400,7 +400,7 @@ public sealed class OfertaCursoPersistenceTests
         Func<Task> negativa = () => InserirCruAsync(
             cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: -1, baseLegal: null);
         await negativa.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_vagas_anuais_autorizadas impede teto negativo");
+            "o CHECK ck_ofertas_de_curso_vagas_anuais_autorizadas impede teto negativo");
 
         Func<Task> zero = () => InserirCruAsync(
             cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: 0, baseLegal: null);
@@ -416,7 +416,7 @@ public sealed class OfertaCursoPersistenceTests
             cursoId, localId, programa: "PARFOR", formato: "PRESENCIAL",
             regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
         await parforSemBase.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_oferta_curso_base_legal_programa espelha o guard de domínio (ADR-0066)");
+            "o CHECK ck_ofertas_de_curso_base_legal_programa espelha o guard de domínio (ADR-0066)");
 
         Func<Task> regularSemBase = () => InserirCruAsync(
             cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
@@ -646,7 +646,7 @@ public sealed class OfertaCursoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.oferta_curso
+            INSERT INTO configuracao.ofertas_de_curso
                 (id, curso_id, local_oferta_id,
                  unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
                  programa_de_oferta, formato_pedagogico, regime_de_funcionamento,
@@ -674,7 +674,7 @@ public sealed class OfertaCursoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.oferta_curso
+            INSERT INTO configuracao.ofertas_de_curso
                 (id, curso_id, local_oferta_id,
                  unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
                  programa_de_oferta, formato_pedagogico, regime_de_funcionamento,

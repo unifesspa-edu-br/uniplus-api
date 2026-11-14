@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Mapeamento único entre <see cref="TipoRegra"/> e o código textual canônico
-/// snake_case do <c>rol_de_regras</c> (o valor persistido na coluna <c>tipo</c>
+/// snake_case do <c>regras_do_catalogo</c> (o valor persistido na coluna <c>tipo</c>
 /// e o token que entra no hash content-addressable). Fonte de verdade única do
 /// wire format — o EF converter e o computador de hash consomem estes métodos,
 /// nunca <c>enum.ToString()</c>.

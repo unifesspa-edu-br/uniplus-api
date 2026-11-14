@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <remarks>
 /// <c>ato_criador_id</c> e <c>ato_criador_retifica_id</c> são referências
 /// <b>por valor</b> (ADR-0061) — deliberadamente <b>sem</b> chave estrangeira,
-/// nem para <c>editais</c> hoje, nem para <c>publicacoes.ato_normativo</c>
+/// nem para <c>editais</c> hoje, nem para <c>publicacoes.atos_normativos</c>
 /// depois de #804. A garantia forense é local: <c>NOT NULL</c> mais
 /// <c>UNIQUE</c> sobre o ato criador — mais forte que o antigo
 /// <c>ux_snapshot_publicacao_edital_id</c>, porque impede também que um mesmo

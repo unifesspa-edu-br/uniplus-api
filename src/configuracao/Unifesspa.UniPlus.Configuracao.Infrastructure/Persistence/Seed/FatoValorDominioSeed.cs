@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
-/// Fonte única do seed de <c>fato_valor_dominio</c> (ADR-0116): a descrição por
+/// Fonte única do seed de <c>valores_de_dominio_do_fato</c> (ADR-0116): a descrição por
 /// valor dos fatos categóricos <b>estáticos</b> desta colheita —
 /// <c>COR_RACA</c> (6), <c>SEXO</c> (3), <c>SEXO_CIVIL</c> (2), <c>IDENTIDADE_GENERO</c> (6), <c>ORIENTACAO_SEXUAL</c> (6), <c>NACIONALIDADE</c> (3), <c>PARENTESCO</c> (12),
 /// <c>ESTADO_CIVIL</c> (6), <c>RG_ORGAO_EMISSOR</c> (12), <c>TIPO_ENDERECO</c> (7) e a origem

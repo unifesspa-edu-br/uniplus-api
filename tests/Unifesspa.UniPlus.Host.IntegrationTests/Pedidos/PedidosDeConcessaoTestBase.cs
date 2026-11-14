@@ -212,11 +212,11 @@ public abstract class PedidosDeConcessaoTestBase
     {
         await Fixture.ProvisionarBucketsAsync();
         await DescartarJanelasAsync();
-        await ExecutarSqlAsync("DELETE FROM autorizacao.revisao_itens");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.itens_da_revisao");
         await ExecutarSqlAsync("DELETE FROM autorizacao.revisoes_de_acessos");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexo_leituras");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_decisoes");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.pedido_anexos");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.leituras_do_anexo_do_pedido");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.decisoes_do_pedido");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.anexos_do_pedido");
         await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
         await ExecutarSqlAsync("DELETE FROM autorizacao.pedidos_de_concessao");
         await ApagarFatosDasConcessoesAsync();
@@ -262,7 +262,7 @@ public abstract class PedidosDeConcessaoTestBase
     {
         await ExecutarSqlAsync("DELETE FROM autorizacao.providencias");
         await ExecutarSqlAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao");
-        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao");
+        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_concedida");
     }
 
     private protected async Task ExecutarSqlAsync(string sql, params object[] parametros)

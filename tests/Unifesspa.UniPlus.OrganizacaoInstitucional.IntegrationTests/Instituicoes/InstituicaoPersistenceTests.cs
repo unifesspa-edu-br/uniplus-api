@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -114,7 +115,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_instituicao_singleton_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.InstituicaoSingletonVivo);
     }
 
     [Fact(DisplayName = "CHECK constraint impede gravar a sentinela como false (singleton constante no banco)")]
@@ -133,10 +134,10 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE organizacao.instituicao SET registro_vivo_sentinela = false WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicoes SET registro_vivo_sentinela = false WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "a CHECK constraint ck_instituicao_singleton_sentinela só admite a sentinela true");
+            "a CHECK constraint ck_instituicoes_singleton_sentinela só admite a sentinela true");
     }
 
     [Fact(DisplayName = "Soft-delete liberta o slot singleton — nova Instituição é aceita após exclusão")]
@@ -312,10 +313,10 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
 
         await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE organizacao.instituicao SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicoes SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_instituicao_endereco_cidade_coerente impede divergência cidade↔CEP");
+            "o CHECK ck_instituicoes_endereco_cidade_coerente impede divergência cidade↔CEP");
     }
 
     [Fact(DisplayName = "CHECK rejeita UPDATE cru que zera a cidade da sede mantendo o endereço")]
@@ -338,10 +339,10 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         // domínio recusa (CidadeObrigatoriaComEndereco); o CHECK protege escrita crua.
         await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE organizacao.instituicao SET cidade_codigo_ibge = NULL, cidade_nome = NULL, cidade_uf = NULL WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicoes SET cidade_codigo_ibge = NULL, cidade_nome = NULL, cidade_uf = NULL WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_instituicao_cidade_obrigatoria_com_endereco exige cidade da sede quando há endereço");
+            "o CHECK ck_instituicoes_cidade_obrigatoria_com_endereco exige cidade da sede quando há endereço");
     }
 
     [Fact(DisplayName = "Completude: CHECK rejeita UPDATE cru que deixa o trio de cidade da sede parcial")]
@@ -363,10 +364,10 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         // trata a cidade como all-or-nothing; o CHECK protege a escrita crua.
         await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE organizacao.instituicao SET cidade_nome = NULL WHERE id = {instituicao.Id}");
+            $"UPDATE organizacao.instituicoes SET cidade_nome = NULL WHERE id = {instituicao.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_instituicao_cidade_completa exige o trio de cidade completo ou ausente");
+            "o CHECK ck_instituicoes_cidade_completa exige o trio de cidade completo ou ausente");
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
@@ -375,7 +376,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     {
         // Cada teste precisa de um ponto de partida sem Instituição viva — o
         // singleton compartilha o slot único entre todos os testes da fixture.
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM organizacao.instituicao");
+        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM organizacao.instituicoes");
     }
 
     private static Instituicao NovaInstituicao(

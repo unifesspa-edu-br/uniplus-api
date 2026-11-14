@@ -37,8 +37,8 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("pedido_decisoes", tabela => tabela.HasCheckConstraint(
-            "ck_pedido_decisoes_motivo_na_recusa",
+        builder.ToTable("decisoes_do_pedido", tabela => tabela.HasCheckConstraint(
+            "ck_decisoes_do_pedido_motivo_na_recusa",
             "resultado <> 'recusado' OR motivo IS NOT NULL"));
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).ValueGeneratedNever();
@@ -57,7 +57,7 @@ internal sealed class DecisaoDoPedidoConfiguration : IEntityTypeConfiguration<De
 
         builder.Ignore(d => d.Decisor);
 
-        builder.HasIndex(d => d.PedidoId).HasDatabaseName("ix_pedido_decisoes_pedido");
-        builder.HasIndex(d => d.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_pedido_decisoes_ordem_de_registro");
+        builder.HasIndex(d => d.PedidoId).HasDatabaseName("ix_decisoes_do_pedido_pedido");
+        builder.HasIndex(d => d.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_decisoes_do_pedido_ordem_de_registro");
     }
 }

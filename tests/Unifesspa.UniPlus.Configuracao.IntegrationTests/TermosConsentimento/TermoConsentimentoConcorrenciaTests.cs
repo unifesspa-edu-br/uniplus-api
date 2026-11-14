@@ -73,7 +73,7 @@ public sealed class TermoConsentimentoConcorrenciaTests
         // qualquer outra transação que tente escrever na mesma linha bloqueia
         // aqui até txB liberar.
         await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.termo_consentimento SET updated_at = now() WHERE id = {id}");
+            $"UPDATE configuracao.termos_de_consentimento SET updated_at = now() WHERE id = {id}");
         int pidDbB = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbB);
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();

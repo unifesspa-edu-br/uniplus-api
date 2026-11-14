@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
@@ -27,20 +28,20 @@ internal sealed class CategoriaDocumentoConfiguration : IEntityTypeConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "categoria_documento",
+            "categorias_de_documento",
             t =>
             {
                 // Formato fechado do código (UPPER_SNAKE iniciando por letra) — defesa
                 // em profundidade do invariante de domínio (CodigoCategoriaDocumento)
                 // contra inserts crus. Case-sensitive, alinhado ao value object.
                 t.HasCheckConstraint(
-                    "ck_categoria_documento_codigo_formato",
+                    "ck_categorias_de_documento_codigo_formato",
                     "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                 // Ordem de exibição é posição, não pode ser negativa — mesmo guarda do
                 // agregado, aplicado também contra inserts crus.
                 t.HasCheckConstraint(
-                    "ck_categoria_documento_ordem_nao_negativa",
+                    "ck_categorias_de_documento_ordem_nao_negativa",
                     "ordem >= 0");
             });
 
@@ -67,12 +68,12 @@ internal sealed class CategoriaDocumentoConfiguration : IEntityTypeConfiguration
         builder.HasIndex(c => c.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_categoria_documento_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.CategoriaDeDocumentoCodigoVivo);
 
         // Exibição do catálogo é sempre por (ordem, codigo) — a ordem sozinha não
         // desempata, e o código é a chave natural estável para o desempate.
         builder.HasIndex(c => new { c.Ordem, c.Codigo })
-            .HasDatabaseName("ix_categoria_documento_ordem_codigo");
+            .HasDatabaseName("ix_categorias_de_documento_ordem_codigo");
 
         builder.HasData(MaterializarSeed());
     }

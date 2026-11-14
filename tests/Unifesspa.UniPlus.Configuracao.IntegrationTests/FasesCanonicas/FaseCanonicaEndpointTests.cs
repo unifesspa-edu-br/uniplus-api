@@ -423,7 +423,7 @@ public sealed class FaseCanonicaEndpointTests
 
         await using NpgsqlCommand comando = conexao.CreateCommand();
         comando.CommandText =
-            "DELETE FROM configuracao.fase_canonica " +
+            "DELETE FROM configuracao.fases_canonicas " +
             "WHERE id::text LIKE 'f45e0000-0000-7000-8000-%' AND codigo = @codigo";
         comando.Parameters.AddWithValue("codigo", codigo);
         await comando.ExecuteNonQueryAsync();

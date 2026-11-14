@@ -20,7 +20,7 @@ using Wolverine;
 
 /// <summary>
 /// Investigação empírica da issue #1032: observa, contra Postgres real, o que
-/// acontece quando a exclusion constraint <c>ex_calendario_dias_uteis_vigente_unico</c>
+/// acontece quando a exclusion constraint <c>ex_calendarios_de_dias_uteis_vigente_unico</c>
 /// (<c>DEFERRABLE INITIALLY DEFERRED</c>) é violada por duas ativações concorrentes
 /// que não disputam a MESMA linha (portanto não colidem por xmin — cada uma marca
 /// um calendário DIFERENTE como vigente, e nenhuma delas tem um "vigente anterior"
@@ -90,7 +90,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
             // transação — um xmin extra fora do controle deste teste, alheio à
             // corrida A-vs-B que ele quer provar.
             await db.Database.ExecuteSqlInterpolatedAsync(
-                $"UPDATE configuracao.calendario_dias_uteis SET vigente = false WHERE vigente = true");
+                $"UPDATE configuracao.calendarios_de_dias_uteis SET vigente = false WHERE vigente = true");
 
             CalendarioDiasUteis calendarA = CalendarioDiasUteis.Criar(
                 $"exc-a-{Guid.NewGuid():N}"[..20],
@@ -111,7 +111,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
         await dbB.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE configuracao.calendario_dias_uteis SET vigente = true WHERE id = {idB}");
+            $"UPDATE configuracao.calendarios_de_dias_uteis SET vigente = true WHERE id = {idB}");
 
         await using AsyncServiceScope scopeA = api.Services.CreateAsyncScope();
         IMessageBus busA = scopeA.ServiceProvider.GetRequiredService<IMessageBus>();

@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// Item de entrada de uma distribuição de vagas por oferta, usado por
 /// <see cref="DefinirDistribuicaoVagasCommand"/>. O admin referencia a oferta,
 /// declara <c>VoBase</c>/<c>PR</c>, escolhe a versão da regra de distribuição
-/// (<c>rol_de_regras</c>) e seleciona as modalidades por <c>Id</c> — os demais
+/// (<c>regras_do_catalogo</c>) e seleciona as modalidades por <c>Id</c> — os demais
 /// atributos de cada modalidade (natureza legal, composição, remanejamento)
 /// são lidos do cadastro vivo pelo handler (snapshot-copy, ADR-0061), não
 /// informados aqui.

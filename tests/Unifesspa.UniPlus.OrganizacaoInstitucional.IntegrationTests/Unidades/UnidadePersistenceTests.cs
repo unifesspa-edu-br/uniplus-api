@@ -304,7 +304,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         Func<Task> act = async () =>
             await rawCtx.Database.ExecuteSqlAsync(
-                $"DELETE FROM organizacao.unidade WHERE id = {pai.Id}");
+                $"DELETE FROM organizacao.unidades WHERE id = {pai.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "FK unidade_superior_id com RESTRICT deve impedir DELETE físico de unidade pai que possui filhos referenciando-a");
@@ -433,7 +433,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         persistida.CidadeUf.Should().Be("PA");
     }
 
-    [Fact(DisplayName = "CHECK ck_unidade_cidade_completa rejeita UPDATE cru que deixa o trio de cidade parcial")]
+    [Fact(DisplayName = "CHECK ck_unidades_cidade_completa rejeita UPDATE cru que deixa o trio de cidade parcial")]
     public async Task CheckCidadeCompleta_RejeitaTrioParcial()
     {
         Unidade unidade = NovaUnidade(
@@ -451,10 +451,10 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         // InstituicaoPersistenceTests.CheckCidadeCompleta_RejeitaTrioParcial).
         await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
-            $"UPDATE organizacao.unidade SET cidade_nome = NULL WHERE id = {unidade.Id}");
+            $"UPDATE organizacao.unidades SET cidade_nome = NULL WHERE id = {unidade.Id}");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_unidade_cidade_completa exige o trio de cidade completo ou ausente");
+            "o CHECK ck_unidades_cidade_completa exige o trio de cidade completo ou ausente");
     }
 
     // ── Factory helper ───────────────────────────────────────────────────

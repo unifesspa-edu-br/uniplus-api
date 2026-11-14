@@ -31,7 +31,7 @@ internal sealed class TentativaDeInstalacaoConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("instalacao_tentativas");
+        builder.ToTable("tentativas_de_instalacao");
         builder.HasKey(t => t.Id);
 
         builder.Property(t => t.AutorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
@@ -45,6 +45,6 @@ internal sealed class TentativaDeInstalacaoConfiguration : IEntityTypeConfigurat
             .HasForeignKey(t => t.InstalacaoId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(t => t.InstalacaoId).HasDatabaseName("ix_instalacao_tentativas_instalacao");
+        builder.HasIndex(t => t.InstalacaoId).HasDatabaseName("ix_tentativas_de_instalacao_instalacao");
     }
 }

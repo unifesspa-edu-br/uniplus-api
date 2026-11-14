@@ -16,7 +16,7 @@ public sealed class OfertaAtendimentoEspecializadoConfiguration : IEntityTypeCon
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("ofertas_atendimento_especializado");
+        builder.ToTable("atendimentos_especializados");
         builder.HasKey(o => o.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo

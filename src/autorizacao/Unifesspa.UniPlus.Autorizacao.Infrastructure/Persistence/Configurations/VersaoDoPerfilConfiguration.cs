@@ -173,7 +173,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
         builder.OwnsMany(v => v.Permissoes, permissao =>
         {
             permissao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            permissao.ToTable("versao_do_perfil_permissoes");
+            permissao.ToTable("permissoes_da_versao_do_perfil");
             permissao.WithOwner().HasForeignKey("VersaoId");
             permissao.Property<Guid>("VersaoId");
             permissao.Property(x => x.Codigo).HasMaxLength(CodigoDaPermissaoMaxLength).IsRequired();

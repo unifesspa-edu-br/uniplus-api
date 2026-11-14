@@ -35,7 +35,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Insert gera linha em obrigatoriedade_legal_historico na mesma transação (CA-03/CA-06)")]
+    [Fact(DisplayName = "Insert gera linha em historicos_da_obrigatoriedade na mesma transação (CA-03/CA-06)")]
     public async Task Insert_GeraHistoricoNaMesmaTransacao()
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_OBRIGATORIA_INSERT");

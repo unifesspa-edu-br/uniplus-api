@@ -60,7 +60,7 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
     {
         Guid[] criadas = [.. _criadas];
         await ExecutarSqlAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao WHERE concessao_id = ANY({0})", criadas);
-        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao WHERE concessao_id = ANY({0})", criadas);
+        await ExecutarSqlAsync("DELETE FROM autorizacao.bases_da_permissao_concedida WHERE concessao_id = ANY({0})", criadas);
         await ExecutarSqlAsync("DELETE FROM autorizacao.concessoes WHERE id = ANY({0})", criadas);
     }
 

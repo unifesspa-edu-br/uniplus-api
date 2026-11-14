@@ -16,7 +16,7 @@ public sealed class OfertaRecursoConfiguration : IEntityTypeConfiguration<Oferta
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("ofertas_recurso");
+        builder.ToTable("recursos_ofertados");
         builder.HasKey(r => r.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo

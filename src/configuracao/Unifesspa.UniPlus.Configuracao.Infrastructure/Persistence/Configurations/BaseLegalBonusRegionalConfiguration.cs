@@ -23,7 +23,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-        builder.ToTable("base_legal_bonus_regional");
+        builder.ToTable("bases_legais_do_bonus_regional");
 
         builder.HasKey(e => e.Id);
 
@@ -32,7 +32,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
             .HasMaxLength(30)
             .IsRequired();
 
-        builder.ToTable(t => t.HasCheckConstraint("CK_base_legal_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')"));
+        builder.ToTable(t => t.HasCheckConstraint("ck_bases_legais_do_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')"));
 
         builder.Property(e => e.Identificacao).HasMaxLength(500).IsRequired();
         builder.Property(e => e.Descricao).HasMaxLength(2000).IsRequired();
@@ -43,16 +43,16 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
         builder.OwnsMany(e => e.Municipios, m =>
         {
             m.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            m.ToTable("base_legal_bonus_regional_municipio");
+            m.ToTable("municipios_da_base_legal_bonus");
             m.WithOwner().HasForeignKey("BaseLegalBonusRegionalId");
 
             m.Property(x => x.CodigoIbge).HasColumnName("codigo_ibge").HasMaxLength(7).IsRequired();
             m.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(150).IsRequired();
             m.Property(x => x.Uf).HasColumnName("uf").HasMaxLength(2).IsRequired();
 
-            m.ToTable(t => t.HasCheckConstraint("CK_base_legal_bonus_regional_municipio_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'"));
+            m.ToTable(t => t.HasCheckConstraint("ck_municipios_da_base_legal_bonus_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'"));
         });
 
-        builder.HasIndex(e => e.TipoInstrumento).HasDatabaseName("IX_base_legal_bonus_regional_tipo_instrumento");
+        builder.HasIndex(e => e.TipoInstrumento).HasDatabaseName("ix_bases_legais_do_bonus_regional_tipo_instrumento");
     }
 }

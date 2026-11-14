@@ -136,7 +136,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
     }
 
     private Task<long> BasesAsync(Guid perfil) =>
-        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0}""", perfil);
+        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE perfil_id = {0}""", perfil);
 
     private Task<long> DivergenciasDeClasseAsync(string codigo) =>
         ContarAsync(

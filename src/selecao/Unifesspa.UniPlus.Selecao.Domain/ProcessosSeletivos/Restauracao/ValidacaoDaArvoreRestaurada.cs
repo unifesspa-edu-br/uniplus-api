@@ -31,8 +31,8 @@ internal static class ValidacaoDaArvoreRestaurada
     /// vazio, ciclo, fase comum, cardinalidade por tipo) mais o que só a RAIZ consegue
     /// provar (INV-B6-símile: <c>DocumentoExigidoId</c> de folha existe em
     /// <c>grafo.DocumentosExigidos</c>) e o que só o BANCO garante na escrita normal (Id
-    /// único, <c>Ordem</c> única entre raízes e entre irmãos — <c>ux_nos_exigencia_raiz_ordem</c>/
-    /// <c>ux_nos_exigencia_irmaos_ordem</c>, <c>NoExigenciaConfiguration</c>). Sem esta
+    /// único, <c>Ordem</c> única entre raízes e entre irmãos — <c>ux_nos_da_arvore_de_exigencias_raiz_ordem</c>/
+    /// <c>ux_nos_da_arvore_de_exigencias_irmaos_ordem</c>, <c>NoExigenciaConfiguration</c>). Sem esta
     /// última checagem, um envelope com duas raízes de mesma <c>Ordem</c> passaria pela
     /// decodificação e só falharia no <c>SaveChanges</c>, como <c>23505</c> (unique
     /// violation) — 500 não tratado no meio de uma restauração, em vez de recusa nomeada.
@@ -93,7 +93,7 @@ internal static class ValidacaoDaArvoreRestaurada
         // Folha ↔ DocumentoExigido: EXATAMENTE 1:1 — nem "a mais" (referenciando um
         // DocumentoExigido que não existe no grafo) nem "a menos" (duas folhas para o mesmo
         // DocumentoExigido, que só falharia depois no SaveChanges contra
-        // ux_nos_exigencia_documento_exigido_id).
+        // ux_nos_da_arvore_de_exigencias_documento_exigido_id).
         HashSet<Guid> idsDocumentosExigidos = [.. grafo.DocumentosExigidos.Select(static d => d.Id)];
         List<Guid> documentoIdsReferenciados = [.. grafo.NosExigencia
             .Where(static n => n.Tipo == TipoNo.Folha)
@@ -182,7 +182,7 @@ internal static class ValidacaoDaArvoreRestaurada
     /// DECODIFICADO tinha o valor não-canônico — e é o nó DECODIFICADO, não o reconstruído,
     /// que é aplicado ao agregado (ADR-0110 D2). Sem esta comparação, uma folha ou grupo
     /// OU/N-de com <c>quantidadeMinima: null</c> passaria por aqui e só falharia depois, no
-    /// <c>SaveChanges</c>, contra <c>ck_nos_exigencia_tipo_campos_coerentes</c>.
+    /// <c>SaveChanges</c>, contra <c>ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes</c>.
     /// </summary>
     internal static Result<NoExigencia> ValidarCanonicidade(NoExigencia decodificado, NoExigencia reconstruido)
     {
@@ -206,7 +206,7 @@ internal static class ValidacaoDaArvoreRestaurada
         // de um nó com o tipo errado desses campos simplesmente os IGNORA (nem chegam a ser
         // parâmetro da factory) em vez de recusar, e a comparação acima não pega isso. Um nó
         // decodificado carregando o campo do outro tipo violaria
-        // ck_nos_exigencia_tipo_campos_coerentes no SaveChanges (folha/grupo) ou persistiria
+        // ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes no SaveChanges (folha/grupo) ou persistiria
         // uma base legal em folha que a API de escrita normal nunca produz.
         if (decodificado.Tipo == TipoNo.Folha)
         {

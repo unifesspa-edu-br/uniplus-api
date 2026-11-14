@@ -157,9 +157,9 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
         UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await contexto.Database.ExecuteSqlRawAsync(
-            "UPDATE configuracao.rol_de_fatos_candidato SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);
+            "UPDATE configuracao.fatos_do_candidato SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);
         await contexto.Database.ExecuteSqlRawAsync(
-            "UPDATE configuracao.tipo_documento SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);
+            "UPDATE configuracao.tipos_de_documento SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);
     }
 
     private void RestaurarEnvVars()

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// O append-only do <c>rol_de_regras</c> é por referência congelada, não por gatilho (ADR-0112): a base subida pelo
+/// O append-only do <c>regras_do_catalogo</c> é por referência congelada, não por gatilho (ADR-0112): a base subida pelo
 /// caminho de produção, com a migration e os scripts, não pode ter gatilho sobre a tabela.
 /// </summary>
 public sealed class RolDeRegrasSemGatilhoTests : IClassFixture<RegraCatalogoDbFixture>
@@ -28,7 +28,7 @@ public sealed class RolDeRegrasSemGatilhoTests : IClassFixture<RegraCatalogoDbFi
             .SqlQuery<string>($"""
                 SELECT pg_get_triggerdef(t.oid) AS "Value"
                 FROM pg_trigger t
-                WHERE t.tgrelid = 'selecao.rol_de_regras'::regclass AND NOT t.tgisinternal
+                WHERE t.tgrelid = 'selecao.regras_do_catalogo'::regclass AND NOT t.tgisinternal
                 """)
             .ToListAsync();
 

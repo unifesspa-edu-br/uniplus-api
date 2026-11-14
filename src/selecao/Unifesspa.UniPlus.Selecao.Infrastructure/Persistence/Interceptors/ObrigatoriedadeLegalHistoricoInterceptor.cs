@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Intercepta <c>SavingChanges</c> do <see cref="UniPlusDbContext"/> para
-/// gravar uma linha em <c>obrigatoriedade_legal_historico</c> a cada mutação
+/// gravar uma linha em <c>historicos_da_obrigatoriedade</c> a cada mutação
 /// de <see cref="ObrigatoriedadeLegal"/> (CA-06 da Story #460). Roda dentro
 /// da mesma transação do save da regra — invariante atômica do histórico.
 /// </summary>
@@ -158,7 +158,7 @@ public sealed class ObrigatoriedadeLegalHistoricoInterceptor : SaveChangesInterc
     /// Serializa o snapshot canônico da regra (campos semânticos + id + hash).
     /// Reusa <see cref="HashCanonicalComputer.CanonicalOptions"/> e
     /// <see cref="HashCanonicalComputer.CanonicalizeRecursive"/> — invariante
-    /// load-bearing: o JSON persistido em <c>obrigatoriedade_legal_historico.conteudo_jsonb</c>
+    /// load-bearing: o JSON persistido em <c>historicos_da_obrigatoriedade.conteudo_jsonb</c>
     /// é byte-equivalente ao payload que alimentou o hash, garantindo
     /// reprodutibilidade forense ("recomputar hash a partir do snapshot
     /// retorna o mesmo valor").

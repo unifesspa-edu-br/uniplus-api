@@ -12,6 +12,7 @@ using NSubstitute.ExceptionExtensions;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
@@ -144,7 +145,7 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "conflito sintético de teste",
-                PostgresExceptionFactory.Create("23P01", "ex_tipo_ato_publicado_codigo_vigencia")));
+                PostgresExceptionFactory.Create("23P01", RestricoesDoBanco.TipoDeAtoPublicadoCodigoVigencia)));
 
         Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
             Comando(existente.Id) with { VigenciaInicio = Inicio.AddMonths(2) },

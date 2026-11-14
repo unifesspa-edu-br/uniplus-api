@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// full-replace (ADR-0058 Emenda 1): todos os campos são aplicados
 /// literalmente — caller deve repassar valores correntes dos opcionais que
 /// quer preservar. URI estável (mesmo <see cref="Id"/>); auditoria via
-/// <c>obrigatoriedade_legal_historico</c>.
+/// <c>historicos_da_obrigatoriedade</c>.
 /// </summary>
 [SuppressMessage(
     "Design",

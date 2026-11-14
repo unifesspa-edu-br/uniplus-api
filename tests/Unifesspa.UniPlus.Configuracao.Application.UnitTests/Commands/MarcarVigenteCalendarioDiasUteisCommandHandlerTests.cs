@@ -9,6 +9,7 @@ using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -99,7 +100,7 @@ public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
         _repository.ObterPorIdAsync(calendario.Id, Arg.Any<CancellationToken>()).Returns(calendario);
         _repository.ObterVigenteAsync(Arg.Any<CancellationToken>()).Returns((CalendarioDiasUteis?)null);
         _unitOfWork.ForcarChecagemImediataDeConstraintsAsync(Arg.Any<CancellationToken>())
-            .ThrowsAsync(PostgresExceptionFactory.Create("23P01", "ex_calendario_dias_uteis_vigente_unico"));
+            .ThrowsAsync(PostgresExceptionFactory.Create("23P01", RestricoesDoBanco.CalendarioDeDiasUteisVigenteUnico));
 
         Result resultado = await MarcarVigenteCalendarioDiasUteisCommandHandler.Handle(
             new MarcarVigenteCalendarioDiasUteisCommand(calendario.Id), _repository, _unitOfWork, CancellationToken.None);

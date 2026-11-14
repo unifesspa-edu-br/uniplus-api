@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// Catálogo do domínio fechado das <b>fases canônicas</b> do ciclo de vida
 /// de um processo seletivo (UNI-REQ-0139) e das constantes de coerência associadas.
 /// Fonte única dos códigos aceitos na guarda de domínio (<c>FaseCanonica.Criar</c>),
-/// no validator e no CHECK de banco <c>ck_fase_canonica_codigo_canonico</c>.
+/// no validator e no CHECK de banco <c>ck_fases_canonicas_codigo_canonico</c>.
 /// </summary>
 /// <remarks>
 /// Tratar o vocabulário de fases como catálogo (e não como enumerado compilado)

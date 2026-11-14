@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -43,7 +44,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("protecao_do_catalogo_manifestacoes", ConfigurarChecks);
+        builder.ToTable("manifestacoes_da_protecao", ConfigurarChecks);
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).ValueGeneratedNever();
         builder.Ignore(m => m.Item);
@@ -73,7 +74,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
         builder.HasOne<ManifestacaoDaProtecaoDoCatalogo>()
             .WithOne()
             .HasForeignKey<ManifestacaoDaProtecaoDoCatalogo>(m => m.SubstituiId)
-            .HasConstraintName("fk_protecao_do_catalogo_manifestacoes_substitui")
+            .HasConstraintName("fk_manifestacoes_da_protecao_substitui")
             .OnDelete(DeleteBehavior.Restrict);
 
         ConfigurarIndices(builder);
@@ -82,17 +83,17 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
     private static void ConfigurarIndices(EntityTypeBuilder<ManifestacaoDaProtecaoDoCatalogo> builder)
     {
         builder.HasIndex(CampoDoCadastro, CampoDoItem, nameof(ManifestacaoDaProtecaoDoCatalogo.Ciclo), nameof(ManifestacaoDaProtecaoDoCatalogo.Instante))
-            .HasDatabaseName("ix_protecao_do_catalogo_manifestacoes_item_ciclo");
+            .HasDatabaseName("ix_manifestacoes_da_protecao_item_ciclo");
         builder.HasIndex(m => m.OrdemDeRegistro)
             .IsUnique()
-            .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_ordem_de_registro");
+            .HasDatabaseName("ux_manifestacoes_da_protecao_ordem_de_registro");
         builder.HasIndex(m => m.SubstituiId)
             .IsUnique()
-            .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_substitui");
+            .HasDatabaseName(RestricoesDoBanco.ManifestacaoDaProtecaoSubstituicaoUnica);
         builder.HasIndex(CampoDoCadastro, CampoDoItem, nameof(ManifestacaoDaProtecaoDoCatalogo.Ciclo), CampoDoEmissor, CampoDoSub)
             .IsUnique()
             .HasFilter("substitui_id IS NULL")
-            .HasDatabaseName("ux_protecao_do_catalogo_manifestacoes_inicial_do_autor");
+            .HasDatabaseName(RestricoesDoBanco.ManifestacaoDaProtecaoInicialDoAutorUnica);
     }
 
     private static void ConfigurarChecks(TableBuilder<ManifestacaoDaProtecaoDoCatalogo> tabela)
@@ -100,12 +101,12 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
         string cadastros = string.Join(", ", CadastrosDoCatalogo.TokensCanonicos.Select(token => $"'{token}'"));
         string pareceres = string.Join(", ", PareceresDaManifestacao.TokensCanonicos.Select(token => $"'{token}'"));
 
-        tabela.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_cadastro", $"cadastro IN ({cadastros})");
-        tabela.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_parecer", $"parecer IN ({pareceres})");
-        tabela.HasCheckConstraint("ck_protecao_do_catalogo_manifestacoes_ciclo_positivo", "ciclo >= 1");
+        tabela.HasCheckConstraint("ck_manifestacoes_da_protecao_cadastro", $"cadastro IN ({cadastros})");
+        tabela.HasCheckConstraint("ck_manifestacoes_da_protecao_parecer", $"parecer IN ({pareceres})");
+        tabela.HasCheckConstraint("ck_manifestacoes_da_protecao_ciclo_positivo", "ciclo >= 1");
         tabela.HasCheckConstraint(
-            "ck_protecao_do_catalogo_manifestacoes_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
+            "ck_manifestacoes_da_protecao_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
         tabela.HasCheckConstraint(
-            "ck_protecao_do_catalogo_manifestacoes_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
+            "ck_manifestacoes_da_protecao_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
     }
 }

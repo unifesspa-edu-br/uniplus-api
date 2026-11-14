@@ -115,7 +115,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         DocumentoExigido documento = DocumentoQualquer(fase.Id);
         // Duas raízes-folha distintas apontando para o MESMO DocumentoExigido — a checagem
         // de "folha referencia um documento que existe" (HashSet) não pega isto sozinha;
-        // ux_nos_exigencia_documento_exigido_id só falharia depois, no SaveChanges.
+        // ux_nos_da_arvore_de_exigencias_documento_exigido_id só falharia depois, no SaveChanges.
         NoExigencia folhaA = NoExigencia.Reidratar(
             Guid.CreateVersion7(), TipoNo.Folha, 0, documento.Id, documento, 1, null, null, null, null, null, [], []);
         NoExigencia folhaB = NoExigencia.Reidratar(
@@ -141,7 +141,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         DocumentoExigido documento = DocumentoQualquer(fase.Id);
         // quantidadeMinima: null — CriarFolha normalizaria para QuantidadeMinimaPadrao (1) em
         // vez de recusar, e a RECONSTRUÇÃO sozinha sucederia; mas o nó DECODIFICADO (aplicado
-        // ao agregado) continuaria com null, violando ck_nos_exigencia_tipo_campos_coerentes
+        // ao agregado) continuaria com null, violando ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes
         // no SaveChanges. ValidarCanonicidade compara reconstruído × decodificado e recusa
         // antes disso.
         NoExigencia folhaSemQuantidade = NoExigencia.Reidratar(

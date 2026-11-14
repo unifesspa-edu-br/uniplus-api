@@ -67,7 +67,7 @@ public sealed class PrecedenciaFaseRepository : IPrecedenciaFaseRepository
     // estrutural do grafo inteiro, não de um par.
     public Task TravarGrafoParaEscritaAsync(CancellationToken cancellationToken) =>
         _dbContext.Database.ExecuteSqlRawAsync(
-            "SELECT pg_advisory_xact_lock(hashtext('configuracao.precedencia_fase'));",
+            "SELECT pg_advisory_xact_lock(hashtext('configuracao.precedencias_entre_fases'));",
             cancellationToken);
 
     public async Task AdicionarAsync(PrecedenciaFase aresta, CancellationToken cancellationToken)

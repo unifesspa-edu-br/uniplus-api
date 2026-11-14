@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
 /// <summary>
 /// Configuração EF Core da entidade <see cref="RegraCatalogo"/> — a biblioteca
-/// <c>rol_de_regras</c> (Story #772).
+/// <c>regras_do_catalogo</c> (Story #772).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// justamente o que habilita versões coexistentes referenciáveis. O append-only é
 /// imposto por convenção (ausência de API de mutação; leitura via
 /// <c>IRegraCatalogoReader</c>) e por fitness test, na linha do ADR-0063 — não por
-/// gatilho de banco: não há gatilho sobre <c>rol_de_regras</c> (ao contrário de
+/// gatilho de banco: não há gatilho sobre <c>regras_do_catalogo</c> (ao contrário de
 /// outras tabelas do módulo, como <c>versoes_configuracao</c>, que têm os seus).
 /// </para>
 /// <para>
@@ -56,7 +56,7 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("rol_de_regras");
+        builder.ToTable("regras_do_catalogo");
         builder.HasKey(r => r.Id);
 
         // Chave Guid v7 gerada no domínio (EntityBase): ValueGeneratedNever
@@ -93,11 +93,11 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
         // v1/v2 coexistem como linhas distintas referenciáveis pelo snapshot.
         builder.HasIndex(r => new { r.Codigo, r.Versao })
             .IsUnique()
-            .HasDatabaseName("ux_rol_de_regras_codigo_versao");
+            .HasDatabaseName("ux_regras_do_catalogo_codigo_versao");
 
         // Resolve a referência da configuração pelo hash content-addressable.
         builder.HasIndex(r => r.Hash)
-            .HasDatabaseName("ix_rol_de_regras_hash");
+            .HasDatabaseName("ix_regras_do_catalogo_hash");
 
         SemearRegrasV1(builder);
     }

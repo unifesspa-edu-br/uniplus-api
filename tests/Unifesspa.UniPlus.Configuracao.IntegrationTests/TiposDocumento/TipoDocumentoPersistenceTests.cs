@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -89,7 +90,7 @@ public sealed class TipoDocumentoPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_tipo_documento_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeDocumentoCodigoVivo);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -172,7 +173,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false}, 'PENDENTE', 1, false, 0)");
+            $"INSERT INTO configuracao.tipos_de_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false}, 'PENDENTE', 1, false, 0)");
 
         await act.Should().NotThrowAsync(
             "a categoria virou código de cadastro: um CHECK preso aos sete tokens do enum recusaria "
@@ -190,7 +191,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"renda familiar"}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
+            $"INSERT INTO configuracao.tipos_de_documento (id, codigo, nome, categoria, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"renda familiar"}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o domínio fechado saiu, mas a forma continua protegida: sem conversor de enum, "
@@ -209,7 +210,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false}, 'PENDENTE', 1, false, 0)");
+            $"INSERT INTO configuracao.tipos_de_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false}, 'PENDENTE', 1, false, 0)");
 
         await act.Should().NotThrowAsync();
     }
@@ -221,7 +222,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, tipo_equivalente, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {codigo}, {"X"}, {"OUTROS"}, {codigo}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
+            $"INSERT INTO configuracao.tipos_de_documento (id, codigo, nome, categoria, tipo_equivalente, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {codigo}, {"X"}, {"OUTROS"}, {codigo}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK tipo_equivalente <> codigo impede o INSERT direto");
@@ -233,7 +234,7 @@ public sealed class TipoDocumentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, tamanho_maximo_mb, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTROS"}, {0}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
+            $"INSERT INTO configuracao.tipos_de_documento (id, codigo, nome, categoria, tamanho_maximo_mb, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTROS"}, {0}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK tamanho_maximo_mb > 0 impede o INSERT direto");
@@ -325,7 +326,7 @@ public sealed class TipoDocumentoPersistenceTests
         // código sequencial derrubaria toda leitura da tabela na reidratação.
         Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
             """
-            INSERT INTO configuracao.tipo_documento
+            INSERT INTO configuracao.tipos_de_documento
                 (id, codigo, nome, categoria, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({0}, '01', 'Certificado', 'ESCOLARIDADE', now(), false, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)
             """,
@@ -333,7 +334,7 @@ public sealed class TipoDocumentoPersistenceTests
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23514", "violação de CHECK constraint");
-        pg.ConstraintName.Should().Be("ck_tipo_documento_codigo_formato");
+        pg.ConstraintName.Should().Be("ck_tipos_de_documento_codigo_formato");
     }
 
     [Fact(DisplayName = "Código sobrevive ao round-trip pelo banco como value object")]

@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+
 /// <summary>
 /// Detecta a violação 23505 (unique_violation) do índice
-/// <c>ix_dia_nao_util_unicidade</c> (api#1458) por <see cref="Type.FullName"/> — evita
+/// <c>ix_dias_nao_uteis_unicidade</c> (api#1458) por <see cref="Type.FullName"/> — evita
 /// dependência direta de <c>Npgsql</c>/<c>Microsoft.EntityFrameworkCore</c> na camada
 /// Application (mesmo raciocínio de <see cref="ExclusionConstraintViolation"/> e
 /// <see cref="OptimisticConcurrencyViolation"/>).
@@ -17,7 +19,7 @@ internal static class UniqueIndexViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string DiaNaoUtilUnicidadeIndex = "ix_dia_nao_util_unicidade";
+    private const string DiaNaoUtilUnicidadeIndex = RestricoesDoBanco.DiaNaoUtilUnicidade;
 
     private const string PostgresExceptionFullName = "Npgsql.PostgresException";
 

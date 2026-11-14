@@ -304,7 +304,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     private Task LerODocumentoDaVersaoAsync(Guid perfil, string leitor) =>
         ExecutarAsync(
             """
-            INSERT INTO autorizacao.leituras_do_documento_da_versao (id, documento_id, leitor_emissor, leitor_sub, instante)
+            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_sub, instante)
             SELECT {0}, d.id, {1}, {2}, now() FROM autorizacao.documentos_da_versao d WHERE d.perfil_id = {3}
             """,
             Guid.CreateVersion7(), TestAuthHandler.DefaultIssuer, leitor, perfil);
@@ -316,7 +316,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, pessoa, perfil);
         Guid versao = await VersaoVigenteAsync(perfil);
         await ExecutarAsync(
-            "UPDATE autorizacao.versao_do_perfil_permissoes SET classificacao = {0}, de_unidade = {1} WHERE versao_id = {2} AND codigo = {3}",
+            "UPDATE autorizacao.permissoes_da_versao_do_perfil SET classificacao = {0}, de_unidade = {1} WHERE versao_id = {2} AND codigo = {3}",
             anterior.ToString().ToLowerInvariant(), deUnidade, versao, Codigo);
         await GravarCatalogoAnteriorAsync(Codigo, anterior, deUnidade, new string('a', 64));
 
@@ -395,7 +395,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.reclassificacoes_da_permissao WHERE perfil_id = {0}""", perfil);
 
     private Task<long> ContarBasesConciliadasAsync(Guid perfil) =>
-        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0} AND origem = 'conciliacao'""", perfil);
+        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE perfil_id = {0} AND origem = 'conciliacao'""", perfil);
 
     private Task<long> FatosSemAvisoDoPerfilAsync(Guid perfil) =>
         ContarAsync(

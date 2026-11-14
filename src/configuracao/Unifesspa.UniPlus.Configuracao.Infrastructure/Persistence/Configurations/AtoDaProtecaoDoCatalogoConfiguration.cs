@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <summary>
 /// Configuração EF Core dos atos da proteção de dados do catálogo de tipos de documento e de fatos do candidato,
 /// registro só acrescentado: sem chave estrangeira para o item, que pode ser desativado sem apagar o registro. As
-/// colunas de quem agiu são <c>Pessoal</c>, como em <c>pedido_decisoes</c>; as demais são <c>Interno</c>. A decisão
+/// colunas de quem agiu são <c>Pessoal</c>, como em <c>decisoes_do_pedido</c>; as demais são <c>Interno</c>. A decisão
 /// guarda o ciclo e se havia manifestação técnica desfavorável vigente, e o banco recusa a aprovação ou o ajuste diante
 /// dela sem justificativa (ADR-0163).
 /// </summary>
@@ -36,7 +36,7 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("protecao_do_catalogo_atos", ConfigurarChecks);
+        builder.ToTable("atos_da_protecao_do_catalogo", ConfigurarChecks);
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
 
@@ -71,10 +71,10 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
         builder.Property(a => a.Instante).IsRequired();
         builder.Property(a => a.OrdemDeRegistro).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
 
-        builder.HasIndex(a => a.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_protecao_do_catalogo_atos_ordem_de_registro");
-        builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_item");
-        builder.HasIndex(a => new { a.Ato, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_ato");
-        builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Ciclo, a.Instante }).HasDatabaseName("ix_protecao_do_catalogo_atos_item_ciclo");
+        builder.HasIndex(a => a.OrdemDeRegistro).IsUnique().HasDatabaseName("ux_atos_da_protecao_do_catalogo_ordem_de_registro");
+        builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Instante }).HasDatabaseName("ix_atos_da_protecao_do_catalogo_item");
+        builder.HasIndex(a => new { a.Ato, a.Instante }).HasDatabaseName("ix_atos_da_protecao_do_catalogo_ato");
+        builder.HasIndex(a => new { a.Cadastro, a.ItemId, a.Ciclo, a.Instante }).HasDatabaseName("ix_atos_da_protecao_do_catalogo_item_ciclo");
     }
 
     private static void ConfigurarChecks(TableBuilder<AtoDaProtecaoDoCatalogo> tabela)
@@ -82,20 +82,20 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
         string cadastros = string.Join(", ", CadastrosDoCatalogo.TokensCanonicos.Select(token => $"'{token}'"));
         string atos = string.Join(", ", AtosDaProtecao.TokensCanonicos.Select(token => $"'{token}'"));
 
-        tabela.HasCheckConstraint("ck_protecao_do_catalogo_atos_cadastro", $"cadastro IN ({cadastros})");
-        tabela.HasCheckConstraint("ck_protecao_do_catalogo_atos_ato", $"ato IN ({atos})");
+        tabela.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_cadastro", $"cadastro IN ({cadastros})");
+        tabela.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ato", $"ato IN ({atos})");
         tabela.HasCheckConstraint(
-            "ck_protecao_do_catalogo_atos_ajuste_com_recomendacao",
+            "ck_atos_da_protecao_do_catalogo_ajuste_com_recomendacao",
             "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
         tabela.HasCheckConstraint(
-            "ck_protecao_do_catalogo_atos_reprovacao_com_justificativa",
+            "ck_atos_da_protecao_do_catalogo_reprovacao_com_justificativa",
             "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
-        tabela.HasCheckConstraint("ck_protecao_do_catalogo_atos_ciclo_positivo", "ciclo >= 1");
+        tabela.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_ciclo_positivo", "ciclo >= 1");
         tabela.HasCheckConstraint(
-            "ck_protecao_do_catalogo_atos_diante_so_na_decisao",
+            "ck_atos_da_protecao_do_catalogo_diante_so_na_decisao",
             "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
         tabela.HasCheckConstraint(
-            "ck_protecao_do_catalogo_atos_justificativa_diante_desfavoravel",
+            "ck_atos_da_protecao_do_catalogo_justificativa_ante_desfavoravel",
             "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
     }
 }

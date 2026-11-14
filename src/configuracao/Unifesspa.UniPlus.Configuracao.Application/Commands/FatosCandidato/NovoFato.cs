@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -13,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal static class NovoFato
 {
-    private const string IndiceUnicoDoCodigo = "ux_rol_de_fatos_candidato_codigo";
+    private const string IndiceUnicoDoCodigo = RestricoesDoBanco.FatoDoCandidatoCodigoUnico;
 
     public static async Task<Result<Guid>> GravarAsync(
         FatoCandidato fato,

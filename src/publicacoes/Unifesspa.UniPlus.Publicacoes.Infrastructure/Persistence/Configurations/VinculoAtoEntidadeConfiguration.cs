@@ -22,7 +22,7 @@ internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "vinculo_ato_entidade",
+            "vinculos_do_ato_com_entidade",
             t =>
             {
                 // Forma canônica do rótulo (a factory já recusa). O módulo não valida o
@@ -30,12 +30,12 @@ internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration
                 // opaco (ADR-0105). O que se exige é grafia única, sem a qual a mesma
                 // entidade se partiria em duas na consulta.
                 t.HasCheckConstraint(
-                    "ck_vinculo_ato_entidade_tipo_formato",
+                    "ck_vinculos_do_ato_com_entidade_tipo_formato",
                     "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
 
                 // Um Guid.Empty não designa objeto algum — defesa contra insert cru.
                 t.HasCheckConstraint(
-                    "ck_vinculo_ato_entidade_id_nao_zero",
+                    "ck_vinculos_do_ato_com_entidade_id_nao_zero",
                     "entidade_id <> '00000000-0000-0000-0000-000000000000'");
             });
 
@@ -54,18 +54,18 @@ internal sealed class VinculoAtoEntidadeConfiguration : IEntityTypeConfiguration
         builder.HasOne<AtoNormativo>()
             .WithMany(a => a.Vinculos)
             .HasForeignKey(v => v.AtoId)
-            .HasConstraintName("fk_vinculo_ato_entidade_ato")
+            .HasConstraintName("fk_vinculos_do_ato_com_entidade_ato")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Único por trio (ato, tipo da entidade, id da entidade): vincular a mesma
         // entidade duas vezes ao mesmo ato não acrescenta vínculo nenhum.
         builder.HasIndex(v => new { v.AtoId, v.EntidadeTipo, v.EntidadeId })
             .IsUnique()
-            .HasDatabaseName("ux_vinculo_ato_entidade_trio");
+            .HasDatabaseName("ux_vinculos_do_ato_com_entidade_trio");
 
         // Suporte à consulta "todos os atos desta entidade": o predicado é
         // (entidade_tipo, entidade_id), e o ato_id fecha o EXISTS sem tocar a heap.
         builder.HasIndex(v => new { v.EntidadeTipo, v.EntidadeId, v.AtoId })
-            .HasDatabaseName("ix_vinculo_ato_entidade_objeto");
+            .HasDatabaseName("ix_vinculos_do_ato_com_entidade_objeto");
     }
 }

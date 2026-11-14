@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Interceptors;
 /// <list type="bullet">
 ///   <item>Persistência de <c>ObrigatoriedadeLegal</c> + materialização do
 ///   payload jsonb canônico do predicado.</item>
-///   <item>Inserção atômica em <c>obrigatoriedade_legal_historico</c> via
+///   <item>Inserção atômica em <c>historicos_da_obrigatoriedade</c> via
 ///   <see cref="ObrigatoriedadeLegalHistoricoInterceptor"/>.</item>
 ///   <item>UNIQUE parcial sobre <c>hash</c> (apenas para linhas vigentes).</item>
 ///   <item>btree_gist + EXCLUDE constraint sobre janelas temporais da

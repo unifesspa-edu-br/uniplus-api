@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -12,10 +13,10 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
 /// Configuração EF Core de <see cref="FatoValorDominio"/> — a tabela
-/// <c>fato_valor_dominio</c> (ADR-0116), filha de <c>rol_de_fatos_candidato</c>.
+/// <c>valores_de_dominio_do_fato</c> (ADR-0116), filha de <c>fatos_do_candidato</c>.
 /// </summary>
 /// <remarks>
-/// A FK para <c>rol_de_fatos_candidato</c> é <strong>intra-schema</strong> (ambas
+/// A FK para <c>fatos_do_candidato</c> é <strong>intra-schema</strong> (ambas
 /// as tabelas vivem no schema <c>configuracao</c>, do mesmo <c>DbContext</c>) —
 /// não é a FK cross-schema que o ADR-0061/fitness test
 /// <c>FatoCandidatoCatalogoTests.Migrations_SemFkParaFatoCandidato</c> proíbe (essa
@@ -36,7 +37,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("fato_valor_dominio");
+        builder.ToTable("valores_de_dominio_do_fato");
 
         builder.HasKey(v => v.Id);
 
@@ -54,7 +55,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
         // garantida também pelo agregado (FatoCandidato.AdicionarValorDominio) no fato do administrador.
         builder.HasIndex(v => new { v.FatoCandidatoId, v.Codigo })
             .IsUnique()
-            .HasDatabaseName("ux_fato_valor_dominio_fato_codigo");
+            .HasDatabaseName(RestricoesDoBanco.ValorDeDominioDoFatoCodigoUnico);
 
         builder.HasData(MaterializarSeed());
     }

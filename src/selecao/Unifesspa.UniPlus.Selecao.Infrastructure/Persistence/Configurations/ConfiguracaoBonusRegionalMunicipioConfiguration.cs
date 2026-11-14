@@ -17,7 +17,7 @@ public sealed class ConfiguracaoBonusRegionalMunicipioConfiguration : IEntityTyp
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_bonus_regional_municipio");
+        builder.ToTable("municipios_do_bonus_regional");
         builder.HasKey(m => m.Id);
         // Chave Guid v7 do domínio (EntityBase) — ValueGeneratedNever para o EF
         // tratar a chave como fornecida pela aplicação (evita UPDATE de filho novo

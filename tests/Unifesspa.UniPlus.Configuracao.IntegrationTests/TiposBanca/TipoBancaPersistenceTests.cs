@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -80,7 +81,7 @@ public sealed class TipoBancaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_tipo_banca_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.TipoDeBancaCodigoVivo);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do código")]
@@ -121,7 +122,7 @@ public sealed class TipoBancaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"BANCA_LOGISTICA"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"BANCA_LOGISTICA"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de conjunto canônico impede o INSERT direto");
@@ -133,7 +134,7 @@ public sealed class TipoBancaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"banca-entrevista"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipos_de_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"banca-entrevista"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z_]+$' impede o INSERT direto");

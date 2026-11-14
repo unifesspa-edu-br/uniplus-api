@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Args aplicados de uma regra do <c>rol_de_regras</c>
+/// Args aplicados de uma regra do <c>regras_do_catalogo</c>
 /// (<c>tipo=regra_ajuste_distribuicao_vagas</c>) — os motores que reconciliam um quadro
 /// fixado pelo edital cuja soma passa do <c>VO_base</c>. Discriminated union no molde de
 /// <c>PredicadoObrigatoriedade</c> (ADR-0058) e de <see cref="ArgsRegraEliminacao"/>.

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// Implementação de <see cref="IRegraCatalogoReader"/>: leitura direta do
-/// <c>rol_de_regras</c> (<c>AsNoTracking</c>), sem cache — o catálogo é de
+/// <c>regras_do_catalogo</c> (<c>AsNoTracking</c>), sem cache — o catálogo é de
 /// baixo volume (dezenas de regras), imutável por versão, e o congelamento por
 /// valor no consumidor (<see cref="Domain.ValueObjects.ReferenciaRegra"/> +
 /// snapshot, ADR-0061) dispensa releitura quente (mesmo padrão dos readers de

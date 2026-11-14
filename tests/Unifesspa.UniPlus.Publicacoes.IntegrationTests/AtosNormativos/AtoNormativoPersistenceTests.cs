@@ -10,6 +10,7 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -82,7 +83,7 @@ public sealed class AtoNormativoPersistenceTests
         await Gravar(ato);
 
         Func<Task> update = () => ExecutarSql(
-            "UPDATE publicacoes.ato_normativo SET assinante = 'Outro' WHERE id = @id",
+            "UPDATE publicacoes.atos_normativos SET assinante = 'Outro' WHERE id = @id",
             ("id", ato.Id));
 
         (await update.Should().ThrowAsync<PostgresException>())
@@ -96,7 +97,7 @@ public sealed class AtoNormativoPersistenceTests
         await Gravar(ato);
 
         Func<Task> delete = () => ExecutarSql(
-            "DELETE FROM publicacoes.ato_normativo WHERE id = @id",
+            "DELETE FROM publicacoes.atos_normativos WHERE id = @id",
             ("id", ato.Id));
 
         await delete.Should().ThrowAsync<PostgresException>();
@@ -113,11 +114,11 @@ public sealed class AtoNormativoPersistenceTests
             """
             SELECT tgname::text
             FROM pg_trigger
-            WHERE tgname = 'trg_ato_normativo_somente_insercao'
+            WHERE tgname = 'trg_atos_normativos_somente_insercao'
               AND NOT tgisinternal
             """);
 
-        nome.Should().Be("trg_ato_normativo_somente_insercao");
+        nome.Should().Be("trg_atos_normativos_somente_insercao");
     }
 
     [Fact(DisplayName = "Dois atos com a mesma numeração são aceitos — número não tem unicidade")]
@@ -149,7 +150,7 @@ public sealed class AtoNormativoPersistenceTests
             SELECT i.indisunique
             FROM pg_class c
             JOIN pg_index i ON i.indexrelid = c.oid
-            WHERE c.relname = 'ix_ato_normativo_numeracao'
+            WHERE c.relname = 'ix_atos_normativos_numeracao'
             """);
 
         indisunique.Should().Be(false);
@@ -243,7 +244,7 @@ public sealed class AtoNormativoPersistenceTests
         pg.SqlState.Should().Be(UniqueViolation);
         // O nome da constraint violada é exatamente o que ConflitoNaGravacaoDoAto
         // procura para traduzir a corrida check-then-act em AtoJaRetificado (409).
-        pg.ConstraintName.Should().Be("ux_ato_normativo_retificado");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.AtoNormativoRetificadoUnico);
     }
 
     [Fact(DisplayName = "Duas retificações empilham na cabeça: R2 retifica R1 (não a raiz), aceito")]
@@ -449,7 +450,7 @@ public sealed class AtoNormativoPersistenceTests
         // e o insert cru exercita justamente o caminho que não a informa.
         await using var command = new NpgsqlCommand(
             """
-            INSERT INTO publicacoes.ato_normativo
+            INSERT INTO publicacoes.atos_normativos
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
                  unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em, versao_do_objeto_id, versao_do_objeto_hash,
                  ato_retificado_id, motivo_retificacao)
@@ -485,7 +486,7 @@ public sealed class AtoNormativoPersistenceTests
         // id = ato_retificado_id na mesma linha: a auto-retificação que o CHECK barra.
         await using var command = new NpgsqlCommand(
             """
-            INSERT INTO publicacoes.ato_normativo
+            INSERT INTO publicacoes.atos_normativos
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
                  unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em, ato_retificado_id, motivo_retificacao)
             VALUES

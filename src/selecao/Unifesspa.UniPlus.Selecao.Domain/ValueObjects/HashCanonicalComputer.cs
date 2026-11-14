@@ -138,7 +138,7 @@ public static class HashCanonicalComputer
     }
 
     /// <summary>
-    /// Computa o hash content-addressable de uma entrada do <c>rol_de_regras</c>
+    /// Computa o hash content-addressable de uma entrada do <c>regras_do_catalogo</c>
     /// (<see cref="Entities.RegraCatalogo"/>) sobre a sua definição COMPLETA:
     /// <c>codigo</c>+<c>versao</c>+<c>tipo</c>+<c>esquema_args</c>+<c>invariantes</c>+<c>base_legal</c>.
     /// Mudar qualquer campo definicional muda o hash — e a versão de uma regra
@@ -146,7 +146,7 @@ public static class HashCanonicalComputer
     /// do freeze do snapshot (congelamento dos parâmetros na publicação, UNI-REQ-0019) por construção.
     /// </summary>
     /// <remarks>
-    /// Espelha o hash validado do <c>rol_de_regras</c> (Postgres real): os
+    /// Espelha o hash validado do <c>regras_do_catalogo</c> (Postgres real): os
     /// campos de auditoria (<c>created_at/by</c>) e o próprio <c>hash</c> ficam
     /// de fora; <paramref name="esquemaArgs"/> (objeto) e
     /// <paramref name="invariantes"/> (array) entram canonicalizados
@@ -181,7 +181,7 @@ public static class HashCanonicalComputer
     /// Canonicaliza (reordena chaves recursivamente), serializa com
     /// <see cref="Utf8JsonWriter"/> byte-stável e devolve o SHA-256 em hex
     /// minúsculo. Fonte única do passo final de hashing — compartilhada entre
-    /// o hash de <c>ObrigatoriedadeLegal</c> e o do <c>rol_de_regras</c>.
+    /// o hash de <c>ObrigatoriedadeLegal</c> e o do <c>regras_do_catalogo</c>.
     /// </summary>
     private static string HashCanonicalPayload(JsonObject payload) =>
         ComputeSha256Hex(ComputeSnapshotBytes(payload));

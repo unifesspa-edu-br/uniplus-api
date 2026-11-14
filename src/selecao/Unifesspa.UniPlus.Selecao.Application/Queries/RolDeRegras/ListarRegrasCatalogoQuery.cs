@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Lista o <c>rol_de_regras</c> paginado por cursor bidirecional (ADR-0026 + ADR-0089), com
+/// Lista o <c>regras_do_catalogo</c> paginado por cursor bidirecional (ADR-0026 + ADR-0089), com
 /// filtro opcional por tipo.
 /// </summary>
 public sealed record ListarRegrasCatalogoQuery(

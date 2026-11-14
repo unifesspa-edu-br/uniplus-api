@@ -21,7 +21,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("calendario_dias_uteis");
+        builder.ToTable("calendarios_de_dias_uteis");
         builder.HasKey(c => c.Id);
 
         builder.Property(c => c.VersaoDataset).HasMaxLength(VersaoDatasetMaxLength).IsRequired();
@@ -60,10 +60,10 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // No máximo um dataset vivo é vigente: EXCLUDE constraint GiST DEFERRABLE
-        // INITIALLY DEFERRED (ex_calendario_dias_uteis_vigente_unico), criada pelo
+        // INITIALLY DEFERRED (ex_calendarios_de_dias_uteis_vigente_unico), criada pelo
         // script 001_vigencia_unica_do_calendario.sql — de propósito AUSENTE daqui como HasIndex().IsUnique(),
-        // mesmo padrão de ex_nos_exigencia_irmaos_ordem (NoExigenciaConfiguration.cs) e
-        // ex_tipo_ato_publicado_codigo_vigencia (TipoAtoPublicadoConfiguration.cs), que o
+        // mesmo padrão de ex_nos_da_arvore_de_exigencias_irmaos_ordem (NoExigenciaConfiguration.cs) e
+        // ex_tipos_de_ato_publicado_codigo_vigencia (TipoAtoPublicadoConfiguration.cs), que o
         // Fluent API do EF Core não modela. Um índice único comum é verificado
         // por-statement: MarcarVigenteCalendarioDiasUteisCommandHandler desmarca o
         // vigente anterior e marca o novo na MESMA SaveChangesAsync, e o EF Core não
@@ -77,6 +77,6 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
 
         builder.HasIndex(c => c.VersaoDataset)
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_calendario_dias_uteis_versao_dataset");
+            .HasDatabaseName("ix_calendarios_de_dias_uteis_versao_dataset");
     }
 }

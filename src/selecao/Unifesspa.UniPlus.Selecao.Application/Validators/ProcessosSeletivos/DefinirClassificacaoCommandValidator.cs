@@ -8,7 +8,7 @@ using FluentValidation;
 /// Checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
 /// identificador de rota; os pares <c>RegraCodigo</c>/<c>RegraVersao</c> (cálculo, arredondamento,
 /// ordem de alocação, cada regra de eliminação) nunca chegam crus a
-/// <c>ConfiguracaoClassificacao.Criar</c> — só alimentam a leitura do <c>rol_de_regras</c>
+/// <c>ConfiguracaoClassificacao.Criar</c> — só alimentam a leitura do <c>regras_do_catalogo</c>
 /// (<c>IRegraCatalogoReader</c>); a lista de regras de eliminação e cada item não podem ser
 /// nulos — o handler desreferencia sem checagem defensiva. A coerência de arredondamento
 /// (via <c>Criar</c>) já tem equivalente completo no domínio e ficou fora daqui.

@@ -27,7 +27,7 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("areas_peso_area_enem_congeladas", t =>
+        builder.ToTable("areas_do_quadro_de_pesos", t =>
         {
             t.HasComment(
                 "Peso e corte de cada área do ENEM num grupo do quadro de pesos por área congelado na " +
@@ -35,9 +35,9 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
 
             // As mesmas faixas da tabela de origem, no cadastro de Pesos por Área: gravação que
             // não passe pelo agregado não deixa peso negativo nem corte fora da nota do ENEM.
-            t.HasCheckConstraint("ck_areas_peso_area_enem_congeladas_peso", "peso >= 0");
+            t.HasCheckConstraint("ck_areas_do_quadro_de_pesos_peso", "peso >= 0");
             t.HasCheckConstraint(
-                "ck_areas_peso_area_enem_congeladas_corte",
+                "ck_areas_do_quadro_de_pesos_corte",
                 $"corte IS NULL OR (corte >= 0 AND corte <= {GrupoPesoAreaEnemCongelado.CorteMaximo.ToString(CultureInfo.InvariantCulture)})");
         });
         builder.HasKey(a => a.Id);

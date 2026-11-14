@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -29,35 +30,35 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "ato_normativo",
+            "atos_normativos",
             t =>
             {
                 // Defesa em profundidade do formato do hash do documento contra
                 // inserts crus (o guard de domínio já recusa). SHA-256 hex minúsculo.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_documento_hash",
+                    "ck_atos_normativos_documento_hash",
                     "documento_hash ~ '^[0-9a-f]{64}$'");
 
                 // O par {id, hash} da versão do objeto é completo ou ausente: um
                 // identificador sem hash não prova nada (ADR-0075).
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_versao_do_objeto_completa",
+                    "ck_atos_normativos_versao_do_objeto_completa",
                     "(versao_do_objeto_id IS NULL AND versao_do_objeto_hash IS NULL) "
                     + "OR (versao_do_objeto_id IS NOT NULL AND versao_do_objeto_hash IS NOT NULL)");
 
                 // Formato do hash da versão quando presente.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_versao_do_objeto_hash",
+                    "ck_atos_normativos_versao_do_objeto_hash",
                     "versao_do_objeto_hash IS NULL OR versao_do_objeto_hash ~ '^[0-9a-f]{64}$'");
 
                 // Um Guid.Empty não referencia versão alguma — defesa contra insert cru.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_versao_do_objeto_id_nao_zero",
+                    "ck_atos_normativos_versao_do_objeto_id_nao_zero",
                     "versao_do_objeto_id IS NULL OR versao_do_objeto_id <> '00000000-0000-0000-0000-000000000000'");
 
                 // Ano é declarado pelo órgão; importação de acervo histórico admite
                 // anos antigos, então não há teto — apenas positividade.
-                t.HasCheckConstraint("ck_ato_normativo_ano_positivo", "ano > 0");
+                t.HasCheckConstraint("ck_atos_normativos_ano_positivo", "ano > 0");
 
                 // Retificação simétrica (ADR-0103): a linhagem é o par (ato
                 // retificado, motivo) — completo ou ausente. O motivo tem de ter
@@ -66,7 +67,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
                 // registrada — inaceitável num registro append-only. Defesa contra
                 // insert cru; o guard de domínio já recusa.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_retificacao_completa",
+                    "ck_atos_normativos_retificacao_completa",
                     "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) "
                     + "OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL "
                     + "AND btrim(motivo_retificacao) <> '')");
@@ -75,7 +76,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
                 // gerado no registro, e o cliente não conhece um Id ainda inexistente);
                 // o CHECK fecha a brecha do insert cru.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_nao_autorretifica",
+                    "ck_atos_normativos_nao_autorretifica",
                     "ato_retificado_id IS NULL OR ato_retificado_id <> id");
             });
 
@@ -127,14 +128,14 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.HasOne<AtoNormativo>()
             .WithMany()
             .HasForeignKey(a => a.AtoRetificadoId)
-            .HasConstraintName("fk_ato_normativo_ato_retificado")
+            .HasConstraintName("fk_atos_normativos_ato_retificado")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Lookup por numeração para o aviso de duplicata. NÃO é único: o
         // número é declarado, não gerado — dois atos com a mesma numeração são
         // aceitos, e a colisão vira aviso, jamais recusa.
         builder.HasIndex(a => new { a.Orgao, a.Serie, a.Ano, a.Numero })
-            .HasDatabaseName("ix_ato_normativo_numeracao");
+            .HasDatabaseName("ix_atos_normativos_numeracao");
 
         // O agregado expõe os vínculos como coleção só-leitura; o EF materializa no
         // campo de apoio, sem passar pela propriedade.
@@ -144,7 +145,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         // Suporte ao seek do keyset ordenado da consulta por entidade (ADR-0094): a
         // ordenação é (publicado_em, id), e o índice casa a mesma expressão.
         builder.HasIndex(a => new { a.PublicadoEm, a.Id })
-            .HasDatabaseName("ix_ato_normativo_publicado_em");
+            .HasDatabaseName("ix_atos_normativos_publicado_em");
 
         // Linearidade da cadeia (ADR-0103): um ato é retificado no máximo uma vez.
         // Índice único parcial — garantia dura à prova da corrida check-then-act do
@@ -153,6 +154,6 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.HasIndex(a => a.AtoRetificadoId)
             .IsUnique()
             .HasFilter("ato_retificado_id IS NOT NULL")
-            .HasDatabaseName("ux_ato_normativo_retificado");
+            .HasDatabaseName(RestricoesDoBanco.AtoNormativoRetificadoUnico);
     }
 }

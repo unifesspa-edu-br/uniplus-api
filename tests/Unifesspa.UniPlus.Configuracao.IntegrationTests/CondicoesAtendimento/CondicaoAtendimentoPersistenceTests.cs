@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CondicoesAtendimento;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -88,7 +89,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_condicao_atendimento_especializado_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CondicaoDeAtendimentoCodigoVivo);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -141,7 +142,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.condicao_atendimento_especializado (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"pcd"}, {"X"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.condicoes_de_atendimento (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"pcd"}, {"X"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de formato do código (UPPER_SNAKE iniciando por letra) impede o INSERT direto");

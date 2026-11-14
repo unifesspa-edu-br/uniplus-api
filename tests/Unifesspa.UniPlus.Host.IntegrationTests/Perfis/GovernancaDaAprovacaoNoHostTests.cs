@@ -57,6 +57,6 @@ public sealed class GovernancaDaAprovacaoNoHostTests : AprovacaoDaVersaoNoHostTe
 
     private static async Task<string[]> CodigosAsync(UniPlusDbContext db, Guid perfilId) =>
         await db.Database
-            .SqlQuery<string>($"SELECT codigo AS \"Value\" FROM autorizacao.perfil_permissoes WHERE perfil_id = {perfilId}")
+            .SqlQuery<string>($"SELECT codigo AS \"Value\" FROM autorizacao.permissoes_do_perfil WHERE perfil_id = {perfilId}")
             .ToArrayAsync();
 }

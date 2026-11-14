@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// Fonte única do seed do catálogo <c>rol_de_fatos_candidato</c> (UNI-REQ-0077,
+/// Fonte única do seed do catálogo <c>fatos_do_candidato</c> (UNI-REQ-0077,
 /// ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078 e pela ADR-0136): os
 /// fatos do vocabulário fechado do candidato. Consumida tanto pela configuração EF Core (que materializa as linhas
 /// via <c>HasData</c> na migration) quanto pelos testes (que conferem o seed do
@@ -95,7 +95,7 @@ public static class FatoCandidatoSeed
         "Importação das notas do ENEM da edição escolhida pelo candidato, na classificação do processo seletivo.";
 
     // Prefixo determinístico próprio do catálogo de fatos (distinto do
-    // rol_de_regras, para não confundir identidades entre tabelas).
+    // regras_do_catalogo, para não confundir identidades entre tabelas).
     private static Guid SeedId(int n) =>
         Guid.Parse($"fa700000-0000-7000-8000-{n:D12}");
 

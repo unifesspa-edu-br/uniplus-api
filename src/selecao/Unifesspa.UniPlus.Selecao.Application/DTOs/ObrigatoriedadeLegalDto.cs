@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// DTO de leitura de <c>ObrigatoriedadeLegal</c> exposto pela camada API.
 /// Reflete o estado atual da regra após qualquer mutação in-place (ADR-0058
 /// Emenda 1) — a reconstrução de versões anteriores é via
-/// <c>obrigatoriedade_legal_historico</c>.
+/// <c>historicos_da_obrigatoriedade</c>.
 /// </summary>
 [SuppressMessage(
     "Design",

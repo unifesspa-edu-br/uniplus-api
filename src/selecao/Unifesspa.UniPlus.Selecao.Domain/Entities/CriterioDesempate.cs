@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Um critério de desempate ordenado do <see cref="ProcessoSeletivo"/> (Story
 /// #774): referencia uma regra tipada do
-/// <c>rol_de_regras</c> (<c>tipo=criterio_desempate</c>) e seus args
+/// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>) e seus args
 /// aplicados. A <see cref="Ordem"/> carrega a semântica de refinamento
 /// sequencial — cada critério desempata só o subgrupo ainda empatado; o
 /// seguinte resolve o resíduo.

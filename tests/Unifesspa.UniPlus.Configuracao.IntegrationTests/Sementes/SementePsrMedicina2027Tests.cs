@@ -285,10 +285,10 @@ public sealed class SementePsrMedicina2027Tests
         List<string> linhas = await ctx.Database.SqlQueryRaw<string>(
             """
             SELECT concat_ws('|', 'tipo', codigo, nome) AS "Value" FROM configuracao.tipos_processo WHERE id::text LIKE '5e3d%'
-            UNION ALL SELECT concat_ws('|', 'termo', nome, texto_rascunho) FROM configuracao.termo_consentimento WHERE id::text LIKE '5e3d%'
-            UNION ALL SELECT concat_ws('|', 'versao', hash) FROM configuracao.termo_consentimento_versao WHERE id::text LIKE '5e3d%'
-            UNION ALL SELECT concat_ws('|', 'fato', codigo, nome, descricao) FROM configuracao.rol_de_fatos_candidato WHERE id::text LIKE '5e3d%'
-            UNION ALL SELECT concat_ws('|', 'valor', codigo, descricao) FROM configuracao.fato_valor_dominio WHERE id::text LIKE '5e3d%'
+            UNION ALL SELECT concat_ws('|', 'termo', nome, texto_rascunho) FROM configuracao.termos_de_consentimento WHERE id::text LIKE '5e3d%'
+            UNION ALL SELECT concat_ws('|', 'versao', hash) FROM configuracao.versoes_do_termo_consentimento WHERE id::text LIKE '5e3d%'
+            UNION ALL SELECT concat_ws('|', 'fato', codigo, nome, descricao) FROM configuracao.fatos_do_candidato WHERE id::text LIKE '5e3d%'
+            UNION ALL SELECT concat_ws('|', 'valor', codigo, descricao) FROM configuracao.valores_de_dominio_do_fato WHERE id::text LIKE '5e3d%'
             """).ToListAsync();
         return string.Join("\n", linhas.Order(StringComparer.Ordinal));
     }

@@ -45,8 +45,8 @@ internal sealed class TravaDaLinhaDoItem : IAsyncDisposable
         UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
         FormattableString trava = cadastro == "FATO"
-            ? (FormattableString)$"SELECT 1 FROM configuracao.rol_de_fatos_candidato WHERE id = {id} FOR UPDATE"
-            : (FormattableString)$"SELECT 1 FROM configuracao.tipo_documento WHERE id = {id} FOR UPDATE";
+            ? (FormattableString)$"SELECT 1 FROM configuracao.fatos_do_candidato WHERE id = {id} FOR UPDATE"
+            : (FormattableString)$"SELECT 1 FROM configuracao.tipos_de_documento WHERE id = {id} FOR UPDATE";
         await contexto.Database.ExecuteSqlInterpolatedAsync(trava);
         int pid = await contexto.Database.SqlQuery<int>($"""SELECT pg_backend_pid() AS "Value" """).SingleAsync();
         return new TravaDaLinhaDoItem(api, escopo, transacao, pid);

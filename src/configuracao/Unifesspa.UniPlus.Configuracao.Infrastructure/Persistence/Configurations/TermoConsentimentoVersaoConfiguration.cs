@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
-/// Configuração EF Core da tabela append-only <c>termo_consentimento_versao</c>
+/// Configuração EF Core da tabela append-only <c>versoes_do_termo_consentimento</c>
 /// (termos imunes após a publicação, UNI-REQ-0086). Sem soft-delete, sem audit fields, sem updates —
 /// qualquer mutação fora de <c>INSERT</c> é incidente operacional.
 /// </summary>
@@ -32,9 +32,9 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "termo_consentimento_versao",
+            "versoes_do_termo_consentimento",
             t => t.HasCheckConstraint(
-                "ck_termo_consentimento_versao_forma_aceite",
+                "ck_versoes_do_termo_consentimento_forma_aceite",
                 $"forma_aceite IN ({TokensSql(FormasAceite.TokensCanonicos)})"));
         builder.HasKey(v => v.Id);
 
@@ -60,7 +60,7 @@ internal sealed class TermoConsentimentoVersaoConfiguration : IEntityTypeConfigu
             .IsRequired();
 
         builder.HasIndex(v => new { v.TermoConsentimentoId, v.PromovidaEm })
-            .HasDatabaseName("ix_termo_consentimento_versao_termo_promovida_em");
+            .HasDatabaseName("ix_versoes_do_termo_consentimento_termo_promovida_em");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

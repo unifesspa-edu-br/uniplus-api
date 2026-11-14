@@ -68,8 +68,8 @@ public sealed class SementeIsencaoDaTaxaTests
     {
         List<string> linhas = await ctx.Database.SqlQueryRaw<string>(
             """
-            SELECT concat_ws('|', 'termo', nome, texto_rascunho) AS "Value" FROM configuracao.termo_consentimento WHERE id::text LIKE '15e0%'
-            UNION ALL SELECT concat_ws('|', 'versao', hash) FROM configuracao.termo_consentimento_versao WHERE id::text LIKE '15e0%'
+            SELECT concat_ws('|', 'termo', nome, texto_rascunho) AS "Value" FROM configuracao.termos_de_consentimento WHERE id::text LIKE '15e0%'
+            UNION ALL SELECT concat_ws('|', 'versao', hash) FROM configuracao.versoes_do_termo_consentimento WHERE id::text LIKE '15e0%'
             UNION ALL SELECT concat_ws('|', 'modelo', codigo, ativo::text, conteudo::text) FROM configuracao.modelos_formulario WHERE id::text LIKE '15e0%'
             """).ToListAsync();
         return string.Join("\n", linhas.Order(StringComparer.Ordinal));

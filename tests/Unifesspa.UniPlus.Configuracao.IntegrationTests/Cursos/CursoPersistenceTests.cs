@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -103,7 +104,7 @@ public sealed class CursoPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_curso_codigo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CursoCodigoVivo);
     }
 
     [Fact(DisplayName = "Código distinto é aceito")]
@@ -158,10 +159,10 @@ public sealed class CursoPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.curso (id, codigo, nome, grau, nivel_ensino, grupo_area_enem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {grupo}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.cursos (id, codigo, nome, grau, nivel_ensino, grupo_area_enem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {grupo}, {DateTimeOffset.UtcNow}, {false})");
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
-        pg.ConstraintName.Should().Be("ck_curso_grupo_area_enem");
+        pg.ConstraintName.Should().Be("ck_cursos_grupo_area_enem");
     }
 
     [Fact(DisplayName = "Tirar o grupo do curso zera código e rótulo gravados")]
@@ -194,7 +195,7 @@ public sealed class CursoPersistenceTests
         // A coluna grupo_area_enem é omitida de propósito: fica NULL e o CHECK
         // null-safe não pode rejeitar o INSERT.
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.curso (id, codigo, nome, grau, nivel_ensino, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.cursos (id, codigo, nome, grau, nivel_ensino, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().NotThrowAsync("a coluna é opcional e o CHECK é null-safe");
     }
@@ -316,7 +317,7 @@ public sealed class CursoPersistenceTests
 
     private static Task<GrupoGravado> GrupoGravadoAsync(UniPlusDbContext ctx, Guid cursoId) =>
         ctx.Database
-            .SqlQuery<GrupoGravado>($"SELECT grupo_area_enem AS codigo, grupo_area_enem_rotulo AS rotulo FROM configuracao.curso WHERE id = {cursoId}")
+            .SqlQuery<GrupoGravado>($"SELECT grupo_area_enem AS codigo, grupo_area_enem_rotulo AS rotulo FROM configuracao.cursos WHERE id = {cursoId}")
             .SingleAsync();
 
     private sealed record GrupoGravado(string? Codigo, string? Rotulo);

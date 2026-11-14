@@ -106,15 +106,15 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     }
 
     /// <summary>
-    /// Issue #943: <c>nos_exigencia</c> é auto-referenciada (<c>no_pai_id → id</c>, Restrict) —
+    /// Issue #943: <c>nos_da_arvore_de_exigencias</c> é auto-referenciada (<c>no_pai_id → id</c>, Restrict) —
     /// substituir uma árvore que já tem um grupo E/OU por outra (ou pela mesma, de novo) faz o
     /// EF Core apagar bottom-up (netos → raiz) mas inserir a raiz NOVA antes da antiga sair do
     /// banco, dentro do mesmo <c>SaveChangesAsync</c>. Um índice único comum era verificado
     /// por-statement e recusava a raiz nova com a MESMA ordem da antiga — mesmo a transação
     /// terminando num estado final válido. A correção troca os dois índices únicos filtrados
-    /// (<c>ux_nos_exigencia_raiz_ordem</c>/<c>ux_nos_exigencia_irmaos_ordem</c>) por exclusion
+    /// (<c>ux_nos_da_arvore_de_exigencias_raiz_ordem</c>/<c>ux_nos_da_arvore_de_exigencias_irmaos_ordem</c>) por exclusion
     /// constraints GiST <c>DEFERRABLE INITIALLY DEFERRED</c> (mesmo padrão de
-    /// <c>ex_tipo_ato_publicado_codigo_vigencia</c>), que só checam no <c>COMMIT</c>.
+    /// <c>ex_tipos_de_ato_publicado_codigo_vigencia</c>), que só checam no <c>COMMIT</c>.
     /// </summary>
     [Fact(DisplayName = "Issue #943: substituir uma árvore com grupo E/OU por outra, várias vezes seguidas na mesma sessão, não falha com 500")]
     public async Task SubstituiArvoreComGrupo_PorOutrasArvores_MultiplasVezesSeguidas()
@@ -156,7 +156,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
 
     /// <summary>
     /// As duas exclusion constraints vivem em SQL cru, fora do <c>ModelSnapshot</c> (mesmo
-    /// padrão de <c>ex_tipo_ato_publicado_codigo_vigencia</c>,
+    /// padrão de <c>ex_tipos_de_ato_publicado_codigo_vigencia</c>,
     /// <c>TipoAtoPublicadoPersistenceTests.ExclusionConstraint_ExisteNoCatalogo</c>): um
     /// squash de migrations as descartaria em silêncio, e o teste de substituição acima
     /// continuaria passando contra um Testcontainer criado do zero — só voltaria a falhar em
@@ -167,8 +167,8 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     /// único que substituiu).
     /// </summary>
     [Theory(DisplayName = "As exclusion constraints de ordem existem no catálogo, como EXCLUDE deferível")]
-    [InlineData("ex_nos_exigencia_raiz_ordem")]
-    [InlineData("ex_nos_exigencia_irmaos_ordem")]
+    [InlineData("ex_nos_da_arvore_de_exigencias_raiz_ordem")]
+    [InlineData("ex_nos_da_arvore_de_exigencias_irmaos_ordem")]
     public async Task ExclusionConstraintsDeOrdem_ExistemNoCatalogo_ComoDeferiveis(string nomeDaConstraint)
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();
@@ -181,7 +181,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
             JOIN pg_class t ON t.oid = c.conrelid
             JOIN pg_namespace n ON n.oid = t.relnamespace
             WHERE n.nspname = 'selecao'
-              AND t.relname = 'nos_exigencia'
+              AND t.relname = 'nos_da_arvore_de_exigencias'
               AND c.conname = @nome
             """,
             (NpgsqlConnection)context.Database.GetDbConnection());

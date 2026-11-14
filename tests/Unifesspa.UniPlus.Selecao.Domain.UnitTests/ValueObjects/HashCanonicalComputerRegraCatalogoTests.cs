@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Cobertura do hash content-addressable do <c>rol_de_regras</c>
+/// Cobertura do hash content-addressable do <c>regras_do_catalogo</c>
 /// (<see cref="HashCanonicalComputer.ComputeRegraCatalogo"/>): determinismo,
 /// independência da ordem das chaves do jsonb e sensibilidade a mudança de
 /// definição — as propriedades que sustentam a reprodutibilidade do freeze

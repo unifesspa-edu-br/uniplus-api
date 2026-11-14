@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <b>Antes: as arestas nasciam semeadas e os vértices não.</b> O seed de
 /// <c>PrecedenciaFase</c> referencia códigos de fase que só existiam se alguém
 /// rodasse a carga por API — nenhuma constraint impedia, porque os CHECK de
-/// <c>precedencia_fase</c> conferem o código contra o vocabulário, não contra a
+/// <c>precedencias_entre_fases</c> conferem o código contra o vocabulário, não contra a
 /// existência da linha. As duas metades do mesmo grafo seguiam regras opostas.
 /// </para>
 /// <para>

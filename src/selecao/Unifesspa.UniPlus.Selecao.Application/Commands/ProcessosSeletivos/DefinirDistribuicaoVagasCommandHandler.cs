@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// resolve cada oferta e regra de distribuição nos cadastros vivos do módulo
 /// Configuração (<see cref="IOfertaCursoReader"/>/<see cref="IModalidadeReader"/>/
 /// <see cref="IReferenciaReservaDemograficaReader"/>, ADR-0056) e no catálogo
-/// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772),
+/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772),
 /// congela cada peça por valor (snapshot-copy, ADR-0061) e monta a
 /// distribuição — as invariantes (PR, referência demográfica, modalidades
 /// federais, coerência de cada modalidade) são garantidas pelas factories do

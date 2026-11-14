@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 public sealed class OrdemDasDecisoesDoPedidoNoHostTests : PedidosDeConcessaoTestBase
 {
     private const string Inserir = """
-        INSERT INTO autorizacao.pedido_decisoes
+        INSERT INTO autorizacao.decisoes_do_pedido
             (id, pedido_id, etapa, resultado, decisor_emissor, decisor_sub, decisor_nome, instante, permissoes_avaliadas, sensibilidade_avaliada)
         VALUES ({0}, {1}, 'gestor', 'aprovado', 'https://idp.test', {2}, {3}, {4}, ARRAY['selecao:processos:consultar'], 'interno')
         """;

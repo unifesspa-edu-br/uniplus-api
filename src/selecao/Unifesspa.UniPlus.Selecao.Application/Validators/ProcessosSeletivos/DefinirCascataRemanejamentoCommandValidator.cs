@@ -7,7 +7,7 @@ using FluentValidation;
 /// <summary>
 /// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
 /// identificador de rota; <c>RegraCodigo</c>/<c>RegraVersao</c> nunca chegam crus a um
-/// <c>Criar</c> de domínio — só alimentam a leitura do <c>rol_de_regras</c>
+/// <c>Criar</c> de domínio — só alimentam a leitura do <c>regras_do_catalogo</c>
 /// (<c>IRegraCatalogoReader</c>) — e seus limites de tamanho espelham
 /// <c>LimitesDoEnvelope.RegraCodigo/RegraVersao</c> (Infrastructure; a Application não pode
 /// referenciar a Infrastructure) só para o par continuar coerente com o schema EF

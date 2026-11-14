@@ -19,7 +19,7 @@ public sealed class LeituraDoDocumentoDaVersaoConfiguration : IEntityTypeConfigu
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("leituras_do_documento_da_versao");
+        builder.ToTable("acessos_ao_documento_da_versao");
         builder.HasKey(l => l.Id);
         builder.Property(l => l.Id).ValueGeneratedNever();
 
@@ -33,6 +33,6 @@ public sealed class LeituraDoDocumentoDaVersaoConfiguration : IEntityTypeConfigu
             .HasForeignKey(l => l.DocumentoId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(l => l.DocumentoId).HasDatabaseName("ix_leituras_do_documento_da_versao_documento");
+        builder.HasIndex(l => l.DocumentoId).HasDatabaseName("ix_acessos_ao_documento_da_versao_documento");
     }
 }

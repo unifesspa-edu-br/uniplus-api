@@ -74,7 +74,7 @@ public sealed class PrecedenciaFaseTests
     {
         // A janela corre dentro das inscrições (UNI-REQ-0106), então a aresta que a
         // liga à coleta permite sobreposição. Referenciá-la nos dois sentidos é o que
-        // prova que o código entrou também nas duas CHECKs de precedencia_fase — sem
+        // prova que o código entrou também nas duas CHECKs de precedencias_entre_fases — sem
         // elas a fase existiria no cadastro e nenhuma aresta poderia apontar para ela.
         Result<PrecedenciaFase> comoSucessora = Criar(
             antecessora: "INSCRICAO",

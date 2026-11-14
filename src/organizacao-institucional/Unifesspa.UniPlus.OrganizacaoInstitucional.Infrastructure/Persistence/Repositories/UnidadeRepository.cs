@@ -63,7 +63,7 @@ public sealed class UnidadeRepository : IUnidadeRepository
             // Slug é value object (SlugValueConverter): o EF não compõe `u.Slug.Valor`
             // dentro de uma DB function, então referenciamos a coluna via
             // EF.Property<string>(u, "Slug") — traduz para immutable_unaccent(u.slug)
-            // e ainda aproveita o índice idx_unidade_slug_trgm.
+            // e ainda aproveita o índice idx_unidades_slug_trgm.
             // Os curingas do LIKE (% _ \) no termo são escapados para serem tratados
             // como texto literal; só os % das pontas atuam como wildcard de "contém".
             // O escape char precisa ser passado explicitamente: a sobrecarga de 2 args

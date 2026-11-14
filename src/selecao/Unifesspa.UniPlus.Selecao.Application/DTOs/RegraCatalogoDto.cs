@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Uma entrada do <c>rol_de_regras</c> como o cliente administrativo a enxerga: a identidade
+/// Uma entrada do <c>regras_do_catalogo</c> como o cliente administrativo a enxerga: a identidade
 /// <c>(codigo, versao)</c> que ele referencia numa configuração, o tipo, o esquema dos
 /// argumentos que precisará preencher, as invariantes declaradas, a base legal e o hash.
 /// </summary>

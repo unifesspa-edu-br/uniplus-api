@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
@@ -81,7 +82,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"UPDATE publicacoes.vinculo_ato_entidade SET entidade_id = '{Guid.CreateVersion7()}' WHERE ato_id = '{ato.Id}'"));
+            $"UPDATE publicacoes.vinculos_do_ato_com_entidade SET entidade_id = '{Guid.CreateVersion7()}' WHERE ato_id = '{ato.Id}'"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -93,7 +94,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
         await Gravar(ato);
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            $"DELETE FROM publicacoes.vinculo_ato_entidade WHERE ato_id = '{ato.Id}'"));
+            $"DELETE FROM publicacoes.vinculos_do_ato_com_entidade WHERE ato_id = '{ato.Id}'"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -108,7 +109,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
         // O agregado e o validator já recusam antes; aqui prova-se a trava do banco.
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
-            INSERT INTO publicacoes.vinculo_ato_entidade (id, ato_id, entidade_tipo, entidade_id)
+            INSERT INTO publicacoes.vinculos_do_ato_com_entidade (id, ato_id, entidade_tipo, entidade_id)
             VALUES ('{Guid.CreateVersion7()}', '{ato.Id}', 'PROCESSO_SELETIVO', '{processo}')
             """));
 
@@ -120,7 +121,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
-            INSERT INTO publicacoes.vinculo_ato_entidade (id, ato_id, entidade_tipo, entidade_id)
+            INSERT INTO publicacoes.vinculos_do_ato_com_entidade (id, ato_id, entidade_tipo, entidade_id)
             VALUES ('{Guid.CreateVersion7()}', '{Guid.CreateVersion7()}', 'PROCESSO_SELETIVO', '{Guid.CreateVersion7()}')
             """));
 
@@ -150,7 +151,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
         });
 
         erro.SqlState.Should().Be(UniqueViolation);
-        erro.ConstraintName.Should().Be("ux_vagas_de_linhagem_objeto_tipo");
+        erro.ConstraintName.Should().Be(RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica);
         primeiro.Id.Should().NotBe(segundo.Id);
     }
 
@@ -237,7 +238,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
             $"""
-            INSERT INTO publicacoes.ato_normativo
+            INSERT INTO publicacoes.atos_normativos
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
                  unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em,
                  ato_retificado_id, motivo_retificacao)
@@ -255,7 +256,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Truncate_DoVinculo_Bloqueado()
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            "TRUNCATE publicacoes.vinculo_ato_entidade"));
+            "TRUNCATE publicacoes.vinculos_do_ato_com_entidade"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -264,7 +265,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     public async Task Truncate_DoAto_Bloqueado()
     {
         PostgresException erro = await Assert.ThrowsAsync<PostgresException>(() => ExecutarCruAsync(
-            "TRUNCATE publicacoes.ato_normativo CASCADE"));
+            "TRUNCATE publicacoes.atos_normativos CASCADE"));
 
         erro.SqlState.Should().Be(RestrictViolation);
     }
@@ -322,7 +323,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private static string InsertAtoCru(AtoNormativo ato) =>
         $"""
-        INSERT INTO publicacoes.ato_normativo
+        INSERT INTO publicacoes.atos_normativos
             (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
              unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
         VALUES
@@ -333,7 +334,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private static string InsertVinculoCru(Guid atoId, string entidadeTipo, Guid entidadeId) =>
         $"""
-        INSERT INTO publicacoes.vinculo_ato_entidade (id, ato_id, entidade_tipo, entidade_id)
+        INSERT INTO publicacoes.vinculos_do_ato_com_entidade (id, ato_id, entidade_tipo, entidade_id)
         VALUES ('{Guid.CreateVersion7()}', '{atoId}', '{entidadeTipo}', '{entidadeId}')
         """;
 

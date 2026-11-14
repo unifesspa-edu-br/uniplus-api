@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -26,14 +27,14 @@ internal sealed class TipoDeficienciaConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "tipo_deficiencia",
+            "tipos_de_deficiencia",
             t =>
             {
                 // Formato fechado do código (UPPER_SNAKE iniciando por letra) — defesa
                 // em profundidade do invariante de domínio (CodigoTipoDeficiencia)
                 // contra inserts crus. Case-sensitive, alinhado ao value object.
                 t.HasCheckConstraint(
-                    "ck_tipo_deficiencia_codigo_formato",
+                    "ck_tipos_de_deficiencia_codigo_formato",
                     "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
             });
 
@@ -67,13 +68,13 @@ internal sealed class TipoDeficienciaConfiguration
         builder.HasIndex(t => t.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_tipo_deficiencia_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.TipoDeDeficienciaCodigoVivo);
 
         // Unicidade do nome entre tipos vivos (índice parcial) — um tipo vivo por
         // nome; soft-delete libera o slot para recriação.
         builder.HasIndex(t => t.Nome)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_tipo_deficiencia_nome_vivo");
+            .HasDatabaseName(RestricoesDoBanco.TipoDeDeficienciaNomeVivo);
     }
 }

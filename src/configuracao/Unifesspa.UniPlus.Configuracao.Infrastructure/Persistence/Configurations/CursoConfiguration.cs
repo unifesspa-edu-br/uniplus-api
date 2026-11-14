@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -44,15 +45,15 @@ internal sealed class CursoConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "curso",
+            "cursos",
             t =>
             {
                 // Domínio fechado do código do grupo de área do ENEM (Resolução nº
                 // 805/2024/Consepe, Anexo I), montado da lista do domínio — espelha o
-                // CHECK de peso_area_enem, mas null-safe: a coluna é opcional (nem todo
+                // CHECK de pesos_por_area_do_enem, mas null-safe: a coluna é opcional (nem todo
                 // curso classifica por área do ENEM).
                 t.HasCheckConstraint(
-                    "ck_curso_grupo_area_enem",
+                    "ck_cursos_grupo_area_enem",
                     $"grupo_area_enem IS NULL OR grupo_area_enem IN ({GrupoCursoValueConverter.CodigosEmSql()})");
             });
 
@@ -70,7 +71,7 @@ internal sealed class CursoConfiguration
         builder.Property(c => c.GrupoAreaEnem)
             .HasConversion<GrupoCursoValueConverter>()
             .HasMaxLength(GrupoAreaEnemMaxLength)
-            .HasComment("Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_curso_grupo_area_enem. O rótulo fica em grupo_area_enem_rotulo. Nulo quando o curso não declara grupo.");
+            .HasComment("Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_cursos_grupo_area_enem. O rótulo fica em grupo_area_enem_rotulo. Nulo quando o curso não declara grupo.");
 
         // Rótulo do grupo, gravado pelo sistema ao lado do código (campo privado do
         // agregado); nulo quando o curso não declara grupo.
@@ -88,7 +89,7 @@ internal sealed class CursoConfiguration
         builder.HasIndex(c => c.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_curso_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.CursoCodigoVivo);
 
         ConfigurarOrdenacaoAlfabetica(builder);
     }
@@ -125,6 +126,6 @@ internal sealed class CursoConfiguration
         // código, id) e o filtro global de soft-delete aplicado a toda leitura.
         builder.HasIndex(NomeOrdenacaoPropriedade, nameof(Curso.Codigo), nameof(Curso.Id))
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_curso_ordenacao_alfabetica");
+            .HasDatabaseName("ix_cursos_ordenacao_alfabetica");
     }
 }

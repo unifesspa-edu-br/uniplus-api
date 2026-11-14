@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 [Collection(ConfiguracaoEndpointCollection.Name)]
 public sealed class OrdemDosRegistrosDaProtecaoEndpointTests : ManifestacaoDaProtecaoTestBase
 {
-    private const string Atos = "configuracao.protecao_do_catalogo_atos";
-    private const string Manifestacoes = "configuracao.protecao_do_catalogo_manifestacoes";
+    private const string Atos = "configuracao.atos_da_protecao_do_catalogo";
+    private const string Manifestacoes = "configuracao.manifestacoes_da_protecao";
     private const string MaiorIdentificador = "'ffffffff-ffff-7fff-bfff-ffffffffffff'::uuid";
     private const string MenorIdentificador = "'00000000-0000-7000-8000-000000000000'::uuid";
 
