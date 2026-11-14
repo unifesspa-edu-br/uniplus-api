@@ -45,6 +45,7 @@ Os módulos internos do host compartilham um contexto. Ficam de fora o portal (`
 ### Fronteira
 
 A fronteira entre módulos é o **módulo** (projeto, namespace e esquema), e não o contexto. Ela é garantida por:
+
 - teste de arquitetura: nenhum módulo depende de `Domain`, `Application`, `Infrastructure` ou `API` de outro, só do `Contracts`; só `{Modulo}.Infrastructure` e o projeto de composição dependem do contexto; as configurações EF ficam em `{Modulo}.Infrastructure.Persistence`; implementação de interface do `Contracts` que só lê não grava; handler de comando não chama `ICommandBus.Send` nem `IMessageBus.InvokeAsync`;
 - catálogo do banco: sem chave estrangeira entre esquemas de módulos, e toda tabela está no esquema de um módulo ou da plataforma.
 
@@ -59,9 +60,9 @@ A referência entre módulos continua por valor ([ADR-0061](0061-referencia-cros
 
 ### Persistência
 
-- Uma connection string, uma migration inicial e uma tabela de idempotência.
+- Uma connection string, uma tabela de idempotência e **uma única migration**, gerada de novo quando o modelo muda, enquanto não houver uso real: ao rebasear, descarta-se a própria e gera-se outra. Isso substitui a estratégia de migration por Story da [ADR-0054](0054-naming-convention-e-strategy-migrations.md) pelo período sem uso real; a regra se inverte quando houver uso real.
 - As tabelas da plataforma (idempotência e histórico de migrations) ficam no esquema `plataforma`.
-- Os scripts SQL continuam nos módulos. Os objetos compartilhados (`btree_gist`, `normalizar_para_comparacao`) existem uma vez só e rodam primeiro. Script de um módulo não referencia o esquema de outro.
+- O que o EF não representa (extensões, funções, gatilhos, exclusões, índices de expressão e sementes) vive em **scripts SQL versionados e idempotentes** de cada módulo, embutidos no assembly: os `Pre` rodam antes da migration e os demais depois, seguidos da etapa posterior de cada módulo, sob uma trava consultiva do banco ([ADR-0127](0127-migrations-aplicadas-por-job-de-deploy.md), emenda 1). O veículo das sementes passa a ser registrado ([ADR-0062](0062-seed-de-catalogos-via-newman-e-endpoints-admin.md), emenda 1), e a guarda do `rol_de_regras` sem gatilho é conferida no catálogo do banco ([ADR-0112](0112-fronteira-append-only-do-catalogo-de-regras.md), emenda 2). Os objetos compartilhados (`btree_gist`, `normalizar_para_comparacao`) existem uma vez só e rodam primeiro. Script de um módulo não referencia o esquema de outro.
 - Não há separação de privilégio por esquema: a pendência de usuário próprio do banco para o esquema `autorizacao` ([ADR-0087](0087-banco-isolado-para-o-contexto-de-autorizacao.md)) deixa de existir.
 - `dotnet ef migrations has-pending-model-changes` roda no CI.
 

@@ -104,3 +104,7 @@ Um valor fora do domínio é **recusado no boot**, com a lista dos aceitos. Cair
 
 - [ADR-0050](0050-registry-ghcr-e-tagging.md) — publicação por tag explícita; esta ADR muda o que acontece **durante** a promoção, não o que a dispara.
 - O Job que consome `ApplyAndExit` vive em `unifesspa-edu-br/uniplus-infra`.
+
+## Emenda 1 (2026-11-13) — scripts antes e depois das migrations, sob lock por banco
+
+O que `ApplyAndExit` e o boot aplicam passa a ser: scripts `Pre/`, migrations do EF e scripts pós, seguidos da etapa posterior do módulo, sob um `pg_advisory_lock` por banco. O modo `Skip`, os códigos de saída e a preservação dos registros em `ApplyAndExit` não mudam. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).

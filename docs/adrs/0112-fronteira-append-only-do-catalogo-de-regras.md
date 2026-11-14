@@ -156,3 +156,7 @@ a linha do catálogo. Sem produção, o `versoes_configuracao → processos_sele
 apagasse só o catálogo; a emenda estende a fronteira para cobrir a cadeia inteira (versão
 congelada → filhos por cascade → processo → ato correspondente em `publicacoes`, referência
 por valor sem FK, ADR-0061) como uma única operação legítima enquanto não há produção.
+
+## Emenda 2 (2026-11-13) — a guarda do append-only é conferida no banco
+
+Com a migration única e os scripts, a guarda de que nenhum gatilho incide sobre o `rol_de_regras` passa a ser um teste de integração que confere o catálogo do banco depois da subida; o append-only continua por referência congelada. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).

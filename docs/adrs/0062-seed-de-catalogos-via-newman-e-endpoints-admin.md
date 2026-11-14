@@ -449,15 +449,11 @@ Ou seja: o caminho de escrita responde **quem** pode alterar; o regime de congel
 **se** ainda pode. Onde houver referência congelada, a resposta é não — por migration ou por
 qualquer outro caminho.
 
-**A prescrição vale daqui em diante, e não cobre o que já foi aplicado.** As três migrations de
-`Modalidade` — `20260723111701_SeedModalidadesFederais`, `20260829000213_SemeiaModalidadePcdPuro` e
-`20260829005332_SemeiaModalidadesInstitucionaisPsiq` — usam `InsertData`, anterior a esta emenda.
-Num ambiente onde um administrador já tenha criado um dos códigos semeados, o conflito de código
-único **aborta a migração** em vez de pular a linha, e com ela o deploy. O risco é baixo (os códigos
-são das modalidades legais, que ninguém cadastra à mão) mas real, e converter essas migrations
-exigiria reescrever migration já aplicada — trabalho próprio, não desta emenda. As de
-`CategoriaDocumento` e `TipoDocumento` já seguem a forma tolerante; a de `FaseCanonica` nasce assim
-na mudança que a semeia, ainda não aplicada.
+**A prescrição vale para a semente que se acrescenta depois da migration inicial.** As sementes do módulo
+`Configuracao` por `HasData` (modalidades, categorias e tipos de documento, fases canônicas, precedências) entram como
+`InsertData` da migration inicial, que só roda em banco vazio: não há código ocupado por um administrador que o conflito
+possa abortar. A semente que se acrescenta com o banco já em uso segue a forma tolerante (`INSERT ... ON CONFLICT DO
+NOTHING`), como as sementes por código do módulo, que rodam na etapa posterior à migration.
 
 ## Mais informações
 
@@ -471,3 +467,7 @@ na mudança que a semeia, ainda não aplicada.
 - [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) — Pattern de snapshot-copy cross-módulo (independente deste seed).
 - Documentação Newman — <https://learning.postman.com/docs/running-collections/using-newman-cli/command-line-integration-with-newman/>.
 - Diretrizes do sponsor (2026-05-14): "remover os seeds e termos os arquivos json para fazer as requests"; "quando a interface gráfica tiver pronta aí pode cadastrar pelo formulario"; "podemos usar newman para fazer isso para nós".
+
+## Emenda 1 (2026-11-13) — veículo das sementes por HasData, script idempotente e etapa do módulo
+
+Os catálogos do domínio já nasciam por `HasData`/migration e por código, não só por Newman e endpoints admin. O veículo passa a ser registrado: `HasData` do modelo (carregado pela migration única), scripts SQL idempotentes com `ON CONFLICT` e a etapa posterior do módulo para o que é gerado por código; o bootstrap por Newman segue valendo para o que exige auditoria do ator real. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).

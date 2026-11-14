@@ -187,3 +187,7 @@ Aplicação no cluster standalone: o pod restart aciona o `MigrationHostedServic
   - [Microsoft Learn — Complex Types (EF 10)](https://learn.microsoft.com/en-us/ef/core/modeling/complex-types)
   - [Microsoft Learn — Value Conversions](https://learn.microsoft.com/en-us/ef/core/modeling/value-conversions)
   - [EFCore.NamingConventions GitHub](https://github.com/efcore/EFCore.NamingConventions)
+
+## Emenda 1 (2026-11-13) — migration única enquanto não houver uso real
+
+A seção "Estratégia de migration: H + J" deixa de valer enquanto não houver uso real: o monólito tem uma única migration, gerada do zero, e o SQL escrito à mão vive em scripts versionados. A regra se inverte quando houver uso real. O naming `snake_case` e o resto desta ADR seguem. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).
