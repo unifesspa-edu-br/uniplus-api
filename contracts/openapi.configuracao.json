@@ -16283,7 +16283,8 @@
           "id",
           "nome",
           "admitePontuacao",
-          "admiteEliminacao"
+          "admiteEliminacao",
+          "conceitosAdmitidos"
         ],
         "type": "object",
         "properties": {
@@ -16308,6 +16309,15 @@
               "null",
               "boolean"
             ]
+          },
+          "conceitosAdmitidos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "descricao": {
             "type": [
@@ -16868,6 +16878,25 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ConceitoAdmitidoDto": {
+        "required": [
+          "codigo",
+          "nome",
+          "natureza"
+        ],
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "natureza": {
+            "type": "string"
           }
         }
       },
@@ -18182,7 +18211,8 @@
           "codigo",
           "nome",
           "admitePontuacao",
-          "admiteEliminacao"
+          "admiteEliminacao",
+          "conceitosAdmitidos"
         ],
         "type": "object",
         "properties": {
@@ -18209,6 +18239,15 @@
               "null",
               "boolean"
             ]
+          },
+          "conceitosAdmitidos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "descricao": {
             "type": [
@@ -22293,6 +22332,7 @@
           "admitePontuacao",
           "admiteEliminacao",
           "notaDeOrigemNoEnem",
+          "conceitosAdmitidos",
           "criadoEm"
         ],
         "type": "object",
@@ -22324,6 +22364,12 @@
           },
           "notaDeOrigemNoEnem": {
             "type": "boolean"
+          },
+          "conceitosAdmitidos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConceitoAdmitidoDto"
+            }
           },
           "criadoEm": {
             "type": "string",
