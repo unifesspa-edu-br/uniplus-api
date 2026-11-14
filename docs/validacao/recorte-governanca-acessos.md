@@ -396,10 +396,10 @@ retrato() {   # leitura pela API e, só para conferência, SELECT no banco
   api betina.neves GET "/api/configuracao/admin/protecao-do-catalogo/fatos/$FATO_ID";         corpo -S . > "$VAL_DIR/6.5-fato-$1.json"
   dc exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d uniplus -At -F "|"' > "$VAL_DIR/6.5-banco-$1.txt" <<SQL
 SELECT id, xmin, classificacao_protecao, protecao_situacao, protecao_ciclo, protecao_decidida_por, protecao_decidida_em
-  FROM configuracao.tipo_documento WHERE id = '$TD_ID';
+  FROM configuracao.tipos_de_documento WHERE id = '$TD_ID';
 SELECT id, xmin, classificacao_protecao, protecao_situacao, protecao_ciclo, protecao_decidida_por, protecao_decidida_em
-  FROM configuracao.rol_de_fatos_candidato WHERE id = '$FATO_ID';
-SELECT count(*), md5(string_agg(t::text, ',' ORDER BY t::text)) FROM configuracao.protecao_do_catalogo_atos t;
+  FROM configuracao.fatos_do_candidato WHERE id = '$FATO_ID';
+SELECT count(*), md5(string_agg(t::text, ',' ORDER BY t::text)) FROM configuracao.atos_da_protecao_do_catalogo t;
 SQL
 }
 retrato antes

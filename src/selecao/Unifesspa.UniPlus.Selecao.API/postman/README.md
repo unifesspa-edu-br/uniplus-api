@@ -150,7 +150,7 @@ estarem escondidos atrás de um binário desatualizado). **104/104 requests,
   por entidade das Stories #921/#922 foram adicionadas sem atualizar esta
   asserção). Corrigido para 8.
 - **Achado real, não corrigido nesta task — [#943](https://github.com/unifesspa-edu-br/uniplus-api/issues/943):**
-  `PUT documentos-exigidos` falha com **500** (`ux_nos_exigencia_raiz_ordem`
+  `PUT documentos-exigidos` falha com **500** (`ux_nos_da_arvore_de_exigencias_raiz_ordem`
   duplicate key) ao substituir uma árvore que já contém um grupo `E`/`OU` por
   qualquer outra — reproduzido de forma consistente contra o stack local, em
   múltiplas combinações de árvore. Bloqueador de produção (quebra a edição de

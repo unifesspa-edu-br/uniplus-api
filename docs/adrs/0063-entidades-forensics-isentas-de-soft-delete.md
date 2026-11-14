@@ -27,7 +27,7 @@ some sem trilha.
 A Story #460 (ADR-0058 + ADR-0057 Pattern 1) introduz duas tabelas com
 semântica distinta: **append-only forensic snapshots**.
 
-- `obrigatoriedade_legal_historico`: uma linha por mutação (Insert /
+- `historicos_da_obrigatoriedade`: uma linha por mutação (Insert /
   Update / soft-delete) de `ObrigatoriedadeLegal`, contendo o JSON
   canônico do conteúdo no momento e o hash determinístico — a evidência
   jurídica de "qual regra rodou em data X com qual base legal".
@@ -45,7 +45,7 @@ quebraria o invariante:
 - O `SoftDeleteInterceptor` converte `Deleted → Modified`. Para
   append-only não existe `Deleted`; aceitá-lo silenciaria um bug.
 - O custo de manter colunas que NUNCA são populadas adiciona ruído ao
-  schema e aos JSON-of-truth (`obrigatoriedade_legal_historico.conteudo_jsonb`).
+  schema e aos JSON-of-truth (`historicos_da_obrigatoriedade.conteudo_jsonb`).
 
 Sem decisão explícita, a regra global "toda entidade tem soft-delete"
 do projeto colide com a forma plena dessas entidades — gerando

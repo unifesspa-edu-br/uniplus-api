@@ -39,7 +39,7 @@ preservadas para extração futura). Sequência: **spike → confirmar → ADR �
 
 ### P2 — schema-por-módulo ✅ (mecanismo validado nos 4 módulos)
 - [x] **Configuracao**: validado (`18daddd`) — 62 testes integração.
-- [x] **Organizacao**: validado (`b736c14`) — 47 testes integração; SQL cru preservado (`immutable_unaccent` em public via `HasDbFunction.HasSchema("public")` + índices trigram em `organizacao.unidade`).
+- [x] **Organizacao**: validado (`b736c14`) — 47 testes integração; SQL cru preservado (`immutable_unaccent` em public via `HasDbFunction.HasSchema("public")` + índices trigram em `organizacao.unidades`).
 - [x] **Selecao**: validado (`c841fea`) — 98 testes integração; sem SQL cru remanescente (eixo de Área já removido).
 - [x] **Ingresso**: validado — esqueleto, sem SQL cru; `has-pending` limpo.
 - [x] **Gate**: build completo 0/0; **ArchTests 24/24** (R8 + ordem migrations→Wolverine intactos).

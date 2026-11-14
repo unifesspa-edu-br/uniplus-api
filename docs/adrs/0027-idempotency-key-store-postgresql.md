@@ -117,7 +117,7 @@ O payload do cache (request body + response body) pode conter PII (CPF, nome soc
 
 ### Esta ADR não decide
 
-- Schema exato da tabela `idempotency_cache` (índices, particionamento, política de cleanup) — tarefa de implementação.
+- Schema exato da tabela `chaves_de_idempotencia` (índices, particionamento, política de cleanup) — tarefa de implementação.
 - Algoritmo exato de canonicalização de JSON para `body_hash` — sugestão razoável é `RFC 8785 JSON Canonicalization Scheme`, decisão final na implementação.
 - Política de cleanup de entradas expiradas (job periódico vs `pg_cron` vs partition drop) — implementação.
 - Headers cacheados além de `Content-Type` e `Location` — caso a caso na implementação.
@@ -130,7 +130,7 @@ Correção (compatível com standalone) — a idempotência passa a ser **por m�
 
 - O filtro é genérico (`IdempotencyFilter<TDbContext>`) e injeta o store concreto `EfCoreIdempotencyStore<TDbContext>`; **não há registro não-keyed de `IIdempotencyStore`**.
 - `AddIdempotency<TDbContext, TApiMarker>(configuration)` registra o store do módulo e uma `IApplicationModelConvention` que aplica o filtro **apenas aos controllers do assembly do módulo** (`TApiMarker`), de forma idempotente — em vez de um filtro global.
-- Cada controller recebe exatamente um filtro, ligado ao `TDbContext` do seu módulo e, portanto, à tabela `idempotency_cache` no schema correto; a fronteira de módulo (extração futura) é preservada.
+- Cada controller recebe exatamente um filtro, ligado ao `TDbContext` do seu módulo e, portanto, à tabela `chaves_de_idempotencia` no schema correto; a fronteira de módulo (extração futura) é preservada.
 
 Invariante travada por fitness test no host (`IdempotenciaCoHostingTests`): nenhum filtro de idempotência é global, e cada endpoint `[RequiresIdempotencyKey]` tem exatamente um filtro, fechado no `DbContext` do seu próprio módulo.
 

@@ -19,7 +19,7 @@ sequência **ordenada e semântica** de modalidades de destino, até terminar em
 
 A lei fixa a lógica de agrupamento (perfis reservados → escola pública → ampla concorrência, art. 3º,
 §1º) mas não a ordem célula a célula entre as oito modalidades dentro de cada grupo. Sem essa ordem
-fixada por norma, o `esquema_args` da regra `REMANEJ-CASCATA-LEI-12711` (rol_de_regras, Story #772)
+fixada por norma, o `esquema_args` da regra `REMANEJ-CASCATA-LEI-12711` (regras_do_catalogo, Story #772)
 não tem fonte a citar — e o campo `BaseLegal` do seed é, por convenção do projeto (§ Padrões
 obrigatórios), preenchimento obrigatório antes de qualquer regra normativa entrar em produção.
 
@@ -91,7 +91,7 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 
 ## Consequências
 
-- `REMANEJ-CASCATA-LEI-12711 v1` (rol_de_regras) semeia esta matriz no `esquema_args`, com
+- `REMANEJ-CASCATA-LEI-12711 v1` (regras_do_catalogo) semeia esta matriz no `esquema_args`, com
   `BaseLegal` citando a Portaria MEC 704/2025 (DOU 20/10/2025, Seção 1, p. 36-37) e a Lei
   12.711/2012 — base legal cita a norma, não a decisão de arquitetura que a documenta.
 - `RN-CASCATA-5` (Story #575) compara o payload aplicado — fallback + todos os destinos — célula a
@@ -107,7 +107,7 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 - Portaria Normativa MEC nº 18, de 11 de outubro de 2012 (redação dada pela Portaria MEC 704/2025,
   art. 1º, em dispositivos distintos do art. 20-A).
 - Lei 12.711/2012, art. 3º, §1º (red. Lei 14.723/2023).
-- Story #575 (cascata de remanejamento) e Story #772 (rol_de_regras, `REMANEJ-CASCATA-LEI-12711`).
+- Story #575 (cascata de remanejamento) e Story #772 (regras_do_catalogo, `REMANEJ-CASCATA-LEI-12711`).
 
 ## Emenda 1 (2026-09-03) — "regime federal" alcança toda regra de `EhRamoFederal`
 

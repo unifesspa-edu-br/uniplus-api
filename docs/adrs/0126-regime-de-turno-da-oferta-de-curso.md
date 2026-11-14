@@ -20,7 +20,7 @@ Duas premissas desse desenho caíram, ambas registradas no requisito **UNI-REQ-0
 1. **`INTEGRAL` não é um período do dia.** É a informação de que o curso funciona em **dois** períodos — mas o rótulo não diz *quais*. Um curso integral manhã+tarde e um curso integral tarde+noite recebem o mesmo token, e o quadro de vagas do processo seletivo não consegue exibir os turnos reais ao candidato.
 2. **Nenhum formato pedagógico dispensa o turno.** A oferta a distância e a semipresencial também funcionam em turnos específicos; a nulidade que a ADR-0066 admitia não corresponde à realidade acadêmica.
 
-Sem produção e com a tabela `oferta_curso` vazia no ambiente de homologação, a correção pode ser feita de uma vez, sem etapa de compatibilidade.
+Sem produção e com a tabela `ofertas_de_curso` vazia no ambiente de homologação, a correção pode ser feita de uma vez, sem etapa de compatibilidade.
 
 ## Drivers da decisão
 
@@ -72,7 +72,7 @@ Esta ADR supersede **apenas** o ponto de turno da ADR-0066. O modelo de três n�
 ## Confirmação
 
 - Testes de domínio cobrem cada violação de regime e cardinalidade com wire code próprio.
-- Três CHECK constraints em `oferta_curso` espelham as invariantes: domínio do regime, domínio de cada turno e cardinalidade por regime.
+- Três CHECK constraints em `ofertas_de_curso` espelham as invariantes: domínio do regime, domínio de cada turno e cardinalidade por regime.
 - `TurnosOferta.TryAnalisar("INTEGRAL", …)` é `false` — teste dedicado impede a reintrodução do token.
 
 ## Prós e contras das opções

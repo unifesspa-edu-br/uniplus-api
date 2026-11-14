@@ -18,13 +18,13 @@ O bloco `vagas` do envelope canônico (ADR-0100, ADR-0109) é hoje um dos 5 bloc
 
 Sem o quadro materializado e congelado, o edital publicado não diz quantas vagas há por modalidade, não há como provar que o certame respeitou a Lei 12.711/2012 (redação da Lei 14.723/2023), o gate de consequência do indeferimento (documentos exigidos) não tem a linha `(oferta × modalidade)` sobre a qual raciocinar, e o envelope nunca fecha as suas 17 chaves.
 
-Dois ramos de regra coexistem no catálogo (`rol_de_regras`), já semeados e sem consumidor: `DISTRIB-VAGAS-LEI-12711` (a quantidade de cada sub-reserva é **calculada** pela fórmula legal a partir de `VoBase`/`Pr`/percentuais demográficos) e `DISTRIB-VAGAS-INSTITUCIONAL` (a quantidade de cada modalidade é **fixada** integralmente pelo edital, sem cálculo). Uma terceira regra, `RECONCILIACAO-VAGAS-ART11-PU`, rege a capagem em `VO` na escassez e a prioridade legal entre sub-reservas — também semeada, também órfã.
+Dois ramos de regra coexistem no catálogo (`regras_do_catalogo`), já semeados e sem consumidor: `DISTRIB-VAGAS-LEI-12711` (a quantidade de cada sub-reserva é **calculada** pela fórmula legal a partir de `VoBase`/`Pr`/percentuais demográficos) e `DISTRIB-VAGAS-INSTITUCIONAL` (a quantidade de cada modalidade é **fixada** integralmente pelo edital, sem cálculo). Uma terceira regra, `RECONCILIACAO-VAGAS-ART11-PU`, rege a capagem em `VO` na escassez e a prioridade legal entre sub-reservas — também semeada, também órfã.
 
 Falta decidir: (1) onde o quadro vive no agregado, (2) se ele nasce por um comando próprio ou junto com os insumos, e (3) como os dois ramos convivem sob o mesmo tipo de saída sem o código ramificar por tipo de processo.
 
 ## Drivers da decisão
 
-- **A chave do quadro é `(oferta de curso × modalidade)`.** A oferta já é a identidade do pai (`ux_configuracoes_distribuicao_vagas_processo_oferta`), e a modalidade já é única dentro dele (`ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada`). Uma segunda fonte de verdade da mesma chave, pendurada em outro lugar, poderia divergir do pai.
+- **A chave do quadro é `(oferta de curso × modalidade)`.** A oferta já é a identidade do pai (`ux_configuracoes_de_vagas_processo_oferta`), e a modalidade já é única dentro dele (`ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada`). Uma segunda fonte de verdade da mesma chave, pendurada em outro lugar, poderia divergir do pai.
 - **RN08 (congelamento por edital).** O quadro, uma vez publicado, não pode ser recalculado a partir do cadastro vivo — precisa ser prova reproduzível a partir dos **insumos congelados**, não do cadastro de hoje.
 - **A prova não pode ser tautológica.** Se o insumo e o resultado fossem o mesmo dado, "recomputar e comparar" não provaria nada. Insumo (`voBase`, `pr`, referência demográfica, quantidades declaradas) e output (o quadro) precisam ser blocos congelados **separados**.
 - **Nenhum código pode ramificar por tipo de processo.** Um PSIQ 100% afirmativo e um SiSU convencional têm de ser cobertos pela **mesma** factory — a diferença vem inteiramente do que o cadastro exige, nunca de um `if (tipo == X)`.

@@ -23,7 +23,7 @@ podem ser citados**, **de que domínio** cada um é (categórico, booleano,
 numérico) e **quais valores** cada um aceita.
 
 O sintoma já está no código, não é hipotético. A regra de desempate
-`DESEMPATE-PREDICADO-FATO` (semeada em `rol_de_regras`) tipa seus argumentos em
+`DESEMPATE-PREDICADO-FATO` (semeada em `regras_do_catalogo`) tipa seus argumentos em
 `ArgsDesempatePredicadoFato(string Fato, string Operador, string Valor)`, e o
 próprio XML-doc dessa classe registra que o campo `Fato` é tipado como `string`
 mas **não é validado contra vocabulário nenhum**, porque o catálogo ainda não
@@ -56,7 +56,7 @@ ficam para stories seguintes; esta ADR não introduz código.
 ## Resultado da decisão
 
 **Escolhida:** "Vocabulário central seed-governado, identidade imutável",
-materializado como o catálogo `rol_de_fatos_candidato` no módulo `Configuracao`,
+materializado como o catálogo `fatos_do_candidato` no módulo `Configuracao`,
 consumido por `Selecao` (e futuros módulos) via leitor síncrono. É a única opção
 que ao mesmo tempo evita divergência entre consumidores, garante que todo fato
 tenha código que o resolva, e protege predicados já congelados.
