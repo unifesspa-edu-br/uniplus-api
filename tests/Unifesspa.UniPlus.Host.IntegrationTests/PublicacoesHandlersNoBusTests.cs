@@ -68,7 +68,7 @@ public sealed class PublicacoesHandlersNoBusTests
 
         criado.IsSuccess.Should().BeTrue(
             "o assembly Publicacoes.Application precisa estar no Discovery do Wolverine "
-            + "e a IPublicacoesUnitOfWork declarada no opt-in de codegen");
+            + "e a IUnitOfWork declarada no opt-in de codegen");
 
         TipoAtoPublicadoDto? lido = await queryBus.Send(
             new ObterTipoAtoPublicadoPorIdQuery(criado.Value), CancellationToken.None);
@@ -132,7 +132,7 @@ public sealed class PublicacoesHandlersNoBusTests
 
         registrado.IsSuccess.Should().BeTrue(
             "o handler de registro precisa resolver ITipoAtoPublicadoRepository, "
-            + "IAtoNormativoRepository e a IPublicacoesUnitOfWork encaminhada pelo codegen (ADR-0098)");
+            + "IAtoNormativoRepository e a IUnitOfWork encaminhada pelo codegen (ADR-0098)");
 
         AtoNormativoDto? lido = await queryBus.Send(
             new ObterAtoNormativoPorIdQuery(registrado.Value!.AtoId), CancellationToken.None);

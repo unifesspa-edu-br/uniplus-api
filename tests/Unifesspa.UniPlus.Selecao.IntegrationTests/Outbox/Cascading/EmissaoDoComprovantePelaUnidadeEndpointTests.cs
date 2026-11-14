@@ -9,10 +9,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -223,14 +224,14 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
         using HttpClient client = api.CreateClient();
         (Guid processoId, _) = await PublicarAtoAvulsoEndpointTests.PublicarEditalAsync(api, client);
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid versaoId = await db.VersoesConfiguracao.AsNoTracking().Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).SingleAsync();
         Guid unidadeId = await db.ProcessosSeletivos.AsNoTracking().Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
         IInscricaoRepository repositorio = escopo.ServiceProvider.GetRequiredService<IInscricaoRepository>();
         Guid enviada = await SemearInscricaoAsync(repositorio, processoId, versaoId, SituacaoInscricao.Submetida, motivo: null);
         Guid cancelada = await SemearInscricaoAsync(repositorio, processoId, versaoId, SituacaoInscricao.Cancelada, "Mudei de curso");
         Guid semMotivo = await SemearInscricaoAsync(repositorio, processoId, versaoId, SituacaoInscricao.Cancelada, motivo: null);
-        await escopo.ServiceProvider.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
+        await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
 
         return new Cenario(processoId, unidadeId, enviada, cancelada, semMotivo);
     }

@@ -10,12 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// <summary>
 /// O circuito de aprovação da proteção de dados do catálogo pelo host real (ADR-0153): o item nasce pendente, o
 /// administrador envia a solicitação, o Representante do controlador recomenda o ajuste com a classificação ou reprova,
@@ -227,7 +225,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
     private async Task<HttpResponseMessage> DecidirDuranteEdicaoConcorrenteAsync(HttpClient client, Guid id)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext concorrente = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext concorrente = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction transacao = await concorrente.Database.BeginTransactionAsync();
         await concorrente.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipo_documento SET updated_at = now() WHERE id = {id}");
         int pid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);

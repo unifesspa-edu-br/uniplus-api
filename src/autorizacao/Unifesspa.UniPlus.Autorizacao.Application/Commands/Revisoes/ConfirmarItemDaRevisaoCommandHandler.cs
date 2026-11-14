@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>Handler da confirmação do item: a concessão segue ativa e a decisão entra na trilha dela.</summary>
@@ -13,7 +13,7 @@ public static class ConfirmarItemDaRevisaoCommandHandler
         ConfirmarItemDaRevisaoCommand command,
         PreparoDaDecisaoDoItem preparo,
         IVerificadorDeAcesso verificador,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {

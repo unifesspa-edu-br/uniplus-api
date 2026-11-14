@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -30,7 +30,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
     private readonly ITipoDocumentoRepository _tipos = Substitute.For<ITipoDocumentoRepository>();
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos = Substitute.For<IAtoDaProtecaoDoCatalogoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     // O que o Representante do controlador leu do circuito do último item montado no cenário.
     private (int Ciclo, int Manifestacoes) _lida = (1, 0);

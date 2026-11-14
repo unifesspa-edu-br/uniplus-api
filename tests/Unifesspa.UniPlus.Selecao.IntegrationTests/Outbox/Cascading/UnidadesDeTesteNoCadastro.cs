@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
@@ -21,7 +22,7 @@ internal static class UnidadesDeTesteNoCadastro
         ArgumentNullException.ThrowIfNull(servicos);
 
         await using AsyncServiceScope scope = servicos.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         foreach (UnidadeResponsavelSnapshot modelo in new[] { UnidadesDeTeste.Ceps, UnidadesDeTeste.Cga })
         {
             Unidade unidade = Unidade.Criar(

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class AtualizarTipoProcessoCommandHandlerTests
 {
     private readonly ITipoProcessoRepository _repository = Substitute.For<ITipoProcessoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TipoProcesso Existente(string codigo = "CODIGO_EXISTENTE") =>
         TipoProcesso.Criar(codigo, "Nome original", null).Value!;

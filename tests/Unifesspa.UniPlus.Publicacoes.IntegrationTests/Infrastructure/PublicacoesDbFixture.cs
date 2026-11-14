@@ -6,19 +6,20 @@ using Microsoft.EntityFrameworkCore;
 
 using Testcontainers.PostgreSql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o schema
-/// do <see cref="PublicacoesDbContext"/> aplicado via <c>MigrateAsync</c>, e expõe
+/// do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>, e expõe
 /// uma factory de DbContext com os MESMOS interceptors de produção
 /// (SoftDelete + Auditable).
 /// </summary>
 /// <remarks>
 /// O container sobe cru: nada do <c>init-db</c> roda aqui. Se a extensão
-/// <c>btree_gist</c> não nascesse na migration, a exclusion constraint falharia
-/// já no <c>MigrateAsync</c> — o que torna esta fixture, por si, a prova de que
+/// <c>btree_gist</c> não nascesse no script compartilhado da plataforma, a exclusion constraint falharia
+/// já no <c>SubirOBancoAsync</c> — o que torna esta fixture, por si, a prova de que
 /// a extensão está no lugar certo.
 /// </remarks>
 [SuppressMessage(
@@ -43,8 +44,8 @@ public sealed class PublicacoesDbFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        await using PublicacoesDbContext context = CreateDbContext(userId: null);
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        await using UniPlusDbContext context = CreateDbContext(userId: null);
+        await context.SubirOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -53,16 +54,16 @@ public sealed class PublicacoesDbFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Constrói um <see cref="PublicacoesDbContext"/> com os interceptors de
+    /// Constrói um <see cref="UniPlusDbContext"/> com os interceptors de
     /// produção. Quando <paramref name="userId"/> é informado, simula um
     /// <c>IUserContext</c> autenticado; caso contrário, fallback <c>"system"</c>.
     /// </summary>
-    public PublicacoesDbContext CreateDbContext(string? userId)
+    public UniPlusDbContext CreateDbContext(string? userId)
     {
         StubUserContext? userContext = userId is null ? null : new StubUserContext(userId);
 
-        DbContextOptions<PublicacoesDbContext> options =
-            new DbContextOptionsBuilder<PublicacoesDbContext>()
+        DbContextOptions<MonolitoDbContext> options =
+            new DbContextOptionsBuilder<MonolitoDbContext>()
                 .UseNpgsql(ConnectionString)
                 .UseSnakeCaseNamingConvention()
                 .AddInterceptors(
@@ -70,6 +71,6 @@ public sealed class PublicacoesDbFixture : IAsyncLifetime
                     new AuditableInterceptor(TimeProvider.System, userContext))
                 .Options;
 
-        return new PublicacoesDbContext(options);
+        return new MonolitoDbContext(options);
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 using Wolverine.Tracking;
@@ -90,7 +91,7 @@ public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTes
     private protected async Task<DecisaoGravada[]> DecisoesAsync(Guid versaoId)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        List<DecisaoDaVersao> decisoes = await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>()
+        List<DecisaoDaVersao> decisoes = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>()
             .DecisoesDasVersoes.AsNoTracking().Where(d => d.VersaoId == versaoId).OrderBy(d => d.Instante).ToListAsync();
 
         return [.. decisoes.Select(d => new DecisaoGravada(d.Etapa.ToString(), d.Resultado.ToString(), d.DecisorSub, d.DecisorTemConcessao))];

@@ -21,70 +21,9 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
     private const string CodigoAntigo = "RECURSO-MULTI-INSTANCIA";
     private const string CodigoNovo = "RECURSO-PRAZO-ANCORADO-EM-ATO";
 
-    /// <summary>
-    /// Hash da regra 18 no seed original (migration <c>AddRolDeRegras</c>), antes
-    /// da substituição — a contraprova de que o hash da regra nova mudou.
-    /// </summary>
-    private const string HashRegraRemovida =
-        "660cf3fffe22069f5a7f302a98b1e44b96d2e992680f02304935a36548f95490";
-
-    /// <summary>
-    /// Hash da regra vigente, congelado na migration
-    /// <c>EsquemaArgsDaRegraDeRecursoSemAtoAncoraCodigo</c>, a última a substituir a
-    /// definição no lugar. Amarra a definição do seed ao literal da migration: editar o
-    /// texto da regra sem regenerar a migration quebra este teste.
-    /// </summary>
+    /// <summary>Hash da regra vigente: amarra a definição do seed ao hash gravado.</summary>
     private const string HashRegraNova =
         "42cbba27f7e36789437ecb469c74476c99a37baaf66404769774eeff619b9e2d";
-
-    /// <summary>
-    /// Hash da definição anterior à retirada de <c>ato_ancora_codigo</c> do
-    /// <c>esquema_args</c>, quando a âncora ainda era argumento declarado por código de
-    /// tipo de ato. Contraprova de que a substituição mudou o conteúdo, não só o texto.
-    /// </summary>
-    private const string HashAntesDaAncoraEstrutural =
-        "92e78394a057b6eadbdcb69c7b08793ff8801790856874d99355074483b2709c";
-
-    /// <summary>
-    /// Hash da definição anterior à inversão da política de unidade, quando o prazo de
-    /// interposição recusava dias úteis. Contraprova de que a substituição no lugar mudou o
-    /// conteúdo, e não só o texto — hash content-addressable acompanha a definição.
-    /// </summary>
-    private const string HashAntesDaInversaoDeUnidade =
-        "94f2a02a12cccae0ebe98dabc9dc66b5aacac25053e91b768fdf0d47492e8240";
-
-    /// <summary>
-    /// Hashes das 15 regras não tocadas, como gravados na migration original — a
-    /// referência que prova que a substituição alterou UMA linha e só uma (CA-04).
-    /// Não inclui DISTRIB-VAGAS-LEI-12711/INSTITUCIONAL v1: essas duas foram
-    /// legitimamente retiradas do catálogo em #1408 (fronteira ADR-0112, mesma
-    /// que valida esta substituição), não pela troca de RECURSO-MULTI-INSTANCIA
-    /// que este arquivo cobre. BONUS-MULTIPLICATIVO reflete o hash pós-correção
-    /// do seu texto (issue #1467), aplicada por migration própria, alheia à
-    /// substituição que este arquivo cobre. ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA reflete a
-    /// renomeação da regra de alocação e as invariantes da ordem com remanejamento antes da 2ª
-    /// opção (issue #1623) e a saída do parâmetro n_opcoes, que passou a ser dimensão do processo,
-    /// também por migrations próprias.
-    /// </summary>
-    private static readonly IReadOnlyDictionary<string, string> HashesOriginaisDasDemais =
-        new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["FORMULA-MEDIA-PONDERADA"] = "a6fdc29bce533ef3cf8acb6cfdd7d67a99104541f6201d227f0d1c7051229ad6",
-            ["CLASSIFICACAO-IMPORTADA"] = "8e6f1f7b705c601991bf0617bbf881e39a3666c641abdfa4c1bd9ce2ecbcc85c",
-            ["PRECISAO-TRUNCAR"] = "66cbb932e61982f09fdd1d60a0db8411ea02dedc19bb72d1af23004f1e18360b",
-            ["PRECISAO-ARREDONDAR-CIMA"] = "efc491bf6a242a870c7bf9969048c198db88116ba39e72a44bcf1d5d5aebc4fb",
-            ["ELIM-NOTA-MINIMA-ETAPA"] = "b64f643eba9744efc20bf19221bde85c645da32262a7d2ef616f18bd7c2ed5ac",
-            ["ELIM-CORTE-EM-AREA"] = "2b664ed9b782ce9e4b47c70063fd2c2f5bc225c74301fcc801600956d856ad4a",
-            ["ELIM-ZERO-EM-AREA"] = "75f4929b848138c8ed939a182e3664451ce38cd40a136adda438b62e1b6e3fb8",
-            ["BONUS-MULTIPLICATIVO"] = "76a46eef115f27a52873a21eeee988a7d6978993ae535c026fa2c2d250d3acd1",
-            ["DESEMPATE-IDOSO"] = "6738b1a9ca4f063f7f215cabb837e055d8abafaf0835f0b3deeed1c97f0becd4",
-            ["DESEMPATE-MAIOR-NOTA-ETAPA"] = "1a988e6681b2970dc6c568c7372ceaf2f6e5ec0f7061ac47f656e1366a9ecad8",
-            ["DESEMPATE-MAIOR-IDADE"] = "1efa26eaeffc88baf31ce9e2030c05c9976fae125e9845fe0283168050dc1237",
-            ["DESEMPATE-PREDICADO-FATO"] = "d832d910826f25b6b50fd324f2f3cae472440c0e81e082be7c8d4fefe3de3f21",
-            ["ALOCACAO-PRIMEIRA-OPCAO-PRIORITARIA"] = "2b70a91223c2d03b6e89ce77ae88699dbfa3ed6c9c3e84fae88b8dc3b4c9444b",
-            ["RENDA-PER-CAPITA-LEI-12711"] = "5a1ad80627e354c03e4d6ef776a45db695a1203cea574a288dbcdf706ca58899",
-            ["RECONCILIACAO-VAGAS-ART11-PU"] = "ad2d8012ddc1f2ea4d763034899d07590c4a49901744b852dca2e70cede8b1e9",
-        };
 
     private static RegraCatalogoSeedItem RegraNova() =>
         RegraCatalogoSeed.Itens.Single(i => i.Codigo == CodigoNovo);
@@ -164,49 +103,11 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
         segunda.Should().Contain("null", "null = a pendência em instância superior não bloqueia (via judicial)");
     }
 
-    [Fact(DisplayName = "CA-09 — o hash da regra nova é estável e difere do da regra removida")]
+    [Fact(DisplayName = "CA-09 — o hash da regra nova é estável")]
     public void RegraCatalogoSeed_HashDaRegraNova()
     {
-        RegraCatalogoSeedItem nova = RegraNova();
-
-        nova.ComputarHash().Should().Be(
+        RegraNova().ComputarHash().Should().Be(
             HashRegraNova,
-            "a definição do seed deve bater com o literal congelado na migration");
-        nova.ComputarHash().Should().NotBe(
-            HashRegraRemovida,
-            "trocar a definição da regra troca o hash content-addressable");
-        nova.ComputarHash().Should().NotBe(
-            HashAntesDaInversaoDeUnidade,
-            "inverter a política de unidade do prazo de interposição é mudança de conteúdo, e o hash acompanha");
-        nova.ComputarHash().Should().NotBe(
-            HashAntesDaAncoraEstrutural,
-            "retirar a âncora do esquema_args é mudança de conteúdo, e o hash acompanha");
-    }
-
-    [Fact(DisplayName = "CA-04 — as outras 15 regras do seed original permanecem idênticas; a substituição tocou uma linha")]
-    public void DemaisRegras_Inalteradas()
-    {
-        IReadOnlyList<RegraCatalogoSeedItem> itens = RegraCatalogoSeed.Itens;
-
-        itens.Select(i => (i.Codigo, i.Versao)).Should().OnlyHaveUniqueItems("(codigo, versao) é único (CA-05)");
-
-        // Itera o dicionário histórico, não o seed: o que se prova é "as regras
-        // originais não mudaram", nunca "nenhuma regra nova pode existir" — o
-        // catálogo cresce por desenho (append-only, ADR-0112), e a completude do
-        // seed corrente é asserção de RegraCatalogoSeedTests.
-        foreach ((string codigo, string hashOriginal) in HashesOriginaisDasDemais)
-        {
-            itens.Should().ContainSingle(
-                i => i.Codigo == codigo && i.Versao == RegraCatalogoSeed.VersaoV1,
-                $"a regra histórica {codigo} continua no catálogo");
-            itens.Single(i => i.Codigo == codigo && i.Versao == RegraCatalogoSeed.VersaoV1)
-                .ComputarHash().Should().Be(
-                    hashOriginal,
-                    $"a regra {codigo} não foi tocada pela substituição");
-        }
-
-        // A única linha alterada é a nova — e seu hash não coincide com nenhum dos
-        // 15 originais nem com o da regra removida.
-        HashesOriginaisDasDemais.Values.Should().NotContain(HashRegraNova);
+            "a definição do seed deve bater com o hash gravado");
     }
 }

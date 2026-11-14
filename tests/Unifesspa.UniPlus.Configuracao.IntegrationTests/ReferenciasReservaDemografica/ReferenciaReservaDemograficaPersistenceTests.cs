@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta da Referência de reserva demográfica contra Postgres
@@ -41,13 +42,13 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
     {
         ReferenciaReservaDemografica referencia = Nova("2022", 78.50m, 1.20m, 8.40m);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ReferenciasReservaDemografica.Add(referencia);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         ReferenciaReservaDemografica persistida = await readCtx.ReferenciasReservaDemografica
             .SingleAsync(r => r.Id == referencia.Id);
 
@@ -68,13 +69,13 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
     [Fact(DisplayName = "UNIQUE parcial (censo) rejeita segunda referência viva para o mesmo Censo")]
     public async Task UniquePartial_Censo_RejeitaDuplicataAtiva()
     {
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ReferenciasReservaDemografica.Add(Nova("2000", 50m, 1m, 5m));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.ReferenciasReservaDemografica.Add(Nova("2000", 60m, 2m, 6m));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -92,13 +93,13 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
     public async Task SoftDelete_PreservaTrilhaELibertaSlot()
     {
         ReferenciaReservaDemografica referencia = Nova("1991", 40m, 1m, 4m);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ReferenciasReservaDemografica.Add(referencia);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             ReferenciaReservaDemografica tracked = await ctx.ReferenciasReservaDemografica
                 .SingleAsync(r => r.Id == referencia.Id);
@@ -106,7 +107,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             ReferenciaReservaDemografica excluida = await ctx.ReferenciasReservaDemografica
                 .IgnoreQueryFilters().SingleAsync(r => r.Id == referencia.Id);
@@ -114,7 +115,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.ReferenciasReservaDemografica.Add(Nova("1991", 41m, 2m, 5m));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -124,7 +125,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita percentual fora do intervalo via SQL cru")]
     public async Task Check_RejeitaPercentualForaDeFaixaViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.referencia_reserva_demografica (id, censo_referencia, ppi_percentual, quilombola_percentual, pcd_percentual, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"9999"}, {120.0m}, {1.0m}, {5.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
@@ -144,7 +145,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         string censoExcluido = $"{prefixo}-d";
 
         // Insere fora de ordem (B antes de A) para provar a ordenação do reader.
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ReferenciasReservaDemografica.Add(Nova(censoB, 60m, 2m, 6m));
             ctx.ReferenciasReservaDemografica.Add(Nova(censoA, 50m, 1m, 5m));
@@ -152,7 +153,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             ReferenciaReservaDemografica aExcluir = await ctx.ReferenciasReservaDemografica
                 .SingleAsync(r => r.CensoReferencia == censoExcluido);
@@ -160,7 +161,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new ReferenciaReservaDemograficaReader(readCtx);
         IReadOnlyList<ReferenciaReservaDemograficaView> todas = await reader.ListarVivasAsync();
 

@@ -5,12 +5,14 @@ using Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 public sealed class ChamadaRepository : IChamadaRepository
 {
-    private readonly IngressoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
 
-    public ChamadaRepository(IngressoDbContext context, TimeProvider timeProvider)
+    public ChamadaRepository(UniPlusDbContext context, TimeProvider timeProvider)
     {
         _context = context;
         _timeProvider = timeProvider;

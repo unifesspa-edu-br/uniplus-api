@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -19,7 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -28,13 +27,11 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
-using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed partial class EnvelopeFechadoE2ETests
 {
@@ -65,7 +62,7 @@ public sealed partial class EnvelopeFechadoE2ETests
         Guid unidadeId;
         await using (AsyncServiceScope scopeOrg = api.Services.CreateAsyncScope())
         {
-            OrganizacaoInstitucionalDbContext org = scopeOrg.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+            UniPlusDbContext org = scopeOrg.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             Unidade unidade = Unidade.Criar(
                 "Centro de Processos Seletivos E2E",
                 new IdentificadoresDaUnidade($"ceps-e2e-{sufixo}", $"CEPS{sufixo}", $"CEPS-{sufixo}", null),
@@ -91,7 +88,7 @@ public sealed partial class EnvelopeFechadoE2ETests
         Guid tipoDocumentoId;
         await using (AsyncServiceScope scopeConfig = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext config = scopeConfig.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext config = scopeConfig.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
             Curso curso = Curso.Criar($"MED{sufixo}", "Medicina", "Bacharelado", "Graduação", "SAUDE_E_BIOLOGICAS").Value!;
             LocalOferta local = LocalOferta.Criar(
@@ -223,15 +220,15 @@ public sealed partial class EnvelopeFechadoE2ETests
     private static async Task SemearTipoDeAtoResultadoPreliminarAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext db =
-            scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext>();
+        UniPlusDbContext db =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await GarantirTipoDeAtoDeResultadoAsync(db, CodigoAtoResultado, "Resultado da classificação");
         await db.SaveChangesAsync().ConfigureAwait(false);
     }
 
     private static async Task GarantirTipoDeAtoDeResultadoAsync(
-        Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext db,
+        UniPlusDbContext db,
         string codigo,
         string nome)
     {
@@ -264,7 +261,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     private static async Task<Guid> SemearBaseLegalBonusRegionalAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         BaseLegalBonusRegional baseLegal = BaseLegalBonusRegional.Criar(
             "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!;
@@ -276,7 +273,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string hash = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -288,7 +285,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     private static async Task<Guid> ObterAtoCriadorUnicoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .Select(v => v.AtoCriadorId)
@@ -298,7 +295,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     private static async Task<(string Hash, Guid VersaoId)> LerIdentidadeDaVersaoAsync(CascadingApiFactory api, Guid atoCriadorId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         VersaoConfiguracao versao = await db.VersoesConfiguracao.AsNoTracking()
             .SingleAsync(v => v.AtoCriadorId == atoCriadorId);
         return (versao.HashConfiguracao, versao.Id);
@@ -314,7 +311,7 @@ public sealed partial class EnvelopeFechadoE2ETests
         CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<VersaoConfiguracao> versoes = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .OrderBy(v => v.NumeroVersao)

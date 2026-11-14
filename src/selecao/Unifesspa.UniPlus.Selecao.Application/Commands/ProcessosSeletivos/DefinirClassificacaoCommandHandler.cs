@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -9,6 +7,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
@@ -36,7 +35,7 @@ public static class DefinirClassificacaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
         IPesoAreaEnemReader pesoAreaEnemReader,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

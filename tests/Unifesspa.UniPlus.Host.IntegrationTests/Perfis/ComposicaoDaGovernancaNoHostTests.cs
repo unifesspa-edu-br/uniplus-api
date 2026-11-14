@@ -16,11 +16,12 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// Os perfis de governança não têm versão, aprovação nem janela, e a composição deles só muda por migration. Reúnem
+/// Os perfis de governança não têm versão, aprovação nem janela, e a composição deles só muda pela carga do modelo. Reúnem
 /// permissões do módulo de autorização e, de outros módulos, só as reservadas à governança: uma permissão comum de outro
 /// módulo chegaria a todos os gestores, Representantes ou Encarregados sem passar pela aprovação que os perfis comuns
 /// exigem. O perfil comum, por sua vez, nunca reúne permissão reservada.
@@ -135,7 +136,7 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     private async Task<PermissaoDeGovernanca[]> ComposicaoGravadaAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Perfis.AsNoTracking()
             .Where(perfil => perfil.Governanca != null)

@@ -16,9 +16,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// O endpoint <c>PUT /processos-seletivos/{id}/classificacao</c>, fim a fim pelo HTTP —
@@ -74,7 +74,7 @@ public sealed class DefinirClassificacaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         classificacao.BaseadoEmEnem.Should().BeFalse();
@@ -90,7 +90,7 @@ public sealed class DefinirClassificacaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         classificacao.BaseadoEmEnem.Should().BeTrue();
@@ -139,7 +139,7 @@ public sealed class DefinirClassificacaoEndpointTests
 
         await using (AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext config = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             List<PesoAreaEnem> linhas = await config.PesosAreaEnem.Where(p => p.Resolucao == resolucao).ToListAsync();
             PesoAreaEnem saude = linhas.Single(p => p.GrupoCurso.Codigo == GrupoCurso.SaudeEBiologicas);
             saude.Atualizar(
@@ -175,7 +175,7 @@ public sealed class DefinirClassificacaoEndpointTests
             "sem o nome do grupo o operador não sabe o que cadastrar");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         classificacao.BaseadoEmEnem.Should().BeFalse("a recusa não grava nada: fica a classificação que o processo já tinha");
@@ -193,7 +193,7 @@ public sealed class DefinirClassificacaoEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent, await resposta.Content.ReadAsStringAsync());
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         classificacao.ResolucaoPesoAreaEnem.Should().Be(doCadastro);
@@ -238,7 +238,7 @@ public sealed class DefinirClassificacaoEndpointTests
         (await QuadroCongeladoAsync(ctx)).Should().BeEmpty("sem ENEM não há quadro, e nenhum grupo fica órfão");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         classificacao.ResolucaoPesoAreaEnem.Should().BeNull();
@@ -251,7 +251,7 @@ public sealed class DefinirClassificacaoEndpointTests
     private static async Task<List<(string Grupo, string Area, decimal Peso)>> QuadroCongeladoAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<GrupoPesoAreaEnemCongelado> grupos = await db.Set<GrupoPesoAreaEnemCongelado>().AsNoTracking()
             .Include(g => g.Areas)
             .Where(g => db.Set<ConfiguracaoClassificacao>()
@@ -300,7 +300,7 @@ public sealed class DefinirClassificacaoEndpointTests
     private static async Task<decimal?> EscalaPersistidaAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         return classificacao.EscalaNotaFinal;
@@ -356,7 +356,7 @@ public sealed class DefinirClassificacaoEndpointTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;

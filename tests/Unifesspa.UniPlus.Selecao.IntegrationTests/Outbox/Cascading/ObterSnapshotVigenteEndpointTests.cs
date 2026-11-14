@@ -13,6 +13,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -98,7 +99,7 @@ public sealed class ObterSnapshotVigenteEndpointTests
         unidade.GetProperty("nome").GetString().Should().Be(congelada.Nome);
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         FaseCronograma fase = await db.Set<FaseCronograma>().AsNoTracking().SingleAsync(f => f.ProcessoSeletivoId == processoId);
         fase.UnidadeResponsavel.Should().Be(congelada, "a fase publicada guarda a cópia de quando a unidade foi definida");
     }
@@ -128,7 +129,7 @@ public sealed class ObterSnapshotVigenteEndpointTests
         // relação entre atos (ADR-0103), e a relação vive no ato, que é de Publicações. O
         // contrato de leitura da Seleção publica do ato apenas o par {id, hash}.
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         VersaoConfiguracao esperado = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .OrderByDescending(v => v.NumeroVersao)
@@ -303,7 +304,7 @@ public sealed class ObterSnapshotVigenteEndpointTests
         CascadingApiFactory api, string nome, UnidadeResponsavelSnapshot? unidadeResponsavel = null)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", unidadeResponsavel: unidadeResponsavel);
         return (processo.Id, documento.Id);
@@ -312,7 +313,7 @@ public sealed class ObterSnapshotVigenteEndpointTests
     private static async Task<Guid> SemearUnidadeAsync(CascadingApiFactory api, string sufixo)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Unidade unidade = Unidade.Criar(
             "Centro de Gestão Acadêmica",
             new IdentificadoresDaUnidade($"cga-{sufixo}", $"CGA{sufixo}", $"CGA-{sufixo}", null),
@@ -329,7 +330,7 @@ public sealed class ObterSnapshotVigenteEndpointTests
     private static async Task RenomearUnidadeAsync(CascadingApiFactory api, Guid unidadeId, string novaSigla, string novoNome)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Unidade unidade = await org.Unidades.SingleAsync(u => u.Id == unidadeId).ConfigureAwait(false);
         unidade.Atualizar(
             novoNome,
@@ -346,7 +347,7 @@ public sealed class ObterSnapshotVigenteEndpointTests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string hashFixo = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();

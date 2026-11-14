@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>Os perfis de governança carregam as permissões da aprovação e não recebem nenhuma das operações novas.</summary>
 [Collection(MonolitoDaInstalacaoCollection.Name)]
@@ -27,7 +27,7 @@ public sealed class GovernancaDaAprovacaoNoHostTests : AprovacaoDaVersaoNoHostTe
     public async Task PerfisDeGovernanca_ReunemAsPermissoesNovas()
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         string[] gestor = await CodigosAsync(db, PerfisDeSistema.GestorDeAcessosId);
         string[] protecao = await CodigosAsync(db, PerfisDeSistema.RepresentanteDoControladorId);
@@ -55,7 +55,7 @@ public sealed class GovernancaDaAprovacaoNoHostTests : AprovacaoDaVersaoNoHostTe
         }
     }
 
-    private static async Task<string[]> CodigosAsync(AutorizacaoDbContext db, Guid perfilId) =>
+    private static async Task<string[]> CodigosAsync(UniPlusDbContext db, Guid perfilId) =>
         await db.Database
             .SqlQuery<string>($"SELECT codigo AS \"Value\" FROM autorizacao.perfil_permissoes WHERE perfil_id = {perfilId}")
             .ToArrayAsync();

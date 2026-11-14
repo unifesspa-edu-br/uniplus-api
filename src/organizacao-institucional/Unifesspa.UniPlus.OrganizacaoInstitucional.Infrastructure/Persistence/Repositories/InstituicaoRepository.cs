@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 
@@ -11,9 +12,9 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
     Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
 public sealed class InstituicaoRepository : IInstituicaoRepository
 {
-    private readonly OrganizacaoInstitucionalDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public InstituicaoRepository(OrganizacaoInstitucionalDbContext dbContext)
+    public InstituicaoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

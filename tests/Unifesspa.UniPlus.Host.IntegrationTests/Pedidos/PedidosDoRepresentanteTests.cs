@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A designação de Representante do controlador e a segunda etapa dos pedidos de quem já é Representante, pelo host real
@@ -106,7 +106,7 @@ public sealed class PedidosDoRepresentanteTests : PedidosDeConcessaoTestBase
         Task<HttpResponseMessage>[] aprovacoes;
         await using (TransacaoRetidaDeTeste retida = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services))
         {
-            await retida.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(TravaDaGravacaoDeConcessoes);
+            await retida.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(TravaDaGravacaoDeConcessoes);
             aprovacoes = [.. pedidos.Select(id => EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"))];
             await retida.AguardarBloqueioAsync(pedidos.Length);
             await retida.ConfirmarAsync();

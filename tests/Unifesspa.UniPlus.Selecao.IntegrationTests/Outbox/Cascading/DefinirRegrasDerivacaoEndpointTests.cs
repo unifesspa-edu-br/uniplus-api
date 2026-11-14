@@ -12,8 +12,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
@@ -65,7 +65,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         resposta.Headers.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<ConfiguracaoDerivacaoFato> configs = await db.Set<ConfiguracaoDerivacaoFato>().AsNoTracking()
             .Where(c => c.ProcessoSeletivoId == ctx.ProcessoId).ToListAsync();
         configs.Select(c => c.CodigoFato).Should().BeEquivalentTo([Derivado]);
@@ -245,7 +245,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         Guid documentoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;

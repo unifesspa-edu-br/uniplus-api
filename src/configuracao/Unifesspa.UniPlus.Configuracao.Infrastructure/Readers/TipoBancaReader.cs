@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Implementação de <see cref="ITipoBancaReader"/> (ADR-0056): leitura direta do
@@ -19,9 +20,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class TipoBancaReader : ITipoBancaReader
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public TipoBancaReader(ConfiguracaoDbContext dbContext)
+    public TipoBancaReader(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

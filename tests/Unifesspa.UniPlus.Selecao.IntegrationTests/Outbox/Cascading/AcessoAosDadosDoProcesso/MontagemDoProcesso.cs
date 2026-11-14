@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -38,7 +38,7 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
     public async Task<Guid> UnidadeDoProcessoAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<SelecaoDbContext>().ProcessosSeletivos.AsNoTracking()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ProcessosSeletivos.AsNoTracking()
             .Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
     }
 
@@ -60,7 +60,7 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
     private async Task<(Guid ProcessoId, Guid DocumentoEdital, Guid FaseId)> SemearProcessoAsync(string nome)
     {
         await using AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id, processo.CronogramaFases.Single().Id);
@@ -88,7 +88,7 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
     private async Task<ProcessoPublicado> LerPublicadoAsync(Guid processoId, Guid faseId, string fatoDoGrupo)
     {
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid versaoId = await contexto.VersoesConfiguracao.AsNoTracking().Where(v => v.ProcessoSeletivoId == processoId)
             .OrderByDescending(v => v.NumeroVersao).Select(v => v.Id).FirstAsync();
         List<DocumentoExigido> exigidos = await contexto.Set<DocumentoExigido>().AsNoTracking()
@@ -122,7 +122,7 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
         where TEntidade : class
     {
         await using AsyncServiceScope escopo = fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Add(entidade);
         await db.SaveChangesAsync();
         await db.AprovarCatalogoAsync();

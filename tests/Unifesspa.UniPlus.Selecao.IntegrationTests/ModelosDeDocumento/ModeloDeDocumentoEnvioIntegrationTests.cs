@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -37,7 +38,7 @@ public sealed class ModeloDeDocumentoEnvioIntegrationTests : IClassFixture<Proce
     [Fact(DisplayName = "Os modelos citados são lidos só do processo: o modelo de outro processo não volta")]
     public async Task ListarDoProcesso_SoDevolveOsModelosDoProcesso()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         ProcessoSeletivo processoA = ProcessoSeletivoDeTeste.Novo("PS A — modelo de documento");
         ProcessoSeletivo processoB = ProcessoSeletivoDeTeste.Novo("PS B — modelo de documento");
         context.ProcessosSeletivos.AddRange(processoA, processoB);

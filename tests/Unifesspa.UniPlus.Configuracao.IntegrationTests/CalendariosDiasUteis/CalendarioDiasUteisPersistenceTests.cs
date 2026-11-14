@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta do calendário de dias úteis contra Postgres real
@@ -46,13 +47,13 @@ public sealed class CalendarioDiasUteisPersistenceTests
             new DiaNaoUtilCriacao("ESTADUAL", null, null, null, new DateOnly(2027, 8, 15), "Adesão do Pará à Independência", "PA"),
             new DiaNaoUtilCriacao("MUNICIPAL", "1504208", "Marabá", "PA", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(calendario);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CalendarioDiasUteis persistido = await readCtx.CalendariosDiasUteis
             .Include(c => c.DiasNaoUteis)
             .SingleAsync(c => c.Id == calendario.Id);
@@ -83,7 +84,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
     {
         CalendarioDiasUteis primeiro = Nova(VersaoUnica());
         primeiro.MarcarVigente();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(primeiro);
             await ctx.SaveChangesAsync();
@@ -91,7 +92,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         CalendarioDiasUteis segundo = Nova(VersaoUnica());
         segundo.MarcarVigente();
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.CalendariosDiasUteis.Add(segundo);
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -110,7 +111,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
         // "segundo" nunca commitou (transação abortada pela exclusion constraint), mas
         // "primeiro" ficou vigente=true na base compartilhada da fixture — desmarca para
         // não colidir com outros testes deste arquivo que também marcam vigente.
-        await using ConfiguracaoDbContext cleanupCtx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext cleanupCtx = _fixture.CreateDbContext(AdminA);
         CalendarioDiasUteis primeiroTracked = await cleanupCtx.CalendariosDiasUteis.SingleAsync(c => c.Id == primeiro.Id);
         primeiroTracked.MarcarNaoVigente();
         await cleanupCtx.SaveChangesAsync();
@@ -121,7 +122,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
     {
         CalendarioDiasUteis primeiro = Nova(VersaoUnica());
         primeiro.MarcarVigente();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(primeiro);
             await ctx.SaveChangesAsync();
@@ -129,7 +130,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         CalendarioDiasUteis segundo = Nova(VersaoUnica());
         segundo.MarcarVigente();
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
 
         // Abre a transação ANTES do SaveChanges — reproduz o outbox do Wolverine
         // (UseEntityFrameworkCoreTransactions + AutoApplyTransactions, ADR-0004), que
@@ -153,7 +154,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         // "segundo" nunca commitou (a transação nunca chegou a Commit), mas "primeiro"
         // segue vigente=true na base compartilhada da fixture.
-        await using ConfiguracaoDbContext cleanupCtx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext cleanupCtx = _fixture.CreateDbContext(AdminA);
         CalendarioDiasUteis primeiroTracked = await cleanupCtx.CalendariosDiasUteis.SingleAsync(c => c.Id == primeiro.Id);
         primeiroTracked.MarcarNaoVigente();
         await cleanupCtx.SaveChangesAsync();
@@ -163,13 +164,13 @@ public sealed class CalendarioDiasUteisPersistenceTests
     public async Task Check_RejeitaMunicipalComSnapshotParcialViaSqlCru()
     {
         CalendarioDiasUteis pai = Nova(VersaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(pai);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx2.Database.ExecuteSqlAsync(
             $"""
@@ -187,13 +188,13 @@ public sealed class CalendarioDiasUteisPersistenceTests
     public async Task Check_RejeitaCampoMunicipalForaDeMunicipalViaSqlCru()
     {
         CalendarioDiasUteis pai = Nova(VersaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(pai);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx2.Database.ExecuteSqlAsync(
             $"""
@@ -215,13 +216,13 @@ public sealed class CalendarioDiasUteisPersistenceTests
             new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2027, 1, 1), "Confraternização Universal"),
             new DiaNaoUtilCriacao("INSTITUCIONAL", null, null, null, new DateOnly(2027, 12, 24), "Recesso da Unifesspa"));
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(calendario);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CalendarioDiasUteis tracked = await ctx.CalendariosDiasUteis
                 .SingleAsync(c => c.Id == calendario.Id);
@@ -229,7 +230,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CalendarioDiasUteis excluido = await readCtx.CalendariosDiasUteis
             .IgnoreQueryFilters()
             .Include(c => c.DiasNaoUteis)
@@ -249,13 +250,13 @@ public sealed class CalendarioDiasUteisPersistenceTests
             new DiaNaoUtilCriacao("MUNICIPAL", "1504208", "Marabá", "PA", new DateOnly(2027, 5, 8), "Aniversário de Marabá"));
         calendario.MarcarVigente();
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CalendariosDiasUteis.Add(calendario);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new CalendarioVigenteReader(readCtx);
 
         CalendarioVigenteView? vigente = await reader.ObterVigenteAsync();

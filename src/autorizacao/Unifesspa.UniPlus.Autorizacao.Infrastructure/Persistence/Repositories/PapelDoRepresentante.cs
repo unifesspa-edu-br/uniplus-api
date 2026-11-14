@@ -5,13 +5,14 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>A trava e a leitura do papel de Representante do controlador, sobre a linha do perfil de sistema dele.</summary>
 public sealed class PapelDoRepresentante : IPapelDoRepresentante
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public PapelDoRepresentante(AutorizacaoDbContext context)
+    public PapelDoRepresentante(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -19,7 +20,7 @@ public sealed class PapelDoRepresentante : IPapelDoRepresentante
 
     public Task TravarAsync(CancellationToken cancellationToken = default) =>
         _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.perfis WHERE id = {{0}} FOR UPDATE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.perfis WHERE id = {{0}} FOR UPDATE",
             [PerfisDeSistema.RepresentanteDoControladorId],
             cancellationToken);
 

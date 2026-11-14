@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -46,7 +47,7 @@ public sealed class ModeloFormularioReaderTests
         deOutroTipo.Ativar().IsSuccess.Should().BeTrue();
 
         using IServiceScope escopo = _fixture.Factory.Services.CreateScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.ModelosFormulario.AddRange(doTipo, deTodos, desativado, deOutroTipo);
         await db.SaveChangesAsync();
         IModeloFormularioReader reader = escopo.ServiceProvider.GetRequiredService<IModeloFormularioReader>();

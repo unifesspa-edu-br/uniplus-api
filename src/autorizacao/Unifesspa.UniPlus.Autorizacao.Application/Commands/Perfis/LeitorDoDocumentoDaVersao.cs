@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
@@ -21,10 +22,10 @@ public sealed class LeitorDoDocumentoDaVersao
     private readonly AutoriaDaOperacao _autoria;
     private readonly IPerfilRepository _perfis;
     private readonly IArmazenamentoDosDocumentosDaAutorizacao _armazenamento;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
 
     public LeitorDoDocumentoDaVersao(
-        AutoriaDaOperacao autoria, IPerfilRepository perfis, IArmazenamentoDosDocumentosDaAutorizacao armazenamento, IAutorizacaoUnitOfWork unitOfWork)
+        AutoriaDaOperacao autoria, IPerfilRepository perfis, IArmazenamentoDosDocumentosDaAutorizacao armazenamento, IUnitOfWork unitOfWork)
     {
         ArgumentNullException.ThrowIfNull(autoria);
         ArgumentNullException.ThrowIfNull(perfis);

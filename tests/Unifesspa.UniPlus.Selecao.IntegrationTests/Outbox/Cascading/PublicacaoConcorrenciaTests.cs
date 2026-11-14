@@ -14,6 +14,7 @@ using Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -53,7 +54,7 @@ public sealed class PublicacaoConcorrenciaTests
         Guid documentoId;
         await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(seedDb, $"Concorrência {Guid.CreateVersion7()}");
             processoId = processo.Id;
@@ -100,7 +101,7 @@ public sealed class PublicacaoConcorrenciaTests
         Result publicarResultado = await publicarTask;
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processoFinal = await readDb.ProcessosSeletivos
             .AsNoTracking()
             .Include(p => p.Etapas)
@@ -194,7 +195,7 @@ public sealed class PublicacaoConcorrenciaTests
         Guid documentoId;
         await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (Guid id, Guid docId) = await SemearProcessoFederalSemCascataAsync(
                 seedDb, $"Concorrência Cascata {Guid.CreateVersion7()}");
             processoId = id;
@@ -232,7 +233,7 @@ public sealed class PublicacaoConcorrenciaTests
         Result publicarResultado = await publicarTask;
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processoFinal = await readDb.ProcessosSeletivos
             .AsNoTracking()
             .Include(p => p.Cascata!).ThenInclude(c => c.Destinos)
@@ -286,7 +287,7 @@ public sealed class PublicacaoConcorrenciaTests
     /// mesmo padrão de <see cref="ProcessoSeletivoPublicavelSeeder.SemearAsync"/>.
     /// </summary>
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoFederalSemCascataAsync(
-        SelecaoDbContext db, string nome)
+        UniPlusDbContext db, string nome)
     {
         ProcessoSeletivo processo = Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos
             .ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome, comCascata: false);

@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
-using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -17,14 +16,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class GravacaoDaDecisaoDoPedido
 {
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IPerfilRepository _perfis;
     private readonly AvisosDoPedido _avisos;
     private readonly ConcessaoDoPedidoAprovado _concessao;
     private readonly AvisoDeDevolucaoPorTermoExigido _avisoDeTermoExigido;
 
     public GravacaoDaDecisaoDoPedido(
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IPerfilRepository perfis,
         AvisosDoPedido avisos,
         ConcessaoDoPedidoAprovado concessao,

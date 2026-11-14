@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ModelosDeDocumento;
@@ -25,7 +26,7 @@ public sealed class EnvioDoModeloDeDocumentoHandlersTests
 {
     private readonly IModeloDeDocumentoRepository _modelos = Substitute.For<IModeloDeDocumentoRepository>();
     private readonly IArquivoArmazenadoStorage _storage = Substitute.For<IArquivoArmazenadoStorage>();
-    private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ModeloDeDocumento _modelo = ModeloDeDocumento.IniciarPendente(
         Guid.CreateVersion7(), "Autodeclaração", "DOCX", TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
 

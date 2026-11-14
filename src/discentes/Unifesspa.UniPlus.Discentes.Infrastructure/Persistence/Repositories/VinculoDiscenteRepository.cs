@@ -11,8 +11,8 @@ using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Protege o CPF na fronteira do repositório (ADR-0121, Opção C): o EF Core só
@@ -27,10 +27,10 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "Instanciada via DI em DiscentesInfrastructureRegistration.")]
 public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
 {
-    private readonly DiscentesDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
     private readonly IUniPlusEncryptionService _encryption;
 
-    public VinculoDiscenteRepository(DiscentesDbContext dbContext, IUniPlusEncryptionService encryption)
+    public VinculoDiscenteRepository(UniPlusDbContext dbContext, IUniPlusEncryptionService encryption)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(encryption);

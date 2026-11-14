@@ -104,11 +104,9 @@ internal sealed class RegraCatalogoConfiguration : IEntityTypeConfiguration<Regr
 
     /// <summary>
     /// Seed das regras <c>v1</c> via <see cref="RelationalEntityTypeBuilderExtensions"/>
-    /// (<c>HasData</c>): o EF congela as linhas como literais na migration no
-    /// momento do scaffold — a migration é um snapshot imutável, e qualquer
-    /// mudança futura em <see cref="RegraCatalogoSeed.Itens"/> exige uma nova
-    /// migration (o EF detecta o diff), sem alterar as bases já migradas. O
-    /// <c>hash</c> é derivado da mesma lógica do domínio, então a linha semeada
+    /// (<c>HasData</c>): o EF grava as linhas como literais na migration inicial, e
+    /// qualquer mudança em <see cref="RegraCatalogoSeed.Itens"/> exige gerar a migration de
+    /// novo. O <c>hash</c> é derivado da mesma lógica do domínio, então a linha semeada
     /// é content-addressable por construção.
     /// </summary>
     private static void SemearRegrasV1(EntityTypeBuilder<RegraCatalogo> builder)

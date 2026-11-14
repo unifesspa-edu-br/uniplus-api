@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -14,11 +14,11 @@ public sealed class ManifestacaoNaProtecaoDoCatalogo
 {
     private readonly ItensSobAprovacao _itens;
     private readonly IManifestacaoDaProtecaoRepository _manifestacoes;
-    private readonly IConfiguracaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _relogio;
 
     public ManifestacaoNaProtecaoDoCatalogo(
-        ItensSobAprovacao itens, IManifestacaoDaProtecaoRepository manifestacoes, IConfiguracaoUnitOfWork unitOfWork, TimeProvider relogio)
+        ItensSobAprovacao itens, IManifestacaoDaProtecaoRepository manifestacoes, IUnitOfWork unitOfWork, TimeProvider relogio)
     {
         ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(manifestacoes);

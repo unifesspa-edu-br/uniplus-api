@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -32,7 +33,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "Seed materializa exatamente as regras declaradas, únicas por código e versão")]
     public async Task Seed_MaterializaAsRegrasDeclaradas()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         List<RegraCatalogo> regras = await context.RolDeRegras
             .AsNoTracking()
@@ -60,7 +61,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "Hash gravado é content-addressable: recomputar após round-trip jsonb bate")]
     public async Task Seed_HashContentAddressable_RecomputeBate()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         List<RegraCatalogo> regras = await context.RolDeRegras
             .AsNoTracking()
@@ -85,7 +86,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "esquema_args/invariantes preservam o conteúdo semântico após o round-trip jsonb")]
     public async Task Seed_PayloadJsonb_PreservaConteudo()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         RegraCatalogo bonus = await context.RolDeRegras
             .AsNoTracking()
@@ -105,7 +106,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         // exigem exatamente as regras v1 semeadas), a v2 é removida ao final —
         // a ordem de execução dentro da classe deixa de importar.
         Guid v2Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             using JsonDocument esquema = JsonDocument.Parse("""{"fonte_pesos":["etapa"]}""");
             using JsonDocument invariantes = JsonDocument.Parse("""["divisor = Σ(peso)"]""");
@@ -122,7 +123,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         try
         {
-            await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+            await using UniPlusDbContext readContext = _fixture.CreateDbContext();
             List<RegraCatalogo> versoes = await readContext.RolDeRegras
                 .AsNoTracking()
                 .Where(r => r.Codigo == "FORMULA-MEDIA-PONDERADA")
@@ -133,7 +134,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         }
         finally
         {
-            await using SelecaoDbContext cleanupContext = _fixture.CreateDbContext();
+            await using UniPlusDbContext cleanupContext = _fixture.CreateDbContext();
             await cleanupContext.RolDeRegras
                 .Where(r => r.Id == v2Id)
                 .ExecuteDeleteAsync(CancellationToken.None);
@@ -143,7 +144,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "Reader resolve regra por (codigo, versao) e filtra por tipo")]
     public async Task Reader_ObterEListar()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? formula = await reader.ObterAsync("FORMULA-MEDIA-PONDERADA", "v1", CancellationToken.None);
@@ -162,7 +163,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "A eliminação por falta em dia de prova do ENEM é semeada sem args, com as duas invariantes")]
     public async Task Seed_EliminacaoPorFaltaEmDiaDeProvaEnem()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", CancellationToken.None);
@@ -178,7 +179,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "O corte em área é semeado com área e mínimo no lugar do corte de Redação")]
     public async Task Seed_CorteEmArea_SubstituiOCorteDeRedacao()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", CancellationToken.None);
@@ -196,7 +197,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "A eliminação por ausência na etapa é semeada com a etapa como único parâmetro e a base legal do edital")]
     public async Task Seed_EliminacaoPorAusenciaNaEtapa()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? regra = await reader.ObterAsync(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", CancellationToken.None);
@@ -215,7 +216,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [InlineData("FORMULA-MEDIA-PONDERADA", "v\01")]
     public async Task Reader_ObterAsync_CaractereNulo_NaoEncontrado(string codigo, string versao)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? regra = await reader.ObterAsync(codigo, versao, CancellationToken.None);
@@ -226,7 +227,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "Versão nula não é encontrada, sem exceção")]
     public async Task Reader_ObterAsync_VersaoNula_NaoEncontrado()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? regra = await reader.ObterAsync("FORMULA-MEDIA-PONDERADA", null!, CancellationToken.None);
@@ -237,7 +238,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "CA-07 — o reader resolve a regra nova e não resolve mais a antiga")]
     public async Task Reader_ObterAsync_RegraNova_Resolve()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         RegraCatalogo? nova = await reader.ObterAsync("RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", CancellationToken.None);
@@ -251,7 +252,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "CA-08 — há exatamente uma regra de prazo de recurso — a nova")]
     public async Task Reader_ListarPorTipo_PrazoRecurso_ExatamenteUma()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         IReadOnlyList<RegraCatalogo> regras = await reader.ListarPorTipoAsync(
@@ -264,7 +265,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
     [Fact(DisplayName = "O reader resolve as cinco regras de distribuição em v1 única; v2 não existe")]
     public async Task Reader_ObterAsync_DistribuicaoVagas_SoResolveV1()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         foreach (string codigo in new[]
@@ -284,52 +285,12 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         }
     }
 
-    [Fact(DisplayName = "CA-12 — nenhuma configuração congelada referencia a regra substituída (fronteira da ADR-0112)")]
-    public async Task RegraCatalogoSeed_SubstituirRegraReferenciada_Falha()
-    {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-
-        // A substituição da regra que geria a segunda instância só foi legítima
-        // porque nenhuma configuração congelada a referenciava (ADR-0112). A
-        // versão procurada é a v1, que era a que a substituição reescreveu.
-        // Para bases já implantadas, a verificação roda como precondição do
-        // fluxo de migração, não aqui.
-        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
-            context, CodigoRegraSubstituida, RegraCatalogoSeed.VersaoV1);
-    }
-
-    [Fact(DisplayName = "Nenhuma configuração congelada referencia a regra de recurso reescrita (fronteira da ADR-0112)")]
-    public async Task RegraDeRecurso_ReescritaSemReferenciaCongelada()
-    {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-
-        // Retirar `ato_ancora_codigo` do esquema_args reescreve a definição no lugar e muda
-        // o hash content-addressable. A ADR-0112 autoriza isso enquanto nenhuma
-        // VersaoConfiguracao referenciar (codigo, versao) — e exige que a verificação seja
-        // executada, não presumida. Este fato é a forma executável dela.
-        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
-            context, CodigoRegraDeRecurso, RegraCatalogoSeed.VersaoV1);
-    }
-
-    [Fact(DisplayName = "Nenhuma configuração congelada referencia a regra de cascata com a base legal corrigida (fronteira da ADR-0112)")]
-    public async Task RegraDeCascata_BaseLegalCorrigidaSemReferenciaCongelada()
-    {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-
-        // Corrigir a BaseLegal (issue #1454) reescreve a definição no lugar e muda o hash
-        // content-addressable — mesmo padrão de RegraDeRecurso_ReescritaSemReferenciaCongelada.
-        // A ADR-0112 autoriza isso enquanto nenhuma VersaoConfiguracao referenciar
-        // (codigo, versao), e exige que a verificação seja executada, não presumida.
-        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
-            context, CodigoRegraDeCascata, RegraCatalogoSeed.VersaoV1);
-    }
-
     [Theory(DisplayName = "A base legal das regras de ação afirmativa é a Res. 532/2021, sem resolução revogada")]
     [InlineData(RegraDistribuicaoVagasCodigo.ComAcPcd, "532/2021-CONSEPE, art. 1º")]
     [InlineData(RegraDistribuicaoVagasCodigo.Psiq, "532/2021-CONSEPE, art. 2º")]
     public async Task RegraDeAcaoAfirmativa_FundamentadaNaResolucao532(string codigo, string normaEsperada)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         RegraCatalogo regra = await context.RolDeRegras.AsNoTracking()
             .SingleAsync(r => r.Codigo == codigo && r.Versao == RegraCatalogoSeed.VersaoV1, CancellationToken.None);
@@ -340,16 +301,4 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             .And.NotContain("22/2014")
             .And.NotContain("64/2015");
     }
-
-    /// <summary>
-    /// A regra que geria uma segunda instância de recurso, removida do catálogo
-    /// e trocada por <c>RECURSO-PRAZO-ANCORADO-EM-ATO</c>.
-    /// </summary>
-    private const string CodigoRegraSubstituida = "RECURSO-MULTI-INSTANCIA";
-
-    /// <summary>A regra de prazo de recurso vigente, cuja definição esta fatia reescreve.</summary>
-    private const string CodigoRegraDeRecurso = "RECURSO-PRAZO-ANCORADO-EM-ATO";
-
-    /// <summary>A regra de cascata vigente, cuja BaseLegal a migration CorrigeBaseLegalCascataLei12711 reescreve.</summary>
-    private const string CodigoRegraDeCascata = "REMANEJ-CASCATA-LEI-12711";
 }

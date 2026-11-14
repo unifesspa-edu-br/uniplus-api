@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 using Microsoft.EntityFrameworkCore;
 
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O tipo de documento e o fato gravados direto no catálogo nascem pendentes de aprovação da proteção de dados
@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 /// </summary>
 internal static class CatalogoAprovadoDeTeste
 {
-    public static async Task AprovarCatalogoAsync(this ConfiguracaoDbContext db)
+    public static async Task AprovarCatalogoAsync(this UniPlusDbContext db)
     {
         ArgumentNullException.ThrowIfNull(db);
 

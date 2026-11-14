@@ -10,8 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A garantia de uma só versão em vigor por perfil, conferida pelo banco no fim da transação e não a cada gravação, com
@@ -71,7 +71,7 @@ public sealed class VersaoVigenteUnicaNoBancoTests : AprovacaoDaVersaoNoHostTest
     private async Task GravarNaTransacaoAsync(params (Guid VersaoId, string Situacao)[] alteracoes)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction transacao = await db.Database.BeginTransactionAsync();
         foreach ((Guid versaoId, string situacao) in alteracoes)
         {

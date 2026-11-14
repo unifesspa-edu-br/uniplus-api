@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -18,7 +18,7 @@ public static class AtualizarOfertaCursoCommandHandler
     public static async Task<Result> Handle(
         AtualizarOfertaCursoCommand command,
         IOfertaCursoRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

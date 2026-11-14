@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta da CategoriaDocumento contra Postgres real
@@ -39,13 +40,13 @@ public sealed class CategoriaDocumentoPersistenceTests
         string codigo = CodigoUnico();
         CategoriaDocumento categoria = Nova(codigo, ordem: 30);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CategoriasDocumento.Add(categoria);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CategoriaDocumento persistida = await readCtx.CategoriasDocumento.SingleAsync(c => c.Id == categoria.Id);
 
         persistida.Codigo.Valor.Should().Be(codigo);
@@ -59,13 +60,13 @@ public sealed class CategoriaDocumentoPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CategoriasDocumento.Add(Nova(codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.CategoriasDocumento.Add(Nova(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -82,7 +83,7 @@ public sealed class CategoriaDocumentoPersistenceTests
     [Fact(DisplayName = "Código distinto é aceito")]
     public async Task CodigoDistinto_Aceita()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.CategoriasDocumento.Add(Nova(CodigoUnico()));
         ctx.CategoriasDocumento.Add(Nova(CodigoUnico()));
 
@@ -95,20 +96,20 @@ public sealed class CategoriaDocumentoPersistenceTests
     {
         string codigo = CodigoUnico();
         CategoriaDocumento categoria = Nova(codigo);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CategoriasDocumento.Add(categoria);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CategoriaDocumento tracked = await ctx.CategoriasDocumento.SingleAsync(c => c.Id == categoria.Id);
             ctx.CategoriasDocumento.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             CategoriaDocumento excluida = await ctx.CategoriasDocumento
                 .IgnoreQueryFilters().SingleAsync(c => c.Id == categoria.Id);
@@ -116,7 +117,7 @@ public sealed class CategoriaDocumentoPersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.CategoriasDocumento.Add(Nova(codigo));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -126,7 +127,7 @@ public sealed class CategoriaDocumentoPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do formato fechado via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoFormatoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.categoria_documento (id, codigo, nome, ordem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"renda"}, {"Renda"}, {0}, {DateTimeOffset.UtcNow}, {false})");
@@ -138,7 +139,7 @@ public sealed class CategoriaDocumentoPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita ordem negativa via SQL cru")]
     public async Task Check_RejeitaOrdemNegativaViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.categoria_documento (id, codigo, nome, ordem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"Renda"}, {-1}, {DateTimeOffset.UtcNow}, {false})");

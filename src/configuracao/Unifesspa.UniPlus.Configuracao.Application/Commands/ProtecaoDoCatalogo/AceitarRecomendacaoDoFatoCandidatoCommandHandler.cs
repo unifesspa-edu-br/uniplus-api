@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -18,7 +19,7 @@ public static class AceitarRecomendacaoDoFatoCandidatoCommandHandler
         IPrecedenciaFaseRepository precedenciaRepository,
         IModeloFormularioRepository modeloRepository,
         IModalidadeRepository modalidadeRepository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

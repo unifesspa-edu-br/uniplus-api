@@ -6,8 +6,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -26,7 +26,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository,
         IRegraCatalogoReader Catalogo,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static JsonElement Json(string bruto) => JsonDocument.Parse(bruto).RootElement.Clone();
 
@@ -55,7 +55,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         IRegraCatalogoReader catalogo = Substitute.For<IRegraCatalogoReader>();
         catalogo.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra);
 
-        return new Mocks(repository, catalogo, Substitute.For<ISelecaoUnitOfWork>());
+        return new Mocks(repository, catalogo, Substitute.For<IUnitOfWork>());
     }
 
     [Fact(DisplayName = "O servidor resolve a identidade completa: declarados código e versão, congela também o hash do catálogo")]

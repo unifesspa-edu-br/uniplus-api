@@ -14,6 +14,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Host;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -248,7 +249,7 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
     private async Task EsvaziarCadastroAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await ctx.Set<TipoAtoPublicado>().ExecuteDeleteAsync(CancellationToken.None);
     }
@@ -279,7 +280,7 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
         TimeProvider relogio = _fixture.Factory.Services.GetRequiredService<TimeProvider>();
         DateOnly hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
 
-        Assembly assembly = typeof(PublicacoesDbContext).Assembly;
+        Assembly assembly = typeof(PublicacoesContribuicao).Assembly;
         using Stream? recurso = assembly.GetManifestResourceStream(
             "Unifesspa.UniPlus.Publicacoes.Infrastructure.seed-tipos-ato.json");
 
@@ -320,7 +321,7 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
     private async Task GravarAsync(LinhaDoCatalogo linha)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         Result<TipoAtoPublicado> criado = TipoAtoPublicado.Criar(
             codigo: linha.Codigo,
@@ -345,7 +346,7 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
     private async Task RemoverAsync(string codigo)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await ctx.Set<TipoAtoPublicado>()
             .Where(tipo => tipo.Codigo == codigo)
@@ -359,7 +360,7 @@ public sealed class CatalogoDeTiposAtoHealthCheckTests
     private async Task LimparAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await ctx.Set<TipoAtoPublicado>()
             .Where(tipo => tipo.Nome == NomeSintetico)

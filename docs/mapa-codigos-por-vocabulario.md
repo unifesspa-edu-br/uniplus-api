@@ -57,9 +57,9 @@ grep -rIn -E "HOMOLOGACAO|HABILITACAO|CodigoFaseHabilitacao|FinalidadeHabilitaca
 # API: tokens com sufixo ou prefixo, para achar todas as variantes de código
 grep -rIoh -E "[A-Za-z_]*(HOMOLOGACAO|HABILITACAO)[A-Za-z_]*" src tests scripts seeds contracts docs | sort | uniq -c | sort -rn
 
-# API: literais de fase em migrações (só HOMOLOGACAO sozinho)
+# API: literais de fase em scripts SQL (só HOMOLOGACAO sozinho)
 grep -lE "(^|[^A-Z_])HOMOLOGACAO([^A-Z_]|$)" \
-  src/configuracao/*/Persistence/Migrations/*.cs
+  src/configuracao/*/Persistence/Scripts/*.sql
 
 # API: configuração de permissões (nada encontrado)
 grep -rIn -i -E "homolog|habilit" src/*/*/Permissoes src/autorizacao src/shared/*Authorization*
@@ -76,7 +76,7 @@ Resultado dos comandos de busca por área (contagem de arquivos com o token):
 | Área | Arquivos | Onde está no mapa |
 |---|---|---|
 | `src/` da API, sem migrações | 16 | seções 3 a 6 |
-| Migrações e instantâneo de modelo da Configuracao | 110 (6 migrações, 103 `*.Designer.cs`, 1 `ConfiguracaoDbContextModelSnapshot.cs`) | seção 3.4 |
+| Scripts SQL da Configuracao (a migration única é gerada) | 5 | seção 3.4 |
 | Testes da API | 75 | seção 3.6 |
 | `scripts/` e `seeds/` da API | 3 | seções 3.7 e 6 |
 | `docs/adrs/` da API | 3 | seção 3.8 |
@@ -192,22 +192,17 @@ A constante tem 16 usos: os dois de produção (linhas 12 e 13 da tabela acima) 
 | `Unifesspa.UniPlus.Selecao.Domain.UnitTests/Entities/RetificacaoFatosDasVersoesPublicadasTests.cs` | 163 e 237 | código da fase do cronograma de teste | manter; PA-1 |
 | `Shared/FormularioDeTeste.cs` | 264 | repete a regra por código de `FaseCronograma.FinalidadesQueAtende` (finalidade para fase) | manter; PA-3 |
 
-### 3.4 Migrações e instantâneos de modelo (Configuracao)
+### 3.4 Migration única e scripts SQL
 
-Migração aplicada não se altera. Todos os arquivos abaixo ficam como estão, e a migração nova da #2322 troca o código nos dados e nos CHECKs.
+Não há migration por módulo: a `Inicial` do `MonolitoDbContext` (`src/host/Unifesspa.UniPlus.Monolito.Persistencia/Migrations`) é gerada de novo quando o modelo muda, e o que o EF não representa vive em scripts SQL idempotentes por módulo. A #2322 não escreve migration sucessora: troca o código nos pontos abaixo e gera a `Inicial` de novo.
 
-| Arquivo | O que contém | Ação |
+| Onde | O que contém | Ação |
 |---|---|---|
-| `20260701143441_AddFaseCanonicaETipoBanca.cs` | CHECKs `ck_fase_canonica_codigo_canonico` e `ck_fase_canonica_complementacao` com `HOMOLOGACAO` | manter (migração aplicada) |
-| `20260715223421_AddPrecedenciaFaseEAtributosFaseCanonica.cs` | CHECKs de precedência e seed das seis arestas (`INSCRICAO` para `HOMOLOGACAO`, linha 82) | manter (migração aplicada) |
-| `20260831204124_AdicionaFaseSolicitacaoIsencao.cs` | recria os três CHECKs com `HOMOLOGACAO` (linhas 32 a 81) | manter (migração aplicada) |
-| `20260901022333_SemeiaFasesCanonicas.cs` | `INSERT` das quinze fases, com `HOMOLOGACAO` na linha 39 | manter (migração aplicada); a migração nova faz o `UPDATE` do código |
-| `20260902185317_AmpliaTipoBancaEFaseCanonicaBiopsicossocial.cs` | recria os CHECKs com `HOMOLOGACAO` (linhas 74 a 207) | manter (migração aplicada) |
-| `20261001042908_AdicionaModelosFormulario.cs` | CHECK `ck_modelos_formulario_finalidade` com `HABILITACAO` (finalidade) | manter (PA-2) |
-| 103 arquivos `*.Designer.cs`, de `20260701143441_AddFaseCanonicaETipoBanca.Designer.cs` a `20261113024443_AdicionaManifestacoesDaProtecaoDoCatalogo.Designer.cs` | instantâneo do modelo de cada migração, com os dados semeados da época | manter (gerados, não se editam) |
-| `ConfiguracaoDbContextModelSnapshot.cs` | instantâneo atual do modelo, com seed e CHECKs | derivado; é regenerado pela migração nova (`dotnet ef migrations add`) |
+| `FaseCanonicaConfiguration.cs`, `PrecedenciaFaseConfiguration.cs` | CHECKs que listam o código e a semente das fases e das arestas, derivados do catálogo | derivados; trocam com o catálogo |
+| `src/configuracao/.../Persistence/Scripts/*.sql` | sementes de tipos de processo e de etapa e as restrições fora do EF | conferir `HOMOLOGACAO` sozinho e trocar |
+| `Migrations/*_Inicial.cs`, `*.Designer.cs`, `MonolitoDbContextModelSnapshot.cs` | instantâneo gerado do modelo | gerados; regerar com `dotnet ef migrations add Inicial` |
 
-A migração nova da #2322 precisa, na ordem: derrubar os CHECKs que listam o código, trocar `HOMOLOGACAO` por `HOMOLOGACAO_INSCRICOES` em `fase_canonica` (código), `precedencia_fase` (antecessora e sucessora) e nos pontos de resolução (`fato_candidato.ponto_resolucao`), reescrever o JSON de `modelos_formulario.conteudo` onde `faseCodigo` cita o código, e recriar os CHECKs com o catálogo novo. As linhas de `fases_cronograma`, `etapas_processo` e as versões congeladas são dados de processo, e o caminho delas é o recadastro (seção 7).
+Na troca de `HOMOLOGACAO` por `HOMOLOGACAO_INSCRICOES`, o catálogo e os CHECKs de `fase_canonica` (código), `precedencia_fase` (antecessora e sucessora) e `fato_candidato.ponto_resolucao` saem do modelo e das sementes; o JSON de `modelos_formulario.conteudo` onde `faseCodigo` cita o código é conteúdo de cadastro. As linhas de `fases_cronograma`, `etapas_processo` e as versões congeladas são dados de processo, e o caminho delas é o recadastro (seção 7).
 
 ### 3.5 Valores citados em outras camadas do código de produção
 

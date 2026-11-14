@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -53,7 +54,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             TimeProvider.System,
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             userContext,
             CancellationToken.None);
 
@@ -73,7 +74,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result<InscricaoDto> resultado = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(ProcessoId),
@@ -114,7 +115,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             new RelogioFixo(DentroDoPeriodo),
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             UsuarioComCpf(cpf, sub: "sub-outro"),
             CancellationToken.None);
 
@@ -137,7 +138,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         Result<InscricaoDto> deOutro = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(ProcessoId), cenario.Inscricoes, cenario.Divulgados, cenario.Processos, Substitute.For<IDocumentoDaInscricaoRepository>(), cenario.Codecs, Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), new RelogioFixo(DentroDoPeriodo),
-            Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf, "sub-outro"), CancellationToken.None);
+            Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf, "sub-outro"), CancellationToken.None);
         deOutro.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
         await cenario.Inscricoes.DidNotReceive().AdicionarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
 
@@ -166,7 +167,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             TimeProvider.System,
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             UsuarioComCpf(cpf),
             CancellationToken.None);
 
@@ -277,7 +278,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(),
             relogio,
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             UsuarioComCpf(cpf),
             CancellationToken.None);
 

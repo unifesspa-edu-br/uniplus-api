@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -89,7 +90,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
 
     private async Task<(Guid ProcessoId, Guid EtapaId)> GravarEtapaComAsync(string nome, params BancaDaEtapa[] bancas)
     {
-        await using SelecaoDbContext escrita = fixture.CreateDbContext();
+        await using UniPlusDbContext escrita = fixture.CreateDbContext();
         ProcessoSeletivo processo = NovoProcesso(nome);
         EtapaProcesso etapa = NovaEtapaDeTitulos();
         etapa.DefinirBancas(bancas).IsSuccess.Should().BeTrue();
@@ -101,7 +102,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
 
     private async Task RegravarAsync(Guid processoId, Guid etapaId, BancaDaEtapa[] bancas, string motivo)
     {
-        await using SelecaoDbContext regravacao = fixture.CreateDbContext();
+        await using UniPlusDbContext regravacao = fixture.CreateDbContext();
         ProcessoSeletivo tracked = await regravacao.ProcessosSeletivos
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .FirstAsync(p => p.Id == processoId);
@@ -114,7 +115,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
 
     private async Task<EtapaProcesso> RelerAsync(Guid etapaId)
     {
-        await using SelecaoDbContext conferencia = fixture.CreateDbContext();
+        await using UniPlusDbContext conferencia = fixture.CreateDbContext();
         return await conferencia.Set<EtapaProcesso>()
             .Include(e => e.Bancas)
             .FirstAsync(e => e.Id == etapaId);

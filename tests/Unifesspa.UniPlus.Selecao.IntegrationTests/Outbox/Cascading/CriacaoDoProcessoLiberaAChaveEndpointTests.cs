@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -134,8 +135,8 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
         Guid unidadeId;
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            OrganizacaoInstitucionalDbContext org = scope.ServiceProvider
-                .GetRequiredService<OrganizacaoInstitucionalDbContext>();
+            UniPlusDbContext org = scope.ServiceProvider
+                .GetRequiredService<UniPlusDbContext>();
             Unidade unidade = Unidade.Criar(
                 "Centro de Processos Seletivos — chave",
                 new IdentificadoresDaUnidade($"ceps-chave-{sufixo}", $"CEPSC{sufixo}", $"CEPSC-{sufixo}", null),
@@ -150,7 +151,7 @@ public sealed class CriacaoDoProcessoLiberaAChaveEndpointTests : IAsyncLifetime
         }
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext config = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext config = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid tipoProcessoId = await config.TiposProcesso
             .Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo)
             .Select(tipo => tipo.Id)

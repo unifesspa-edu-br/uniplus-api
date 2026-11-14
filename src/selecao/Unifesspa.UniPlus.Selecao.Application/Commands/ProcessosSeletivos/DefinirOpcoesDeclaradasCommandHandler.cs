@@ -1,13 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Services;
 
@@ -23,7 +22,7 @@ public static class DefinirOpcoesDeclaradasCommandHandler
         DefinirOpcoesDeclaradasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

@@ -4,9 +4,9 @@ using System.Linq.Expressions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
 /// <summary>
 /// Implementação do <see cref="ITipoAtoPublicadoReader"/> (ADR-0056): resolve o tipo pela
@@ -19,21 +19,18 @@ using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 /// justamente o que esta leitura existe para evitar.
 /// </para>
 /// <para>
-/// <b>internal</b> de propósito: o contrato é público, o concreto não. Se fosse público, o
-/// codegen do Wolverine tentaria construí-lo inline dentro dos handlers de Seleção, enxergaria
-/// o <c>PublicacoesDbContext</c> na árvore e falharia com <i>"multiple DbContext types
-/// detected"</i> — o middleware transacional não coordena dois contextos. Sendo internal, o
-/// codegen cai em service location, que é o consumo correto de um contrato cross-módulo e que
-/// <c>SelecaoCodegenRegistration</c> declara explicitamente (ADR-0098).
+/// <b>internal</b> de propósito: o contrato é público, o concreto não. Sendo internal, o
+/// codegen do Wolverine cai em service location, que é o consumo correto de um contrato
+/// cross-módulo e que <c>SelecaoCodegenRegistration</c> declara explicitamente (ADR-0098).
 /// </para>
 /// </remarks>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em PublicacoesInfrastructureRegistration.")]
-internal sealed class TipoAtoPublicadoReader(PublicacoesDbContext db) : ITipoAtoPublicadoReader
+internal sealed class TipoAtoPublicadoReader(UniPlusDbContext db) : ITipoAtoPublicadoReader
 {
-    private readonly PublicacoesDbContext _db = db ?? throw new ArgumentNullException(nameof(db));
+    private readonly UniPlusDbContext _db = db ?? throw new ArgumentNullException(nameof(db));
 
     // A vigência e a projeção são as mesmas nas duas leituras: se divergissem, o lote veria um
     // tipo que a leitura individual não vê, ou o contrário.

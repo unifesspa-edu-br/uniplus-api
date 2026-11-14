@@ -6,16 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -49,7 +47,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         // abre um ciclo recursal que nada conclui — estado que a fábrica recusa produzir hoje.
         await RebaixarProdutoParaPreliminarAsync(processoId);
 
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.CronogramaFases.Should().ContainSingle()
@@ -77,7 +75,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1426 ok {Guid.CreateVersion7()}");
 
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
@@ -109,7 +107,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
     /// </summary>
     private async Task<Guid> SemearProcessoConformeAsync(string nome)
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -145,7 +143,6 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
                 Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -179,7 +176,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         afetadas.Should().Be(1, "a semeadura grava exatamente um produto para a única fase do processo");
     }
 
-    private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
+    private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.Etapas)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)

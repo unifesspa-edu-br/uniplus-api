@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -19,7 +19,7 @@ public static class AlterarDefinicaoDoFatoCandidatoCommandHandler
         IPrecedenciaFaseRepository precedenciaRepository,
         IModeloFormularioRepository modeloRepository,
         IModalidadeRepository modalidadeRepository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

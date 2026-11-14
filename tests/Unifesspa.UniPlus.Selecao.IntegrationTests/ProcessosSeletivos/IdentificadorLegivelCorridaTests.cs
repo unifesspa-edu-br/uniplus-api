@@ -2,14 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
-
 using NSubstitute;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -19,7 +18,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -42,7 +40,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         IdentificadorLegivel disputado = IdentificadoresDeTeste.Novo();
         await PersistirConcorrenteAsync(disputado);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         IProcessoSeletivoRepository repository = RepositorioQueNaoVeAConcorrencia(ctx);
         IUnidadeReader unidadeReader = Substitute.For<IUnidadeReader>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(new UnidadeView(
@@ -71,7 +69,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         await PersistirAsync(alvo);
         await PersistirConcorrenteAsync(disputado);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         IProcessoSeletivoRepository repository = RepositorioQueNaoVeAConcorrencia(ctx);
 
         Result<MutacaoAceita> resultado = await DefinirIdentificadorLegivelCommandHandler.Handle(
@@ -88,7 +86,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     /// Repositório real em tudo, menos na consulta de unicidade, que responde "livre" — o estado
     /// de quem consultou antes de o processo concorrente gravar.
     /// </summary>
-    private static IProcessoSeletivoRepository RepositorioQueNaoVeAConcorrencia(SelecaoDbContext ctx)
+    private static IProcessoSeletivoRepository RepositorioQueNaoVeAConcorrencia(UniPlusDbContext ctx)
     {
         ProcessoSeletivoRepository real = new(ctx, TimeProvider.System);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
@@ -119,7 +117,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
 
     private async Task PersistirAsync(ProcessoSeletivo processo)
     {
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         await ctx.ProcessosSeletivos.AddAsync(processo);
         await ctx.SaveChangesAsync();
     }

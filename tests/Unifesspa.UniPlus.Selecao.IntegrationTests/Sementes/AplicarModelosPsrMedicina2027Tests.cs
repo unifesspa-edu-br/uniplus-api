@@ -17,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -89,7 +90,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         TipoDeficiencia removido = TipoDeficiencia.Criar($"{prefixo}_REMOVIDO", "Tipo removido", "Descrição de teste").Value!;
         await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             db.TiposDeficiencia.AddRange(ativo, removido);
             await db.SaveChangesAsync();
             db.TiposDeficiencia.Remove(removido);
@@ -104,7 +105,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
             string[] tiposAtivos;
             await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
             {
-                ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+                UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
                 tiposAtivos = [.. (await db.TiposDeficiencia.AsNoTracking().ToListAsync())
                     .Select(static t => t.Codigo.Valor).Order(StringComparer.Ordinal)];
             }
@@ -126,7 +127,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         finally
         {
             await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-            ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             await db.TiposDeficiencia.IgnoreQueryFilters().Where(t => t.Id == ativo.Id || t.Id == removido.Id).ExecuteDeleteAsync();
         }
     }
@@ -142,7 +143,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         habilitacao.StatusCode.Should().Be(HttpStatusCode.OK, await habilitacao.Content.ReadAsStringAsync());
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.ProcessosSeletivos.AsNoTracking()
             .Include(static p => p.Formularios)
             .Include(static p => p.Campos)
@@ -156,7 +157,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         TipoProcessoSnapshot psr = TipoProcessoSnapshot.Criar(
             SementePsrMedicina2027.TipoProcessoId, SementePsrMedicina2027.TipoProcessoCodigo, "Processo Seletivo Regular Unificado").Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db, $"Medicina 2027 {Guid.CreateVersion7()}", complementar: p => ComBonusRegionalEAtendimento(p, ofertarAtendimento), tipo: psr);
         return processo.Id;
@@ -245,7 +246,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     private async Task<Guid> ModeloAsync(string codigo)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.ModelosFormulario.Where(m => m.Codigo == codigo).Select(static m => m.Id).SingleAsync();
     }
 

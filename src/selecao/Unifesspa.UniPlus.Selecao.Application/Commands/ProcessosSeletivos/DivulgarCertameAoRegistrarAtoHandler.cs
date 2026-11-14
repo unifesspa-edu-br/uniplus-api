@@ -8,13 +8,13 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.Services;
 using Domain.ValueObjects;
 
 using DTOs;
 
 using Queries.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
@@ -56,7 +56,7 @@ public static class DivulgarCertameAoRegistrarAtoHandler
         IAtoDoProcessoRepository atoDoProcessoRepository,
         IAcervoPublico acervoPublico,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

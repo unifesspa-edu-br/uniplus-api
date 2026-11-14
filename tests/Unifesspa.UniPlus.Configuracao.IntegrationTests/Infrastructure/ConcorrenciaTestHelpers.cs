@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 using Xunit;
@@ -67,7 +67,7 @@ internal static class ConcorrenciaTestHelpers
         ArgumentNullException.ThrowIfNull(lockHolderPids);
 
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int[] holderPids = [.. lockHolderPids];
 
         DateTimeOffset deadline = DateTimeOffset.UtcNow.Add(timeout ?? DefaultTimeout);
@@ -117,7 +117,7 @@ internal static class ConcorrenciaTestHelpers
     /// um lock): o protocolo do Npgsql não aceita um novo comando concorrente
     /// ao que já está em andamento na mesma conexão.
     /// </summary>
-    public static async Task<int> GetConnectionPidAsync(ConfiguracaoDbContext connection)
+    public static async Task<int> GetConnectionPidAsync(UniPlusDbContext connection)
     {
         ArgumentNullException.ThrowIfNull(connection);
         return await connection.Database

@@ -7,6 +7,7 @@ using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
@@ -33,7 +34,7 @@ public static class DefinirEtapasCommandHandler
         ITipoAtoPublicadoReader tipoAtoPublicadoReader,
         IRegistroCodecsEnvelope registroCodecs,
         TimeProvider timeProvider,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

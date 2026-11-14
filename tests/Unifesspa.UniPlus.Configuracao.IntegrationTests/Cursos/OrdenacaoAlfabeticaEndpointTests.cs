@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -411,7 +412,7 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
             null).Value!;
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         dbContext.Cursos.Add(curso);
         await dbContext.SaveChangesAsync(CancellationToken.None);
         return curso.Id;
@@ -431,7 +432,7 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
             null).Value!;
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         dbContext.LocaisOferta.Add(local);
         await dbContext.SaveChangesAsync(CancellationToken.None);
         return local.Id;
@@ -455,7 +456,7 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
             null).Value!;
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         dbContext.OfertasCurso.Add(oferta);
         await dbContext.SaveChangesAsync(CancellationToken.None);
         return oferta.Id;

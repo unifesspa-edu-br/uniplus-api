@@ -12,9 +12,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// O critério de desempate por área do ENEM pelo HTTP, com a regra semeada no catálogo e a
@@ -104,7 +104,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
         Textos(problema.RootElement).Should().Contain("uniplus.selecao.processo_seletivo.desempate_area_enem_sem_quadro");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoClassificacao classificacao = await db.Set<ConfiguracaoClassificacao>().AsNoTracking()
             .SingleAsync(c => c.ProcessoSeletivoId == ctx.ProcessoId);
         classificacao.BaseadoEmEnem.Should().BeTrue("a recusa mantém a classificação que o processo já tinha");
@@ -193,7 +193,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
     private static async Task<List<CriterioDesempate>> CriteriosGravadosAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.Set<CriterioDesempate>().AsNoTracking()
             .Where(c => c.ProcessoSeletivoId == ctx.ProcessoId)
             .ToListAsync();
@@ -246,7 +246,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             // Estes testes partem de um desempate ainda por definir: o seeder declara um critério
             // para o processo ser publicável, e aqui ele sai.
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder

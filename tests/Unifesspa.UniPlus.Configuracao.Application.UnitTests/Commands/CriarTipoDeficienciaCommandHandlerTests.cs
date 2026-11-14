@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDeficiencia;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -16,7 +16,7 @@ public sealed class CriarTipoDeficienciaCommandHandlerTests
     private const string Codigo = "DEFICIENCIA_VISUAL";
 
     private readonly ITipoDeficienciaRepository _repository = Substitute.For<ITipoDeficienciaRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarTipoDeficienciaCommand ComandoValido() =>
         new(Codigo, "Visual", "Deficiência relacionada à visão");

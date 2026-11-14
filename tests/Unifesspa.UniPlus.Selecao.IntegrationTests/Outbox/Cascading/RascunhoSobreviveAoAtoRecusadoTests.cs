@@ -13,7 +13,7 @@ using Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine;
@@ -72,7 +72,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
             $"a recusa precisa vir do índice de numeração para exercer o caminho em questão — veio '{resultado.Error?.Code}'");
 
         await using AsyncServiceScope leituraScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext leitura = leituraScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext leitura = leituraScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<RascunhoDePublicacao> rascunhos = await leitura.RascunhosDePublicacao.AsNoTracking()
             .Where(r => r.ProcessoSeletivoId == processoId)
             .ToListAsync();
@@ -120,7 +120,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
         // depois do flush poderia tê-la deixado num caminho que nunca executa, e a varredura de
         // arquitetura continuaria verde: ela confere onde a chamada está escrita, não se roda.
         await using AsyncServiceScope leituraScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext leitura = leituraScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext leitura = leituraScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         bool sobrou = await leitura.RascunhosDePublicacao.AsNoTracking()
             .AnyAsync(r => r.ProcessoSeletivoId == processoId);
 
@@ -131,7 +131,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
     private static async Task OcuparAVersaoUmAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         db.VersoesConfiguracao.Add(VersaoConfiguracao.Abrir(
             processoId,
@@ -149,7 +149,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
     private static async Task SemearRascunhoDaPublicacaoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         Result<RascunhoDePublicacao> rascunho = RascunhoDePublicacao.Criar(
             processoId,
@@ -169,7 +169,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
         CascadingApiFactory api)
     {
         await using AsyncServiceScope seedScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(seedDb, $"Rascunho preservado {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);

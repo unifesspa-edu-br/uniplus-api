@@ -10,15 +10,15 @@ using Microsoft.Extensions.DependencyInjection;
 /// (issue #197). Valida que o host runtime enxerga:
 /// <list type="bullet">
 ///   <item><description>A connection string do Postgres do Testcontainers em
-///   <c>ConnectionStrings:SelecaoDb</c>;</description></item>
+///   <c>ConnectionStrings:UniPlusDb</c>;</description></item>
 ///   <item><description><c>Kafka:BootstrapServers</c> em whitespace, garantindo que
 ///   o Wolverine NÃO tente abrir transporte Kafka contra <c>localhost:9092</c>.</description></item>
 /// </list>
 /// </summary>
 /// <remarks>
 /// O teste pega o <see cref="IConfiguration"/> da factory após o build do host —
-/// é o mesmo objeto usado por <c>UseWolverineOutboxCascading</c> e
-/// <c>SelecaoInfrastructureRegistration.AddSelecaoInfrastructure</c>. Se a
+/// é o mesmo objeto usado por <c>UseWolverineOutboxCascading</c> e pelo
+/// registro do contexto único. Se a
 /// configuração efetiva divergir da intenção da fixture, o teste falha cedo
 /// com mensagem direcional.
 /// </remarks>
@@ -35,11 +35,11 @@ public sealed class CascadingFixtureConfigurationTests
     {
         IConfiguration configuration = _fixture.Factory.Services.GetRequiredService<IConfiguration>();
 
-        string? connectionString = configuration.GetConnectionString("SelecaoDb");
+        string? connectionString = configuration.GetConnectionString("UniPlusDb");
 
         connectionString.Should().NotBeNullOrWhiteSpace(
-            because: "ConnectionStrings__SelecaoDb deve ter sido injetada pela fixture via env var; "
-            + "se ficou vazia, AddSelecaoInfrastructure não conseguiria configurar o DbContext.");
+            because: "ConnectionStrings__UniPlusDb deve ter sido injetada pela fixture via env var; "
+            + "se ficou vazia, o registro do contexto único não conseguiria configurar o DbContext.");
         // Sem expor a connection string completa em logs/asserts — apenas
         // validar marcadores estruturais. A MonolitoPostgresFixtureBase cria o
         // testcontainer com Username="uniplus_test" (distinto do usuário "uniplus"

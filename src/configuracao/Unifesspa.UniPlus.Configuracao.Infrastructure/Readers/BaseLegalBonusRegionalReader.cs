@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Implementação de <see cref="IBaseLegalBonusRegionalReader"/> (ADR-0056): leitura
@@ -17,9 +18,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
     Justification = "Instanciada via DI em DependencyInjection.")]
 internal sealed class BaseLegalBonusRegionalReader : IBaseLegalBonusRegionalReader
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public BaseLegalBonusRegionalReader(ConfiguracaoDbContext dbContext)
+    public BaseLegalBonusRegionalReader(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

@@ -10,6 +10,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -108,7 +109,7 @@ public sealed class ExpiracaoDoArquivoDoCandidatoComResiduoEndpointTests
     private async Task<ArquivoDaApresentacao> LerArquivoAsync(Guid arquivoId)
     {
         await using AsyncServiceScope escopo = Fabrica.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().ArquivosDaApresentacao.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().ArquivosDaApresentacao.AsNoTracking()
             .SingleAsync(a => a.Id == arquivoId);
     }
 }

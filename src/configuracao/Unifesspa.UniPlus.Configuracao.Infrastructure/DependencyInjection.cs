@@ -2,28 +2,21 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Registra a infraestrutura do módulo Configuracao: o DbContext com os interceptors transversais de soft delete e
-/// auditoria, a unidade de trabalho, os repositórios e os leitores cross-módulo (ADR-0056). Wire-up centralizado em
-/// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0054).
+/// Registra a infraestrutura do módulo Configuracao: os repositórios e os leitores cross-módulo (ADR-0056). O contexto e
+/// a unidade de trabalho vêm da persistência única do monólito.
 /// </summary>
 public static class ConfiguracaoInfrastructureRegistration
 {
-    private const string ConnectionStringName = "ConfiguracaoDb";
-
     public static IServiceCollection AddConfiguracaoInfrastructure(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        AdicionarPersistencia(services);
         AdicionarRepositoriosDaOferta(services);
         AdicionarRepositoriosDosDocumentosEDoAtendimento(services);
         AdicionarRepositoriosDoProcesso(services);
@@ -31,18 +24,6 @@ public static class ConfiguracaoInfrastructureRegistration
         AdicionarLeitoresDosCadastros(services);
         AdicionarLeitoresDoProcesso(services);
         return services;
-    }
-
-    // A unidade de trabalho encaminha para a mesma instância do DbContext do escopo: uma segunda instância quebraria a
-    // atomicidade da gravação com o outbox (ADR-0004).
-    private static void AdicionarPersistencia(IServiceCollection services)
-    {
-        services.AddUniPlusEfInterceptors();
-        services.AddDbContext<ConfiguracaoDbContext>((serviceProvider, options) =>
-            options.UseUniPlusNpgsqlConventions<ConfiguracaoDbContext>(
-                serviceProvider, ConnectionStringName, schema: ConfiguracaoDbContext.Schema));
-        services.AddScoped<IConfiguracaoUnitOfWork>(serviceProvider =>
-            serviceProvider.GetRequiredService<ConfiguracaoDbContext>());
     }
 
     // Os cadastros da oferta de vagas: campi, locais, cursos, ofertas e modalidades, e as bases da reserva e do bônus.

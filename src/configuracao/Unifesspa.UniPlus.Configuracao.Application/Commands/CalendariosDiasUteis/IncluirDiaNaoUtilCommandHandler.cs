@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -22,7 +22,7 @@ public static class IncluirDiaNaoUtilCommandHandler
     public static async Task<Result<CalendarioDiasUteisDto>> Handle(
         IncluirDiaNaoUtilCommand command,
         ICalendarioDiasUteisRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

@@ -10,8 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -53,7 +53,7 @@ public sealed class DevolucaoPorTermoExigidoNoHostTests : PedidosDeConcessaoTest
             new PartesDoPedido(betina, null), perfil, EscopoDaConcessao.DaUnidade(unidade), new DeclaracaoDoPedido(Justificativa),
             servicos.GetRequiredService<IDominiosInstitucionais>(), servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>(), DateTimeOffset.UtcNow).Value!;
         await servicos.GetRequiredService<IPedidoDeConcessaoRepository>().AdicionarAsync(pedido);
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
 
         return pedido.Id;
     }

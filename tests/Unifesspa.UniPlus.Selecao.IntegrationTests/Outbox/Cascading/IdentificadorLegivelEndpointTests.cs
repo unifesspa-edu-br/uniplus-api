@@ -13,9 +13,9 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -112,7 +112,7 @@ public sealed class IdentificadorLegivelEndpointTests
         await TiposDeAtoSeeder.SemearAsync(api.Services);
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (api.CreateClient(), processo.Id, documento.Id);
@@ -121,7 +121,7 @@ public sealed class IdentificadorLegivelEndpointTests
     private async Task<string> LerIdentificadorAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == processoId);
         return processo.IdentificadorLegivel!.Value.Valor;
     }

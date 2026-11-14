@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta do RecursoAcessibilidade contra Postgres real
@@ -41,13 +42,13 @@ public sealed class RecursoAcessibilidadePersistenceTests
         string codigo = CodigoUnico();
         RecursoAcessibilidade recurso = Novo(nome, codigo);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.RecursosAcessibilidade.Add(recurso);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         RecursoAcessibilidade persistido = await readCtx.RecursosAcessibilidade.SingleAsync(r => r.Id == recurso.Id);
 
         persistido.Codigo.Valor.Should().Be(codigo);
@@ -66,13 +67,13 @@ public sealed class RecursoAcessibilidadePersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.RecursosAcessibilidade.Add(Novo(NomeUnico(), codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.RecursosAcessibilidade.Add(Novo(NomeUnico(), codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -89,13 +90,13 @@ public sealed class RecursoAcessibilidadePersistenceTests
     public async Task UniquePartial_Nome_RejeitaDuplicataAtiva()
     {
         string nome = NomeUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.RecursosAcessibilidade.Add(Novo(nome));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.RecursosAcessibilidade.Add(Novo(nome));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -112,7 +113,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
     [Fact(DisplayName = "Nome distinto é aceito")]
     public async Task NomeDistinto_Aceita()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.RecursosAcessibilidade.Add(Novo(NomeUnico()));
         ctx.RecursosAcessibilidade.Add(Novo(NomeUnico()));
 
@@ -125,20 +126,20 @@ public sealed class RecursoAcessibilidadePersistenceTests
     {
         string nome = NomeUnico();
         RecursoAcessibilidade recurso = Novo(nome);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.RecursosAcessibilidade.Add(recurso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             RecursoAcessibilidade tracked = await ctx.RecursosAcessibilidade.SingleAsync(r => r.Id == recurso.Id);
             ctx.RecursosAcessibilidade.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             RecursoAcessibilidade excluido = await ctx.RecursosAcessibilidade
                 .IgnoreQueryFilters().SingleAsync(r => r.Id == recurso.Id);
@@ -146,7 +147,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
             excluido.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.RecursosAcessibilidade.Add(Novo(nome));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -161,7 +162,7 @@ public sealed class RecursoAcessibilidadePersistenceTests
         string nomeB = $"{prefixo}_B";
         string nomeExcluido = $"{prefixo}_D";
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.RecursosAcessibilidade.Add(Novo(nomeB));
             ctx.RecursosAcessibilidade.Add(Novo(nomeA));
@@ -169,14 +170,14 @@ public sealed class RecursoAcessibilidadePersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             RecursoAcessibilidade aExcluir = await ctx.RecursosAcessibilidade.SingleAsync(r => r.Nome == nomeExcluido);
             ctx.RecursosAcessibilidade.Remove(aExcluir);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new RecursoAcessibilidadeReader(readCtx);
         IReadOnlyList<RecursoAcessibilidadeView> todos = await reader.ListarVivosAsync();
 

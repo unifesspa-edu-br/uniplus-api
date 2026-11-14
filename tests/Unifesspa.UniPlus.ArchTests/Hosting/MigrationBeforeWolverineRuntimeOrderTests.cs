@@ -23,13 +23,11 @@ using Unifesspa.UniPlus.Portal.API;
 /// quando o Wolverine começar a processar envelopes que tocam tabelas do módulo.
 /// </summary>
 /// <remarks>
-/// <para>Os 5 módulos internos (Selecao, Ingresso, Configuracao, Organizacao)
-/// deixaram de ser executáveis (viraram class libraries) — não têm mais
-/// <c>Program</c> próprio. A ordem migrations→Wolverine deles é governada por um
-/// <b>único</b> entry point, o host UniPlus, que registra os 4
-/// <c>MigrationHostedService</c> (um por DbContext de módulo) via <c>Add*Module</c>
-/// e só então o <c>WolverineRuntime</c> consolidado. Verificar o host cobre os 4
-/// de uma vez; o Portal permanece deployable autônomo.</para>
+/// <para>Os módulos internos são class libraries — não têm <c>Program</c> próprio. A ordem
+/// migrations→Wolverine deles é governada por um <b>único</b> entry point, o host UniPlus, que
+/// registra um só <c>MigrationHostedService</c> (o do contexto único dos módulos) via
+/// <c>AddMonolitoPersistencia</c> e só então o <c>WolverineRuntime</c> consolidado. O Portal
+/// permanece deployable autônomo.</para>
 ///
 /// <para>A invariante depende de duas premissas conjuntas:
 /// (1) ordem de registro no <see cref="IServiceCollection"/> determina ordem
@@ -68,23 +66,14 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 
     /// <summary>
     /// DbContexts cuja migration on startup CADA entry point deve registrar. O
-    /// host UniPlus co-hospeda os 6 módulos internos, então precisa dos 6; o
-    /// Portal é autônomo com um DbContext. Travar o conjunto exato impede
-    /// que um módulo perca silenciosamente seu <c>AddDbContextMigrationsOnStartup</c>
-    /// enquanto outro ainda registra o seu (a ordem sozinha não pegaria isso).
+    /// host UniPlus co-hospeda os módulos internos num único contexto; o Portal
+    /// é autônomo com o seu. Travar o conjunto exato impede que um entry point
+    /// perca silenciosamente o seu <c>AddDbContextMigrationsOnStartup</c> (a
+    /// ordem sozinha não pegaria isso).
     /// </summary>
     private static readonly Dictionary<string, string[]> MigrationContextsEsperados = new(StringComparer.Ordinal)
     {
-        [MigrationOrderFixture.UniPlusKey] =
-        [
-            "SelecaoDbContext",
-            "IngressoDbContext",
-            "ConfiguracaoDbContext",
-            "OrganizacaoInstitucionalDbContext",
-            "PublicacoesDbContext",
-            "DiscentesDbContext",
-            "AutorizacaoDbContext",
-        ],
+        [MigrationOrderFixture.UniPlusKey] = ["MonolitoDbContext"],
         [MigrationOrderFixture.PortalKey] = ["PortalDbContext"],
     };
 
@@ -99,8 +88,8 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
 
         // Cobertura: todo DbContext esperado para este entry point precisa de um
         // MigrationHostedService<TContext>. Travado ANTES da ordem para que perder
-        // o Add*Module de um módulo falhe com mensagem direcional (e não apenas
-        // afrouxe silenciosamente a invariante #419 para os demais).
+        // o registro falhe com mensagem direcional (e não apenas afrouxe
+        // silenciosamente a invariante #419).
         string[] contextsRegistrados = [.. hostedServices
             .Select(d => MigrationOrderHeuristics.GetMigrationContextName(d.ImplementationType))
             .Where(nome => nome is not null)
@@ -109,13 +98,12 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
         contextsRegistrados.Should().BeEquivalentTo(
             MigrationContextsEsperados[entryPointKey],
             because: "o entry point " + entryPointKey + " deve registrar AddDbContextMigrationsOnStartup<TContext> "
-                + "para exatamente estes DbContexts (uniplus-api#419). No host UniPlus, cada Add*Module contribui o "
-                + "MigrationHostedService do seu módulo — se um sumir, o schema dele não é aplicado antes do Wolverine.");
+                + "para exatamente estes DbContexts (uniplus-api#419). No host UniPlus, o AddMonolitoPersistencia contribui o "
+                + "MigrationHostedService do contexto único — se ele sumir, o schema dos módulos não é aplicado antes do Wolverine.");
 
         int wolverineIndex = hostedServices.FindIndex(MigrationOrderHeuristics.IsWolverineRuntime);
-        // FindLastIndex (e não FindIndex) porque o host UniPlus registra VÁRIOS
-        // MigrationHostedService (um por DbContext de módulo). A invariante exige
-        // que TODAS as migrations precedam o Wolverine — basta a última preceder.
+        // FindLastIndex: a invariante exige que TODAS as migrations do entry point
+        // precedam o Wolverine — basta a última preceder.
         int ultimaMigrationIndex = hostedServices.FindLastIndex(d =>
             MigrationOrderHeuristics.IsMigrationHostedService(d.ImplementationType));
 
@@ -126,7 +114,7 @@ public sealed class MigrationBeforeWolverineRuntimeOrderTests : IClassFixture<Mi
             because: "Schema EF do domínio precisa estar aplicado antes do WolverineRuntime aceitar envelopes "
                 + "que toquem tabelas do módulo (uniplus-api#419). No entry point "
                 + entryPointKey + ", AddDbContextMigrationsOnStartup<TContext>() precisa preceder UseWolverineOutboxCascading "
-                + "(no host UniPlus, todos os Add*Module precedem o UseWolverineOutboxCascading consolidado).");
+                + "(no host UniPlus, o AddMonolitoPersistencia precede o UseWolverineOutboxCascading consolidado).");
     }
 
     [Theory(DisplayName = "HostOptions.ServicesStartConcurrently permanece false (premissa da ordem)")]
@@ -177,16 +165,10 @@ public sealed class MigrationOrderFixture : IDisposable
         // AddDbContextMigrationsOnStartup registram services lazy; a conexão
         // só seria tentada no IHostedService.StartAsync, que este teste não
         // dispara (apenas Build do host para capturar IServiceCollection).
-        // O host UniPlus lê UniPlusDb (outbox consolidado) + as 4 conn strings dos
-        // módulos internos (Add*Module). O Portal lê a sua própria.
+        // O host UniPlus lê UniPlusDb (contexto único dos módulos e outbox consolidado).
+        // O Portal lê a sua própria.
         const string fake = "Host=fitness-not-real;Database=fake;Username=u;Password=p";
         Environment.SetEnvironmentVariable("ConnectionStrings__UniPlusDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__SelecaoDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__IngressoDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__PublicacoesDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__ConfiguracaoDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__OrganizacaoDb", fake);
-        Environment.SetEnvironmentVariable("ConnectionStrings__AutorizacaoDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);
 
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
@@ -302,7 +284,7 @@ internal static class MigrationOrderHeuristics
 
     /// <summary>
     /// Nome do <c>TContext</c> em <c>MigrationHostedService&lt;TContext&gt;</c>
-    /// (ex.: <c>SelecaoDbContext</c>), ou <c>null</c> se o descriptor não for um
+    /// (ex.: <c>UniPlusDbContext</c>), ou <c>null</c> se o descriptor não for um
     /// migration hosted service. Usado para travar a cobertura por DbContext.
     /// </summary>
     public static string? GetMigrationContextName(Type? implementationType) =>

@@ -11,8 +11,8 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// A UF e o município de nascimento pelo HTTP, contra o Postgres (UNI-REQ-0145): o formulário de
@@ -60,7 +60,7 @@ public sealed class CampoDeMunicipioEndpointTests
     private async Task<Guid> SemearProcessoAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Campo de município {Guid.CreateVersion7()}");
         return processo.Id;
     }

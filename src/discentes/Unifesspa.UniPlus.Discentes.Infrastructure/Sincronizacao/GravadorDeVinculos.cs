@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Discentes.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
 
@@ -72,8 +72,8 @@ internal sealed class GravadorDeVinculos : IGravadorDeVinculos
         {
             IVinculoDiscenteRepository repositorio =
                 escopo.ServiceProvider.GetRequiredService<IVinculoDiscenteRepository>();
-            IDiscentesUnitOfWork unidadeDeTrabalho =
-                escopo.ServiceProvider.GetRequiredService<IDiscentesUnitOfWork>();
+            IUnitOfWork unidadeDeTrabalho =
+                escopo.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
             // Preparar o lote também pode falhar — cifrar o CPF de um vínculo alterado é o caso
             // mais provável —, e essa falha precisa do mesmo tratamento por lote que a da

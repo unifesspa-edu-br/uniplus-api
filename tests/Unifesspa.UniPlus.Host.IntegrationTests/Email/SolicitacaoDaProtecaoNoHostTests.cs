@@ -11,13 +11,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// A solicitação da proteção do catálogo, no host real, com a decisão de acesso e a leitura dos destinatários dentro do
-/// handler: o verificador e os titulares leem o <c>AutorizacaoDbContext</c>, e o handler continua com um único contexto
+/// handler: o verificador e os titulares leem o <c>UniPlusDbContext</c>, e o handler continua com um único contexto
 /// transacional, o da Configuração. Se o detector do Wolverine visse os dois contextos, o handler nem seria gerado; e a
 /// escrita e o aviso por e-mail, que o handler devolve como mensagem, só chegam juntos quando a transação do outbox é a mesma
 /// da escrita.
@@ -129,7 +129,7 @@ public sealed class SolicitacaoDaProtecaoNoHostTests
     private async Task<int> EnvelopesDeEmailNoOutboxAsync()
     {
         using IServiceScope escopo = _fixture.Factory.Services.CreateScope();
-        ConfiguracaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await contexto.Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM wolverine.wolverine_outgoing_envelopes WHERE message_type ILIKE '%email%'")

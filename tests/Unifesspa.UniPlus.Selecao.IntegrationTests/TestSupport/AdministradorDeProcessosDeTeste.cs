@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -97,7 +98,7 @@ internal static partial class AdministradorDeProcessosDeTeste
             {
                 Guid processoId = Guid.Parse(rota.Groups["id"].Value);
                 await using AsyncServiceScope escopo = contexto.RequestServices.CreateAsyncScope();
-                return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().ProcessosSeletivos
+                return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().ProcessosSeletivos
                     .AsNoTracking()
                     .Where(p => p.Id == processoId)
                     .Select(p => (Guid?)p.UnidadeAdministradoraOrigemId)

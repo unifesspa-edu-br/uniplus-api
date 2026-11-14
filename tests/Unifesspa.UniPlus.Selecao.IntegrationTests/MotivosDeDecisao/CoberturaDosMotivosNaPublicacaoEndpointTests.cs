@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -40,7 +41,7 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
     public async Task DisposeAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_do_processo WHERE codigo LIKE 'TEST\\_CDM\\_%' ESCAPE '\\'");
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_CDM\\_%' ESCAPE '\\'");
     }
@@ -77,7 +78,7 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
     private async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoComIsencaoAsync(string nome)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db, $"{nome} {Guid.CreateVersion7()}", complementar: HabilitarIsencao);
         return (processo.Id, documento.Id);
@@ -110,7 +111,7 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
             sentido)).Value!;
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             db.MotivosDeDecisao.Add(motivo);
             await db.SaveChangesAsync();
         }

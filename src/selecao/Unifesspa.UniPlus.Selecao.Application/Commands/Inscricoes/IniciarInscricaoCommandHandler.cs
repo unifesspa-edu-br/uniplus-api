@@ -4,7 +4,6 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs;
 
@@ -12,6 +11,7 @@ using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Inicia a inscrição (issue #1858) — ou devolve a que já existe, idempotente por construção, não
@@ -44,7 +44,7 @@ public static class IniciarInscricaoCommandHandler
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
         IEnderecoNoAcervoPublico enderecoNoAcervo,
         TimeProvider timeProvider,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {

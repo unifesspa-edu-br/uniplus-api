@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -67,14 +68,14 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             [("1504208", "Marabá", "PA")]).Value!;
         processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
@@ -125,14 +126,14 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
                 "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
                 [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (SelecaoDbContext configureContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
@@ -154,7 +155,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.CriteriosDesempate)
             .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)
@@ -175,14 +176,14 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!], PrecondicaoIfMatch.Ausente);
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (SelecaoDbContext configureContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
@@ -200,7 +201,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.Etapas)
             .Include(p => p.CriteriosDesempate)

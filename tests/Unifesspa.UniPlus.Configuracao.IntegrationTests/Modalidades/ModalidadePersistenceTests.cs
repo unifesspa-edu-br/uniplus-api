@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Serializacao;
@@ -53,13 +54,13 @@ public sealed class ModalidadePersistenceTests
         string codigo = CodigoUnico();
         Modalidade modalidade = Cota(codigo);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Modalidades.Add(modalidade);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Modalidade persistida = await readCtx.Modalidades.SingleAsync(m => m.Id == modalidade.Id);
 
         persistida.Codigo.Valor.Should().Be(codigo);
@@ -80,13 +81,13 @@ public sealed class ModalidadePersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Modalidades.Add(Ampla(codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Modalidades.Add(Ampla(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -104,20 +105,20 @@ public sealed class ModalidadePersistenceTests
     {
         string codigo = CodigoUnico();
         Modalidade modalidade = Ampla(codigo);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Modalidades.Add(modalidade);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             Modalidade tracked = await ctx.Modalidades.SingleAsync(m => m.Id == modalidade.Id);
             ctx.Modalidades.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             Modalidade excluida = await ctx.Modalidades
                 .IgnoreQueryFilters().SingleAsync(m => m.Id == modalidade.Id);
@@ -125,7 +126,7 @@ public sealed class ModalidadePersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.Modalidades.Add(Ampla(codigo));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -135,7 +136,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita natureza fora do domínio via SQL cru")]
     public async Task Check_RejeitaNaturezaForaDoDominioViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.modalidade (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"INVALIDA"}, {"RESIDUAL_DO_VO"}, {DateTimeOffset.UtcNow}, {false})");
@@ -147,7 +148,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do formato via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoFormatoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.modalidade (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"AMPLA"}, {"RESIDUAL_DO_VO"}, {DateTimeOffset.UtcNow}, {false})");
@@ -159,7 +160,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita RETIRA_DE sem origem via SQL cru")]
     public async Task Check_RejeitaRetiraDeSemOrigemViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.modalidade (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RETIRA_DE"}, {DateTimeOffset.UtcNow}, {false})");
@@ -171,7 +172,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita origem preenchida sem RETIRA_DE via SQL cru")]
     public async Task Check_RejeitaOrigemSemRetiraDeViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.modalidade (id, codigo, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RESIDUAL_DO_VO"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
@@ -186,7 +187,7 @@ public sealed class ModalidadePersistenceTests
         string origem = CodigoUnico();
         string dependente = CodigoUnico();
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Modalidades.Add(Ampla(origem));
         ctx.Modalidades.Add(RetiraDe(dependente, origem));
         await ctx.SaveChangesAsync();
@@ -203,7 +204,7 @@ public sealed class ModalidadePersistenceTests
         string destino = CodigoUnico();
         string dependente = CodigoUnico();
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Modalidades.Add(Ampla(destino));
         ctx.Modalidades.Add(DestinoUnico(dependente, destino));
         await ctx.SaveChangesAsync();
@@ -219,7 +220,7 @@ public sealed class ModalidadePersistenceTests
     {
         string livre = CodigoUnico();
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Modalidades.Add(Ampla(livre));
         await ctx.SaveChangesAsync();
 
@@ -237,7 +238,7 @@ public sealed class ModalidadePersistenceTests
         string codB = $"{prefixo}_B";
         string codExcluido = $"{prefixo}_D";
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Modalidades.Add(Ampla(codB));
             ctx.Modalidades.Add(Ampla(codA));
@@ -245,7 +246,7 @@ public sealed class ModalidadePersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoModalidade voExcluido = CodigoModalidade.Criar(codExcluido).Value!;
             Modalidade aExcluir = await ctx.Modalidades.SingleAsync(m => m.Codigo == voExcluido);
@@ -253,7 +254,7 @@ public sealed class ModalidadePersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new ModalidadeReader(readCtx);
         IReadOnlyList<ModalidadeView> todos = await reader.ListarVivosAsync();
 
@@ -275,14 +276,14 @@ public sealed class ModalidadePersistenceTests
         string codigoVivo = CodigoUnico();
         string codigoRemovido = CodigoUnico();
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Modalidades.Add(Ampla(codigoVivo));
             ctx.Modalidades.Add(Ampla(codigoRemovido));
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoModalidade voRemovido = CodigoModalidade.Criar(codigoRemovido).Value!;
             Modalidade aExcluir = await ctx.Modalidades.SingleAsync(m => m.Codigo == voRemovido);
@@ -290,7 +291,7 @@ public sealed class ModalidadePersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new ModalidadeReader(readCtx);
 
         ModalidadeView? viva = await reader.ObterVivaPorCodigoAsync(codigoVivo);
@@ -306,7 +307,7 @@ public sealed class ModalidadePersistenceTests
         foraDoFormato.Should().BeNull();
     }
 
-    private static Guid ExcluirId(ConfiguracaoDbContext ctx, string codigo)
+    private static Guid ExcluirId(UniPlusDbContext ctx, string codigo)
     {
         CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
         return ctx.Modalidades.Single(m => m.Codigo == vo).Id;
@@ -315,7 +316,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "Seed: as oito federais + AC + as institucionais nascem com a migração, vivas e com os atributos corretos")]
     public async Task Seed_ModalidadesFederais_PresentesEVivas()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<Modalidade> semeadas = await ctx.Modalidades.AsNoTracking()
             .Where(m => !m.IsDeleted)
@@ -354,7 +355,7 @@ public sealed class ModalidadePersistenceTests
         CodigoModalidade acIVo = CodigoModalidade.Criar(CodigoModalidade.AcI).Value!;
         CodigoModalidade acQVo = CodigoModalidade.Criar(CodigoModalidade.AcQ).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<Modalidade> psiq = await ctx.Modalidades.AsNoTracking()
             .Where(m => !m.IsDeleted && (m.Codigo == acIVo || m.Codigo == acQVo))
@@ -393,7 +394,7 @@ public sealed class ModalidadePersistenceTests
     {
         CodigoModalidade vo = CodigoModalidade.Criar(codigo).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Modalidade modalidade = await ctx.Modalidades.AsNoTracking()
             .SingleAsync(m => !m.IsDeleted && m.Codigo == vo);
@@ -446,7 +447,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "Seed: a regra de cada modalidade legal passa pela conferência contra o catálogo semeado")]
     public async Task Seed_RegrasDeAplicabilidade_PassamPelaConferenciaDoCatalogo()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Include(static f => f.ValoresDominioDeclarados).ToListAsync();
         List<PrecedenciaFase> precedencias = await ctx.PrecedenciasFase.AsNoTracking().ToListAsync();
         CatalogoDeFatos catalogo = new(fatos, precedencias);
@@ -464,7 +465,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "Regra que cita a modalidade da convocação é recusada: ela só existe depois do resultado final")]
     public async Task Conferir_ModalidadeDaConvocacao_RecusaPelasPrecedenciasSemeadas()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Include(static f => f.ValoresDominioDeclarados).ToListAsync();
         List<PrecedenciaFase> precedencias = await ctx.PrecedenciasFase.AsNoTracking().ToListAsync();
         PredicadoDnf regra = PredicadoDnf.CriarDeCondicoesAgrupadas(
@@ -479,7 +480,7 @@ public sealed class ModalidadePersistenceTests
     [Fact(DisplayName = "Seed: a regra gravada de cada modalidade legal volta igual pela leitura cross-módulo")]
     public async Task Seed_RegraDeAplicabilidade_VoltaIgualPeloReader()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         IReadOnlyList<ModalidadeView> vivas = await new ModalidadeReader(ctx).ListarVivosAsync(CancellationToken.None);
 
         foreach (ModalidadeSeedItem item in ModalidadeSeed.Itens)

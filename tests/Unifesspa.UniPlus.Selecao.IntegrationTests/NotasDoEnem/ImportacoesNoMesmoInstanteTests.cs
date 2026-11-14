@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Host;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
@@ -71,7 +72,7 @@ public sealed class ImportacoesNoMesmoInstanteTests : IDisposable
     private async Task<LoteGravado[]> LotesAsync(Publicado processo)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().LotesDeNotasDoEnem.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().LotesDeNotasDoEnem.AsNoTracking()
             .Where(l => l.ProcessoSeletivoId == processo.ProcessoId)
             .Select(l => new LoteGravado(l.ImportadoEm, EF.Property<long>(l, LoteDeNotasDoEnemConfiguration.OrdemDeRegistro)))
             .ToArrayAsync();

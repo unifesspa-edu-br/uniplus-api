@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O leitor cross-módulo das versões de termo (UNI-REQ-0086), contra Postgres real: é por ele que
@@ -37,7 +38,7 @@ public sealed class TermoConsentimentoReaderTests
         (TermoConsentimento vivo, TermoConsentimentoVersao versaoViva) = Promovido("Autorização de consulta", "A_DEFINIR");
         (TermoConsentimento removido, TermoConsentimentoVersao versaoRemovida) = Promovido("Termo retirado", "REGISTRO_DIGITAL_SEM_LOG_IP");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.AddRange(vivo, removido);
             await ctx.SaveChangesAsync();
@@ -46,7 +47,7 @@ public sealed class TermoConsentimentoReaderTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimentoReader reader = new(readCtx);
 
         IReadOnlyList<VersaoTermoConsentimentoView> versoes =

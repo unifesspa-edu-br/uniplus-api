@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -68,7 +69,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         Guid id;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
                 $"conc-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
@@ -78,7 +79,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         }
 
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
 
         // Trava a linha (lock de escrita do Postgres) sem commitar ainda —
@@ -107,7 +108,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
             "o xmin lido pelo handler ficou obsoleto assim que txB commitou a própria escrita na mesma linha");
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         CalendarioDiasUteis persistido = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == id);
         persistido.IsDeleted.Should().BeFalse(
             "o handler perdeu a corrida e não deve ter removido nada — nenhuma segunda tentativa do outbox deve ter reaplicado a remoção");
@@ -132,7 +133,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         Guid id;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
                 $"conc-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
@@ -142,7 +143,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         }
 
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
 
         // Simula o UPDATE que RemoverCalendarioDiasUteisCommandHandler (via
@@ -169,7 +170,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.ConflitoDeConcorrencia);
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int diasComANovaData = await readDb.Database.SqlQuery<int>(
             $"""
             SELECT count(*)::int AS "Value" FROM configuracao.dia_nao_util
@@ -198,7 +199,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         Guid id;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             CalendarioDiasUteis criado = CalendarioDiasUteis.Criar(
                 $"conc-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "Ano novo")]).Value!;
@@ -208,7 +209,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         }
 
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
 
         // Insere a MESMA combinação diretamente por SQL cru, sem commitar — o
@@ -241,7 +242,7 @@ public sealed class CalendarioDiasUteisConcorrenciaTests
         resultadoA.Error!.Code.Should().Be(CalendarioDiasUteisErrorCodes.DataDuplicadaNoDataset);
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int totalNaCombinacao = await readDb.Database.SqlQuery<int>(
             $"""
             SELECT count(*)::int AS "Value" FROM configuracao.dia_nao_util

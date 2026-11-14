@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -18,7 +18,7 @@ internal static class MutacaoDoTipo
         Guid id,
         Func<TipoDocumento, Result> mutacao,
         ITipoDocumentoRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         DomainError conflito,
         CancellationToken cancellationToken)
     {
@@ -40,7 +40,7 @@ internal static class MutacaoDoTipo
     /// modificada. Qualquer outra exceção sobe para quem chama.
     /// </summary>
     public static async Task<Result> SalvarAsync(
-        IConfiguracaoUnitOfWork unitOfWork, DomainError conflito, CancellationToken cancellationToken)
+        IUnitOfWork unitOfWork, DomainError conflito, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(conflito);

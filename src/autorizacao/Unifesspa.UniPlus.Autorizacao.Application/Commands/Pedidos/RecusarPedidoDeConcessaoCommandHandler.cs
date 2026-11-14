@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
@@ -24,7 +25,7 @@ public static class RecusarPedidoDeConcessaoCommandHandler
         IVerificadorDeAcesso verificador,
         CatalogoDaAplicacao catalogo,
         AvisosDoPedido avisos,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

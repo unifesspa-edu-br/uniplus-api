@@ -5,9 +5,8 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -131,7 +130,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         instalacao.Situacao.Should().Be(SituacaoDaInstalacao.DocumentoVerificado);
     }
 
-    private static Task<IEnumerable<EnviarEmail>> Despachar(ResultadoDaVerificacaoDeArquivo resultado, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
+    private static Task<IEnumerable<EnviarEmail>> Despachar(ResultadoDaVerificacaoDeArquivo resultado, IPedidoDeConcessaoRepository pedidos, IUnitOfWork unidade) =>
         RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler.Handle(
             resultado, DoublesDeAvisos.Receptores(new InstalacaoNaMemoria(null), pedidos, unidade), NullLogger.Instance, CancellationToken.None);
 
@@ -168,7 +167,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         public bool Contem(string dominio) => true;
     }
 
-    private sealed class UnidadeDeTrabalhoQueConta : IAutorizacaoUnitOfWork
+    private sealed class UnidadeDeTrabalhoQueConta : IUnitOfWork
     {
         public int Gravacoes { get; private set; }
 
@@ -181,6 +180,8 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
         public void DescartarAlteracoesNaoSalvas()
         {
         }
+
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class InstalacaoNaMemoria(Instalacao? instalacao) : IInstalacaoRepository

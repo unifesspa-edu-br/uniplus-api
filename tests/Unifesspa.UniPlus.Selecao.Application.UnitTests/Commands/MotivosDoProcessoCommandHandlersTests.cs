@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
@@ -32,7 +32,7 @@ public sealed class MotivosDoProcessoCommandHandlersTests
     private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
     private readonly IMotivoDeDecisaoRepository _cadastro = Substitute.For<IMotivoDeDecisaoRepository>();
     private readonly IMotivoDoProcessoRepository _escolhidos = Substitute.For<IMotivoDoProcessoRepository>();
-    private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly TimeProvider _relogio = new RelogioFixo(new DateTimeOffset(2027, 2, 1, 0, 0, 0, TimeSpan.Zero));
 
     public MotivosDoProcessoCommandHandlersTests()

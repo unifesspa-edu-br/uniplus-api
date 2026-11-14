@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -35,7 +36,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
         Guid processoId = await GravarAsync(
             "PS recorte", Guid.CreateVersion7(), BancaComRecorte(tipoUnico, "RENDA"), BancaComRecorte(tipoUnico, "ETNICO_RACIAL"));
 
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         IReadOnlyCollection<BancaRequerida> bancas = (await CarregarAsync(db, processoId)).CronogramaFases.Single().BancasRequeridas;
 
         bancas.Should().OnlyContain(b => b.Codigo == "BANCA_ANALISE_DOCUMENTAL" && b.TipoBancaOrigemId == tipoUnico);
@@ -61,7 +62,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
 
         await RedefinirAsync(processoId, faseCanonicaOrigemId, BancaComRecorte(tipoBanca, "ESCOLARIDADE"));
 
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.CronogramaFases.Single().BancasRequeridas.Single()
@@ -75,7 +76,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     {
         Guid processoId = await GravarAsync("PS recorte unico", Guid.CreateVersion7(), BancaComRecorte(Guid.CreateVersion7(), "RENDA"));
 
-        await using SelecaoDbContext direto = _fixture.CreateDbContext();
+        await using UniPlusDbContext direto = _fixture.CreateDbContext();
         Guid bancaId = (await CarregarAsync(direto, processoId)).CronogramaFases.Single().BancasRequeridas.Single().Id;
 
         // A recusa no agregado é check-then-act não-atômico: duas requisições concorrentes
@@ -92,7 +93,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     // A banca antiga foi removida com a reposição; o recorte dela não pode
     // sobreviver ao pai, ou o certame passaria a declarar competência de uma banca
     // que ninguém mais requer.
-    private static async Task ConferirQueNenhumaCategoriaFicouOrfaAsync(SelecaoDbContext db)
+    private static async Task ConferirQueNenhumaCategoriaFicouOrfaAsync(UniPlusDbContext db)
     {
         List<Guid> bancasVivas = await db.BancasRequeridas.Select(b => b.Id).ToListAsync();
         (await db.Set<CategoriaJulgada>().CountAsync(c => !bancasVivas.Contains(c.BancaRequeridaId)))
@@ -108,7 +109,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
 
     private async Task<Guid> GravarAsync(string nome, Guid faseCanonicaOrigemId, params BancaRequerida[] bancas)
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = NovoProcesso($"{nome} {Guid.CreateVersion7()}");
         processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -119,7 +120,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
 
     private async Task RedefinirAsync(Guid processoId, Guid faseCanonicaOrigemId, params BancaRequerida[] bancas)
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
         Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Curinga);
         redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
@@ -150,7 +151,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
             regraRecurso: null,
             unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
-    private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
+    private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)

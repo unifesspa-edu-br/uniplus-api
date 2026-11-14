@@ -7,26 +7,23 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
-using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Publicacoes.API.Errors;
 using Unifesspa.UniPlus.Publicacoes.API.Hateoas;
 using Unifesspa.UniPlus.Publicacoes.Application;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Permissoes;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo Publicações para o composition root do
 /// monólito modular (ADR-0097). Reúne o que é específico do módulo — OpenAPI
-/// doc, registro de erros de domínio, Infrastructure e migrations on startup.
+/// doc, registro de erros de domínio, builders HATEOAS, Application e Infrastructure.
 ///
 /// O módulo não referencia Domain, Application, Infrastructure ou API de nenhum
 /// outro módulo (ADR-0105): ele possui a essência documental do ato, e nada mais.
 ///
 /// Os handlers vivem no assembly Application e são descobertos pelo Wolverine, que
-/// os inclui explicitamente no <c>Discovery</c> do composition root — junto com o
-/// opt-in de codegen de <see cref="PublicacoesCodegenRegistration"/>.
+/// os inclui explicitamente no <c>Discovery</c> do composition root.
 /// </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Design",
@@ -51,21 +48,12 @@ public static class PublicacoesModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<TipoAtoPublicadoDto>, TipoAtoPublicadoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<AtoNormativoDto>, AtoNormativoLinksBuilder>();
 
-        // Idempotency-Key (ADR-0027) sobre o DbContext do módulo. Sem este registro o
-        // [RequiresIdempotencyKey] do POST compila e não faz nada: a requisição sem
-        // header alcança o handler, e o replay reexecuta em vez de devolver o cache.
-        services.AddIdempotency<PublicacoesDbContext, PublicacoesApiAssemblyMarker>(configuration);
-
         // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
         // conferido na subida.
         services.AddCatalogoDePermissoes<PermissaoPublicacoes>();
 
         services.AddPublicacoesApplication();
         services.AddPublicacoesInfrastructure();
-
-        // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES
-        // do runtime Wolverine (invariante #419 — MigrationBeforeWolverineRuntimeOrder).
-        services.AddDbContextMigrationsOnStartup<PublicacoesDbContext>();
 
         return services;
     }

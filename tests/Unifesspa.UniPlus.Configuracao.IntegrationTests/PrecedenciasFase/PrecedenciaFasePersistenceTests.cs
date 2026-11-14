@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta de <c>PrecedenciaFase</c> contra Postgres real
@@ -49,7 +50,7 @@ public sealed class PrecedenciaFasePersistenceTests
     [Fact(DisplayName = "CA-05: o seed materializa as seis arestas canônicas e o reader devolve o grafo")]
     public async Task Seed_MaterializaArestasCanonicas()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var reader = new PrecedenciaFaseReader(ctx);
 
         IReadOnlyList<PrecedenciaFaseView> grafo = await reader.ListarVivasAsync();
@@ -67,13 +68,13 @@ public sealed class PrecedenciaFasePersistenceTests
     {
         PrecedenciaFase aresta = Aresta("ENSALAMENTO", "AVALIACAO");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PrecedenciasFase.Add(aresta);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PrecedenciaFase persistida = await readCtx.PrecedenciasFase.SingleAsync(p => p.Id == aresta.Id);
 
         persistida.AntecessoraCodigo.Should().Be("ENSALAMENTO");
@@ -91,13 +92,13 @@ public sealed class PrecedenciaFasePersistenceTests
     [Fact(DisplayName = "UNIQUE parcial do par rejeita segunda aresta viva com o mesmo par")]
     public async Task UniquePartial_Par_RejeitaDuplicataAtiva()
     {
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PrecedenciasFase.Add(Aresta("CLASSIFICACAO", "CHAMADA"));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.PrecedenciasFase.Add(Aresta("CLASSIFICACAO", "CHAMADA"));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -112,20 +113,20 @@ public sealed class PrecedenciaFasePersistenceTests
     public async Task SoftDelete_LiberaSlot()
     {
         PrecedenciaFase aresta = Aresta("LISTA_ESPERA", "CHAMADA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PrecedenciasFase.Add(aresta);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PrecedenciaFase tracked = await ctx.PrecedenciasFase.SingleAsync(p => p.Id == aresta.Id);
             ctx.PrecedenciasFase.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             PrecedenciaFase excluida = await ctx.PrecedenciasFase
                 .IgnoreQueryFilters().SingleAsync(p => p.Id == aresta.Id);
@@ -133,7 +134,7 @@ public sealed class PrecedenciaFasePersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.PrecedenciasFase.Add(Aresta("LISTA_ESPERA", "CHAMADA"));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -143,7 +144,7 @@ public sealed class PrecedenciaFasePersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita self-loop via SQL cru")]
     public async Task Check_RejeitaSelfLoopViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {"INSCRICAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
@@ -155,7 +156,7 @@ public sealed class PrecedenciaFasePersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código de antecessora fora do conjunto canônico via SQL cru")]
     public async Task Check_RejeitaAntecessoraForaDoCanonicoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"HOMOLOGACAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
@@ -171,7 +172,7 @@ public sealed class PrecedenciaFasePersistenceTests
         // dois sentidos é o que distingue "acrescentei o código nas três" de "acrescentei
         // só na de fase_canonica" — neste último caso a fase existiria no cadastro e
         // nenhuma aresta poderia referenciá-la.
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> comoSucessora = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {true}, {DateTimeOffset.UtcNow}, {false})");

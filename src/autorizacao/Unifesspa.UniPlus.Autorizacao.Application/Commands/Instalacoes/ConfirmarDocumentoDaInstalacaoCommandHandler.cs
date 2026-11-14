@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -19,7 +19,7 @@ public static class ConfirmarDocumentoDaInstalacaoCommandHandler
     public static async Task<(Result<InstalacaoDto> Resposta, IEnumerable<object> Mensagens)> Handle(
         ConfirmarDocumentoDaInstalacaoCommand command,
         IInstalacaoRepository repository,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {

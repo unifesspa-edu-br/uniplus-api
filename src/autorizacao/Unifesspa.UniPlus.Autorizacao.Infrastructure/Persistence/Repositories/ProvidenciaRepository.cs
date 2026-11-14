@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -15,9 +16,9 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// </summary>
 public sealed class ProvidenciaRepository : IProvidenciaRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public ProvidenciaRepository(AutorizacaoDbContext context)
+    public ProvidenciaRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -62,7 +63,7 @@ public sealed class ProvidenciaRepository : IProvidenciaRepository
     {
         // A trava vem antes da leitura, que então enxerga o que a revogação concorrente já confirmou.
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE id = {{0}} FOR SHARE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.concessoes WHERE id = {{0}} FOR SHARE",
             [concessaoId],
             cancellationToken).ConfigureAwait(false);
 

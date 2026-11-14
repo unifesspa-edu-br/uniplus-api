@@ -123,8 +123,8 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
         // Sem colisão de posição entre irmãos (NoPaiId IS NOT NULL) nem entre raízes do
         // mesmo processo (NoPaiId IS NULL) — de propósito AUSENTES daqui como
         // HasIndex().IsUnique(): são EXCLUDE constraints GiST DEFERRABLE INITIALLY DEFERRED
-        // (ex_nos_exigencia_irmaos_ordem/ex_nos_exigencia_raiz_ordem), criadas via SQL cru na
-        // migration — mesmo padrão de ex_tipo_ato_publicado_codigo_vigencia
+        // (ex_nos_exigencia_irmaos_ordem/ex_nos_exigencia_raiz_ordem), criadas pelo script
+        // 001_ordem_unica_dos_nos_da_exigencia.sql — mesmo padrão de ex_tipo_ato_publicado_codigo_vigencia
         // (TipoAtoPublicadoConfiguration.cs), que o Fluent API do EF Core não modela. Um
         // índice único comum é verificado por-statement; como nos_exigencia é
         // auto-referenciada (NoPaiId → Id, Restrict), substituir uma árvore com grupo E/OU

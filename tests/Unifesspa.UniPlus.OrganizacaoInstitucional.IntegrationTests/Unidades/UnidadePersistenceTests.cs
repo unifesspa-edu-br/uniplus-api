@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -42,13 +43,13 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     {
         Unidade unidade = NovaUnidade("insert-basico", "CEPS-INS", "INS001");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         Unidade persistida = await readCtx.Unidades
             .Include(u => u.Historico)
@@ -77,7 +78,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             "HUP001",
             alias: "Alias original");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
@@ -85,7 +86,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         DateOnly dataMudanca = DataInicio.AddDays(10);
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             var repository = new UnidadeRepository(ctx);
             Unidade tracked = (await repository.ObterPorIdAsync(unidade.Id, CancellationToken.None))!;
@@ -107,7 +108,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
                 "a nova entrada de histórico deve ser inserida, não tratada como update de linha existente");
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         Unidade persistida = await readCtx.Unidades.SingleAsync(u => u.Id == unidade.Id);
         persistida.Alias.Should().Be("Alias atualizado");
@@ -131,13 +132,13 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     {
         Unidade unidade = NovaUnidade("audit-trail", "AUDIT", "AUD001");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         Unidade persistida = await readCtx.Unidades
             .SingleAsync(u => u.Id == unidade.Id);
@@ -150,14 +151,14 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     public async Task UniquePartial_Slug_RejeitaDuplicataAtiva()
     {
         Unidade primeira = NovaUnidade("slug-unico", "SU01", "SUC001");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(primeira);
             await ctx.SaveChangesAsync();
         }
 
         Unidade segunda = NovaUnidade("slug-unico", "SU02", "SUC002");
-        await using OrganizacaoInstitucionalDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Unidades.Add(segunda);
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -170,14 +171,14 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     public async Task UniquePartial_Sigla_RejeitaDuplicataAtiva()
     {
         Unidade primeira = NovaUnidade("sigla-unica-a", "SIGDUP", "SGDUP001");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(primeira);
             await ctx.SaveChangesAsync();
         }
 
         Unidade segunda = NovaUnidade("sigla-unica-b", "SIGDUP", "SGDUP002");
-        await using OrganizacaoInstitucionalDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Unidades.Add(segunda);
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -191,14 +192,14 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     {
         Unidade unidade = NovaUnidade("slug-reciclado", "RCSL", "REC001");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
         }
 
         // Soft-delete via SoftDeleteInterceptor.
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             Unidade tracked = await ctx.Unidades.SingleAsync(u => u.Id == unidade.Id);
             ctx.Unidades.Remove(tracked);
@@ -206,7 +207,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         }
 
         // Confirma que is_deleted = true via IgnoreQueryFilters.
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             Unidade excluida = await ctx.Unidades
                 .IgnoreQueryFilters()
@@ -216,7 +217,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         // Nova Unidade com mesmo slug é aceita — UNIQUE parcial WHERE is_deleted = false.
         Unidade nova = NovaUnidade("slug-reciclado", "RCSL2", "REC002");
-        await using OrganizacaoInstitucionalDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.Unidades.Add(nova);
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -229,20 +230,20 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     {
         Unidade unidade = NovaUnidade("soft-del-audit", "SDA", "SDA001");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
         }
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             Unidade tracked = await ctx.Unidades.SingleAsync(u => u.Id == unidade.Id);
             ctx.Unidades.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Unidade excluida = await readCtx.Unidades
             .IgnoreQueryFilters()
             .SingleAsync(u => u.Id == unidade.Id);
@@ -257,7 +258,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     {
         Unidade pai = NovaUnidade("reitoria", "REIT", "REIT001");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(pai);
             await ctx.SaveChangesAsync();
@@ -265,13 +266,13 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         Unidade filho = NovaUnidade("proeg", "PROEG", "PROEG001", superiorId: pai.Id);
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(filho);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         Unidade persistido = await readCtx.Unidades.SingleAsync(u => u.Id == filho.Id);
 
@@ -285,21 +286,21 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         // portanto não emite DELETE SQL e não aciona o RESTRICT. Para testar a constraint
         // de banco em si, emitimos DELETE físico via SQL bruto.
         Unidade pai = NovaUnidade("pai-restrict", "PRST", "PRS001");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(pai);
             await ctx.SaveChangesAsync();
         }
 
         Unidade filho = NovaUnidade("filho-restrict", "FRST", "FRS001", superiorId: pai.Id);
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(filho);
             await ctx.SaveChangesAsync();
         }
 
         // Tenta DELETE físico do pai com filho ativo — deve violar FK RESTRICT.
-        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () =>
             await rawCtx.Database.ExecuteSqlAsync(
@@ -318,7 +319,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         Unidade c = NovaUnidade("hier-c", "HIERC", "HRC001", b.Id);
         Unidade d = NovaUnidade("hier-d", "HIERD", "HRD001");
 
-        await using (OrganizacaoInstitucionalDbContext seed = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext seed = _fixture.CreateDbContext(AdminA))
         {
             // Saves sequenciais respeitam a FK auto-referencial (pai antes do filho).
             seed.Unidades.Add(a);
@@ -331,7 +332,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             await seed.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
 
         // C é descendente de A (A→B→C): tornar C superior de A formaria ciclo.
@@ -350,13 +351,13 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
     public async Task ChecagensDeUnicidade_NormalizamArgumentoComEspacos()
     {
         Unidade existente = NovaUnidade("trim-check", "TRIMSIG", "TRIMCOD");
-        await using (OrganizacaoInstitucionalDbContext seed = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext seed = _fixture.CreateDbContext(AdminA))
         {
             seed.Unidades.Add(existente);
             await seed.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
 
         // " trimsig " deve casar com "TRIMSIG" persistido (Trim + ToUpperInvariant).
@@ -375,7 +376,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         // impede o cascade em memória: a Unidade vira soft-delete e o histórico sobrevive.
         Unidade unidade = NovaUnidade("hist-preserva", "HPRES", "HPR001");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
@@ -383,7 +384,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
 
         // Caminho EXATO do RemoverUnidadeCommandHandler: ObterPorIdAsync (Include
         // Historico, rastreado) seguido de Remover, no mesmo contexto.
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             var repository = new UnidadeRepository(ctx);
             Unidade tracked = (await repository.ObterPorIdAsync(unidade.Id, CancellationToken.None))!;
@@ -394,7 +395,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         // Unidade soft-deletada (UPDATE is_deleted=true), não removida fisicamente.
         Unidade excluida = await readCtx.Unidades
@@ -418,13 +419,13 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             "cidade-completa", "CIDCOMP", "CID001",
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Unidade persistida = await readCtx.Unidades.SingleAsync(u => u.Id == unidade.Id);
 
         persistida.CidadeCodigoIbge.Should().Be("1504208");
@@ -439,7 +440,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
             "cidade-trio", "CIDTRIO", "CID002",
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(unidade);
             await ctx.SaveChangesAsync();
@@ -448,7 +449,7 @@ public sealed class UnidadePersistenceTests : IClassFixture<UnidadeDbFixture>
         // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio trata a
         // cidade como all-or-nothing; o CHECK protege a escrita crua (mesmo padrão de
         // InstituicaoPersistenceTests.CheckCidadeCompleta_RejeitaTrioParcial).
-        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE organizacao.unidade SET cidade_nome = NULL WHERE id = {unidade.Id}");
 

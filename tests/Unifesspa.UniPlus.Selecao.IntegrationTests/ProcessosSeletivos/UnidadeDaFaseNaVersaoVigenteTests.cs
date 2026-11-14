@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -15,7 +16,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -31,7 +31,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task DaFase_ResolveAUnidadeDaVersaoVigente()
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS unidade da fase");
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         UnidadeDaFaseNaVersaoVigente leitor = new(context, TimeProvider.System);
 
         UnidadeDaFase? daFase = await leitor.DaFaseAsync(processoId, fase.Id);
@@ -46,7 +46,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS fase inexistente");
         (Guid outroProcessoId, _, _) = await PublicadoAsync("PS outro processo");
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         UnidadeDaFaseNaVersaoVigente leitor = new(context, TimeProvider.System);
 
         (await leitor.DaFaseAsync(processoId, Guid.CreateVersion7())).Should().BeNull();
@@ -60,7 +60,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task Iniciadas_ContaPelaJanelaPublicada()
     {
         (Guid processoId, FaseCronograma fase, _) = await PublicadoAsync("PS janela da fase", Abertura);
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         FasesIniciadasDoProcesso leitor = new(context);
 
         FasesIniciadas antes = await leitor.ObterAsync(processoId, DateTimeOffset.UtcNow);
@@ -123,7 +123,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
 
     private async Task SemearImportacaoDeNotasAsync(Guid processoId, Guid etapaId, DateTimeOffset importadoEm)
     {
-        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
         Guid versaoId = await semeadura.VersoesConfiguracao.Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).FirstAsync();
         semeadura.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
             processoId, etapaId, "2026", "INEP_ENEM_RETORNO", "v1", new string('b', 64), new string('c', 64), "sub-admin", importadoEm, 0,
@@ -133,7 +133,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
 
     private async Task SemearInscricaoRecebidaAsync(Guid processoId, DateTimeOffset criadaEm)
     {
-        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
         semeadura.Inscricoes.Add(InscricaoSubmetida(processoId, criadaEm));
         await semeadura.SaveChangesAsync();
     }
@@ -161,7 +161,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await PublicadoAsync("PS vigencia futura");
         await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         UnidadeDaFase? daFase = await new UnidadeDaFaseNaVersaoVigente(context, TimeProvider.System).DaFaseAsync(processoId, fase.Id);
         UnidadeDaFase? daEtapa = await new UnidadeDaFaseNaVersaoVigente(context, TimeProvider.System).DaEtapaAsync(processoId, etapa.Id);
@@ -311,7 +311,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
 
     private async Task SucederNoEnvelopeAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraOEnvelope)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         VersaoConfiguracao anterior = await context.VersoesConfiguracao
             .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).FirstAsync();
         JsonObject envelope = JsonNode.Parse(anterior.ConfiguracaoCongelada)!.AsObject();
@@ -324,13 +324,13 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
 
     private async Task<FasesIniciadas> IniciadasAsync(Guid processoId, DateTimeOffset agora)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         return await new FasesIniciadasDoProcesso(context).ObterAsync(processoId, agora);
     }
 
     private async Task SemearAtoAsync(Guid processoId, IdentidadeDoItemDoEdital item)
     {
-        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processoId, FinalidadeDoDocumento.DocumentoDeAto, "resultado.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, new string('a', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -346,7 +346,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     private async Task<(Guid ProcessoId, FaseCronograma Fase, EtapaProcesso Etapa)> PublicadoAsync(string nome, DateTimeOffset? inicioDaFase = null)
     {
         ProcessoSeletivoPublicacaoSeeder.Resultado resultado = await ProcessoSeletivoPublicacaoSeeder.PublicarAsync(_fixture, nome, inicioDaFase);
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await context.ProcessosSeletivos
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.Etapas)

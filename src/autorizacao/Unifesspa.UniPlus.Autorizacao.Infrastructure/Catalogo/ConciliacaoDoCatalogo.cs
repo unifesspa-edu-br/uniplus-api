@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A conferência do catálogo da aplicação com o último catálogo gravado, na implantação, depois das migrations. Numa
@@ -21,14 +22,14 @@ public sealed partial class ConciliacaoDoCatalogo
 {
     private const string NomeDaTrava = "autorizacao.conciliacao_do_catalogo";
 
-    private readonly AutorizacaoDbContext _db;
+    private readonly UniPlusDbContext _db;
     private readonly CatalogoDaAplicacao _catalogo;
     private readonly ICatalogoDePermissoesConsultavel _consultavel;
     private readonly TimeProvider _relogio;
     private readonly ILogger<ConciliacaoDoCatalogo> _logger;
 
     public ConciliacaoDoCatalogo(
-        AutorizacaoDbContext db,
+        UniPlusDbContext db,
         CatalogoDaAplicacao catalogo,
         ICatalogoDePermissoesConsultavel consultavel,
         TimeProvider relogio,
@@ -100,7 +101,7 @@ public sealed partial class ConciliacaoDoCatalogo
 
     private async Task TravarPerfisComunsAsync(CancellationToken cancellationToken) =>
         await _db.Database.ExecuteSqlRawAsync(
-            $"SELECT id FROM {AutorizacaoDbContext.Schema}.perfis WHERE governanca IS NULL ORDER BY id FOR UPDATE", cancellationToken)
+            $"SELECT id FROM {AutorizacaoContribuicao.NomeDoEsquema}.perfis WHERE governanca IS NULL ORDER BY id FOR UPDATE", cancellationToken)
             .ConfigureAwait(false);
 
     private async Task RegistrarDivergenciasDaGovernancaAsync(ComparacaoDeCatalogos comparacao, CancellationToken cancellationToken)

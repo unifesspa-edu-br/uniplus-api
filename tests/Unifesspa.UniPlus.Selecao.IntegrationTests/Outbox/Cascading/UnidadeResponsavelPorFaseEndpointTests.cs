@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -168,7 +169,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"PS unidade por fase — {nome} {Guid.CreateVersion7()}",
                 Unifesspa.UniPlus.Selecao.Domain.Enums.TipoProcesso.SiSU,
@@ -189,7 +190,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
     private static async Task<Guid> ObterFaseCanonicaAsync(CascadingApiFactory api, string codigo)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext config = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         // O catálogo de fases vivas é pequeno — materializar é mais barato que traduzir a
         // comparação do value object Codigo para SQL.
@@ -225,7 +226,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         public async Task<IReadOnlyList<FaseCronograma>> ObterFasesGravadasAsync()
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             return await db.Set<FaseCronograma>().AsNoTracking()
                 .Where(f => f.ProcessoSeletivoId == ProcessoId)
                 .OrderBy(f => f.Ordem)
@@ -249,7 +250,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         {
             string sufixo = Guid.CreateVersion7().ToString("N")[^8..];
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+            UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             Unidade unidade = Unidade.Criar(
                 nome,
                 new IdentificadoresDaUnidade($"{sigla.ToLowerInvariant()}-{sufixo}", $"{sigla}{sufixo}", $"{sigla}-{sufixo}", null),
@@ -266,7 +267,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         public async Task ExcluirUnidadeAsync(Guid unidadeId)
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+            UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             Unidade unidade = await org.Unidades.SingleAsync(u => u.Id == unidadeId).ConfigureAwait(false);
             unidade.MarkAsDeleted("teste", DateTimeOffset.UtcNow);
             await org.SaveChangesAsync().ConfigureAwait(false);
@@ -275,7 +276,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         public async Task RenomearUnidadeAsync(Guid unidadeId, string novaSigla, string novoNome)
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            OrganizacaoInstitucionalDbContext org = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+            UniPlusDbContext org = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             Unidade unidade = await org.Unidades.SingleAsync(u => u.Id == unidadeId).ConfigureAwait(false);
             unidade.Atualizar(
                 novoNome,

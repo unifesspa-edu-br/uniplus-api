@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class MarcarVigenteCalendarioDiasUteisCommandHandlerTests
 {
     private readonly ICalendarioDiasUteisRepository _repository = Substitute.For<ICalendarioDiasUteisRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CalendarioDiasUteis Novo(string versaoDataset = "2027.1") =>
         CalendarioDiasUteis.Criar(

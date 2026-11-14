@@ -7,20 +7,18 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
-using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API.Hateoas;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.DTOs;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Permissoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo OrganizacaoInstitucional para o composition
 /// root do monólito modular. Reúne tudo que é específico do módulo —
-/// OpenAPI doc, registro de erros de domínio, builders HATEOAS, idempotência sobre
-/// o DbContext do módulo, Application + Infrastructure e migrations on startup.
+/// OpenAPI doc, registro de erros de domínio, builders HATEOAS, permissões,
+/// Application e Infrastructure.
 ///
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, criptografia,
@@ -52,23 +50,14 @@ public static class OrganizacaoInstitucionalModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<UnidadeDto>, UnidadeLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<InstituicaoDto>, InstituicaoLinksBuilder>();
 
-        // Idempotency-Key (ADR-0027) sobre o DbContext do módulo. O filter de MVC
-        // ativa-se em endpoints com [RequiresIdempotencyKey], persistindo entries
-        // cifradas at-rest.
-        services.AddIdempotency<OrganizacaoInstitucionalDbContext, OrganizacaoApiAssemblyMarker>(configuration);
-
         // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
         // conferido na subida.
         services.AddCatalogoDePermissoes<PermissaoOrganizacao>();
 
-        // Application + Infrastructure — registram validators, DbContext, repositórios,
+        // Application + Infrastructure — registram validators, repositórios,
         // readers cross-módulo (ADR-0056) e cache invalidators.
         services.AddOrganizacaoInstitucionalApplication();
         services.AddOrganizacaoInstitucionalInfrastructure();
-
-        // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES
-        // do runtime Wolverine (invariante #419 — MigrationBeforeWolverineRuntimeOrder).
-        services.AddDbContextMigrationsOnStartup<OrganizacaoInstitucionalDbContext>();
 
         return services;
     }

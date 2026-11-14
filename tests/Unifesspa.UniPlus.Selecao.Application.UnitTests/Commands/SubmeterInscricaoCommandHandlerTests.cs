@@ -11,6 +11,7 @@ using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -25,7 +26,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -76,7 +76,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IInscricaoRepository inscricaoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         IConferenciaEnderecoGeo? conferenciaEnderecoGeo = null,
         IGeradorDeNumeroInscricao? geradorDeNumeroInscricao = null,
@@ -155,7 +155,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            Substitute.For<ISelecaoUnitOfWork>(), userContext);
+            Substitute.For<IUnitOfWork>(), userContext);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -172,7 +172,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+            Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -186,7 +186,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
@@ -214,7 +214,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         DivulgacaoDeTeste.ConfigurarDivulgada(processoRepository, registroCodecs, divulgada, grafo);
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([]);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
@@ -242,7 +242,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
             geradorDeNumeroInscricao: gerador, relogio: new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
@@ -271,7 +271,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([DivulgacaoDeTeste.ETagDepoisDeAdotar(existente, divulgada)])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
             geradorDeNumeroInscricao: GeradorQueDevolve("00000007"), relogio: new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -430,7 +430,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         };
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([inscricao.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf));
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf));
         Guardar(inscricao, inscricaoRepository);
         return resultado;
     }
@@ -490,7 +490,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
             Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
                 new SubmeterInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
-                inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), documentoRepository: documentos);
+                inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), documentoRepository: documentos);
             Guardar(existente, inscricaoRepository);
             return (resultado, documentos, fixado, orfao, existente);
         }
@@ -534,7 +534,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IGeradorDeNumeroInscricao gerador = GeradorQueDevolve("00000042");
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
@@ -572,7 +572,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IGeradorDeNumeroInscricao gerador = Substitute.For<IGeradorDeNumeroInscricao>();
 
         // Todo o conjunto básico está respondido, exceto APELIDO — nem agora, nem numa chamada
@@ -607,7 +607,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
@@ -630,7 +630,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         geo.ResolverCepAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result<CepResolvido>.Failure(new DomainError(ConferenciaEnderecoGeoErrorCodes.CepNaoResolve, "sem cobertura")));
 
-        (Result<ReciboDaInscricaoDto> resultado, ISelecaoUnitOfWork unitOfWork) = await SubmeterComEnderecoAsync(geo);
+        (Result<ReciboDaInscricaoDto> resultado, IUnitOfWork unitOfWork) = await SubmeterComEnderecoAsync(geo);
 
         resultado.Errors.Should().ContainSingle(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == InscricaoErrorCodes.EnderecoCepNaoEncontrado);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -674,7 +674,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.Errors.Should().NotContain(e => e.Field == "ENDERECO_RESIDENCIAL" && e.Error.Code == ConferenciaEnderecoGeoErrorCodes.MunicipioDivergente);
     }
 
-    private static async Task<(Result<ReciboDaInscricaoDto> Resultado, ISelecaoUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
+    private static async Task<(Result<ReciboDaInscricaoDto> Resultado, IUnitOfWork UnitOfWork)> SubmeterComEnderecoAsync(IConferenciaEnderecoGeo geo, string? cep = "66010000")
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
@@ -686,7 +686,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
         respostas["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
@@ -716,7 +716,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         // O estrangeiro não responde o RG nem a naturalidade, que ficam ocultos para ele.
         Dictionary<string, JsonElement> respostas = RespostasDoConjuntoBasico(cpf);
@@ -763,7 +763,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         // Só o aceite do termo vem nesta chamada — APELIDO já estava gravado pela chamada de Salvar.
         InscricaoRequest request = new(
@@ -823,7 +823,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, comApelido with { Respostas = todas, Grupos = respostasDosGrupos }, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf, nomeSocial: nomeSocialDaConta), geo);
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf, nomeSocial: nomeSocialDaConta), geo);
         Guardar(existente, inscricaoRepository);
         return (resultado, existente);
     }
@@ -1060,7 +1060,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
 
@@ -1099,7 +1099,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         // 23:59:59,9 de 15/01 em Belém; cada leitura seguinte do relógio já cai em 16/01.
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
@@ -1127,7 +1127,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-15"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
             relogio: new RelogioQueAvanca(new DateTimeOffset(2026, 1, 16, 2, 59, 59, 900, TimeSpan.Zero), TimeSpan.FromMilliseconds(200)));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -1149,13 +1149,13 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> envio = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-15"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
             relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero)));
         envio.IsSuccess.Should().BeTrue(envio.Error?.Message);
 
         Result<ReciboDaInscricaoDto> correcao = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComDataDoEvento(cpf, termo, grafo, "2026-01-16"), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf),
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf),
             relogio: new RelogioFixo(new DateTimeOffset(2026, 1, 16, 12, 0, 0, TimeSpan.Zero)));
 
         correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message);
@@ -1434,7 +1434,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> enviada = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, pedido, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece());
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece());
 
         enviada.IsSuccess.Should().BeTrue(enviada.Error?.Message);
         existente.Grupos["LOCAIS"].Single().Respostas.Should().ContainKey("OBSERVACAO_DE_BELEM", "no envio a regra viu o município pelo código");
@@ -1475,7 +1475,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> enviada = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece());
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece());
         enviada.IsSuccess.Should().BeTrue(enviada.Error?.Message);
 
         Result<Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixada> contexto = await Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver
@@ -1518,7 +1518,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
         (await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece()))
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece()))
             .IsSuccess.Should().BeTrue();
 
         Result<Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixada> contexto = await Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver
@@ -1550,7 +1550,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
         (await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, RequestComApelidoETermoAceito(cpf, termo, grafo), PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece()))
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), GeoQueConhece()))
             .IsSuccess.Should().BeTrue();
 
         InscricaoRequest comNovoApelido = RequestComApelidoETermoAceito(cpf, termo, grafo, apelido: "Nandinha");
@@ -1562,7 +1562,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         Result<ReciboDaInscricaoDto> corrigida = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, correcao, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<ISelecaoUnitOfWork>(), UsuarioComCpf(cpf), geo);
+            inscricaoRepository, processoRepository, registroCodecs, Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), geo);
 
         corrigida.IsSuccess.Should().BeTrue(corrigida.Error?.Message);
         existente.Respostas["NATURALIDADE_MUNICIPIO"].GetRawText().Should().Be(ValorDeMunicipio.Gravado(Belem, "Belém").GetRawText());

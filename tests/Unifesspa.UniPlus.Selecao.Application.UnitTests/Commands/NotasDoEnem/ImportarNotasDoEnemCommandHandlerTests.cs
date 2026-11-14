@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -38,7 +38,7 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
     private readonly IInscritosDaEdicaoDoEnem _inscritos = Substitute.For<IInscritosDaEdicaoDoEnem>();
     private readonly IIndiceCegoDoCpf _indices = Substitute.For<IIndiceCegoDoCpf>();
     private readonly ILoteDeNotasDoEnemRepository _lotes = Substitute.For<ILoteDeNotasDoEnemRepository>();
-    private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IUserContext _usuario = Substitute.For<IUserContext>();
 
     public ImportarNotasDoEnemCommandHandlerTests()

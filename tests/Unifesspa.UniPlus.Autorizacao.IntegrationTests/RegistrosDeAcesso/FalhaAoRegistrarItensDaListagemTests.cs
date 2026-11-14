@@ -6,7 +6,6 @@ using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,9 +17,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Host;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -73,7 +72,7 @@ public sealed class FalhaAoRegistrarItensDaListagemTests
     private async Task DescartarOQueSemeouAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade banco = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database;
+        Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade banco = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database;
         await banco.ExecuteSqlRawAsync(
             "DELETE FROM autorizacao.revisao_itens WHERE concessao_id IN (SELECT id FROM autorizacao.concessoes WHERE beneficiario_sub = {0})", Cecilia);
         await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.revisoes_de_acessos r WHERE NOT EXISTS (SELECT 1 FROM autorizacao.revisao_itens i WHERE i.revisao_id = r.id)");
@@ -103,7 +102,7 @@ public sealed class FalhaAoRegistrarItensDaListagemTests
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(new Identidade(TestAuthHandler.DefaultIssuer, "marlene.martins"), [concessao], DateTimeOffset.UtcNow);
         await scope.ServiceProvider.GetRequiredService<IRevisaoDeAcessosRepository>().AdicionarAsync(revisao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     private WebApplicationFactory<HostAssemblyMarker> ComRegistroQueFalhaNosItens() =>

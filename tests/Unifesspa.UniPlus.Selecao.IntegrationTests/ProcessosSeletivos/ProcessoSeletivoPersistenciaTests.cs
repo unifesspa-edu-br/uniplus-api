@@ -5,18 +5,16 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using Npgsql;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -63,14 +61,14 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         ofertaResult.IsSuccess.Should().BeTrue();
         processo.DefinirOfertaAtendimento(ofertaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.Etapas)
             .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
@@ -110,7 +108,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             "PS snapshot B", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processoA, CancellationToken.None);
@@ -118,7 +116,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo[] recarregados = await readContext.ProcessosSeletivos
             .AsNoTracking()
             .Where(processo => processo.Id == processoA.Id || processo.Id == processoB.Id)
@@ -142,14 +140,14 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
                 cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
 
@@ -174,7 +172,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
                 cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -183,7 +181,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
 
         // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio trata a
         // cidade como all-or-nothing; o CHECK protege a escrita crua.
-        await using SelecaoDbContext rawContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext rawContext = _fixture.CreateDbContext();
         Func<Task> act = async () => await rawContext.Database.ExecuteSqlAsync(
             $"UPDATE selecao.processos_seletivos SET unidade_administradora_cidade_nome = NULL WHERE id = {processo.Id}");
 
@@ -202,14 +200,14 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, passoDoLancamento: 0.5m).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext rawContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext rawContext = _fixture.CreateDbContext();
         Func<Task> act = async () => _ = notaMaxima
             ? await rawContext.Database.ExecuteSqlAsync(
                 $"UPDATE selecao.etapas_processo SET nota_maxima = 0 WHERE processo_seletivo_id = {processo.Id}")
@@ -225,28 +223,29 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     {
         Guid processoId = Guid.CreateVersion7();
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
 
-        // A coluna é passada EXPLICITAMENTE como NULL, não omitida — `AddColumn(defaultValue: "")`
-        // da migration inicial deixa um DEFAULT '' na coluna (formalidade do EF para o ALTER TABLE
-        // em bases com linhas pré-existentes, que este projeto pré-produção não tem); omitir a
-        // coluna do INSERT cairia nesse default em vez de provar a constraint NOT NULL.
+        // A coluna é passada EXPLICITAMENTE como NULL, não omitida, e as demais colunas obrigatórias
+        // recebem valor: o banco não tem valor padrão para nenhuma, então o INSERT só prova a constraint
+        // NOT NULL da sigla se não falhar antes em outra coluna.
         Func<Task> act = async () => await writeContext.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO selecao.processos_seletivos (
                 id, nome, tipo_processo_origem_id, tipo_processo_codigo, tipo_processo_nome,
-                status, origem_candidatos, unidade_administradora_origem_id,
+                status, origem_candidatos, localidade_codigo_ibge, localidade_nome, localidade_uf,
+                unidade_administradora_origem_id,
                 unidade_administradora_sigla, unidade_administradora_slug, unidade_administradora_nome, unidade_administradora_tipo,
                 created_at, is_deleted)
             VALUES (
-                {processoId}, 'PS sem unidade', {TipoProcesso.SiSU.OrigemId}, 'SiSU', 'SiSU', 1, 1, {Guid.NewGuid()},
+                {processoId}, 'PS sem unidade', {TipoProcesso.SiSU.OrigemId}, 'SiSU', 'SiSU', 1, 1, '1504208', 'Marabá', 'PA',
+                {Guid.NewGuid()},
                 NULL, 'ceps', 'Centro de Processos Seletivos', 'ADMINISTRATIVA',
                 now(), false)
             """,
             CancellationToken.None);
 
         (await act.Should().ThrowAsync<PostgresException>(
-            "unidade_administradora_sigla é NOT NULL desde a migration inicial — sem produção, sem estratégia em duas fases"))
+            "unidade_administradora_sigla é NOT NULL, sem estratégia em duas fases"))
             .Which.ColumnName.Should().Be("unidade_administradora_sigla");
     }
 
@@ -261,14 +260,14 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente);
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (SelecaoDbContext configureContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
@@ -284,7 +283,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.Etapas)
             .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
@@ -308,14 +307,14 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         ]).Value!;
         processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository readRepo = new(readContext, TimeProvider.System);
         ProcessoSeletivo? recarregado = await readRepo.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None);
 

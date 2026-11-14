@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -86,7 +87,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Cada cota tem par elegibilidade + opt-in como fatos independentes (UNI-REQ-0078)")]
     public async Task Seed_CadaCotaTemParElegibilidadeEOptIn()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -118,7 +119,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Fatos reutilizados mantêm a identidade semeada — o vocabulário não duplica código")]
     public async Task Seed_FatosPreexistentesSaoReutilizadosSemDuplicar()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -153,7 +154,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Fato booleano não recebe FatoValorDominio (ADR-0111/ADR-0116)")]
     public async Task Seed_BooleanoNaoRecebeValorDominio()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> booleanos = await ctx.FatosCandidato.AsNoTracking()
             .Where(f => f.Dominio == DominioFato.Booleano)
@@ -173,7 +174,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Seed materializa exatamente os fatos de sistema, batendo com a fonte única")]
     public async Task Seed_MaterializaTodosOsFatosDaFonteUnica()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -202,7 +203,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Sexo civil, identidade de gênero e orientação sexual são fatos de sistema com as opções fixas da issue, e o sexo passa a biológico")]
     public async Task Seed_SexoCivilIdentidadeDeGeneroEOrientacaoSexual_TemAsOpcoesFixas()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         FatoCandidatoReader reader = new(ctx);
 
         Dictionary<string, string[]> esperado = new(StringComparer.Ordinal)
@@ -234,7 +235,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "O sexo civil é pessoal; a identidade de gênero e a orientação sexual são sensíveis")]
     public async Task Seed_SexoCivilIdentidadeDeGeneroEOrientacaoSexual_TemAClassificacaoDaIssue()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Dictionary<string, ClassificacaoDeProtecao> classificacoes = await ctx.FatosCandidato.AsNoTracking()
             .Where(f => f.Codigo == "SEXO" || f.Codigo == "SEXO_CIVIL" || f.Codigo == "IDENTIDADE_GENERO" || f.Codigo == "ORIENTACAO_SEXUAL")
@@ -252,7 +253,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "O NOME, que vem do login, não tem formato: abreviatura com ponto, uma palavra só e dígito passam")]
     public async Task Seed_NomeDoLogin_NaoPassaPorRegraDeFormato()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         FatoCandidato nome = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "NOME");
 
@@ -267,7 +268,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "O nome social, o da mãe e o do pai, digitados pelo candidato, seguem com o formato de nome de pessoa")]
     public async Task Seed_NomesDigitados_SeguemComFormatoDeNomeDePessoa()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Dictionary<string, FormatoTexto?> formatos = await ctx.FatosCandidato.AsNoTracking()
             .Where(f => f.Codigo == "NOME_SOCIAL" || f.Codigo == "NOME_MAE" || f.Codigo == "NOME_PAI")
@@ -279,7 +280,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Cor ou raça, deficiência, tipo de deficiência e atendimento são sensíveis; a modalidade e as opções de concorrer, internas; CPF, RG e documento do estrangeiro são identificador; os demais, pessoais")]
     public async Task Seed_ClassificacaoDeProtecao()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -304,7 +305,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "A modalidade da 2ª opção de curso é fato de sistema derivado, interno e multivalorado, como a modalidade")]
     public async Task Seed_ModalidadeDaSegundaOpcao_EhDerivadaEInterna()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE_SEGUNDA_OPCAO");
 
@@ -318,7 +319,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "A Seleção lê do catálogo a hipótese legal e a finalidade de cada fato, para congelá-las junto da classificação")]
     public async Task Leitor_TrazAHipoteseLegalEAFinalidadeDoFato()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         IReadOnlyList<FatoCandidatoView> fatos = await new FatoCandidatoReader(ctx).ListarAsync(CancellationToken.None);
 
@@ -333,14 +334,14 @@ public sealed class FatoCandidatoPersistenceTests
     [InlineData("TEXTO")]
     public async Task Check_RecusaCategoricoSemFonteETextoSemFormato(string dominio)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {dominio}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -352,14 +353,14 @@ public sealed class FatoCandidatoPersistenceTests
     [InlineData(true)]
     public async Task Check_RecusaTextoPublico(bool sistema)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, formato, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, formato, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"}, {"LIVRE"},
-                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -369,14 +370,14 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "CHECK recusa classificação de proteção fora do domínio via SQL cru")]
     public async Task Check_RecusaClassificacaoInvalida()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -389,14 +390,14 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato fato = NovoFatoDoAdministrador();
         try
         {
-            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
             {
                 ctx.FatosCandidato.Add(fato);
                 await ctx.SaveChangesAsync();
             }
 
-            await using ConfiguracaoDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
-            await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+            await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+            await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
             FatoCandidato noPrimeiro = await primeiro.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
             FatoCandidato noSegundo = await segundo.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
 
@@ -425,14 +426,14 @@ public sealed class FatoCandidatoPersistenceTests
         fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
         try
         {
-            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
             {
                 ctx.FatosCandidato.Add(fato);
                 await ctx.SaveChangesAsync();
             }
 
-            await using ConfiguracaoDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
-            await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+            await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+            await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
             FatoCandidatoRepository repositorioDoPrimeiro = new(primeiro);
             FatoCandidatoRepository repositorioDoSegundo = new(segundo);
             FatoCandidato noPrimeiro = (await repositorioDoPrimeiro.ObterPorIdAsync(fato.Id, CancellationToken.None))!;
@@ -457,14 +458,14 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato fato = NovoFatoCategoricoComDoisValores();
         try
         {
-            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
             {
                 ctx.FatosCandidato.Add(fato);
                 await ctx.SaveChangesAsync();
             }
 
-            await using ConfiguracaoDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
-            await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
+            await using UniPlusDbContext primeiro = _fixture.CreateDbContext(userId: "admin-1");
+            await using UniPlusDbContext segundo = _fixture.CreateDbContext(userId: "admin-2");
             FatoCandidato noPrimeiro = (await new FatoCandidatoRepository(primeiro).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
             FatoCandidato noSegundo = (await new FatoCandidatoRepository(segundo).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
 
@@ -487,13 +488,13 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato fato = NovoFatoCategoricoComDoisValores();
         try
         {
-            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
             {
                 ctx.FatosCandidato.Add(fato);
                 await ctx.SaveChangesAsync();
             }
 
-            await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(userId: "admin-2");
+            await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(userId: "admin-2");
             FatoCandidato rastreado = (await new FatoCandidatoRepository(ctx2).ObterPorIdAsync(fato.Id, CancellationToken.None))!;
             DateTimeOffset? carimboAntes = rastreado.UpdatedAt;
             string? autorAntes = rastreado.UpdatedBy;
@@ -503,7 +504,7 @@ public sealed class FatoCandidatoPersistenceTests
             ctx2.ChangeTracker.HasChanges().Should().BeFalse();
             await ctx2.SaveChangesAsync();
 
-            await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+            await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
             FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == fato.Id);
             persistido.UpdatedAt.Should().Be(carimboAntes);
             persistido.UpdatedBy.Should().Be(autorAntes);
@@ -532,20 +533,20 @@ public sealed class FatoCandidatoPersistenceTests
         FatoCandidato fato = NovoFatoDoAdministrador();
         try
         {
-            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
+            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-1"))
             {
                 ctx.FatosCandidato.Add(fato);
                 await ctx.SaveChangesAsync();
             }
 
-            await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: "admin-2"))
+            await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: "admin-2"))
             {
                 FatoCandidato rastreado = await ctx.FatosCandidato.SingleAsync(f => f.Id == fato.Id);
                 rastreado.Desativar().IsSuccess.Should().BeTrue();
                 await ctx.SaveChangesAsync();
             }
 
-            await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+            await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
             FatoCandidato persistido = await leitura.FatosCandidato.AsNoTracking().SingleAsync(f => f.Id == fato.Id);
             persistido.CreatedBy.Should().Be("admin-1");
             persistido.UpdatedBy.Should().Be("admin-2");
@@ -559,7 +560,7 @@ public sealed class FatoCandidatoPersistenceTests
     /// <summary>O banco é compartilhado pela coleção: o fato criado pelo teste sai no fim, para não mudar o seed que os outros contam.</summary>
     private async Task RemoverAsync(Guid id)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.FatosCandidato.Where(f => f.Id == id).ExecuteDeleteAsync();
     }
 
@@ -575,7 +576,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Seed: as regras padrão dos derivados semeados passam pela conferência do catálogo")]
     public async Task Seed_RegrasPadrao_PassamPelaConferenciaDoCatalogo()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Include(static f => f.ValoresDominioDeclarados).ToListAsync();
         List<PrecedenciaFase> precedencias = await ctx.PrecedenciasFase.AsNoTracking().ToListAsync();
         CatalogoDeFatos catalogo = new(fatos, precedencias);
@@ -593,7 +594,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Origem: os calculados de atributo, a modalidade e a modalidade da convocação são Derivado; os demais são Declarado (ADR-0116)")]
     public async Task Seed_OrigemReclassificadaConformeADR0116()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -615,7 +616,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "PontoResolucao: os fatos de sistema resolvem na inscrição, exceto a modalidade da convocação, no resultado final, e a renda do pedido de isenção, na solicitação de isenção")]
     public async Task Seed_PontoResolucaoInscricaoParaTodos()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -627,7 +628,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Cardinalidade: só MODALIDADE, MODALIDADE_SEGUNDA_OPCAO, CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE são multivalorados; os demais escalares")]
     public async Task Seed_CardinalidadeCoerente()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
@@ -644,11 +645,11 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Seed de FatoValorDominio: os categóricos estáticos de sistema têm os valores filhos esperados")]
     public async Task Seed_FatoValorDominio_MaterializaOsValoresDosCategoricosEstaticos()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // Só os valores dos fatos de sistema: o catálogo também tem fatos do administrador semeados.
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
-            .Where(v => ctx.FatosCandidato.Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
+            .Where(v => ctx.Set<FatoCandidato>().Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
             .ToListAsync();
         valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(80);
 
@@ -713,7 +714,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Índice único (FatoCandidatoId, Codigo) de fato_valor_dominio recusa código duplicado no mesmo fato")]
     public async Task FatoValorDominio_IndiceUnico_RecusaDuplicataNoMesmoFato()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         FatoCandidato corRaca = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "COR_RACA");
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
@@ -730,7 +731,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Reader (resolvível de fora do assembly) lista ordenado por código e projeta a view com PontoResolucao/Binding")]
     public async Task Reader_Lista_OrdenadoPorCodigo()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var reader = new FatoCandidatoReader(ctx);
 
         // Os fatos de sistema entre os listados: o catálogo também tem fatos do administrador semeados.
@@ -765,7 +766,7 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Reader resolve por chave natural e devolve null para código inexistente")]
     public async Task Reader_ObterPorCodigo_ResolveOuNull()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var reader = new FatoCandidatoReader(ctx);
 
         FatoCandidatoView? sexo = await reader.ObterPorCodigoAsync("SEXO");
@@ -781,14 +782,14 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "Índice único total recusa código duplicado (insert cru de um código já semeado)")]
     public async Task IndiceUnicoTotal_RecusaDuplicata()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_FORMULARIO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         Npgsql.PostgresException ex = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
@@ -799,14 +800,14 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "CHECK de domínio recusa token fora do vocabulário via SQL cru")]
     public async Task Check_RecusaDominioInvalido()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_rol_de_fatos_candidato_dominio bloqueia 'TEXTO'");
@@ -815,14 +816,14 @@ public sealed class FatoCandidatoPersistenceTests
     [Fact(DisplayName = "CHECK de origem recusa token fora do vocabulário via SQL cru")]
     public async Task Check_RecusaOrigemInvalida()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.rol_de_fatos_candidato
-                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at)
+                (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"BRUTO_INFORMADO"}, {"ESCALAR"},
-                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow})
+                {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
@@ -898,7 +899,7 @@ public sealed class FatoCandidatoPersistenceTests
             ("MODALIDADE_SEGUNDA_OPCAO", "060", DominioFato.Categorico, OrigemFato.Derivado, CardinalidadeFato.Multivalorado, "ATRIBUTO_CANDIDATO:MODALIDADE_SEGUNDA_OPCAO", "INSCRICAO"),
         ];
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
 
         fatos.Should().HaveCount(esperado.Length);

@@ -12,6 +12,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -72,7 +73,7 @@ public sealed class DefinirBonusRegionalEndpointTests
     private async Task<bool?> DeclaracaoGravadaAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == processoId);
         return processo.AplicaBonusRegional;
     }
@@ -102,7 +103,7 @@ public sealed class DefinirBonusRegionalEndpointTests
         HttpClient client = api.CreateClient();
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", complementar: semear =>
             {

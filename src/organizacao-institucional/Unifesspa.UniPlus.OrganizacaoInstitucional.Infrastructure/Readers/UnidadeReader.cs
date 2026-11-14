@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.Caching;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Mappings;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Caching;
@@ -36,12 +37,12 @@ public sealed partial class UnidadeReader : IUnidadeReader
     internal static TimeSpan DelayAntesDoSourceParaTeste { get; set; } = TimeSpan.Zero;
 
     private readonly ICacheService _cache;
-    private readonly OrganizacaoInstitucionalDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
     private readonly ILogger<UnidadeReader> _logger;
 
     public UnidadeReader(
         ICacheService cache,
-        OrganizacaoInstitucionalDbContext dbContext,
+        UniPlusDbContext dbContext,
         ILogger<UnidadeReader> logger)
     {
         ArgumentNullException.ThrowIfNull(cache);

@@ -5,6 +5,8 @@ using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 // Alias evita o conflito com ArchUnitNET.Domain.Assembly importado pelo
@@ -62,26 +64,26 @@ public sealed class SolutionNaoTemMediatRTests
             typeof(Infrastructure.Core.Messaging.WolverineOutboxConfiguration).Assembly,
             typeof(Selecao.Domain.Entities.ProcessoSeletivo).Assembly,
             typeof(Selecao.Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-            typeof(Selecao.Infrastructure.Persistence.SelecaoDbContext).Assembly,
+            typeof(Selecao.Infrastructure.Persistence.SelecaoContribuicao).Assembly,
             typeof(Selecao.API.Controllers.ProcessoSeletivoController).Assembly,
             typeof(Ingresso.Domain.Entities.Chamada).Assembly,
-            typeof(Ingresso.Infrastructure.Persistence.IngressoDbContext).Assembly,
+            typeof(Ingresso.Infrastructure.Persistence.IngressoContribuicao).Assembly,
             typeof(Ingresso.API.IngressoApiAssemblyMarker).Assembly,
             typeof(Portal.Domain.PortalDomainAssemblyMarker).Assembly,
             typeof(Portal.Infrastructure.Persistence.PortalDbContext).Assembly,
             typeof(Portal.API.PortalApiAssemblyMarker).Assembly,
             typeof(OrganizacaoInstitucional.Domain.Entities.Unidade).Assembly,
             typeof(OrganizacaoInstitucional.Application.Commands.Unidades.CriarUnidadeCommand).Assembly,
-            typeof(OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalDbContext).Assembly,
+            typeof(OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalContribuicao).Assembly,
             typeof(OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly,
             typeof(Configuracao.Domain.ConfiguracaoDomainAssemblyMarker).Assembly,
             typeof(Configuracao.Application.ConfiguracaoApplicationAssemblyMarker).Assembly,
             typeof(Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
-            typeof(Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
+            typeof(Configuracao.Infrastructure.Persistence.ConfiguracaoContribuicao).Assembly,
             typeof(Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
             typeof(Autorizacao.Domain.Entities.Perfil).Assembly,
-            typeof(Autorizacao.Application.Abstractions.IAutorizacaoUnitOfWork).Assembly,
-            typeof(Autorizacao.Infrastructure.Persistence.AutorizacaoDbContext).Assembly,
+            typeof(Autorizacao.Application.AutorizacaoApplicationServiceRegistration).Assembly,
+            typeof(Autorizacao.Infrastructure.Persistence.AutorizacaoContribuicao).Assembly,
             typeof(Autorizacao.API.AutorizacaoApiAssemblyMarker).Assembly,
         ];
 

@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -22,7 +22,7 @@ public static class EnviarAvisoDaReclassificacaoCommandHandler
         EnviarAvisoDaReclassificacaoCommand command,
         AvisosDaReclassificacao avisos,
         IReclassificacaoRepository reclassificacoes,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {

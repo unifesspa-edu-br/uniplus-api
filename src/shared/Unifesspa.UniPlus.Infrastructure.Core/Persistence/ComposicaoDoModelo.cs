@@ -20,8 +20,18 @@ internal static class ComposicaoDoModelo
             modelBuilder,
             UniPlusDbContext.EsquemaDaPlataforma,
             () => modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdempotencyEntry).Assembly));
+        RegistrarFuncoesDaPlataforma(modelBuilder);
 
         modelBuilder.AplicarFiltroGlobalSoftDelete();
+    }
+
+    // Sem este registro a consulta que chama PgFunctions.NormalizeForComparison não traduz, e o EF tentaria avaliá-la
+    // no cliente, onde o stub lança.
+    private static void RegistrarFuncoesDaPlataforma(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasDbFunction(typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)
+            .HasName("normalizar_para_comparacao")
+            .HasSchema(UniPlusDbContext.EsquemaDaPlataforma);
     }
 
     private static void ValidarEsquemas(IReadOnlyList<IContribuicaoDoModulo> modulos)

@@ -18,11 +18,10 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
-using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Verificador.Contratos;
@@ -221,7 +220,7 @@ public abstract class JanelaDeMigracaoNoHostTestBase : AprovacaoDaVersaoNoHostTe
     private protected async Task<DateTimeOffset?> AvisoGravadoEmAsync(Guid perfilId, bool de48Horas)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return de48Horas
             ? await db.Database.SqlQuery<DateTimeOffset?>(

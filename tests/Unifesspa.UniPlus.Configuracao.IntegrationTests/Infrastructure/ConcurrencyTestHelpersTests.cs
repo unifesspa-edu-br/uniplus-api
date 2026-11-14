@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -51,7 +52,7 @@ public sealed class ConcurrencyTestHelpersTests
         Guid decoyId;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             CalendarioDiasUteis target = CalendarioDiasUteis.Criar(
                 $"pid-target-{Guid.NewGuid():N}"[..20],
                 [new DiaNaoUtilCriacao("NACIONAL", null, null, null, new DateOnly(2099, 1, 1), "x")]).Value!;
@@ -70,14 +71,14 @@ public sealed class ConcurrencyTestHelpersTests
         // "calendario_dias_uteis" por coincidência, mas bloqueado por um
         // holder que NÃO é o que a corrida real vai usar.
         await using AsyncServiceScope scopeDecoyHolder = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbDecoyHolder = scopeDecoyHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbDecoyHolder = scopeDecoyHolder.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txDecoyHolder = await dbDecoyHolder.Database.BeginTransactionAsync();
         await dbDecoyHolder.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {decoyId}");
         int pdecoyIdHolder = await ConcorrenciaTestHelpers.GetConnectionPidAsync(dbDecoyHolder);
 
         await using AsyncServiceScope scopeDecoyBlocked = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbDecoyBlocked = scopeDecoyBlocked.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbDecoyBlocked = scopeDecoyBlocked.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txDecoyBlocked = await dbDecoyBlocked.Database.BeginTransactionAsync();
         Task decoyBlockedTask = dbDecoyBlocked.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {decoyId}");
@@ -109,7 +110,7 @@ public sealed class ConcurrencyTestHelpersTests
             // existir de verdade na Fase 2) não deve ser satisfeita pelo decoy —
             // ele está bloqueado por pdecoyIdHolder, não por targetHolderPid.
             await using AsyncServiceScope scopeTargetHolder = api.Services.CreateAsyncScope();
-            ConfiguracaoDbContext dbTargetHolder = scopeTargetHolder.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext dbTargetHolder = scopeTargetHolder.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             await using IDbContextTransaction txTargetHolder = await dbTargetHolder.Database.BeginTransactionAsync();
             await dbTargetHolder.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE configuracao.calendario_dias_uteis SET updated_at = now() WHERE id = {targetId}");

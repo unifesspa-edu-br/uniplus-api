@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -125,8 +126,8 @@ public sealed class VocabularioIdaEVoltaEndpointTests
         Guid unidadeId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            OrganizacaoInstitucionalDbContext org = scope.ServiceProvider
-                .GetRequiredService<OrganizacaoInstitucionalDbContext>();
+            UniPlusDbContext org = scope.ServiceProvider
+                .GetRequiredService<UniPlusDbContext>();
             Unidade unidade = Unidade.Criar(
                 "Centro de Processos Seletivos — vocabulário",
                 new IdentificadoresDaUnidade($"ceps-vocab-{sufixo}", $"CEPSV{sufixo}", $"CEPSV-{sufixo}", null),
@@ -143,7 +144,7 @@ public sealed class VocabularioIdaEVoltaEndpointTests
 
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext config = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             Guid tipoProcessoId = await config.TiposProcesso
                 .Where(tipo => tipo.Codigo == "SiSU" && tipo.Ativo)
                 .Select(tipo => tipo.Id)

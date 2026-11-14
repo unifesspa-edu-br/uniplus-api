@@ -4,14 +4,13 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -56,7 +55,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         Guid famePreliminarOrigem = Guid.CreateVersion7();
         Guid faseFinalOrigem = Guid.CreateVersion7();
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = NovoProcesso($"PS deslocamento {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
@@ -90,7 +89,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         // resultado para 3 e 4. Nenhuma ordem forma ciclo fechado, então
         // PermutacaoDeOrdemNaoSuportada não recusa; as fases são reconciliadas por
         // FaseCanonicaOrigemId e os produtos mantêm seus Ids no banco, agora sob outras ordens.
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(tracked), "teste", Agora)
@@ -114,7 +113,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             await sessao.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext conferencia = _fixture.CreateDbContext())
+        await using (UniPlusDbContext conferencia = _fixture.CreateDbContext())
         {
             ProcessoSeletivo deslocado = await CarregarAsync(conferencia, processoId);
             deslocado.CronogramaFases.Should().HaveCount(4, "pré-condição: a sessão inseriu a fase no meio");
@@ -124,7 +123,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
 
         // O DESCARTE: repõe o grafo congelado — três fases, com a de ordem 2 caindo sobre a
         // HOMOLOGACAO viva — e encerra a sessão.
-        await using (SelecaoDbContext descarte = _fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
             VersaoConfiguracao versaoDoBanco = await descarte.Set<VersaoConfiguracao>().FirstAsync(v => v.Id == versaoId);
@@ -146,7 +145,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
                 "como desfazer o deslocamento");
         }
 
-        await using (SelecaoDbContext verificacao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext verificacao = _fixture.CreateDbContext())
         {
             ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
 
@@ -182,7 +181,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         Guid fasePreliminarOrigem = Guid.CreateVersion7();
         Guid faseFinalOrigem = Guid.CreateVersion7();
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = NovoProcesso($"PS âncora deslocada {Guid.CreateVersion7()}");
 
@@ -223,7 +222,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         // para 3 e 4. A reconciliação por FaseCanonicaOrigemId reusa a instância RASTREADA de
         // cada produto — o Id que chega na coleção nova é descartado, e a âncora declarada
         // sobre ele tem de acompanhar.
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             VersaoConfiguracao versaoDoBanco = await sessao.Set<VersaoConfiguracao>().FirstAsync(v => v.Id == versaoId);
@@ -252,7 +251,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             await sessao.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext conferencia = _fixture.CreateDbContext())
+        await using (UniPlusDbContext conferencia = _fixture.CreateDbContext())
         {
             ProcessoSeletivo deslocado = await CarregarAsync(conferencia, processoId);
             AncoraDaFase(deslocado, "RESULTADO_PRELIMINAR").Should().Be(produtoPreliminarId,
@@ -262,7 +261,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
 
         // O DESCARTE: repõe o grafo congelado — três fases, com a de ordem 2 caindo sobre a
         // HOMOLOGACAO viva, o que faz os produtos serem RECRIADOS com identidade nova.
-        await using (SelecaoDbContext descarte = _fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
             VersaoConfiguracao versaoDoBanco = await descarte.Set<VersaoConfiguracao>().FirstAsync(v => v.Id == versaoId);
@@ -279,7 +278,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             await descarte.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext verificacao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext verificacao = _fixture.CreateDbContext())
         {
             ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
             FaseCronograma preliminar = reposto.CronogramaFases.Single(f => f.Codigo == "RESULTADO_PRELIMINAR");
@@ -312,7 +311,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         Guid fasePreliminarOrigem = Guid.CreateVersion7();
         Guid faseFinalOrigem = Guid.CreateVersion7();
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = NovoProcesso($"PS item publicado {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
@@ -352,7 +351,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             documentoId = documento.Id;
         }
 
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(tracked), "teste", Agora)
@@ -373,7 +372,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             await sessao.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext descarte = _fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = _fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
             VersaoConfiguracao versaoDoBanco = await descarte.Set<VersaoConfiguracao>().FirstAsync(v => v.Id == versaoId);
@@ -385,7 +384,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             await descarte.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext verificacao = _fixture.CreateDbContext();
+        await using UniPlusDbContext verificacao = _fixture.CreateDbContext();
         ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
         FaseCronograma fasePreliminar = reposto.CronogramaFases.Single(f => f.Codigo == "RESULTADO_PRELIMINAR");
         ProdutoDaFase recriado = fasePreliminar.Produtos.Single();
@@ -597,7 +596,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
-    private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
+    private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.Classificacao)

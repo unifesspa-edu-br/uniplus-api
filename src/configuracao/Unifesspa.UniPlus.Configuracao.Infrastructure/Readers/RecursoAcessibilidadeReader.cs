@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Implementação de <see cref="IRecursoAcessibilidadeReader"/> (ADR-0056): leitura
@@ -19,9 +20,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class RecursoAcessibilidadeReader : IRecursoAcessibilidadeReader
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public RecursoAcessibilidadeReader(ConfiguracaoDbContext dbContext)
+    public RecursoAcessibilidadeReader(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

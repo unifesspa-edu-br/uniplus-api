@@ -8,14 +8,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Repositório dos perfis de acesso.</summary>
 public sealed class PerfilRepository : IPerfilRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public PerfilRepository(AutorizacaoDbContext context)
+    public PerfilRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -35,7 +36,7 @@ public sealed class PerfilRepository : IPerfilRepository
             .AsNoTracking()
             .ComComposicao()
             .Where(p => p.Ativo
-                && (p.Governanca != null || _context.VigenciasDosPerfis.Any(v => v.PerfilId == p.Id && v.Ate == null)));
+                && (p.Governanca != null || _context.Set<VigenciaDoPerfil>().Any(v => v.PerfilId == p.Id && v.Ate == null)));
 
         CursorKeysetPage<Perfil> page = await CursorKeyset
             .ApplyAsync(pediveis, afterId, limit, direction, cancellationToken)
@@ -74,7 +75,7 @@ public sealed class PerfilRepository : IPerfilRepository
     {
         // A trava vem antes da leitura rastreada, que então enxerga o que a transação anterior confirmou.
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.perfis WHERE id = {{0}} FOR UPDATE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.perfis WHERE id = {{0}} FOR UPDATE",
             [id],
             cancellationToken).ConfigureAwait(false);
 
@@ -144,7 +145,7 @@ public sealed class PerfilRepository : IPerfilRepository
             await _context.EventosDaContencao.AsNoTracking().Where(e => e.PerfilId == perfilId).OrderBy(e => e.OrdemNaTrilha)
                 .ToListAsync(cancellationToken).ConfigureAwait(false),
             await _context.DecisoesDasRetomadas.AsNoTracking()
-                .Where(d => _context.SuspensoesDosPerfis.Any(s => s.Id == d.SuspensaoId && s.PerfilId == perfilId))
+                .Where(d => _context.Set<SuspensaoDoPerfil>().Any(s => s.Id == d.SuspensaoId && s.PerfilId == perfilId))
                 .OrderBy(d => d.OrdemNaTrilha)
                 .ToListAsync(cancellationToken).ConfigureAwait(false));
     }

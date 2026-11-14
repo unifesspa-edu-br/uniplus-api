@@ -8,10 +8,10 @@ using Microsoft.Extensions.Options;
 using Minio.DataModel;
 using Minio.DataModel.Args;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -80,7 +80,7 @@ internal sealed class AcervoPublicoDeTeste
 
     public async Task DivulgarAsync(Guid ato, string tipoDoAto = TipoDoAto, string bucket = MinioContainerFixture.BucketDoAcervoPublico)
     {
-        await using SelecaoDbContext context = Db.CreateDbContext();
+        await using UniPlusDbContext context = Db.CreateDbContext();
         await DivulgarCertameAoRegistrarAtoHandler.Handle(
             new AtoNormativoRegistrado(ato, AnoDoAto, tipoDoAto),
             new ProcessoSeletivoRepository(context, TimeProvider.System),
@@ -98,13 +98,13 @@ internal sealed class AcervoPublicoDeTeste
 
     public async Task<CertameDivulgado> CertameDivulgadoAsync(Guid processoId)
     {
-        await using SelecaoDbContext leitura = Db.CreateDbContext();
+        await using UniPlusDbContext leitura = Db.CreateDbContext();
         return await leitura.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processoId);
     }
 
     public async Task<bool> CertameFoiDivulgadoAsync(Guid processoId)
     {
-        await using SelecaoDbContext leitura = Db.CreateDbContext();
+        await using UniPlusDbContext leitura = Db.CreateDbContext();
         return await leitura.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == processoId);
     }
 

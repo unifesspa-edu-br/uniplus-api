@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 using Wolverine.EntityFrameworkCore;
 
@@ -59,7 +59,7 @@ public sealed class EmissaoDeAvisosNoHostTests
         perdedora.Should().BeEmpty();
         (await RegistrosAsync(fato)).Should().Be(1);
         (await EnvelopesDeEmailAsync()).Should().Be(envelopesAntes + 1, "só a vencedora deixou envelope");
-        await primeira.Servicos.GetRequiredService<IDbContextOutbox<AutorizacaoDbContext>>().FlushOutgoingMessagesAsync();
+        await primeira.Servicos.GetRequiredService<IDbContextOutbox<UniPlusDbContext>>().FlushOutgoingMessagesAsync();
         await PedidosDeConcessaoTestBase.AguardarAsync(async () => await EnvelopesDeEmailAsync() <= envelopesAntes, "o envelope não foi entregue");
     }
 
@@ -146,7 +146,7 @@ public sealed class EmissaoDeAvisosNoHostTests
         TransacaoRetidaDeTeste transacao, Guid fato, IReadOnlyList<DestinatarioDoAviso> destinatarios)
     {
         IReadOnlyList<EnviarEmail> emitidos = await EmitirAsync(transacao, fato, destinatarios);
-        IDbContextOutbox<AutorizacaoDbContext> outbox = transacao.Servicos.GetRequiredService<IDbContextOutbox<AutorizacaoDbContext>>();
+        IDbContextOutbox<UniPlusDbContext> outbox = transacao.Servicos.GetRequiredService<IDbContextOutbox<UniPlusDbContext>>();
         foreach (EnviarEmail email in emitidos)
         {
             await outbox.PublishAsync(email);
@@ -159,7 +159,7 @@ public sealed class EmissaoDeAvisosNoHostTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM wolverine.wolverine_outgoing_envelopes WHERE message_type ILIKE '%email%'")
             .SingleAsync();
     }
@@ -168,7 +168,7 @@ public sealed class EmissaoDeAvisosNoHostTests
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.avisos_emitidos WHERE fato_id = {fato}")
             .SingleAsync();
     }

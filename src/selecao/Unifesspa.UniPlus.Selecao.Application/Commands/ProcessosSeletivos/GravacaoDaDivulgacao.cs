@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using System.Text.Json;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
@@ -12,13 +10,15 @@ using DTOs;
 
 using Queries.ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>
 /// Grava a divulgação do certame: cria a linha na primeira versão divulgada, avança nas seguintes e
 /// salva, classificando a violação do identificador legível único.
 /// </summary>
 internal sealed class GravacaoDaDivulgacao
 {
-    public GravacaoDaDivulgacao(ICertameDivulgadoRepository certames, ISelecaoUnitOfWork unitOfWork, TimeProvider relogio)
+    public GravacaoDaDivulgacao(ICertameDivulgadoRepository certames, IUnitOfWork unitOfWork, TimeProvider relogio)
     {
         Certames = certames;
         UnitOfWork = unitOfWork;
@@ -27,7 +27,7 @@ internal sealed class GravacaoDaDivulgacao
 
     private ICertameDivulgadoRepository Certames { get; }
 
-    private ISelecaoUnitOfWork UnitOfWork { get; }
+    private IUnitOfWork UnitOfWork { get; }
 
     private TimeProvider Relogio { get; }
 

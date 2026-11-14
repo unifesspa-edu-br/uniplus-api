@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -16,7 +16,7 @@ public static class CriarMotivoDeDecisaoCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarMotivoDeDecisaoCommand command,
         IMotivoDeDecisaoRepository repository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -38,7 +38,7 @@ public static class CriarMotivoDeDecisaoCommandHandler
     }
 
     private static async Task<Result<Guid>> GravarAsync(
-        MotivoDeDecisao motivo, IMotivoDeDecisaoRepository repository, ISelecaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        MotivoDeDecisao motivo, IMotivoDeDecisaoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         if (await repository.CodigoExisteAsync(motivo.Tipo, motivo.Codigo.Valor, cancellationToken).ConfigureAwait(false))
         {

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -29,7 +30,7 @@ internal static class TermoNoHostDeTeste
     public static async Task ReiniciarAsync(IServiceProvider servicos)
     {
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
-        DatabaseFacade banco = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database;
+        DatabaseFacade banco = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database;
         await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.aceites_do_termo");
         await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.termos_na_instalacao");
         await banco.ExecuteSqlRawAsync("UPDATE autorizacao.pedidos_de_concessao SET termo_versao_id = NULL, termo_numero = NULL, termo_resumo = NULL");
@@ -41,7 +42,7 @@ internal static class TermoNoHostDeTeste
     public static async Task<VersaoDoTermo> PublicarAsync(IServiceProvider servicos, string marca)
     {
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
-        AutorizacaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ITermoDeResponsabilidadeRepository termos = escopo.ServiceProvider.GetRequiredService<ITermoDeResponsabilidadeRepository>();
         await using IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
         (TermoDeResponsabilidade termo, VersaoDoTermo? vigente) = await termos.ObterParaPublicarAsync();
@@ -58,7 +59,7 @@ internal static class TermoNoHostDeTeste
     {
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Pedidos.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Pedidos.AsNoTracking()
             .Where(p => p.Id == pedidoId).Select(p => p.TermoVersaoId).SingleOrDefaultAsync();
     }
 

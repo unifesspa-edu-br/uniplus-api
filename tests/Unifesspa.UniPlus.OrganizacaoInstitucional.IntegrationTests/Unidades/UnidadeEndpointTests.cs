@@ -9,6 +9,7 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -187,8 +188,8 @@ public sealed class UnidadeEndpointTests
             false).Value!;
 
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
-        OrganizacaoInstitucionalDbContext ctx =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext ctx =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ctx.Unidades.Add(unidade);
         await ctx.SaveChangesAsync();
     }

@@ -8,15 +8,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Portal.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Fitness function da issue #629: soft-delete é capability opt-in via
@@ -24,8 +20,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// <list type="bullet">
 /// <item>CA-01: <see cref="EntityBase"/> não declara membros de soft-delete;</item>
 /// <item>CA-07: a convenção <c>AplicarFiltroGlobalSoftDelete</c> aplica o filtro
-/// <c>!IsDeleted</c> a toda entidade <see cref="ISoftDeletable"/> dos seis
-/// DbContexts e a nenhuma outra; nenhuma entidade não-soft mapeia a coluna
+/// <c>!IsDeleted</c> a toda entidade <see cref="ISoftDeletable"/> do contexto único dos
+/// módulos e do Portal, e a nenhuma outra; nenhuma entidade não-soft mapeia a coluna
 /// <c>is_deleted</c>.</item>
 /// </list>
 /// </summary>
@@ -51,7 +47,7 @@ public sealed class SoftDeleteOptInConventionTests
             "SoftDeletableEntity estende EntityBase (soft-delete é opt-in sobre a identidade)");
     }
 
-    [Fact(DisplayName = "CA-07: convenção aplica soft-delete a toda ISoftDeletable e a nenhuma outra (6 DbContexts)")]
+    [Fact(DisplayName = "CA-07: convenção aplica soft-delete a toda ISoftDeletable e a nenhuma outra (contexto único e Portal)")]
     public void Convencao_SoftDelete_OptIn_Invariante()
     {
         List<string> violacoes = [];
@@ -119,12 +115,8 @@ public sealed class SoftDeleteOptInConventionTests
     // modelo materializado reflete fielmente o que vai a produção (Npgsql).
     private static IEnumerable<DbContext> CriarContextos()
     {
-        yield return Criar<SelecaoDbContext>();
-        yield return Criar<IngressoDbContext>();
+        yield return Criar<MonolitoDbContext>();
         yield return Criar<PortalDbContext>();
-        yield return Criar<OrganizacaoInstitucionalDbContext>();
-        yield return Criar<ConfiguracaoDbContext>();
-        yield return Criar<AutorizacaoDbContext>();
     }
 
     private static TContext Criar<TContext>()

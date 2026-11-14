@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Confere o catálogo semeado por <c>HasData</c> contra
@@ -40,7 +41,7 @@ public sealed class CategoriaDocumentoSeedTests
     {
         Guid[] idsDoSeed = [.. CategoriaDocumentoSeed.Itens.Select(item => item.Id)];
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         Dictionary<Guid, CategoriaDocumento> persistidas = await ctx.CategoriasDocumento
             .AsNoTracking()
             .Where(c => idsDoSeed.Contains(c.Id))
@@ -71,7 +72,7 @@ public sealed class CategoriaDocumentoSeedTests
         CategoriaDocumento empateB = Nova($"{prefixo}_B", ordem: 800);
         CategoriaDocumento empateA = Nova($"{prefixo}_A", ordem: 800);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-ordem"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-ordem"))
         {
             ctx.CategoriasDocumento.Add(ultima);
             ctx.CategoriasDocumento.Add(empateB);
@@ -79,7 +80,7 @@ public sealed class CategoriaDocumentoSeedTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var repositorio = new CategoriaDocumentoRepository(readCtx);
 
         IReadOnlyList<CategoriaDocumento> categorias = await repositorio.ListarVivasOrdenadasAsync(CancellationToken.None);
@@ -97,7 +98,7 @@ public sealed class CategoriaDocumentoSeedTests
     {
         string[] esperados = [.. CategoriaDocumentoSeed.Itens.OrderBy(i => i.Ordem).Select(i => i.Codigo)];
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repositorio = new CategoriaDocumentoRepository(ctx);
 
         IReadOnlyList<CategoriaDocumento> categorias = await repositorio.ListarVivasOrdenadasAsync(CancellationToken.None);

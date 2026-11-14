@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class AtualizarTipoEtapaCommandHandlerTests
 {
     private readonly ITipoEtapaRepository _repository = Substitute.For<ITipoEtapaRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TipoEtapa Existente(string codigo = "CODIGO_EXISTENTE") =>
         TipoEtapa.Criar(codigo, "Nome original", null, true, true).Value!;

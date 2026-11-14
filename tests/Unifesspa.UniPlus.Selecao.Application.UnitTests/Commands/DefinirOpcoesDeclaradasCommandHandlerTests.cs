@@ -6,10 +6,10 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -40,7 +40,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 
         Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
             new DefinirOpcoesDeclaradasCommand(processo.Id, "COR_RACA", [new OpcaoDeclaradaInput("PRETA", "Preta")], PrecondicaoIfMatch.Ausente),
-            repositorio, reader, Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+            repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("OpcaoDeclaradaFato.FonteNaoEhDoProcesso");
         processo.OpcoesDeclaradas.Should().BeEmpty();
@@ -79,7 +79,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
 
         Result<MutacaoAceita> resultado = await DefinirOpcoesDeclaradasCommandHandler.Handle(
             new DefinirOpcoesDeclaradasCommand(processo.Id, "CATEGORIA_RENDA", [new OpcaoDeclaradaInput("URBANA", "Urbana")], PrecondicaoIfMatch.Ausente),
-            repositorio, reader, Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+            repositorio, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         resultado.Error!.Code.Should().Be(OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva);
     }

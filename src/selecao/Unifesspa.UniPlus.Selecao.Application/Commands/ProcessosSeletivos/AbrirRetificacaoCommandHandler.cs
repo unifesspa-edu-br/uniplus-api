@@ -4,13 +4,13 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs;
 
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Abre a sessão editorial de retificação (Story #860, ADR-0110 D3).
@@ -28,7 +28,7 @@ public static class AbrirRetificacaoCommandHandler
         AbrirRetificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

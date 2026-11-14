@@ -8,15 +8,13 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Services;
-
-using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 public sealed class GravacaoDaVersaoCongelada(
     IProcessoSeletivoRepository processos,
     IAtoDoProcessoRepository atos,
     IRascunhoDePublicacaoRepository rascunhos,
-    ISelecaoUnitOfWork unitOfWork,
+    IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
     /// <summary>

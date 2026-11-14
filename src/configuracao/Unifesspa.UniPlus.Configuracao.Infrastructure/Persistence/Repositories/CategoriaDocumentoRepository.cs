@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -13,9 +14,9 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class CategoriaDocumentoRepository : ICategoriaDocumentoRepository
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public CategoriaDocumentoRepository(ConfiguracaoDbContext dbContext)
+    public CategoriaDocumentoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

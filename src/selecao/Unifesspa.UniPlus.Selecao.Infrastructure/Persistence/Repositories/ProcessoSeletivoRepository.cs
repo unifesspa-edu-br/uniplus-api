@@ -8,14 +8,15 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
 
-    public ProcessoSeletivoRepository(SelecaoDbContext context, TimeProvider timeProvider)
+    public ProcessoSeletivoRepository(UniPlusDbContext context, TimeProvider timeProvider)
     {
         _context = context;
         _timeProvider = timeProvider;
@@ -287,7 +288,7 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
             .Where(v => atos.Contains(v.AtoCriadorId)
                 // Mesmo filtro de exclusão lógica dos irmãos desta família: processo excluído
                 // logicamente não vaza a sua configuração congelada por nenhuma das portas.
-                && _context.ProcessosSeletivos.Any(p => p.Id == v.ProcessoSeletivoId))
+                && _context.Set<ProcessoSeletivo>().Any(p => p.Id == v.ProcessoSeletivoId))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
@@ -334,7 +335,7 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
             .Select(p => new EstadoDoProcesso(
                 p.UnidadeAdministradoraOrigemId,
                 p.Status,
-                _context.VersoesConfiguracao.Any(v => v.ProcessoSeletivoId == p.Id)))
+                _context.Set<VersaoConfiguracao>().Any(v => v.ProcessoSeletivoId == p.Id)))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<bool> ExisteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -373,7 +374,7 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
         IQueryable<ProcessoSeletivo> query = _context.ProcessosSeletivos.AsNoTracking()
             .Where(p => EstadoDoProcesso.StatusDeLeituraAberta.Contains(p.Status)
                 || (p.Status == StatusProcesso.Cancelado
-                    && _context.VersoesConfiguracao.Any(v => v.ProcessoSeletivoId == p.Id))
+                    && _context.Set<VersaoConfiguracao>().Any(v => v.ProcessoSeletivoId == p.Id))
                 || unidadesDoRascunho.Contains(p.UnidadeAdministradoraOrigemId));
 
         CursorKeysetPage<ProcessoSeletivo> page = await CursorKeyset

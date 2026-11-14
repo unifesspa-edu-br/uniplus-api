@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -26,7 +26,7 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
     private static readonly DateOnly Inicio = new(2026, 1, 1);
 
     private readonly ITipoAtoPublicadoRepository _repository = Substitute.For<ITipoAtoPublicadoRepository>();
-    private readonly IPublicacoesUnitOfWork _unitOfWork = Substitute.For<IPublicacoesUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     [Fact(DisplayName = "Recusa quando o tipo de ato não existe")]
     public async Task Handle_NaoEncontrado_Falha()

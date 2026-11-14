@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Fonte única do seed da biblioteca <c>rol_de_regras</c> (Story #772): as
 /// regras <c>v1</c> tipadas e versionadas que a configuração do Processo
-/// Seletivo referencia. Consumida tanto pela migration (que materializa as
+/// Seletivo referencia. Consumida tanto pelo modelo (<c>HasData</c>, que materializa as
 /// linhas) quanto pelos testes (que recomputam o hash e conferem a
 /// completude), garantindo uma única definição por regra.
 /// </summary>
@@ -36,16 +36,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// do primeiro congelamento, vale append-only estrito (congelamento dos parâmetros na publicação, UNI-REQ-0019).
 /// </para>
 /// <para>
-/// <b>Precondição obrigatória de migration (ADR-0112):</b> qualquer migration
-/// futura que substitua ou remova entrada deste seed deve verificar, antes de
-/// alterar qualquer linha, que nenhuma <c>VersaoConfiguracao</c> referencia o
-/// par código e versão afetado. Enquanto não há produção, a Emenda 1 da
-/// ADR-0112 autoriza uma segunda saída além de abortar: descartar o processo
-/// inteiro que carrega a referência, em vez de recusar a migration. O
-/// <c>Down</c> da migration <c>AddAlgoritmosContagemPrazo</c> é o exemplo
-/// executável de abortar (bloco <c>DO</c> com <c>RAISE EXCEPTION</c> antes do
-/// <c>DeleteData</c>); a migration que unifica as regras de distribuição em
-/// <c>v1</c> é o exemplo executável de descartar.
+/// <b>Precondição (ADR-0112):</b> substituir ou remover uma entrada deste seed exige
+/// verificar, antes de alterar qualquer linha, que nenhuma <c>VersaoConfiguracao</c>
+/// referencia o par código e versão afetado. Enquanto não há produção, a Emenda 1 da
+/// ADR-0112 autoriza, além de recusar a mudança, descartar o processo inteiro que
+/// carrega a referência.
 /// </para>
 /// </remarks>
 public static class RegraCatalogoSeed

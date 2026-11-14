@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -123,10 +124,10 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
         });
     }
 
-    private async Task<T> RecarregarAsync<T>(Func<ConfiguracaoDbContext, Task<T>> leitura)
+    private async Task<T> RecarregarAsync<T>(Func<UniPlusDbContext, Task<T>> leitura)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        return await leitura(escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>());
+        return await leitura(escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>());
     }
 
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();

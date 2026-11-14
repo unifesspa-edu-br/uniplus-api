@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.RolDeRegras;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
@@ -29,7 +29,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     /// só esta implementação faz. Exercitar a porta aqui esconderia justamente o que se quer
     /// provar.
     /// </summary>
-    private static RegraCatalogoReader Reader(SelecaoDbContext context) => new(context);
+    private static RegraCatalogoReader Reader(UniPlusDbContext context) => new(context);
 
     private static (string Tipo, string Codigo, string Versao) Chave(RegraCatalogo r) =>
         (r.Tipo.ToCodigo(), r.Codigo, r.Versao);
@@ -37,7 +37,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "A ordem é tipo, código e versão — e não a ordem em que o seed inseriu as linhas")]
     public async Task Listar_OrdenaPorTipoCodigoVersao()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         (IReadOnlyList<RegraCatalogo> itens, Guid? _, Guid? _) = await Reader(context)
             .ListarPaginadoAsync(tipo: null, afterId: null, limit: 500, PaginationDirection.Next, CancellationToken.None);
@@ -49,7 +49,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "O filtro por tipo devolve somente aquele tipo")]
     public async Task Listar_FiltradaPorTipo_SoTrazAqueleTipo()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         (IReadOnlyList<RegraCatalogo> itens, Guid? _, Guid? _) = await Reader(context)
             .ListarPaginadoAsync(TipoRegra.CriterioDesempate, afterId: null, limit: 500, PaginationDirection.Next, CancellationToken.None);
@@ -61,7 +61,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "Percorrer o catálogo em páginas pequenas visita cada regra exatamente uma vez, na mesma ordem da leitura inteira")]
     public async Task Listar_PaginandoAteOFim_NaoPulaNemRepete()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = Reader(context);
 
         (IReadOnlyList<RegraCatalogo> tudo, Guid? _, Guid? _) = await reader
@@ -93,7 +93,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "Navegar para trás a partir da segunda página devolve a primeira, na ordem ascendente")]
     public async Task Listar_ParaTras_VoltaAPaginaAnterior()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = Reader(context);
 
         (IReadOnlyList<RegraCatalogo> primeira, Guid? _, Guid? proximo) = await reader
@@ -114,7 +114,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "Cursor que aponta para regra inexistente devolve página vazia, não a primeira página")]
     public async Task Listar_CursorOrfao_NaoReiniciaDoComeco()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         (IReadOnlyList<RegraCatalogo> itens, Guid? anterior, Guid? proximo) = await Reader(context)
             .ListarPaginadoAsync(tipo: null, Guid.CreateVersion7(), limit: 3, PaginationDirection.Next, CancellationToken.None);
@@ -128,7 +128,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "A leitura por identidade devolve a versão pedida, com o hash que o domínio congela")]
     public async Task Obter_PorCodigoEVersao_DevolveAVersaoPedida()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = Reader(context);
 
         (IReadOnlyList<RegraCatalogo> itens, Guid? _, Guid? _) = await reader
@@ -145,7 +145,7 @@ public sealed class RegraCatalogoLeituraPaginadaTests : IClassFixture<RegraCatal
     [Fact(DisplayName = "Versão inexistente de um código que existe não devolve outra versão do mesmo código")]
     public async Task Obter_VersaoInexistente_NaoCaiEmOutraVersao()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = Reader(context);
 
         (IReadOnlyList<RegraCatalogo> itens, Guid? _, Guid? _) = await reader

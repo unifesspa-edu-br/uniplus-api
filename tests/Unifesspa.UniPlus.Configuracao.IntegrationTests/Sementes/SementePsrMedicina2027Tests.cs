@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.Sementes;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 using AwesomeAssertions;
@@ -14,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -21,14 +21,10 @@ using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
-/// A configuração do edital de Medicina 2027 existe ao subir o sistema, gravada pela migration
-/// <c>SemeiaPsrMedicina2027</c>, e é lida pelos mesmos caminhos que a aplicação usa.
+/// A configuração do edital de Medicina 2027 existe ao subir o sistema, gravada pelas sementes do módulo, e é lida
+/// pelos mesmos caminhos que a aplicação usa.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class SementePsrMedicina2027Tests
 {
     private static readonly string[] CodigosDosFatos =
@@ -46,55 +42,37 @@ public sealed class SementePsrMedicina2027Tests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Depois das migrations, o tipo PSR, os termos promovidos e os fatos do administrador, com descrição e valores, são lidos")]
-    public async Task Migrations_GravamOTipoOsTermosEOsFatos()
+    [Fact(DisplayName = "Depois da subida do banco, o tipo PSR, os termos promovidos e os fatos do administrador, com descrição e valores, são lidos")]
+    public async Task SubidaDoBanco_GravaOTipoOsTermosEOsFatos()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         TipoProcesso tipo = await ctx.TiposProcesso.SingleAsync(t => t.Codigo == SementePsrMedicina2027.TipoProcessoCodigo);
         tipo.Nome.Should().Be("Processo Seletivo Regular Unificado");
         tipo.Ativo.Should().BeTrue();
 
-        IReadOnlyList<VersaoTermoConsentimentoView> versoes = await new TermoConsentimentoReader(ctx).ListarVersoesAsync(
-            [.. SementePsrMedicina2027.Termos.Select(static t => t.VersaoId)], CancellationToken.None);
-        versoes.Select(static v => v.TermoId).Should().BeEquivalentTo(SementePsrMedicina2027.Termos.Select(static t => t.TermoId));
-        versoes.Should().OnlyContain(static v => v.FormaAceite == "REGISTRO_DIGITAL_COM_LOG_IP" && v.Hash.Length == 64);
-
-        List<FatoCandidato> fatos = await ctx.FatosCandidato
-            .Include(static f => f.ValoresDominioDeclarados)
-            .Where(f => CodigosDosFatos.Contains(f.Codigo))
-            .ToListAsync();
-        fatos.Select(static f => f.Codigo).Should().BeEquivalentTo(CodigosDosFatos);
-        fatos.Should().OnlyContain(static f => !f.Sistema && f.Ativo && !string.IsNullOrWhiteSpace(f.Descricao));
-        fatos.Single(static f => f.Codigo == "CATEGORIA_RENDA").ValoresDominioDeclarados.Should().HaveCount(7);
-        fatos.Single(static f => f.Codigo == "CATEGORIAS_RENDA_FAMILIA").Binding.Should().Be("AGREGACAO_GRUPO:CATEGORIA_RENDA");
+        await ConferirTermosPromovidosAsync(ctx);
+        await ConferirFatosDoAdministradorAsync(ctx);
     }
 
     [Fact(DisplayName = "Nos modelos semeados, a pergunta de sim ou não termina em interrogação, e a ajuda não manda responder nem repete o rótulo")]
     public async Task Modelos_RotulosEAjudasSemRepeticao()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<ModeloFormulario> modelos = await ctx.ModelosFormulario
-            .Where(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva
-                || m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva
-                || m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao)
-            .ToListAsync();
+        List<ModeloFormulario> modelos = await ModelosSemeadosAsync(ctx);
         List<ItemDoModelo> itens = [.. modelos.SelectMany(static m => m.Conteudo.Itens.Concat(m.Conteudo.Grupos.SelectMany(static g => g.Subitens)))];
 
         modelos.Should().HaveCount(3);
         itens.Where(static i => i.TipoRenderizacao == TipoRenderizacao.Booleano)
             .Should().OnlyContain(static i => i.Rotulo.EndsWith('?'), "o sim ou não responde a uma pergunta");
-        itens.Where(static i => i.Ajuda != null).Should().OnlyContain(
-            static i => !i.Ajuda!.StartsWith("Responda", StringComparison.Ordinal)
-                && !i.Ajuda.Contains(i.Rotulo.TrimEnd('?'), StringComparison.OrdinalIgnoreCase),
-            "a ajuda diz o que o rótulo não diz");
+        ConferirAjudasSemRepeticao(itens);
     }
 
     [Fact(DisplayName = "Reaplicar a semente não duplica nem altera o que já existe")]
     public async Task Reaplicar_NaoDuplicaNemAltera()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         string antes = await RetratoAsync(ctx);
 
         foreach (string comando in SementePsrMedicina2027.ComandosDoTipoTermosEFatos())
@@ -105,43 +83,29 @@ public sealed class SementePsrMedicina2027Tests
         (await RetratoAsync(ctx)).Should().Be(antes);
     }
 
-    [Fact(DisplayName = "Regravar o município de residência do Fator troca a descrição que falava da residência atual, que a reaplicação da semente não altera")]
-    public async Task RegravarMunicipioDeResidenciaDoFator_TrocaADescricaoAntiga()
-    {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
-        const string codigo = "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO";
-        string atual = await DescricaoAsync(ctx, codigo);
-        await ctx.Database.ExecuteSqlRawAsync(
-            "UPDATE configuracao.rol_de_fatos_candidato SET descricao = 'O município da área de abrangência do edital em que o candidato reside.' WHERE codigo = {0};",
-            codigo);
-
-        foreach (string comando in SementePsrMedicina2027.ComandosQueRetiramOMunicipioDeResidenciaDoFator()
-            .Concat(SementePsrMedicina2027.ComandosDoTipoTermosEFatos()))
-        {
-            await ctx.Database.ExecuteSqlRawAsync(comando);
-        }
-
-        (await DescricaoAsync(ctx, codigo)).Should().Be(atual);
-    }
-
-    private static Task<string> DescricaoAsync(ConfiguracaoDbContext ctx, string codigo) =>
-        ctx.FatosCandidato.AsNoTracking().Where(f => f.Codigo == codigo).Select(static f => f.Descricao!).SingleAsync();
-
     [Fact(DisplayName = "O termo do Banco Central está só na habilitação, condicionado a CONCORRER_RENDA, e o Fator de Atenuação é pedido uma vez, com o município conforme a forma de conclusão do ensino médio")]
     public async Task Modelos_TermoDoBancoCentralNaHabilitacaoEFatorDeAtenuacaoNaInscricao()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
         ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
 
-        inscricao.Conteudo.Termos.Should().NotContain(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL");
+        ConferirTermoDoBancoCentralSoNaHabilitacao(inscricao, habilitacao);
+        ConferirFatorDeAtenuacaoPedidoUmaVez(inscricao);
+    }
 
+    private static void ConferirTermoDoBancoCentralSoNaHabilitacao(ModeloFormulario inscricao, ModeloFormulario habilitacao)
+    {
+        inscricao.Conteudo.Termos.Should().NotContain(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL");
         TermoDoModelo termoDoBancoCentral = habilitacao.Conteudo.Termos.Should()
             .ContainSingle(static t => t.Codigo == "CONSULTA_AO_BANCO_CENTRAL").Subject;
         termoDoBancoCentral.FatosCitados.Should().BeEquivalentTo(["CONCORRER_RENDA"]);
         habilitacao.Conteudo.Pressupostos.Should().Contain("CONCORRER_RENDA");
+    }
 
+    private static void ConferirFatorDeAtenuacaoPedidoUmaVez(ModeloFormulario inscricao)
+    {
         Dictionary<string, ItemDoModelo> itens = inscricao.Conteudo.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
         itens["SOLICITA_FATOR_ATENUACAO"].FatosCitados.Should().BeEmpty("o pedido é feito a todo candidato");
         itens["SOLICITA_FATOR_ATENUACAO"].Ajuda.Should().NotContainAny(["reside", "conta de"]);
@@ -156,7 +120,7 @@ public sealed class SementePsrMedicina2027Tests
     [Fact(DisplayName = "O modelo de inscrição semeado traz a seção dos dados básicos, e as regras dele citam a cor ou raça")]
     public async Task Inscricao_TrazOsDadosBasicosECitaACorOuRaca()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
 
@@ -169,17 +133,26 @@ public sealed class SementePsrMedicina2027Tests
     [Fact(DisplayName = "A inscrição com prova pede o atendimento especializado em seção própria: quem pede escolhe a condição e o recurso, e descreve a condição fora da lista")]
     public async Task Inscricao_PedeOAtendimentoEspecializadoEmSecaoPropria()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva);
         Dictionary<string, ItemDoModelo> itens = inscricao.Conteudo.Itens.ToDictionary(static i => i.FatoCodigo, StringComparer.Ordinal);
 
+        ConferirSecaoDoAtendimento(inscricao, itens);
+        ConferirExibicaoDoAtendimento(itens);
+    }
+
+    private static void ConferirSecaoDoAtendimento(ModeloFormulario inscricao, Dictionary<string, ItemDoModelo> itens)
+    {
         inscricao.Conteudo.Etapas.Should().ContainSingle(static e => e.Codigo == "ATENDIMENTO_ESPECIALIZADO")
             .Which.Titulo.Should().Be("Atendimento especializado");
         string[] daSecao = ["SOLICITA_ATENDIMENTO_ESPECIALIZADO", "CONDICAO_ATENDIMENTO", "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "RECURSO_ACESSIBILIDADE"];
         daSecao.Should().OnlyContain(c => itens[c].EtapaCodigo == "ATENDIMENTO_ESPECIALIZADO");
         daSecao.Should().OnlyContain(c => itens[c].Obrigatoriedade.Tipo == TipoObrigatoriedade.Sempre, "o que aparece é exigido");
+    }
 
+    private static void ConferirExibicaoDoAtendimento(Dictionary<string, ItemDoModelo> itens)
+    {
         itens["SOLICITA_ATENDIMENTO_ESPECIALIZADO"].FatosCitados.Should().BeEmpty("o pedido é feito a todo candidato");
         Exibicao(itens["CONDICAO_ATENDIMENTO"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
         Exibicao(itens["RECURSO_ACESSIBILIDADE"]).Should().Be(Se("SOLICITA_ATENDIMENTO_ESPECIALIZADO", true));
@@ -192,7 +165,7 @@ public sealed class SementePsrMedicina2027Tests
     [Fact(DisplayName = "A inscrição sem prova não pergunta por atendimento especializado nem exige os documentos dele, e as duas versões mantêm o tipo de deficiência da reserva de vagas")]
     public async Task InscricaoSemProva_NaoTrazOAtendimentoEspecializado()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario semProva = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva);
         ModeloFormulario comProva = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva);
@@ -209,27 +182,72 @@ public sealed class SementePsrMedicina2027Tests
     [Fact(DisplayName = "A inscrição com prova exige de quem solicita atendimento o laudo de cada condição ofertada e a certidão da lactante, com a base legal resolvida")]
     public async Task Inscricao_TrazOsDocumentosDoAtendimentoEspecializado()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario inscricao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva);
         ModeloFormulario habilitacao = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao);
 
+        ConferirExigenciaDeTodosOsDocumentos(inscricao);
+        ConferirLaudoDeCadaCondicaoOfertada(inscricao);
+        ConferirCertidaoDaLactante(inscricao);
+        habilitacao.Conteudo.Documentos.Should().BeEmpty();
+    }
+
+    private static void ConferirExigenciaDeTodosOsDocumentos(ModeloFormulario inscricao)
+    {
+        inscricao.Conteudo.Documentos.Should().HaveCount(2);
         inscricao.Conteudo.Documentos.Should().OnlyContain(static d => d.FaseCodigo == "INSCRICAO" && d.ConsequenciaIndeferimento == "REMOVE_VANTAGEM" && d.Obrigatorio);
         inscricao.Conteudo.Documentos.SelectMany(static d => d.BasesLegais).Should().OnlyContain(static b => b.Status == "RESOLVIDO" && b.Abrangencia == "FEDERAL");
+    }
 
-        // O laudo não enumera as condições: vale para cada uma que o processo ofertar, menos a lactante e
-        // a pessoa idosa.
+    // O laudo não enumera as condições: vale para cada uma que o processo ofertar, menos a lactante e
+    // a pessoa idosa.
+    private static void ConferirLaudoDeCadaCondicaoOfertada(ModeloFormulario inscricao)
+    {
         DocumentoExigidoDoModelo laudo = inscricao.Conteudo.Documentos.Should().ContainSingle(static d => d.TipoDocumentoCodigo == "LAUDO_MEDICO").Which;
         laudo.PorOpcao.Should().BeEquivalentTo(new ExigenciaPorOpcao("CONDICAO_ATENDIMENTO", ["LACTANTE", "PESSOA_IDOSA"]));
         laudo.Quando!.Clausulas.Single().Condicoes.Select(static c => c.Fato).Should().Equal("SOLICITA_ATENDIMENTO_ESPECIALIZADO");
+    }
 
+    private static void ConferirCertidaoDaLactante(ModeloFormulario inscricao)
+    {
         DocumentoExigidoDoModelo certidao = inscricao.Conteudo.Documentos.Should().ContainSingle(static d => d.TipoDocumentoCodigo == "CERTIDAO_NASCIMENTO").Which;
         certidao.PorOpcao.Should().BeNull();
         CondicaoDe(certidao).Should().Be("LACTANTE");
         certidao.BasesLegais.Select(static b => b.Referencia).Should().Equal("Lei nº 13.872/2019, art. 2º, § 2º");
+    }
 
-        inscricao.Conteudo.Documentos.Should().HaveCount(2);
-        habilitacao.Conteudo.Documentos.Should().BeEmpty();
+    private static async Task<List<ModeloFormulario>> ModelosSemeadosAsync(UniPlusDbContext ctx) =>
+        await ctx.ModelosFormulario
+            .Where(m => m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoSemProva
+                || m.Codigo == SementePsrMedicina2027.ModeloDeInscricaoComProva
+                || m.Codigo == SementePsrMedicina2027.ModeloDeHabilitacao)
+            .ToListAsync();
+
+    private static void ConferirAjudasSemRepeticao(List<ItemDoModelo> itens) =>
+        itens.Where(static i => i.Ajuda != null).Should().OnlyContain(
+            static i => !i.Ajuda!.StartsWith("Responda", StringComparison.Ordinal)
+                && !i.Ajuda.Contains(i.Rotulo.TrimEnd('?'), StringComparison.OrdinalIgnoreCase),
+            "a ajuda diz o que o rótulo não diz");
+
+    private static async Task ConferirTermosPromovidosAsync(UniPlusDbContext ctx)
+    {
+        IReadOnlyList<VersaoTermoConsentimentoView> versoes = await new TermoConsentimentoReader(ctx).ListarVersoesAsync(
+            [.. SementePsrMedicina2027.Termos.Select(static t => t.VersaoId)], CancellationToken.None);
+        versoes.Select(static v => v.TermoId).Should().BeEquivalentTo(SementePsrMedicina2027.Termos.Select(static t => t.TermoId));
+        versoes.Should().OnlyContain(static v => v.FormaAceite == "REGISTRO_DIGITAL_COM_LOG_IP" && v.Hash.Length == 64);
+    }
+
+    private static async Task ConferirFatosDoAdministradorAsync(UniPlusDbContext ctx)
+    {
+        List<FatoCandidato> fatos = await ctx.FatosCandidato
+            .Include(static f => f.ValoresDominioDeclarados)
+            .Where(f => CodigosDosFatos.Contains(f.Codigo))
+            .ToListAsync();
+        fatos.Select(static f => f.Codigo).Should().BeEquivalentTo(CodigosDosFatos);
+        fatos.Should().OnlyContain(static f => !f.Sistema && f.Ativo && !string.IsNullOrWhiteSpace(f.Descricao));
+        fatos.Single(static f => f.Codigo == "CATEGORIA_RENDA").ValoresDominioDeclarados.Should().HaveCount(7);
+        fatos.Single(static f => f.Codigo == "CATEGORIAS_RENDA_FAMILIA").Binding.Should().Be("AGREGACAO_GRUPO:CATEGORIA_RENDA");
     }
 
     /// <summary>A condição de atendimento que dispara o documento: cada documento tem uma só cláusula.</summary>
@@ -262,7 +280,7 @@ public sealed class SementePsrMedicina2027Tests
     }
 
     /// <summary>A contagem e o conteúdo das linhas que a semente grava, para comparar antes e depois.</summary>
-    private static async Task<string> RetratoAsync(ConfiguracaoDbContext ctx)
+    private static async Task<string> RetratoAsync(UniPlusDbContext ctx)
     {
         List<string> linhas = await ctx.Database.SqlQueryRaw<string>(
             """

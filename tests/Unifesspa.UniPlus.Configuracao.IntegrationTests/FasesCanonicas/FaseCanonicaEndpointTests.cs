@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -383,8 +384,8 @@ public sealed class FaseCanonicaEndpointTests
         }
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         dbContext.Unidades.Add(unidade);
         await dbContext.SaveChangesAsync(CancellationToken.None);
         return unidade;

@@ -16,9 +16,9 @@ using Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -67,7 +67,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         retificar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<VersaoConfiguracao> versoes = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .OrderBy(v => v.NumeroVersao)
@@ -120,7 +120,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         retificar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         VersaoConfiguracao versao = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .OrderByDescending(v => v.NumeroVersao)
@@ -263,7 +263,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api, string nome)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);
@@ -272,7 +272,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string hashFixo = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -284,7 +284,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
     private static async Task<Guid> ObterAtoCriadorUnicoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .Select(v => v.AtoCriadorId)

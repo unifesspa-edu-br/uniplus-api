@@ -3,13 +3,13 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Abstractions;
 
 using Domain.Entities;
-using Domain.Errors;
 using Domain.Interfaces;
 
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Remove fisicamente o rascunho do dono do token. O rascunho não tem número nem comprovante, e guardar
@@ -26,7 +26,7 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         TimeProvider timeProvider,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         IDocumentoDaInscricaoRepository documentoRepository,
         CancellationToken cancellationToken)

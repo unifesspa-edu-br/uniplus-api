@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -22,11 +22,11 @@ public sealed class DecisaoNaProtecaoDoCatalogo
 
     private readonly ItensSobAprovacao _itens;
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos;
-    private readonly IConfiguracaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _relogio;
 
     public DecisaoNaProtecaoDoCatalogo(
-        ItensSobAprovacao itens, IAtoDaProtecaoDoCatalogoRepository atos, IConfiguracaoUnitOfWork unitOfWork, TimeProvider relogio)
+        ItensSobAprovacao itens, IAtoDaProtecaoDoCatalogoRepository atos, IUnitOfWork unitOfWork, TimeProvider relogio)
     {
         ArgumentNullException.ThrowIfNull(itens);
         ArgumentNullException.ThrowIfNull(atos);

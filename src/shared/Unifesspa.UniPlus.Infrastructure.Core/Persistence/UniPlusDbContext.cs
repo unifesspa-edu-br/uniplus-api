@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 /// <summary>
 /// Base do contexto único dos módulos internos do monólito. O modelo é sempre montado completo, com a contribuição de cada
@@ -26,6 +27,13 @@ public abstract class UniPlusDbContext : DbContext, IUnitOfWork
         ComposicaoDoModelo.Compor(modelBuilder, Modulos);
         base.OnModelCreating(modelBuilder);
     }
+
+    /// <summary>
+    /// Sobe o banco do contexto: scripts <c>Pre</c>, migrations e scripts pós, sob a trava do banco. As etapas posteriores
+    /// das contribuições pedem o provider da aplicação e rodam só pela subida do host.
+    /// </summary>
+    public Task SubirOBancoAsync(CancellationToken cancellationToken = default) =>
+        SubidaDoBancoExtensions.SubirOBancoAsync(this, ScriptsDasContribuicoes.Assemblies(Modulos), cancellationToken);
 
     public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
     {

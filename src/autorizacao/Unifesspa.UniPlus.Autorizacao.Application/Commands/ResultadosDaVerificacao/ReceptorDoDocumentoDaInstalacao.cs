@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerific
 
 using Microsoft.Extensions.Logging;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -12,13 +12,13 @@ using Unifesspa.UniPlus.Verificador.Contratos;
 public sealed partial class ReceptorDoDocumentoDaInstalacao : IReceptorDoResultadoDaVerificacao
 {
     private readonly IInstalacaoRepository _instalacoes;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
     private readonly ILogger<ReceptorDoDocumentoDaInstalacao> _logger;
 
     public ReceptorDoDocumentoDaInstalacao(
         IInstalacaoRepository instalacoes,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         ILogger<ReceptorDoDocumentoDaInstalacao> logger)
     {

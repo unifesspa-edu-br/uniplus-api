@@ -6,13 +6,13 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -35,7 +35,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
         IProcessoSeletivoRepository Repository,
         IFatoCandidatoReader FatoCandidatoReader,
         ITermoConsentimentoReader TermoReader,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo processo)
     {
@@ -43,7 +43,7 @@ public sealed class DefinirTermosDoFormularioCommandHandlerTests
             Substitute.For<IProcessoSeletivoRepository>(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<ITermoConsentimentoReader>(),
-            Substitute.For<ISelecaoUnitOfWork>());
+            Substitute.For<IUnitOfWork>());
         mocks.Repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
         [

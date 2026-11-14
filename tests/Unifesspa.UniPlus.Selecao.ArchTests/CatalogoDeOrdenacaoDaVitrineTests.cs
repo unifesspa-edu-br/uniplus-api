@@ -56,7 +56,7 @@ public sealed class CatalogoDeOrdenacaoDaVitrineTests
     /// </summary>
     private static IReadOnlyList<string> CamposMapeados()
     {
-        Assembly infraestrutura = typeof(SelecaoDbContext).Assembly;
+        Assembly infraestrutura = typeof(SelecaoContribuicao).Assembly;
         Type ordenacao = infraestrutura
             .GetType("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories.Ordenacao.OrdenacaoDaVitrine")
             .Should().NotBeNull().And.Subject.As<Type>();

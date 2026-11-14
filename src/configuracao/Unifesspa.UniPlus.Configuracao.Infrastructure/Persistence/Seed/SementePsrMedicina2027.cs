@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 
 using System.Globalization;
-using System.Text.Json;
 
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -26,7 +25,7 @@ using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.SqlD
 /// É dado administrado — depois de semeado, edita-se pelas telas de administração —, gravado direto
 /// no banco por decisão do líder técnico (uniplus-api#1802), para o processo real estar disponível
 /// sem cadastro manual em cada ambiente. Cada linha é construída pelas factories do domínio: o que o
-/// domínio recusaria derruba a migration em vez de gravar dado que a API não aceita.
+/// domínio recusaria derruba a subida do banco em vez de gravar dado que a API não aceita.
 /// </para>
 /// <para>
 /// Os identificadores são fixos, para a inserção ser idempotente e as chaves estrangeiras baterem
@@ -50,7 +49,7 @@ public static class SementePsrMedicina2027
     private const string AutorDaSemente = "semente-psr-medicina-2027";
 
     /// <summary>Como as recusas do domínio nomeiam esta semente.</summary>
-    private const string NomeDaSemente = "do PSR Medicina 2027";
+    internal const string NomeDaSemente = "do PSR Medicina 2027";
 
     private const HipoteseLegalTratamento HipoteseLegal = HipoteseLegalTratamento.CumprimentoObrigacaoLegal;
 
@@ -255,18 +254,22 @@ public static class SementePsrMedicina2027
         List<(FatoDaSemente, FatoCandidato)> construidos = [];
         foreach (FatoDaSemente semente in fatos)
         {
-            FatoCandidato fato = Exigir(
-                semente.Construir(new CatalogoDeFatos([.. construidos.Select(static c => c.Item2)], [])), $"fato {semente.N}");
-            for (int ordem = 0; ordem < semente.Valores.Count; ordem++)
-            {
-                (string codigo, string descricao) = semente.Valores[ordem];
-                Exigir(fato.AdicionarValorDominio(codigo, descricao, ordem, ativo: true), $"valor {codigo} de {fato.Codigo}");
-            }
-
+            CatalogoDeFatos catalogo = new([.. construidos.Select(static c => c.Item2)], []);
+            FatoCandidato fato = Exigir(semente.Construir(catalogo), $"fato {semente.N}");
+            AdicionarValores(fato, semente.Valores);
             construidos.Add((semente, fato));
         }
 
         return construidos;
+    }
+
+    private static void AdicionarValores(FatoCandidato fato, IReadOnlyList<(string Codigo, string Descricao)> valores)
+    {
+        for (int ordem = 0; ordem < valores.Count; ordem++)
+        {
+            (string codigo, string descricao) = valores[ordem];
+            Exigir(fato.AdicionarValorDominio(codigo, descricao, ordem, ativo: true), $"valor {codigo} de {fato.Codigo}");
+        }
     }
 
     /// <summary>
@@ -283,52 +286,14 @@ public static class SementePsrMedicina2027
     [
         ComandoDoModelo(4, ModeloDeInscricaoSemProva, "Inscrição — PSR sem prova",
             "Formulário de inscrição do Processo Seletivo Regular Unificado sem aplicação de prova, que classifica pela nota do ENEM.",
-            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ConteudoDaInscricao(comProva: false), FormatosDoCatalogo()), DerivacoesDaInscricao),
+            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ModelosDaSementePsrMedicina2027.Inscricao(comProva: false), FormatosDoCatalogo()), DerivacoesDaInscricao),
         ComandoDoModelo(2, ModeloDeHabilitacao, "Habilitação — Medicina 2027",
             "Formulário de habilitação dos convocados no Processo Seletivo Regular Unificado de Medicina 2027.",
-            FinalidadeFormulario.Habilitacao, ConteudoDaHabilitacao(),
+            FinalidadeFormulario.Habilitacao, ModelosDaSementePsrMedicina2027.Habilitacao(),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)),
         ComandoDoModelo(3, ModeloDeInscricaoComProva, "Inscrição — PSR com prova",
             "Formulário de inscrição do Processo Seletivo Regular Unificado com aplicação de prova, com o pedido de atendimento especializado nas etapas presenciais.",
-            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ConteudoDaInscricao(comProva: true), FormatosDoCatalogo()), DerivacoesDaInscricao),
-    ];
-
-    /// <summary>
-    /// Os comandos que tiram do banco a forma de conclusão do ensino médio que a semente gravava como
-    /// fato do administrador: ela passou a fato de sistema, com o mesmo código, ao lado de onde o
-    /// candidato cursou o ensino médio.
-    /// </summary>
-    public static IReadOnlyList<string> ComandosQueRetiramAFormaDeConclusaoDaSemente() =>
-    [
-        $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id = {Uuid(Id(TabelaFato, 5))};",
-        $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id = {Uuid(Id(TabelaFato, 5))};",
-    ];
-
-    /// <summary>
-    /// Os comandos que tiram do banco os fatos do pedido do acréscimo que a semente gravava antes: dois
-    /// pedidos e dois municípios viraram um pedido e o município de residência.
-    /// </summary>
-    public static IReadOnlyList<string> ComandosQueRetiramOsFatosAntigosDoFator() => ComandosQueRetiramOsFatos(3, 4, 11, 12);
-
-    /// <summary>
-    /// Os comandos que tiram do banco o município de residência do Fator, para ele ser gravado de novo
-    /// com a residência no período do edital no lugar da residência atual.
-    /// </summary>
-    public static IReadOnlyList<string> ComandosQueRetiramOMunicipioDeResidenciaDoFator() => ComandosQueRetiramOsFatos(13);
-
-    private static string[] ComandosQueRetiramOsFatos(params int[] fatos) =>
-    [
-        .. fatos.SelectMany(static n => new[]
-        {
-            $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id = {Uuid(Id(TabelaFato, n))};",
-            $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id = {Uuid(Id(TabelaFato, n))};",
-        }),
-    ];
-
-    /// <summary>Os comandos que apagam os modelos semeados, para o <c>Down</c> da migration.</summary>
-    public static IReadOnlyList<string> ComandosDeRemocaoDosModelos() =>
-    [
-        $"DELETE FROM configuracao.modelos_formulario WHERE id::text LIKE '5e3d{TabelaModelo:D4}-%';",
+            FinalidadeFormulario.Inscricao, ConjuntoBasicoDoModelo.Mesclar(ModelosDaSementePsrMedicina2027.Inscricao(comProva: true), FormatosDoCatalogo()), DerivacoesDaInscricao),
     ];
 
     /// <summary>
@@ -353,286 +318,11 @@ public static class SementePsrMedicina2027
             .Concat(VocabularioDoCatalogo.Formatos(Construir(Fatos).Select(static c => c.Fato)))
             .ToDictionary(StringComparer.Ordinal);
 
-    /// <summary>
-    /// O conteúdo da inscrição. O atendimento especializado serve à realização da prova (UNI-REQ-0012):
-    /// só o processo com prova pergunta por ele e exige os documentos que o comprovam.
-    /// </summary>
-    private static ConteudoDoModelo ConteudoDaInscricao(bool comProva)
-    {
-        const string enem = "ENEM";
-        const string escolaridade = "ESCOLARIDADE";
-        const string cotas = "RESERVA_DE_VAGAS";
-        const string fator = "FATOR_ATENUACAO";
-        const string solicitaFator = "SOLICITA_FATOR_ATENUACAO";
-        const string caminhoFator = "CAMINHO_FATOR_ATENUACAO";
-        const string indigena = "INDIGENA";
-        const string quilombola = "QUILOMBOLA";
-        const string baixaRenda = "BAIXA_RENDA";
-
-        return new(
-            "Inscrição no Processo Seletivo Regular Unificado",
-            [
-                Secao(enem, 1, "ENEM", "A edição do ENEM cujas notas você vai usar neste processo seletivo."),
-                Secao(escolaridade, 2, "Ensino médio", "Como você concluiu o ensino médio e onde o cursou."),
-                Secao(fator, 3, "Fator de Atenuação das Desigualdades de Acesso", "Pedido do Fator de Atenuação das Desigualdades de Acesso previsto no edital."),
-                Secao(cotas, 4, "Reserva de vagas", "Condições que permitem concorrer às vagas reservadas da Lei nº 12.711/2012 e às ações afirmativas do edital."),
-                .. comProva ? [SecaoDoAtendimento()] : Array.Empty<EtapaDoModelo>(),
-                Bloco("MODALIDADES", 6, BlocoSistema.ModalidadesCalculadas, "Modalidades de concorrência"),
-                Bloco("DOCUMENTOS", 7, BlocoSistema.ComprovacaoDocumental, "Documentos"),
-                Bloco("REVISAO", 8, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
-            ],
-            [
-                Campo(EdicaoDoEnem.Fato, 100, enem, "Qual edição do ENEM você vai usar?", TipoRenderizacao.SelecaoUnica,
-                    "Só aparecem as edições que o edital aceita."),
-                Campo(OrigemEscolar.FatoFormaDeConclusao, 101, escolaridade, "Como você concluiu o ensino médio?", TipoRenderizacao.SelecaoUnica, null),
-                Campo(OrigemEscolar.FatoOndeCursou, 102, escolaridade, "Onde você cursou o ensino médio?", TipoRenderizacao.SelecaoUnica,
-                    "A resposta define se você pode concorrer às vagas para quem cursou o ensino médio em escola pública.",
-                    restricoes: [OpcoesDeOndeCursou()]),
-                // Quem cursou o ensino médio regular ou na EJA pede pelo município em que o cursou; quem
-                // concluiu por certificação escolhe entre esse caminho e o da residência no período.
-                Campo(solicitaFator, 103, fator, "Deseja solicitar o Fator de Atenuação das Desigualdades de Acesso?", TipoRenderizacao.Booleano,
-                    "Para quem cursou pelo menos um ano do ensino médio num dos municípios da área que o edital lista ou, se concluiu por certificação, residiu num deles no período do edital. A comprovação é pedida na habilitação."),
-                Campo(caminhoFator, 104, fator, "Por qual vínculo com a área você solicita o Fator?", TipoRenderizacao.SelecaoUnica,
-                    "Como você concluiu o ensino médio por certificação, pode usar o ensino médio cursado na área ou a residência na área no período do edital.",
-                    exibicao: SeAlguma([Condicao(solicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes)])),
-                Campo("MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", 105, fator, "Em qual município da área de influência você cursou o ensino médio? Se foi em mais de um, informe aquele em que estudou mais tempo.", TipoRenderizacao.SelecaoUnica,
-                    "Vale o município em que você cursou pelo menos um ano do ensino médio, em escola pública ou privada. Só aparecem os municípios que o edital lista.",
-                    exibicao: SeAlguma(
-                        [Condicao(solicitaFator, Operador.Igual, true), Condicao(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, ConclusoesPorCurso)],
-                        [Condicao(solicitaFator, Operador.Igual, true), Condicao(caminhoFator, Operador.Igual, CaminhoPeloEnsinoMedio)])),
-                Campo("MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", 106, fator, "Em qual município da área de abrangência você residiu no período? Se foi em mais de um, informe aquele em que residiu mais tempo.", TipoRenderizacao.SelecaoUnica,
-                    "Vale ter residido pelo menos um ano na área entre outubro de 2024 e outubro de 2026, conforme o edital.",
-                    exibicao: SeAlguma([Condicao(solicitaFator, Operador.Igual, true), Condicao(caminhoFator, Operador.Igual, CaminhoPelaResidencia)])),
-                Campo("PCD", 107, cotas, "Você é pessoa com deficiência?", TipoRenderizacao.Booleano,
-                    "A deficiência é comprovada por laudo, conforme o edital."),
-                Campo("TIPO_DEFICIENCIA", 108, cotas, "Tipo de deficiência", TipoRenderizacao.SelecaoUnica, null,
-                    exibicao: Se("PCD", Operador.Igual, true)),
-                Campo("CONCORRER_PCD", 109, cotas, "Deseja concorrer às vagas para pessoas com deficiência?", TipoRenderizacao.Booleano, null,
-                    exibicao: Se("PCD", Operador.Igual, true)),
-                Campo(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 110, cotas, "Deseja concorrer às vagas para quem cursou o ensino médio em escola pública?", TipoRenderizacao.Booleano, null,
-                    exibicao: Se(OrigemEscolar.FatoEgresso, Operador.Igual, true)),
-                // As perguntas das cotas da lei só se fazem a quem optou por elas (UNI-REQ-0073), e a
-                // elegibilidade vem antes da opção por concorrer: o pertencimento indígena, de quem se
-                // declarou indígena na cor ou raça, e a autodeclaração quilombola, de quem tem qualquer
-                // outra cor ou raça, vêm antes da PPI e da cota de quilombolas.
-                Campo(indigena, 111, cotas, "Você pertence a um povo indígena?", TipoRenderizacao.Booleano,
-                    "O pertencimento é comprovado na habilitação, conforme o edital.",
-                    exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Igual, CorIndigena)])),
-                Campo(quilombola, 112, cotas, "Você se autodeclara quilombola?", TipoRenderizacao.Booleano,
-                    "Quem é quilombola pode ter qualquer cor ou raça, exceto a raça indígena. As vagas para pretos e pardos são para quem informou essa cor ou raça em Dados do candidato.",
-                    exibicao: SeAlguma([Optou, Condicao(CorRaca, Operador.Diferente, CorIndigena)])),
-                // Concorre à PPI quem se declarou preto ou pardo, ou indígena com o pertencimento.
-                Campo("CONCORRER_PPI", 113, cotas, "Deseja concorrer às vagas para pretos, pardos e indígenas?", TipoRenderizacao.Booleano,
-                    "Para quem se autodeclara preto, pardo ou indígena.",
-                    exibicao: SeAlguma(
-                        [Optou, Condicao(CorRaca, Operador.Em, CoresPretaOuParda)],
-                        [Optou, Condicao(CorRaca, Operador.Igual, CorIndigena), Condicao(indigena, Operador.Igual, true)])),
-                Campo("CONCORRER_Q", 114, cotas, "Deseja concorrer às vagas para quilombolas?", TipoRenderizacao.Booleano, null,
-                    exibicao: SeAlguma([Optou, Condicao(quilombola, Operador.Igual, true)])),
-                Campo(baixaRenda, 115, cotas, "A renda da sua família é de até um salário mínimo por pessoa?", TipoRenderizacao.Booleano,
-                    "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. A renda é comprovada na habilitação.",
-                    exibicao: SeAlguma([Optou])),
-                Campo("CONCORRER_RENDA", 116, cotas, "Deseja concorrer às vagas com critério de renda?", TipoRenderizacao.Booleano, null,
-                    exibicao: SeAlguma([Optou, Condicao(baixaRenda, Operador.Igual, true)])),
-                .. comProva ? CamposDoAtendimento() : Array.Empty<ItemDoModelo>(),
-            ],
-            [
-                Termo(Termos[0], 1),
-                Termo(Termos[1], 2),
-            ],
-            [],
-            [],
-            comProva ? DocumentosDoAtendimentoEspecializado() : []);
-    }
-
-    private const string Atendimento = "ATENDIMENTO_ESPECIALIZADO";
-    private const string SolicitaAtendimento = "SOLICITA_ATENDIMENTO_ESPECIALIZADO";
-    private const string CondicaoAtendimento = "CONDICAO_ATENDIMENTO";
-
-    private static EtapaDoModelo SecaoDoAtendimento() =>
-        Secao(Atendimento, 5, "Atendimento especializado", "Pedido de atendimento especializado nas etapas presenciais do processo seletivo.");
-
-    private static ItemDoModelo[] CamposDoAtendimento() =>
-    [
-        // Atendimento especializado não é só de quem tem deficiência (UNI-REQ-0026): quem pede
-        // escolhe a condição e o recurso entre os que o processo oferta; a condição fora da
-        // lista é descrita.
-        Campo(SolicitaAtendimento, 117, Atendimento, "Você precisa de atendimento especializado em alguma etapa presencial do processo?", TipoRenderizacao.Booleano,
-            "Por exemplo, por deficiência, gestação, amamentação, idade ou transtorno de aprendizagem."),
-        Campo(CondicaoAtendimento, 118, Atendimento, "Em quais condições você se enquadra?", TipoRenderizacao.SelecaoMultipla,
-            "Marque todas as que se aplicam a você.",
-            exibicao: Se(SolicitaAtendimento, Operador.Igual, true)),
-        Campo("DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", 119, Atendimento, "Descreva a sua condição específica", TipoRenderizacao.Texto,
-            "Diga qual é a condição, em poucas palavras.",
-            exibicao: Se(CondicaoAtendimento, Operador.Igual, CondicaoForaDaLista), formato: "LIVRE",
-            restricoes: [new TamanhoTexto(null, LimiteDaDescricaoDaOutraCondicao)]),
-        Campo("RECURSO_ACESSIBILIDADE", 120, Atendimento, "De quais recursos você vai precisar nas etapas presenciais?", TipoRenderizacao.SelecaoMultipla,
-            "Só aparecem os recursos que o processo oferece. Marque todos de que você precisa.",
-            exibicao: Se(SolicitaAtendimento, Operador.Igual, true)),
-    ];
-
-    /// <summary>
-    /// O conjunto padrão de documentos da inscrição (UNI-REQ-0026, UNI-REQ-0170): o CEPS só concede o
-    /// atendimento especializado a quem comprova a condição, e o documento comprova a condição, não o
-    /// recurso. Toda condição que o processo oferece pede o laudo médico, menos a lactante, que apresenta
-    /// a certidão de nascimento da criança, e a pessoa idosa, cuja idade vem do cadastro. Para quem
-    /// solicita atendimento o documento é obrigatório: sem ele, a inscrição não é enviada; o documento
-    /// enviado e indeferido na análise tira o atendimento e mantém a inscrição. As normas são de concurso
-    /// público, adotadas como referência; exigir o documento já na inscrição é regra do edital.
-    /// </summary>
-    private static DocumentoExigidoDoModelo[] DocumentosDoAtendimentoEspecializado()
-    {
-        const string lactante = "LACTANTE";
-        const string pessoaIdosa = "PESSOA_IDOSA";
-        const string removeVantagem = "REMOVE_VANTAGEM";
-        const string federal = "FEDERAL";
-        const string resolvido = "RESOLVIDO";
-        const string referencia = "Norma de concurso público adotada como referência; o edital exige o documento na inscrição.";
-        BaseLegalDoDocumentoDoModelo[] doLaudo =
-        [
-            new("Lei nº 13.146/2015 (Lei Brasileira de Inclusão)", federal, resolvido, null),
-            new("Decreto nº 9.508/2018, na redação do Decreto nº 9.546/2018", federal, resolvido, referencia),
-            new("Decreto nº 3.298/1999", federal, resolvido, referencia),
-        ];
-        BaseLegalDoDocumentoDoModelo[] daCertidao =
-        [
-            new("Lei nº 13.872/2019, art. 2º, § 2º", federal, resolvido, referencia),
-        ];
-
-        // Um laudo por condição: o CEPS defere ou indefere cada comprovação por si, e quem declara mais
-        // de uma condição apresenta o laudo de cada uma. As condições vêm da oferta do processo, e a que
-        // o administrador cadastrar depois também pede o laudo.
-        return
-        [
-            new("INSCRICAO", "LAUDO_MEDICO", Obrigatorio: true, SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true)]), removeVantagem, doLaudo,
-                new ExigenciaPorOpcao(CondicaoAtendimento, [lactante, pessoaIdosa])),
-            new("INSCRICAO", "CERTIDAO_NASCIMENTO", Obrigatorio: true,
-                SeAlguma([Condicao(SolicitaAtendimento, Operador.Igual, true), Condicao(CondicaoAtendimento, Operador.Igual, lactante)]),
-                removeVantagem, daCertidao),
-        ];
-    }
-
-    private static ConteudoDoModelo ConteudoDaHabilitacao()
-    {
-        const string conclusao = "CONCLUSAO_ENSINO_MEDIO";
-        const string familia = "COMPOSICAO_FAMILIAR";
-
-        return new(
-            "Habilitação no Processo Seletivo Regular Unificado de Medicina 2027",
-            [
-                Secao(conclusao, 1, "Conclusão do ensino médio e vínculos", "Situação da conclusão do ensino médio e vínculos com outras instituições."),
-                Secao(familia, 2, "Composição familiar", "Destina-se a quem foi convocado em vaga com critério de renda: informe as pessoas que compõem o seu grupo familiar, incluindo você."),
-                Bloco("DOCUMENTOS", 3, BlocoSistema.ComprovacaoDocumental, "Documentos"),
-                Bloco("REVISAO", 4, BlocoSistema.RevisaoEAceite, "Revisão e aceite"),
-            ],
-            [
-                Campo("CERTIFICADO_EM_EMITIDO", 1, conclusao, "Seu certificado de conclusão do ensino médio já foi emitido?", TipoRenderizacao.Booleano,
-                    "Se ainda não, apresente a declaração de conclusão e o termo de responsabilidade.",
-                    exibicao: Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Igual, OrigemEscolar.Regular)),
-                Campo("HABILITACAO_POR_PROCURADOR", 2, conclusao, "Outra pessoa fará a habilitação em seu nome, por procuração?", TipoRenderizacao.Booleano,
-                    "O procurador apresenta a procuração e o próprio documento de identificação."),
-                Campo("VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", 3, conclusao, "Você tem matrícula ativa em outra instituição pública de ensino superior ou bolsa do ProUni?", TipoRenderizacao.Booleano, null),
-            ],
-            [
-                // Pressuposto aceita só fato Declarado; MODALIDADE_CONVOCACAO (UNI-REQ-0147) é
-                // Derivado. CONCORRER_RENDA é o superconjunto declarado: todo convocado em cota de
-                // renda o respondeu antes.
-                Termo(Termos[2], 1, exibicao: Se("CONCORRER_RENDA", Operador.Igual, true)),
-            ],
-            [OrigemEscolar.FatoFormaDeConclusao, "CONCORRER_RENDA"],
-            [
-                new GrupoDoModelo(
-                    familia, 4, familia, "Membros da composição familiar", Minimo: 1, Maximo: null, Exibicao: null,
-                    Obrigatoriedade.Sempre,
-                    [
-                        Campo(CandidatoComoMembro.FatoParentesco, 1, null, "Parentesco com você", TipoRenderizacao.SelecaoUnica, null),
-                        Campo("CATEGORIA_RENDA", 2, null, "Fontes de renda desta pessoa", TipoRenderizacao.SelecaoMultipla,
-                            "Marque todas. Elas definem os documentos de renda a apresentar."),
-                        Campo("SOB_GUARDA", 3, null, "É menor de idade sob guarda?", TipoRenderizacao.Booleano,
-                            "Sob a sua guarda ou a de alguém da família."),
-                    ],
-                    IncluiCandidato: true),
-            ]);
-    }
-
-    private static EtapaDoModelo Secao(string codigo, int ordem, string titulo, string descricao) =>
-        new(codigo, ordem, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, titulo, descricao, null, null);
-
-    private static EtapaDoModelo Bloco(string codigo, int ordem, BlocoSistema bloco, string titulo) =>
-        new(codigo, ordem, TipoEtapaFormulario.Bloco, bloco, titulo, null, null, null);
-
-    private static ItemDoModelo Campo(
-        string fato, int ordem, string? etapa, string rotulo, TipoRenderizacao tipo, string? ajuda,
-        PredicadoDnf? exibicao = null, Obrigatoriedade? obrigatoriedade = null, string? formato = null,
-        IReadOnlyList<RestricaoValor>? restricoes = null) =>
-        new(fato, ordem, etapa, rotulo, tipo, formato, ajuda, obrigatoriedade ?? Obrigatoriedade.Sempre, exibicao, restricoes ?? [], PedirConfirmacao: false);
-
-    /// <summary>
-    /// Onde cursou oferece "Concluí por certificação" só a quem respondeu que concluiu por
-    /// certificação; as demais opções, a todos.
-    /// </summary>
-    private static OpcoesPermitidas OpcoesDeOndeCursou() =>
-        new([
-            new OpcoesCondicionadas(null, OrigemEscolar.OndeCursouSemCertificacao),
-            new OpcoesCondicionadas(
-                Se(OrigemEscolar.FatoFormaDeConclusao, Operador.Em, OrigemEscolar.Certificacoes),
-                [OrigemEscolar.ConcluiuPorCertificacao]),
-        ]);
-
-    private static TermoDoModelo Termo(TermoDaSemente termo, int ordem, PredicadoDnf? exibicao = null) =>
-        new(termo.Codigo, ordem, termo.TermoId, termo.VersaoId, exibicao, Obrigatoriedade.Sempre);
-
-    private const string CorRaca = "COR_RACA";
-    private const string CorIndigena = "INDIGENA";
-
-    /// <summary>As cores ou raças que, com a autodeclaração, dão acesso à cota de pretos, pardos e indígenas.</summary>
-    private static IReadOnlyList<string> CoresPretaOuParda { get; } = ["PRETA", "PARDA"];
-
-    /// <summary>A opção pelas cotas da lei, que toda pergunta delas exige.</summary>
-    private static CondicaoDnf Optou => Condicao(OpcaoPelasCotasDaLei.Fato, Operador.Igual, true);
-
-    /// <summary>As formas de conclusão de quem cursou o ensino médio, e não o concluiu por certificação.</summary>
-    private static IReadOnlyList<string> ConclusoesPorCurso { get; } = [OrigemEscolar.Regular, OrigemEscolar.Eja];
-
-    /// <summary>A condição única "fato operador valor", como predicado de uma cláusula só.</summary>
-    private static PredicadoDnf Se<T>(string fato, Operador operador, T valor) => SeAlguma([Condicao(fato, operador, valor)]);
-
-    /// <summary>O predicado que vale quando todas as condições de alguma das cláusulas valem.</summary>
-    private static PredicadoDnf SeAlguma(params CondicaoDnf[][] clausulas) =>
-        Exigir(
-            PredicadoDnf.CriarDeCondicoesAgrupadas([.. clausulas.SelectMany(static (condicoes, i) => condicoes.Select(c => (i + 1, c)))]),
-            $"predicado sobre {string.Join(", ", clausulas.SelectMany(static c => c).Select(static c => c.Fato).Distinct(StringComparer.Ordinal))}");
-
-    private static CondicaoDnf Condicao<T>(string fato, Operador operador, T valor) =>
-        Exigir(CondicaoDnf.Criar(fato, operador, JsonSerializer.SerializeToElement(valor)), $"condição sobre {fato}");
-
     private static string ComandoDoModelo(
         int n, string codigo, string nome, string descricao, FinalidadeFormulario finalidade, ConteudoDoModelo conteudo,
         IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes) =>
         SqlDaSemente.ComandoDoModelo(
             Id(TabelaModelo, n), codigo, nome, descricao, finalidade, TipoProcessoCodigo, conteudo, derivacoes, Instante, NomeDaSemente);
-
-    /// <summary>
-    /// Os comandos que tiram do banco o tipo de localidade e o nome da comunidade que a semente
-    /// gravava como fatos do administrador — eles passaram aos dados básicos, como fatos de sistema —
-    /// e o modelo de inscrição que os pedia, para ser gravado de novo sem eles.
-    /// </summary>
-    public static IReadOnlyList<string> ComandosQueRetiramALocalidadeDaSemente() =>
-    [
-        $"DELETE FROM configuracao.fato_valor_dominio WHERE fato_candidato_id IN ({Uuid(Id(TabelaFato, 1))}, {Uuid(Id(TabelaFato, 2))});",
-        $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id IN ({Uuid(Id(TabelaFato, 1))}, {Uuid(Id(TabelaFato, 2))});",
-        $"DELETE FROM configuracao.modelos_formulario WHERE id = {Uuid(Id(TabelaModelo, 1))};",
-    ];
-
-    /// <summary>Os identificadores que a semente grava, para o <c>Down</c> da migration apagá-los.</summary>
-    public static IReadOnlyList<string> ComandosDeRemocao() =>
-    [
-        $"DELETE FROM configuracao.fato_valor_dominio WHERE id::text LIKE '5e3d{TabelaValor:D4}-%';",
-        $"DELETE FROM configuracao.rol_de_fatos_candidato WHERE id::text LIKE '5e3d{TabelaFato:D4}-%';",
-        $"DELETE FROM configuracao.termo_consentimento_versao WHERE id::text LIKE '5e3d{TabelaVersaoDoTermo:D4}-%';",
-        $"DELETE FROM configuracao.termo_consentimento WHERE id::text LIKE '5e3d{TabelaTermo:D4}-%';",
-        $"DELETE FROM configuracao.tipos_processo WHERE id::text LIKE '5e3d{TabelaTipoProcesso:D4}-%';",
-    ];
 
     private static string ComandoDoTipoProcesso()
     {
@@ -649,20 +339,32 @@ public static class SementePsrMedicina2027
             semente.TermoId, semente.VersaoId, semente.Nome, semente.Texto, semente.BaseLegal, AutorDaSemente, Instante, NomeDaSemente);
 
     private static string ComandoDoFato(Guid id, FatoCandidato fato) =>
-        Inserir("rol_de_fatos_candidato", "id",
-            ("id", Uuid(id)), ("codigo", Texto(fato.Codigo)), ("nome", Texto(fato.Nome)), ("descricao", Texto(fato.Descricao)),
-            ("dominio", Texto(DominiosFato.ParaTokenCanonico(fato.Dominio))),
-            ("origem", Texto(OrigensFato.ParaTokenCanonico(fato.Origem))),
-            ("cardinalidade", Texto(CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade))),
-            ("fonte_valores", Texto(fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null)),
-            ("formato", Texto(fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null)),
-            ("ponto_resolucao", Texto(fato.PontoResolucao)), ("binding", Texto(fato.Binding)),
-            ("escopo", Texto(EscoposFato.ParaTokenCanonico(fato.Escopo))),
-            ("classificacao_protecao", Texto(ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao))),
-            ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
-            ("hipotese_legal", Texto(HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal))),
-            ("sistema", Logico(fato.Sistema)), ("ativo", Logico(fato.Ativo)), ("regras_padrao", "'[]'::jsonb"),
-            ("dependencias", ListaDeTexto(fato.Dependencias)), ("created_at", Momento(Instante)));
+        Inserir("rol_de_fatos_candidato", "id", [.. ColunasDoFato(id, fato), .. ColunasDaAprovacao(fato.Aprovacao)]);
+
+    private static (string Coluna, string Valor)[] ColunasDoFato(Guid id, FatoCandidato fato) =>
+    [
+        ("id", Uuid(id)), ("codigo", Texto(fato.Codigo)), ("nome", Texto(fato.Nome)), ("descricao", Texto(fato.Descricao)),
+        ("dominio", Texto(DominiosFato.ParaTokenCanonico(fato.Dominio))),
+        ("origem", Texto(OrigensFato.ParaTokenCanonico(fato.Origem))),
+        ("cardinalidade", Texto(CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade))),
+        ("fonte_valores", Texto(fato.FonteValores is { } fonte ? FontesValoresFato.ParaTokenCanonico(fonte) : null)),
+        ("formato", Texto(fato.Formato is { } formato ? FormatosTexto.ParaTokenCanonico(formato) : null)),
+        ("ponto_resolucao", Texto(fato.PontoResolucao)), ("binding", Texto(fato.Binding)),
+        ("escopo", Texto(EscoposFato.ParaTokenCanonico(fato.Escopo))),
+        ("classificacao_protecao", Texto(ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao))),
+        ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
+        ("hipotese_legal", Texto(HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal))),
+        ("sistema", Logico(fato.Sistema)), ("ativo", Logico(fato.Ativo)), ("regras_padrao", "'[]'::jsonb"),
+        ("dependencias", ListaDeTexto(fato.Dependencias)), ("created_at", Momento(Instante)),
+    ];
+
+    private static (string Coluna, string Valor)[] ColunasDaAprovacao(AprovacaoDaProtecao aprovacao) =>
+    [
+        ("protecao_situacao", Texto(SituacoesDaAprovacao.ParaTokenCanonico(aprovacao.Situacao))),
+        ("protecao_ciclo", aprovacao.Ciclo.Numero.ToString(CultureInfo.InvariantCulture)),
+        ("protecao_manifestacao_desfavoravel", Logico(aprovacao.ManifestacaoDesfavoravelVigente)),
+        ("protecao_manifestacoes_no_ciclo", aprovacao.ManifestacoesNoCiclo.ToString(CultureInfo.InvariantCulture)),
+    ];
 
     private static string ComandoDoValor(Guid id, Guid fatoId, FatoValorDominio valor) =>
         Inserir("fato_valor_dominio", "id",

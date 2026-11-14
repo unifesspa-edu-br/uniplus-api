@@ -8,7 +8,6 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,9 +16,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Host;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -161,7 +160,7 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
     private async Task DescartarPedidosAsync(string sub)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_sub = {0}", sub);
     }
 

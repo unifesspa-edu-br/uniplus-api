@@ -10,13 +10,13 @@ using Domain.Interfaces;
 using Domain.Services;
 using Domain.ValueObjects;
 
-using DTOs;
 using DTOs.Comprovantes;
 
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
@@ -38,7 +38,7 @@ public static class SubmeterInscricaoCommandHandler
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
         IGeradorDeNumeroInscricao geradorDeNumeroInscricao,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

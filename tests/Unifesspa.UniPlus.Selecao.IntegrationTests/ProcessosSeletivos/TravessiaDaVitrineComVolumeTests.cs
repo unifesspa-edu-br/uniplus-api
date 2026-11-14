@@ -6,12 +6,12 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -64,7 +64,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
 
     public async Task InitializeAsync()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
         List<CertameDivulgado> linhas = [];
@@ -260,7 +260,7 @@ public sealed class TravessiaDaVitrineComVolumeTests : IClassFixture<ProcessoSel
             (string SortKey, Guid Id)? cursor,
             PaginationDirection direcao)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =

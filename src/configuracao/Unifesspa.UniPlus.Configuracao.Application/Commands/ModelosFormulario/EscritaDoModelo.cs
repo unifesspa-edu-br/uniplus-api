@@ -1,9 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
-using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -11,7 +10,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// O que a criação e a edição do modelo têm em comum: ler o conteúdo, conferi-lo contra o catálogo
@@ -98,7 +96,7 @@ internal static class EscritaDoModelo
 
     /// <summary>Grava o modelo novo: o código é único entre todos os modelos, desativados inclusive.</summary>
     public static async Task<Result<Guid>> GravarNovoAsync(
-        ModeloFormulario modelo, IModeloFormularioRepository repository, IConfiguracaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        ModeloFormulario modelo, IModeloFormularioRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         if (await repository.CodigoExisteAsync(modelo.Codigo, cancellationToken).ConfigureAwait(false))
         {
@@ -126,7 +124,7 @@ internal static class EscritaDoModelo
         Guid id,
         Func<ModeloFormulario, Task<Result>> mutacao,
         IModeloFormularioRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ModeloFormulario? modelo = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);

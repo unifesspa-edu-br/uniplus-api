@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -221,7 +221,7 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     private async Task<HttpResponseMessage> RemoverVencendoAJanelaNaEsperaAsync(HttpClient gestor, Guid perfilId)
     {
         await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
         Task<HttpResponseMessage> remocao = RemoverBrutoAsync(gestor, perfilId, [Sensivel]);
         await trava.AguardarBloqueioAsync();
@@ -318,7 +318,7 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQuery<Guid>(sql).ToListAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQuery<Guid>(sql).ToListAsync();
     }
 
     private sealed record AvisosDaMaterializacao(IReadOnlyList<Guid> Revogadas, IReadOnlyList<Guid> Encerradas);
@@ -330,14 +330,14 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQueryRaw<int>(sql).SingleAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQueryRaw<int>(sql).SingleAsync();
     }
 
     private async Task<DateTimeOffset?> EncerradaEmAsync(Guid perfilId)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<DateTimeOffset?>($"SELECT encerrada_em AS \"Value\" FROM autorizacao.janelas_de_migracao WHERE perfil_id = {perfilId}")
             .SingleAsync();
     }

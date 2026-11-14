@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposBanca;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class AtualizarTipoBancaCommandHandlerTests
 {
     private readonly ITipoBancaRepository _repository = Substitute.For<ITipoBancaRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TipoBanca Existente(string codigo = "BANCA_ANALISE_RECURSOS") =>
         TipoBanca.Criar(codigo, "Banca de análise de recursos", null, null).Value!;

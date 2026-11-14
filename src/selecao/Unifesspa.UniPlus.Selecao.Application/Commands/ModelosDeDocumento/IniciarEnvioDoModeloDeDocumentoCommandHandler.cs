@@ -11,6 +11,8 @@ using Kernel.Results;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>
 /// Handler de <see cref="IniciarEnvioDoModeloDeDocumentoCommand"/>: confere que o processo existe,
 /// cria o registro pendente e devolve a URL de PUT. Enviar o modelo não é configuração do processo
@@ -23,7 +25,7 @@ public static class IniciarEnvioDoModeloDeDocumentoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IArquivoArmazenadoStorage storage,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {

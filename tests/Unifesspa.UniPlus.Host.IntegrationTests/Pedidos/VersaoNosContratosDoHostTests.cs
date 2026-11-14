@@ -11,8 +11,8 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -130,7 +130,7 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
             PerfisDeTeste.AutoriaDoAutor,
             PerfisDeTeste.Instante,
             catalogo));
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     private static async Task<Dictionary<Guid, int?>> VersoesDasConcessoesAsync(HttpClient leitor, Guid perfil) =>

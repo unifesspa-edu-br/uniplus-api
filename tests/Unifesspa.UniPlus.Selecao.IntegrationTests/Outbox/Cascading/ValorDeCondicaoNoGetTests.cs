@@ -11,8 +11,8 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// O valor de uma condição sobre fato do candidato viaja no MESMO formato nas duas leituras
@@ -118,7 +118,7 @@ public sealed class ValorDeCondicaoNoGetTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"Valor de condição {Guid.CreateVersion7()}");
             processoId = processo.Id;

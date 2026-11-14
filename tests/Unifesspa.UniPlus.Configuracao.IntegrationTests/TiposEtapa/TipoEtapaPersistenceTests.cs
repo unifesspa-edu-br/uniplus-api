@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A origem da nota no ENEM contra Postgres real: a carga do cadastro a liga só no tipo de
@@ -33,7 +33,7 @@ public sealed class TipoEtapaPersistenceTests
     [Fact(DisplayName = "A carga do cadastro liga a nota de origem no ENEM só no tipo NOTA_ENEM, e a leitura cross-módulo a expõe")]
     public async Task Carga_LigaANotaDeOrigemNoEnemSoNoTipoDoEnem()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         IReadOnlyList<TipoEtapaView> ativos = await new TipoEtapaReader(ctx).ListarAtivosAsync(CancellationToken.None);
 
@@ -43,7 +43,7 @@ public sealed class TipoEtapaPersistenceTests
     [Fact(DisplayName = "O banco recusa tirar a pontuação do tipo com nota de origem no ENEM")]
     public async Task CheckConstraint_NotaDeOrigemNoEnemSemPontuacao_Recusa()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // A linha semeada é compartilhada pela coleção: a transação desfeita no fim a preserva
         // mesmo que o CHECK deixe de recusar.

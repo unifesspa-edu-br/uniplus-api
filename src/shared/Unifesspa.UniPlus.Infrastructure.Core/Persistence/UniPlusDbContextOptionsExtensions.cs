@@ -10,12 +10,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 
 /// <summary>
-/// Helpers de configuração de <see cref="DbContext"/> consumidos pelos 3
-/// módulos (Selecao, Ingresso, Portal). Centraliza invariantes da camada de
-/// persistência declaradas no ADR-0054 — naming convention global
-/// (snake_case automático), interceptors transversais (soft delete + audit)
-/// e leitura lazy da connection string. Substitui código duplicado nos
-/// <c>Add{Module}Infrastructure</c>.
+/// Helpers de configuração de <see cref="DbContext"/> consumidos pelo contexto único dos módulos do monólito e pelo
+/// Portal. Centraliza invariantes da camada de persistência declaradas no ADR-0054 — naming convention global
+/// (snake_case automático), interceptors transversais (soft delete + audit) e leitura lazy da connection string.
 /// </summary>
 public static class UniPlusDbContextOptionsExtensions
 {
@@ -100,6 +97,28 @@ public static class UniPlusDbContextOptionsExtensions
             .Options;
     }
 
+    /// <summary>
+    /// Acrescenta os interceptadores de cada módulo, na ordem dos <paramref name="modulos"/>. Chamar depois de
+    /// <see cref="UseUniPlusNpgsqlConventions{TContext}"/> mantém os interceptadores compartilhados à frente: um
+    /// interceptador de módulo vê o que o soft delete e a auditoria já fizeram.
+    /// </summary>
+    public static DbContextOptionsBuilder AdicionarInterceptadoresDosModulos(
+        this DbContextOptionsBuilder options,
+        IServiceProvider serviceProvider,
+        IEnumerable<IContribuicaoDoModulo> modulos)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(modulos);
+
+        foreach (IContribuicaoDoModulo modulo in modulos)
+        {
+            modulo.AdicionarInterceptadores(options, serviceProvider);
+        }
+
+        return options;
+    }
+
     private static string ConnectionStringObrigatoria(IServiceProvider serviceProvider, string connectionStringName)
     {
         string? connectionString = serviceProvider
@@ -117,9 +136,9 @@ public static class UniPlusDbContextOptionsExtensions
     /// Fixa o assembly das migrations e o nome da tabela de histórico, que runtime e design-time precisam ver igual:
     /// sem o nome fixado, o EFCore.NamingConventions pode renomear a tabela para <c>__ef_migrations_history</c>
     /// (efcore/EFCore.NamingConventions#108), criando drift quando outro pod, sem a convention, já criou a de nome
-    /// PascalCase. As colunas continuam a cargo da convention; este pin estabiliza só o nome da tabela. No monólito
-    /// modular, o <paramref name="schema"/> do módulo abriga também a tabela de histórico (banco único,
-    /// schema-por-módulo); o schema padrão do modelo é fixado no <c>OnModelCreating</c> de cada DbContext.
+    /// PascalCase. As colunas continuam a cargo da convention; este pin estabiliza só o nome da tabela. O
+    /// <paramref name="schema"/> abriga a tabela de histórico: o monólito passa o esquema da plataforma, e quem não passa
+    /// fica com o esquema padrão do banco.
     /// </summary>
     private static void ConfigurarMigrations<TContext>(NpgsqlDbContextOptionsBuilder npgsqlOptions, string? schema)
         where TContext : DbContext
@@ -137,10 +156,8 @@ public static class UniPlusDbContextOptionsExtensions
     /// </summary>
     /// <remarks>
     /// Os interceptors dependem do <see cref="TimeProvider"/> para <c>CreatedAt</c>/<c>UpdatedAt</c>/<c>DeletedAt</c>;
-    /// o relógio é o registrado pelo host: esta extensão não registra relógio. Cada módulo chama este método no seu
-    /// <c>Add{Modulo}Infrastructure</c>, então no co-hosting (monólito modular) ele roda N vezes no mesmo container:
-    /// sem o <c>TryAdd</c>, o container acumularia N descritores idênticos de cada interceptor. Eles não têm estado por módulo (resolvem <c>IUserContext</c> e <see cref="TimeProvider"/>
-    /// scoped), então um único registro serve a todos os DbContexts.
+    /// o relógio é o registrado pelo host: esta extensão não registra relógio. O <c>TryAdd</c> mantém um só descritor de
+    /// cada interceptor quando mais de um registro de persistência roda no mesmo container.
     /// </remarks>
     public static IServiceCollection AddUniPlusEfInterceptors(this IServiceCollection services)
     {

@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -41,7 +42,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_do_processo WHERE codigo LIKE 'TEST\\_IRE\\_%' ESCAPE '\\'");
         await db.Database.ExecuteSqlAsync($"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_IRE\\_%' ESCAPE '\\'");
     }
@@ -122,7 +123,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         Guid documentoId;
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
                 db, $"{nome} {Guid.CreateVersion7()}", complementar: HabilitarIsencao);
             (processoId, documentoId) = (processo.Id, documento.Id);
@@ -169,7 +170,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         MotivoDeDecisao motivo = MotivoDeDecisao.Criar(new CamposDoMotivo(
             tipo, $"TEST_IRE_{Guid.NewGuid():N}"[..40].ToUpperInvariant(), "Motivo previsto pela comissão do processo", subclassificacao, sentido)).Value!;
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.MotivosDeDecisao.Add(motivo);
         await db.SaveChangesAsync();
         return motivo;

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using Microsoft.Extensions.Logging.Abstractions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
@@ -22,7 +23,7 @@ internal static class DoublesDeAvisos
 
     /// <summary>Os receptores do resultado da verificação, na ordem de consulta, com perfis e versões neutros.</summary>
     public static IReadOnlyList<IReceptorDoResultadoDaVerificacao> Receptores(
-        IInstalacaoRepository instalacoes, IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unidade) =>
+        IInstalacaoRepository instalacoes, IPedidoDeConcessaoRepository pedidos, IUnitOfWork unidade) =>
     [
         new ReceptorDoDocumentoDaInstalacao(instalacoes, unidade, TimeProvider.System, NullLogger<ReceptorDoDocumentoDaInstalacao>.Instance),
         new ReceptorDoAnexoDoPedido(pedidos, new PerfilQualquer(), Avisos(), unidade, TimeProvider.System, NullLogger<ReceptorDoAnexoDoPedido>.Instance),
@@ -34,7 +35,7 @@ internal static class DoublesDeAvisos
         Versoes(new DoublesDePerfis.PerfisNaMemoria(), new DoublesDePerfis.UnidadeDeTrabalho(), TimeProvider.System);
 
     /// <summary>O tratamento de versões do perfil sobre os perfis dados, com a unidade de trabalho e o relógio dados.</summary>
-    public static ResultadoDoDocumentoDaVersao Versoes(DoublesDePerfis.PerfisNaMemoria perfis, IAutorizacaoUnitOfWork unidade, TimeProvider relogio) =>
+    public static ResultadoDoDocumentoDaVersao Versoes(DoublesDePerfis.PerfisNaMemoria perfis, IUnitOfWork unidade, TimeProvider relogio) =>
         new(
             perfis,
             new OperacaoSobreOPerfil(perfis, unidade, relogio),

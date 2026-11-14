@@ -5,13 +5,12 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore.Migrations.Operations;
-
 using Npgsql;
 
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
@@ -29,13 +28,11 @@ using Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Migrations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -79,7 +76,6 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
 
         processo.DefinirOfertaAtendimento(oferta ?? OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -235,7 +231,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
     /// <summary>Publica e divulga o processo com os repositórios de produção, no mesmo <paramref name="db"/>.</summary>
     private static async Task<(Guid ProcessoId, DadosEdital Dados)> PublicarEDivulgarAsync(
-        SelecaoDbContext db,
+        UniPlusDbContext db,
         ProcessoSeletivo processo,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresDosCampos = null)
     {
@@ -296,7 +292,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
             nameof(Handle_ComProcessoPublicadoEDivulgadoReal_DefinicoesDasRespostasMarcamOsFatosIdentificador));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -311,7 +307,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
         iniciar.Value!.Respostas.Keys.Should().Equal(["CPF"], "a inscrição nasce em rascunho só com o CPF da conta");
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao? gravada = await readRepository.ObterPorIdAsync(iniciar.Value!.Id);
 
@@ -328,116 +324,12 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             "só a identidade de gênero e a orientação sexual têm cifra individual: o sexo, o sexo civil e a cor ou raça ficam em claro");
     }
 
-    [Fact(DisplayName = "A migração regrava o formulário gravado antes da faixa: as datas do conjunto básico passam a declará-la")]
-    public async Task Migracao_FormularioGravadoAntes_RecebeAFaixaNasDatasDoConjuntoBasico()
-    {
-        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Migracao_FormularioGravadoAntes_RecebeAFaixaNasDatasDoConjuntoBasico));
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
-        {
-            await writeContext.ProcessosSeletivos.AddAsync(processo);
-            await writeContext.SaveChangesAsync();
-        }
-
-        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
-        await connection.OpenAsync();
-        await using (NpgsqlCommand antes = connection.CreateCommand())
-        {
-            antes.CommandText = """
-                UPDATE selecao.fatos_coletados SET restricoes = '[]'::jsonb
-                WHERE processo_seletivo_id = @id AND fato_codigo IN ('DATA_NASCIMENTO', 'RG_DATA_EMISSAO')
-                """;
-            antes.Parameters.AddWithValue("id", processo.Id);
-            (await antes.ExecuteNonQueryAsync()).Should().Be(2, "o formulário gravado antes da faixa tem as duas datas sem restrição");
-        }
-
-        foreach (SqlOperation operacao in new LimitaAsDatasDoConjuntoBasico().UpOperations.OfType<SqlOperation>())
-        {
-            await using NpgsqlCommand migracao = connection.CreateCommand();
-            migracao.CommandText = operacao.Sql;
-            await migracao.ExecuteNonQueryAsync();
-        }
-
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo lido = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System).ObterComConfiguracaoAsync(processo.Id))!;
-        foreach (string fato in new[] { "DATA_NASCIMENTO", "RG_DATA_EMISSAO" })
-        {
-            FaixaDeData faixa = lido.FatosColetados.Single(f => f.FatoCodigo == fato).Restricoes.OfType<FaixaDeData>().Single();
-            faixa.Minima.Should().Be(LimiteDeData.NoEnvio(anos: -120, dias: 0));
-            faixa.Maxima.Should().Be(LimiteDeData.NoEnvio(anos: 0, dias: 0));
-        }
-    }
-
-    [Fact(DisplayName = "A migração regrava o formulário gravado com o órgão emissor em texto: a lista e o nome do outro órgão entram, e o que vinha depois desce")]
-    public async Task Migracao_FormularioComOrgaoEmissorEmTexto_RecebeAListaEONomeDoOutro()
-    {
-        ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Migracao_FormularioComOrgaoEmissorEmTexto_RecebeAListaEONomeDoOutro));
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
-        {
-            await writeContext.ProcessosSeletivos.AddAsync(processo);
-            await writeContext.SaveChangesAsync();
-        }
-
-        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
-        await connection.OpenAsync();
-        await using (NpgsqlCommand antes = connection.CreateCommand())
-        {
-            // O formulário como era gravado antes da lista: o órgão emissor em texto livre, sem o nome
-            // do outro órgão, e o que vem depois dele uma posição acima.
-            antes.CommandText = """
-                CREATE TEMPORARY TABLE rg_antes AS
-                SELECT ordem FROM selecao.fatos_coletados WHERE processo_seletivo_id = @id AND fato_codigo = 'RG_ORGAO_EMISSOR';
-                DELETE FROM selecao.fatos_coletados WHERE processo_seletivo_id = @id AND fato_codigo = 'RG_ORGAO_EMISSOR_OUTRO';
-                UPDATE selecao.fatos_coletados SET tipo_renderizacao = 5, formato = 'LIVRE'
-                WHERE processo_seletivo_id = @id AND fato_codigo = 'RG_ORGAO_EMISSOR';
-                UPDATE selecao.fatos_coletados SET ordem = ordem + 1000000
-                WHERE processo_seletivo_id = @id AND grupo_coletado_id IS NULL AND ordem > (SELECT ordem FROM rg_antes);
-                UPDATE selecao.fatos_coletados SET ordem = ordem - 1000001
-                WHERE processo_seletivo_id = @id AND grupo_coletado_id IS NULL AND ordem > 1000000;
-                UPDATE selecao.grupos_coletados SET ordem = ordem - 1
-                WHERE processo_seletivo_id = @id AND ordem > (SELECT ordem FROM rg_antes);
-                DROP TABLE rg_antes;
-                """;
-            antes.Parameters.AddWithValue("id", processo.Id);
-            await antes.ExecuteNonQueryAsync();
-        }
-
-        foreach (SqlOperation operacao in new EscolheOOrgaoEmissorDoRgDeUmaLista().UpOperations.OfType<SqlOperation>())
-        {
-            await using NpgsqlCommand migracao = connection.CreateCommand();
-            migracao.CommandText = operacao.Sql;
-            await migracao.ExecuteNonQueryAsync();
-        }
-
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo lido = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System).ObterComConfiguracaoAsync(processo.Id))!;
-        Forma(lido).Should().BeEquivalentTo(Forma(processo), static o => o.WithStrictOrdering());
-        lido.GruposColetados.Select(static g => (g.Codigo, g.Ordem)).Should().BeEquivalentTo(processo.GruposColetados.Select(static g => (g.Codigo, g.Ordem)));
-
-        static IEnumerable<object> Forma(ProcessoSeletivo p) => p.FatosColetados
-            .Where(static f => f.GrupoColetadoId is null)
-            .OrderBy(static f => f.Ordem)
-            .Select(static f => new
-            {
-                f.FatoCodigo,
-                f.Ordem,
-                f.EtapaCodigo,
-                f.Rotulo,
-                f.TipoRenderizacao,
-                f.Formato,
-                f.ClassificacaoProtecao,
-                f.OrigemValores,
-                Obrigatoriedade = f.Obrigatoriedade.Tipo,
-                f.Restricoes,
-                Precondicoes = f.Precondicoes.Select(static c => (c.Clausula, c.Fato, c.Operador, JsonSerializer.Serialize(c.Valor))).ToList(),
-            });
-    }
-
     [Fact(DisplayName = "O conjunto básico publicado recusa o nascimento depois do envio com os limites do dia, sem gravar o rascunho")]
     public async Task Salvar_SobreVersaoFixadaReal_RecusaONascimentoNoFuturo()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Salvar_SobreVersaoFixadaReal_RecusaONascimentoNoFuturo));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -463,7 +355,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         salvar.Errors.Should().ContainSingle(static e => e.Field == "DATA_NASCIMENTO" && e.Error.Code == InscricaoErrorCodes.DataForaDaFaixa)
             .Which.Error.Message.Should().Be("Informe uma data entre 15/01/1906 e 15/01/2026.");
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Inscricao? gravada = await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(iniciar.Value!.Id);
         gravada!.Respostas.Should().NotContainKey("DATA_NASCIMENTO", "a resposta recusada não é gravada no rascunho");
@@ -474,7 +366,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Salvar_EnderecoComCepConfirmado_GravaEReleAConfirmacao));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -512,7 +404,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao lida = (await readRepository.ObterPorIdAsync(inscricao.Id))!;
         lida.Respostas["ENDERECO_RESIDENCIAL"].GetProperty("cepConfirmado").GetBoolean().Should().BeTrue();
@@ -524,7 +416,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
             nameof(Salvar_SobreVersaoFixadaReal_CifraDocumentosDeNivelSuperiorEDeGrupo));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -587,7 +479,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         linhas.Should().Be(2, "o RG de nível superior e o do membro do grupo têm cada um a sua linha cifrada");
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao lida = (await readRepository.ObterPorIdAsync(inscricao.Id))!;
         lida.Respostas["RG_NUMERO"].GetString().Should().Be("30.111.222-9");
@@ -605,7 +497,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
             nameof(RecursoDeAcessibilidade_ForaDaOfertaDoProcesso_ERecusado), oferta, [campoRecurso]);
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
@@ -615,7 +507,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
@@ -638,7 +530,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(OrgaoEmissor_ForaDaListaCongelada_ERecusado));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
@@ -648,7 +540,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
@@ -668,7 +560,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricao(nameof(Telefone_SobreVersaoFixada_GravaSoOsDigitos));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
 
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
@@ -678,7 +570,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), DentroDoPeriodo, writeContext, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None);
         iniciar.IsSuccess.Should().BeTrue(iniciar.Error?.Message);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<ContextoDaVersaoFixada> contexto = await ContextoDaVersaoFixadaResolver.ResolverAsync(
             iniciar.Value!.VersaoFormularioId, processoId, new ProcessoSeletivoRepository(readContext, TimeProvider.System), RegistroCodecs, ofertaCursoId: null, null, CancellationToken.None);
         contexto.IsSuccess.Should().BeTrue(contexto.Error?.Message);
@@ -708,7 +600,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         ProcessoSeletivo processo = NovoProcessoDeInscricao(
             nameof(Envio_SobreVersaoFixadaReal_DescartaARespostaDoItemOculto), camposAdicionais: [precisa, condicao]);
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(writeContext, processo);
         InscricaoRepository inscricaoRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
@@ -735,7 +627,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await inscricaoRepository.AtualizarAsync(inscricao, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 
-        await using SelecaoDbContext envioContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext envioContext = _fixture.CreateDbContext();
         InscricaoRepository envioRepository = new(envioContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao rascunho = (await envioRepository.ObterPorIdAsync(inscricao.Id))!;
         rascunho.Respostas.Should().ContainKey("CONDICAO_DESCRITA", "o rascunho guarda a resposta oculta, para o candidato poder voltar atrás");
@@ -755,7 +647,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await envioRepository.AdicionarComprovanteAsync(comprovante, CancellationToken.None);
         await envioContext.SaveChangesAsync(CancellationToken.None);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao enviada = (await leitura.ObterPorIdAsync(inscricao.Id))!;
         enviada.Respostas.Should().ContainKey("PRECISA_ATENDIMENTO").And.NotContainKey("CONDICAO_DESCRITA");
@@ -781,7 +673,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     }
 
     private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarAsync(
-        SelecaoDbContext db, Guid processoId, IUserContext usuario, Dictionary<string, JsonElement>? respostas) =>
+        UniPlusDbContext db, Guid processoId, IUserContext usuario, Dictionary<string, JsonElement>? respostas) =>
         await AvaliarInscricaoQueryHandler.Handle(
             new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, null)),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -791,7 +683,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "A consulta da inscrição sobre o processo publicado devolve as modalidades das respostas, o que falta e o nome congelado, sem gravar nada")]
     public async Task Consulta_SobreVersaoFixadaReal_DevolveAsModalidadesSemGravar()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(Consulta_SobreVersaoFixadaReal_DevolveAsModalidadesSemGravar)));
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
@@ -819,7 +711,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         naoConcorre.Value!.Modalidades.Situacao.Should().Be("NAO_CONCORRE");
         naoConcorre.Value!.Modalidades.Itens.Should().BeEmpty();
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         Inscricao gravada = (await new InscricaoRepository(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(iniciar.Value!.Id))!;
         gravada.Respostas.Should().NotContainKey("CONCORRER_PCD", "a consulta não grava nada");
@@ -829,7 +721,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Sobre o processo que só oferta a ampla, incondicional, a consulta diz que o candidato concorre a ela")]
     public async Task Consulta_SoAmpla_ConcorreAAmpla()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, NovoProcessoDeInscricao(nameof(Consulta_SoAmpla_ConcorreAAmpla)));
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await IniciarInscricaoCommandHandler.Handle(
@@ -848,7 +740,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "A consulta só responde ao titular: sem inscrição no processo é não encontrada, e o sub divergente é dono divergente")]
     public async Task Consulta_SoAoTitular()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(Consulta_SoAoTitular)));
         (await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
@@ -868,7 +760,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O formulário da inscrição publicado diz, só pelo código, de que campos a avaliação depende, sem regra nem valor")]
     public async Task FormularioDaInscricao_TrazAsDependenciasDaAvaliacaoSoPeloCodigo()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(FormularioDaInscricao_TrazAsDependenciasDaAvaliacaoSoPeloCodigo)));
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await IniciarInscricaoCommandHandler.Handle(
@@ -898,7 +790,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return NovoProcessoDeInscricao(nome, camposAdicionais: [pedeOFator], fatoDoFator: "PEDE_O_FATOR", comIsencao: comIsencao);
     }
 
-    private async Task<FormularioRenderizavelDto> FormularioDaInscricaoDeFernandaAsync(SelecaoDbContext db, ProcessoSeletivo processo)
+    private async Task<FormularioRenderizavelDto> FormularioDaInscricaoDeFernandaAsync(UniPlusDbContext db, ProcessoSeletivo processo)
     {
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
@@ -920,7 +812,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O formulário da inscrição publicado traz, só pelo código, o fato que o bônus regional cita como dependência do Fator")]
     public async Task FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
 
         FormularioRenderizavelDto formulario = await FormularioDaInscricaoDeFernandaAsync(
             db, ProcessoComFator(nameof(FormularioDaInscricao_TrazAsDependenciasDoFatorPeloFatoQueOBonusCita)));
@@ -931,7 +823,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O formulário da inscrição publicado de processo sem Fator traz as dependências do Fator vazias, não nulas")]
     public async Task FormularioDaInscricao_SemFator_TrazAsDependenciasDoFatorVazias()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
 
         FormularioRenderizavelDto formulario = await FormularioDaInscricaoDeFernandaAsync(
             db, ProcessoQueDerivaAModalidade(nameof(FormularioDaInscricao_SemFator_TrazAsDependenciasDoFatorVazias)));
@@ -942,7 +834,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O formulário da isenção publicado não traz as dependências do Fator: elas são só da inscrição")]
     public async Task FormularioDaIsencao_NaoTrazAsDependenciasDoFator()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoComFator(nameof(FormularioDaIsencao_NaoTrazAsDependenciasDoFator), comIsencao: true));
 
         Result<FormularioRenderizavelDto> formulario = await ObterFormularioRenderizavelQueryHandler.Handle(
@@ -979,7 +871,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
                 NoExigencia.CriarFolha(daConvocacao, 3).Value!,
             ],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         (await IniciarInscricaoCommandHandler.Handle(
@@ -1017,7 +909,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         documentos.Fases.Single().Documentos.Select(static d => (d.TipoDocumentoCodigo, d.OcorrenciaId, d.Situacao));
 
     private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarDocumentosAsync(
-        SelecaoDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId)
+        UniPlusDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId)
     {
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
         if (declaraRenda is { } valor)
@@ -1165,7 +1057,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Sobre a versão publicada com a matriz da Lei 12.711, a consulta deriva as modalidades da origem escolar e da opção pelas cotas")]
     public async Task Consulta_ComAMatrizNormativaPublicada_DerivaAsModalidadesDaLei()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(
             db, ProcessoComAMatrizNormativa(nameof(Consulta_ComAMatrizNormativaPublicada_DerivaAsModalidadesDaLei)), OpcoesDaOrigemEscolar());
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
@@ -1257,7 +1149,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     }
 
     /// <summary>Inicia a inscrição da Fernanda no processo publicado e devolve o ETag com que ela é enviada.</summary>
-    private async Task<string> IniciarAsync(SelecaoDbContext db, Guid processoId)
+    private async Task<string> IniciarAsync(UniPlusDbContext db, Guid processoId)
     {
         Result<InscricaoDto> iniciar = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(processoId),
@@ -1268,7 +1160,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return iniciar.Value!.ETag;
     }
 
-    private async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(SelecaoDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
+    private async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
         await SubmeterInscricaoCommandHandler.Handle(
             new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -1284,7 +1176,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
     private async Task<(Inscricao Inscricao, IReadOnlyList<ComprovanteInscricao> Comprovantes)> RelerAsync(Guid processoId)
     {
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao inscricao = (await repositorio.ObterAtivaPorProcessoECpfAsync(processoId, PersonasDeTeste.FernandaDrumond, CancellationToken.None))!;
         return (inscricao, await repositorio.ObterComprovantesAsync([inscricao.Id], CancellationToken.None));
@@ -1310,7 +1202,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         return linhas;
     }
 
-    private async Task<Result<InscricaoDto>> SalvarAsync(SelecaoDbContext db, Guid processoId, InscricaoRequest pedido, string etag) =>
+    private async Task<Result<InscricaoDto>> SalvarAsync(UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag) =>
         await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -1320,7 +1212,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Salvar e enviar sobre a versão publicada recusam, no nível superior, o fato que a versão só coleta dentro de um grupo")]
     public async Task Resposta_DeSubitemDeGrupoNoNivelSuperior_ERecusada()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Resposta_DeSubitemDeGrupoNoNivelSuperior_ERecusada));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1343,7 +1235,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Salvar e enviar recusam a lista de grupo nula e a ocorrência nula com o caminho do campo, sem lançar")]
     public async Task Grupo_ComListaOuOcorrenciaNula_ERecusado()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Grupo_ComListaOuOcorrenciaNula_ERecusado));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1373,7 +1265,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Salvar e enviar recusam o aceite nulo e o aceite sem código ou sem hash com o caminho do campo, sem lançar")]
     public async Task Aceite_NuloOuSemCodigoOuSemHash_ERecusado()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Aceite_NuloOuSemCodigoOuSemHash_ERecusado));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1400,7 +1292,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Salvar e enviar recusam o aceite repetido, o de termo fora do formulário e o de outra versão, conferidos contra o termo congelado")]
     public async Task Aceite_RepetidoForaDoFormularioOuDeOutraVersao_ERecusado()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Aceite_RepetidoForaDoFormularioOuDeOutraVersao_ERecusado));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1430,7 +1322,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O envio sobre a versão publicada grava as modalidades em que o candidato concorre e o comprovante relido as traz com o nome congelado")]
     public async Task Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Envio_SobreAVersaoPublicada_GravaAsModalidadesEComprova));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1454,7 +1346,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O envio sobre a versão publicada sem nenhuma modalidade aplicável é recusado, sem comprovante, e a inscrição continua em rascunho")]
     public async Task Envio_SemModalidade_RecusaEMantemORascunho()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoQueDerivaAModalidade(nameof(Envio_SemModalidade_RecusaEMantemORascunho));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
         string etag = await IniciarAsync(db, processoId);
@@ -1474,7 +1366,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "O comprovante lido do banco sai montado com a versão fixada, o CPF mascarado, a posição e o prazo da correção aberto")]
     public async Task ComprovanteGravado_SaiMontadoParaExibir()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(ComprovanteGravado_SaiMontadoParaExibir));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1488,7 +1380,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             enviada.ETag, "00000104");
         correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message);
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ProcessoSeletivoRepository processos = new(leitura, TimeProvider.System);
         MontadorDoComprovante montador = new(
@@ -1513,7 +1405,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "A correção que troca as modalidades emite um comprovante novo, com hash próprio, e o anterior fica como estava")]
     public async Task Correcao_QueTrocaAsModalidades_EmiteComprovanteNovo()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoComAMatrizNormativa(nameof(Correcao_QueTrocaAsModalidades_EmiteComprovanteNovo));
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo, OpcoesDaOrigemEscolar());
         string etag = await IniciarAsync(db, processoId);
@@ -1544,7 +1436,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     [Fact(DisplayName = "Salvar e ler a inscrição devolvem a avaliação do que ficou gravado, com as modalidades que a resposta decide")]
     public async Task SalvarELer_DevolvemAAvaliacaoDoGravado()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, ProcessoQueDerivaAModalidade(nameof(SalvarELer_DevolvemAAvaliacaoDoGravado)));
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
         InscricaoRepository inscricoes = new(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -1599,7 +1491,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     }
 
     /// <summary>Grava <paramref name="retificado"/> como a versão seguinte do processo, sem divulgá-la: a retificação fechada ainda sem publicidade.</summary>
-    private static async Task<VersaoConfiguracao> GravarRetificacaoAsync(SelecaoDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados)
+    private static async Task<VersaoConfiguracao> GravarRetificacaoAsync(UniPlusDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados)
     {
         string hash = new('4', 64);
         ProcessoSeletivoRepository processos = new(db, TimeProvider.System);
@@ -1614,7 +1506,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
     }
 
     /// <summary>Faz o certame divulgar <paramref name="versao"/>, a que dá publicidade à retificação.</summary>
-    private static async Task DivulgarAsync(SelecaoDbContext db, Guid processoId, VersaoConfiguracao versao)
+    private static async Task DivulgarAsync(UniPlusDbContext db, Guid processoId, VersaoConfiguracao versao)
     {
         CertameDivulgado divulgado = (await new CertameDivulgadoRepository(db).ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
         divulgado.TentarAvancar(
@@ -1625,7 +1517,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         await db.SaveChangesAsync();
     }
 
-    private static async Task DivulgarRetificacaoAsync(SelecaoDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados) =>
+    private static async Task DivulgarRetificacaoAsync(UniPlusDbContext db, Guid processoId, ProcessoSeletivo retificado, DadosEdital dados) =>
         await DivulgarAsync(db, processoId, await GravarRetificacaoAsync(db, processoId, retificado, dados));
 
     [Fact(DisplayName = "O rascunho adota a versão divulgada ao salvar e ao enviar, sem gravar na leitura; o primeiro envio congela a versão")]
@@ -1638,7 +1530,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         Guid processoId;
         DadosEdital dados;
         string etag;
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             (processoId, dados) = await PublicarEDivulgarAsync(db, v1);
             etag = await IniciarAsync(db, processoId);
@@ -1652,13 +1544,13 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         // A retificação fechada e ainda sem publicidade não é adotada: o rascunho continua na versão divulgada.
         VersaoConfiguracao semPublicidade;
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             semPublicidade = await GravarRetificacaoAsync(db, processoId, v2, dados);
         }
 
         Guid versaoUm = (await RelerAsync(processoId)).Inscricao.VersaoFormularioId;
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             Result<InscricaoDto> ainda = await ObterInscricaoQueryHandler.Handle(
                 new ObterInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -1669,14 +1561,14 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ainda.Value!.Respostas.Should().ContainKey("ANTIGA");
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             await DivulgarAsync(db, processoId, semPublicidade);
         }
 
         // A leitura mostra a versão nova e não grava: a linha continua na versão em que o rascunho nasceu.
         InscricaoDto lida;
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             Result<InscricaoDto> ler = await ObterInscricaoQueryHandler.Handle(
                 new ObterInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -1694,7 +1586,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         naoGravada.Revisao.Should().BeLessThan(int.Parse(lida.ETag.Trim('"').Split(':')[1], System.Globalization.CultureInfo.InvariantCulture));
 
         // O formulário e a avaliação avulsa do rascunho também são os da versão nova.
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             Result<FormularioRenderizavelDto> formulario = await ObterFormularioDaInscricaoQueryHandler.Handle(
                 new ObterFormularioDaInscricaoQuery(processoId), new InscricaoRepository(db, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System),
@@ -1708,7 +1600,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         // O envio sem a pergunta nova obrigatória é recusado nela, e nada é gravado.
         InscricaoRequest semNova = PedidoDeEnvio(v2, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true) });
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             Result<ReciboDaInscricaoDto> recusado = await EnviarAsync(db, processoId, semNova, lida.ETag, "00000201");
             recusado.Errors.Should().ContainSingle().Which.Field.Should().Be("NOVA");
@@ -1719,7 +1611,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
 
         // Salvar grava a adoção: a versão nova, sem a resposta à pergunta retirada.
         InscricaoDto salvo;
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             Result<InscricaoDto> salvar = await SalvarAsync(db, processoId, new InscricaoRequest(null, null, null, null), lida.ETag);
             salvar.IsSuccess.Should().BeTrue(salvar.Error?.Message);
@@ -1737,19 +1629,19 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             ["NOVA"] = JsonSerializer.SerializeToElement("resposta"),
             ["CONCORRER_PCD"] = JsonSerializer.SerializeToElement(true),
         });
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             (await EnviarAsync(db, processoId, comNova, salvo.ETag, "00000202")).IsSuccess.Should().BeTrue();
         }
 
         // Uma retificação divulgada depois do envio não muda a versão da inscrição: a correção continua nela.
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             await DivulgarRetificacaoAsync(db, processoId, v3, dados);
         }
 
         (Inscricao enviada, _) = await RelerAsync(processoId);
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             Result<ReciboDaInscricaoDto> correcao = await EnviarAsync(db, processoId, comNova, enviada.ETag, "00000203");
             correcao.IsSuccess.Should().BeTrue(correcao.Error?.Message ?? string.Join("; ", correcao.Errors.Select(static e => $"{e.Field}: {e.Error.Message}")));

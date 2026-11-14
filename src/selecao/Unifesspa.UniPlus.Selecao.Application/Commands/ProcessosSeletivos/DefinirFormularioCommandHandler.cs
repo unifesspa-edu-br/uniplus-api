@@ -1,16 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
@@ -28,7 +26,7 @@ public static class DefinirFormularioCommandHandler
         DefinirFormularioCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -127,7 +125,7 @@ public static class RemoverFormularioCommandHandler
     public static async Task<Result<MutacaoAceita>> Handle(
         RemoverFormularioCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

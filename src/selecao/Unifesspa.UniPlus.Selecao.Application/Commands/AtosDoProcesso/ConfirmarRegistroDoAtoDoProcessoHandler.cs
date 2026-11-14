@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
@@ -28,7 +27,7 @@ public static class ConfirmarRegistroDoAtoDoProcessoHandler
     public static async Task Handle(
         AtoNormativoRegistrado mensagem,
         IAtoDoProcessoRepository atoDoProcessoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

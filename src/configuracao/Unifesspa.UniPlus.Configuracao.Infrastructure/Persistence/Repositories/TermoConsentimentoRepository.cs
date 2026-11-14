@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -13,9 +14,9 @@ using Unifesspa.UniPlus.Kernel.Pagination;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public TermoConsentimentoRepository(ConfiguracaoDbContext dbContext)
+    public TermoConsentimentoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
@@ -36,15 +37,6 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Globalization",
-        "CA1304:Specify CultureInfo",
-        Justification = "t.Nome.ToLower() vive dentro de uma expression tree traduzida pelo EF Core " +
-            "para SQL lower(nome) — roda no Postgres, sem CurrentCulture do processo .NET envolvida.")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Globalization",
-        "CA1311:Specify a culture or use an invariant version",
-        Justification = "Mesma razão de CA1304 — chamada traduzida para SQL, não executada em CLR.")]
     public async Task<(IReadOnlyList<TermoConsentimento> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId,
         int limit,
@@ -53,27 +45,7 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
         CancellationToken cancellationToken)
     {
         // Sem Include de Versoes — a listagem projeta só o cabeçalho do termo.
-        IQueryable<TermoConsentimento> query = _dbContext.TermosConsentimento.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            // Busca indexada via pg_trgm (issue #1105): ILIKE '%termo%' acelerado
-            // pelo índice GIN de expressão ix_termo_consentimento_nome_trgm sobre
-            // lower(nome) (migration AdicionaBuscaTrigramTermoConsentimento) — o
-            // opclass gin_trgm_ops também acelera LIKE/ILIKE, não só os operadores
-            // de similaridade. Preferido a word_similarity/<%: abaixo do threshold
-            // padrão (0.6) esse operador não garante casar substrings internas
-            // curtas (ex.: "lat" não bate com "Plataforma", mesmo com termo válido
-            // e presente) — ILIKE dá semântica de "contains" exata, sem depender de
-            // limiar algum, para qualquer tamanho de termo. lower() nos dois lados
-            // mantém a busca caixa-insensível e casa com o índice; sem
-            // acento-insensibilidade (fora de escopo da issue). Curingas do LIKE
-            // (% _ \) são escapados para virarem texto literal.
-            string term = EscapeLikeWildcards(searchTerm.Trim());
-            string pattern = "%" + term + "%";
-            const string escape = @"\";
-            query = query.Where(t => EF.Functions.ILike(t.Nome.ToLower(), pattern, escape));
-        }
+        IQueryable<TermoConsentimento> query = FiltrarPorNome(_dbContext.TermosConsentimento.AsNoTracking(), searchTerm);
 
         // Keyset bidirecional (ADR-0089): ordenação por Id (Guid v7, ADR-0026/0032),
         // aplicado sobre a query JÁ FILTRADA — os EXISTS internos do helper herdam
@@ -83,6 +55,39 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
             .ConfigureAwait(false);
 
         return (page.Items, page.PrevAfterId, page.NextAfterId);
+    }
+
+    // Busca indexada via pg_trgm (issue #1105): ILIKE '%termo%' acelerado
+    // pelo índice GIN de expressão ix_termo_consentimento_nome_trgm sobre
+    // lower(nome) (script 003_busca_por_proximidade_do_termo.sql) — o
+    // opclass gin_trgm_ops também acelera LIKE/ILIKE, não só os operadores
+    // de similaridade. Preferido a word_similarity/<%: abaixo do threshold
+    // padrão (0.6) esse operador não garante casar substrings internas
+    // curtas (ex.: "lat" não bate com "Plataforma", mesmo com termo válido
+    // e presente) — ILIKE dá semântica de "contains" exata, sem depender de
+    // limiar algum, para qualquer tamanho de termo. lower() nos dois lados
+    // mantém a busca caixa-insensível e casa com o índice; sem
+    // acento-insensibilidade (fora de escopo da issue). Curingas do LIKE
+    // (% _ \) são escapados para virarem texto literal.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Globalization",
+        "CA1304:Specify CultureInfo",
+        Justification = "t.Nome.ToLower() vive dentro de uma expression tree traduzida pelo EF Core " +
+            "para SQL lower(nome) — roda no Postgres, sem CurrentCulture do processo .NET envolvida.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Globalization",
+        "CA1311:Specify a culture or use an invariant version",
+        Justification = "Mesma razão de CA1304 — chamada traduzida para SQL, não executada em CLR.")]
+    private static IQueryable<TermoConsentimento> FiltrarPorNome(IQueryable<TermoConsentimento> query, string? searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return query;
+        }
+
+        string pattern = "%" + EscapeLikeWildcards(searchTerm.Trim()) + "%";
+        const string escape = @"\";
+        return query.Where(t => EF.Functions.ILike(t.Nome.ToLower(), pattern, escape));
     }
 
     // Escapa os curingas do LIKE/ILIKE (\ % _) para que metacaracteres digitados

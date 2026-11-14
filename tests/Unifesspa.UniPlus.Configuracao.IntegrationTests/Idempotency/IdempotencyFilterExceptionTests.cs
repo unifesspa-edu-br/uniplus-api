@@ -8,7 +8,6 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
@@ -20,7 +19,6 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Configuracao.API.Controllers;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -28,7 +26,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
-/// Prova de correção do fix da issue #1028: <see cref="IdempotencyFilter{TDbContext}"/>
+/// Prova de correção do fix da issue #1028: <see cref="IdempotencyFilter"/>
 /// não deve cachear uma resposta de sucesso quando o <c>next()</c> devolve um
 /// <see cref="ResourceExecutedContext"/> com uma exceção pendente e não tratada
 /// — o cenário que o <c>ResourceInvoker</c> do ASP.NET Core MVC produz quando a
@@ -82,8 +80,8 @@ public sealed class IdempotencyFilterExceptionTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         IServiceProvider services = scope.ServiceProvider;
 
-        EfCoreIdempotencyStore<ConfiguracaoDbContext> store = ActivatorUtilities
-            .CreateInstance<EfCoreIdempotencyStore<ConfiguracaoDbContext>>(services);
+        EfCoreIdempotencyStore store = ActivatorUtilities
+            .CreateInstance<EfCoreIdempotencyStore>(services);
         IUniPlusEncryptionService encryption = services.GetRequiredService<IUniPlusEncryptionService>();
         IDomainErrorMapper errorMapper = services.GetRequiredService<IDomainErrorMapper>();
         TimeProvider time = services.GetRequiredService<TimeProvider>();
@@ -93,7 +91,7 @@ public sealed class IdempotencyFilterExceptionTests
         userContext.IsAuthenticated.Returns(true);
         userContext.UserId.Returns("idempotency-filter-exception-test-user");
 
-        IdempotencyFilter<ConfiguracaoDbContext> filter = new(store, encryption, errorMapper, time, userContext, options);
+        IdempotencyFilter filter = new(store, encryption, errorMapper, time, userContext, options);
 
         MethodInfo idempotentMethod = typeof(TermosConsentimentoController)
             .GetMethod(nameof(TermosConsentimentoController.MarcarRevisado))!;
@@ -194,12 +192,12 @@ public sealed class IdempotencyFilterExceptionTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         IServiceProvider services = scope.ServiceProvider;
-        EfCoreIdempotencyStore<ConfiguracaoDbContext> store = ActivatorUtilities
-            .CreateInstance<EfCoreIdempotencyStore<ConfiguracaoDbContext>>(services);
+        EfCoreIdempotencyStore store = ActivatorUtilities
+            .CreateInstance<EfCoreIdempotencyStore>(services);
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.IsAuthenticated.Returns(true);
         userContext.UserId.Returns("idempotency-filter-registro-test-user");
-        IdempotencyFilter<ConfiguracaoDbContext> filter = new(
+        IdempotencyFilter filter = new(
             store,
             services.GetRequiredService<IUniPlusEncryptionService>(),
             services.GetRequiredService<IDomainErrorMapper>(),

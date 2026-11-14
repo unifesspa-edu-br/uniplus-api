@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -17,7 +17,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
 {
     private readonly IFaseCanonicaRepository _repository = Substitute.For<IFaseCanonicaRepository>();
     private readonly IUnidadeReader _unidadeReader = Substitute.For<IUnidadeReader>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static FaseCanonica Existente(string codigo = "ENSALAMENTO") =>
         FaseCanonica.Criar(codigo, "Ensalamento", null, false, false, null, false, false, "NO_EDITAL").Value!;

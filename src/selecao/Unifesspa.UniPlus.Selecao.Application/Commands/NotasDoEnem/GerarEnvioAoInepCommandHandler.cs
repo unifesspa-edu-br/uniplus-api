@@ -16,6 +16,7 @@ using Kernel.Results;
 using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Gera o arquivo de envio ao INEP e registra a geração. Os CPFs vão só no arquivo devolvido: o
@@ -31,7 +32,7 @@ public static partial class GerarEnvioAoInepCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IInscritosDaEdicaoDoEnem inscritos,
         IGeracaoDeEnvioAoInepRepository geracoes,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         IResolvedorFusoInstitucional resolvedorFuso,
         TimeProvider timeProvider,

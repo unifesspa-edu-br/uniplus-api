@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -27,7 +28,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
     [Fact(DisplayName = "Só a apresentação com ao menos um arquivo verificado conta; o arquivo em verificação não atende a exigência")]
     public async Task ApresentacoesVerificadas_IgnoraEmVerificacaoEPendente()
     {
-        (SelecaoDbContext context, Guid inscricaoId, DocumentoExigido laudo) = await InscricaoComLaudoAsync();
+        (UniPlusDbContext context, Guid inscricaoId, DocumentoExigido laudo) = await InscricaoComLaudoAsync();
         DocumentoDaInscricaoRepository repositorio = new(context);
         ApresentacaoDeDocumento confirmada = await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 1);
         await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 0);
@@ -43,7 +44,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
     [Fact(DisplayName = "Ao remover todos os arquivos de uma apresentação no mesmo envio, ela sai junto; o que constou de envio fica")]
     public async Task Conciliacao_RemoveApresentacaoSemArquivo_EPreservaOQueConstou()
     {
-        (SelecaoDbContext context, Guid inscricaoId, DocumentoExigido laudo) = await InscricaoComLaudoAsync();
+        (UniPlusDbContext context, Guid inscricaoId, DocumentoExigido laudo) = await InscricaoComLaudoAsync();
         DocumentoDaInscricaoRepository repositorio = new(context);
         ApresentacaoDeDocumento frenteEVerso = await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 2);
         ApresentacaoDeDocumento jaEnviada = await ApresentacaoComArquivosAsync(repositorio, inscricaoId, laudo, confirmados: 1);
@@ -65,14 +66,14 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
             FormularioDeTeste.AvaliacaoSemOcultos, [], DateTimeOffset.UtcNow, CancellationToken.None);
         await context.SaveChangesAsync();
 
-        await using SelecaoDbContext leitura = _db.CreateDbContext();
+        await using UniPlusDbContext leitura = _db.CreateDbContext();
         (await leitura.ApresentacoesDeDocumento.Where(a => a.InscricaoId == inscricaoId).Select(static a => a.Id).ToListAsync())
             .Should().BeEquivalentTo([jaEnviada.Id], "a apresentação cujos arquivos saíram vai junto, e a que já constou de um envio fica");
     }
 
-    private async Task<(SelecaoDbContext Context, Guid InscricaoId, DocumentoExigido Laudo)> InscricaoComLaudoAsync()
+    private async Task<(UniPlusDbContext Context, Guid InscricaoId, DocumentoExigido Laudo)> InscricaoComLaudoAsync()
     {
-        SelecaoDbContext context = _db.CreateDbContext();
+        UniPlusDbContext context = _db.CreateDbContext();
         InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
         Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);

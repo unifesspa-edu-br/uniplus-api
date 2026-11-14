@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 
 using Microsoft.Extensions.Logging;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -20,13 +21,13 @@ public sealed partial class TentativaDeConfirmacao
 {
     private readonly IInstalacaoRepository _instalacoes;
     private readonly IResumoDeCodigoDeConfirmacao _resumo;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<TentativaDeConfirmacao> _logger;
 
     public TentativaDeConfirmacao(
         IInstalacaoRepository instalacoes,
         IResumoDeCodigoDeConfirmacao resumo,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         ILogger<TentativaDeConfirmacao> logger)
     {
         ArgumentNullException.ThrowIfNull(instalacoes);

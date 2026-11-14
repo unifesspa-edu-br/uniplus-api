@@ -12,9 +12,9 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
@@ -94,7 +94,7 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
             .Should().Equal(["BAIXA_RENDA", "QUILOMBOLA"], "a troca de ordens sob sessão persistiu");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Set<FatoColetado>().Count(f => f.ProcessoSeletivoId == ctx.ProcessoId).Should().Be(PrimeiraOrdem + 2, "sem linha órfã");
     }
 
@@ -132,7 +132,7 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
 
         // Sem órfãos: exatamente os básicos e os dois fatos coletados persistidos.
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int total = db.Set<FatoColetado>().Count(f => f.ProcessoSeletivoId == ctx.ProcessoId);
         total.Should().Be(PrimeiraOrdem + 2, "o descarte não deixa linha órfã");
     }
@@ -253,7 +253,7 @@ public sealed class EdicaoColetaSobRetificacaoEndpointTests
         Guid documentoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;

@@ -12,6 +12,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -186,7 +187,7 @@ public sealed class AtoNormativoEndpointTests
             versaoInvocada: null);
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+            UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             await ctx.Set<AtoNormativo>().AddAsync(semNome);
             await ctx.SaveChangesAsync();
         }
@@ -565,7 +566,7 @@ public sealed class AtoNormativoEndpointTests
             .Should().Contain("uniplus.publicacoes.anexo_do_ato.nome_duplicado");
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        PublicacoesDbContext ctx = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await ctx.AtosNormativos.AnyAsync(a => a.Serie == serie)).Should().BeFalse();
     }
 

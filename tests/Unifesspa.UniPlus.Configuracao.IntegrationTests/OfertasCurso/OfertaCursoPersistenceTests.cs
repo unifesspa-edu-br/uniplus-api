@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -57,13 +58,13 @@ public sealed class OfertaCursoPersistenceTests
         UnidadeOfertante unidade = NovaUnidade();
         OfertaCurso oferta = NovaOferta(cursoId, localId, unidade);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
         persistida.CursoId.Should().Be(cursoId);
@@ -106,13 +107,13 @@ public sealed class OfertaCursoPersistenceTests
             cursoId, localId, NovaUnidade(), "REGULAR", null,
             "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
         persistida.FormatoPedagogico.Should().Be(FormatoPedagogico.Presencial, "default conceitual quando o token está ausente");
@@ -132,13 +133,13 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
         OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
@@ -150,7 +151,7 @@ public sealed class OfertaCursoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
         persistida.RegimeDeTurno.Should().Be(RegimeDeTurno.Regular);
@@ -165,7 +166,7 @@ public sealed class OfertaCursoPersistenceTests
         (_, Guid localId) = await SemearCursoELocalAsync();
         OfertaCurso orfa = NovaOferta(Guid.CreateVersion7(), localId, NovaUnidade());
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.OfertasCurso.Add(orfa);
 
         Func<Task> act = async () => await ctx.SaveChangesAsync();
@@ -181,7 +182,7 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, _) = await SemearCursoELocalAsync();
         OfertaCurso orfa = NovaOferta(cursoId, Guid.CreateVersion7(), NovaUnidade());
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.OfertasCurso.Add(orfa);
 
         Func<Task> act = async () => await ctx.SaveChangesAsync();
@@ -320,7 +321,7 @@ public sealed class OfertaCursoPersistenceTests
     {
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = () => ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.oferta_curso
@@ -367,7 +368,7 @@ public sealed class OfertaCursoPersistenceTests
             cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
             regime: "INTEGRAL", turnos: ["NOTURNO", "MATUTINO"], vagas: null, baseLegal: null);
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new OfertaCursoReader(readCtx);
 
         IReadOnlyList<OfertaCursoView> vivas = await reader.ListarVivasAsync();
@@ -429,20 +430,20 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
         OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             OfertaCurso tracked = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
             ctx.OfertasCurso.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         (await readCtx.OfertasCurso.AnyAsync(o => o.Id == oferta.Id))
             .Should().BeFalse("o soft-delete tira a oferta das leituras");
 
@@ -458,13 +459,13 @@ public sealed class OfertaCursoPersistenceTests
         (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
         OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             var cursoRepository = new CursoRepository(ctx);
             (await cursoRepository.ReferenciadoPorOfertaCursoVivaAsync(cursoId, CancellationToken.None))
@@ -473,14 +474,14 @@ public sealed class OfertaCursoPersistenceTests
                 .Should().BeFalse("curso sem oferta não é referenciado");
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             OfertaCurso tracked = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
             ctx.OfertasCurso.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var repositoryAposRemocao = new CursoRepository(readCtx);
         (await repositoryAposRemocao.ReferenciadoPorOfertaCursoVivaAsync(cursoId, CancellationToken.None))
             .Should().BeFalse("o soft-delete da oferta libera o curso para remoção");
@@ -498,7 +499,7 @@ public sealed class OfertaCursoPersistenceTests
         await SemearOfertasAsync(
             (cursoA, localId), (cursoB, localId), (cursoA, localId), (cursoB, localId), (cursoA, localId));
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var repository = new OfertaCursoRepository(readCtx);
 
         // Ordem canônica do banco (uuid) das ofertas de A — base para fatiar as páginas.
@@ -554,7 +555,7 @@ public sealed class OfertaCursoPersistenceTests
         OfertaCurso ofertaComGrupo = NovaOferta(comGrupo.Id, local.Id, NovaUnidade());
         OfertaCurso ofertaSemGrupo = NovaOferta(semGrupo.Id, local.Id, NovaUnidade());
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.AddRange(comGrupo, semGrupo);
             ctx.LocaisOferta.Add(local);
@@ -562,7 +563,7 @@ public sealed class OfertaCursoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new OfertaCursoReader(readCtx);
 
         (await reader.ObterPorIdAsync(ofertaComGrupo.Id))!.GrupoAreaEnem.Should().Be(new GrupoAreaEnemView("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
@@ -587,7 +588,7 @@ public sealed class OfertaCursoPersistenceTests
         Curso curso = Curso.Criar(
             CodigoUnico(), "Engenharia Elétrica", "Bacharelado", "Graduação", null).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(curso);
         await ctx.SaveChangesAsync();
 
@@ -596,7 +597,7 @@ public sealed class OfertaCursoPersistenceTests
 
     private async Task SemearOfertasAsync(params (Guid CursoId, Guid LocalOfertaId)[] ofertas)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         foreach ((Guid cursoId, Guid localOfertaId) in ofertas)
         {
             ctx.OfertasCurso.Add(NovaOferta(cursoId, localOfertaId, NovaUnidade()));
@@ -613,7 +614,7 @@ public sealed class OfertaCursoPersistenceTests
             TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(curso);
         ctx.LocaisOferta.Add(local);
         await ctx.SaveChangesAsync();
@@ -642,7 +643,7 @@ public sealed class OfertaCursoPersistenceTests
         string? baseLegal,
         string funcionamento = "EXTENSIVO")
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.oferta_curso
@@ -670,7 +671,7 @@ public sealed class OfertaCursoPersistenceTests
         string regime,
         string turnosLiteral)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO configuracao.oferta_curso

@@ -6,13 +6,14 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>Repositório do catálogo gravado e das reclassificações das permissões.</summary>
 public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public ReclassificacaoRepository(AutorizacaoDbContext context)
+    public ReclassificacaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -93,7 +94,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
     private IQueryable<ReclassificacaoDaPermissao> Vigentes() =>
         _context.Reclassificacoes.AsNoTracking()
-            .Where(r => !_context.Reclassificacoes.Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha)
+            .Where(r => !_context.Set<ReclassificacaoDaPermissao>().Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha)
                 && _context.ImplantacaoAtual().Any(p => p.Codigo == r.Codigo && p.Classificacao == r.ClassificacaoNova && p.DeUnidade == r.DeUnidadeNovo));
 
     public async Task<IReadOnlyList<LiberacaoDaReclassificacao>> ListarLiberacoesAsync(
@@ -166,12 +167,12 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
     {
         IQueryable<FatoSemAviso> reclassificacoes = _context.Reclassificacoes.AsNoTracking()
             .Where(r => (FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoNova) > FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoAnterior) || r.DeUnidadeNovo != r.DeUnidadeAnterior)
-                && !_context.AvisosDasReclassificacoes.Any(a => a.Origem == OrigemDoAviso.Reclassificacao && a.OrigemId == r.Id))
+                && !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Reclassificacao && a.OrigemId == r.Id))
             .OrderBy(r => r.OrdemNaTrilha)
             .Take(limite)
             .Select(r => new FatoSemAviso(OrigemDoAviso.Reclassificacao, r.Id));
         IQueryable<FatoSemAviso> divergencias = _context.DivergenciasDaGovernanca.AsNoTracking()
-            .Where(d => !_context.AvisosDasReclassificacoes.Any(a => a.Origem == OrigemDoAviso.Divergencia && a.OrigemId == d.Id))
+            .Where(d => !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Divergencia && a.OrigemId == d.Id))
             .OrderBy(d => d.OrdemNaTrilha)
             .Take(limite)
             .Select(d => new FatoSemAviso(OrigemDoAviso.Divergencia, d.Id));
@@ -204,7 +205,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
     private Task<int> TravarParaLeituraAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
         _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE id = ANY({{0}}) ORDER BY id FOR SHARE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.concessoes WHERE id = ANY({{0}}) ORDER BY id FOR SHARE",
             [ids.ToArray()],
             cancellationToken);
 

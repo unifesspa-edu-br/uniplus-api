@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -12,6 +10,8 @@ using Microsoft.Extensions.Options;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>
 /// Só uma réplica executa cada lote (lock consultivo que dura a transação); a que chega depois, com o lock já
 /// liberado, não encontra o que republicar. Os pedidos saem pelo outbox da transação que registra a publicação.
@@ -21,7 +21,7 @@ public static partial class ReconciliarVerificacaoDosArquivosCommandHandler
     public static async Task<(Result<int> Resposta, IEnumerable<object> Mensagens)> Handle(
         ReconciliarVerificacaoDosArquivosCommand command,
         IDocumentoDaInscricaoRepository documentoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IOptions<ReconciliacaoDaVerificacaoOptions> opcoes,
         TimeProvider timeProvider,
         ILogger logger,

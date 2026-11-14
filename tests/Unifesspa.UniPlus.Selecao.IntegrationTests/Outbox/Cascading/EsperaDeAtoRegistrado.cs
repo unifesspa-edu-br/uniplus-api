@@ -2,14 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics;
 
-using AwesomeAssertions;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
 /// <summary>
 /// Espera única pelo registro de um <see cref="AtoNormativo"/> em Publicações — a fila que
@@ -56,7 +54,7 @@ internal static class EsperaDeAtoRegistrado
         while (true)
         {
             await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-            PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             AtoNormativo? ato = await db.Set<AtoNormativo>().AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == atoId, cancellationToken)
                 .ConfigureAwait(false);

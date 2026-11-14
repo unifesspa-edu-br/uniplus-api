@@ -4,8 +4,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Apoio;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -29,7 +29,7 @@ public sealed class RevogacaoDaConcessaoTests
 
     private readonly IConcessaoRepository _concessoes = Substitute.For<IConcessaoRepository>();
     private readonly IPapelDoRepresentante _papel = Substitute.For<IPapelDoRepresentante>();
-    private readonly IAutorizacaoUnitOfWork _unidade = Substitute.For<IAutorizacaoUnitOfWork>();
+    private readonly IUnitOfWork _unidade = Substitute.For<IUnitOfWork>();
 
     // A conta do papel se lê antes de revogar, porque depois a designação já não está ativa; a leitura não grava nada, e
     // a recusa do agregado prevalece sobre a do último Representante, que aqui também valeria.

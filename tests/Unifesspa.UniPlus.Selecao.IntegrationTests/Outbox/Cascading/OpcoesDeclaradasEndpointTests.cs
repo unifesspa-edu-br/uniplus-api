@@ -11,8 +11,8 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// As opções que o processo declara para um fato de fonte do processo, como as edições do ENEM
@@ -68,7 +68,7 @@ public sealed class OpcoesDeclaradasEndpointTests
     private async Task<Guid> SemearProcessoDoEnemAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPendenciasSeeder.SemearEnemComCalculoLocalAsync(
             db, $"Opções declaradas {Guid.CreateVersion7()}", ofertaComGrupo: true);
         return processo.Id;

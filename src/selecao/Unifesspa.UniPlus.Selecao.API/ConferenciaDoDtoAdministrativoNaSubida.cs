@@ -4,10 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Administrativos;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Confere, quando a aplicação sobe, que o DTO administrativo da Seleção não classifica uma propriedade lida direto da
@@ -35,7 +34,7 @@ internal sealed class ConferenciaDoDtoAdministrativoNaSubida : IHostedService
     private void ExigirDtoConforme()
     {
         using IServiceScope escopo = _escopos.CreateScope();
-        SelecaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         IReadOnlyList<string> violacoes = ConferenciaDoDtoClassificado.Conferir(
             typeof(InscricaoAdministrativaDto).Assembly.GetExportedTypes(),

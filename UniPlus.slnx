@@ -2,6 +2,7 @@
   <Folder Name="/src/" />
   <Folder Name="/src/host/">
     <Project Path="src/host/Unifesspa.UniPlus.Host/Unifesspa.UniPlus.Host.csproj" />
+    <Project Path="src/host/Unifesspa.UniPlus.Monolito.Persistencia/Unifesspa.UniPlus.Monolito.Persistencia.csproj" />
   </Folder>
   <Folder Name="/src/ingresso/">
     <Project Path="src/ingresso/Unifesspa.UniPlus.Ingresso.API/Unifesspa.UniPlus.Ingresso.API.csproj" />

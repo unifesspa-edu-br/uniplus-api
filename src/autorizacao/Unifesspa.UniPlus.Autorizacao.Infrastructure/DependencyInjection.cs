@@ -13,24 +13,21 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Seguranca;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 
 /// <summary>
-/// Registra a infraestrutura do módulo Autorização (DbContext, interceptors, repositório e a
-/// porta do catálogo). Wire-up centralizado em <see cref="UniPlusDbContextOptionsExtensions"/>
-/// (ADR-0054).
+/// Registra a infraestrutura do módulo Autorização: o interceptador da trilha de contenção, os repositórios e a porta do
+/// catálogo. O contexto e a unidade de trabalho vêm da persistência única do monólito.
 /// </summary>
 public static class AutorizacaoInfrastructureRegistration
 {
-    private const string ConnectionStringName = "AutorizacaoDb";
-
     public static IServiceCollection AddAutorizacaoInfrastructure(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        AddContexto(services);
-        AddUnidadeDeTrabalho(services);
+        // A AutorizacaoContribuicao acrescenta o interceptador às opções do contexto.
+        services.AddScoped<OrdemDaTrilhaDeContencaoInterceptor>();
+        services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
         AddRepositorios(services);
         AddCatalogo(services);
         AddInstalacao(services);
@@ -38,26 +35,6 @@ public static class AutorizacaoInfrastructureRegistration
         AddArmazenamento(services);
 
         return services;
-    }
-
-    private static void AddContexto(IServiceCollection services)
-    {
-        services.AddUniPlusEfInterceptors();
-        services.AddScoped<OrdemDaTrilhaDeContencaoInterceptor>();
-        services.AddDbContext<AutorizacaoDbContext>((serviceProvider, options) =>
-        {
-            options.UseUniPlusNpgsqlConventions<AutorizacaoDbContext>(serviceProvider, ConnectionStringName, schema: AutorizacaoDbContext.Schema);
-            options.AddInterceptors(serviceProvider.GetRequiredService<OrdemDaTrilhaDeContencaoInterceptor>());
-        });
-    }
-
-    private static void AddUnidadeDeTrabalho(IServiceCollection services)
-    {
-        // A Application consome a abstração do próprio módulo, roteada para o DbContext (ADR-0042).
-        services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
-
-        services.AddScoped<IAutorizacaoUnitOfWork>(serviceProvider =>
-            serviceProvider.GetRequiredService<AutorizacaoDbContext>());
     }
 
     private static void AddRepositorios(IServiceCollection services)
@@ -106,8 +83,7 @@ public static class AutorizacaoInfrastructureRegistration
         services.AddSingleton<ILinkDaGovernanca, LinkDaGovernanca>();
         services.AddScoped<IRegistroDeAvisos, RegistroDeAvisos>();
 
-        // O leitor de unidades usa o DbContext da Organização Institucional; a fábrica o esconde do detector de
-        // transação do Wolverine, para que o pedido e os avisos entrem no outbox do DbContext da Autorização.
+        // Por fábrica, e não por tipo: o concreto é interno e o ponto de decisão o injeta (ADR-0098).
         services.AddScoped<ILeitorDeUnidade>(static sp => new LeitorDeUnidade(sp.GetRequiredService<IUnidadeReader>()));
     }
 

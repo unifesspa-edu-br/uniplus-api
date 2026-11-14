@@ -5,13 +5,13 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
-using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -40,7 +40,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
         return contexto;
     }
 
-    private static async Task<(Result Resultado, Inscricao Inscricao, ISelecaoUnitOfWork UnitOfWork)> Cancelar(
+    private static async Task<(Result Resultado, Inscricao Inscricao, IUnitOfWork UnitOfWork)> Cancelar(
         Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string sub = "sub-1", string? motivo = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
@@ -53,7 +53,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
             processoRepository, registroCodecs, grafo,
             fixada: (versao, DivulgacaoDeTeste.FimDoPeriodo),
             divulgada: (versao, DivulgacaoDeTeste.FimDoPeriodo));
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result resultado = await CancelarInscricaoCommandHandler.Handle(
             new CancelarInscricaoCommand(ProcessoId, motivo, PrecondicaoIfMatch.DeTags([existente.ETag])),
@@ -65,7 +65,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     [Fact(DisplayName = "Cancelar a inscrição enviada, com as inscrições abertas, grava o cancelamento com o ator e o motivo")]
     public async Task Handle_EnviadaNoPeriodo_Cancela()
     {
-        (Result resultado, Inscricao inscricao, ISelecaoUnitOfWork unitOfWork) = await Cancelar(
+        (Result resultado, Inscricao inscricao, IUnitOfWork unitOfWork) = await Cancelar(
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo, motivo: "Desisti");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -79,7 +79,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     [Fact(DisplayName = "Fora do período, cancelar é recusado e a inscrição segue enviada")]
     public async Task Handle_ForaDoPeriodo_Recusa()
     {
-        (Result resultado, Inscricao inscricao, ISelecaoUnitOfWork unitOfWork) = await Cancelar(
+        (Result resultado, Inscricao inscricao, IUnitOfWork unitOfWork) = await Cancelar(
             DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
@@ -100,7 +100,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     [Fact(DisplayName = "O rascunho não se cancela: a recusa orienta a descartar")]
     public async Task Handle_Rascunho_RecusaOrientandoDescartar()
     {
-        (Result resultado, _, ISelecaoUnitOfWork unitOfWork) = await Cancelar(
+        (Result resultado, _, IUnitOfWork unitOfWork) = await Cancelar(
             static versao => Inscricao.Iniciar(ProcessoId, Dono, "sub-1", "https://issuer", versao).Value!,
             DivulgacaoDeTeste.DentroDoPeriodo);
 

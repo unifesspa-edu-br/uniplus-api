@@ -8,6 +8,8 @@ using Microsoft.Extensions.Options;
 
 using Persistence;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 using static CatalogoDeTiposAtoDeclarado;
 
 /// <summary>
@@ -44,7 +46,7 @@ using static CatalogoDeTiposAtoDeclarado;
 /// </para>
 /// </remarks>
 internal sealed class CatalogoDeTiposAtoHealthCheck(
-    PublicacoesDbContext dbContext,
+    UniPlusDbContext dbContext,
     TimeProvider timeProvider,
     IOptions<CatalogoDeTiposAtoOptions> opcoes) : IHealthCheck
 {

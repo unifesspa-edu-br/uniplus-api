@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -36,7 +37,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         Guid processoId;
         Guid produtoIdAntes;
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = NovoProcesso($"PS produtos {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
@@ -51,7 +52,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             produtoIdAntes = processo.CronogramaFases.Single().Produtos.Single().Id;
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
@@ -70,7 +71,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             await db.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
             IReadOnlyCollection<ProdutoDaFase> produtos = processo.CronogramaFases.Single().Produtos;
@@ -97,7 +98,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         Guid processoId;
         Guid definitivaIdAntes;
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             // Começa só com a definitiva porque a fase que publica preliminar precisa de quem
             // conclua o ciclo: o estado intermediário de um par pela metade o agregado recusa.
@@ -114,7 +115,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             definitivaIdAntes = processo.CronogramaFases.Single().Produtos.Single().Id;
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
@@ -131,7 +132,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             await db.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
             IReadOnlyCollection<ProdutoDaFase> produtos = processo.CronogramaFases.Single().Produtos;
@@ -151,7 +152,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
         Guid processoId;
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = NovoProcesso($"PS produtos removidos {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
@@ -168,7 +169,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             processoId = processo.Id;
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
             processo.DefinirCronogramaFases(
@@ -179,7 +180,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             await db.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext db = _fixture.CreateDbContext())
+        await using (UniPlusDbContext db = _fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
@@ -212,7 +213,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             regraRecurso: null,
             unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
 
-    private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
+    private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)

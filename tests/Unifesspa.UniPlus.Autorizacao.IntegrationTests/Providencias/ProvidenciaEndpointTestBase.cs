@@ -10,10 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O apoio dos testes da providência pelo endpoint real: Cecília Moura é o Encarregado de dados que solicita, Diogo Souza
@@ -78,6 +77,6 @@ public abstract class ProvidenciaEndpointTestBase : ConcessaoEndpointTestBase
     private protected async Task<int> ExecutarSqlAsync(string sql, params object[] parametros)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
     }
 }

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -43,7 +44,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
     {
         Guid processoId = await SemearProcessoComDuasFasesAsync();
 
-        await using SelecaoDbContext troca = fixture.CreateDbContext();
+        await using UniPlusDbContext troca = fixture.CreateDbContext();
         List<FaseCronograma> fases = await troca.Set<FaseCronograma>()
             .Where(f => f.ProcessoSeletivoId == processoId)
             .OrderBy(f => f.Ordem)
@@ -69,7 +70,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
                 + "coberto por índice único — é a premissa que sustenta o guard de permutação cíclica");
 
         // E o estado no banco não mudou: a transação inteira não chegou a ser emitida.
-        await using SelecaoDbContext leitura = fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = fixture.CreateDbContext();
         Dictionary<string, int> ordemPorCodigo = await leitura.Set<FaseCronograma>()
             .Where(f => f.ProcessoSeletivoId == processoId)
             .ToDictionaryAsync(f => f.Codigo, f => f.Ordem);
@@ -80,7 +81,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
 
     private async Task<Guid> SemearProcessoComDuasFasesAsync()
     {
-        await using SelecaoDbContext escrita = fixture.CreateDbContext();
+        await using UniPlusDbContext escrita = fixture.CreateDbContext();
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"Certame de permutação {Guid.CreateVersion7()}",

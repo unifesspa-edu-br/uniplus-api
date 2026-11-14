@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Implementação de <see cref="IReferenciaReservaDemograficaReader"/> (ADR-0056):
@@ -19,9 +20,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class ReferenciaReservaDemograficaReader : IReferenciaReservaDemograficaReader
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public ReferenciaReservaDemograficaReader(ConfiguracaoDbContext dbContext)
+    public ReferenciaReservaDemograficaReader(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

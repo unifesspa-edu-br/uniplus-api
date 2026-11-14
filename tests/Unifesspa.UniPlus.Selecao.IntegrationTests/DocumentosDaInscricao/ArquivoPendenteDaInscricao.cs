@@ -2,15 +2,15 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.DocumentosDaInscricao;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>Um arquivo enviado pelo candidato, gravado ainda pendente, com o contexto e o repositório em que foi gravado.</summary>
 internal sealed class ArquivoPendenteDaInscricao(
-    SelecaoDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) : IDisposable
+    UniPlusDbContext context, DocumentoDaInscricaoRepository repositorio, ArquivoDaApresentacao arquivo) : IDisposable
 {
-    public SelecaoDbContext Context { get; } = context;
+    public UniPlusDbContext Context { get; } = context;
 
     public DocumentoDaInscricaoRepository Repositorio { get; } = repositorio;
 

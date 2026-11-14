@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="DefinirAlgoritmoContagemPrazoCommand"/> (UNI-REQ-0112): resolve o
@@ -24,7 +24,7 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
         DefinirAlgoritmoContagemPrazoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

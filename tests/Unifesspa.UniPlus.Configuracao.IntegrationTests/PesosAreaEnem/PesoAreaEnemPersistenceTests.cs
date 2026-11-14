@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta de Pesos por Área contra Postgres real: as cinco áreas na
@@ -44,13 +45,13 @@ public sealed class PesoAreaEnemPersistenceTests
         string resolucao = ResolucaoUnica();
         PesoAreaEnem peso = Nova(resolucao);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
 
         persistida.Resolucao.Should().Be(resolucao);
@@ -80,13 +81,13 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task Atualizar_MudaNoLugar()
     {
         PesoAreaEnem peso = Nova(ResolucaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             List<AreaInformada> novas = Areas();
@@ -96,7 +97,7 @@ public sealed class PesoAreaEnemPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
         persistida.AreasDaLinha[0].Peso.Should().Be(3.00m);
         persistida.AreasDaLinha[0].Corte.Should().BeNull();
@@ -110,13 +111,13 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task Atualizar_SoAsAreas_CarimbaAuditoriaDaLinha()
     {
         PesoAreaEnem peso = Nova(ResolucaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             var repository = new PesoAreaEnemRepository(ctx);
             PesoAreaEnem tracked = (await repository.ObterPorIdAsync(peso.Id, CancellationToken.None))!;
@@ -126,7 +127,7 @@ public sealed class PesoAreaEnemPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
         persistida.AreasDaLinha[4].Peso.Should().Be(4.25m);
         persistida.BaseLegal.Should().Be(BaseLegal);
@@ -138,7 +139,7 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task Atualizar_RegravaORotulo()
     {
         PesoAreaEnem peso = Nova(ResolucaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
@@ -146,7 +147,7 @@ public sealed class PesoAreaEnemPersistenceTests
                 $"UPDATE configuracao.peso_area_enem_area SET rotulo = {"Rótulo antigo"} WHERE peso_area_enem_id = {peso.Id} AND codigo = {PesoAreaEnem.CodigoLinguagens}");
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             tracked.AreasDaLinha[3].Rotulo.Should().Be("Rótulo antigo");
@@ -154,7 +155,7 @@ public sealed class PesoAreaEnemPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
         persistida.AreasDaLinha[3].Rotulo.Should().Be("Linguagens e suas Tecnologias");
     }
@@ -163,7 +164,7 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task Atualizar_RegravaORotuloDoGrupo()
     {
         PesoAreaEnem peso = Nova(ResolucaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
@@ -171,14 +172,14 @@ public sealed class PesoAreaEnemPersistenceTests
                 $"UPDATE configuracao.peso_area_enem SET grupo_curso_rotulo = {"Rótulo antigo"} WHERE id = {peso.Id}");
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             tracked.Atualizar(Areas(), BaseLegal).IsSuccess.Should().BeTrue();
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         (await GrupoPersistidoAsync(readCtx, peso.Id)).Should().Be(("TECNOLOGICA", "Tecnológica"),
             "o rótulo do grupo é regravado a partir do código na edição, como o das áreas");
     }
@@ -187,17 +188,17 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task AtualizarConcorrenteComRemocao_NaoRessuscitaALinha()
     {
         PesoAreaEnem peso = Nova(ResolucaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
         // A edição carrega a linha viva; a remoção lógica é confirmada antes de a edição salvar.
-        await using ConfiguracaoDbContext ctxEdicao = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctxEdicao = _fixture.CreateDbContext(AdminA);
         PesoAreaEnem emEdicao = await ctxEdicao.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
 
-        await using (ConfiguracaoDbContext ctxRemocao = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctxRemocao = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem aRemover = await ctxRemocao.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             ctxRemocao.PesosAreaEnem.Remove(aRemover);
@@ -209,7 +210,7 @@ public sealed class PesoAreaEnemPersistenceTests
         emEdicao.Atualizar(novas, BaseLegal).IsSuccess.Should().BeTrue();
         await ctxEdicao.SaveChangesAsync();
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem final = await readCtx.PesosAreaEnem.IgnoreQueryFilters().SingleAsync(p => p.Id == peso.Id);
         final.IsDeleted.Should().BeTrue("a edição regrava só as colunas de auditoria, não as de remoção lógica");
         final.DeletedBy.Should().Be(AdminB);
@@ -220,20 +221,20 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task AtualizarSemMudanca_NaoCarimbaAuditoria()
     {
         PesoAreaEnem peso = Nova(ResolucaoUnica());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             tracked.Atualizar(Areas(), BaseLegal).IsSuccess.Should().BeTrue();
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
         persistida.UpdatedBy.Should().BeNull("nada mudou, então não houve edição a registrar");
         persistida.UpdatedAt.Should().BeNull();
@@ -243,13 +244,13 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task UniquePartial_Par_RejeitaDuplicataAtiva()
     {
         string resolucao = ResolucaoUnica();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(Nova(resolucao));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.PesosAreaEnem.Add(Nova(resolucao));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -267,7 +268,7 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task ParDistinto_MesmaResolucaoOutroGrupo_Aceita()
     {
         string resolucao = ResolucaoUnica();
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.PesosAreaEnem.Add(Nova(resolucao, GrupoCurso.Tecnologica));
         ctx.PesosAreaEnem.Add(Nova(resolucao, GrupoCurso.HumanisticaI));
 
@@ -280,20 +281,20 @@ public sealed class PesoAreaEnemPersistenceTests
     {
         string resolucao = ResolucaoUnica();
         PesoAreaEnem peso = Nova(resolucao);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem tracked = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
             ctx.PesosAreaEnem.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             PesoAreaEnem excluida = await ctx.PesosAreaEnem
                 .IgnoreQueryFilters().SingleAsync(p => p.Id == peso.Id);
@@ -303,7 +304,7 @@ public sealed class PesoAreaEnemPersistenceTests
             (await ContarAreasAsync(ctx, peso.Id)).Should().Be(5);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.PesosAreaEnem.Add(Nova(resolucao));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -315,7 +316,7 @@ public sealed class PesoAreaEnemPersistenceTests
     [InlineData("Tecnológica")]
     public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru(string grupo)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {grupo}, {"Rótulo"}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
@@ -332,7 +333,7 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task Check_TabelaDeAreas_RejeitaForaDaFaixa(string codigo, double peso, double? corte, string constraint)
     {
         Guid paiId = await CriarPaiSemAreasAsync();
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         decimal? corteDecimal = corte is null ? null : (decimal)corte.Value;
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
@@ -346,7 +347,7 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task Pk_RejeitaAreaRepetidaNaLinha()
     {
         Guid paiId = await CriarPaiSemAreasAsync();
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {1.0m})");
 
@@ -368,13 +369,13 @@ public sealed class PesoAreaEnemPersistenceTests
         areas[0] = new(PesoAreaEnem.CodigoRedacao, 2.00m, esperado);
         PesoAreaEnem peso = PesoAreaEnem.Criar(ResolucaoUnica(), GrupoCurso.Tecnologica, areas, BaseLegal).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         PesoAreaEnem persistida = await readCtx.PesosAreaEnem.SingleAsync(p => p.Id == peso.Id);
         persistida.AreasDaLinha[0].Corte.Should().Be(esperado);
     }
@@ -390,7 +391,7 @@ public sealed class PesoAreaEnemPersistenceTests
         string resExcluida = $"{prefixo}-d";
 
         // Insere fora de ordem (B antes de A) para provar a ordenação do reader.
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(Nova(resB));
             ctx.PesosAreaEnem.Add(Nova(resA));
@@ -398,14 +399,14 @@ public sealed class PesoAreaEnemPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem aExcluir = await ctx.PesosAreaEnem.SingleAsync(p => p.Resolucao == resExcluida);
             ctx.PesosAreaEnem.Remove(aExcluir);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new PesoAreaEnemReader(readCtx);
         IReadOnlyList<PesoAreaEnemView> todas = await reader.ListarVivasAsync();
 
@@ -422,7 +423,7 @@ public sealed class PesoAreaEnemPersistenceTests
     public async Task ObterPorResolucao_Completa_DevolveLinhasOrdenadasPorCodigo()
     {
         string resolucao = ResolucaoUnica();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             // Inseridos fora da ordem do código para a ordenação não sair de graça.
             ctx.PesosAreaEnem.AddRange(
@@ -433,7 +434,7 @@ public sealed class PesoAreaEnemPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync($"  {resolucao} ");
 
         view.Should().NotBeNull();
@@ -450,7 +451,7 @@ public sealed class PesoAreaEnemPersistenceTests
     {
         string resolucao = ResolucaoUnica();
         PesoAreaEnem removida = Nova(resolucao, GrupoCurso.HumanisticaII);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.AddRange(
                 Nova(resolucao, GrupoCurso.Tecnologica),
@@ -459,14 +460,14 @@ public sealed class PesoAreaEnemPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             PesoAreaEnem aExcluir = await ctx.PesosAreaEnem.SingleAsync(p => p.Id == removida.Id);
             ctx.PesosAreaEnem.Remove(aExcluir);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(resolucao);
 
         view.Should().NotBeNull();
@@ -483,13 +484,13 @@ public sealed class PesoAreaEnemPersistenceTests
         string sufixo = Guid.NewGuid().ToString("N")[..8];
         string composta = $"Resolução {sufixo}".Normalize(System.Text.NormalizationForm.FormC);
         string decomposta = composta.Normalize(System.Text.NormalizationForm.FormD);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.PesosAreaEnem.Add(Nova(decomposta));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(decomposta);
 
         view.Should().NotBeNull("o cadastro grava em NFC e a busca normaliza a entrada do mesmo jeito");
@@ -503,7 +504,7 @@ public sealed class PesoAreaEnemPersistenceTests
     [InlineData("Resolução com quarenta e um caracteres ..")]
     public async Task ObterPorResolucao_TextoInvalidoParaAColuna_DevolveNull(string resolucao)
     {
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(resolucao);
 
@@ -513,7 +514,7 @@ public sealed class PesoAreaEnemPersistenceTests
     [Fact(DisplayName = "Leitura por resolução com não-caractere devolve null, sem exceção")]
     public async Task ObterPorResolucao_NaoCaractere_DevolveNull()
     {
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync("Res. 805" + (char)0xFFFE);
 
@@ -523,7 +524,7 @@ public sealed class PesoAreaEnemPersistenceTests
     [Fact(DisplayName = "Leitura por resolução sem nenhuma linha viva devolve null")]
     public async Task ObterPorResolucao_Inexistente_DevolveNull()
     {
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         ResolucaoPesoAreaEnemView? view = await new PesoAreaEnemReader(readCtx).ObterPorResolucaoAsync(ResolucaoUnica());
 
@@ -542,7 +543,7 @@ public sealed class PesoAreaEnemPersistenceTests
     private static PesoAreaEnem Nova(string resolucao, string grupo = GrupoCurso.Tecnologica) =>
         PesoAreaEnem.Criar(resolucao, grupo, Areas(), BaseLegal).Value!;
 
-    private static Task<int> ContarAreasAsync(ConfiguracaoDbContext ctx, Guid pesoId) =>
+    private static Task<int> ContarAreasAsync(UniPlusDbContext ctx, Guid pesoId) =>
         ctx.Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM configuracao.peso_area_enem_area WHERE peso_area_enem_id = {pesoId}")
             .SingleAsync();
@@ -555,13 +556,13 @@ public sealed class PesoAreaEnemPersistenceTests
     {
         Guid id = Guid.CreateVersion7();
         DateTimeOffset agora = DateTimeOffset.UtcNow;
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted, deleted_at) VALUES ({id}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {"Tecnológica"}, {BaseLegal}, {agora}, {true}, {agora})");
         return id;
     }
 
-    private static async Task<(string Codigo, string Rotulo)> GrupoPersistidoAsync(ConfiguracaoDbContext ctx, Guid pesoId)
+    private static async Task<(string Codigo, string Rotulo)> GrupoPersistidoAsync(UniPlusDbContext ctx, Guid pesoId)
     {
         GrupoGravado grupo = await ctx.Database
             .SqlQuery<GrupoGravado>($"SELECT grupo_curso AS codigo, grupo_curso_rotulo AS rotulo FROM configuracao.peso_area_enem WHERE id = {pesoId}")

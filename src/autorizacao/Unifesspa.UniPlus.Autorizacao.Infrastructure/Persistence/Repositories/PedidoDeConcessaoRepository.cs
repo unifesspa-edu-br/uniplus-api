@@ -10,14 +10,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Repositório dos pedidos de concessão, de seus anexos e dos acessos a eles.</summary>
 public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public PedidoDeConcessaoRepository(AutorizacaoDbContext context)
+    public PedidoDeConcessaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

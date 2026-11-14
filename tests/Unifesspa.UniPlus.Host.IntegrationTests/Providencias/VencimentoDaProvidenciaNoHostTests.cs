@@ -11,10 +11,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O vencimento da concessão durante a tramitação deixa a providência prejudicada sem nada gravado (UNI-REQ-0376). O host
@@ -58,7 +58,7 @@ public sealed class VencimentoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
         (Governanca g, Guid providencia, _) = await ProvidenciaSobreConcessaoQueVenceAsync();
         Guid concessao = (await ProvidenciaAsync(g.Diogo, providencia)).GetProperty("concessao").GetProperty("id").GetGuid();
         await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(TravaDaConcessao, concessao);
+        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(TravaDaConcessao, concessao);
 
         Task<HttpResponseMessage> resposta = ResponderAsync(g.Isabella, providencia);
         await trava.AguardarBloqueioAsync();

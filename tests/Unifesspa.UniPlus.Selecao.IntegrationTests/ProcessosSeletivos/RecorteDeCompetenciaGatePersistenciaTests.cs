@@ -6,16 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -59,7 +57,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
 
         await ApagarRecorteDeAsync(processoId, "ETNICO_RACIAL");
 
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.CronogramaFases.Single().BancasRequeridas
@@ -83,7 +81,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte igual {Guid.CreateVersion7()}");
         await UniformizarRecortesAsync(processoId);
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
         ConferirQueAsBancasDocumentaisSeguemComRecorte(processo);
         ItemDoRecorteDasBancas(processo).Ok.Should().BeFalse();
@@ -97,7 +95,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte ok {Guid.CreateVersion7()}");
 
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         ItemDoRecorteDasBancas(processo).Ok.Should().BeTrue();
@@ -182,7 +180,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
     /// </summary>
     private async Task<Guid> SemearProcessoConformeAsync(string nome)
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -222,7 +220,6 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'd'), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -247,7 +244,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         afetadas.Should().Be(linhasEsperadas, "a adulteração precisa alcançar exatamente as linhas que o cenário descreve");
     }
 
-    private static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext db, Guid processoId) =>
+    private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos
             .Include(p => p.Etapas)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)

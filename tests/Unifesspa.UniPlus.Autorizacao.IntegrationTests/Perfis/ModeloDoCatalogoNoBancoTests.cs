@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 
@@ -33,7 +34,7 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
     public async Task OrdemDaClassificacao_EhADoEnum()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         foreach (ClassificacaoDeProtecao valor in Enum.GetValues<ClassificacaoDeProtecao>())
         {
@@ -49,7 +50,7 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
     public async Task Composicao_EhASementeEOBanco()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IEntityType permissoes = db.GetService<IDesignTimeModel>().Model.FindEntityType(typeof(Perfil))!
             .FindNavigation(nameof(Perfil.Permissoes))!.TargetEntityType;
 
@@ -80,7 +81,7 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
     public async Task CatalogoGravado_TemUmaLinhaPorPermissao()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         CatalogoDaAplicacao catalogo = scope.ServiceProvider.GetRequiredService<CatalogoDaAplicacao>();
 
         ImplantacaoDasPermissoes atual = await db.ImplantacoesDasPermissoes.AsNoTracking().Include(c => c.Permissoes)

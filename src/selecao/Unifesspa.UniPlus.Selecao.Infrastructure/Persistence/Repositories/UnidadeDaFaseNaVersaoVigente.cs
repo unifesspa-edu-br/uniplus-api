@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
@@ -10,10 +11,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 internal sealed class UnidadeDaFaseNaVersaoVigente : IUnidadeDaFaseNaVersaoVigente
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
 
-    public UnidadeDaFaseNaVersaoVigente(SelecaoDbContext context, TimeProvider timeProvider)
+    public UnidadeDaFaseNaVersaoVigente(UniPlusDbContext context, TimeProvider timeProvider)
     {
         _context = context;
         _timeProvider = timeProvider;

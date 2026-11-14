@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -27,7 +27,7 @@ public static class IniciarInstalacaoCommandHandler
         IConcessaoRepository concessaoRepository,
         IArmazenamentoDosDocumentosDaAutorizacao armazenamento,
         IDominiosInstitucionais dominios,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

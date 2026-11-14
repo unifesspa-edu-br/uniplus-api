@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Caching;
 /// <see cref="Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory{TEntryPoint}"/>
 /// base das suítes de integração do monólito modular: sobe a <b>API UniPlus</b>
 /// (composition root) — o único entry point dos módulos internos, que agora são
-/// class libraries. As 5 connection strings apontam para o mesmo banco
+/// class libraries. A connection string <c>UniPlusDb</c> aponta para o banco
 /// <c>uniplus</c> (schema-por-módulo).
 /// </summary>
 /// <remarks>
@@ -41,7 +41,7 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
     private readonly bool _wolverineEnabled;
 
     /// <param name="connectionString">
-    /// Connection string aplicada às 5 conn strings do host. Em suítes HTTP-only
+    /// Connection string do host (<c>UniPlusDb</c>, a única). Em suítes HTTP-only
     /// (sem Postgres) basta um valor não-vazio (o DbContext é resolvido lazy e
     /// nunca usado); em suítes de endpoint, a do Postgres efêmero.
     /// </param>
@@ -67,12 +67,6 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
         Dictionary<string, string?> overrides = new(StringComparer.OrdinalIgnoreCase)
         {
             ["ConnectionStrings:UniPlusDb"] = _connectionString,
-            ["ConnectionStrings:ConfiguracaoDb"] = _connectionString,
-            ["ConnectionStrings:OrganizacaoDb"] = _connectionString,
-            ["ConnectionStrings:SelecaoDb"] = _connectionString,
-            ["ConnectionStrings:IngressoDb"] = _connectionString,
-            ["ConnectionStrings:DiscentesDb"] = _connectionString,
-            ["ConnectionStrings:AutorizacaoDb"] = _connectionString,
             ["Autorizacao:EnderecoDaConfiguracao"] = EnderecoDaConfiguracao,
             // Valor só para a validação da subida: o registro real não é construído, porque o de teste o substitui.
             ["RegistroDeAcesso:Kafka:BootstrapServers"] = "localhost:9092",

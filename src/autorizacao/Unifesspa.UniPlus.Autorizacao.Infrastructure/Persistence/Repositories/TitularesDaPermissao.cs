@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Os titulares de uma permissão, lidos das concessões para quem precisa avisá-los. O perfil desativado
@@ -12,10 +13,10 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 /// </summary>
 internal sealed class TitularesDaPermissao : ITitularesDaPermissao
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
 
-    public TitularesDaPermissao(AutorizacaoDbContext context, TimeProvider timeProvider)
+    public TitularesDaPermissao(UniPlusDbContext context, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(timeProvider);

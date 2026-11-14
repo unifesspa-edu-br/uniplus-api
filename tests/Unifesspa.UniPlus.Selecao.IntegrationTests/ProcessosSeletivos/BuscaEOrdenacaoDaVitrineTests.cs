@@ -5,12 +5,12 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -41,7 +41,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
 
     public async Task InitializeAsync()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
         context.CertamesDivulgados.AddRange(
@@ -148,7 +148,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         (string SortKey, Guid Id) ancora = emitido!.Value;
 
         // Uma divulgação avança: é o que o registro do ato de uma retificação faz.
-        await using (SelecaoDbContext mutacao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext mutacao = _fixture.CreateDbContext())
         {
             CertameDivulgado divulgado = await mutacao.CertamesDivulgados.FirstAsync(CancellationToken.None);
             divulgado.TentarAvancar(
@@ -184,7 +184,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         emitido.Should().NotBeNull();
         (string SortKey, Guid Id) ancora = emitido!.Value;
 
-        await using (SelecaoDbContext mutacao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext mutacao = _fixture.CreateDbContext())
         {
             mutacao.CertamesDivulgados.Add(Divulgado(
                 "Ingresso ao Mestrado", "004/2026", ["AC"], Agora.AddDays(15), divulgadoEm: Agora.AddDays(-1)));
@@ -289,7 +289,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         // linha o certame não é público.
         string tituloNoLimite = new('M', 300);
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         context.CertamesDivulgados.Add(Divulgado(tituloNoLimite, "900/2026", ["AC"], Agora.AddDays(15)));
 
         Func<Task> divulgar = () => context.SaveChangesAsync(CancellationToken.None);
@@ -303,7 +303,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     {
         // Isolado, cada recorte passa mesmo que a consulta aplique só o último. A amostra tem um
         // alvo que satisfaz os três e vizinhos que falham em exatamente um.
-        await using (SelecaoDbContext seed = _fixture.CreateDbContext())
+        await using (UniPlusDbContext seed = _fixture.CreateDbContext())
         {
             seed.CertamesDivulgados.AddRange(
                 // Alvo: casa busca, modalidade e situação.
@@ -330,7 +330,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     public async Task ContarPorSituacao_QuandoHaBuscaAplicada_DeveContarSoOsCorrespondentes()
     {
         // O número ao lado do filtro promete o que aquele filtro traz sobre o que está na tela.
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
@@ -343,7 +343,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
 
     private async Task<IReadOnlyList<string>> ListarNumerosAsync(RecorteDaVitrine recorte)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
@@ -359,7 +359,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         string? afterSortKey = null,
         Guid? afterId = null)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
@@ -375,7 +375,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         int limite,
         IReadOnlyList<SortField>? ordenacao = null)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
@@ -391,7 +391,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         (string SortKey, Guid Id)? cursor,
         PaginationDirection direcao)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =
@@ -405,7 +405,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
     private async Task<(IReadOnlyList<CertameDivulgado> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         PaginaCompletaAsync((string SortKey, Guid Id)? cursor, PaginationDirection direcao)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =

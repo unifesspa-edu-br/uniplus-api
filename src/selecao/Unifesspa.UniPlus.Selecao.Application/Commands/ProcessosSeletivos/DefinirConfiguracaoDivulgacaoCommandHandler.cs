@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="DefinirConfiguracaoDivulgacaoCommand"/> (UNI-REQ-0050, issue #563):
@@ -18,7 +18,7 @@ public static class DefinirConfiguracaoDivulgacaoCommandHandler
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirConfiguracaoDivulgacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

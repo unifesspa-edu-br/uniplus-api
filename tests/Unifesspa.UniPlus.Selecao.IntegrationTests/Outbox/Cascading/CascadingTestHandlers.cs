@@ -10,6 +10,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -34,7 +36,7 @@ public sealed class FalharAposPublicarCascadingHandler
 
     public static async Task<IEnumerable<object>> Handle(
         FalharAposPublicarCascadingCommand command,
-        SelecaoDbContext db,
+        UniPlusDbContext db,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -105,7 +107,7 @@ public sealed class RegistrarAtoDoProcessoDeTesteHandler
     public static async Task<IEnumerable<object>> Handle(
         RegistrarAtoDoProcessoDeTesteCommand command,
         IAtoDoProcessoRepository atoDoProcessoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

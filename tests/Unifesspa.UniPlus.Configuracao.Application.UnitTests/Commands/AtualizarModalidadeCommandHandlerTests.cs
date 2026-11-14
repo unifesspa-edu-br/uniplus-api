@@ -6,7 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.Predicados;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -24,7 +24,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
     private readonly IModalidadeRepository _repository = Substitute.For<IModalidadeRepository>();
     private static readonly IReadOnlyList<IReadOnlyList<CondicaoDoPredicadoInput>> Incondicional = [];
 
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IFatoCandidatoRepository _fatoRepository = Substitute.For<IFatoCandidatoRepository>();
     private readonly IPrecedenciaFaseRepository _precedenciaRepository = Substitute.For<IPrecedenciaFaseRepository>();
 

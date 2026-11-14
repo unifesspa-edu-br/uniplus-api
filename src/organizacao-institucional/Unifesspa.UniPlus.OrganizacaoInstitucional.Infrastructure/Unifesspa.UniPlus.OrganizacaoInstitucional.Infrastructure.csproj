@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Persistence\Scripts\**\*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Expõe internals (ex.: UnidadeRepository) aos testes de integração —
          mesmo padrão de Infrastructure.Core. -->
     <InternalsVisibleTo Include="Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests" />

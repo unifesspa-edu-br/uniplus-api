@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
@@ -21,7 +22,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         processoRepository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ProcessoSeletivo?)null);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> resultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
@@ -43,7 +44,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         processoRepository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         storage.GerarUrlUploadAsync(Arg.Any<string>(), tipoDeMidia, Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns("https://minio.local/uniplus-documentos/x?X-Amz-Signature=fake");
@@ -68,7 +69,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         processoRepository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
 
         Result<IniciarEnvioDoDocumentoAPublicarDto> resultado = await IniciarEnvioDoDocumentoAPublicarCommandHandler.Handle(
@@ -88,7 +89,7 @@ public sealed class IniciarEnvioDoDocumentoAPublicarCommandHandlerTests
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         IDocumentoAPublicarRepository documentoRepository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         processoRepository.ExisteAsync(processoId, Arg.Any<CancellationToken>()).Returns(true);
         storage.GerarUrlUploadAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<TimeSpan>(), Arg.Any<CancellationToken>())
             .Returns<Task<string>>(_ => throw new InvalidOperationException("MinIO indisponível (simulado)"));

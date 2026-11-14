@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using System.Text.Json;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -11,6 +9,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -39,7 +38,7 @@ public static class DefinirCriteriosDesempateCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
         IFatoCandidatoReader fatoCandidatoReader,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

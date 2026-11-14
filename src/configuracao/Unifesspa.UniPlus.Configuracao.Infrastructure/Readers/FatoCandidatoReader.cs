@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -24,9 +25,9 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
     Justification = "Instanciada via DI em ConfiguracaoInfrastructureRegistration.")]
 internal sealed class FatoCandidatoReader : IFatoCandidatoReader
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public FatoCandidatoReader(ConfiguracaoDbContext dbContext)
+    public FatoCandidatoReader(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

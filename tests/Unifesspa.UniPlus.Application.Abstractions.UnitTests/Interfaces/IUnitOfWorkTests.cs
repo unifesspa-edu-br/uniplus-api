@@ -9,23 +9,18 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 public sealed class IUnitOfWorkTests
 {
     [Fact]
-    public void IUnitOfWork_DeveTerExatamenteUmMetodo()
+    public void IUnitOfWork_DeveExporSalvarDescartarEForcarChecagemDeConstraints()
     {
-        MethodInfo[] metodos = typeof(IUnitOfWork).GetMethods();
+        string[] metodos = [.. typeof(IUnitOfWork).GetMethods().Select(static m => m.Name)];
 
-        metodos.Should().HaveCount(1);
+        metodos.Should().BeEquivalentTo(
+            "SalvarAlteracoesAsync",
+            "DescartarAlteracoesNaoSalvas",
+            "ForcarChecagemImediataDeConstraintsAsync");
     }
 
     [Fact]
-    public void IUnitOfWork_MetodoDeveChamarSeSalvarAlteracoesAsync()
-    {
-        MethodInfo[] metodos = typeof(IUnitOfWork).GetMethods();
-
-        metodos[0].Name.Should().Be("SalvarAlteracoesAsync");
-    }
-
-    [Fact]
-    public void IUnitOfWork_MetodoDeveRetornarTaskDeInt()
+    public void IUnitOfWork_SalvarAlteracoesDeveRetornarTaskDeInt()
     {
         MethodInfo metodo = typeof(IUnitOfWork).GetMethod("SalvarAlteracoesAsync")!;
 
@@ -33,9 +28,20 @@ public sealed class IUnitOfWorkTests
     }
 
     [Fact]
-    public void IUnitOfWork_MetodoDeveAceitarCancellationTokenComValorPadrao()
+    public void IUnitOfWork_DescartarAlteracoesNaoDevolveNada()
     {
-        MethodInfo metodo = typeof(IUnitOfWork).GetMethod("SalvarAlteracoesAsync")!;
+        MethodInfo metodo = typeof(IUnitOfWork).GetMethod("DescartarAlteracoesNaoSalvas")!;
+
+        metodo.ReturnType.Should().Be(typeof(void));
+        metodo.GetParameters().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("SalvarAlteracoesAsync")]
+    [InlineData("ForcarChecagemImediataDeConstraintsAsync")]
+    public void IUnitOfWork_MetodosAssincronosAceitamCancellationTokenComValorPadrao(string nomeDoMetodo)
+    {
+        MethodInfo metodo = typeof(IUnitOfWork).GetMethod(nomeDoMetodo)!;
         ParameterInfo[] parametros = metodo.GetParameters();
 
         parametros.Should().HaveCount(1);

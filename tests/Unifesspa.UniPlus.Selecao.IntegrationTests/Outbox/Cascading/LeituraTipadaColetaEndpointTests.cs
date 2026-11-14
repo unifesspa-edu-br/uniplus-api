@@ -11,9 +11,9 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
@@ -163,7 +163,7 @@ public sealed class LeituraTipadaColetaEndpointTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;

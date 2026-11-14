@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.ProcessosSeletivos.Publicacao;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Congela uma versão de configuração: confere a configuração (<see cref="ConferenciaDaConfiguracaoAoCongelar"/>),
@@ -17,7 +17,7 @@ public sealed class CongelamentoDaVersao(
     ConferenciaDaConfiguracaoAoCongelar conferencia,
     MontagemDoCongelamento montagem,
     GravacaoDaVersaoCongelada gravacao,
-    ISelecaoUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork)
 {
     /// <summary>
     /// A recópia das cópias do item altera o agregado rastreado antes dos gates seguintes; a recusa não devolve

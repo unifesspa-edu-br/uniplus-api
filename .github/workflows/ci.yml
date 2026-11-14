@@ -216,6 +216,17 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIG }} --no-restore
 
+      # A migration inicial do contexto único é gerada de novo a cada mudança de modelo. Este passo falha
+      # quando o modelo mudou e a migration não foi regenerada (ADR-0170). Não conecta ao banco.
+      - name: Modelo sem mudança pendente
+        run: |
+          dotnet tool run dotnet-ef migrations has-pending-model-changes \
+            --project src/host/Unifesspa.UniPlus.Monolito.Persistencia \
+            --startup-project src/host/Unifesspa.UniPlus.Host \
+            --context MonolitoDbContext \
+            --configuration ${{ env.BUILD_CONFIG }} \
+            --no-build
+
       # Empacotar em tar antes do upload preserva a estrutura por projeto
       # (<projeto>/bin/Release/...) — actions/upload-artifact "rebaseia" globs
       # iniciados com ** e flatteniza arquivos sob bin/ / obj/ comuns no

@@ -4,13 +4,13 @@ using System.Net.Http.Headers;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ModelosDeDocumento;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ModelosDeDocumento;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -22,12 +22,12 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 /// </summary>
 internal sealed class EnvioDoModeloDeDocumento : IAsyncDisposable
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly ModeloDeDocumentoRepository _modelos;
     private readonly ProcessoSeletivoRepository _processos;
     private readonly IArquivoArmazenadoStorage _storage;
 
-    private EnvioDoModeloDeDocumento(SelecaoDbContext context, ProcessoSeletivo processo, IArquivoArmazenadoStorage storage)
+    private EnvioDoModeloDeDocumento(UniPlusDbContext context, ProcessoSeletivo processo, IArquivoArmazenadoStorage storage)
     {
         _context = context;
         Processo = processo;
@@ -42,7 +42,7 @@ internal sealed class EnvioDoModeloDeDocumento : IAsyncDisposable
         ProcessoSeletivoDbFixture db, IArquivoArmazenadoStorage storage, string nomeDoProcesso)
     {
         ArgumentNullException.ThrowIfNull(db);
-        SelecaoDbContext context = db.CreateDbContext();
+        UniPlusDbContext context = db.CreateDbContext();
         ProcessoSeletivo processo = await ProcessoSeletivoDeTeste.GravarAsync(context, nomeDoProcesso);
         return new EnvioDoModeloDeDocumento(context, processo, storage);
     }

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using System.Text;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -9,20 +7,19 @@ using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 
 public sealed class LoteDeNotasDoEnemRepository : ILoteDeNotasDoEnemRepository
 {
     private static readonly string[] OrdemDasAreas = [.. AreaDoEnem.Todas];
 
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly IUniPlusEncryptionService _encryption;
 
-    public LoteDeNotasDoEnemRepository(SelecaoDbContext context, IUniPlusEncryptionService encryption)
+    public LoteDeNotasDoEnemRepository(UniPlusDbContext context, IUniPlusEncryptionService encryption)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(encryption);

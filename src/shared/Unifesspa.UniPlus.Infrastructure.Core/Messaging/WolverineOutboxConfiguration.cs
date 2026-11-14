@@ -55,8 +55,8 @@ public static class WolverineOutboxConfiguration
     /// propaga para <see cref="WebApplicationBuilder.Configuration"/> em apps
     /// minimal API — usar env vars nos testes).</param>
     /// <param name="connectionStringName">Nome da connection string em
-    /// <see cref="IConfiguration.GetConnectionString"/> (ex.: <c>"SelecaoDb"</c>,
-    /// <c>"IngressoDb"</c>).</param>
+    /// <see cref="IConfiguration.GetConnectionString"/> (ex.: <c>"UniPlusDb"</c>,
+    /// <c>"PortalDb"</c>).</param>
     /// <param name="kafkaConfigSection">Seção em <see cref="IConfiguration"/> ligada a
     /// <see cref="KafkaSettings"/>. Se <see cref="KafkaSettings.BootstrapServers"/> for vazio,
     /// o transporte Kafka é desligado mantendo a queue PG ativa. Padrão:

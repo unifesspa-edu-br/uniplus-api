@@ -221,9 +221,7 @@ docs/0021-cache-distribuido
 ### Migrations EF Core
 
 - Escopo `migrations` — ex.: `feat(migrations): adiciona tabela de inscricoes`.
-- Migrations nomeadas descritivamente: `AddCandidatoTable`, `AddIndexOnCpf`.
-- **Nunca editar migrations já aplicadas** — criar nova migration.
-- **Atenção:** migrations para entidades de domínio estão **gated pela issue [#155](https://github.com/unifesspa-edu-br/uniplus-api/issues/155)** (definição de naming convention). Não rode `dotnet ef migrations add` para entidades de domínio enquanto a issue não fechar — confira o status antes.
+- Há uma só migration, `Inicial`, do `MonolitoDbContext`: quando o modelo muda, ela é gerada de novo (ao rebasear, descarte a própria e gere outra). O que o EF não representa vai em script SQL idempotente do módulo. Ver `CONTRIBUTING.md`, seção Entity Framework e migrations.
 
 ### Testes de arquitetura (ArchUnitNET)
 

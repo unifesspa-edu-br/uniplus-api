@@ -5,8 +5,8 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Apoio;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
@@ -34,7 +34,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
     private readonly IConcessaoRepository _repositorio = Substitute.For<IConcessaoRepository>();
     private readonly IPapelDoRepresentante _papel = Substitute.For<IPapelDoRepresentante>();
     private readonly IIncompatibilidadeDosPapeis _papeis = Substitute.For<IIncompatibilidadeDosPapeis>();
-    private readonly IAutorizacaoUnitOfWork _unidade = Substitute.For<IAutorizacaoUnitOfWork>();
+    private readonly IUnitOfWork _unidade = Substitute.For<IUnitOfWork>();
 
     [Fact(DisplayName = "A revogação do Representante trava o papel antes de travar a concessão")]
     public async Task Revogar_Representante_TravaOPapelAntesDaConcessao()

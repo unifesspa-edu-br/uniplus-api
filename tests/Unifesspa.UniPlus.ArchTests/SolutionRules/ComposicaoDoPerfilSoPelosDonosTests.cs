@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
 using ArchUnitNET.Domain;
-using ArchUnitNET.Fluent;
 using ArchUnitNET.Fluent.Syntax.Elements.Types;
 using ArchUnitNET.Loader;
 
@@ -42,7 +41,7 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
     // mapeamento do EF, as leituras do banco que as juntam e quem lê o retrato.
     private const string DonosDasPermissoes =
         $@"^({Dominio}(Perfil|VersaoDoPerfil|PermissaoDoPerfil|PermissaoDaVersao|Concessao)"
-        + $@"|{Persistencia}(AutorizacaoDbContext|Configurations\.(PerfilConfiguration|VersaoDoPerfilConfiguration)"
+        + $@"|{Persistencia}(UniPlusDbContext|Configurations\.(PerfilConfiguration|VersaoDoPerfilConfiguration)"
         + $@"|Repositories\.(ComposicaoEmVigorNoBanco|ConsultasDePerfil))"
         + $@"|{Persistencia}Migrations\..+"
         + $@"|{LeitoresDoRetrato})(\+|$)";

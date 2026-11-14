@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Testcontainers.PostgreSql;
 
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Fixture base genérica que provisiona um Postgres efêmero (Testcontainers) com o
@@ -26,9 +26,8 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 /// não-genérico <see cref="MonolitoPostgresFixture"/> usa <see cref="MonolitoApiFactory"/>.
 /// </typeparam>
 /// <remarks>
-/// As 7 connection strings são injetadas via env var (duplo underscore) <em>e</em>
-/// via <c>ConfigureAppConfiguration</c> na factory, todas apontando para o mesmo
-/// container. Suítes derivam esta fixture numa <c>[CollectionDefinition]</c> com
+/// A connection string <c>UniPlusDb</c> é injetada via env var (duplo underscore) <em>e</em>
+/// via <c>ConfigureAppConfiguration</c> na factory, apontando para o container. Suítes derivam esta fixture numa <c>[CollectionDefinition]</c> com
 /// <c>DisableParallelization=true</c> para proteger as env vars process-wide.
 /// </remarks>
 [SuppressMessage(
@@ -38,17 +37,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
     where TFactory : MonolitoApiFactory
 {
-    private static readonly string[] ConnectionStringEnvVars =
-    [
-        "ConnectionStrings__UniPlusDb",
-        "ConnectionStrings__ConfiguracaoDb",
-        "ConnectionStrings__OrganizacaoDb",
-        "ConnectionStrings__SelecaoDb",
-        "ConnectionStrings__IngressoDb",
-        "ConnectionStrings__PublicacoesDb",
-        "ConnectionStrings__DiscentesDb",
-        "ConnectionStrings__AutorizacaoDb",
-    ];
+    private static readonly string[] ConnectionStringEnvVars = ["ConnectionStrings__UniPlusDb"];
 
     private const string KafkaBootstrapEnvVar = "Kafka__BootstrapServers";
     private const string RabbitMqUriEnvVar = "RabbitMq__Uri";
@@ -165,7 +154,7 @@ public abstract class MonolitoPostgresFixtureBase<TFactory> : IAsyncLifetime
     private static async Task AprovarOCatalogoSemeadoAsync(IServiceProvider services)
     {
         await using AsyncServiceScope escopo = services.CreateAsyncScope();
-        ConfiguracaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await contexto.Database.ExecuteSqlRawAsync(
             "UPDATE configuracao.rol_de_fatos_candidato SET protecao_situacao = 'APROVADA'").ConfigureAwait(false);

@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="DefinirIdentificadorLegivelCommand"/>. A regra de quando o identificador
@@ -19,7 +19,7 @@ public static class DefinirIdentificadorLegivelCommandHandler
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirIdentificadorLegivelCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

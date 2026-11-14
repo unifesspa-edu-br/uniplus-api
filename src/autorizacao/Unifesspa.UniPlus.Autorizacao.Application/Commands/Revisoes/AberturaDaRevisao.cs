@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -19,14 +19,14 @@ public sealed class AberturaDaRevisao
     private readonly IRevisaoDeAcessosRepository _revisoes;
     private readonly LeituraDaRevisao _leitura;
     private readonly CatalogoDaAplicacao _catalogo;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
 
     public AberturaDaRevisao(
         IRevisaoDeAcessosRepository revisoes,
         LeituraDaRevisao leitura,
         CatalogoDaAplicacao catalogo,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(revisoes);

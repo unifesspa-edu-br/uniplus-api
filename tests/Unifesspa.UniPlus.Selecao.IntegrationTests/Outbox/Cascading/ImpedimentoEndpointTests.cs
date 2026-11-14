@@ -11,8 +11,8 @@ using Domain.Entities;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -97,7 +97,7 @@ public sealed class ImpedimentoEndpointTests
     private async Task<Guid> SemearProcessoAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Impedimento {Guid.CreateVersion7()}");
         return processo.Id;
     }

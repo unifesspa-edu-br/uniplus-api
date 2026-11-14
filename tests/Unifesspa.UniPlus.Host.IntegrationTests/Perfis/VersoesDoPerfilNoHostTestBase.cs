@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 
@@ -17,9 +16,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
-using Wolverine;
 using Wolverine.Tracking;
 
 /// <summary>Chamadas, leituras e acessos ao banco comuns às suítes da versão do perfil pelo host real.</summary>
@@ -141,7 +140,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     {
         await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         _travaDaFila = trava;
-        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", perfilId);
 
         List<Task<HttpResponseMessage>> disparadas = await DispararEmFilaAsync(trava, chamadas);
@@ -236,7 +235,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<string> SituacaoNoBancoAsync(Guid documentoId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database.SqlQuery<string>($"SELECT situacao AS \"Value\" FROM autorizacao.documentos_da_versao WHERE id = {documentoId}").SingleAsync();
     }
@@ -244,7 +243,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<(bool Aberta, Guid VersaoId)[]> VigenciasAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         VigenciaDoPerfil[] vigencias = await db.VigenciasDosPerfis.AsNoTracking().Where(v => v.PerfilId == perfilId).ToArrayAsync();
 
         return [.. vigencias.Select(v => (v.Aberta, v.VersaoId))];
@@ -254,7 +253,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>()
             .LeiturasDosDocumentosDasVersoes.CountAsync(l => l.DocumentoId == documentoId);
     }
 
@@ -300,7 +299,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<string> SituacaoDaVersaoNoBancoAsync(Guid versaoId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database.SqlQuery<string>($"SELECT situacao AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE id = {versaoId}").SingleAsync();
     }
@@ -309,7 +308,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<bool> TemIdMenorAsync(Guid id, Guid outroId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database.SqlQuery<bool>($"SELECT {id}::uuid < {outroId}::uuid AS \"Value\"").SingleAsync();
     }
@@ -317,7 +316,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<int> QuantidadeDeVersoesVigentesAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'vigente'").SingleAsync();
     }
@@ -334,7 +333,7 @@ public abstract class VersoesDoPerfilNoHostTestBase : PedidosDeConcessaoTestBase
             .Em(DateTimeOffset.UtcNow)
             .Construir();
         await repositorio.AdicionarAsync(concessao);
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
 
         return perfil;
     }

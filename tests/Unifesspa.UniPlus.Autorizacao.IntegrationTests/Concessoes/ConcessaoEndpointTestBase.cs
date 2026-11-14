@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Concessoes;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -12,13 +11,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Apoio;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -92,7 +90,7 @@ public abstract class ConcessaoEndpointTestBase
     private protected async Task EnvelhecerAsync(Guid id)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.Database.ExecuteSqlRawAsync(
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '1 hour', valida_ate = now() - interval '1 minute' WHERE id = {0}", id);
     }
@@ -104,7 +102,7 @@ public abstract class ConcessaoEndpointTestBase
         Concessao concessao = await MontarAsync(scope, perfilId, beneficiario, escopo, validaAteDaquiAMinutos);
         IConcessaoRepository repositorio = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
         await repositorio.AdicionarAsync(concessao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
         return concessao.Id;
     }
 
@@ -116,7 +114,7 @@ public abstract class ConcessaoEndpointTestBase
         await repositorio.AdicionarAsync(concessao);
 
         return await Assert.ThrowsAnyAsync<Exception>(
-            () => scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync());
+            () => scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync());
     }
 
     private protected static async Task<Concessao> MontarAsync(
@@ -139,7 +137,7 @@ public abstract class ConcessaoEndpointTestBase
     private protected async Task LimparConcessoesAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao WHERE perfil_id = {0}", perfilId);
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0}", perfilId);
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", perfilId);

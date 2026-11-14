@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogoRepository
@@ -19,9 +20,9 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
     // A instituição conta o dia no fuso de Belém (sem horário de verão), e não em UTC.
     private static readonly TimeSpan FusoInstitucional = TimeZoneInfo.FindSystemTimeZoneById("America/Belem").BaseUtcOffset;
 
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public AtoDaProtecaoDoCatalogoRepository(ConfiguracaoDbContext dbContext)
+    public AtoDaProtecaoDoCatalogoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

@@ -14,9 +14,9 @@ using Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -67,7 +67,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             "o nome do tipo viaja por valor na requisição, como Seleção o conferiu ao publicar");
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         // O vínculo com o certame (ADR-0105) — sem ele a consulta "atos deste certame" não acha nada.
         (await db.Set<VinculoAtoEntidade>().AsNoTracking()
@@ -127,7 +127,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         await entrega.Should().ThrowAsync<Exception>();
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         (await db.Set<AtoNormativo>().AsNoTracking().AnyAsync(a => a.Id == atoRecusado))
             .Should().BeFalse("o ato não foi registrado — o tipo não existe no catálogo");
@@ -140,7 +140,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         // E o que Seleção publicou permanece publicado — os dois módulos falham em separado.
         await using AsyncServiceScope scopeSelecao = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.AtoCriadorId == atoId)).Should().BeTrue();
     }
 
@@ -163,7 +163,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         (await RetificarAsync(client, processoId, documentoRetificacao)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scopeSelecao = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         // A raiz da cadeia é o ato que não emenda ninguém, e a retificação é o que emenda —
         // não há rótulo de natureza a consultar: a relação É a marca (ADR-0103).
         Guid abertura = await selecao.VersoesConfiguracao.AsNoTracking()
@@ -180,7 +180,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         atoRetificacao.AtoRetificadoId.Should().Be(abertura, "a cadeia em Publicações espelha a de Seleção");
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         // A retificação HERDA o vínculo com o certame — sem isso ela sumiria da consulta dos
         // atos do certame, que passaria a exibir só a versão superada.
@@ -243,7 +243,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         await entrega.Should().ThrowAsync<Exception>();
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await db.Set<AtoNormativo>().AsNoTracking().AnyAsync(a => a.Id == atoInvalido))
             .Should().BeFalse("a emenda entre classes de congelamento distintas é recusada, não persistida");
     }
@@ -270,7 +270,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         // E nada foi escrito: a conferência acontece ANTES de publicar. Sem ela, o Edital
         // sairia publicado com 204 e a recusa só apareceria na dead letter.
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().BeFalse("a recusa precede qualquer escrita");
     }
@@ -299,7 +299,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await selecao.VersoesConfiguracao.AsNoTracking().CountAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().Be(1, "a retificação recusada não cria versão alguma — só a da abertura existe");
     }
@@ -320,7 +320,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         VersaoConfiguracao versao;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext selecao = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext selecao = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             versao = await selecao.VersoesConfiguracao.AsNoTracking()
                 .SingleAsync(v => v.ProcessoSeletivoId == processoId);
         }
@@ -392,7 +392,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         }
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         AtoNormativo ato = await db.Set<AtoNormativo>().AsNoTracking().SingleAsync(a => a.Id == atoId);
 
         ato.CongelaConfiguracao.Should().BeTrue(
@@ -425,12 +425,12 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
             Func<Task> entrega = () => bus.InvokeAsync(RequisicaoDeAnexos(comNulo, processoId, [null!]));
             await entrega.Should().ThrowAsync<Exception>();
             await using AsyncServiceScope outro = api.Services.CreateAsyncScope();
-            (await outro.ServiceProvider.GetRequiredService<PublicacoesDbContext>()
+            (await outro.ServiceProvider.GetRequiredService<UniPlusDbContext>()
                 .Set<AtoNormativo>().AsNoTracking().AnyAsync(a => a.Id == comNulo)).Should().BeFalse();
         }
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         AtoNormativo ato = await db.Set<AtoNormativo>().AsNoTracking().Include(a => a.Anexos).SingleAsync(a => a.Id == comAnexos);
         ato.Anexos.OrderBy(a => a.Ordem).Select(a => a.Nome).Should().Equal("Anexo II.pdf", "Anexo I.pdf");
@@ -480,7 +480,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = conferencia.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().BeFalse("a recusa precede qualquer escrita");
     }
@@ -522,7 +522,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
 
         await using (AsyncServiceScope conferencia = api.Services.CreateAsyncScope())
         {
-            PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+            UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (await db.Set<LinhagemUnicaPorObjeto>().AsNoTracking().AnyAsync(l => l.EntidadeId == processoId))
                 .Should().BeFalse("pré-condição: não há vaga reservada — o tipo não era único quando o ato foi registrado");
         }
@@ -536,7 +536,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
         await using AsyncServiceScope scopeSelecao = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = scopeSelecao.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await selecao.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().BeFalse("a recusa precede qualquer escrita");
     }
@@ -585,7 +585,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        SelecaoDbContext selecao = conferencia.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext selecao = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await selecao.VersoesConfiguracao.AsNoTracking()
             .CountAsync(v => v.ProcessoSeletivoId == processoId))
             .Should().Be(1, "a recusa precede qualquer escrita — só a versão da abertura existe");
@@ -614,7 +614,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         }
 
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = conferencia.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         (await db.Set<AtoNormativo>().AsNoTracking().CountAsync(a => a.Id == atoId))
             .Should().Be(1, "o id vem na mensagem — o segundo processamento reencontra o ato e não faz nada");
@@ -838,7 +838,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
     private static async Task<string> ObterIdentificadorLegivelAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().FirstAsync(p => p.Id == processoId);
         return processo.IdentificadorLegivel!.Value.Valor;
     }
@@ -851,7 +851,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
     private static async Task<CertameDivulgado?> ObterDivulgacaoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.CertamesDivulgados.AsNoTracking().FirstOrDefaultAsync(c => c.Id == processoId);
     }
 
@@ -885,7 +885,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         CascadingApiFactory api, Guid processoId, int numeroVersao)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId && v.NumeroVersao == numeroVersao)
             .Select(v => v.AtoCriadorId)
@@ -919,7 +919,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         CascadingApiFactory api, Guid atoId, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         AtoNormativo ato = await db.Set<AtoNormativo>().AsNoTracking().SingleAsync(a => a.Id == atoId);
 
         return new Unifesspa.UniPlus.Publicacoes.Contracts.RegistrarAtoNormativoRequisicao(
@@ -968,7 +968,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
         CascadingApiFactory api, string codigo, bool unicoPorObjeto, bool congela = true)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
         {
             return;
@@ -988,7 +988,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
     private static async Task<Guid> ObterAtoIdAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .Select(v => v.AtoCriadorId)
@@ -1028,7 +1028,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string hash = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hash, TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -1040,7 +1040,7 @@ public sealed class RegistroDeAtoPorFilaDuravelTests
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoAsync(CascadingApiFactory api, string nome)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);

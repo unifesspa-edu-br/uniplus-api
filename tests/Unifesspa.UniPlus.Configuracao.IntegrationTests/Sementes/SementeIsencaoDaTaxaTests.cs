@@ -10,12 +10,12 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>
-/// O modelo de solicitação de isenção da taxa existe ao subir o sistema, gravado pela migration
-/// <c>SemeiaModeloDeIsencaoDaTaxa</c>, para qualquer processo que cobre taxa.
+/// O modelo de solicitação de isenção da taxa existe ao subir o sistema, gravado pelas sementes do módulo, para qualquer processo que cobre taxa.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -31,10 +31,10 @@ public sealed class SementeIsencaoDaTaxaTests
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Depois das migrations, o modelo de isenção é ativo, sem tipo de processo, e coleta ou pressupõe todo fato que a condição da Lei nº 12.799/2013 cita")]
-    public async Task Migrations_GravamOModeloDeIsencao()
+    [Fact(DisplayName = "Depois da subida do banco, o modelo de isenção é ativo, sem tipo de processo, e coleta ou pressupõe todo fato que a condição da Lei nº 12.799/2013 cita")]
+    public async Task SubidaDoBanco_GravaOModeloDeIsencao()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         ModeloFormulario modelo = await ctx.ModelosFormulario.SingleAsync(m => m.Codigo == SementeIsencaoDaTaxa.ModeloDeIsencao);
 
@@ -50,9 +50,9 @@ public sealed class SementeIsencaoDaTaxaTests
     [Fact(DisplayName = "Reaplicar a semente da isenção não duplica nem altera o que já existe")]
     public async Task Reaplicar_NaoDuplicaNemAltera()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         string antes = await RetratoAsync(ctx);
-        antes.Should().NotBeEmpty("a migration já gravou os termos e o modelo");
+        antes.Should().NotBeEmpty("a subida do banco já gravou os termos e o modelo");
 
         foreach (string comando in SementeIsencaoDaTaxa.Comandos())
         {
@@ -64,7 +64,7 @@ public sealed class SementeIsencaoDaTaxaTests
     }
 
     /// <summary>A contagem e o conteúdo das linhas que a semente grava, para comparar antes e depois.</summary>
-    private static async Task<string> RetratoAsync(ConfiguracaoDbContext ctx)
+    private static async Task<string> RetratoAsync(UniPlusDbContext ctx)
     {
         List<string> linhas = await ctx.Database.SqlQueryRaw<string>(
             """

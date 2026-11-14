@@ -6,12 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 using Testcontainers.PostgreSql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="SelecaoDbContext"/> aplicado via <c>MigrateAsync</c> —
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c> —
 /// inclui as migrations do <c>rol_de_regras</c> (da <c>AddRolDeRegras</c>,
 /// Story #772, em diante) e o seed das regras <c>v1</c> do
 /// <c>RegraCatalogoSeed</c>, validando ponta-a-ponta contra Postgres real.
@@ -38,8 +39,8 @@ public sealed class RegraCatalogoDbFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        await using SelecaoDbContext context = CreateDbContext();
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        await using UniPlusDbContext context = CreateDbContext();
+        await context.SubirOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -47,9 +48,9 @@ public sealed class RegraCatalogoDbFixture : IAsyncLifetime
         await _postgres.DisposeAsync().ConfigureAwait(false);
     }
 
-    public SelecaoDbContext CreateDbContext()
+    public UniPlusDbContext CreateDbContext()
     {
-        DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
+        DbContextOptions<MonolitoDbContext> options = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql(ConnectionString)
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(
@@ -57,6 +58,6 @@ public sealed class RegraCatalogoDbFixture : IAsyncLifetime
                 new AuditableInterceptor(TimeProvider.System, userContext: null))
             .Options;
 
-        return new SelecaoDbContext(options);
+        return new MonolitoDbContext(options);
     }
 }

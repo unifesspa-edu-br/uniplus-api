@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Publicacoes.IntegrationTests.AtosNormativos;
 
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -10,12 +9,12 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -443,10 +442,10 @@ public sealed class AtosDaEntidadeEndpointTests
                 "Jairo Belchior", null, null, null, null,
                 [new VinculoEntidadeRequisicao(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)],
                 new AtributosDoTipoAto(true, false, false, "Tipo de teste")),
-            sp.GetRequiredService<PublicacoesDbContext>(),
+            sp.GetRequiredService<UniPlusDbContext>(),
             sp.GetRequiredService<ITipoAtoPublicadoRepository>(),
             sp.GetRequiredService<IAtoNormativoRepository>(),
-            sp.GetRequiredService<IPublicacoesUnitOfWork>(),
+            sp.GetRequiredService<IUnitOfWork>(),
             sp.GetRequiredService<TimeProvider>(),
             CancellationToken.None);
 
@@ -626,4 +625,3 @@ public sealed class AtosDaEntidadeEndpointTests
         return corpo.RootElement.GetProperty("atoId").GetGuid();
     }
 }
-

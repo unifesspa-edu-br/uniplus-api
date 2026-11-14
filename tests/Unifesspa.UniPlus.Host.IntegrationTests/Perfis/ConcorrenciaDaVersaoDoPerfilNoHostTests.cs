@@ -1,22 +1,19 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 
 using System.Net;
-using System.Text.Json;
 
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
-using Wolverine;
 using Wolverine.Tracking;
 
 /// <summary>
@@ -169,7 +166,7 @@ public sealed class ConcorrenciaDaVersaoDoPerfilNoHostTests : VersoesDoPerfilNoH
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.decisoes_da_versao WHERE versao_id = {versaoId}")
             .SingleAsync();
     }

@@ -4,14 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Extensions;
 
 /// <summary>
-/// Implementação <see cref="IIdempotencyStore"/> sobre <see cref="DbContext"/>
-/// genérico. Cada módulo que usa idempotência registra um instance via
-/// <c>AddIdempotency&lt;TDbContext&gt;</c> (ex.: <c>SelecaoDbContext</c>);
-/// a entidade <see cref="IdempotencyEntry"/> precisa estar mapeada no
-/// contexto do módulo (auto via <c>ApplyConfigurationsFromAssembly</c>).
+/// Implementação <see cref="IIdempotencyStore"/> sobre o <see cref="UniPlusDbContext"/> único dos módulos. A entidade
+/// <see cref="IdempotencyEntry"/> é mapeada no esquema da plataforma, e a chave única (Scope, Endpoint, IdempotencyKey)
+/// impede colisão entre módulos.
 /// </summary>
 /// <remarks>
 /// Trade-off documentado em ADR-0027 §"Negativas — Atomicidade parcial":
@@ -21,15 +20,14 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 /// filter chama <see cref="DeleteAsync"/> para liberar a key (cliente pode
 /// retry após falha transitória do servidor).
 /// </remarks>
-public sealed class EfCoreIdempotencyStore<TDbContext> : IIdempotencyStore
-    where TDbContext : DbContext
+public sealed class EfCoreIdempotencyStore : IIdempotencyStore
 {
     private const string PostgresUniqueViolationSqlState = "23505";
 
-    private readonly TDbContext _db;
+    private readonly UniPlusDbContext _db;
     private readonly TimeProvider _timeProvider;
 
-    public EfCoreIdempotencyStore(TDbContext db, TimeProvider timeProvider)
+    public EfCoreIdempotencyStore(UniPlusDbContext db, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(timeProvider);

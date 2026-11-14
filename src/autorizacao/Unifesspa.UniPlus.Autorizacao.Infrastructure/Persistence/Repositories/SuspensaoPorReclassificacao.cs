@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -15,7 +16,7 @@ internal static class SuspensaoPorReclassificacao
 {
     /// <summary>Os códigos da composição, sem os que o catálogo atual suspende na concessão. Governança nunca se suspende.</summary>
     public static IQueryable<CodigoDaConcessao> SemSuspensasPorReclassificacao(
-        this AutorizacaoDbContext context, IQueryable<CodigoDaConcessao> codigos) =>
+        this UniPlusDbContext context, IQueryable<CodigoDaConcessao> codigos) =>
         from k in codigos
         join b in context.BasesVivas() on new { k.ConcessaoId, k.Codigo } equals new { b.ConcessaoId, b.Codigo } into daBase
         from b in daBase.DefaultIfEmpty()
@@ -26,15 +27,15 @@ internal static class SuspensaoPorReclassificacao
         select k;
 
     /// <summary>As permissões do catálogo de maior sequência.</summary>
-    public static IQueryable<PermissaoImplantada> ImplantacaoAtual(this AutorizacaoDbContext context) =>
+    public static IQueryable<PermissaoImplantada> ImplantacaoAtual(this UniPlusDbContext context) =>
         context.PermissoesImplantadas.Where(p =>
-            p.ImplantacaoId == context.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).First());
+            p.ImplantacaoId == context.Set<ImplantacaoDasPermissoes>().OrderByDescending(c => c.Sequencia).Select(c => c.Id).First());
 
     /// <summary>A última base de cada par (concessão, código), quando não é de saída.</summary>
-    public static IQueryable<BaseViva> BasesVivas(this AutorizacaoDbContext context) =>
+    public static IQueryable<BaseViva> BasesVivas(this UniPlusDbContext context) =>
         from b in context.BasesDasPermissoes
         where b.Origem != OrigemDaBase.Saida
-            && !context.BasesDasPermissoes.Any(o => o.ConcessaoId == b.ConcessaoId && o.Codigo == b.Codigo && o.OrdemNaTrilha > b.OrdemNaTrilha)
+            && !context.Set<BaseDaPermissaoNaConcessao>().Any(o => o.ConcessaoId == b.ConcessaoId && o.Codigo == b.Codigo && o.OrdemNaTrilha > b.OrdemNaTrilha)
         select new BaseViva { ConcessaoId = b.ConcessaoId, Codigo = b.Codigo, Classificacao = b.Classificacao!.Value, DeUnidade = b.DeUnidade!.Value };
 }
 

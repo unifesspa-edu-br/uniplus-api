@@ -4,11 +4,9 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
-
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 
@@ -18,10 +16,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// tornou decláraveis por edital. Prova o conteúdo do seed (as quatro
 /// resoluções declaradas, com exemplos nas âncoras canônicas; esquema de
 /// argumentos vazio; base legal com placeholder honesto de pendência), os
-/// hashes dourados que amarram o seed ao literal da migration, o reader por
-/// tipo e a fronteira append-only (ADR-0112) no schema-alvo dos testes. A
-/// prova de que a precondição de migration aborta diante de referência
-/// fabricada fica em <see cref="AlgoritmoContagemPrazoPrecondicaoTests"/>.
+/// hashes dourados que amarram o seed ao hash gravado, e o reader por tipo.
 /// </summary>
 public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalogoDbFixture>
 {
@@ -33,9 +28,8 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     }
 
     /// <summary>
-    /// Hashes congelados nas migrations que semeiam as convenções. Amarram a
-    /// definição do seed ao literal da migration: editar o texto de uma entrada
-    /// sem regenerar a migration quebra este teste.
+    /// Hashes congelados das convenções. Amarram a definição do seed ao hash gravado:
+    /// editar o texto de uma entrada sem regenerar a migration quebra este teste.
     /// </summary>
     private const string HashExcluiDiaInicial =
         "fce95fc44b52a5a93a697b0309659a5af0085f9d39ceac1c3917c7b00b1c0be5";
@@ -76,21 +70,6 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     };
 
     /// <summary>
-    /// Cada código do rol como caso de teoria — semear uma quarta convenção passa a cobri-la
-    /// aqui sozinha, em vez de deixar a teoria calada sobre o código novo.
-    /// </summary>
-    public static TheoryData<string> RolDeContagem()
-    {
-        TheoryData<string> dados = new();
-        foreach (string codigo in AlgoritmoContagemPrazoCodigo.Todos)
-        {
-            dados.Add(codigo);
-        }
-
-        return dados;
-    }
-
-    /// <summary>
     /// O hash dourado de <paramref name="codigo"/>, com a falta declarada como asserção — a
     /// indexação crua morreria com <c>KeyNotFoundException</c>, que não diz a quem semeou uma
     /// convenção nova que falta congelar o hash dela aqui.
@@ -99,7 +78,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     {
         HashesDourados.Should().ContainKey(
             codigo,
-            $"{codigo} está no rol e precisa do hash congelado da migration que o semeia");
+            $"{codigo} está no rol e precisa do hash dourado");
 
         return HashesDourados[codigo];
     }
@@ -107,7 +86,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
     [Fact(DisplayName = "O reader devolve as três convenções de contagem, cada uma com código, versão e hash")]
     public async Task Reader_ListarPorTipo_DevolveAsConvencoes()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         RegraCatalogoReader reader = new(context);
 
         IReadOnlyList<RegraCatalogo> algoritmos = await reader.ListarPorTipoAsync(
@@ -123,8 +102,8 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         }
     }
 
-    [Fact(DisplayName = "Os hashes dourados amarram a definição do seed ao literal da migration")]
-    public void Seed_HashesDourados_AmarramSeedEMigration()
+    [Fact(DisplayName = "Os hashes dourados amarram a definição do seed ao hash gravado")]
+    public void Seed_HashesDourados_AmarramASemente()
     {
         foreach (string codigo in CodigosDeContagem)
         {
@@ -255,15 +234,5 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         fundamento.Should().Contain("dispõe sobre efeito suspensivo",
             "a negativa é explícita — silêncio deixaria supor que a decisão do prazo a alcança");
         fundamento.Should().Contain("UNI-REQ-0117", "a negativa aponta onde a dependência é rastreada");
-    }
-
-    [Theory(DisplayName = "Nenhuma configuração congelada referencia a entrada de contagem (fronteira da ADR-0112)")]
-    [MemberData(nameof(RolDeContagem))]
-    public async Task NenhumaConfiguracaoCongelada_ReferenciaEntradaDeContagem(string codigo)
-    {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
-
-        await FronteiraAppendOnlyDoRol.NenhumaReferenciaCongeladaAsync(
-            context, codigo, RegraCatalogoSeed.VersaoV1);
     }
 }

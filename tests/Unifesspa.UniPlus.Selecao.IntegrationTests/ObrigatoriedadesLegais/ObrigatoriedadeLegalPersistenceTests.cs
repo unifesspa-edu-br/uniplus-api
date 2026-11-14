@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -39,13 +40,13 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_OBRIGATORIA_INSERT");
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ObrigatoriedadesLegais.Add(regra);
             await ctx.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         ObrigatoriedadeLegal persisted = await readCtx.ObrigatoriedadesLegais
             .SingleAsync(o => o.Id == regra.Id)
@@ -75,7 +76,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_UPDATE");
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ObrigatoriedadesLegais.Add(regra);
             await ctx.SaveChangesAsync();
@@ -83,7 +84,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
         string hashOriginal = regra.Hash;
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
                 .SingleAsync(o => o.Id == regra.Id)
@@ -104,7 +105,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             await ctx.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         ObrigatoriedadeLegal atualizada = await readCtx.ObrigatoriedadesLegais
             .SingleAsync(o => o.Id == regra.Id)
@@ -130,7 +131,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra1 = NovaRegraValida("ETAPA_HASH_UNIQUE");
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ObrigatoriedadesLegais.Add(regra1);
             await ctx.SaveChangesAsync();
@@ -141,7 +142,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
         regra1.Hash.Should().Be(regra2.Hash,
             "duas regras com conteúdo semântico idêntico precisam compartilhar hash");
 
-        await using SelecaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.ObrigatoriedadesLegais.Add(regra2);
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -156,14 +157,14 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_HASH_RECYCLE");
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ObrigatoriedadesLegais.Add(regra);
             await ctx.SaveChangesAsync();
         }
 
         // Soft-delete via SoftDeleteInterceptor.
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
                 .SingleAsync(o => o.Id == regra.Id)
@@ -174,7 +175,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
         ObrigatoriedadeLegal regraNova = NovaRegraValida("ETAPA_HASH_RECYCLE");
 
-        await using SelecaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.ObrigatoriedadesLegais.Add(regraNova);
 
         // Sem exceção — UNIQUE parcial WHERE is_deleted = false permite reuso.
@@ -186,13 +187,13 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_SOFT_DELETE_HISTORY");
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ObrigatoriedadesLegais.Add(regra);
             await ctx.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
                 .SingleAsync(o => o.Id == regra.Id);
@@ -202,7 +203,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
         // Bypass do query filter para verificar o estado real persistido —
         // após soft-delete, a regra continua no banco com IsDeleted=true.
-        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
 
         List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
             .Where(h => h.RegraId == regra.Id)
@@ -227,7 +228,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_DETERMINISTIC");
 
-        await using (SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.ObrigatoriedadesLegais.Add(regra);
             await ctx.SaveChangesAsync();
@@ -245,7 +246,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             vigenciaInicio: new DateOnly(2026, 1, 1),
             vigenciaFim: null);
 
-        await using SelecaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         string persistido = (await readCtx.ObrigatoriedadesLegais
             .SingleAsync(o => o.Id == regra.Id)
             ).Hash;
@@ -265,13 +266,13 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             "SiSU", CategoriaObrigatoriedade.Outros, "RULESET_SISU", new ConcorrenciaDuplaObrigatoria(),
             "SiSU", "Lei", new DateOnly(2026, 6, 1), new DateOnly(2026, 7, 1)).Value!;
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext context = _fixture.CreateDbContext(AdminA))
         {
             context.ObrigatoriedadesLegais.AddRange(universal, psiq, sisu);
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext(userId: null);
         ObrigatoriedadeLegalRepository repository = new(readContext, TimeProvider.System);
 
         IReadOnlyList<ObrigatoriedadeLegal> emVigencia = await repository
@@ -300,7 +301,7 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
             snapshotAt: DateTimeOffset.UtcNow,
             snapshotBy: AdminA);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.ObrigatoriedadeLegalHistorico.Add(orphan);
 
         Func<Task> act = async () => await ctx.SaveChangesAsync();

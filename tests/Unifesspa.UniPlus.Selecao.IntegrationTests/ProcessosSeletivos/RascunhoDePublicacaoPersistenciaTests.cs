@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -44,7 +44,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
 
         await GravarAsync(processoId, Operador, conteudo, versao: 3);
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         RascunhoDePublicacao? lido = await new RascunhoDePublicacaoRepository(leitura)
             .ObterDoOperadorAsync(processoId, Operador);
 
@@ -61,7 +61,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
         await GravarAsync(processoId, Operador, """{"numero":"do primeiro"}""");
         await GravarAsync(processoId, Colega, """{"numero":"do segundo"}""");
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         RascunhoDePublicacaoRepository repositorio = new(leitura);
 
         (await repositorio.ObterDoOperadorAsync(processoId, Operador))!.Conteudo
@@ -78,7 +78,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
 
         // Não passa pela fábrica de substituição de propósito: o que se prova aqui é a guarda do
         // BANCO, que continua de pé mesmo se um caminho futuro esquecer de ler antes de gravar.
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         RascunhoDePublicacao duplicado = RascunhoDePublicacao.Criar(
             processoId, Operador, """{"a":2}""", 1, Agora, RascunhoDePublicacao.Prazo).Value!;
         contexto.RascunhosDePublicacao.Add(duplicado);
@@ -96,7 +96,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
         await GravarAsync(processoId, Operador, """{"a":1}""");
         await GravarAsync(processoId, Colega, """{"a":2}""");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         int apagados = await new RascunhoDePublicacaoRepository(contexto).ApagarDoProcessoAsync(processoId);
 
         apagados.Should().Be(2);
@@ -111,7 +111,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
         await GravarAsync(processoId, Operador, """{"a":1}""");
         await GravarAsync(processoId, Colega, """{"a":2}""");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         RascunhoDePublicacaoRepository repositorio = new(contexto);
         await repositorio.ApagarDoOperadorAsync(processoId, Operador);
 
@@ -125,7 +125,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
         Guid processoId = await NovoProcessoAsync();
         Guid rascunhoId = await GravarAsync(processoId, Operador, """{"a":1}""");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         RascunhoDePublicacaoRepository repositorio = new(contexto);
 
         // O veredito de vencimento é de ANTES do prazo: a linha renovada não é a que ele
@@ -149,7 +149,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
         await VencerAsync(abandonado);
         await GravarAsync(vivo, Colega, """{"a":2}""");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         RascunhoDePublicacaoRepository repositorio = new(contexto);
 
         int apagados = await repositorio.ApagarVencidosAsync(Agora.AddDays(1));
@@ -164,7 +164,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
     /// rascunho vencido, e envelhecer trinta dias de relógio não é opção.</summary>
     private async Task VencerAsync(Guid processoId)
     {
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         await contexto.RascunhosDePublicacao
             .Where(r => r.ProcessoSeletivoId == processoId)
             .ExecuteUpdateAsync(set => set.SetProperty(r => r.ExpiraEm, Agora.AddDays(-1)));
@@ -172,7 +172,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
 
     private async Task<Guid> GravarAsync(Guid processoId, string usuarioSub, string conteudo, int versao = 1)
     {
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         RascunhoDePublicacaoRepository repositorio = new(contexto);
 
         RascunhoDePublicacao? existente = await repositorio.ObterDoOperadorAsync(processoId, usuarioSub);
@@ -195,7 +195,7 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
 
     private async Task<Guid> NovoProcessoAsync()
     {
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"Certame de teste {Guid.CreateVersion7()}",
             TipoProcesso.SiSU,

@@ -4,8 +4,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -13,17 +13,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed class DefinirOpcoesDeCursoCommandHandlerTests
 {
-    private static (IProcessoSeletivoRepository Repository, ISelecaoUnitOfWork UnitOfWork) NovosMocks(ProcessoSeletivo? processo, Guid processoId)
+    private static (IProcessoSeletivoRepository Repository, IUnitOfWork UnitOfWork) NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
-        return (repository, Substitute.For<ISelecaoUnitOfWork>());
+        return (repository, Substitute.For<IUnitOfWork>());
     }
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
-        (IProcessoSeletivoRepository repository, ISelecaoUnitOfWork unitOfWork) = NovosMocks(null, Guid.CreateVersion7());
+        (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(null, Guid.CreateVersion7());
 
         Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
             new DefinirOpcoesDeCursoCommand(Guid.CreateVersion7(), 1, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
@@ -35,7 +35,7 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
     public async Task Handle_UmaOpcaoComUmCurso_GravaEPersiste()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS opções", out _);
-        (IProcessoSeletivoRepository repository, ISelecaoUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
 
         Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
             new DefinirOpcoesDeCursoCommand(processo.Id, 1, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
@@ -49,7 +49,7 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
     public async Task Handle_DuasOpcoesComUmCurso_RecusaENaoPersiste()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS opções", out _);
-        (IProcessoSeletivoRepository repository, ISelecaoUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
 
         Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
             new DefinirOpcoesDeCursoCommand(processo.Id, 2, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
@@ -65,7 +65,7 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
     public async Task Handle_ConflitoDeConcorrencia_DescartaEDevolveConflito()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS opções", out _);
-        (IProcessoSeletivoRepository repository, ISelecaoUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ => throw new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException("xmin"));
 

@@ -9,7 +9,6 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
-
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -17,6 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -432,8 +432,8 @@ public sealed class OfertaCursoEndpointTests
         Curso curso = Curso.Criar(CodigoUnico(), nome, "Bacharelado", "Graduação", null).Value!;
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         dbContext.Cursos.Add(curso);
         await dbContext.SaveChangesAsync(CancellationToken.None);
@@ -450,8 +450,8 @@ public sealed class OfertaCursoEndpointTests
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         dbContext.Cursos.Add(curso);
         dbContext.LocaisOferta.Add(local);
@@ -470,8 +470,8 @@ public sealed class OfertaCursoEndpointTests
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         dbContext.Cursos.Add(curso);
         dbContext.LocaisOferta.Add(local);
@@ -506,8 +506,8 @@ public sealed class OfertaCursoEndpointTests
         // host — o schema `organizacao` foi criado pelas migrations no boot; o
         // IUnidadeReader (in-process, ADR-0056) enxerga a Unidade na criação da oferta.
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         dbContext.Unidades.Add(unidade);
         await dbContext.SaveChangesAsync(CancellationToken.None);
@@ -646,8 +646,8 @@ public sealed class OfertaCursoEndpointTests
                 "uniplus.configuracao.oferta_curso.regime_de_funcionamento_incompativel_com_regime_de_turno");
 
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext =
-            escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext =
+            escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<OfertaCurso> persistidas = await dbContext.OfertasCurso
             .Where(o => o.CursoId == cursoId && o.LocalOfertaId == localId)
             .ToListAsync(CancellationToken.None);
@@ -978,8 +978,8 @@ public sealed class OfertaCursoEndpointTests
     private async Task SemearOfertasAsync(Guid cursoId, Guid localId, Guid unidadeOrigemId, int quantidade)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         for (int i = 0; i < quantidade; i++)
         {

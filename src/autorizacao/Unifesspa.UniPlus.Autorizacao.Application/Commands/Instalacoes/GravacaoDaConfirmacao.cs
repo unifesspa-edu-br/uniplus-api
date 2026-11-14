@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 internal static class GravacaoDaConfirmacao
 {
     /// <summary>Grava; nula quando gravou, ou a recusa da violação reconhecida, com o rastreamento descartado.</summary>
-    public static async Task<DomainError?> GravarAsync(IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    public static async Task<DomainError?> GravarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

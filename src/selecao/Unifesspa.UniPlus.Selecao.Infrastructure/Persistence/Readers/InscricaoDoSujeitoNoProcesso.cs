@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
@@ -11,9 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 public sealed class InscricaoDoSujeitoNoProcesso : IInscricaoDoSujeitoNoProcesso
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public InscricaoDoSujeitoNoProcesso(SelecaoDbContext context)
+    public InscricaoDoSujeitoNoProcesso(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 

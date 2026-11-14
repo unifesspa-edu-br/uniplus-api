@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDocumento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -16,7 +17,7 @@ public static class AceitarRecomendacaoDoTipoDocumentoCommandHandler
         AceitarRecomendacaoDoTipoDocumentoCommand command,
         ITipoDocumentoRepository tipos,
         IAtoDaProtecaoDoCatalogoRepository atos,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

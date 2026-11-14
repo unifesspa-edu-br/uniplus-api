@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -9,6 +7,7 @@ using DTOs;
 
 using ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
@@ -32,7 +31,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

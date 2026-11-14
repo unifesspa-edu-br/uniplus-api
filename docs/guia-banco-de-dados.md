@@ -13,8 +13,8 @@ Referência canônica para devs que tocam persistência: naming convention, tipo
 5. [Audit trail](#5-audit-trail)
 6. [Value Objects](#6-value-objects)
 7. [Workflow de migration](#7-workflow-de-migration)
-8. [Forward-only revert](#8-forward-only-revert)
-9. [Nomenclatura de migration](#9-nomenclatura-de-migration)
+8. [Migration regerada, não sucessora](#8-migration-regerada-não-sucessora)
+9. [Nome da migration](#9-nome-da-migration)
 10. [Constraints e índices](#10-constraints-e-índices)
 11. [FKs e cascade](#11-fks-e-cascade)
 12. [Rodar local](#12-rodar-local)
@@ -27,15 +27,15 @@ Referência canônica para devs que tocam persistência: naming convention, tipo
 
 ## 1. Topologia
 
-Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](adrs/0097-topologia-de-deploy-em-tres-apis-monolito-modular.md)). Os módulos internos coabitam a API UniPlus num processo único, cada um com `HasDefaultSchema` próprio, e as connection strings do host apontam todas para o mesmo banco.
+Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](adrs/0097-topologia-de-deploy-em-tres-apis-monolito-modular.md)). Os módulos internos coabitam a API UniPlus num processo único e compartilham **um só contexto** (`MonolitoDbContext`, [ADR-0170](adrs/0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)): cada módulo contribui com as suas configurações e o esquema dos seus tipos, e há uma só connection string (`UniPlusDb`).
 
-| Schema | DbContext | Cobertura |
+| Schema | Contribuição | Cobertura |
 |---|---|---|
-| `selecao` | `SelecaoDbContext` | Processos seletivos, Editais, Candidatos, Inscrições, Cotas, Etapas |
-| `ingresso` | `IngressoDbContext` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
-| `configuracao` | `ConfiguracaoDbContext` | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
-| `organizacao` | `OrganizacaoInstitucionalDbContext` | Unidade, Instituição |
-| `publicacoes` | `PublicacoesDbContext` | Registro central dos atos normativos ([ADR-0105](adrs/0105-modulo-publicacoes-registro-central-dos-atos.md)). Nasce vazio |
+| `selecao` | `SelecaoContribuicao` | Processos seletivos, Editais, Candidatos, Inscrições, Cotas, Etapas |
+| `ingresso` | `IngressoContribuicao` | Chamadas, Convocações, Matrículas, DocumentosMatricula |
+| `configuracao` | `ConfiguracaoContribuicao` | Catálogos cross-cutting: Modalidade, NecessidadeEspecial, TipoDocumento, Endereco |
+| `organizacao` | `OrganizacaoInstitucionalContribuicao` | Unidade, Instituição |
+| `publicacoes` | `PublicacoesContribuicao` | Registro central dos atos normativos ([ADR-0105](adrs/0105-modulo-publicacoes-registro-central-dos-atos.md)). Nasce vazio |
 | `wolverine` | — | Outbox/envelopes/dead-letters, uma única instância ([ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md)) |
 
 **Geo** (repositório dedicado, `uniplus_geo` com PostGIS) e **Portal** (`uniplus_portal`) permanecem deployables autônomos, com banco próprio.
@@ -45,9 +45,10 @@ Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](ad
 Extensões habilitadas:
 
 - `uuid-ossp`, `pg_trgm` — em todos os bancos de aplicação.
-- `btree_gist` — pré-requisito das exclusion constraints GIST sobre intervalos temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)). Provisionada em dev pelo `init-db.sql` e, nos demais ambientes, pela migration do `DbContext` que a exige (idempotente, `CREATE EXTENSION IF NOT EXISTS`) — os containers efêmeros dos testes de integração não executam o `init-db`, então a migration é a única fonte. A aplicação original (junction de áreas de interesse) foi removida no KILL do eixo de Área (Epic #600); a aplicação viva hoje é a constraint `ex_tipo_ato_publicado_codigo_vigencia`, no schema `publicacoes`, que impede duas versões vivas do mesmo tipo de ato de valerem no mesmo dia. Como a constraint vive em SQL cru e não entra no `ModelSnapshot`, um squash de migrations a descartaria em silêncio: `TipoAtoPublicadoPersistenceTests` consulta o `pg_constraint` para impedi-lo.
+- `btree_gist` — pré-requisito das exclusion constraints GIST sobre intervalos temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)) e sobre a ordem dos nós da árvore de exigências. Existe **uma vez só**, no script compartilhado `Infrastructure.Core/Persistence/Scripts/Pre/001_extensao_btree_gist.sql` (idempotente, `CREATE EXTENSION IF NOT EXISTS`), que roda antes de tudo e antes dos scripts dos módulos. Os containers efêmeros dos testes de integração não executam o `init-db`, então esse script é a única fonte. A aplicação viva é a constraint `ex_tipo_ato_publicado_codigo_vigencia`, no schema `publicacoes`, que impede duas versões vivas do mesmo tipo de ato de valerem no mesmo dia. Como a constraint vive em script SQL e não no modelo do EF, `TipoAtoPublicadoPersistenceTests` consulta o `pg_constraint` para garantir que ela existe.
+- `unaccent` e `pg_trgm` — busca sem acento e por proximidade; a primeira vive no script `Pre` da Organização, a segunda é declarada no modelo (`HasPostgresExtension`).
 
-Migrations EF Core são **por DbContext** — cada módulo tem o seu `__EFMigrationsHistory` **no próprio schema**, sem coordenação cross-módulo. As migrations on startup rodam antes do runtime Wolverine (invariante travada por `MigrationBeforeWolverineRuntimeOrderTests`).
+Há **uma migration**, `Inicial`, do `MonolitoDbContext`, e **um histórico** (`plataforma.__EFMigrationsHistory`). O que o EF não representa vive em scripts SQL idempotentes dentro de cada módulo, e a subida roda: trava consultiva do banco → scripts `Pre` → `MigrateAsync` → scripts pós → etapa posterior de cada módulo (§ 7). A subida roda antes do runtime Wolverine (invariante travada por `MigrationBeforeWolverineRuntimeOrderTests`).
 
 ## 2. Naming convention
 
@@ -183,41 +184,63 @@ Existe `ValueObjectConventions.ConfigureValueObjectConverters()` (`Infrastructur
 ```bash
 # 1. Editar a entity em src/<modulo>/Unifesspa.UniPlus.<Modulo>.Domain/Entities/
 # 2. Editar a Configuration em src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure/Persistence/Configurations/
-# 3. Gerar migration (--startup-project aponta para o Host — ver nota abaixo):
-dotnet ef migrations add Adiciona<Coisa> \
-  --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
-  --startup-project src/host/Unifesspa.UniPlus.Host \
-  --output-dir Persistence/Migrations \
-  --context <Modulo>DbContext
+# 3. Apagar a migration e o snapshot da pasta Migrations do projeto de composição e recompilar
+#    (o `--no-build` lê o assembly antigo e ainda "vê" a migration apagada):
+rm src/host/Unifesspa.UniPlus.Monolito.Persistencia/Migrations/*
+dotnet build src/host/Unifesspa.UniPlus.Host -c Release
 
-# 4. Revisar SQL gerado (Up/Down + indexes + constraints)
-# 5. Build + testes (suite integração local)
-dotnet build UniPlus.slnx
+# 4. Gerar a migration de novo (--startup-project aponta para o Host — ver nota abaixo):
+dotnet ef migrations add Inicial \
+  --project src/host/Unifesspa.UniPlus.Monolito.Persistencia \
+  --startup-project src/host/Unifesspa.UniPlus.Host \
+  --context MonolitoDbContext \
+  --output-dir Migrations
+
+# 5. Recompilar e conferir que o modelo não tem mudança pendente:
+dotnet build src/host/Unifesspa.UniPlus.Host -c Release
+dotnet ef migrations has-pending-model-changes \
+  --project src/host/Unifesspa.UniPlus.Monolito.Persistencia \
+  --startup-project src/host/Unifesspa.UniPlus.Host \
+  --context MonolitoDbContext --no-build -c Release
+
+# 6. Testes de integração dos módulos afetados (precisam de Docker)
 dotnet test tests/Unifesspa.UniPlus.<Modulo>.IntegrationTests
 
-# 6. Commit migration + snapshot + Configuration juntos no MESMO PR
-git add src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure/Persistence/Migrations/
-git add src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure/Persistence/Configurations/
-git commit -m "feat(<modulo>): adiciona <coisa>"
+# 7. Commit migration + snapshot + Configuration juntos no MESMO PR
 ```
+
+**Ao rebasear**, descarte a migration própria (volte `Migrations/` ao estado da `main`) e gere outra do zero: o snapshot é um só e concentra os conflitos entre branches. O `has-pending-model-changes` do CI recusa o PR em que o modelo mudou e a migration não foi regerada.
+
+### O que o EF não representa: scripts SQL por módulo
+
+Extensões, funções, gatilhos, exclusion constraints, índices de expressão e sementes por SQL ficam em `Persistence/Scripts/` do `{Modulo}.Infrastructure`:
+
+- `Persistence/Scripts/Pre/NNN_assunto.sql` roda **antes** da migration (o que a migration precisa já existir: extensão, função usada em coluna gerada);
+- `Persistence/Scripts/NNN_assunto.sql` roda **depois** dela (o que referencia tabela: constraint, gatilho, índice de expressão, semente).
+
+Os arquivos são recursos embutidos (`<EmbeddedResource Include="Persistence\Scripts\**\*.sql" />` no `.csproj`), aplicados em ordem ordinal do nome, **cada um numa transação própria**, e **precisam ser idempotentes**: `CREATE ... IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP ... IF EXISTS` antes de `ADD`, `INSERT ... ON CONFLICT DO NOTHING`. Reaplicar é no-op.
+
+Os objetos compartilhados existem **uma vez só**, no conjunto `Infrastructure.Core/Persistence/Scripts/Pre`, que roda primeiro: `btree_gist` e a função `plataforma.normalizar_para_comparacao`. **Script de um módulo não referencia o esquema de outro.** Sementes por código (as que dependem de regra da aplicação) ficam na etapa posterior do módulo (`IContribuicaoDoModulo.ExecutarEtapaPosteriorDaMigrationAsync`), depois dos scripts pós.
+
+Para subir um banco de teste por inteiro (scripts `Pre`, migration e scripts pós), as fixtures chamam `UniPlusDbContext.SubirOBancoAsync()`.
 
 ### Em produção / standalone
 
-`MigrationHostedService<TContext>` aplica a migration no `StartAsync` do host, antes do `WolverineRuntime` iniciar (ordem garantida por fitness test — ver [ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md) e [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)). Pod restart → migration aplicada → app pronto.
+`MigrationHostedService<MonolitoDbContext>` sobe o banco no `StartAsync` do host (trava, scripts `Pre`, migration, scripts pós, etapas posteriores), antes do `WolverineRuntime` iniciar (ordem garantida por fitness test — ver [ADR-0039](adrs/0039-provisioning-schema-wolverine-via-deploy.md) e [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)). Pod restart → banco subido → app pronto. A trava consultiva (`pg_advisory_lock`) serializa réplicas que subam ao mesmo tempo.
 
 ### `dotnet ef` exige `--startup-project` apontando para o Host
 
-Sem `--startup-project`, o `dotnet ef` falha com `FileNotFoundException` em assemblies de runtime versão `10.0.0.0` (`System.Runtime`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.AspNetCore.Http.Abstractions`, conforme o comando). **Não é bug do EF tool nem do .NET 10** — o design-time factory do DbContext (`<Modulo>DbContextDesignTimeFactory`) resolve dependências que só existem num projeto executável com `FrameworkReference Microsoft.AspNetCore.App` e `runtimeconfig.json`. Rodar só com `--project ...Infrastructure` executa o tool num contexto sem esse framework, e as assemblies não resolvem.
+Sem `--startup-project`, o `dotnet ef` falha com `FileNotFoundException` em assemblies de runtime versão `10.0.0.0` (`System.Runtime`, `Microsoft.Extensions.DependencyInjection.Abstractions`, `Microsoft.AspNetCore.Http.Abstractions`, conforme o comando). **Não é bug do EF tool nem do .NET 10** — o design-time factory do contexto (`MonolitoDbContextDesignTimeFactory`) resolve dependências que só existem num projeto executável com `FrameworkReference Microsoft.AspNetCore.App` e `runtimeconfig.json`. Rodar só com `--project ...Infrastructure` executa o tool num contexto sem esse framework, e as assemblies não resolvem.
 
-**Desde o [ADR-0097](adrs/0097-topologia-de-deploy-em-tres-apis-monolito-modular.md), os `.Infrastructure`/`.API` dos módulos internos (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional) são class libraries puras — sem `Program.cs` nem `runtimeconfig.json`.** `src/host/Unifesspa.UniPlus.Host` é o único executável com o setup design-time do EF para esses módulos; **sempre passar `--startup-project src/host/Unifesspa.UniPlus.Host`** em qualquer comando `dotnet ef` (`migrations add`, `migrations list`, `migrations has-pending-model-changes`, `dbcontext info`, etc.) para essa família de módulos. **Geo (repositório dedicado) e Portal são exceção**: são *deployables* autônomos com `Program.cs` próprio — para eles, `--startup-project` aponta para o próprio projeto (`src/portal/Unifesspa.UniPlus.Portal.API`, por exemplo), não para o Host.
+**Desde o [ADR-0097](adrs/0097-topologia-de-deploy-em-tres-apis-monolito-modular.md), os `.Infrastructure`/`.API` dos módulos internos (Selecao, Ingresso, Configuracao, OrganizacaoInstitucional, Publicacoes, Autorizacao, Discentes) são class libraries puras — sem `Program.cs` nem `runtimeconfig.json`.** `src/host/Unifesspa.UniPlus.Host` é o único executável com o setup design-time do EF para esses módulos; **sempre passar `--startup-project src/host/Unifesspa.UniPlus.Host`** em qualquer comando `dotnet ef` (`migrations add`, `migrations list`, `migrations has-pending-model-changes`, `dbcontext info`, etc.) para essa família de módulos. **Geo (repositório dedicado) e Portal são exceção**: são *deployables* autônomos com `Program.cs` próprio — para eles, `--startup-project` aponta para o próprio projeto (`src/portal/Unifesspa.UniPlus.Portal.API`, por exemplo), não para o Host.
 
 Com isso roda no host, sem container e sem workaround. Verificação útil de que o snapshot está consistente com o modelo:
 
 ```bash
 dotnet ef migrations has-pending-model-changes \
-  --project src/<modulo>/Unifesspa.UniPlus.<Modulo>.Infrastructure \
+  --project src/host/Unifesspa.UniPlus.Monolito.Persistencia \
   --startup-project src/host/Unifesspa.UniPlus.Host \
-  --context <Modulo>DbContext
+  --context MonolitoDbContext
 # Esperado: "No changes have been made to the model since the last migration."
 ```
 
@@ -255,29 +278,18 @@ ser tocado. Não garante que o schema novo seja compatível com a versão anteri
 para migration destrutiva promovida sem indisponibilidade, a resposta continua sendo expandir e
 contrair em duas releases.
 
-## 8. Forward-only revert
+## 8. Migration regerada, não sucessora
 
-`Down()` em migrations é **proibido em produção**. Política:
+Sem produção com dado real, não há histórico a preservar: a `Inicial` é **gerada de novo** a cada mudança de modelo, e nenhuma migration sucessora acompanha a mudança. Política:
 
-- Cada migration nova é **adição forward**. Schema só evolui pra frente.
-- Para reverter uma mudança ruim: nova migration `Reverte<X>` ou `Remove<X>` com `Up()` que desfaz, `Down()` vazio ou `throw new InvalidOperationException("Migrations são forward-only — ver guia de banco de dados.")`.
-- O `__EFMigrationsHistory` preserva o histórico completo (audit).
+- O que o modelo não declara não existe no banco: default de coluna, índice e constraint só nascem do modelo (migration) ou de um script do módulo.
+- `Down()` não é usado. Para reverter uma mudança, reverta o modelo e gere a migration de novo.
+- O `plataforma.__EFMigrationsHistory` tem uma linha só.
+- Quando houver um banco com dado real a preservar, esta política muda por ADR, e as migrations voltam a ser sucessivas.
 
-**Em dev local**, está OK rodar `dotnet ef database update <NomeAnterior>` para iterar localmente. Não acontece em prod.
+## 9. Nome da migration
 
-## 9. Nomenclatura de migration
-
-Padrão: `{timestamp}_{Verbo}{Objeto}.cs` (EF gera o timestamp; você escreve o resto).
-
-Verbos pt-BR em **indicativo presente** (alinhado com conventional commits):
-
-- ✅ `Adiciona<Coisa>` — `AdicionaCampoBonus`, `AdicionaTabelaDocumento`
-- ✅ `Remove<Coisa>` — `RemoveColunaObsoleta`
-- ✅ `Renomeia<Coisa>` — `RenomeiaCandidatosParaInscritos`
-- ✅ `Cria<Coisa>` — `CriaIndiceComposto` (uso raro; prefira "Adiciona" mais comum)
-- ✅ `Corrige<Coisa>` — `CorrigeCardinalidadeMatricula`
-- ✅ `Promove<Coisa>` — para migrations que promovem schema entre módulos
-- ❌ `Migration1`, `Update1`, `Adicionar` (infinitivo), `AddIndex` (inglês) — proibidos.
+A migration única chama-se **`Inicial`**, em `src/host/Unifesspa.UniPlus.Monolito.Persistencia/Migrations`. O nome do script SQL segue `NNN_assunto_no_indicativo_ou_substantivo.sql` (`001_vigencia_unica_do_calendario.sql`): o número ordena a aplicação dentro do módulo, e o assunto diz o que o script garante.
 
 ## 10. Constraints e índices
 
@@ -305,15 +317,14 @@ builder.OwnsOne(c => c.Cpf, cpf =>
 });
 ```
 
-### Migration SQL raw (quando EF não basta)
+### Script SQL (quando o EF não basta)
 
-Se precisar de índice especial (parcial, GIN sobre jsonb, etc.):
+Se precisar de índice especial (parcial, GIN sobre jsonb, de expressão) ou de qualquer objeto que o EF não modela, escreva um script idempotente em `Persistence/Scripts/` do módulo, nunca `migrationBuilder.Sql` à mão:
 
-```csharp
-migrationBuilder.Sql(@"
-    CREATE INDEX ix_editais_metadata_gin
-    ON editais USING GIN (metadata jsonb_path_ops);
-");
+```sql
+-- Persistence/Scripts/001_busca_por_metadados_do_edital.sql
+CREATE INDEX IF NOT EXISTS ix_editais_metadata_gin
+    ON selecao.editais USING GIN (metadata jsonb_path_ops);
 ```
 
 ## 11. FKs e cascade
@@ -339,9 +350,9 @@ docker compose -f docker/docker-compose.yml up postgres -d
 # uniplus_configuracao, uniplus_organizacao (usuários _app dedicados)
 ```
 
-### Aplicar migrations local
+### Aplicar a migration local
 
-Não é necessário aplicar manualmente — o `MigrationHostedService` do host aplica no `StartAsync` da API. Apenas:
+Não é necessário aplicar manualmente — o `MigrationHostedService` do host sobe o banco (scripts, migration, etapas) no `StartAsync` da API. Apenas:
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.override.yml up -d
@@ -353,7 +364,7 @@ Sobe APIs + Postgres + Kafka + Redis + MinIO + Keycloak.
 
 ```bash
 docker compose down -v        # apaga volumes (perde dados)
-docker compose up postgres -d # recria bancos vazios; APIs aplicam migrations no próximo start
+docker compose up postgres -d # recria bancos vazios; a API sobe o banco no próximo start
 ```
 
 ## 13. Inspecionar schema
@@ -375,8 +386,8 @@ docker compose exec postgres psql -U postgres -d uniplus_selecao
 SELECT conname, conrelid::regclass, confrelid::regclass
   FROM pg_constraint WHERE contype = 'f';
 
-# Conferir migrations aplicadas
-SELECT * FROM "__EFMigrationsHistory";
+# Conferir a migration aplicada
+SELECT * FROM plataforma."__EFMigrationsHistory";
 ```
 
 ## 14. Cifragem at-rest
@@ -392,37 +403,24 @@ Dados sensíveis (Idempotency-Key requests, PII) são cifrados **antes** de grav
 
 ### Preciso `ALTER COLUMN` para mudar tipo?
 
-Sim, via migration. Se for mudança breaking (ex.: `varchar(50)` → `varchar(10)` com truncamento), gere a migration com `Sql()` raw para validação prévia + cópia controlada:
-
-```csharp
-migrationBuilder.Sql(@"
-    UPDATE editais SET codigo = LEFT(codigo, 10) WHERE LENGTH(codigo) > 10;
-");
-migrationBuilder.AlterColumn<string>("codigo", "editais", maxLength: 10);
-```
+Não: mude o modelo (a Configuration) e gere a migration `Inicial` de novo. Não há dado real a preservar, então não há `UPDATE` de validação nem cópia controlada.
 
 ### Como adiciono enum value?
 
-C# enum value novo + nova migration que faz `ALTER TYPE` (se for PG enum) ou simplesmente adiciona o int na tabela (se usar `HasConversion<int>`). Para `HasConversion<int>` (padrão Uni+), basta adicionar o valor no enum C# — sem migration SQL.
+C# enum value novo. Para `HasConversion<int>` (padrão Uni+), basta adicionar o valor no enum C#: o banco não muda. Se for PG enum, mude o modelo e gere a migration de novo.
 
-### Como mudo tipo de coluna sem perder dados?
+### Como mudo tipo de coluna?
 
-3 migrations:
-
-1. **Adiciona coluna nova** (`coluna_novo`) com o tipo desejado.
-2. **Copia dados** via `Sql("UPDATE … SET coluna_novo = coluna_old::novo_tipo")`.
-3. **Remove coluna antiga** e renomeia `coluna_novo` → `coluna_old`.
-
-Forward-only. Cada passo committed separadamente para permitir rollback parcial via outra migration de adição.
+Mude a propriedade na Configuration e gere a migration `Inicial` de novo.
 
 ### Posso indexar uma subpropriedade de VO?
 
 - Com `OwnsOne`: ✅ sim — `cpf.HasIndex(v => v.Valor).IsUnique()`.
-- Com `ComplexProperty` (EF 10): ❌ ainda não — usar SQL raw via `migrationBuilder.Sql("CREATE UNIQUE INDEX ...")`.
+- Com `ComplexProperty` (EF 10): ❌ ainda não — usar um script SQL do módulo com `CREATE UNIQUE INDEX IF NOT EXISTS ...`.
 
 ### Quando criar um IDesignTimeDbContextFactory?
 
-Já existe um por DbContext (`<Modulo>DbContextDesignTimeFactory` em cada `Infrastructure/Persistence/`). Usado pelo `dotnet ef` CLI; não precisa criar novo a menos que esteja adicionando um DbContext novo.
+Já existe um só, `MonolitoDbContextDesignTimeFactory`, no projeto de composição `Monolito.Persistencia`. Usado pelo `dotnet ef` CLI; o Portal tem o dele, e um módulo novo do monólito contribui com o contexto único em vez de criar outro.
 
 ### Como restauro um registro soft-deleted?
 
@@ -446,55 +444,23 @@ Procedimentos de cluster (SSH, `psql` no host, troubleshooting) vivem no reposit
 
 ## 16. Promoção de enum → entidade
 
-Quando um enum modelado como `int4` em coluna de tabela (`HasConversion<int>`) precisa virar uma **entidade plena** (com aggregate próprio, código strongly-typed, atributos extensíveis), a transição é feita em **três Stories sequenciais** para evitar schema drift entre o domain model e o banco. O padrão foi consolidado na promoção `TipoProcesso → TipoEdital` (Stories #454 → #455) e vale para qualquer enum futuro que ganhar status de entidade.
+Quando um enum modelado como `int4` em coluna de tabela (`HasConversion<int>`) precisa virar uma **entidade plena** (com aggregate próprio, código strongly-typed, atributos extensíveis), a mudança de schema é **uma mudança de modelo só**: a coluna `<nome>_<enum>` (`int`) dá lugar à FK `<nome>_id uuid`, e a migration `Inicial` é gerada de novo. Não há etapas de migration preparatória nem constraint `NOT NULL` posterior, porque não há dado a migrar.
 
-### Etapa 1 — Migration preparatória (drop + add FK NULL)
-
-Story de schema-only que **dropa a coluna `<nome>_<enum>` (`int`)** e **adiciona uma coluna FK preparatória `<nome>_id uuid NULL`**, sem `HasOne` configurado e sem constraint.
-
-- A propriedade na entidade vira `Guid? <Nome>Id { get; private set; }`.
-- Configurations EF removem o `HasConversion<int>()`; a propriedade passa a ser mapeada nativamente como `uuid` nullable (snake_case automático via `EFCore.NamingConventions`).
-- Migration `Up()` executa `DropColumn` + `AddColumn`. `Down()` lança `NotSupportedException("Forward-only migration per ADR-0054 §J.")`.
-- Command/Validator: parâmetro `<Nome>Id` opcional e nullable; validator rejeita `Guid.Empty` quando informado.
-- DTOs e schemas OpenAPI são regerados — a baseline `contracts/openapi.<modulo>.json` muda neste passo (`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`).
-
-Referência: [Story #454](https://github.com/unifesspa-edu-br/uniplus-api/issues/454) — migration `DropEnumColumnsPrePromotion` em `SelecaoDbContext`.
-
-### Etapa 2 — Criação da entidade + carga inicial
-
-Story que **cria o agregado** (`<Nome>` em `Selecao.Domain.Entities`) com todos os atributos planejados, incluindo `Codigo` strongly-typed (substitui o enum), `Descricao`, audit fields. Configurações EF, repositório, command de criação e a carga inicial do vocabulário.
-
-- A coluna FK introduzida na Etapa 1 ainda é `NULL`able. Adiciona `HasOne(e => e.<Nome>).WithMany().HasForeignKey(e => e.<Nome>Id)` em Configuration.
-- Enum legado (`Selecao.Domain.Enums.<EnumLegado>`) é **removido nesta etapa** — não na Etapa 1 — para evitar refactor amplo enquanto schema migration ainda está em vôo.
+- A entidade nasce com `Codigo` strongly-typed (substitui o enum), `Descricao` e audit fields; o enum legado é removido na mesma mudança.
+- DTOs e schemas OpenAPI são regerados — a baseline `contracts/openapi.<modulo>.json` muda (`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`).
 - **O caminho da carga depende da natureza do dado**, per [ADR-0062](adrs/0062-seed-de-catalogos-via-newman-e-endpoints-admin.md) Emenda 2. Promoção de enum para entidade cai quase sempre no primeiro caso, porque o que era enum é vocabulário:
 
 | Natureza | Caminho | Autor |
 |---|---|---|
-| vocabulário normativo — ninguém o escolheu | seed em migration (`HasData` + `INSERT … ON CONFLICT DO NOTHING`) | `created_by` nulo, honesto |
+| vocabulário normativo — ninguém o escolheu | `HasData` no modelo (entra na migration) ou script SQL do módulo com `INSERT … ON CONFLICT DO NOTHING`, ou semente por código na etapa posterior | `created_by` nulo, honesto |
 | dado que a instituição administra | endpoints admin, via Newman (CSV/JSON sob `seeds/`) | `sub` real do JWT |
 
-- **Não usar os dois** para o mesmo vocabulário: numa base recém-migrada, a collection Newman faria `POST` de códigos que a migration já inseriu, recebendo conflito onde espera 200/201 — e o passo pós-deploy falha. Foi o que aconteceu com `TipoEtapa`, semeado por `20260811221349_CriaCadastroTiposEtapa` e ainda listado no bootstrap.
-- Escolhido o seed em migration num catálogo **administrável**: **`UpdateData` e `DeleteData` gerados não entram**. O primeiro sobrescreveria a edição do operador; o segundo apagaria a linha fisicamente, sem o soft-delete auditado da API. A migration só acrescenta (`INSERT … ON CONFLICT DO NOTHING`).
-- **Item semeado que nasceu errado** se corrige por **nova migration** — nunca editando a já aplicada —, guardada para não sobrescrever o que tem dono. Corrigir só pela tela consertaria o ambiente onde alguém rodou a correção e deixaria o catálogo dependendo da idade do banco, já que esses arquivos saíram do Newman. A forma da guarda depende do contrato do agregado (por linha, por campo, com ou sem verificação de referência) — ver a Emenda 2 da ADR-0062.
+- **Não usar os dois** para o mesmo vocabulário: numa base recém-subida, a collection Newman faria `POST` de códigos que a semente já inseriu, recebendo conflito onde espera 200/201 — e o passo pós-deploy falha.
+- Escolhida a semente num catálogo **administrável**, ela só acrescenta (`INSERT … ON CONFLICT DO NOTHING`): nunca sobrescreve a edição do operador nem apaga a linha fisicamente, sem o soft-delete auditado da API.
+- **Item semeado que nasceu errado** se corrige no modelo ou no script, e a migration é gerada de novo; num banco que já tem a linha, a semente não a sobrescreve (a correção é ato administrativo, com autor).
 - **Ausência de CRUD não basta:** havendo regime de congelamento, ele vem antes. `RegraCatalogo` é seed-governado e somente-leitura, mas a [ADR-0112](adrs/0112-fronteira-append-only-do-catalogo-de-regras.md) só admite substituir enquanto nenhuma `VersaoConfiguracao` referenciar a entrada. O caminho de escrita responde *quem* altera; o congelamento responde *se* ainda pode.
-
-Referência: [Story #455](https://github.com/unifesspa-edu-br/uniplus-api/issues/455) — promove `TipoProcesso → TipoEdital` entidade.
-
-### Etapa 3 — Constraint NOT NULL
-
-Story de schema-only **separada**, executada quando dados de produção foram migrados (via script ou seed) para que toda linha tenha `<nome>_id` preenchido. Migration `AlterColumn` muda a coluna de `nullable: true` para `nullable: false`.
-
-- Pré-requisito: query auditiva em prod (`SELECT COUNT(*) WHERE <nome>_id IS NULL`) retorna zero.
-- Sem essa garantia, `AlterColumn` falha com `23502 not_null_violation` no `MigrationHostedService` no `StartAsync` do pod, derrubando o rollout.
-
-### Por quê três Stories e não uma só
-
-- **Risco de rollback**: três migrations forward-only permitem revert via nova migration parcial (ex.: voltar Etapa 3 sem perder Etapa 2).
-- **PR review focado**: cada Story tem um único concern (schema, domain, constraint), reduzindo superfície de revisão.
-- **CI testável incrementalmente**: a Etapa 1 já fica verde no CI antes de a entidade existir, permitindo merge sem aguardar #455.
 
 ### Anti-patterns proibidos
 
-- ❌ **Drop + create entidade na mesma migration**: PR fica grande, qualquer issue de domain/EF reverte schema também. Aumenta risco de coluna órfã ou data loss em rollout parcial.
-- ❌ **NOT NULL na Etapa 1**: dados não existem ainda — a coluna nasce `NULL` por design. Tentar `nullable: false` no DropColumn+AddColumn quebra inserts existentes em qualquer ambiente já com dados.
-- ❌ **Manter o enum em `Domain.Enums` após Etapa 2**: causa risco de devs continuarem instanciando `<Nome>Id` a partir do enum legado, gerando GUIDs hardcoded sem entrada no agregado real.
+- ❌ **Manter o enum em `Domain.Enums` depois da promoção**: causa risco de devs continuarem instanciando `<Nome>Id` a partir do enum legado, gerando GUIDs hardcoded sem entrada no agregado real.
+- ❌ **Semear o mesmo vocabulário por semente e por Newman.**

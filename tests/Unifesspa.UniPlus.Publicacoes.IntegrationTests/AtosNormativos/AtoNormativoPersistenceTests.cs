@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
@@ -49,7 +50,7 @@ public sealed class AtoNormativoPersistenceTests
         AtoNormativo ato = Novo(numero: "13", versao: versao);
         await Gravar(ato);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         AtoNormativo persistido = await ctx.AtosNormativos.SingleAsync(a => a.Id == ato.Id);
 
         persistido.Orgao.Should().Be("CEPS");
@@ -67,7 +68,7 @@ public sealed class AtoNormativoPersistenceTests
         AtoNormativo ato = Novo(numero: null, versao: null);
         await Gravar(ato);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         AtoNormativo persistido = await ctx.AtosNormativos.SingleAsync(a => a.Id == ato.Id);
 
         persistido.Numero.Should().BeNull();
@@ -101,7 +102,7 @@ public sealed class AtoNormativoPersistenceTests
         await delete.Should().ThrowAsync<PostgresException>();
 
         // A prova de que o bloqueio é do banco: a linha continua lá.
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         (await ctx.AtosNormativos.AnyAsync(a => a.Id == ato.Id)).Should().BeTrue();
     }
 
@@ -135,7 +136,7 @@ public sealed class AtoNormativoPersistenceTests
         await Gravar(Novo(numero: "14"));
         await Gravar(Novo(numero: "15"));
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         int doDia = await ctx.AtosNormativos.CountAsync(a => a.DataPublicacao == Publicacao);
         doDia.Should().BeGreaterThanOrEqualTo(3);
     }
@@ -207,7 +208,7 @@ public sealed class AtoNormativoPersistenceTests
             numero: "13", atoRetificadoId: raiz.Id, motivoRetificacao: "corrige o anexo II");
         await Gravar(retificador);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         AtoNormativo persistido = await ctx.AtosNormativos.SingleAsync(a => a.Id == retificador.Id);
 
         persistido.AtoRetificadoId.Should().Be(raiz.Id);
@@ -270,7 +271,7 @@ public sealed class AtoNormativoPersistenceTests
         AtoNormativo c = Novo(numero: "13", atoRetificadoId: b.Id, motivoRetificacao: "terceira versão");
         await Gravar(c);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new AtoNormativoRepository(ctx);
 
         Guid[] esperada = [a.Id, b.Id, c.Id];
@@ -286,7 +287,7 @@ public sealed class AtoNormativoPersistenceTests
         AtoNormativo solo = Novo(numero: "77");
         await Gravar(solo);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new AtoNormativoRepository(ctx);
 
         (await repo.ListarIdsDaCadeiaAsync(solo.Id, default))
@@ -339,7 +340,7 @@ public sealed class AtoNormativoPersistenceTests
         await Gravar(a1);
         await Gravar(a2);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new AtoNormativoRepository(ctx);
 
         IReadOnlyList<Guid> conflitantesDeA1 = await repo.ListarIdsComMesmaNumeracaoAsync(
@@ -356,7 +357,7 @@ public sealed class AtoNormativoPersistenceTests
         await Gravar(a1);
         await Gravar(a2);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new AtoNormativoRepository(ctx);
 
         (IReadOnlyList<AtoNormativo> itens, _, _) = await repo.ListarPaginadoAsync(
@@ -380,7 +381,7 @@ public sealed class AtoNormativoPersistenceTests
 
         Guid[] ordenados = new[] { a1.Id, a2.Id, a3.Id }.OrderBy(id => id).ToArray();
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new AtoNormativoRepository(ctx);
 
         // Ancorado no maior dos três, Prev traz os anteriores em ordem ascendente
@@ -397,7 +398,7 @@ public sealed class AtoNormativoPersistenceTests
 
     private async Task Gravar(AtoNormativo ato)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
         await ctx.SaveChangesAsync();
     }
@@ -408,7 +409,7 @@ public sealed class AtoNormativoPersistenceTests
         Justification = "SQL fixo dos testes de integração, sem entrada de usuário; parâmetros via NpgsqlParameter.")]
     private async Task ExecutarSql(string sql, params (string Nome, object Valor)[] parametros)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
         await using var command = new NpgsqlCommand(sql, (NpgsqlConnection)ctx.Database.GetDbConnection());
@@ -426,7 +427,7 @@ public sealed class AtoNormativoPersistenceTests
         Justification = "SQL fixo dos testes de integração, sem entrada de usuário.")]
     private async Task<object?> ExecutarScalar(string sql)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
         await using var command = new NpgsqlCommand(sql, (NpgsqlConnection)ctx.Database.GetDbConnection());
@@ -441,7 +442,7 @@ public sealed class AtoNormativoPersistenceTests
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
         // unico_por_objeto omitido de propósito: a coluna é NOT NULL DEFAULT false,
@@ -450,11 +451,11 @@ public sealed class AtoNormativoPersistenceTests
             """
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 data_publicacao, documento_hash, assinante, registrado_em, versao_invocada_id, versao_invocada_hash,
+                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em, versao_invocada_id, versao_invocada_hash,
                  ato_retificado_id, motivo_retificacao)
             VALUES
                 (gen_random_uuid(), 'CEPS', 'EDITAL', @ano, '13', 'EDITAL_ABERTURA', false, false,
-                 @data, @hash, 'Assinante', now(), @versao_id, @versao_hash,
+                 false, @data, @hash, 'Assinante', now(), @versao_id, @versao_hash,
                  @ato_retificado_id, @motivo_retificacao)
             """,
             (NpgsqlConnection)ctx.Database.GetDbConnection());
@@ -478,7 +479,7 @@ public sealed class AtoNormativoPersistenceTests
     {
         Guid id = Guid.CreateVersion7();
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
         // id = ato_retificado_id na mesma linha: a auto-retificação que o CHECK barra.
@@ -486,10 +487,10 @@ public sealed class AtoNormativoPersistenceTests
             """
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 data_publicacao, documento_hash, assinante, registrado_em, ato_retificado_id, motivo_retificacao)
+                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em, ato_retificado_id, motivo_retificacao)
             VALUES
                 (@id, 'CEPS', 'EDITAL', 2026, '13', 'EDITAL_ABERTURA', false, false,
-                 @data, @hash, 'Assinante', now(), @id, 'corrige')
+                 false, @data, @hash, 'Assinante', now(), @id, 'corrige')
             """,
             (NpgsqlConnection)ctx.Database.GetDbConnection());
 

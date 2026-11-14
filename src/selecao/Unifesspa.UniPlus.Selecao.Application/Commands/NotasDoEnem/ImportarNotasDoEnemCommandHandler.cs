@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Importa o retorno do INEP: confere o arquivo contra o leiaute, cruza as linhas com as inscrições da
@@ -48,7 +49,7 @@ public static partial class ImportarNotasDoEnemCommandHandler
         IInscritosDaEdicaoDoEnem inscritos,
         IIndiceCegoDoCpf indiceCegoDoCpf,
         ILoteDeNotasDoEnemRepository lotes,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         IResolvedorFusoInstitucional resolvedorFuso,
         TimeProvider timeProvider,

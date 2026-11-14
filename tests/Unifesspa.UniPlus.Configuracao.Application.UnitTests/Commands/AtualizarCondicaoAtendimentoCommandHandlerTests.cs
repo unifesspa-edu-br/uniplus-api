@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CondicoesAtendimento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class AtualizarCondicaoAtendimentoCommandHandlerTests
 {
     private readonly ICondicaoAtendimentoRepository _repository = Substitute.For<ICondicaoAtendimentoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CondicaoAtendimentoEspecializado Existente(string codigo = "LACTANTE") =>
         CondicaoAtendimentoEspecializado.Criar(codigo, "Lactante", null).Value!;

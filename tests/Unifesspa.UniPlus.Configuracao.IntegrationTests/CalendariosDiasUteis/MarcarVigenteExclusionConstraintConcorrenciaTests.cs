@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -78,7 +79,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         Guid idB;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
             // ConfiguracaoEndpointFixture é compartilhado por toda a
             // ConfiguracaoEndpointCollection — outro teste da mesma collection
@@ -107,7 +108,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         // fica vigente=true no estado COMMITADO enquanto txB está aberta, então o
         // handler de A não vê "vigenteAnterior" nenhum e não toca a linha de B.
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
         await dbB.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE configuracao.calendario_dias_uteis SET vigente = true WHERE id = {idB}");
@@ -143,7 +144,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
         // outbox); chegar aqui sem exceção não capturada é a prova de que o outbox
         // não relançou.
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         CalendarioDiasUteis persistedA = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idA);
         CalendarioDiasUteis persistedB = await readDb.CalendariosDiasUteis.SingleAsync(c => c.Id == idB);
 
@@ -156,7 +157,7 @@ public sealed class MarcarVigenteExclusionConstraintConcorrenciaTests
     private static async Task WaitForConstraintCheckToBlockAsync(MonolitoApiFactory api, Task taskExpectedToBlock)
     {
         await using AsyncServiceScope pollScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext pollDb = pollScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         DateTimeOffset deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         while (DateTimeOffset.UtcNow < deadline)

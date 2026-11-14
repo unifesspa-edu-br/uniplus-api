@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
-using Unifesspa.UniPlus.Regras.Services;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -63,7 +63,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
     {
         LoteComAvaliacoes cenario = await GravarLoteComAvaliacoesAsync();
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         LoteDeNotasDoEnem gravado = await leitura.LotesDeNotasDoEnem.Include(l => l.Avaliacoes).SingleAsync(l => l.Id == cenario.Lote.Id);
         gravado.VersaoConfiguracaoId.Should().Be(cenario.Escopo.VersaoId);
         gravado.Avaliacoes.Single(a => a.InscricaoId == cenario.Fernanda).Nota.Should().Be(Dizima);
@@ -124,7 +124,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         await InscreverAsync(_fixture, escopo, PersonasDeTeste.Candidatas[3], edicao: "2024");
         await InscreverAsync(_fixture, escopo, PersonasDeTeste.Candidatas[4], edicao: null);
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscritosDaEdicaoDoEnem leitor = new(leitura, _fixture.Encryption);
         IReadOnlyList<InscritoDaEdicao> inscritos = await leitor.ListarAsync(escopo.ProcessoId, Edicao);
 
@@ -144,7 +144,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
         LoteDeNotasDoEnem segundo = NovoLote(escopo, ComNota((fernanda, "240000000001", 700m)), new string('c', 64), DateTimeOffset.UtcNow);
         await SalvarAsync(_fixture, primeiro, segundo);
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         LoteDeNotasDoEnemRepository repositorio = new(leitura, _fixture.Encryption);
         (await repositorio.ObterVigenteAsync(escopo.ProcessoId, escopo.EtapaId, Edicao))!.Id.Should().Be(segundo.Id);
         (await repositorio.ListarAsync(escopo.ProcessoId, escopo.EtapaId, Edicao)).Select(l => l.Id).Should().Equal(segundo.Id, primeiro.Id);
@@ -163,7 +163,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
 
         await InscricoesDoEnemDeTeste.TrocarEdicaoAsync(_fixture, kevin, "2024");
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         IReadOnlyList<LancamentoVigente> vigentes = await new LancamentosDeNotaReader(leitura).ListarVigentesAsync(escopo.EtapaId, [fernanda, kevin]);
         vigentes.Select(l => l.InscricaoId).Distinct().Should().Equal(fernanda);
     }
@@ -178,7 +178,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
             [new InscritoComNota(fernanda, "240000000001", Areas(0m, SituacaoDaProvaNoEnem.Ausente))], [kevin], [], []);
         await SalvarAsync(_fixture, NovoLote(escopo, cruzamento, Hash, DateTimeOffset.UtcNow));
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         IReadOnlyList<LancamentoVigente> vigentes = await new LancamentosDeNotaReader(leitura).ListarVigentesAsync(escopo.EtapaId, [fernanda, kevin]);
 
         vigentes.Should().HaveCount(5).And.OnlyContain(l => l.InscricaoId == fernanda && l.Situacao == SituacaoDaProvaNoEnem.Ausente);
@@ -215,7 +215,7 @@ public sealed class NotasDoEnemPersistenceTests : IClassFixture<InscricaoDbFixtu
 
     private async Task ExecutarAsync(string sql)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync(sql);
     }
 

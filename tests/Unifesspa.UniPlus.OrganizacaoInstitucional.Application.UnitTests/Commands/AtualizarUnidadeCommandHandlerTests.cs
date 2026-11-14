@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
@@ -40,19 +41,19 @@ public sealed class AtualizarUnidadeCommandHandlerTests
         false,
         null);
 
-    private static (IUnidadeRepository Repo, IOrganizacaoInstitucionalUnitOfWork Uow, IUnidadeCacheInvalidator Cache) Mocks()
+    private static (IUnidadeRepository Repo, IUnitOfWork Uow, IUnidadeCacheInvalidator Cache) Mocks()
     {
         IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
         repo.SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
         repo.CodigoExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(false);
-        return (repo, Substitute.For<IOrganizacaoInstitucionalUnitOfWork>(), Substitute.For<IUnidadeCacheInvalidator>());
+        return (repo, Substitute.For<IUnitOfWork>(), Substitute.For<IUnidadeCacheInvalidator>());
     }
 
     [Fact(DisplayName = "Handle com unidade inexistente retorna NaoEncontrada e NÃO persiste")]
     public async Task Handle_ComUnidadeInexistente_RetornaNaoEncontrada()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Guid id = Guid.NewGuid();
         repo.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((Unidade?)null);
 
@@ -68,7 +69,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle com motivo > 500 chars e sigla ausente acumula os dois erros sem buscar a unidade")]
     public async Task Handle_ComMotivoLongoESiglaAusente_AcumulaErrosAntesDeBuscar()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Guid id = Guid.NewGuid();
         AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(id)
             with
@@ -86,7 +87,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle trocando slug para um já existente entre vivos retorna SlugJaExiste")]
     public async Task Handle_ComSlugDuplicadoExcluindoSelf_RetornaSlugJaExiste()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), existente.Id, Arg.Any<CancellationToken>()).Returns(true);
@@ -104,7 +105,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle trocando sigla para uma já existente entre vivos retorna SiglaJaExiste")]
     public async Task Handle_ComSiglaDuplicadaExcluindoSelf_RetornaSiglaJaExiste()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         repo.SiglaExisteEntreLivosAsync("CGA", existente.Id, Arg.Any<CancellationToken>()).Returns(true);
@@ -122,7 +123,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle com superior igual à própria unidade retorna SuperiorFormaCiclo")]
     public async Task Handle_ComSuperiorIgualAoProprio_RetornaSuperiorFormaCiclo()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
@@ -140,7 +141,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle com superior inexistente retorna SuperiorNaoEncontrado")]
     public async Task Handle_ComSuperiorInexistente_RetornaSuperiorNaoEncontrado()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         Guid superiorId = Guid.NewGuid();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -160,7 +161,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle com superior que é descendente retorna SuperiorFormaCiclo (via EhDescendenteAsync)")]
     public async Task Handle_ComSuperiorDescendente_RetornaSuperiorFormaCiclo()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         Unidade superior = UnidadeExistente();
         Guid superiorId = Guid.NewGuid();
@@ -182,7 +183,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle trocando Codigo só na caixa (ABC→abc) detecta mudança e checa unicidade")]
     public async Task Handle_ComCodigoMudandoApenasCaixa_RodaChecagemDeUnicidade()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = Unidade.Criar(
             "Centro de Processos Seletivos",
             new IdentificadoresDaUnidade("ceps", "CEPS", "ABC", null),
@@ -208,7 +209,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle com command válido persiste e invalida cache")]
     public async Task Handle_ComCommandValido_PersisteEInvalidaCache()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         Unidade existente = UnidadeExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
@@ -223,7 +224,7 @@ public sealed class AtualizarUnidadeCommandHandlerTests
     [Fact(DisplayName = "Handle com sigla ausente propaga o erro sem buscar a Unidade por Id — validação vence 404")]
     public async Task Handle_ComSiglaAusente_RetornaErroSemBuscarPorId()
     {
-        (IUnidadeRepository repo, IOrganizacaoInstitucionalUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
+        (IUnidadeRepository repo, IUnitOfWork uow, IUnidadeCacheInvalidator cache) = Mocks();
         AtualizarUnidadeCommand command = CommandSemMudancaDeIdentificador(Guid.NewGuid()) with { Sigla = "" };
 
         Result resultado = await AtualizarUnidadeCommandHandler.Handle(

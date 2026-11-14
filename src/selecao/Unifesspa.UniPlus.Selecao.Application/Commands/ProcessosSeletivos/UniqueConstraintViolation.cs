@@ -13,7 +13,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 /// <remarks>
 /// A tradução acontece no boundary de persistência (ADR-0102 §"Forma do
 /// contrato") no sentido em que é aplicada imediatamente em torno da chamada
-/// a <c>ISelecaoUnitOfWork.SalvarAlteracoesAsync</c> — o ponto exato em que
+/// a <c>IUnitOfWork.SalvarAlteracoesAsync</c> — o ponto exato em que
 /// Application invoca o boundary de persistência — não dentro do
 /// repositório. Mesma convenção já usada por 7+ handlers do módulo antes
 /// desta ADR existir; não introduz uma segunda forma de tradução.

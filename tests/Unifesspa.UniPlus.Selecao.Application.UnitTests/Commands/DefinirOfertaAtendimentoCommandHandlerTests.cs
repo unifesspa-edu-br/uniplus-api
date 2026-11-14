@@ -4,9 +4,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -21,7 +21,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         ICondicaoAtendimentoReader CondicaoReader,
         IRecursoAcessibilidadeReader RecursoReader,
         ITipoDeficienciaReader TipoDeficienciaReader,
-        ISelecaoUnitOfWork UnitOfWork) NovosMocks(ProcessoSeletivo? processo, Guid processoId)
+        IUnitOfWork UnitOfWork) NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
@@ -30,7 +30,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
             Substitute.For<ICondicaoAtendimentoReader>(),
             Substitute.For<IRecursoAcessibilidadeReader>(),
             Substitute.For<ITipoDeficienciaReader>(),
-            Substitute.For<ISelecaoUnitOfWork>());
+            Substitute.For<IUnitOfWork>());
     }
 
     [Fact(DisplayName = "Handle com tipo de deficiência sob condição PcD persiste (CA-06, ADR-0067)")]
@@ -40,7 +40,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         Guid condicaoId = Guid.CreateVersion7();
         Guid tipoDeficienciaId = Guid.CreateVersion7();
 
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, ISelecaoUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns(new CondicaoAtendimentoView(condicaoId, "PCD", "Pessoa com deficiência"));
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
@@ -64,7 +64,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         Guid condicaoId = Guid.CreateVersion7();
         Guid tipoDeficienciaId = Guid.CreateVersion7();
 
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, ISelecaoUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns(new CondicaoAtendimentoView(condicaoId, "LACTANTE", "Lactante"));
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
@@ -86,7 +86,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid condicaoId = Guid.CreateVersion7();
 
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, ISelecaoUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
 
         DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId, condicaoId], [], [], PrecondicaoIfMatch.Ausente);
 
@@ -104,7 +104,7 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Guid condicaoId = Guid.CreateVersion7();
 
-        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, ISelecaoUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
+        (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns((CondicaoAtendimentoView?)null);
 

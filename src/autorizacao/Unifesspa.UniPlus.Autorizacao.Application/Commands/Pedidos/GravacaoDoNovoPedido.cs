@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -14,10 +14,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class GravacaoDoNovoPedido
 {
     private readonly IPedidoDeConcessaoRepository _pedidos;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly AvisosDoPedido _avisos;
 
-    public GravacaoDoNovoPedido(IPedidoDeConcessaoRepository pedidos, IAutorizacaoUnitOfWork unitOfWork, AvisosDoPedido avisos)
+    public GravacaoDoNovoPedido(IPedidoDeConcessaoRepository pedidos, IUnitOfWork unitOfWork, AvisosDoPedido avisos)
     {
         ArgumentNullException.ThrowIfNull(pedidos);
         ArgumentNullException.ThrowIfNull(unitOfWork);

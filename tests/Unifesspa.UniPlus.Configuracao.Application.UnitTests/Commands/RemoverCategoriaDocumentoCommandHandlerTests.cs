@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CategoriasDocumento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class RemoverCategoriaDocumentoCommandHandlerTests
 {
     private readonly ICategoriaDocumentoRepository _repository = Substitute.For<ICategoriaDocumentoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     [Fact(DisplayName = "Categoria existente é removida e a remoção é persistida")]
     public async Task Handle_Existente_RemoveEPersiste()

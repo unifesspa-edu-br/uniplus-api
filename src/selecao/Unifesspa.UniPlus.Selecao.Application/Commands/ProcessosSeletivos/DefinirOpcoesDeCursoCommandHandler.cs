@@ -1,12 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
@@ -18,7 +17,7 @@ public static class DefinirOpcoesDeCursoCommandHandler
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirOpcoesDeCursoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

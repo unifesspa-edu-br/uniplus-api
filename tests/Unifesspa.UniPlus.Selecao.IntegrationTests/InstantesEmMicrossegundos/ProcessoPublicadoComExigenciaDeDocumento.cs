@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.InstantesEmMicrossegundos;
 
 using System.Globalization;
 using System.Net;
-using System.Net.Http.Json;
 
 using AwesomeAssertions;
 
@@ -10,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -57,7 +57,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
     private static async Task<(Guid ProcessoId, Guid DocumentoEditalId, Guid ExigenciaId)> SemearAsync(InstantesEmResiduoApiFactory api)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid exigenciaId = Guid.Empty;
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db,
@@ -87,7 +87,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
     private static async Task<Guid> AtoDaVersaoAsync(InstantesEmResiduoApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().VersoesConfiguracao.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .Select(v => v.AtoCriadorId)
             .SingleAsync();

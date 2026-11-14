@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -63,7 +64,7 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await db.Database.ExecuteSqlAsync(
             $"DELETE FROM selecao.motivos_de_decisao WHERE codigo LIKE 'TEST\\_MDI\\_%' ESCAPE '\\'");
@@ -394,7 +395,7 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     private async Task<bool> ExisteNoBanco(string codigo)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         CodigoMotivoDecisao codigoVo = CodigoMotivoDecisao.Criar(codigo).Value!;
 

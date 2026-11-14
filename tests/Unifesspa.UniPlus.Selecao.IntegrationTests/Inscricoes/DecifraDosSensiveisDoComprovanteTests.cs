@@ -7,9 +7,9 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -37,7 +37,7 @@ public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<Inscri
         await GravarAsync(inscricao, envio, correcao);
 
         IUniPlusEncryptionService espiao = EspiaoDaCifra();
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(leitura, espiao, _fixture.BlindIndex, TimeProvider.System);
 
         await repositorio.ObterEmissoesAsync([inscricao.Id]);
@@ -67,7 +67,7 @@ public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<Inscri
 
     private async Task GravarAsync(Inscricao inscricao, params ComprovanteInscricao[] comprovantes)
     {
-        await using SelecaoDbContext escrita = _fixture.CreateDbContext();
+        await using UniPlusDbContext escrita = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(escrita, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await repositorio.AdicionarAsync(inscricao);
         foreach (ComprovanteInscricao comprovante in comprovantes)

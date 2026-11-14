@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// <c>precedencia_fase</c> (UNI-REQ-0139, story #851). CRUD-administrado (como
 /// <c>FaseCanonica</c>) e <b>seed-governado</b> (como <c>RegraCatalogo</c>/
 /// <c>FatoCandidato</c>): as seis arestas estruturais de §3.3 são materializadas
-/// via <c>HasData</c> nesta migration, e o CRUD admin continua disponível para
+/// via <c>HasData</c>, e o CRUD admin continua disponível para
 /// acrescentar novas arestas.
 /// </summary>
 [SuppressMessage(
@@ -90,10 +90,9 @@ internal sealed class PrecedenciaFaseConfiguration : IEntityTypeConfiguration<Pr
 
     /// <summary>
     /// Projeta o seed (<see cref="PrecedenciaFaseSeed.Itens"/>) para linhas que o
-    /// <c>HasData</c> congela como literais na migration. O instante-âncora é fixo
+    /// <c>HasData</c> congela como literais na migration inicial. O instante-âncora é fixo
     /// (as linhas não passam pelo <c>AuditableInterceptor</c>/<c>SoftDeleteInterceptor</c>);
-    /// qualquer mudança futura no seed exige uma nova migration (o EF detecta o
-    /// diff), sem alterar as bases já migradas.
+    /// mudar o seed muda o modelo, e a migration inicial é gerada de novo.
     /// </summary>
     private static IEnumerable<object> MaterializarSeed()
     {

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -66,7 +67,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         (await apagar.Should().ThrowAsync<PostgresException>())
             .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         (await contexto.DocumentosAPublicar.FindAsync(documentoId)).Should().NotBeNull(
             "o documento continua lá — a recusa não é cosmética");
     }
@@ -88,7 +89,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         (await desconfirmar.Should().ThrowAsync<PostgresException>())
             .Which.ConstraintName.Should().Be("ck_documentos_a_publicar_confirmado_retido");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
         documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
     }
@@ -122,7 +123,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         // expirados tem de continuar possível.
         await ExecutarAsync(conexao, $"DELETE FROM selecao.documentos_a_publicar WHERE id = '{documentoId}'");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         (await contexto.DocumentosAPublicar.FindAsync(documentoId)).Should().BeNull();
     }
 
@@ -139,7 +140,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
         // próprio upload deixaria de funcionar.
         await ExecutarAsync(conexao, $"UPDATE selecao.documentos_a_publicar SET status = 1 WHERE id = '{documentoId}'");
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         DocumentoAPublicar? documento = await contexto.DocumentosAPublicar.FindAsync(documentoId);
         documento!.Status.Should().Be(Domain.Enums.StatusArquivoEnviado.Confirmado);
     }
@@ -158,7 +159,7 @@ public sealed class RetencaoDocumentoEditalTests : IClassFixture<ProcessoSeletiv
             documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
         }
 
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         await contexto.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
         await contexto.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await contexto.SaveChangesAsync(CancellationToken.None);

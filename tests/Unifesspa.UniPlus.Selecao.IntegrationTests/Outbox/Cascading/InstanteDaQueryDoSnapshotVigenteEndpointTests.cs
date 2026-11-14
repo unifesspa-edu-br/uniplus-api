@@ -8,9 +8,9 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// O instante que o cliente informa na query do snapshot vigente chega ao handler já em microssegundos, a precisão
@@ -64,7 +64,7 @@ public sealed class InstanteDaQueryDoSnapshotVigenteEndpointTests
     private async Task<Guid> SemearRascunhoAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"Instante em microssegundos {Guid.CreateVersion7()}");
 

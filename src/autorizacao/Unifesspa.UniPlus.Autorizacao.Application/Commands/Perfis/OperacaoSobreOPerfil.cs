@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -40,10 +40,10 @@ public sealed record GravacaoDaOperacao<T>(Result<T> Resultado, IReadOnlyList<En
 public sealed class OperacaoSobreOPerfil
 {
     private readonly IPerfilRepository _perfis;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
 
-    public OperacaoSobreOPerfil(IPerfilRepository perfis, IAutorizacaoUnitOfWork unitOfWork, TimeProvider clock)
+    public OperacaoSobreOPerfil(IPerfilRepository perfis, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(perfis);
         ArgumentNullException.ThrowIfNull(unitOfWork);

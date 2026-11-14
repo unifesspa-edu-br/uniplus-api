@@ -1,4 +1,4 @@
-# AutorizacaoDbContext
+# MonolitoDbContext
 autorizacao.aceites_do_termo.aceito_em: Pessoal
 autorizacao.aceites_do_termo.id: Pessoal
 autorizacao.aceites_do_termo.numero: Pessoal
@@ -152,17 +152,6 @@ autorizacao.eventos_da_contencao.suspensao_id: Pessoal
 autorizacao.eventos_da_contencao.tipo: Pessoal
 autorizacao.eventos_da_contencao.versao_que_entrou_id: Pessoal
 autorizacao.eventos_da_contencao.versao_vigente_id: Pessoal
-autorizacao.idempotency_cache.body_hash: Sensivel
-autorizacao.idempotency_cache.created_at: Interno
-autorizacao.idempotency_cache.endpoint: Interno
-autorizacao.idempotency_cache.expires_at: Interno
-autorizacao.idempotency_cache.id: Interno
-autorizacao.idempotency_cache.idempotency_key: Interno
-autorizacao.idempotency_cache.response_body_cipher: Sensivel
-autorizacao.idempotency_cache.response_headers_json: Sensivel
-autorizacao.idempotency_cache.response_status: Interno
-autorizacao.idempotency_cache.scope: Pessoal
-autorizacao.idempotency_cache.status: Interno
 autorizacao.implantacoes_das_permissoes.id: Interno
 autorizacao.implantacoes_das_permissoes.implantada_em: Interno
 autorizacao.implantacoes_das_permissoes.impressao: Interno
@@ -473,8 +462,6 @@ autorizacao.vigencias_do_perfil.perfil_id: Interno
 autorizacao.vigencias_do_perfil.updated_at: Interno
 autorizacao.vigencias_do_perfil.versao_id: Interno
 autorizacao.vigencias_do_perfil.xmin: Interno
-
-# ConfiguracaoDbContext
 configuracao.base_legal_bonus_regional.created_at: Interno
 configuracao.base_legal_bonus_regional.created_by: Pessoal
 configuracao.base_legal_bonus_regional.deleted_at: Interno
@@ -610,17 +597,6 @@ configuracao.fato_valor_dominio.id: Interno
 configuracao.fato_valor_dominio.ordem: Interno
 configuracao.fato_valor_dominio.orientacao: Interno
 configuracao.fato_valor_dominio.updated_at: Interno
-configuracao.idempotency_cache.body_hash: Sensivel
-configuracao.idempotency_cache.created_at: Interno
-configuracao.idempotency_cache.endpoint: Interno
-configuracao.idempotency_cache.expires_at: Interno
-configuracao.idempotency_cache.id: Interno
-configuracao.idempotency_cache.idempotency_key: Interno
-configuracao.idempotency_cache.response_body_cipher: Sensivel
-configuracao.idempotency_cache.response_headers_json: Sensivel
-configuracao.idempotency_cache.response_status: Interno
-configuracao.idempotency_cache.scope: Pessoal
-configuracao.idempotency_cache.status: Interno
 configuracao.local_oferta.campus_responsavel_id: Interno
 configuracao.local_oferta.cidade_codigo_ibge: Interno
 configuracao.local_oferta.cidade_display_atualizado_em: Interno
@@ -928,8 +904,6 @@ configuracao.tipos_processo.nome: Interno
 configuracao.tipos_processo.updated_at: Interno
 configuracao.tipos_processo.updated_by: Pessoal
 configuracao.tipos_processo.xmin: Interno
-
-# DiscentesDbContext
 discentes.sync_run.created_at: Interno
 discentes.sync_run.data_de_referencia: Interno
 discentes.sync_run.error_count: Interno
@@ -958,8 +932,6 @@ discentes.vinculo_discente.resumo_do_conteudo: Pessoal
 discentes.vinculo_discente.situacao_descricao: Pessoal
 discentes.vinculo_discente.situacao_id: Pessoal
 discentes.vinculo_discente.situacao_vinculo: Pessoal
-
-# IngressoDbContext
 ingresso.chamadas.created_at: Interno
 ingresso.chamadas.data_publicacao: Interno
 ingresso.chamadas.deleted_at: Interno
@@ -1009,19 +981,6 @@ ingresso.matriculas.is_deleted: Pessoal
 ingresso.matriculas.observacoes: Pessoal
 ingresso.matriculas.status: Pessoal
 ingresso.matriculas.updated_at: Pessoal
-
-# OrganizacaoInstitucionalDbContext
-organizacao.idempotency_cache.body_hash: Sensivel
-organizacao.idempotency_cache.created_at: Interno
-organizacao.idempotency_cache.endpoint: Interno
-organizacao.idempotency_cache.expires_at: Interno
-organizacao.idempotency_cache.id: Interno
-organizacao.idempotency_cache.idempotency_key: Interno
-organizacao.idempotency_cache.response_body_cipher: Sensivel
-organizacao.idempotency_cache.response_headers_json: Sensivel
-organizacao.idempotency_cache.response_status: Interno
-organizacao.idempotency_cache.scope: Pessoal
-organizacao.idempotency_cache.status: Interno
 organizacao.instituicao.ato_credenciamento: Interno
 organizacao.instituicao.ato_recredenciamento: Interno
 organizacao.instituicao.categoria_administrativa: Interno
@@ -1095,10 +1054,17 @@ organizacao.unidade_identificador_historico.updated_at: Interno
 organizacao.unidade_identificador_historico.valor: Interno
 organizacao.unidade_identificador_historico.vigencia_fim: Interno
 organizacao.unidade_identificador_historico.vigencia_inicio: Interno
-
-# PortalDbContext
-
-# PublicacoesDbContext
+plataforma.idempotency_cache.body_hash: Sensivel
+plataforma.idempotency_cache.created_at: Interno
+plataforma.idempotency_cache.endpoint: Interno
+plataforma.idempotency_cache.expires_at: Interno
+plataforma.idempotency_cache.id: Interno
+plataforma.idempotency_cache.idempotency_key: Interno
+plataforma.idempotency_cache.response_body_cipher: Sensivel
+plataforma.idempotency_cache.response_headers_json: Sensivel
+plataforma.idempotency_cache.response_status: Interno
+plataforma.idempotency_cache.scope: Pessoal
+plataforma.idempotency_cache.status: Interno
 publicacoes.anexo_do_ato.ato_id: Interno
 publicacoes.anexo_do_ato.hash: Interno
 publicacoes.anexo_do_ato.id: Interno
@@ -1123,17 +1089,6 @@ publicacoes.ato_normativo.tipo_nome: Interno
 publicacoes.ato_normativo.unico_por_objeto: Interno
 publicacoes.ato_normativo.versao_invocada_hash: Interno
 publicacoes.ato_normativo.versao_invocada_id: Interno
-publicacoes.idempotency_cache.body_hash: Sensivel
-publicacoes.idempotency_cache.created_at: Interno
-publicacoes.idempotency_cache.endpoint: Interno
-publicacoes.idempotency_cache.expires_at: Interno
-publicacoes.idempotency_cache.id: Interno
-publicacoes.idempotency_cache.idempotency_key: Interno
-publicacoes.idempotency_cache.response_body_cipher: Sensivel
-publicacoes.idempotency_cache.response_headers_json: Sensivel
-publicacoes.idempotency_cache.response_status: Interno
-publicacoes.idempotency_cache.scope: Pessoal
-publicacoes.idempotency_cache.status: Interno
 publicacoes.linhagem_unica_por_objeto.ato_id: Interno
 publicacoes.linhagem_unica_por_objeto.entidade_id: Interno
 publicacoes.linhagem_unica_por_objeto.entidade_tipo: Interno
@@ -1163,8 +1118,6 @@ publicacoes.vinculo_ato_entidade.ato_id: Interno
 publicacoes.vinculo_ato_entidade.entidade_id: Interno
 publicacoes.vinculo_ato_entidade.entidade_tipo: Interno
 publicacoes.vinculo_ato_entidade.id: Interno
-
-# SelecaoDbContext
 selecao.aceites_da_inscricao.hash_versao: Interno
 selecao.aceites_da_inscricao.id: Interno
 selecao.aceites_da_inscricao.inscricao_id: Interno
@@ -1639,17 +1592,6 @@ selecao.grupos_peso_area_enem_congelados.grupo_area_enem_codigo: Interno
 selecao.grupos_peso_area_enem_congelados.grupo_area_enem_rotulo: Interno
 selecao.grupos_peso_area_enem_congelados.id: Interno
 selecao.grupos_peso_area_enem_congelados.updated_at: Interno
-selecao.idempotency_cache.body_hash: Sensivel
-selecao.idempotency_cache.created_at: Interno
-selecao.idempotency_cache.endpoint: Interno
-selecao.idempotency_cache.expires_at: Interno
-selecao.idempotency_cache.id: Interno
-selecao.idempotency_cache.idempotency_key: Interno
-selecao.idempotency_cache.response_body_cipher: Sensivel
-selecao.idempotency_cache.response_headers_json: Sensivel
-selecao.idempotency_cache.response_status: Interno
-selecao.idempotency_cache.scope: Pessoal
-selecao.idempotency_cache.status: Interno
 selecao.inscricoes.cancelada_em: Interno
 selecao.inscricoes.cancelada_por: Pessoal
 selecao.inscricoes.cpf_indice: Identificador
@@ -2022,4 +1964,6 @@ selecao.versoes_configuracao.numero_versao: Interno
 selecao.versoes_configuracao.processo_seletivo_id: Interno
 selecao.versoes_configuracao.schema_version: Interno
 selecao.versoes_configuracao.vigente_a_partir_de: Interno
+
+# PortalDbContext
 

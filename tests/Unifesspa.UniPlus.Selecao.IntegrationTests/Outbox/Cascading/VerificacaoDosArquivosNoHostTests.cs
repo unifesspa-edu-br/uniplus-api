@@ -5,8 +5,9 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -49,14 +50,14 @@ public sealed class VerificacaoDosArquivosNoHostTests
         arquivo.Confirmar("\"etag\"", new RelogioFixo(publicadoEm)).IsSuccess.Should().BeTrue();
         await documentos.AdicionarApresentacaoAsync(apresentacao);
         await documentos.AdicionarArquivoAsync(arquivo);
-        await sp.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
+        await sp.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
         return arquivo.Id;
     }
 
     private async Task<ArquivoDaApresentacao> LerAsync(Guid id)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<SelecaoDbContext>()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>()
             .ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == id);
     }
 

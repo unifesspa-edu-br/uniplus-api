@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -184,7 +185,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
             tipo,
             false).Value!;
 
-        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext("admin-640");
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin-640");
         ctx.Unidades.Add(unidade);
         await ctx.SaveChangesAsync();
         return unidade.Id;
@@ -252,7 +253,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         Guid? afterId,
         PaginationDirection direction)
     {
-        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
         return await repository.ListarPaginadoAsync(afterId, limit, direction, filtro, CancellationToken.None);
     }
@@ -262,7 +263,7 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         int take = TakeAlto,
         Guid? afterId = null)
     {
-        await using OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
         (IReadOnlyList<Unidade> itens, _, _) = await repository
             .ListarPaginadoAsync(afterId, take, PaginationDirection.Next, filtro, CancellationToken.None);

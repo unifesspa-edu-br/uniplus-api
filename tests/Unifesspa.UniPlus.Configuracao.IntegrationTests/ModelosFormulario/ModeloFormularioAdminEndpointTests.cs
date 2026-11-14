@@ -1,21 +1,16 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore.Migrations.Operations;
-
-using Npgsql;
-
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Migrations;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
+
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModeloFormularioHttp;
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.ModelosFormulario.ModelosParaTeste;
 
 /// <summary>
 /// Contrato HTTP da manutenção dos modelos de formulário pela permissão de manter
@@ -23,14 +18,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// desativação e reativação.
 /// </summary>
 [Collection(ConfiguracaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class ModeloFormularioAdminEndpointTests
 {
-    private const string Base = "/api/configuracao/admin/modelos-formulario";
-
     private readonly ConfiguracaoEndpointFixture _fixture;
 
     public ModeloFormularioAdminEndpointTests(ConfiguracaoEndpointFixture fixture)
@@ -42,124 +31,31 @@ public sealed class ModeloFormularioAdminEndpointTests
     public async Task CicloDoModelo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
-        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        JsonObject recemCriado = await ObterAsync(client, id);
-        recemCriado["ativo"]!.GetValue<bool>().Should().BeFalse();
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-
+        Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
+        (await ObterAsync(client, id))["ativo"]!.GetValue<bool>().Should().BeFalse();
+        await AtivarAsync(client, id);
+        (await StatusAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao")).Should().Be(HttpStatusCode.UnprocessableEntity);
         JsonObject lido = await ObterAsync(client, id);
-        lido["ativo"]!.GetValue<bool>().Should().BeTrue();
-        lido["finalidade"]!.GetValue<string>().Should().Be("HABILITACAO");
-        JsonNode condicao = lido["conteudo"]!["itens"]![1]!["precondicao"]![0]![0]!;
-        condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");
-        condicao["valor"]!.GetValue<bool>().Should().BeTrue();
-
-        // O conteúdo lido volta à escrita sem conversão.
-        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Habilitação editada", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = lido["conteudo"] }))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await EnviarAsync(client, HttpMethod.Delete, $"{Base}/{id}", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        using (JsonDocument inativos = await ListarAsync(client, "?ativo=false&finalidade=HABILITACAO&tipoProcesso=QUALQUER_TIPO"))
-        {
-            inativos.RootElement.EnumerateArray().Should().Contain(m => m.GetProperty("id").GetGuid() == id
-                && m.GetProperty("nome").GetString() == "Habilitação editada");
-        }
-
-        using (JsonDocument outraFinalidade = await ListarAsync(client, "?finalidade=INSCRICAO"))
-        {
-            outraFinalidade.RootElement.EnumerateArray().Should().NotContain(m => m.GetProperty("id").GetGuid() == id);
-        }
-
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao", corpo: null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        ConferirHabilitacaoAtivaLida(lido);
+        await RegravarLidoEDesativarAsync(client, id, lido);
+        await ConferirListasAsync(client, id);
+        await AtivarAsync(client, id);
     }
 
     [Fact(DisplayName = "O modelo de inscrição ganha a seção dos dados básicos, cita um deles sem declará-lo e recusa alterá-lo")]
     public async Task ModeloDeInscricao_SecaoDosDadosBasicos()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloDeInscricao(CodigoUnico()));
-        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
+        Guid id = await CriarAsync(client, Inscricao(CodigoUnico()));
         JsonObject lido = await ObterAsync(client, id);
-        lido["conteudo"]!["etapas"]![0]!["codigo"]!.GetValue<string>().Should().Be("DADOS_BASICOS");
-        JsonArray itens = lido["conteudo"]!["itens"]!.AsArray();
-        itens.Where(static i => i!["etapaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
+        ConferirSecaoDosDadosBasicos(lido);
 
         // O conteúdo lido volta à escrita sem conversão; o dado básico alterado é recusado.
-        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = lido["conteudo"] }))
-            .StatusCode.Should().Be(HttpStatusCode.NoContent);
-        JsonNode alterado = lido["conteudo"]!.DeepClone();
-        alterado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["obrigatoriedade"] = "NUNCA";
-        HttpResponseMessage recusada = await EnviarAsync(
-            client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Inscrição", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo = alterado });
+        (await StatusAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Inscrição", lido["conteudo"]))).Should().Be(HttpStatusCode.NoContent);
+        HttpResponseMessage recusada = await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Inscrição", ComCorRacaDispensada(lido["conteudo"]!)));
 
         recusada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await recusada.Content.ReadAsStringAsync()).Should().Contain("uniplus.estrutura_formulario.dado_basico_alterado");
-    }
-
-    [Fact(DisplayName = "A migração regrava o modelo gravado com o órgão emissor em texto: a lista e o nome do outro órgão entram, e o que vinha depois desce")]
-    public async Task Migracao_ModeloComOrgaoEmissorEmTexto_RecebeAListaEONomeDoOutro()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloDeInscricao(CodigoUnico()));
-        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        JsonNode esperado = (await ObterAsync(client, id))["conteudo"]!;
-
-        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
-        await conexao.OpenAsync();
-        await using (NpgsqlCommand antes = conexao.CreateCommand())
-        {
-            antes.CommandText = "UPDATE configuracao.modelos_formulario SET conteudo = @conteudo::jsonb WHERE id = @id";
-            antes.Parameters.AddWithValue("id", id);
-            antes.Parameters.AddWithValue("conteudo", ConteudoComOrgaoEmissorEmTexto(await ConteudoGravadoAsync(conexao, id)));
-            (await antes.ExecuteNonQueryAsync()).Should().Be(1);
-        }
-
-        foreach (SqlOperation operacao in new EscolheOOrgaoEmissorDoRgDeUmaLista().UpOperations.OfType<SqlOperation>())
-        {
-            await using NpgsqlCommand migracao = conexao.CreateCommand();
-            migracao.CommandText = operacao.Sql;
-            await migracao.ExecuteNonQueryAsync();
-        }
-
-        JsonNode.DeepEquals((await ObterAsync(client, id))["conteudo"], esperado).Should().BeTrue(
-            "a migração devolve o modelo à forma que a escrita grava hoje");
-    }
-
-    private static async Task<string> ConteudoGravadoAsync(NpgsqlConnection conexao, Guid id)
-    {
-        await using NpgsqlCommand ler = conexao.CreateCommand();
-        ler.CommandText = "SELECT conteudo::text FROM configuracao.modelos_formulario WHERE id = @id";
-        ler.Parameters.AddWithValue("id", id);
-        return (string)(await ler.ExecuteScalarAsync())!;
-    }
-
-    /// <summary>
-    /// O conteúdo como era gravado antes da lista: o órgão emissor em texto livre, sem o nome do outro
-    /// órgão, e os itens e os grupos que vêm depois dele uma posição acima.
-    /// </summary>
-    private static string ConteudoComOrgaoEmissorEmTexto(string gravado)
-    {
-        JsonObject conteudo = JsonNode.Parse(gravado)!.AsObject();
-        JsonArray itens = conteudo["itens"]!.AsArray();
-        JsonNode outro = itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "RG_ORGAO_EMISSOR_OUTRO")!;
-        int ordemDoOutro = outro["ordem"]!.GetValue<int>();
-        itens.Remove(outro);
-        JsonNode orgao = itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "RG_ORGAO_EMISSOR")!;
-        orgao["tipoRenderizacao"] = "TEXTO";
-        orgao["formato"] = "LIVRE";
-        foreach (JsonNode posterior in itens.Concat(conteudo["grupos"]!.AsArray()).OfType<JsonNode>().Where(n => n["ordem"]!.GetValue<int>() > ordemDoOutro))
-        {
-            posterior["ordem"] = posterior["ordem"]!.GetValue<int>() - 1;
-        }
-
-        return conteudo.ToJsonString();
     }
 
     [Fact(DisplayName = "Item de fato derivado é recusado pela conferência contra o catálogo")]
@@ -167,7 +63,7 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico(), fatoDoPrimeiroItem: "MODALIDADE"));
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, Base, Habilitacao(CodigoUnico(), fatoDoPrimeiroItem: "MODALIDADE"));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
@@ -180,23 +76,11 @@ public sealed class ModeloFormularioAdminEndpointTests
     public async Task Atualizar_RecusadaPeloCatalogo_NaoGrava()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        JsonObject lido = await ObterAsync(client, id);
-        JsonNode conteudo = lido["conteudo"]!.DeepClone();
-        conteudo["termos"] = new JsonArray(new JsonObject
-        {
-            ["codigo"] = "LGPD",
-            ["ordem"] = 0,
-            ["termoId"] = Guid.NewGuid(),
-            ["versaoId"] = Guid.NewGuid(),
-            ["exibicao"] = null,
-            ["obrigatoriedade"] = "SEMPRE",
-            ["predicadoObrigatoriedade"] = null,
-        });
+        Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
+        JsonNode conteudo = (await ObterAsync(client, id))["conteudo"]!.DeepClone();
+        conteudo["termos"] = TermosDeCadastroInexistente();
 
-        (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Nome que não deve ficar", descricao = (string?)null, tipoProcessoCodigo = (string?)null, conteudo }))
-            .StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await StatusAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Nome que não deve ficar", conteudo))).Should().Be(HttpStatusCode.UnprocessableEntity);
 
         JsonObject depois = await ObterAsync(client, id);
         depois["nome"]!.GetValue<string>().Should().Be("Habilitação Medicina 2027");
@@ -207,22 +91,13 @@ public sealed class ModeloFormularioAdminEndpointTests
     public async Task TipoProcessoComCaractereNulo_RecusaSemErroDoBanco()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        Dictionary<string, object?> modelo = new(JsonSerializer.SerializeToNode(Modelo(CodigoUnico()))!.AsObject()
-            .Select(static p => KeyValuePair.Create(p.Key, (object?)p.Value?.DeepClone())))
-        {
-            ["tipoProcessoCodigo"] = "PSR\u0000",
-        };
+        object modelo = ComTipoDeProcesso(Habilitacao(CodigoUnico()), "PSR\u0000");
 
         HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, modelo);
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?tipoProcesso=%00", corpo: null);
+        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?tipoProcesso=%00");
 
         criar.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        using (JsonDocument problema = JsonDocument.Parse(await criar.Content.ReadAsStringAsync()))
-        {
-            problema.RootElement.GetProperty("errors").EnumerateArray().Select(static e => e.GetProperty("code").GetString())
-                .Should().Contain("uniplus.configuracao.modelo_formulario.texto_nao_gravavel");
-        }
-
+        await ConferirCodigoDoErroAsync(criar, "uniplus.configuracao.modelo_formulario.texto_nao_gravavel");
         listar.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         lista.RootElement.GetArrayLength().Should().Be(0);
@@ -232,365 +107,15 @@ public sealed class ModeloFormularioAdminEndpointTests
     public async Task PreVisualizar_RespostasSimuladas_AvaliaOModelo()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        object simulacao = new { respostas = new Dictionary<string, object> { ["QUILOMBOLA"] = false } };
+        Guid id = await CriarAsync(client, Habilitacao(CodigoUnico()));
+        Dictionary<string, object> respostas = new() { ["QUILOMBOLA"] = false };
 
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", simulacao);
+        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas });
 
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
+        JsonObject resultado = await LerAsync(resposta);
         resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.pre-visualizacao-modelo-formulario.v1+json");
-        JsonObject resultado = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
-        JsonNode baixaRenda = resultado["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "BAIXA_RENDA")!;
-        baixaRenda["visivel"]!.GetValue<string>().Should().Be("FALSO");
-        (await EnviarAsync(client, HttpMethod.Post, $"{Base}/{Guid.NewGuid()}/pre-visualizacao", simulacao)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact(DisplayName = "O renderizável do modelo traz a apresentação e as regras no formato do formulário; modelo inexistente é 404")]
-    public async Task ObterRenderizavel_DevolveOFormulario()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, Modelo(CodigoUnico()));
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        resposta.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.formulario.v2+json");
-        JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
-        formulario["fatosColetados"]!.AsArray().Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Should().Contain("BAIXA_RENDA");
-        formulario["regras"]!["etapas"]!.AsArray().SelectMany(static e => e!["itens"]!.AsArray())
-            .Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain("BAIXA_RENDA", "as regras vão com a apresentação");
-        (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{Guid.NewGuid()}/renderizavel", null)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact(DisplayName = "O renderizável do modelo de habilitação semeado traz o grupo repetível com os campos de cada ocorrência")]
-    public async Task ObterRenderizavel_ModeloComGrupo_TrazOGrupo()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=HABILITACAO", null);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_MEDICINA_2027_HABILITACAO").GetProperty("id").GetGuid();
-
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
-        JsonNode grupo = formulario["grupos"]!.AsArray().Single(static g => g!["codigo"]!.GetValue<string>() == "COMPOSICAO_FAMILIAR")!;
-        grupo["incluiCandidato"]!.GetValue<bool>().Should().BeTrue();
-        grupo["subitens"]!.AsArray().Should().NotBeEmpty();
-        formulario["regras"]!["etapas"]!.AsArray().SelectMany(static e => e!["grupos"]!.AsArray())
-            .Select(static g => g!["codigo"]!.GetValue<string>()).Should().Contain("COMPOSICAO_FAMILIAR");
-    }
-
-    [Fact(DisplayName = "O renderizável do modelo de inscrição gravado sem o conjunto básico, como o semeado, traz os dados do candidato que o processo terá depois de aplicado")]
-    public async Task ObterRenderizavel_ModeloDeInscricaoSemOBasico_TrazOsDadosDoCandidato()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
-
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK, await resposta.Content.ReadAsStringAsync());
-        JsonObject formulario = JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
-        formulario["etapas"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao);
-        formulario["fatosColetados"]!.AsArray().Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
-        JsonNode preta = formulario["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "COR_RACA")!["valoresSelecionaveis"]!.AsArray()
-            .Single(static v => v!["codigo"]!.GetValue<string>() == "PRETA")!;
-        preta["descricao"]!.GetValue<string>().Should().Be("Preta");
-        preta["orientacao"]!.GetValue<string>().Should().Contain("heteroidentificação", "a opção leva a orientação abaixo do nome curto");
-        JsonNode secaoNasRegras = formulario["regras"]!["etapas"]!.AsArray()
-            .Single(static e => e!["codigo"]!.GetValue<string>() == ConjuntoBasicoDaInscricao.CodigoDaSecao)!;
-        secaoNasRegras["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>())
-            .Should().Contain(ConjuntoBasicoDaInscricao.Fatos, "as regras vão com a apresentação");
-
-        HttpResponseMessage previa = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas = new Dictionary<string, object>() });
-
-        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
-        JsonObject preVisualizacao = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!.AsObject();
-        preVisualizacao["secoes"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>())
-            .Should().Contain(ConjuntoBasicoDaInscricao.CodigoDaSecao, "a pré-visualização avalia o mesmo conteúdo do renderizável");
-        preVisualizacao["itens"]!.AsArray().Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().Contain(ConjuntoBasicoDaInscricao.Fatos);
-    }
-
-    [Fact(DisplayName = "Sem processo, a condição de atendimento e o tipo de deficiência oferecem o cadastro institucional vivo")]
-    public async Task ObterRenderizavel_AtendimentoEDeficiencia_OferecemOCadastro()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        string condicao = $"COND_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
-        string deficiencia = $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
-        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/condicoes-atendimento", new { codigo = condicao, nome = "Ledor" }))
-            .StatusCode.Should().Be(HttpStatusCode.Created);
-        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/tipos-deficiencia",
-            new { codigo = deficiencia, nome = $"Deficiência {deficiencia}", descricao = "Deficiência relacionada à visão" }))
-            .StatusCode.Should().Be(HttpStatusCode.Created);
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_COM_PROVA").GetProperty("id").GetGuid();
-
-        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
-
-        List<string> Opcoes(string fato) => [.. formulario["fatosColetados"]!.AsArray()
-            .Single(f => f!["fatoCodigo"]!.GetValue<string>() == fato)!["valoresSelecionaveis"]!.AsArray()
-            .Select(static v => v!["codigo"]!.GetValue<string>())];
-        Opcoes("CONDICAO_ATENDIMENTO").Should().Contain(condicao);
-        Opcoes("TIPO_DEFICIENCIA").Should().Contain(deficiencia);
-    }
-
-    [Fact(DisplayName = "Sem processo, o recurso de acessibilidade oferece o cadastro institucional vivo, pelo código")]
-    public async Task ObterRenderizavel_RecursoDeAcessibilidade_OfereceOCadastro()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        string recurso = $"REC_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
-        (await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/recursos-acessibilidade",
-            new { codigo = recurso, nome = $"Sala para amamentação {recurso}" }))
-            .StatusCode.Should().Be(HttpStatusCode.Created);
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloComRecursoDeAcessibilidade(CodigoUnico()));
-        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-
-        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
-
-        JsonNode opcao = formulario["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "RECURSO_ACESSIBILIDADE")!["valoresSelecionaveis"]!.AsArray()
-            .Single(v => v!["codigo"]!.GetValue<string>() == recurso)!;
-        opcao["descricao"]!.GetValue<string>().Should().Be($"Sala para amamentação {recurso}");
-    }
-
-    [Fact(DisplayName = "Sem processo, o município da área do bônus oferece os municípios das bases legais cadastradas, sem repetir")]
-    public async Task ObterRenderizavel_MunicipioDoBonus_OfereceAsBasesLegais()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        foreach (object[] municipios in new[]
-        {
-            new object[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }, new { codigoIbge = "1500131", nome = "Abel Figueiredo", uf = "PA" } },
-            new object[] { new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" } },
-        })
-        {
-            HttpResponseMessage criada = await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/base-legal-bonus-regional", new
-            {
-                tipoInstrumento = "PORTARIA",
-                identificacao = $"Portaria {Guid.NewGuid().ToString("N")[..8]}",
-                descricao = "Área do bônus regional",
-                municipios,
-            });
-            criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
-        }
-
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
-        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
-
-        List<string> codigos = [.. formulario["fatosColetados"]!.AsArray()
-            .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")!["valoresSelecionaveis"]!.AsArray()
-            .Select(static v => v!["codigo"]!.GetValue<string>())];
-        codigos.Should().Contain(["1500131", "1504208"]).And.OnlyHaveUniqueItems("o município de duas bases aparece uma vez");
-    }
-
-    [Theory(DisplayName = "No modelo de inscrição semeado, o tipo de localidade vem nos dados básicos antes do endereço, e o nome da comunidade só aparece para aldeia, comunidade ou quilombo")]
-    [InlineData("URBANO", "FALSO")]
-    [InlineData("ALDEIA", "VERDADEIRO")]
-    public async Task ModeloDeInscricao_TipoDeLocalidadeAntesDoEndereco(string localidade, string comunidadeVisivel)
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
-
-        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
-        List<string> basicos = [.. formulario["regras"]!["etapas"]!.AsArray()
-            .Single(static e => e!["codigo"]!.GetValue<string>() == ConjuntoBasicoDaInscricao.CodigoDaSecao)!["itens"]!.AsArray()
-            .Select(static i => i!["fatoCodigo"]!.GetValue<string>())];
-        basicos.IndexOf("TIPO_ENDERECO").Should().BeLessThan(basicos.IndexOf("NOME_COMUNIDADE"));
-        basicos.IndexOf("NOME_COMUNIDADE").Should().BeLessThan(basicos.IndexOf("ENDERECO_RESIDENCIAL"), "a localidade é perguntada antes do endereço");
-        formulario["etapas"]!.AsArray().Select(static e => e!["codigo"]!.GetValue<string>()).Should().NotContain("ENDERECO");
-
-        HttpResponseMessage previa = await EnviarAsync(
-            client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas = new Dictionary<string, object> { ["TIPO_ENDERECO"] = localidade } });
-        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
-        JsonObject preVisualizacao = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!.AsObject();
-        preVisualizacao["itens"]!.AsArray().Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "NOME_COMUNIDADE")!["visivel"]!
-            .GetValue<string>().Should().Be(comunidadeVisivel);
-    }
-
-    [Theory(DisplayName = "No modelo de inscrição semeado, \"Concluí por certificação\" só é oferecido a quem concluiu por certificação, e a opção pelas vagas de escola pública segue o egresso derivado")]
-    [InlineData("REGULAR", "PRIVADA_BOLSA_INTEGRAL", false, "FALSO")]
-    [InlineData("ENCCEJA", "CERTIFICACAO", true, "VERDADEIRO")]
-    public async Task ModeloDeInscricao_OrigemEscolarEmDuasPerguntas(
-        string formaDeConclusao, string ondeCursou, bool ofereceCertificacao, string opcaoPelaEscolaPublicaVisivel)
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage listar = await EnviarAsync(client, HttpMethod.Get, $"{Base}?finalidade=INSCRICAO", null);
-        using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
-        Guid id = lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
-
-        HttpResponseMessage previa = await EnviarAsync(
-            client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao",
-            new { respostas = new Dictionary<string, object> { ["FORMA_CONCLUSAO_EM"] = formaDeConclusao, ["ONDE_CURSOU_EM"] = ondeCursou } });
-        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
-        JsonArray itens = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!["itens"]!.AsArray();
-
-        itens.Select(static i => i!["fatoCodigo"]!.GetValue<string>()).Should().NotContain("EGRESSO_ESCOLA_PUBLICA", "o egresso é derivado, não perguntado");
-        itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "ONDE_CURSOU_EM")!["opcoes"]!["codigos"]!.AsArray()
-            .Select(static c => c!.GetValue<string>()).Contains("CERTIFICACAO").Should().Be(ofereceCertificacao);
-        itens.Single(static i => i!["fatoCodigo"]!.GetValue<string>() == "CONCORRER_EP")!["visivel"]!
-            .GetValue<string>().Should().Be(opcaoPelaEscolaPublicaVisivel);
-    }
-
-    [Theory(DisplayName = "No modelo de inscrição semeado, quem cursou o ensino médio regular ou na EJA pede o Fator pelo município em que o cursou, mesmo com o endereço atual fora da área")]
-    [InlineData("REGULAR")]
-    [InlineData("EJA")]
-    public async Task ModeloDeInscricao_FatorPeloMunicipioDoEnsinoMedio(string formaDeConclusao)
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await ModeloDeInscricaoDaMedicinaAsync(client);
-        await RegistrarMarabaNoBonusAsync(client);
-
-        JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object>
-        {
-            // Belém, fora da área do bônus: o Fator não confere o endereço atual.
-            ["ENDERECO_RESIDENCIAL"] = new { cep = (string?)null, cidade = new { codigoIbge = "1501402", uf = "PA" } },
-            ["FORMA_CONCLUSAO_EM"] = formaDeConclusao,
-            ["ONDE_CURSOU_EM"] = "SOMENTE_PUBLICA",
-            ["SOLICITA_FATOR_ATENUACAO"] = true,
-            ["MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO"] = Maraba,
-        });
-
-        JsonNode municipio = Item(itens, "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO");
-        municipio["visivel"]!.GetValue<string>().Should().Be("VERDADEIRO");
-        municipio["obrigatorio"]!.GetValue<string>().Should().Be("VERDADEIRO");
-        municipio["restricoesVioladas"]!.AsArray().Should().BeEmpty();
-        municipio["impedido"]!.GetValue<string>().Should().Be("FALSO");
-        Item(itens, "CAMINHO_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be("FALSO", "só quem concluiu por certificação escolhe o caminho");
-        Item(itens, "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be("FALSO");
-    }
-
-    [Theory(DisplayName = "No modelo de inscrição semeado, quem concluiu por certificação e pede o Fator escolhe o caminho, que leva ao município do ensino médio ou ao da residência no período")]
-    [InlineData("ENEM", "ENSINO_MEDIO", "VERDADEIRO", "FALSO")]
-    [InlineData("ENCCEJA", "RESIDENCIA", "FALSO", "VERDADEIRO")]
-    [InlineData("PROFICIENCIA", "RESIDENCIA", "FALSO", "VERDADEIRO")]
-    public async Task ModeloDeInscricao_CertificacaoEscolheOCaminhoDoFator(
-        string formaDeConclusao, string caminho, string ensinoMedioVisivel, string residenciaVisivel)
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await ModeloDeInscricaoDaMedicinaAsync(client);
-
-        JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object>
-        {
-            ["FORMA_CONCLUSAO_EM"] = formaDeConclusao,
-            ["ONDE_CURSOU_EM"] = "CERTIFICACAO",
-            ["SOLICITA_FATOR_ATENUACAO"] = true,
-            ["CAMINHO_FATOR_ATENUACAO"] = caminho,
-        });
-
-        JsonNode escolha = Item(itens, "CAMINHO_FATOR_ATENUACAO");
-        escolha["visivel"]!.GetValue<string>().Should().Be("VERDADEIRO");
-        escolha["obrigatorio"]!.GetValue<string>().Should().Be("VERDADEIRO");
-        Item(itens, "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be(ensinoMedioVisivel);
-        Item(itens, "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO")["visivel"]!.GetValue<string>().Should().Be(residenciaVisivel);
-    }
-
-    [Theory(DisplayName = "No modelo de inscrição semeado, as perguntas das cotas da lei só aparecem para quem optou por elas, e a da PPI só para quem é preto, pardo ou indígena com pertencimento")]
-    [InlineData("SOMENTE_PUBLICA", true, "BRANCA", false, false, false, "QUILOMBOLA,BAIXA_RENDA")]
-    [InlineData("SOMENTE_PUBLICA", true, "AMARELA", false, false, false, "QUILOMBOLA,BAIXA_RENDA")]
-    [InlineData("SOMENTE_PUBLICA", true, "PARDA", false, false, false, "QUILOMBOLA,CONCORRER_PPI,BAIXA_RENDA")]
-    [InlineData("SOMENTE_PUBLICA", true, "INDIGENA", false, false, false, "INDIGENA,BAIXA_RENDA")]
-    [InlineData("SOMENTE_PUBLICA", true, "INDIGENA", true, false, false, "INDIGENA,CONCORRER_PPI,BAIXA_RENDA")]
-    [InlineData("SOMENTE_PUBLICA", true, "PRETA", false, true, true, "QUILOMBOLA,CONCORRER_PPI,CONCORRER_Q,BAIXA_RENDA,CONCORRER_RENDA")]
-    [InlineData("SOMENTE_PUBLICA", false, "PARDA", true, true, true, "")]
-    [InlineData("PRIVADA", false, "INDIGENA", true, true, true, "")]
-    public async Task ModeloDeInscricao_ReservaPerguntaAElegibilidadeDeQuemOptou(
-        string ondeCursou, bool concorrerEscolaPublica, string corRaca, bool indigena, bool quilombola, bool baixaRenda, string visiveis)
-    {
-        ArgumentNullException.ThrowIfNull(visiveis);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        Guid id = await ModeloDeInscricaoDaMedicinaAsync(client);
-
-        JsonArray itens = await PreVisualizarAsync(client, id, new Dictionary<string, object>
-        {
-            ["FORMA_CONCLUSAO_EM"] = "REGULAR",
-            ["ONDE_CURSOU_EM"] = ondeCursou,
-            ["CONCORRER_EP"] = concorrerEscolaPublica,
-            ["COR_RACA"] = corRaca,
-            ["INDIGENA"] = indigena,
-            ["QUILOMBOLA"] = quilombola,
-            ["BAIXA_RENDA"] = baixaRenda,
-        });
-
-        HashSet<string> esperados = [.. visiveis.Split(',', StringSplitOptions.RemoveEmptyEntries)];
-        foreach (string fato in new[] { "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "BAIXA_RENDA", "CONCORRER_RENDA" })
-        {
-            Item(itens, fato)["visivel"]!.GetValue<string>().Should().Be(esperados.Contains(fato) ? "VERDADEIRO" : "FALSO", fato);
-        }
-    }
-
-    [Theory(DisplayName = "A avaliação sem cadastro das regras do modelo dá o mesmo resultado da pré-visualização do modelo")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task AvaliarSemCadastro_MesmoResultadoDaPreVisualizacao(bool quilombola)
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarAsync(client, HttpMethod.Post, Base, ModeloComOpcoes(CodigoUnico()));
-        criar.StatusCode.Should().Be(HttpStatusCode.Created, await criar.Content.ReadAsStringAsync());
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        JsonObject formulario = JsonNode.Parse(await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}/renderizavel", null)).Content.ReadAsStringAsync())!.AsObject();
-        Dictionary<string, object> respostas = new() { ["QUILOMBOLA"] = quilombola };
-
-        HttpResponseMessage semCadastro = await EnviarAsync(
-            client, HttpMethod.Post, "/api/configuracao/admin/avaliacoes-de-formulario", new { regras = formulario["regras"], respostas });
-        HttpResponseMessage previa = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas });
-
-        semCadastro.StatusCode.Should().Be(HttpStatusCode.OK, await semCadastro.Content.ReadAsStringAsync());
-        semCadastro.Content.Headers.ContentType!.MediaType.Should().Be("application/vnd.uniplus.avaliacao-de-formulario.v1+json");
-        JsonObject avaliacao = JsonNode.Parse(await semCadastro.Content.ReadAsStringAsync())!.AsObject();
-        JsonObject preVisualizacao = JsonNode.Parse(await previa.Content.ReadAsStringAsync())!.AsObject();
-        JsonArray itens = preVisualizacao["itens"]!.AsArray();
-        itens.Should().NotBeEmpty();
-        foreach (JsonNode? item in itens)
-        {
-            JsonNode campo = avaliacao["campos"]!.AsArray().Single(c => c!["fatoCodigo"]!.GetValue<string>() == item!["fatoCodigo"]!.GetValue<string>())!;
-            foreach (string chave in new[] { "visivel", "obrigatorio", "impedido", "restricoesVioladas", "opcoes" })
-            {
-                (campo[chave]?.ToJsonString()).Should().Be(item![chave]?.ToJsonString(), $"'{chave}' do campo {item["fatoCodigo"]} é o mesmo nos dois caminhos");
-            }
-        }
-
-        avaliacao["campos"]!.AsArray().Single(static c => c!["fatoCodigo"]!.GetValue<string>() == "FORMA_CONCLUSAO_EM")!["opcoes"]!["codigos"]!.AsArray()
-            .Select(static c => c!.GetValue<string>()).Should().Equal(quilombola ? ["EJA", "REGULAR"] : ["REGULAR"], "as opções seguem a resposta anterior");
-
-        // No modelo, o código da etapa nas regras é o da seção: as duas listas se comparam direto.
-        Pares(avaliacao["etapas"]!, "codigo", "visivel").Should().Equal(Pares(preVisualizacao["secoes"]!, "codigo", "visivel"));
-
-        static List<string> Pares(JsonNode lista, string chave, string valor) =>
-            [.. lista.AsArray().Select(e => $"{e![chave]!.GetValue<string>()}={e[valor]!.GetValue<string>()}")];
-    }
-
-    [Fact(DisplayName = "A avaliação sem cadastro recusa regras que não formam formulário com a causa")]
-    public async Task AvaliarSemCadastro_RegrasMalformadas_Recusa()
-    {
-        using HttpClient client = _fixture.Factory.CreateClient();
-        object regras = new
-        {
-            etapas = new[] { new { codigo = "DADOS", exibicao = (object?)null, itens = Array.Empty<object>(), grupos = Array.Empty<object>() } },
-            termos = Array.Empty<object>(),
-            derivacoes = Array.Empty<object>(),
-            agregados = new[] { new { codigo = "ALGUEM", grupoCodigo = "FAMILIA", fatoDeMembro = "SEM_RENDA", operacao = "SOMA" } },
-        };
-
-        HttpResponseMessage recusa = await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/avaliacoes-de-formulario", new { regras });
-
-        recusa.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await recusa.Content.ReadAsStringAsync()).Should().Contain("uniplus.formulario_portavel.operacao_de_agregado_invalida");
+        Item(resultado["itens"]!.AsArray(), "BAIXA_RENDA")["visivel"]!.GetValue<string>().Should().Be("FALSO");
+        (await StatusAsync(client, HttpMethod.Post, $"{Base}/{Guid.NewGuid()}/pre-visualizacao", new { respostas })).Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact(DisplayName = "Código já usado por outro modelo é recusado com conflito")]
@@ -598,219 +123,71 @@ public sealed class ModeloFormularioAdminEndpointTests
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         string codigo = CodigoUnico();
-        (await EnviarAsync(client, HttpMethod.Post, Base, Modelo(codigo))).StatusCode.Should().Be(HttpStatusCode.Created);
+        (await StatusAsync(client, HttpMethod.Post, Base, Habilitacao(codigo))).Should().Be(HttpStatusCode.Created);
 
-        (await EnviarAsync(client, HttpMethod.Post, Base, Modelo(codigo))).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await StatusAsync(client, HttpMethod.Post, Base, Habilitacao(codigo))).Should().Be(HttpStatusCode.Conflict);
     }
 
-    /// <summary>
-    /// Um modelo de habilitação com duas perguntas, a segunda exibida a quem respondeu sim à
-    /// primeira, e o bloco de revisão e aceite que a finalidade exige.
-    /// </summary>
-    private static object Modelo(string codigo, string fatoDoPrimeiroItem = "QUILOMBOLA") => new
-    {
-        codigo,
-        nome = "Habilitação Medicina 2027",
-        finalidade = "HABILITACAO",
-        conteudo = new
-        {
-            titulo = "Habilitação",
-            etapas = new object[]
-            {
-                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
-                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
-            },
-            itens = new object[]
-            {
-                new { fatoCodigo = fatoDoPrimeiroItem, ordem = 0, rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE", precondicao = (object?)null, etapaCodigo = "DADOS" },
-                new
-                {
-                    fatoCodigo = "BAIXA_RENDA",
-                    ordem = 1,
-                    rotulo = "Baixa renda",
-                    tipoRenderizacao = "BOOLEANO",
-                    obrigatoriedade = "SEMPRE",
-                    precondicao = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } },
-                    etapaCodigo = "DADOS",
-                },
-            },
-        },
-    };
+    private static async Task AtivarAsync(HttpClient client, Guid id) =>
+        (await StatusAsync(client, HttpMethod.Post, $"{Base}/{id}/ativacao")).Should().Be(HttpStatusCode.NoContent);
 
-    /// <summary>
-    /// Um modelo de inscrição com a pergunta de renda exibida a quem se declarou preto: cor ou raça
-    /// vem da seção dos dados básicos, que o modelo não declara.
-    /// </summary>
-    private static object ModeloDeInscricao(string codigo) => new
+    private static void ConferirHabilitacaoAtivaLida(JsonObject lido)
     {
-        codigo,
-        nome = "Inscrição",
-        finalidade = "INSCRICAO",
-        conteudo = new
-        {
-            titulo = "Inscrição",
-            etapas = new object[]
-            {
-                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
-                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
-            },
-            itens = new object[]
-            {
-                new
-                {
-                    fatoCodigo = "BAIXA_RENDA",
-                    ordem = 0,
-                    rotulo = "Baixa renda",
-                    tipoRenderizacao = "BOOLEANO",
-                    obrigatoriedade = "SEMPRE",
-                    precondicao = new[] { new[] { new { fato = "COR_RACA", operador = "IGUAL", valor = "PRETA" } } },
-                    etapaCodigo = "DADOS",
-                },
-            },
-        },
-    };
-
-    /// <summary>
-    /// Um modelo de inscrição com um campo de escolha cujas opções seguem a resposta anterior: a forma
-    /// de conclusão do ensino médio admite a EJA só para quem se declarou quilombola.
-    /// </summary>
-    private static object ModeloComOpcoes(string codigo) => new
-    {
-        codigo,
-        nome = "Inscrição com opções",
-        finalidade = "INSCRICAO",
-        conteudo = new
-        {
-            titulo = "Inscrição",
-            etapas = new object[]
-            {
-                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
-                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
-            },
-            itens = new object[]
-            {
-                new { fatoCodigo = "QUILOMBOLA", ordem = 0, rotulo = "Quilombola", tipoRenderizacao = "BOOLEANO", obrigatoriedade = "SEMPRE", precondicao = (object?)null, etapaCodigo = "DADOS" },
-                new
-                {
-                    fatoCodigo = "FORMA_CONCLUSAO_EM",
-                    ordem = 1,
-                    rotulo = "Forma de conclusão do ensino médio",
-                    tipoRenderizacao = "SELECAO_UNICA",
-                    obrigatoriedade = "SEMPRE",
-                    precondicao = (object?)null,
-                    etapaCodigo = "DADOS",
-                    restricoes = new object[]
-                    {
-                        new
-                        {
-                            tipo = "OPCOES_PERMITIDAS",
-                            entradas = new object[]
-                            {
-                                new { quando = (object?)null, valores = new[] { "REGULAR" } },
-                                new { quando = new[] { new[] { new { fato = "QUILOMBOLA", operador = "IGUAL", valor = true } } }, valores = new[] { "EJA" } },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    };
-
-    /// <summary>Um modelo de inscrição que pergunta de qual recurso de acessibilidade o candidato vai precisar.</summary>
-    private static object ModeloComRecursoDeAcessibilidade(string codigo) => new
-    {
-        codigo,
-        nome = "Inscrição com recurso de acessibilidade",
-        finalidade = "INSCRICAO",
-        conteudo = new
-        {
-            titulo = "Inscrição",
-            etapas = new object[]
-            {
-                new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados", descricao = (string?)null, aviso = (string?)null },
-                new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão", descricao = (string?)null, aviso = (string?)null },
-            },
-            itens = new object[]
-            {
-                new
-                {
-                    fatoCodigo = "RECURSO_ACESSIBILIDADE",
-                    ordem = 0,
-                    rotulo = "De qual recurso de acessibilidade você vai precisar?",
-                    tipoRenderizacao = "SELECAO_MULTIPLA",
-                    obrigatoriedade = "NUNCA",
-                    precondicao = (object?)null,
-                    etapaCodigo = "DADOS",
-                },
-            },
-        },
-    };
-
-    /// <summary>Marabá, município da área do bônus regional.</summary>
-    private const string Maraba = "1504208";
-
-    private static async Task<Guid> ModeloDeInscricaoDaMedicinaAsync(HttpClient client)
-    {
-        using JsonDocument lista = await ListarAsync(client, "?finalidade=INSCRICAO");
-        return lista.RootElement.EnumerateArray()
-            .Single(static m => m.GetProperty("codigo").GetString() == "PSR_INSCRICAO_SEM_PROVA").GetProperty("id").GetGuid();
+        lido["ativo"]!.GetValue<bool>().Should().BeTrue();
+        lido["finalidade"]!.GetValue<string>().Should().Be("HABILITACAO");
+        JsonNode condicao = lido["conteudo"]!["itens"]![1]!["precondicao"]![0]![0]!;
+        condicao["fato"]!.GetValue<string>().Should().Be("QUILOMBOLA");
+        condicao["valor"]!.GetValue<bool>().Should().BeTrue();
     }
 
-    /// <summary>Uma base legal do bônus com Marabá, de onde vêm as opções de município do Fator.</summary>
-    private static async Task RegistrarMarabaNoBonusAsync(HttpClient client)
+    private static async Task RegravarLidoEDesativarAsync(HttpClient client, Guid id, JsonObject lido)
     {
-        HttpResponseMessage criada = await EnviarAsync(client, HttpMethod.Post, "/api/configuracao/admin/base-legal-bonus-regional", new
+        // O conteúdo lido volta à escrita sem conversão.
+        (await StatusAsync(client, HttpMethod.Put, $"{Base}/{id}", Edicao("Habilitação editada", lido["conteudo"]))).Should().Be(HttpStatusCode.NoContent);
+        (await StatusAsync(client, HttpMethod.Delete, $"{Base}/{id}")).Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private static async Task ConferirListasAsync(HttpClient client, Guid id)
+    {
+        using (JsonDocument inativos = await ListarAsync(client, "?ativo=false&finalidade=HABILITACAO&tipoProcesso=QUALQUER_TIPO"))
         {
-            tipoInstrumento = "PORTARIA",
-            identificacao = $"Portaria {Guid.NewGuid().ToString("N")[..8]}",
-            descricao = "Área do bônus regional",
-            municipios = new[] { new { codigoIbge = Maraba, nome = "Marabá", uf = "PA" } },
-        });
-        criada.StatusCode.Should().Be(HttpStatusCode.Created, await criada.Content.ReadAsStringAsync());
-    }
-
-    private static async Task<JsonArray> PreVisualizarAsync(HttpClient client, Guid id, Dictionary<string, object> respostas)
-    {
-        HttpResponseMessage previa = await EnviarAsync(client, HttpMethod.Post, $"{Base}/{id}/pre-visualizacao", new { respostas });
-        previa.StatusCode.Should().Be(HttpStatusCode.OK, await previa.Content.ReadAsStringAsync());
-        return JsonNode.Parse(await previa.Content.ReadAsStringAsync())!["itens"]!.AsArray();
-    }
-
-    private static JsonNode Item(JsonArray itens, string fatoCodigo) =>
-        itens.Single(i => i!["fatoCodigo"]!.GetValue<string>() == fatoCodigo)!;
-
-    private static string CodigoUnico() => $"MODELO_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
-
-    private static async Task<JsonObject> ObterAsync(HttpClient client, Guid id)
-    {
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}/{id}", corpo: null);
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        return JsonNode.Parse(await resposta.Content.ReadAsStringAsync())!.AsObject();
-    }
-
-    private static async Task<JsonDocument> ListarAsync(HttpClient client, string filtros)
-    {
-        HttpResponseMessage resposta = await EnviarAsync(client, HttpMethod.Get, $"{Base}{filtros}", corpo: null);
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
-        return JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-    }
-
-    private static async Task<HttpResponseMessage> EnviarAsync(
-        HttpClient client, HttpMethod metodo, string url, object? corpo)
-    {
-        using HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative));
-        request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        if (metodo != HttpMethod.Get)
-        {
-            request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+            inativos.RootElement.EnumerateArray().Should().Contain(m => m.GetProperty("id").GetGuid() == id
+                && m.GetProperty("nome").GetString() == "Habilitação editada");
         }
 
-        if (corpo is not null)
-        {
-            request.Content = JsonContent.Create(corpo);
-        }
+        using JsonDocument outraFinalidade = await ListarAsync(client, "?finalidade=INSCRICAO");
+        outraFinalidade.RootElement.EnumerateArray().Should().NotContain(m => m.GetProperty("id").GetGuid() == id);
+    }
 
-        return await client.SendAsync(request);
+    private static void ConferirSecaoDosDadosBasicos(JsonObject lido)
+    {
+        lido["conteudo"]!["etapas"]![0]!["codigo"]!.GetValue<string>().Should().Be("DADOS_BASICOS");
+        JsonArray itens = lido["conteudo"]!["itens"]!.AsArray();
+        itens.Where(static i => i!["etapaCodigo"]!.GetValue<string>() == "DADOS_BASICOS").Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
+    }
+
+    private static JsonNode ComCorRacaDispensada(JsonNode conteudo)
+    {
+        JsonNode alterado = conteudo.DeepClone();
+        Item(alterado["itens"]!.AsArray(), "COR_RACA")["obrigatoriedade"] = "NUNCA";
+        return alterado;
+    }
+
+    private static JsonArray TermosDeCadastroInexistente() => new(new JsonObject
+    {
+        ["codigo"] = "LGPD",
+        ["ordem"] = 0,
+        ["termoId"] = Guid.NewGuid(),
+        ["versaoId"] = Guid.NewGuid(),
+        ["exibicao"] = null,
+        ["obrigatoriedade"] = "SEMPRE",
+        ["predicadoObrigatoriedade"] = null,
+    });
+
+    private static async Task ConferirCodigoDoErroAsync(HttpResponseMessage resposta, string codigo)
+    {
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("errors").EnumerateArray()
+            .Select(static e => e.GetProperty("code").GetString()).Should().Contain(codigo);
     }
 }

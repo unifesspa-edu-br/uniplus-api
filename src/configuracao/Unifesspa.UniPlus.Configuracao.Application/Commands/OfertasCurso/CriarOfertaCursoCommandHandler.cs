@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -27,14 +27,14 @@ public static class CriarOfertaCursoCommandHandler
     /// monólito que injeta um reader cross-módulo (<see cref="IUnidadeReader"/>,
     /// implementado em Organização, dependente de
     /// <c>OrganizacaoInstitucionalDbContext</c>) dentro de um handler que TAMBÉM
-    /// escreve no seu próprio módulo (via <see cref="IConfiguracaoUnitOfWork"/>,
+    /// escreve no seu próprio módulo (via <see cref="IUnitOfWork"/>,
     /// dependente de <c>ConfiguracaoDbContext</c>). O detector de transação do
     /// Wolverine.EntityFrameworkCore (<c>AutoApplyTransactions</c>) enumera TODAS
     /// as dependências transitivas dos parâmetros do handler em busca de um único
     /// <c>DbContext</c> a enrolar na transação do outbox — encontra os dois e
     /// falha por ambiguidade (<c>InvalidOperationException</c> no boot do host).
     /// A persistência continua correta sem o enrolamento automático: o handler já
-    /// chama <see cref="IConfiguracaoUnitOfWork.SalvarAlteracoesAsync"/>
+    /// chama <see cref="IUnitOfWork.SalvarAlteracoesAsync"/>
     /// explicitamente (mesmo padrão de todo handler de Configuração), e o módulo
     /// não emite domain events — não há atomicidade write+evento de outbox a
     /// perder (ADR-0004 não se aplica aqui). O reader é só leitura, sem
@@ -47,7 +47,7 @@ public static class CriarOfertaCursoCommandHandler
         ICursoRepository cursoRepository,
         ILocalOfertaRepository localOfertaRepository,
         IUnidadeReader unidadeReader,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

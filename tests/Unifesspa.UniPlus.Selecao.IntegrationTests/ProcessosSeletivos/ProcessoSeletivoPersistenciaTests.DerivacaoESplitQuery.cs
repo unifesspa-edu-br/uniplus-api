@@ -7,19 +7,15 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-using Npgsql;
-
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -39,7 +35,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
             ]).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -48,7 +44,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
         // Substitui a configuração por inteiro sobre o agregado JÁ tracked (fluxo real de reconfiguração):
         // Clear+Add deve marcar as regras e condições antigas como órfãs e o cascade deve deletá-las.
-        await using (SelecaoDbContext mutateContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext mutateContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(mutateContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
@@ -66,7 +62,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
         // Contexto novo: a árvore antiga inteira sumiu — sobra só a única regra âncora sem condição.
         // Contagens escopadas a ESTE processo (a fixture é compartilhada entre testes da classe).
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Guid configId = await readContext.Set<ConfiguracaoDerivacaoFato>()
             .Where(c => c.ProcessoSeletivoId == processo.Id).Select(c => c.Id).SingleAsync(CancellationToken.None);
 
@@ -186,7 +182,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
     private async Task GravarAsync(ProcessoSeletivo processo)
     {
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -196,7 +192,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
     private async Task<ProcessoSeletivo?> RecarregarCapturandoSqlAsync(Guid processoId, CapturadorDeSql capturador)
     {
-        DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
+        DbContextOptions<MonolitoDbContext> options = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql(_fixture.ConnectionString)
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(
@@ -205,7 +201,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
                 capturador)
             .Options;
 
-        await using SelecaoDbContext context = new(options);
+        await using MonolitoDbContext context = new(options);
         ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
         return await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None);
     }

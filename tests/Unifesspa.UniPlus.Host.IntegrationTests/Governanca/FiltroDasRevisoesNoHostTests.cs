@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O filtro da situação na listagem das revisões, pelo host real: filtra no servidor antes da paginação, e cada página
@@ -106,7 +106,7 @@ public sealed class FiltroDasRevisoesNoHostTests : PedidosDeConcessaoTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(IdentidadeDe(Marlene), concessoes, DateTimeOffset.UtcNow);
         await scope.ServiceProvider.GetRequiredService<IRevisaoDeAcessosRepository>().AdicionarAsync(revisao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
 
         return revisao.Id;
     }

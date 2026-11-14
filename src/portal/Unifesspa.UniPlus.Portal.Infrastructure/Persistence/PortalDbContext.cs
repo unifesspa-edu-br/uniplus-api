@@ -25,4 +25,14 @@ public sealed class PortalDbContext : DbContext, IUnitOfWork
     {
         return await SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    public void DescartarAlteracoesNaoSalvas()
+    {
+        ChangeTracker.Clear();
+    }
+
+    public async Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default)
+    {
+        await Database.ExecuteSqlRawAsync("SET CONSTRAINTS ALL IMMEDIATE", cancellationToken).ConfigureAwait(false);
+    }
 }

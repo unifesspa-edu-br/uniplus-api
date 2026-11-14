@@ -4,9 +4,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -31,7 +31,7 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
         ObrigatoriedadeLegal regra = RegraGravada();
         PredicadoObrigatoriedade predicadoAnterior = regra.Predicado;
         IObrigatoriedadeLegalRepository repository = RepositorioCom(regra);
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result resultado = await AtualizarObrigatoriedadeLegalCommandHandler.Handle(
             ComPredicado(regra.Id, new DocumentoObrigatorioParaModalidade(ModalidadeAusente, "LAUDO_MEDICO")),
@@ -58,7 +58,7 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
     public async Task Handle_TipoDocumentoInexistente_RecusaComErroProprio()
     {
         ObrigatoriedadeLegal regra = RegraGravada();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result resultado = await AtualizarObrigatoriedadeLegalCommandHandler.Handle(
             ComPredicado(regra.Id, new DocumentoObrigatorioParaModalidade("LB_PPI", TipoDocumentoAusente)),
@@ -94,7 +94,7 @@ public sealed class AtualizarObrigatoriedadeLegalCommandHandlerTests
             CadastrosVivos.TiposDocumento(),
             CadastrosVivos.TiposDeficiencia(),
             CadastrosVivos.RegrasDesempate(),
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

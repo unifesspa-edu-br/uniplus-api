@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -31,7 +31,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
         ProcessoSeletivo processo = NovoProcesso(identificador);
         await PersistirAsync(processo);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         ProcessoSeletivo recarregado = await ctx.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == processo.Id);
 
         recarregado.IdentificadorLegivel.Should().Be(identificador);
@@ -59,7 +59,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
         excluido.MarkAsDeleted("teste", DateTimeOffset.UtcNow);
         await PersistirAsync(excluido);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(ctx, TimeProvider.System);
 
         (await repository.IdentificadorLegivelEmUsoAsync(identificador, excluirId: null, CancellationToken.None))
@@ -76,7 +76,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
 
     private async Task PersistirAsync(ProcessoSeletivo processo)
     {
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(ctx, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await ctx.SaveChangesAsync(CancellationToken.None);

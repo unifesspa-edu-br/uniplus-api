@@ -13,6 +13,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -71,7 +72,7 @@ public sealed class FatosDasVersoesPublicadasNaRetificacaoEndpointTests
         await ctx.AbrirAsync();
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         RascunhoRetificacao rascunho = await db.RascunhosRetificacao.AsNoTracking().SingleAsync(r => r.ProcessoSeletivoId == ctx.ProcessoId);
 
         rascunho.FatosDasVersoesPublicadas.EixosDosItens["QUILOMBOLA"].Should().ContainSingle()
@@ -122,7 +123,7 @@ public sealed class FatosDasVersoesPublicadasNaRetificacaoEndpointTests
         Guid documentoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;
@@ -146,7 +147,7 @@ public sealed class FatosDasVersoesPublicadasNaRetificacaoEndpointTests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(ctx.ProcessoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
         await db.DocumentosAPublicar.AddAsync(documento);

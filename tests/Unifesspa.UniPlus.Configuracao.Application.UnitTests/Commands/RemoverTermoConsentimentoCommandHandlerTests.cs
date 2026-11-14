@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -19,7 +19,7 @@ public sealed class RemoverTermoConsentimentoCommandHandlerTests
     private static readonly DateTimeOffset Agora = new(2027, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
     private readonly ITermoConsentimentoRepository _repository = Substitute.For<ITermoConsentimentoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     [Fact(DisplayName = "Remove termo sem nenhuma versão promovida")]
     public async Task Handle_SemVersaoPromovida_RemoveEPersiste()

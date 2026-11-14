@@ -105,10 +105,10 @@ public sealed class Stage1ArchitectureRulesTests
         [
             typeof(Domain.Entities.ProcessoSeletivo).Assembly,
             typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-            typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly,
+            typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly,
             typeof(API.Controllers.ProcessoSeletivoController).Assembly,
             typeof(Ingresso.Domain.Entities.Chamada).Assembly,
-            typeof(Ingresso.Infrastructure.Persistence.IngressoDbContext).Assembly,
+            typeof(Ingresso.Infrastructure.Persistence.IngressoContribuicao).Assembly,
             typeof(Ingresso.API.IngressoApiAssemblyMarker).Assembly,
         ];
 

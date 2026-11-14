@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -16,9 +17,9 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
     Justification = "Instanciada via DI em PublicacoesInfrastructureRegistration.")]
 public sealed class AtoNormativoRepository : IAtoNormativoRepository
 {
-    private readonly PublicacoesDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public AtoNormativoRepository(PublicacoesDbContext dbContext)
+    public AtoNormativoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
@@ -222,7 +223,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
             .AsNoTracking()
             .Where(a => a.TipoCodigo == codigoNorm
                 && !daPropriaCadeia.Contains(a.Id)
-                && _dbContext.VinculosAtoEntidade
+                && _dbContext.Set<VinculoAtoEntidade>()
                     .Any(v => v.AtoId == a.Id && v.EntidadeTipo == tipoNorm && v.EntidadeId == entidadeId))
             .OrderBy(a => a.Id)
             .FirstOrDefaultAsync(cancellationToken);
@@ -247,7 +248,7 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         IQueryable<AtoNormativo> query = _dbContext.AtosNormativos
             .AsNoTracking()
             .Include(a => a.Anexos)
-            .Where(a => _dbContext.VinculosAtoEntidade
+            .Where(a => _dbContext.Set<VinculoAtoEntidade>()
                 .Any(v => v.AtoId == a.Id && v.EntidadeTipo == tipoNorm && v.EntidadeId == entidadeId));
 
         OrderedKeysetPage<AtoNormativo> page = await OrderedKeysetCursor

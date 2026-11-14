@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -70,7 +70,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         Result definirResult = processo.DefinirDocumentosExigidos([raiz], PrecondicaoIfMatch.Ausente);
         definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -80,7 +80,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         // Sessão NOVA — simula uma requisição HTTP diferente da que definiu a árvore. Pelo
         // caminho REAL de produção, não uma query de teste (é justamente o Include deste
         // método que o achado de revisão apontou faltando).
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository readRepository = new(readContext, TimeProvider.System);
         ProcessoSeletivo? recarregado = await readRepository.ObterParaMutacaoAsync(processo.Id, CancellationToken.None);
 
@@ -127,7 +127,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
             bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
@@ -171,7 +171,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     [InlineData("ex_nos_exigencia_irmaos_ordem")]
     public async Task ExclusionConstraintsDeOrdem_ExistemNoCatalogo_ComoDeferiveis(string nomeDaConstraint)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.OpenConnectionAsync();
 
         await using NpgsqlCommand command = new(

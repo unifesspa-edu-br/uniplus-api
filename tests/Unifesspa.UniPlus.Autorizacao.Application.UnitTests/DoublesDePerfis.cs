@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -43,7 +44,7 @@ internal static class DoublesDePerfis
         public IReadOnlyList<string> GetResourceRoles(string resourceName) => [];
     }
 
-    internal sealed class UnidadeDeTrabalho : IAutorizacaoUnitOfWork
+    internal sealed class UnidadeDeTrabalho : IUnitOfWork
     {
         public int Gravacoes { get; private set; }
 
@@ -63,6 +64,8 @@ internal static class DoublesDePerfis
         }
 
         public void DescartarAlteracoesNaoSalvas() => Descartes++;
+
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     internal sealed class Armazenamento : IArmazenamentoDosDocumentosDaAutorizacao

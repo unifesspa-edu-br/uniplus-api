@@ -7,8 +7,8 @@ using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -26,7 +26,7 @@ public sealed class VerificacaoDosArquivosDoCandidatoHandlersTests
     private static readonly DateTimeOffset Agora = new(2026, 10, 24, 12, 0, 0, TimeSpan.Zero);
 
     private readonly IDocumentoDaInscricaoRepository _documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
-    private readonly ISelecaoUnitOfWork _unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     public VerificacaoDosArquivosDoCandidatoHandlersTests() =>
         _documentos.TentarConcluirVerificacaoAsync(Arg.Any<Guid>(), Arg.Any<SituacaoDoArquivoDoCandidato>(), Arg.Any<CancellationToken>()).Returns(true);

@@ -5,12 +5,14 @@ using Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 public sealed class MatriculaRepository : IMatriculaRepository
 {
-    private readonly IngressoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
 
-    public MatriculaRepository(IngressoDbContext context, TimeProvider timeProvider)
+    public MatriculaRepository(UniPlusDbContext context, TimeProvider timeProvider)
     {
         _context = context;
         _timeProvider = timeProvider;

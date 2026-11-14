@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -31,7 +31,7 @@ public sealed class SolicitacaoDaProtecaoDoCatalogo
     private readonly ITipoDocumentoRepository _tipos;
     private readonly IFatoCandidatoRepository _fatos;
     private readonly IAtoDaProtecaoDoCatalogoRepository _atos;
-    private readonly IConfiguracaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ITitularesDaPermissao _titulares;
     private readonly TimeProvider _relogio;
 
@@ -39,7 +39,7 @@ public sealed class SolicitacaoDaProtecaoDoCatalogo
         ITipoDocumentoRepository tipos,
         IFatoCandidatoRepository fatos,
         IAtoDaProtecaoDoCatalogoRepository atos,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         ITitularesDaPermissao titulares,
         TimeProvider relogio)
     {

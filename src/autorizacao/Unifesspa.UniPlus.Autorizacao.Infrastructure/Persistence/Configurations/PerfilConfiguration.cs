@@ -33,7 +33,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         governanca => governanca.ToCodigo(),
         codigo => TipoDeGovernancaCodigo.FromCodigo(codigo));
 
-    // Perfis de sistema, com identificador fixo para que as migrations seguintes os alcancem.
+    // Perfis de sistema, com identificador fixo, para que a conferência do catálogo e os testes os alcancem.
     private static readonly Guid GestorDeAcessosId = PerfisDeSistema.GestorDeAcessosId;
     private static readonly Guid RepresentanteDoControladorId = PerfisDeSistema.RepresentanteDoControladorId;
     private static readonly Guid EncarregadoDeDadosId = PerfisDeSistema.EncarregadoDeDadosId;

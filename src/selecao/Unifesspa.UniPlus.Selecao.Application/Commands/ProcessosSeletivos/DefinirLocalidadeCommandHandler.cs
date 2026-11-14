@@ -1,12 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="DefinirLocalidadeCommand"/> (UNI-REQ-0111): monta o value object
@@ -19,7 +19,7 @@ public static class DefinirLocalidadeCommandHandler
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirLocalidadeCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

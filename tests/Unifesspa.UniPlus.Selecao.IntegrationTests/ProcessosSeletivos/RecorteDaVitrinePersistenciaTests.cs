@@ -4,12 +4,12 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -56,7 +56,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
     public async Task InitializeAsync()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
         // Toda combinação das bordas, inclusive janelas invertidas.
@@ -108,7 +108,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
     [Fact(DisplayName = "Cada contador é o tamanho da lista que ele promete, e os quatro somam o total")]
     public async Task ContarPorSituacao_QuandoHaDivulgadosEmTodasAsSituacoes_DeveBaterComOTamanhoDoRecorte()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         ContadoresDaVitrine contadores = (await repository.ListarVitrineAsync(
@@ -131,7 +131,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
         // Contar o que a página não pode mostrar faz o número ao lado do filtro prometer item que
         // filtro nenhum alcança. Numa janela de deploy em fases, o documento gravado por um
         // processo já atualizado é ilegível para este — e a linha existe no banco.
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         context.CertamesDivulgados.Add(Divulgado(
@@ -154,7 +154,7 @@ public sealed class RecorteDaVitrinePersistenciaTests : IClassFixture<ProcessoSe
 
     private async Task<IReadOnlyList<Guid>> ListarAsync(SituacaoDoCertame? situacao)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         PaginaDaVitrine pagina =

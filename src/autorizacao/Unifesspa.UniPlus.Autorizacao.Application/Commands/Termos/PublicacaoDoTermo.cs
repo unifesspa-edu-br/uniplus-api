@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Termos;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -16,10 +16,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class PublicacaoDoTermo
 {
     private readonly ITermoDeResponsabilidadeRepository _termos;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
 
-    public PublicacaoDoTermo(ITermoDeResponsabilidadeRepository termos, IAutorizacaoUnitOfWork unitOfWork, TimeProvider clock)
+    public PublicacaoDoTermo(ITermoDeResponsabilidadeRepository termos, IUnitOfWork unitOfWork, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(termos);
         ArgumentNullException.ThrowIfNull(unitOfWork);

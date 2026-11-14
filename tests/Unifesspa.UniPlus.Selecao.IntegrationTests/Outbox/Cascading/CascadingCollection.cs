@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 
 using System.Diagnostics.CodeAnalysis;
 
-// DisableParallelization=true protege a env var ConnectionStrings__SelecaoDb
+// DisableParallelization=true protege a env var ConnectionStrings__UniPlusDb
 // (setada pela CascadingFixture) contra interleaving com OUTRAS coleções de
 // teste rodando em paralelo no mesmo processo. Não desabilita paralelismo
 // global — somente impede que esta coleção rode simultaneamente com qualquer

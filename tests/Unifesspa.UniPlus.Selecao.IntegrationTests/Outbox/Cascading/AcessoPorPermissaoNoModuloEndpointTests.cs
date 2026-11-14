@@ -11,12 +11,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
 /// Os recursos administrativos do módulo decidem o acesso pela permissão concedida, e não pelo papel do token: quem tem
@@ -160,7 +160,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
     private async Task<(Guid ProcessoId, Guid UnidadeId)> SemearAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Acesso por permissão {Guid.CreateVersion7()}");
         Guid unidade = await db.ProcessosSeletivos.AsNoTracking()
             .Where(p => p.Id == processo.Id).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();

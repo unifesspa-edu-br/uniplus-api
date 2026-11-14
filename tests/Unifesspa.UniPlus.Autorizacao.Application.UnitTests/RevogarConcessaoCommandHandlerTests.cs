@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -54,10 +54,11 @@ public sealed class RevogarConcessaoCommandHandlerTests
         public IReadOnlyList<string> GetResourceRoles(string resourceName) => [];
     }
 
-    private sealed class UnidadeDeTrabalhoIntocavel : IAutorizacaoUnitOfWork
+    private sealed class UnidadeDeTrabalhoIntocavel : IUnitOfWork
     {
         public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public void DescartarAlteracoesNaoSalvas() => throw new InvalidOperationException();
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     private sealed class PapelIntocavel : IPapelDoRepresentante

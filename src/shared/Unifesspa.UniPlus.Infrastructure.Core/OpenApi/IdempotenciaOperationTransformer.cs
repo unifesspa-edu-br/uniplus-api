@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
 /// <summary>
-/// Declara no contrato as respostas que o <see cref="IdempotencyFilter{TDbContext}"/> produz
+/// Declara no contrato as respostas que o <see cref="IdempotencyFilter"/> produz
 /// — em <b>toda</b> rota marcada com <see cref="RequiresIdempotencyKeyAttribute"/>.
 /// </summary>
 /// <remarks>

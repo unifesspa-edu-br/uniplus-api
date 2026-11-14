@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -89,15 +90,15 @@ public sealed class ExpiracaoDoEnvioComResiduoEndpointTests
     private async Task<Guid> SemearProcessoAsync()
     {
         await using AsyncServiceScope escopo = Fabrica.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db, $"Instantes em microssegundos {Guid.CreateVersion7()}");
         return processo.Id;
     }
 
-    private async Task<T> LerAsync<T>(Func<SelecaoDbContext, Task<T>> leitura)
+    private async Task<T> LerAsync<T>(Func<UniPlusDbContext, Task<T>> leitura)
     {
         await using AsyncServiceScope escopo = Fabrica.Services.CreateAsyncScope();
-        return await leitura(escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>());
+        return await leitura(escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>());
     }
 }

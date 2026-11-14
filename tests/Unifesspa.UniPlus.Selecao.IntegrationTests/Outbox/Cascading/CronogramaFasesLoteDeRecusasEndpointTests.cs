@@ -16,8 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -222,8 +222,8 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     private static async Task GarantirTiposDeAtoAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext db =
-            scope.ServiceProvider.GetRequiredService<Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext>();
+        UniPlusDbContext db =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         bool inseriu = false;
         foreach ((string codigo, string nome, bool ehResultado) in new[]
@@ -256,7 +256,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     private static async Task<Guid> ObterFaseCanonicaAsync(CascadingApiFactory api, string codigo)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext config = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         // O catálogo de fases vivas é pequeno — materializar é mais barato que traduzir a
         // comparação do value object Codigo para SQL.
@@ -270,7 +270,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
     private static async Task<Guid> SemearProcessoAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"PS lote de recusas {Guid.CreateVersion7()}",

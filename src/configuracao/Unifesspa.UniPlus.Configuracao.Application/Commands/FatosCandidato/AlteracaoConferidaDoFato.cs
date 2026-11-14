@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
@@ -21,7 +21,7 @@ internal static class AlteracaoConferidaDoFato
         IPrecedenciaFaseRepository precedenciaRepository,
         IModeloFormularioRepository modeloRepository,
         IModalidadeRepository modalidadeRepository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         // A alteração é conferida contra as regras padrão do catálogo inteiro: as escritas dessas regras e

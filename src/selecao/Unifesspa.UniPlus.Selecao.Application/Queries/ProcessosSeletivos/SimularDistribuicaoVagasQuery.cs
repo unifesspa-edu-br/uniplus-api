@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </summary>
 /// <remarks>
 /// É uma Query, não um Command: despachada via <c>IQueryBus</c>, nunca toca
-/// <c>ISelecaoUnitOfWork</c>. Reaproveita a mesma resolução cross-módulo
+/// <c>IUnitOfWork</c>. Reaproveita a mesma resolução cross-módulo
 /// (<see cref="ConfiguracaoDistribuicaoVagasResolver"/>) e a mesma projeção
 /// de leitura (<see cref="ProcessoSeletivoDto"/>) usadas pelo comando de
 /// escrita e pela leitura persistida, para nunca divergir do que o PUT real

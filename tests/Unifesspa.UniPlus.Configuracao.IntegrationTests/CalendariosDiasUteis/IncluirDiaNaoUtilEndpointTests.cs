@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -223,7 +224,7 @@ public sealed class IncluirDiaNaoUtilEndpointTests
     private async Task<int> ContarCalendarios()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.CalendariosDiasUteis.CountAsync();
     }
 

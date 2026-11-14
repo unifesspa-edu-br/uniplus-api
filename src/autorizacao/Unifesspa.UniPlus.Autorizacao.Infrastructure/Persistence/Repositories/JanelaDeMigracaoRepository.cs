@@ -4,14 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>Repositório das janelas de migração.</summary>
 public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public JanelaDeMigracaoRepository(AutorizacaoDbContext context)
+    public JanelaDeMigracaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -52,7 +52,7 @@ public sealed class JanelaDeMigracaoRepository : IJanelaDeMigracaoRepository
         Guid perfilId, DateTimeOffset desde, CancellationToken cancellationToken = default)
     {
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE perfil_id = {{0}} AND (revogada_em IS NULL OR revogada_em >= {{1}}) ORDER BY id FOR UPDATE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.concessoes WHERE perfil_id = {{0}} AND (revogada_em IS NULL OR revogada_em >= {{1}}) ORDER BY id FOR UPDATE",
             [perfilId, desde],
             cancellationToken).ConfigureAwait(false);
 

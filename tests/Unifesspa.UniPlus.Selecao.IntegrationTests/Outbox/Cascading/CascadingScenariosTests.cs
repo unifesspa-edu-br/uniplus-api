@@ -10,6 +10,7 @@ using Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine;
@@ -55,7 +56,7 @@ public sealed class CascadingScenariosTests
         Guid documentoId;
         await using (AsyncServiceScope seedScope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(seedDb, $"V8 cascading {Guid.CreateVersion7()}");
             processoId = processo.Id;
@@ -64,7 +65,7 @@ public sealed class CascadingScenariosTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         var command = new PublicarProcessoSeletivoCommand(
             processoId,
@@ -110,7 +111,7 @@ public sealed class CascadingScenariosTests
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         string nomeProcesso = $"V9 cascading rollback {Guid.CreateVersion7()}";
         var command = new FalharAposPublicarCascadingCommand(nomeProcesso);

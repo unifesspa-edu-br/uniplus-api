@@ -79,10 +79,9 @@ internal sealed class CategoriaDocumentoConfiguration : IEntityTypeConfiguration
 
     /// <summary>
     /// Projeta o seed (<see cref="CategoriaDocumentoSeed.Itens"/>) para linhas que o
-    /// <c>HasData</c> congela como literais na migration. O instante-âncora é fixo
+    /// <c>HasData</c> congela como literais na migration inicial. O instante-âncora é fixo
     /// (as linhas não passam pelo <c>AuditableInterceptor</c>/<c>SoftDeleteInterceptor</c>);
-    /// qualquer mudança futura no seed exige uma nova migration — o EF detecta o
-    /// diff —, sem alterar as bases já migradas.
+    /// mudar o seed muda o modelo, e a migration inicial é gerada de novo.
     /// </summary>
     /// <remarks>
     /// O cadastro é administrado e semeado ao mesmo tempo, então as duas escritas

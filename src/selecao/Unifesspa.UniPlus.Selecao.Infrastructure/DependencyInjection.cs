@@ -12,7 +12,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
-using Persistence;
 using Persistence.Cryptography;
 using Persistence.Interceptors;
 using Persistence.Readers;
@@ -31,8 +30,6 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Time;
 
 public static class SelecaoInfrastructureRegistration
 {
-    private const string ConnectionStringName = "SelecaoDb";
-
     private static void AddProcessoSeletivoEAsLeiturasDaVersaoPublicada(this IServiceCollection services)
     {
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
@@ -40,32 +37,10 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IFasesIniciadasDoProcesso, FasesIniciadasDoProcesso>();
     }
 
-    private static void AddInterceptorsDaPersistencia(this IServiceCollection services)
-    {
-        services.AddUniPlusEfInterceptors();
-
-        // ObrigatoriedadeLegalHistoricoInterceptor (Story #460, ADR-0058) é
-        // scoped por simetria com SoftDelete/Auditable — depende do
-        // IUserContext scoped para preencher snapshot_by.
+    // Scoped por simetria com SoftDelete/Auditable: depende do IUserContext scoped para preencher snapshot_by. A
+    // SelecaoContribuicao o acrescenta às opções do contexto.
+    private static void AddInterceptorDoHistoricoDasObrigatoriedades(this IServiceCollection services) =>
         services.AddScoped<ObrigatoriedadeLegalHistoricoInterceptor>();
-    }
-
-    private static void AddDbContextEUnidadeDeTrabalhoDoSelecao(this IServiceCollection services)
-    {
-        services.AddDbContext<SelecaoDbContext>((serviceProvider, options) =>
-        {
-            options.UseUniPlusNpgsqlConventions<SelecaoDbContext>(serviceProvider, ConnectionStringName, schema: SelecaoDbContext.Schema);
-
-            // Encaixe deliberado em sequência aos interceptors cross-cutting do
-            // UseUniPlusNpgsqlConventions — roda DEPOIS de SoftDelete + Auditable,
-            // garantindo que mutações via soft-delete (Delete convertido para
-            // Modified+IsDeleted=true) também gerem linha no histórico.
-            options.AddInterceptors(
-                serviceProvider.GetRequiredService<ObrigatoriedadeLegalHistoricoInterceptor>());
-        });
-        services.AddScoped<ISelecaoUnitOfWork>(serviceProvider =>
-            serviceProvider.GetRequiredService<SelecaoDbContext>());
-    }
 
     private static void AddCertameDivulgadoESnapshotDaVersao(this IServiceCollection services)
     {
@@ -111,11 +86,10 @@ public static class SelecaoInfrastructureRegistration
     private static void AddPortasELeitoresDoModulo(this IServiceCollection services)
     {
         // Substitui a porta nula do host: a Seleção guarda as inscrições e responde ao impedimento do servidor inscrito.
-        // Por fábrica, e não por tipo: o ponto de decisão é injetado por handlers de todos os módulos, e o Wolverine,
-        // ao percorrer o grafo de dependências de um handler de outro módulo, não pode enxergar aqui o DbContext da
-        // Seleção como segundo contexto da transação.
+        // Por fábrica, e não por tipo, porque o concreto é interno e o ponto de decisão é injetado por handlers de todos
+        // os módulos (ADR-0098).
         services.Replace(ServiceDescriptor.Scoped<IInscricaoDoSujeitoNoProcesso>(
-            static sp => new InscricaoDoSujeitoNoProcesso(sp.GetRequiredService<SelecaoDbContext>())));
+            static sp => new InscricaoDoSujeitoNoProcesso(sp.GetRequiredService<UniPlusDbContext>())));
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
@@ -164,18 +138,15 @@ public static class SelecaoInfrastructureRegistration
     }
 
     /// <summary>
-    /// Registra a infraestrutura do módulo Seleção (DbContext + interceptors +
-    /// repositórios + serviços externos). Wire-up centralizado em
-    /// <see cref="UniPlusDbContextOptionsExtensions"/> (ADR-0054): convenção
-    /// snake_case global, soft delete + audit interceptors, leitura lazy de
-    /// connection string.
+    /// Registra a infraestrutura do módulo Seleção: o interceptador do histórico das obrigatoriedades legais, os
+    /// repositórios, os leitores e os serviços externos. O contexto e a unidade de trabalho vêm da persistência única do
+    /// monólito.
     /// </summary>
     public static IServiceCollection AddSelecaoInfrastructure(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddInterceptorsDaPersistencia();
-        services.AddDbContextEUnidadeDeTrabalhoDoSelecao();
+        services.AddInterceptorDoHistoricoDasObrigatoriedades();
         services.AddProcessoSeletivoEAsLeiturasDaVersaoPublicada();
         services.AddCertameDivulgadoESnapshotDaVersao();
         services.AddRepositoriosDoModulo();

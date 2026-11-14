@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <!-- Entry point dos testes de integração do monólito: a API UniPlus (composition root). -->
     <ProjectReference Include="..\..\src\host\Unifesspa.UniPlus.Host\Unifesspa.UniPlus.Host.csproj" />
+    <ProjectReference Include="..\..\src\host\Unifesspa.UniPlus.Monolito.Persistencia\Unifesspa.UniPlus.Monolito.Persistencia.csproj" />
   </ItemGroup>
 
 </Project>

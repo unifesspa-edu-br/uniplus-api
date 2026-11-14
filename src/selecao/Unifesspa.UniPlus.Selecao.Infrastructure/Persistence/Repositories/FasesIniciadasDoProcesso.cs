@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -15,9 +16,9 @@ using static InicioDasFases;
 /// </summary>
 internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public FasesIniciadasDoProcesso(SelecaoDbContext context) => _context = context;
+    public FasesIniciadasDoProcesso(UniPlusDbContext context) => _context = context;
 
     public async Task<FasesIniciadas> ObterAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken = default)
     {

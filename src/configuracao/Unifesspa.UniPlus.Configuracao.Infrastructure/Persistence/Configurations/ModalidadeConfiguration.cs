@@ -108,9 +108,9 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
 
     /// <summary>
     /// Projeta o seed (<see cref="ModalidadeSeed.Itens"/>) para linhas que o <c>HasData</c> congela
-    /// como literais na migration. O instante-âncora é fixo (as linhas não passam pelo
+    /// como literais na migration inicial. O instante-âncora é fixo (as linhas não passam pelo
     /// <c>AuditableInterceptor</c>); as oito federais mais AC, AC_PCD, AC_I e AC_Q
-    /// nascem com a migração.
+    /// nascem com a migration inicial.
     /// </summary>
     private static IEnumerable<object> MaterializarSeed()
     {

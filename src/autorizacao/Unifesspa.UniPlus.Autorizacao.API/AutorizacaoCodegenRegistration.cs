@@ -8,17 +8,11 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 using Wolverine;
 
 /// <summary>
-/// Opt-ins de codegen Wolverine do módulo Autorização (ADR-0098). Declara que
-/// <see cref="IAutorizacaoUnitOfWork"/> usa service location <em>intencionalmente</em> sob
-/// <c>ServiceLocationPolicy.NotAllowed</c>.
+/// Opt-ins de codegen Wolverine do módulo Autorização (ADR-0098): portas registradas por fábrica ou de
+/// implementação interna, que o código gerado resolve do contêiner sob <c>ServiceLocationPolicy.NotAllowed</c>.
+/// A unidade de trabalho é declarada uma vez, em <c>MonolitoCodegenRegistration</c>. Composto pelo host no
+/// <c>configureRouting</c>; o helper compartilhado permanece agnóstico dos tipos do módulo.
 /// </summary>
-/// <remarks>
-/// A UoW encaminha para a MESMA instância do <c>AutorizacaoDbContext</c>, registrada como
-/// lambda Scoped opaca ao codegen. Registrar a UoW direto sobre o DbContext criaria uma
-/// segunda instância por escopo e quebraria a atomicidade write+evento do outbox (ADR-0004).
-/// Composto pelo host no <c>configureRouting</c>; o helper compartilhado permanece agnóstico
-/// dos tipos do módulo.
-/// </remarks>
 [SuppressMessage(
     "Design",
     "CA1515:Consider making public types internal",
@@ -30,10 +24,7 @@ public static class AutorizacaoCodegenRegistration
     {
         ArgumentNullException.ThrowIfNull(opts);
 
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<IAutorizacaoUnitOfWork>();
-
-        // O leitor de unidades é registrado por fábrica para o detector de transação não enxergar o DbContext da
-        // Organização Institucional (ver AddAutorizacaoInfrastructure).
+        // O leitor de unidades é registrado por fábrica, sobre um concreto interno (ver AddAutorizacaoInfrastructure).
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ILeitorDeUnidade>();
 
         // O armazenamento do PDF de designação é registrado por fábrica (credencial própria derivada das opções),

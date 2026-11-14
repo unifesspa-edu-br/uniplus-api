@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta do TipoBanca contra Postgres real (UNI-REQ-0139):
@@ -41,13 +42,13 @@ public sealed class TipoBancaPersistenceTests
     {
         TipoBanca banca = Banca("BANCA_ANALISE_DOCUMENTAL", "Banca de análise documental", "Homologação");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposBanca.Add(banca);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoBanca persistida = await readCtx.TiposBanca.SingleAsync(b => b.Id == banca.Id);
 
         persistida.Codigo.Valor.Should().Be("BANCA_ANALISE_DOCUMENTAL");
@@ -65,13 +66,13 @@ public sealed class TipoBancaPersistenceTests
     [Fact(DisplayName = "UNIQUE parcial do código rejeita segunda banca viva com mesmo código")]
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposBanca.Add(Banca("BANCA_ENTREVISTA", "Banca de entrevista", null));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.TiposBanca.Add(Banca("BANCA_ENTREVISTA", "Banca de entrevista", null));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -86,20 +87,20 @@ public sealed class TipoBancaPersistenceTests
     public async Task SoftDelete_LiberaSlot()
     {
         TipoBanca banca = Banca("BANCA_CORRECAO_REDACOES", "Banca de correção de redações", null);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposBanca.Add(banca);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             TipoBanca tracked = await ctx.TiposBanca.SingleAsync(b => b.Id == banca.Id);
             ctx.TiposBanca.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             TipoBanca excluida = await ctx.TiposBanca
                 .IgnoreQueryFilters().SingleAsync(b => b.Id == banca.Id);
@@ -107,7 +108,7 @@ public sealed class TipoBancaPersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.TiposBanca.Add(Banca("BANCA_CORRECAO_REDACOES", "Banca de correção de redações", null));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -117,7 +118,7 @@ public sealed class TipoBancaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do conjunto canônico via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoCanonicoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.tipo_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"BANCA_LOGISTICA"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
@@ -129,7 +130,7 @@ public sealed class TipoBancaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do formato via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoFormatoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.tipo_banca (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"banca-entrevista"}, {"Banca"}, {DateTimeOffset.UtcNow}, {false})");
@@ -142,13 +143,13 @@ public sealed class TipoBancaPersistenceTests
     public async Task ListarVivos_ExcluiSoftDeleted()
     {
         TipoBanca banca = Banca("BANCA_ANALISE_RECURSOS", "Banca de análise de recursos", null);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposBanca.Add(banca);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoBanca vo = CodigoBanca.Criar("BANCA_ANALISE_RECURSOS").Value!;
             TipoBanca aExcluir = await ctx.TiposBanca.SingleAsync(b => b.Codigo == vo);
@@ -156,7 +157,7 @@ public sealed class TipoBancaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new TipoBancaReader(readCtx);
         IReadOnlyList<TipoBancaView> todos = await reader.ListarVivosAsync();
 

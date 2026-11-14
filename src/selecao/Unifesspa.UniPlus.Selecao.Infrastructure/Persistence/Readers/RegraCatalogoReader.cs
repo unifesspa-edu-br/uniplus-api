@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -24,9 +25,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     Justification = "Instanciada via DI na registration de Infrastructure do módulo Seleção.")]
 internal sealed class RegraCatalogoReader : IRegraCatalogoReader
 {
-    private readonly SelecaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public RegraCatalogoReader(SelecaoDbContext dbContext)
+    public RegraCatalogoReader(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

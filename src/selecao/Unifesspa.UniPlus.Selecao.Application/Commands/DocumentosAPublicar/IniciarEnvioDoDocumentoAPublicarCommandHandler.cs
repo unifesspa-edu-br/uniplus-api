@@ -11,6 +11,8 @@ using Kernel.Results;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>
 /// Handler de <see cref="IniciarEnvioDoDocumentoAPublicarCommand"/>: confere que o processo existe,
 /// cria o registro pendente e devolve a URL pré-assinada de PUT, de validade curta
@@ -23,7 +25,7 @@ public static class IniciarEnvioDoDocumentoAPublicarCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         IArquivoArmazenadoStorage storage,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {

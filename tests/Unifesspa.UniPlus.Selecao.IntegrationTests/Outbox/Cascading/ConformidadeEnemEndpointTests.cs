@@ -13,6 +13,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -70,7 +71,7 @@ public sealed class ConformidadeEnemEndpointTests
         Guid documentoRetificacao;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             // Correção de dados sobre o processo publicado: o grupo perde o código, e o EF
             // devolve a oferta sem grupo.
             await db.Database.ExecuteSqlAsync(
@@ -96,7 +97,7 @@ public sealed class ConformidadeEnemEndpointTests
         CascadingApiFactory api, string nome, bool ofertaComGrupo)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await ProcessoSeletivoPendenciasSeeder.SemearEnemComCalculoLocalAsync(db, $"{nome} {Guid.CreateVersion7()}", ofertaComGrupo);
     }
 

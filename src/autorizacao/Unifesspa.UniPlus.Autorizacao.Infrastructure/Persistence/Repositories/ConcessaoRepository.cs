@@ -7,14 +7,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Repositório das concessões de acesso.</summary>
 public sealed class ConcessaoRepository : IConcessaoRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public ConcessaoRepository(AutorizacaoDbContext context)
+    public ConcessaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -27,7 +28,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
     {
         // A trava vem antes da leitura rastreada, que então enxerga o que a transação anterior confirmou.
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE id = {{0}} FOR UPDATE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.concessoes WHERE id = {{0}} FOR UPDATE",
             [id],
             cancellationToken).ConfigureAwait(false);
 
@@ -63,7 +64,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         // A trava vem antes da leitura: a leitura seguinte enxerga o que a transação que
         // desativava o perfil já confirmou. A trava dura até o fim da transação do handler.
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.perfis WHERE id = {{0}} FOR SHARE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.perfis WHERE id = {{0}} FOR SHARE",
             [perfilId],
             cancellationToken).ConfigureAwait(false);
 
@@ -97,7 +98,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         // A trava vem antes da leitura rastreada, que então enxerga o que a transação anterior confirmou: a concessão
         // revogada nesse intervalo não volta a ser lida. A ordem por id evita ciclo entre quem trava mais de uma.
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.concessoes WHERE perfil_id = {{0}} AND versao_id = {{1}} AND revogada_em IS NULL ORDER BY id FOR UPDATE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.concessoes WHERE perfil_id = {{0}} AND versao_id = {{1}} AND revogada_em IS NULL ORDER BY id FOR UPDATE",
             [perfilId, versaoId],
             cancellationToken).ConfigureAwait(false);
 

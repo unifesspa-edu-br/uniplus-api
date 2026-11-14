@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -32,7 +33,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         (Guid processoId, VersaoConfiguracao versao) = await SemearPublicadoSemIdentificadorAsync(variante: 4);
         await DeclararNaSessaoAsync(processoId, versao, Declarado(4));
 
-        await using (SelecaoDbContext descarte = fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(descarte, processoId);
             Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao);
@@ -46,7 +47,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
             await descarte.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext leitura = fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = fixture.CreateDbContext();
         ProcessoSeletivo reposto = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(leitura, processoId);
         reposto.IdentificadorLegivel.Should().BeNull(
             "o descarte devolve o que a versão vigente congelou — a declaração da sessão não sobrevive");
@@ -61,7 +62,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         await DeclararNaSessaoAsync(processoId, versao, declarado);
 
         VersaoConfiguracao nova;
-        await using (SelecaoDbContext fechamento = fixture.CreateDbContext())
+        await using (UniPlusDbContext fechamento = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(fechamento, processoId);
             SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(
@@ -82,7 +83,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         reidratada.Value!.Grafo.IdentificadorLegivel.Should().Be(
             declarado, "o identificador declarado na sessão é congelado pela versão que ela gera");
 
-        await using SelecaoDbContext novaSessao = fixture.CreateDbContext();
+        await using UniPlusDbContext novaSessao = fixture.CreateDbContext();
         ProcessoSeletivo processo = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(novaSessao, processoId);
         processo.AbrirRetificacao(
                 "Tenta trocar o endereço", nova, reidratada.Value.Grafo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), CorpusEnvelope.Ator,
@@ -120,7 +121,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
             processo, semIdentificador.Bytes, new Guid($"01900000-0000-7000-8000-0000000014{variante:x2}"));
 
-        await using SelecaoDbContext escrita = fixture.CreateDbContext();
+        await using UniPlusDbContext escrita = fixture.CreateDbContext();
         escrita.ProcessosSeletivos.Add(processo);
         escrita.Add(versao);
         await escrita.SaveChangesAsync();
@@ -137,7 +138,7 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         baseReidratada.IsSuccess.Should().BeTrue(baseReidratada.Error?.Message);
         baseReidratada.Value!.Grafo.IdentificadorLegivel.Should().BeNull("pré-condição: a versão congelou sem identificador");
 
-        await using SelecaoDbContext sessao = fixture.CreateDbContext();
+        await using UniPlusDbContext sessao = fixture.CreateDbContext();
         ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(sessao, processoId);
         tracked.AbrirRetificacao(
                 "Declara o endereço público", versao, baseReidratada.Value.Grafo.IdentificadorLegivel,

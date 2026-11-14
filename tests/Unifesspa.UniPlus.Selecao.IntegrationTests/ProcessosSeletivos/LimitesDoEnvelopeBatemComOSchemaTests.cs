@@ -7,10 +7,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Xunit;
 
@@ -159,7 +160,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     [Fact(DisplayName = "Todo limite de COMPRIMENTO do decoder é o da coluna que vai receber o valor")]
     public void Comprimentos_BatemComOSchema()
     {
-        using SelecaoDbContext contexto = ContextoSoParaOModelo();
+        using UniPlusDbContext contexto = ContextoSoParaOModelo();
 
         foreach ((string nome, int valorNoCodec, Type entidade, string propriedade) in Comprimentos)
         {
@@ -179,7 +180,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     [Fact(DisplayName = "Todo limite de PRECISÃO do decoder é o da coluna numeric(p,s)")]
     public void Precisoes_BatemComOSchema()
     {
-        using SelecaoDbContext contexto = ContextoSoParaOModelo();
+        using UniPlusDbContext contexto = ContextoSoParaOModelo();
 
         foreach ((string nome, int precisaoNoCodec, int escalaNoCodec, Type entidade, string propriedade) in Precisoes)
         {
@@ -220,7 +221,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     [Fact(DisplayName = "Toda ReferenciaRegra embutida no modelo tem as larguras do decodificador — descobertas, não listadas")]
     public void Toda_ReferenciaRegra_Embutida_TemAsLargurasDoDecodificador()
     {
-        using SelecaoDbContext contexto = ContextoSoParaOModelo();
+        using UniPlusDbContext contexto = ContextoSoParaOModelo();
 
         (string Dono, string Navegacao, IEntityType Alvo)[] referencias = contexto.Model
             .GetEntityTypes()
@@ -260,7 +261,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     [Fact(DisplayName = "Os limites dos owned types (ReferenciaRegra, referência demográfica) também são os do schema")]
     public void OwnedTypes_BatemComOSchema()
     {
-        using SelecaoDbContext contexto = ContextoSoParaOModelo();
+        using UniPlusDbContext contexto = ContextoSoParaOModelo();
 
         IEntityType demografica = contexto.Model
             .FindEntityType(typeof(ConfiguracaoDistribuicaoVagas))!
@@ -442,8 +443,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
     /// O modelo do EF é construído em memória — nenhuma conexão é aberta. A connection string
     /// existe só porque o provider a exige para montar o modelo.
     /// </summary>
-    private static SelecaoDbContext ContextoSoParaOModelo() => new(
-        new DbContextOptionsBuilder<SelecaoDbContext>()
+    private static MonolitoDbContext ContextoSoParaOModelo() => new(
+        new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql("Host=localhost;Database=nao-conecta;Username=x;Password=x")
             .UseSnakeCaseNamingConvention()
             .Options);

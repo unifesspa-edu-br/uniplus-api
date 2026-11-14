@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -33,7 +34,7 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
         Guid etapaId;
         TipoEtapaSnapshot tipo = Tipo();
 
-        await using (SelecaoDbContext escrita = fixture.CreateDbContext())
+        await using (UniPlusDbContext escrita = fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"Certame de itens {Guid.CreateVersion7()}", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
@@ -51,7 +52,7 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
         }
 
         Guid idDaClareza;
-        await using (SelecaoDbContext regravacao = fixture.CreateDbContext())
+        await using (UniPlusDbContext regravacao = fixture.CreateDbContext())
         {
             EtapaProcesso etapa = await Carregar(regravacao, etapaId);
             etapa.EscalaDeAtendimento!.Select(static n => (n.Rotulo, n.Fracao)).Should().Equal(
@@ -66,7 +67,7 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
             await regravacao.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext conferencia = fixture.CreateDbContext();
+        await using UniPlusDbContext conferencia = fixture.CreateDbContext();
         EtapaProcesso relida = await Carregar(conferencia, etapaId);
 
         relida.ItensDeAvaliacao.Should().HaveCount(2)
@@ -76,6 +77,6 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
             .Should().Be(2, "o item que saiu da lista não deixa linha órfã");
     }
 
-    private static Task<EtapaProcesso> Carregar(SelecaoDbContext contexto, Guid etapaId) =>
+    private static Task<EtapaProcesso> Carregar(UniPlusDbContext contexto, Guid etapaId) =>
         contexto.Set<EtapaProcesso>().Include(e => e.ItensDeAvaliacao).FirstAsync(e => e.Id == etapaId);
 }
