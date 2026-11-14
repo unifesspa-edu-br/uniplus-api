@@ -1,13 +1,16 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
+using System.Text.RegularExpressions;
+
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
+using ArchUnitNET.Fluent.Syntax.Elements.Types;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.ArchTests.TestSupport;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
@@ -47,52 +50,31 @@ public sealed class CrossModuleReadIsolationTests
     /// Roster dos módulos da plataforma. Cada entrada é o namespace raiz; as
     /// camadas internas (<c>.Domain</c>, <c>.Application</c>, etc.) seguem por convenção.
     /// </summary>
-    private static readonly string[] ModulesRoster =
-    [
-        "Selecao",
-        "Ingresso",
-        "Portal",
-        "OrganizacaoInstitucional",
-        "Configuracao",
-        "Publicacoes",
-        "Discentes",
-        "Autorizacao",
-    ];
+    private static readonly string[] ModulesRoster = ModulosDoMonolito.Nomes;
 
     private static readonly Architecture SolutionArchitecture = LoadSolutionArchitecture();
 
-    [Fact(DisplayName = "R8: nenhum módulo depende do Domain ou Application de outro módulo")]
+    [Fact(DisplayName = "R8: nenhum módulo depende do Domain, Application, Infrastructure ou API de outro módulo")]
     public void Modulos_NaoDependemDeDomainOuApplicationDeOutros()
     {
-        List<string> violations = [];
-
-        foreach (string moduloOrigem in ModulesRoster)
-        {
-            string origemPattern = $@"^Unifesspa\.UniPlus\.{moduloOrigem}(\.|$)";
-
-            foreach (string moduloDestino in ModulesRoster)
-            {
-                if (string.Equals(moduloOrigem, moduloDestino, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                // Dois namespaces "off-limits" cross-módulo: .Domain e .Application
-                // (.Infrastructure e .API também são proibidos por construção — quem
-                // referencia Application de outro módulo já viola, então Infrastructure/API
-                // ficam cobertos transitivamente).
-                AssertSemDependencia(moduloOrigem, origemPattern, moduloDestino, ".Domain", violations);
-                AssertSemDependencia(moduloOrigem, origemPattern, moduloDestino, ".Application", violations);
-                AssertSemDependencia(moduloOrigem, origemPattern, moduloDestino, ".Infrastructure", violations);
-                AssertSemDependencia(moduloOrigem, origemPattern, moduloDestino, ".API", violations);
-            }
-        }
+        List<string> violations = ViolacoesDeFronteira(SolutionArchitecture, ModulosDoMonolito.Raizes);
 
         Assert.True(
             violations.Count == 0,
             "ADR-0056 §\"Fitness tests\" exige que dependências cross-módulo sejam apenas contra "
             + "{Module}.Contracts ou Governance.Contracts. Violações encontradas:\n  - "
             + string.Join("\n  - ", violations));
+    }
+
+    [Fact(DisplayName = "Fitness_ModuloQueUsaOutroModulo_Falha")]
+    public void Fitness_ModuloQueUsaOutroModulo_Falha()
+    {
+        List<string> reprovados = ViolacoesDeFronteira(ArquiteturaDasTravas.Fixtures, ModulosDoMonolito.RaizesDosFixtures);
+
+        reprovados.Should().Contain(static v => v.Contains("UsaODominioDeBeta", StringComparison.Ordinal));
+        reprovados.Should().Contain(static v => v.Contains("UsaAInfraestruturaDeBeta", StringComparison.Ordinal));
+        reprovados.Should().NotContain(static v => v.Contains("UsaOContratoDeBeta", StringComparison.Ordinal));
+        reprovados.Should().NotContain(static v => v.Contains("UsaODominioDeAlfa", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "R8 (Program top-level): tipos no global namespace de cada API não dependem de outros módulos")]
@@ -248,38 +230,24 @@ public sealed class CrossModuleReadIsolationTests
         }
     }
 
-    private static void AssertSemDependencia(
-        string moduloOrigem,
-        string origemPattern,
-        string moduloDestino,
-        string layerDestino,
-        List<string> violations)
-    {
-        string destinoPattern = $@"^Unifesspa\.UniPlus\.{moduloDestino}{System.Text.RegularExpressions.Regex.Escape(layerDestino)}(\.|$)";
+    // Para cada par de módulos, a origem não depende de Domain, Application, Infrastructure nem API do destino (.Infrastructure e
+    // .API ficam cobertos transitivamente por quem referencia Application, mas a regra os nomeia). Só o Contracts do destino e o
+    // Governance.Contracts são alcançáveis. `Program` top-level vive no namespace global e tem o teste próprio acima.
+    private static List<string> ViolacoesDeFronteira(Architecture arquitetura, string[] raizes) =>
+        [
+            .. raizes
+                .SelectMany(origem => raizes.Where(destino => destino != origem), (origem, destino) => (Origem: origem, Destino: destino))
+                .SelectMany(par => ArquiteturaDasTravas.Reprovacoes(RegraDeFronteira(par.Origem, par.Destino), arquitetura)
+                    .Select(descricao => $"{par.Origem} → {par.Destino}: {descricao.Split('\n')[0]}")),
+        ];
 
-        // Predicate de origem inclui o namespace canônico do módulo. Para
-        // captar `Program` top-level statements (vive no global namespace),
-        // o teste em separado [Fact] ProgramsApi_NaoDependemDeOutrosModulos
-        // varre os Program de cada API por reflection no assembly do módulo.
-        IArchRule rule = Types()
+    private static TypesShouldConjunction RegraDeFronteira(string origem, string destino) =>
+        Types()
             .That()
-            .ResideInNamespaceMatching(origemPattern)
+            .ResideInNamespaceMatching($@"^{Regex.Escape(origem)}(\.|$)")
             .Should()
             .NotDependOnAnyTypesThat()
-            .ResideInNamespaceMatching(destinoPattern);
-
-        try
-        {
-            rule.Check(SolutionArchitecture);
-        }
-        catch (Xunit.Sdk.XunitException ex)
-        {
-            // ArchUnitNET.xUnit traduz violação em FailedArchRuleException, que
-            // herda de XunitException. Coleta violações em vez de falhar no primeiro
-            // — relatório consolidado facilita triage de múltiplas violações.
-            violations.Add($"{moduloOrigem} → {moduloDestino}{layerDestino}: {ex.Message.Split('\n')[0]}");
-        }
-    }
+            .ResideInNamespaceMatching($@"^{Regex.Escape(destino)}\.(Domain|Application|Infrastructure|API)(\.|$)");
 
     private static Architecture LoadSolutionArchitecture()
     {
