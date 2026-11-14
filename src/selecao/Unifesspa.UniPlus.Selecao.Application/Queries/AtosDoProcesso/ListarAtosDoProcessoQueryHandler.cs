@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
-using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -41,21 +40,11 @@ public static class ListarAtosDoProcessoQueryHandler
             .ListarDoProcessoAsync(query.ProcessoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
-        // Só os documentos que os atos listados referenciam: o histórico de envios do processo inclui
-        // documentos que nenhum ato usou.
-        Guid[] idsDosDocumentos =
-        [
-            .. atos.SelectMany(static a => a.Anexos.Select(static x => x.DocumentoAPublicarId).Append(a.DocumentoPrincipalId)).Distinct(),
-        ];
-        IReadOnlyList<DocumentoAPublicar> documentos = await documentoAPublicarRepository
-            .ListarDoProcessoAsync(query.ProcessoSeletivoId, idsDosDocumentos, cancellationToken)
-            .ConfigureAwait(false);
-
-        Dictionary<Guid, DocumentoAPublicar> documentosPorId = documentos.ToDictionary(static d => d.Id);
-
         // A ordem é a do repositório (instante de gravação decrescente, ato como desempate); reordenar
         // aqui desfaria o que o contrato promete.
-        AtoDoProcessoDto[] itens = [.. atos.Select(a => AtoDoProcessoMapping.ToDto(a, documentosPorId))];
+        AtoDoProcessoDto[] itens = await ProjecaoDosAtosDoProcesso
+            .ProjetarAsync(query.ProcessoSeletivoId, atos, documentoAPublicarRepository, cancellationToken)
+            .ConfigureAwait(false);
 
         return Result<ListarAtosDoProcessoResult>.Success(new ListarAtosDoProcessoResult(itens));
     }
