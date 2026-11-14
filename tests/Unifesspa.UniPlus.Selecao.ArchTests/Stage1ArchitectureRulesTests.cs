@@ -39,11 +39,10 @@ public sealed class Stage1ArchitectureRulesTests
     /// só o namespace dos marcadores (<c>[NonTransactional]</c> etc.), lidos pelo codegen em
     /// build-time, zero acoplamento a <c>IMessageBus</c>/dispatch (confirmado por reflection:
     /// <c>NonTransactionalAttribute</c> deriva só de <c>System.Attribute</c>). Necessário para
-    /// handlers que injetam reader cross-módulo com <c>DbContext</c> diferente da própria
-    /// UnitOfWork (ex.: <c>IUnidadeReader</c> em <c>CriarProcessoSeletivoCommandHandler</c>,
-    /// issue #849) — <c>[NonTransactional]</c> é o único mecanismo que o Wolverine expõe para
-    /// excusar o handler do detector de transação (<c>AutoApplyTransactions</c>, ADR-0004); não
-    /// há alternativa fluente registrável fora do atributo. O resto de <c>Wolverine.*</c> (bus,
+    /// as consultas que registram o acesso no Kafka e não devem segurar a conexão numa transação
+    /// ambiente (ex.: <c>ListarInscricoesDoProcessoQueryHandler</c>) — <c>[NonTransactional]</c> é o
+    /// único mecanismo que o Wolverine expõe para excusar o handler do detector de transação
+    /// (<c>AutoApplyTransactions</c>, ADR-0004); não há alternativa fluente registrável fora do atributo. O resto de <c>Wolverine.*</c> (bus,
     /// runtime, EF Core middleware) continua proibido.
     /// </summary>
     [Fact(DisplayName = "R2: Application.Abstractions, Selecao.Application e Selecao.Domain nao dependem de Wolverine (exceto Wolverine.Attributes)")]

@@ -8,8 +8,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// Handler do <see cref="CriarOfertaCursoCommand"/> (convention-based Wolverine):
 /// valida os campos regulatórios do payload primeiro (422, sem I/O — validação
@@ -22,25 +20,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class CriarOfertaCursoCommandHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c> é necessário porque este é o primeiro handler do
-    /// monólito que injeta um reader cross-módulo (<see cref="IUnidadeReader"/>,
-    /// implementado em Organização, dependente de
-    /// <c>OrganizacaoInstitucionalDbContext</c>) dentro de um handler que TAMBÉM
-    /// escreve no seu próprio módulo (via <see cref="IUnitOfWork"/>,
-    /// dependente de <c>ConfiguracaoDbContext</c>). O detector de transação do
-    /// Wolverine.EntityFrameworkCore (<c>AutoApplyTransactions</c>) enumera TODAS
-    /// as dependências transitivas dos parâmetros do handler em busca de um único
-    /// <c>DbContext</c> a enrolar na transação do outbox — encontra os dois e
-    /// falha por ambiguidade (<c>InvalidOperationException</c> no boot do host).
-    /// A persistência continua correta sem o enrolamento automático: o handler já
-    /// chama <see cref="IUnitOfWork.SalvarAlteracoesAsync"/>
-    /// explicitamente (mesmo padrão de todo handler de Configuração), e o módulo
-    /// não emite domain events — não há atomicidade write+evento de outbox a
-    /// perder (ADR-0004 não se aplica aqui). O reader é só leitura, sem
-    /// participação na transação de escrita.
-    /// </summary>
-    [NonTransactional]
     public static async Task<Result<Guid>> Handle(
         CriarOfertaCursoCommand command,
         IOfertaCursoRepository repository,

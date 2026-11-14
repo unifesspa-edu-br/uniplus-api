@@ -19,18 +19,9 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// cujo snapshot é congelado em <see cref="ConfiguracaoBonusRegional"/> (Story #1466).
 /// </summary>
 /// <remarks>
-/// O reader cross-módulo (backed por <c>ConfiguracaoDbContext</c>) não exige
-/// <c>[NonTransactional]</c> nem desliga o enrolamento automático do Wolverine em
-/// <c>SelecaoDbContext</c> (ADR-0004): o opt-in de codegen
-/// <c>AlwaysUseServiceLocationFor&lt;IBaseLegalBonusRegionalReader&gt;()</c>
-/// (<c>SelecaoCodegenRegistration</c>, ADR-0098) resolve o reader por service location, e
-/// isso já basta para o <c>ConfiguracaoDbContext</c> deixar de ser alcançável na análise de
-/// <c>AutoApplyTransactions</c> — mesmo padrão de <see cref="ICalendarioVigenteReader"/> em
-/// <c>PublicarProcessoSeletivoCommandHandler</c>/<c>RetificarProcessoSeletivoCommandHandler</c>/
-/// <c>FecharRetificacaoCommandHandler</c>, que também combinam um reader cross-módulo com
-/// <c>ObterParaMutacaoAsync</c> sem abrir mão da transação ambiente. Desligá-la aqui
-/// destravaria o <c>SELECT ... FOR UPDATE</c> do lock pessimista (ArchTest
-/// <c>CarregamentoDeMutacao_NaoConviveComTransacaoDesligada</c>).
+/// Sem <c>[NonTransactional]</c>, de propósito: o <c>SELECT ... FOR UPDATE</c> de
+/// <c>ObterParaMutacaoAsync</c> só serializa handlers concorrentes dentro da transação ambiente do
+/// Wolverine (ADR-0004), e desligá-la destravaria o lock pessimista.
 /// </remarks>
 public static class DefinirBonusRegionalCommandHandler
 {

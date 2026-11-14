@@ -8,8 +8,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// Handler do <see cref="CriarFaseCanonicaCommand"/> (convention-based Wolverine).
 /// Orquestra: construção do agregado por inteiro primeiro (sem I/O — formato,
@@ -21,12 +19,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class CriarFaseCanonicaCommandHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c> pelo mesmo motivo de <c>CriarOfertaCursoCommandHandler</c>: o
-    /// handler injeta o reader de Organização e o unit of work de Configuração, e o detector de
-    /// transação do Wolverine falha por ambiguidade de <c>DbContext</c>.
-    /// </summary>
-    [NonTransactional]
     public static async Task<Result<Guid>> Handle(
         CriarFaseCanonicaCommand command,
         IFaseCanonicaRepository repository,

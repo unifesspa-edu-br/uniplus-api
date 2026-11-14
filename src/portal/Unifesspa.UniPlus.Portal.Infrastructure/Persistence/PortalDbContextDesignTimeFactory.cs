@@ -5,8 +5,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Factory consumido apenas pelo <c>dotnet ef</c> CLI em design-time. Ver
-/// <c>SelecaoDbContextDesignTimeFactory</c> para a justificativa.
+/// Factory consumido apenas pelo <c>dotnet ef</c> CLI em design-time.
 /// </summary>
 public sealed class PortalDbContextDesignTimeFactory : IDesignTimeDbContextFactory<PortalDbContext>
 {

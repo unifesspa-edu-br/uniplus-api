@@ -9,8 +9,6 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// Handler do <see cref="AtualizarFaseCanonicaCommand"/>. Valida antes de I/O só o
 /// que é determinável sem o código persistido (os quatro campos comuns) — as
@@ -23,11 +21,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class AtualizarFaseCanonicaCommandHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c> porque o handler injeta o reader de Organização e o unit of work de
-    /// Configuração, e o detector de transação do Wolverine falha por ambiguidade de <c>DbContext</c>.
-    /// </summary>
-    [NonTransactional]
     public static async Task<Result> Handle(
         AtualizarFaseCanonicaCommand command,
         IFaseCanonicaRepository repository,

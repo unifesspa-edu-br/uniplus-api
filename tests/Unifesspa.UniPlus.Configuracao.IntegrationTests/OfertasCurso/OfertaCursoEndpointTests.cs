@@ -502,8 +502,8 @@ public sealed class OfertaCursoEndpointTests
             TipoUnidade.Centro,
             true).Value!;
 
-        // Semeia pelo DbContext do MÓDULO Organização resolvido do container do
-        // host — o schema `organizacao` foi criado pelas migrations no boot; o
+        // Semeia pelo contexto do container do host — o schema `organizacao` foi
+        // criado pelas migrations no boot; o
         // IUnidadeReader (in-process, ADR-0056) enxerga a Unidade na criação da oferta.
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext dbContext =

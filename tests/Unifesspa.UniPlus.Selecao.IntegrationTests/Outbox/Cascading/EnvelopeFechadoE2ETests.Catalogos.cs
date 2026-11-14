@@ -254,7 +254,7 @@ public sealed partial class EnvelopeFechadoE2ETests
 
     /// <summary>
     /// Semeia uma Base Legal de Bônus Regional (Configuração, Story #1465) direto no
-    /// DbContext do módulo — o E2E cascateado testa a drenagem de eventos de Seleção, não o
+    /// contexto de persistência — o E2E cascateado testa a drenagem de eventos de Seleção, não o
     /// cadastro de Configuração, então seguir o mesmo atalho de <see cref="SemearDocumentoConfirmadoAsync"/>
     /// evita um HTTP round-trip extra sem cobertura adicional.
     /// </summary>

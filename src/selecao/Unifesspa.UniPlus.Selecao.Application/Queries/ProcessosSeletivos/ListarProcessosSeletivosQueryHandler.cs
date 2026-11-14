@@ -14,8 +14,6 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// A listagem carrega apenas a raiz (sem a configuração) e projeta em
 /// <see cref="ProcessoSeletivoResumoDto"/> — omitir as coleções de configuração
@@ -27,11 +25,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class ListarProcessosSeletivosQueryHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c>: a porta de concessões lê o <c>AutorizacaoDbContext</c> e o repositório, o
-    /// <c>SelecaoDbContext</c>; o detector de transação do Wolverine recusa dois contextos. A consulta só lê.
-    /// </summary>
-    [NonTransactional]
     public static async Task<ListarProcessosSeletivosResult> Handle(
         ListarProcessosSeletivosQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
