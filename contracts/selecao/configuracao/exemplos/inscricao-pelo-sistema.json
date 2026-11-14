@@ -1,6 +1,7 @@
 {
   "formato": "uniplus.selecao.configuracao",
   "versaoFormato": 1,
+  "publicadoEm": "2026-11-10T15:30:00Z",
   "identificacao": {
     "nome": "Processo Seletivo de Exemplo 2027",
     "tipoProcessoCodigo": "PSR",
@@ -133,14 +134,17 @@
       ],
       "escalaDeAtendimento": [
         {
+          "chave": "atende-plenamente",
           "rotulo": "Atende plenamente",
           "fracao": 1
         },
         {
+          "chave": "atende-parcialmente",
           "rotulo": "Atende parcialmente",
           "fracao": 0.5
         },
         {
+          "chave": "nao-atende",
           "rotulo": "Não atende",
           "fracao": 0
         }

@@ -20,6 +20,12 @@
       "description": "Versão principal do formato. Neste esquema é sempre 1. Mudança incompatível cria a versão 2 em outro esquema.",
       "const": 1
     },
+    "publicadoEm": {
+      "title": "Publicado em",
+      "description": "Instante da divulgação da versão exportada, em UTC. A publicidade é a divulgação gravada na transação; numa retificação o campo traz o instante da versão retificada. Não existe no rascunho. Campo só de leitura: ignorado na importação e definido pela divulgação.",
+      "$ref": "#/$defs/instante",
+      "readOnly": true
+    },
     "identificacao": {
       "$ref": "#/$defs/identificacao"
     },
@@ -850,7 +856,15 @@
       "description": "Um nível da escala de atendimento: o rótulo e a fração da pontuação do item que ele vale.",
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
       "properties": {
+        "chave": {
+          "title": "Chave do nível",
+          "description": "Chave local do nível, única na escala. É a identidade do nível entre versões e nas referências internas: o rótulo é texto editável, e corrigir a grafia não pode virar retirada e inclusão.",
+          "$ref": "#/$defs/chave"
+        },
         "rotulo": {
           "title": "Rótulo do nível",
           "description": "Nome do nível, único na escala.",

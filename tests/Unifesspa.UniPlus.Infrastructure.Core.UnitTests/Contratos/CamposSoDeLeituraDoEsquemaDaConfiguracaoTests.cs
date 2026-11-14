@@ -15,6 +15,7 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
 
     public static TheoryData<string> CamposSoDeLeitura =>
     [
+        "properties/publicadoEm",
         "properties/tiposDeAtoCongelados",
         "$defs/identificacao/properties/localidadeNome",
         "$defs/identificacao/properties/localidadeUf",

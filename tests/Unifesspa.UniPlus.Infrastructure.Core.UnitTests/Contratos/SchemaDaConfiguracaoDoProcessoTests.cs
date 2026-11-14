@@ -192,6 +192,26 @@ public sealed class SchemaDaConfiguracaoDoProcessoTests
         CaminhosComErro(documento).Should().Contain(["/etapas/0/itensDeAvaliacao/0", "/etapas/0/faseChave"]);
     }
 
+    [Fact(DisplayName = "O nível da escala de atendimento sem chave é recusado")]
+    public void NivelSemChave_ApontaOCaminho()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["etapas"]![0]!["escalaDeAtendimento"]![0]!.AsObject().Remove("chave");
+
+        CaminhosComErro(documento).Should().Contain("/etapas/0/escalaDeAtendimento/0");
+    }
+
+    [Fact(DisplayName = "A data de publicação é um instante UTC e o instante com outro fuso é recusado")]
+    public void PublicadoEm_EInstanteUtc()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["publicadoEm"]!.GetValue<string>().Should().EndWith("Z");
+        CaminhosComErro(documento).Should().BeEmpty();
+
+        documento["publicadoEm"] = "2026-11-10T12:00:00-03:00";
+        CaminhosComErro(documento).Should().Contain("/publicadoEm");
+    }
+
     [Fact(DisplayName = "A fração do nível da escala de atendimento acima de 1 é recusada")]
     public void FracaoDoNivelAcimaDeUm_ApontaOCaminho()
     {
