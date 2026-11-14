@@ -87,6 +87,27 @@ public sealed class OpenApiEndpointTests
             $"contrato OpenAPI mudou — regerar a baseline com `{UpdateBaselineEnvVar}=1 dotnet test --filter SpecRuntime` e revisar o diff antes de commit (ADR-0030).");
     }
 
+    [Theory(DisplayName = "Os POST de publicação declaram o header Location no 201")]
+    [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/atos")]
+    [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/produtos-previstos/{produtoId}/publicacoes")]
+    public async Task PublicacaoDeAto_DeclaraLocationNoCreated(string rota)
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement headers = spec.RootElement.GetProperty("paths").GetProperty(rota)
+            .GetProperty("post").GetProperty("responses").GetProperty("201").GetProperty("headers");
+
+        headers.GetProperty("Location").GetProperty("description").GetString().Should().NotBeNullOrWhiteSpace();
+    }
+
+    private async Task<JsonDocument> LerSpecAsync()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        HttpResponseMessage response = await client.GetAsync(new Uri("/openapi/selecao.json", UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    }
+
     private static string NormalizeJson(string raw)
     {
         // Reescreve com indentação canônica para que diffs apareçam por

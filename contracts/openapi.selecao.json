@@ -113,6 +113,14 @@
         "responses": {
           "201": {
             "description": "Created",
+            "headers": {
+              "Location": {
+                "description": "Endere\u00E7o da lista de atos do processo, onde o ato publicado consta; o atoId do corpo o identifica nela.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -11943,6 +11951,14 @@
         "responses": {
           "201": {
             "description": "Created",
+            "headers": {
+              "Location": {
+                "description": "Endere\u00E7o da lista de atos do processo, onde o ato publicado consta; o atoId do corpo o identifica nela.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {

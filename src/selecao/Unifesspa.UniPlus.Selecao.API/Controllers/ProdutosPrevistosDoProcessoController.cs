@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -81,6 +82,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
     [HttpPost("{produtoId:guid}/publicacoes")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status201Created)]
+    [EmiteHeader("Location", AtosDoProcessoController.DescricaoDoLocationDoAtoPublicado, Status = "201")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
