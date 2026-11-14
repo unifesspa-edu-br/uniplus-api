@@ -15,8 +15,6 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
 
     public static TheoryData<string> CamposSoDeLeitura =>
     [
-        "properties/criadoEm",
-        "properties/atualizadoEm",
         "properties/tiposDeAtoCongelados",
         "$defs/identificacao/properties/localidadeNome",
         "$defs/identificacao/properties/localidadeUf",
@@ -50,6 +48,23 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
 
         Navegar(caminho)["readOnly"].Should().BeNull();
     }
+
+    [Fact(DisplayName = "O esquema não tem campo interno: id do banco, datas de auditoria nem autoria")]
+    public void Esquema_NaoTemCampoInterno()
+    {
+        string[] internos = ["id", "criadoEm", "atualizadoEm", "criadoPor", "atualizadoPor", "createdBy", "updatedBy"];
+
+        NomesDePropriedades(Esquema).Intersect(internos, StringComparer.Ordinal).Should().BeEmpty();
+    }
+
+    private static IEnumerable<string> NomesDePropriedades(JsonNode? no) => no switch
+    {
+        JsonObject objeto => objeto.SelectMany(static par => (par.Key == "properties" && par.Value is JsonObject propriedades
+            ? propriedades.Select(static p => p.Key)
+            : []).Concat(NomesDePropriedades(par.Value))),
+        JsonArray lista => lista.SelectMany(NomesDePropriedades),
+        _ => [],
+    };
 
     private static JsonNode Navegar(string caminho) =>
         caminho.Split('/').Aggregate(Esquema, static (no, passo) => no[passo]!);

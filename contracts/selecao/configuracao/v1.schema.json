@@ -43,18 +43,6 @@
     "divulgacao": {
       "$ref": "#/$defs/divulgacao"
     },
-    "criadoEm": {
-      "title": "Criado em",
-      "description": "Instante em que o processo foi criado, em UTC. Campo só de leitura: ignorado na importação e preenchido pelo servidor.",
-      "$ref": "#/$defs/instante",
-      "readOnly": true
-    },
-    "atualizadoEm": {
-      "title": "Atualizado em",
-      "description": "Instante da última alteração do processo, em UTC. Campo só de leitura: ignorado na importação e preenchido pelo servidor.",
-      "$ref": "#/$defs/instante",
-      "readOnly": true
-    },
     "tiposDeAtoCongelados": {
       "title": "Tipos de ato congelados",
       "description": "Cópia, congelada na publicação, dos tipos de ato do catálogo de Publicações que o processo usa, com o que cada um significa. Existe só no processo publicado. Campo só de leitura: ignorado na importação; a referência é o código do tipo de ato em cada produto de fase e de etapa.",
