@@ -8,7 +8,7 @@ Quatro vocabulários distintos usam palavras parecidas. Cada um é fechado e pr�
 
 | Vocabulário | Pergunta que responde | Onde vive | Natureza |
 |---|---|---|---|
-| Fase canônica | Em que momento do ciclo o processo está | `FaseCanonicaCatalogo` (domínio fechado) e cadastro `fase_canonica` | Domínio fechado em código que o cadastro referencia; nome e sinalizadores são editáveis |
+| Fase canônica | Em que momento do ciclo o processo está | `FaseCanonicaCatalogo` (domínio fechado) e cadastro `fases_canonicas` | Domínio fechado em código que o cadastro referencia; nome e sinalizadores são editáveis |
 | Tipo de decisão | Que tipo de decisão um motivo justifica | `TipoMotivoDeDecisao` e `TipoMotivoDeDecisaoCodigo` | Vocabulário fechado em código |
 | Formulário | Para que serve o formulário (finalidade) e de que modelo partiu (código do modelo) | `EstruturaFormulario` (finalidade) e cadastro `modelos_formulario` (código do modelo) | Finalidade fechada em código; modelo é cadastro |
 | Tipo de ato | Que ato normativo se publica | Cadastro versionado de Publicações; `seeds/seed-tipos-ato.json` é a referência | Cadastro configurável, sem literal no domínio (ADR-0103) |
@@ -94,7 +94,7 @@ Limite da classificação por linha nas seções 3.6 e 3.10: ela foi feita por p
 
 ### 3.1 Os dezesseis códigos
 
-Origem única do conjunto: `FaseCanonicaCatalogo.Descritos` (`src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Enums/FaseCanonicaCatalogo.cs`), que deriva `Codigos`. O cadastro (`configuracao.fase_canonica`, semeado por `FaseCanonicaSeed` e pela migração `SemeiaFasesCanonicas`) referencia cada um deles; nome, descrição e sinalizadores são editáveis, e o código não é.
+Origem única do conjunto: `FaseCanonicaCatalogo.Descritos` (`src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Enums/FaseCanonicaCatalogo.cs`), que deriva `Codigos`. O cadastro (`configuracao.fases_canonicas`, semeado por `FaseCanonicaSeed` e pela migração `SemeiaFasesCanonicas`) referencia cada um deles; nome, descrição e sinalizadores são editáveis, e o código não é.
 
 | Código atual | Código novo ou mantido | Ação |
 |---|---|---|
@@ -120,8 +120,8 @@ Origem única do conjunto: `FaseCanonicaCatalogo.Descritos` (`src/configuracao/U
 | O que | Natureza | Observação |
 |---|---|---|
 | Conjunto de códigos de fase (`FaseCanonicaCatalogo.Codigos`) | fechado em código | Guarda do domínio (`FaseCanonica.EhCanonico`), validator e CHECKs do banco derivam dele. Renomear o código é mudar o catálogo e uma migração nova |
-| Linha do cadastro (`fase_canonica`: nome, descrição, unidade sugerida, `permite_complementacao`, `coleta_inscricao` e demais sinalizadores) | cadastro configurável | Edita-se sem deploy. O sinalizador `permite_complementacao` só vale para os códigos de `CodigosComComplementacaoPermitida` |
-| Aresta de precedência (`precedencia_fase`) | cadastro configurável, com seed de seis arestas | Cita códigos de fase por valor, sem chave estrangeira |
+| Linha do cadastro (`fases_canonicas`: nome, descrição, unidade sugerida, `permite_complementacao`, `coleta_inscricao` e demais sinalizadores) | cadastro configurável | Edita-se sem deploy. O sinalizador `permite_complementacao` só vale para os códigos de `CodigosComComplementacaoPermitida` |
+| Aresta de precedência (`precedencias_entre_fases`) | cadastro configurável, com seed de seis arestas | Cita códigos de fase por valor, sem chave estrangeira |
 | Fase do cronograma de um processo (`fases_cronograma`) | snapshot congelado na publicação | Copia o código por valor; a decisão de publicação lê o snapshot, nunca o cadastro vivo |
 | Capacidade de uma fase (coleta de inscrição, coleta de solicitação de isenção, produtos que declara) | configuração da fase | É por ela, e não pelo código, que o sistema reconhece o que a fase faz. A isenção já funciona assim (`PoliticaDaIsencaoDaTaxa.AvaliaNaFase` usa `ColetaSolicitacaoIsencao`) |
 
@@ -138,8 +138,8 @@ O mapa não cria regra por código de fase. As regras por código que já existe
 | 5 | idem | linhas 113 e 119 | seed de `HABILITACAO` e `HOMOLOGACAO_RESULTADO_FINAL` | manter (PA-1 para o primeiro) |
 | 6 | `.../Persistence/Seed/PrecedenciaFaseSeed.cs` | linha 30 | aresta `INSCRICAO` para `HOMOLOGACAO` | renomear a sucessora; a aresta continua existindo |
 | 7 | idem | linhas 33, 34 e 35 | arestas com `HABILITACAO` e `HOMOLOGACAO_RESULTADO_FINAL` | manter (PA-1 para as duas primeiras) |
-| 8 | `.../Persistence/Configurations/FaseCanonicaConfiguration.cs` | `ConfigurarChecks`, `HasData` | CHECKs `ck_fase_canonica_codigo_canonico` e `ck_fase_canonica_complementacao` e a semente, todos gerados do catálogo e do `FaseCanonicaSeed` | derivado; a #2322 traz a migração que troca o código em dados e CHECKs |
-| 9 | `.../Persistence/Configurations/PrecedenciaFaseConfiguration.cs` | `ConfigurarChecks`, `HasData` | CHECKs `ck_precedencia_fase_antecessora_canonica` e `ck_precedencia_fase_sucessora_canonica` e a semente | derivado; mesma migração |
+| 8 | `.../Persistence/Configurations/FaseCanonicaConfiguration.cs` | `ConfigurarChecks`, `HasData` | CHECKs `ck_fases_canonicas_codigo_canonico` e `ck_fases_canonicas_complementacao` e a semente, todos gerados do catálogo e do `FaseCanonicaSeed` | derivado; a #2322 traz a migração que troca o código em dados e CHECKs |
+| 9 | `.../Persistence/Configurations/PrecedenciaFaseConfiguration.cs` | `ConfigurarChecks`, `HasData` | CHECKs `ck_precedencias_entre_fases_antecessora_canonica` e `ck_precedencias_entre_fases_sucessora_canonica` e a semente | derivado; mesma migração |
 | 10 | `src/configuracao/Unifesspa.UniPlus.Configuracao.Contracts/FaseCanonicaSnapshot.cs` | comentário do parâmetro `Codigo` (linha 20) | exemplo `"HOMOLOGACAO"` | renomear o exemplo |
 | 11 | `src/selecao/Unifesspa.UniPlus.Selecao.Domain/Entities/FaseCronograma.cs` | comentário de `Codigo` (linha 62) | exemplo `"HOMOLOGACAO"` | renomear o exemplo |
 | 12 | idem | `FinalidadesQueAtende` (linha 112) | compara `Codigo` com `FormularioProcesso.CodigoFaseHabilitacao` para decidir que a fase atende a finalidade `Habilitacao` | manter; ponto em aberto para o líder técnico (PA-3) |
@@ -167,7 +167,7 @@ As fases mantidas decidem comportamento por código nestes pontos de produção.
 | `src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Entities/FaseCanonica.cs` | 208 | `SOLICITACAO_ISENCAO` | coerência da coleta de solicitação de isenção com o código | manter |
 | idem | 222 | `AVALIACAO` | só a fase de avaliação pode agrupar etapas | manter |
 | `src/configuracao/Unifesspa.UniPlus.Configuracao.Domain/Services/ConferenciaDaRegraDeAplicabilidade.cs` | 88 e 89 | `INSCRICAO` | confere se o fato é conhecido até a inscrição | manter |
-| `src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Persistence/Configurations/FaseCanonicaConfiguration.cs` | 146 | `AVALIACAO` | CHECK `ck_fase_canonica_agrupa_etapas` | manter |
+| `src/configuracao/Unifesspa.UniPlus.Configuracao.Infrastructure/Persistence/Configurations/FaseCanonicaConfiguration.cs` | 146 | `AVALIACAO` | CHECK `ck_fases_canonicas_agrupa_etapas` | manter |
 | `.../Persistence/Seed/FaseCanonicaSeed.cs` | 47, 53 e 71 | `INSCRICAO`, `SOLICITACAO_ISENCAO`, `AVALIACAO` | seed de fase | manter |
 | `.../Persistence/Seed/FatoCandidatoSeed.cs` | 61 e 315 | `INSCRICAO`, `SOLICITACAO_ISENCAO` | ponto de resolução de fatos semeados | manter |
 | `.../Persistence/Seed/SementePsrMedicina2027.cs` | 46, 507 e 509 | `INSCRICAO` | ponto de resolução e fase do documento exigido do modelo | manter |
@@ -202,7 +202,7 @@ Não há migration por módulo: a `Inicial` do `MonolitoDbContext` (`src/host/Un
 | `src/configuracao/.../Persistence/Scripts/*.sql` | sementes de tipos de processo e de etapa e as restrições fora do EF | conferir `HOMOLOGACAO` sozinho e trocar |
 | `Migrations/*_Inicial.cs`, `*.Designer.cs`, `MonolitoDbContextModelSnapshot.cs` | instantâneo gerado do modelo | gerados; regerar com `dotnet ef migrations add Inicial` |
 
-Na troca de `HOMOLOGACAO` por `HOMOLOGACAO_INSCRICOES`, o catálogo e os CHECKs de `fase_canonica` (código), `precedencia_fase` (antecessora e sucessora) e `fato_candidato.ponto_resolucao` saem do modelo e das sementes; o JSON de `modelos_formulario.conteudo` onde `faseCodigo` cita o código é conteúdo de cadastro. As linhas de `fases_cronograma`, `etapas_processo` e as versões congeladas são dados de processo, e o caminho delas é o recadastro (seção 7).
+Na troca de `HOMOLOGACAO` por `HOMOLOGACAO_INSCRICOES`, o catálogo e os CHECKs de `fases_canonicas` (código), `precedencias_entre_fases` (antecessora e sucessora) e `fato_candidato.ponto_resolucao` saem do modelo e das sementes; o JSON de `modelos_formulario.conteudo` onde `faseCodigo` cita o código é conteúdo de cadastro. As linhas de `fases_cronograma`, `etapas_processo` e as versões congeladas são dados de processo, e o caminho delas é o recadastro (seção 7).
 
 ### 3.5 Valores citados em outras camadas do código de produção
 
@@ -462,8 +462,8 @@ Não é alterado por esta issue. A uniplus-developers#455 já foi integrada; o q
 | `src/data/produto/requisitos-mvp-selecao.ts` | 141 | lista dos dezesseis códigos de fase, com `HOMOLOGACAO` | ponto para o portal: renomear |
 | `src/data/produto/requisitos-mvp-selecao.ts` | 6744 | separa o vocabulário de tipos de decisão do de fases e de bancas | manter |
 | `src/data/produto/requisitos-mvp-selecao.ts` | 7878 | já diz que a fase é reconhecida pela capacidade configurada e cita `HOMOLOGACAO_INSCRICOES` | manter |
-| `docs/erros/uniplus.configuracao.fase_canonica.codigo_fora_do_conjunto_canonico.mdx` | 31 | lista os códigos aceitos, com `HOMOLOGACAO` | ponto para o portal: renomear |
-| `docs/erros/uniplus.configuracao.fase_canonica.complementacao_apenas_fases_permitidas.mdx` | 4, 10, 11, 25 e 34 | cita `HOMOLOGACAO` como fase que admite complementação | ponto para o portal: renomear |
+| `docs/erros/uniplus.configuracao.fases_canonicas.codigo_fora_do_conjunto_canonico.mdx` | 31 | lista os códigos aceitos, com `HOMOLOGACAO` | ponto para o portal: renomear |
+| `docs/erros/uniplus.configuracao.fases_canonicas.complementacao_apenas_fases_permitidas.mdx` | 4, 10, 11, 25 e 34 | cita `HOMOLOGACAO` como fase que admite complementação | ponto para o portal: renomear |
 | `docs/erros/uniplus.selecao.formulario_processo.codigo_duplicado.mdx` | 38 e 39 | exemplo com código de formulário `HABILITACAO_COMPLEMENTAR` no lugar de `HABILITACAO` (finalidade) | manter; PA-2 |
 | `docs/erros/uniplus.selecao.motivo_de_decisao.tipo_obrigatorio.mdx` | 24 e 30 | lista os seis tipos de decisão, com `HOMOLOGACAO_DAS_INSCRICOES` | manter |
 | `docs/erros/uniplus.selecao.processo_seletivo.tipo_de_ato_unico_declarado_mais_de_uma_vez.mdx` | 81 e 82 | cita `RESULTADO_HOMOLOGACAO` e `HOMOLOGACAO_INSCRICOES` como tipos de ato | manter; PA-4 |
@@ -582,11 +582,11 @@ Só a fase tem código renomeado. Onde o código antigo deixa de ser aceito, e c
 
 | Onde | Como o código antigo é recusado |
 |---|---|
-| Criação e atualização de fase canônica | "fora do conjunto canônico" (`uniplus.configuracao.fase_canonica.codigo_fora_do_conjunto_canonico`), pela guarda de domínio e pelo validator |
+| Criação e atualização de fase canônica | "fora do conjunto canônico" (`uniplus.configuracao.fases_canonicas.codigo_fora_do_conjunto_canonico`), pela guarda de domínio e pelo validator |
 | Criação e atualização de precedência de fase | mesma recusa, pela guarda de domínio |
 | Ponto de resolução de fato (`FatoCandidato.ValidarPontoResolucao`) | recusa `FatoCandidato.PontoResolucaoInvalido`, porque o ponto precisa ser código canônico |
 | Aplicação de um modelo de formulário a um processo | recusa com mensagem quando a fase que o `faseCodigo` do documento cita não existe no cronograma do processo (`SelecaoDosDocumentosDoModelo`) |
-| Banco: `fase_canonica` e `precedencia_fase` | CHECKs recriados sem o código antigo; o `INSERT` direto é recusado |
+| Banco: `fases_canonicas` e `precedencias_entre_fases` | CHECKs recriados sem o código antigo; o `INSERT` direto é recusado |
 | Cadastro e edição do próprio modelo de formulário | **não** recusa: o `faseCodigo` do documento só é conferido quanto a estar preenchido e a ser texto válido, e é normalizado, sem conferência contra o catálogo (ver PA-7) |
 
 O vocabulário de fases passa a devolver `HOMOLOGACAO_INSCRICOES` com o mesmo rótulo e a não devolver `HOMOLOGACAO`. Nenhum código de tipo de decisão, de finalidade de formulário nem de tipo de ato muda nesta entrega, então nenhum deles tem código antigo a recusar.
@@ -597,8 +597,8 @@ O seed da API chega ao HML por migração; o que não chega é o dado de process
 
 | Onde (schema e tabela) | Coluna | Natureza | Caminho no HML |
 |---|---|---|---|
-| `configuracao.fase_canonica` | `codigo` | seed e cadastro | a migração nova troca o código; sem recadastro |
-| `configuracao.precedencia_fase` | `antecessora_codigo`, `sucessora_codigo` | seed e cadastro | a migração nova troca; sem recadastro |
+| `configuracao.fases_canonicas` | `codigo` | seed e cadastro | a migração nova troca o código; sem recadastro |
+| `configuracao.precedencias_entre_fases` | `antecessora_codigo`, `sucessora_codigo` | seed e cadastro | a migração nova troca; sem recadastro |
 | `configuracao.fato_candidato` | `ponto_resolucao` | cadastro | a migração nova troca onde valer `HOMOLOGACAO`; as sementes só usam `INSCRICAO` e `HABILITACAO` |
 | `configuracao.modelos_formulario` | `conteudo` (JSON, `documentosExigidos[].faseCodigo`) | cadastro | a migração nova reescreve o JSON; modelos de HML recadastrados a partir do backup precisam trazer o código novo |
 | `selecao.fases_cronograma` | `codigo`, `fase_concluinte_codigo` | dado de processo | recadastro do processo (backup, apagar, subir, recadastrar), com o JSON de exportação do processo já com o código novo |
@@ -608,8 +608,8 @@ O seed da API chega ao HML por migração; o que não chega é o dado de process
 Conferência a rodar no HML, em leitura, antes de apagar (substitui adivinhar o que está no backup):
 
 ```sql
-SELECT 'fase_canonica' AS tabela, count(*) FROM configuracao.fase_canonica WHERE codigo = 'HOMOLOGACAO'
-UNION ALL SELECT 'precedencia_fase', count(*) FROM configuracao.precedencia_fase
+SELECT 'fases_canonicas' AS tabela, count(*) FROM configuracao.fases_canonicas WHERE codigo = 'HOMOLOGACAO'
+UNION ALL SELECT 'precedencias_entre_fases', count(*) FROM configuracao.precedencias_entre_fases
   WHERE 'HOMOLOGACAO' IN (antecessora_codigo, sucessora_codigo)
 UNION ALL SELECT 'fato_candidato', count(*) FROM configuracao.fato_candidato WHERE ponto_resolucao = 'HOMOLOGACAO'
 UNION ALL SELECT 'modelos_formulario', count(*) FROM configuracao.modelos_formulario

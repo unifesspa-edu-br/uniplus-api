@@ -13,7 +13,7 @@ informed:
 
 ## Contexto e enunciado do problema
 
-O catálogo `rol_de_regras` (Story #772) é uma biblioteca de regras tipadas,
+O catálogo `regras_do_catalogo` (Story #772) é uma biblioteca de regras tipadas,
 versionadas e content-addressable que a configuração do Processo Seletivo
 referencia por `(codigo, versao, hash)`. A configuração congelada de um certame
 (`VersaoConfiguracao`, ADR-0104) preserva essa referência para tornar o resultado
@@ -89,7 +89,7 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 
 ### Neutras
 
-- A regra vale para o `rol_de_regras`; outros catálogos append-only decidem sua
+- A regra vale para o `regras_do_catalogo`; outros catálogos append-only decidem sua
   própria política, ainda que este seja o precedente natural.
 
 ## Confirmação
@@ -125,7 +125,7 @@ por instância, e ancora o prazo no instante de publicação de um ato.
 
 - RN08 (congelamento de parâmetros por edital).
 - ADR-0104 (a vigência da configuração ordena as versões).
-- Story #772 (a biblioteca `rol_de_regras`).
+- Story #772 (a biblioteca `regras_do_catalogo`).
 
 ## Emenda 1 (2026-09-03) — reescrita de versão, não só de conteúdo, enquanto não há produção
 
@@ -146,7 +146,7 @@ produção, `(DISTRIB-VAGAS-INSTITUCIONAL, v1)` pode passar a designar conteúdo
 que `v1` designava antes de ter sido apagada por uma migration anterior — o par não estava
 congelado em nenhuma `VersaoConfiguracao`, então reusar a identidade não viola RN08. A
 verificação mecânica continua a mesma: cruzar `VersaoConfiguracao` (e o rascunho vivo em
-`configuracoes_distribuicao_vagas`, ADR-0061) contra `(codigo, versao)` antes de qualquer
+`configuracoes_de_vagas`, ADR-0061) contra `(codigo, versao)` antes de qualquer
 `DELETE`/`INSERT` que mude a linha.
 
 Esta emenda também autoriza o que a fronteira original não previa: a migration que aplica a
@@ -159,4 +159,4 @@ por valor sem FK, ADR-0061) como uma única operação legítima enquanto não h
 
 ## Emenda 2 (2026-11-13) — a guarda do append-only é conferida no banco
 
-Com a migration única e os scripts, a guarda de que nenhum gatilho incide sobre o `rol_de_regras` passa a ser um teste de integração que confere o catálogo do banco depois da subida; o append-only continua por referência congelada. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).
+Com a migration única e os scripts, a guarda de que nenhum gatilho incide sobre o `regras_do_catalogo` passa a ser um teste de integração que confere o catálogo do banco depois da subida; o append-only continua por referência congelada. Ver [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).

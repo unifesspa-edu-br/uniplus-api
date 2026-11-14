@@ -279,7 +279,7 @@ da entidade (`obrigatoriedade_legal`, `ObrigatoriedadeLegal`), nunca
 A seção §"REST surface" descreveu PUT como "soft-delete a versão anterior,
 insere nova (hash muda)". A entrega em #520 (Story #460) convergiu para
 **in-place full-replace** com auditoria via tabela append-only
-`obrigatoriedade_legal_historico`:
+`historicos_da_obrigatoriedade`:
 
 - O método `ObrigatoriedadeLegal.Atualizar(...)` aplica todos os campos
   literalmente sobre a entidade existente (mantém o `Id`).
@@ -288,7 +288,7 @@ insere nova (hash muda)". A entrega em #520 (Story #460) convergiu para
   garantido por estar dentro do mesmo `SaveChangesAsync`.
 - A URI do recurso é estável: `GET /api/selecao/obrigatoriedades-legais/{id}`
   sempre retorna a versão vigente; reconstrução histórica é via
-  `obrigatoriedade_legal_historico` ou via `EditalGovernanceSnapshot`
+  `historicos_da_obrigatoriedade` ou via `EditalGovernanceSnapshot`
   (quando a regra foi vinculada a um edital publicado).
 - Editais já publicados antes da edição mantêm seu `EditalGovernanceSnapshot`
   original — o hash difere do hash atual da regra; é exatamente isso que

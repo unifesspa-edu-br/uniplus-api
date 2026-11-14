@@ -91,7 +91,7 @@ Quando `Slug`, `Sigla`, `Codigo` ou `Alias` mudam por ato, a entrada anterior te
 ## Confirmação
 
 1. Entidade `Unidade` em `Unifesspa.UniPlus.OrganizacaoInstitucional.Domain` com os campos descritos e factory com validação.
-2. Índices únicos parciais `ix_unidade_slug_vivo`, `ix_unidade_sigla_vivo`, `ix_unidade_codigo_vivo` (filtro `is_deleted = false`) e índice não-único de `alias`.
+2. Índices únicos parciais `ix_unidades_slug_vivo`, `ix_unidades_sigla_vivo`, `ix_unidades_codigo_vivo` (filtro `is_deleted = false`) e índice não-único de `alias`.
 3. `UnidadeIdentificadorHistorico` registra `TipoIdentificador` (`Slug`/`Sigla`/`Codigo`/`Alias`), `Valor`, `VigenciaInicio`/`VigenciaFim` e `MotivoMudanca`.
 4. `Id` Guid v7 via `EntityBase` (ADR-0032); hierarquia por `UnidadeSuperiorId` com FK `Restrict`.
 5. Testes de unidade e integração do módulo cobrem a unicidade entre vivos, o histórico na mudança de identificador e a busca acento/caixa-insensível sobre os identificadores.

@@ -40,7 +40,7 @@ Há ainda um custo mensurável. O índice `ux_editais_processo_abertura_unica` f
 
 - **A**: Manter o enumerado e acrescentar valores conforme novos tipos de ato surgirem.
 - **B**: Retificação como **relação** entre atos (`ato_retificado_id` + `motivo`), com o tipo do ato vindo de cadastro.
-- **C**: Manter o enumerado e acrescentar um segundo eixo (`tipo_documento`) ao lado dele.
+- **C**: Manter o enumerado e acrescentar um segundo eixo (`tipos_de_documento`) ao lado dele.
 
 ## Resultado da decisão
 

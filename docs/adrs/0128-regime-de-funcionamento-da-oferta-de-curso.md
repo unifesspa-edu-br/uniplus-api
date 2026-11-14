@@ -74,7 +74,7 @@ Esta ADR **complementa** a ADR-0126 — não a supersede nem reabre nenhum ponto
 
 - Testes de domínio cobrem as cinco combinações válidas, a inválida, ausência, token fora do domínio e a não-derivação de erro a partir de erro.
 - Testes provam que a recusa não muta o agregado: nem o regime de funcionamento, nem o regime de turno, nem os turnos.
-- Dois CHECK constraints em `oferta_curso` espelham as invariantes: domínio do regime de funcionamento e compatibilidade com o regime de turno.
+- Dois CHECK constraints em `ofertas_de_curso` espelham as invariantes: domínio do regime de funcionamento e compatibilidade com o regime de turno.
 - Teste de persistência prova que a coluna é `NOT NULL` sem default — omitir o regime é `23502`, não um valor presumido.
 - Testes de contrato cobrem os três wire codes públicos e a leitura das duas dimensões separadamente.
 

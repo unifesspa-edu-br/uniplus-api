@@ -446,7 +446,7 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 | Classes, métodos, propriedades | PascalCase (inglês) | `CandidatoService`, `CalcularNotaFinal()` |
 | Variáveis locais, parâmetros | camelCase (inglês) | `candidatoId`, `notaFinal` |
 | Interfaces | `I` + PascalCase | `ICandidatoRepository` |
-| Tabelas (EF Core) | PascalCase plural | `Candidatos`, `Inscricoes` |
+| Tabelas (EF Core) | `snake_case`, núcleo no plural, até 30 caracteres ([guia do banco](docs/guia-banco-de-dados.md#2-naming-convention), [ADR-0054](docs/adrs/0054-naming-convention-e-strategy-migrations.md)) | `candidatos`, `inscricoes`, `aceites_do_termo` |
 | Strings user-facing | pt-BR | `"Inscrição realizada com sucesso"` |
 | Mensagens de erro da API | pt-BR | `"CPF já cadastrado neste processo"` |
 

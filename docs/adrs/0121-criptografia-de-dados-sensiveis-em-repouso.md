@@ -127,7 +127,7 @@ dessa cópia é calculado com a chave do módulo que a possui, no momento em que
 
 Uma chave compartilhada entre módulos (`MatchScope` único) só faria diferença se alguém
 comparasse índices cegos de tabelas de módulos diferentes **fora** desses dois caminhos — por
-exemplo, um relatório rodando `JOIN` direto entre `discentes.vinculo_discente.cpf_lookup_digest`
+exemplo, um relatório rodando `JOIN` direto entre `discentes.vinculos_de_discentes.cpf_lookup_digest`
 e `ingresso.matricula.cpf_lookup_digest` via SQL cru, sem passar por nenhum Reader. Isso já
 seria uma violação de isolamento por outro motivo (a mesma proibição de FK cruzando módulo da
 ADR-0097) e não é um caminho sancionado. **Decisão: uma chave HMAC por módulo, nunca

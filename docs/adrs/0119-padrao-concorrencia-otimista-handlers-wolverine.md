@@ -79,7 +79,7 @@ desse achado — issue #1027).
 - **Endpoint SEM `[RequiresIdempotencyKey]`** (ex.: `DELETE`, naturalmente idempotente por semântica HTTP, como os dois handlers `Remover` migrados nesta ADR): o handler **não captura** `DbUpdateConcurrencyException` — deixa propagar. O `GlobalExceptionMiddleware` (`Infrastructure.Core/Middleware/GlobalExceptionMiddleware.cs`) mapeia centralmente para `409 Conflict`, `code=uniplus.concorrencia.conflito`, um único branch para todo o monólito modular.
 - **Endpoint COM `[RequiresIdempotencyKey]`**: o handler **continua capturando** `DbUpdateConcurrencyException` localmente e chamando `unitOfWork.DescartarAlteracoesNaoSalvas()` (`ChangeTracker.Clear()`) antes de devolver `Result.Failure` — o padrão do PR #1019, mantido explicitamente enquanto o gap do `IdempotencyFilter` não for corrigido.
 - **Escopo restrito ao caminho síncrono HTTP request/reply.** Um handler Wolverine invocado por consumidor durável/background (sem `HttpContext`, fora do `GlobalExceptionMiddleware`) segue as políticas de retry/dead-letter do próprio Wolverine quando lança — comportamento correto para esse contexto, não coberto por esta ADR.
-- **Investigado por emenda (issue #1032):** a exclusion constraint `DEFERRABLE INITIALLY DEFERRED` de `MarcarVigenteCalendarioDiasUteisCommandHandler` (`ex_calendario_dias_uteis_vigente_unico`) — ver "Emenda (issue #1032)" abaixo. Conclusão: nenhuma mudança de código foi necessária para esse handler no shape atual.
+- **Investigado por emenda (issue #1032):** a exclusion constraint `DEFERRABLE INITIALLY DEFERRED` de `MarcarVigenteCalendarioDiasUteisCommandHandler` (`ex_calendarios_de_dias_uteis_vigente_unico`) — ver "Emenda (issue #1032)" abaixo. Conclusão: nenhuma mudança de código foi necessária para esse handler no shape atual.
 
 Handlers migrados nesta ADR: `RemoverTermoConsentimentoCommandHandler` e
 `RemoverCalendarioDiasUteisCommandHandler` — ambos atrás de endpoints `DELETE` sem
@@ -99,8 +99,8 @@ Handlers migrados nesta ADR: `RemoverTermoConsentimentoCommandHandler` e
 
 ### Negativas
 
-- **Breaking de contrato para quem já leu o corpo 409 dos dois endpoints migrados**: `type`, `title`, `code` e `detail` mudam de valores por-módulo (`uniplus.configuracao.termo_consentimento.conflito_de_concorrencia`,
-  `uniplus.configuracao.calendario_dias_uteis.conflito_de_concorrencia`) para o valor
+- **Breaking de contrato para quem já leu o corpo 409 dos dois endpoints migrados**: `type`, `title`, `code` e `detail` mudam de valores por-módulo (`uniplus.configuracao.termos_de_consentimento.conflito_de_concorrencia`,
+  `uniplus.configuracao.calendarios_de_dias_uteis.conflito_de_concorrencia`) para o valor
   genérico `uniplus.concorrencia.conflito`. Mitigado por não haver consumidor externo
   ainda integrado nesta data (issue #1018 mergeada na véspera desta ADR, telas do
   frontend ainda não construídas — issues uniplus-web#498/#499).

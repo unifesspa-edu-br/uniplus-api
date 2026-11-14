@@ -120,7 +120,7 @@ gate consulta fica no cadastro vivo. **A lista concreta é do record**
 gates — enumerá-la aqui só criaria uma segunda versão para envelhecer.
 
 A substituição da regra `RECURSO-MULTI-INSTANCIA` por
-`RECURSO-PRAZO-ANCORADO-EM-ATO` no catálogo `rol_de_regras` é decisão e escopo da
+`RECURSO-PRAZO-ANCORADO-EM-ATO` no catálogo `regras_do_catalogo` é decisão e escopo da
 ADR-0112/#854, não desta ADR — aqui apenas se registra que `FaseCronograma`
 referencia a regra corrigida por símbolo (`RegraPrazoRecursoCodigo.AncoradoEmAto`),
 nunca por literal solto.
@@ -142,7 +142,7 @@ nunca por literal solto.
 ### Negativas
 
 - Dois cadastros novos em Configuração (`PrecedenciaFase`) e quatro colunas novas
-  em `fase_canonica` aumentam a superfície de configuração que precisa ser
+  em `fases_canonicas` aumentam a superfície de configuração que precisa ser
   populada corretamente antes de qualquer processo real publicar — erro de
   cadastro é possível (mitigado por CHECKs de banco e pela factory de domínio).
 - A revisão do `FaseCanonicaSnapshot` (passar a congelar `AgrupaEtapas`) é uma
@@ -166,9 +166,9 @@ nunca por literal solto.
   (CA-05): o seed materializa as seis arestas e o `IPrecedenciaFaseReader` as
   devolve.
 - CHECKs de banco espelhando as guardas de domínio (defesa em profundidade):
-  `ck_fase_canonica_resultado_definitivo`, `ck_fase_canonica_origem_data`,
-  `ck_precedencia_fase_sem_self_loop`, `ck_precedencia_fase_antecessora_canonica`,
-  `ck_precedencia_fase_sucessora_canonica`.
+  `ck_fases_canonicas_resultado_definitivo`, `ck_fases_canonicas_origem_data`,
+  `ck_precedencias_entre_fases_sem_self_loop`, `ck_precedencias_entre_fases_antecessora_canonica`,
+  `ck_precedencias_entre_fases_sucessora_canonica`.
 - O consumo do grafo pelo gate de `FaseCronograma` (bicondicional Fase × Etapa,
   piso mínimo por `OrigemCandidatos`, precedência sem ramificação por tipo) é
   escopo de PR posterior sobre o Módulo Seleção; esta ADR fixa o contrato de
@@ -209,8 +209,8 @@ reais das fases são ato operacional pós-deploy via endpoint admin — a mesma 
 A mesma decisão tornou `PrecedenciaFase` seed-governada, com as seis arestas estruturais nascendo
 por `HasData`. O resultado é que **as arestas do grafo nasciam semeadas e os vértices não**: toda
 base migrada tinha seis precedências apontando para fases que só existiam se alguém rodasse a carga
-por API. Nenhuma constraint impede — os CHECK de `precedencia_fase` conferem o código contra o
-vocabulário fechado, não contra a existência da linha em `fase_canonica`.
+por API. Nenhuma constraint impede — os CHECK de `precedencias_entre_fases` conferem o código contra o
+vocabulário fechado, não contra a existência da linha em `fases_canonicas`.
 
 O custo apareceu ao promover a `v0.12.0`: o código da solicitação de isenção entrou no vocabulário
 e a fase não existia em homologação, porque aquela migration relaxa as CHECK constraints e nada

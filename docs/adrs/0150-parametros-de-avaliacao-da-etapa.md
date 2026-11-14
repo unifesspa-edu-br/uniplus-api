@@ -40,7 +40,7 @@ A etapa declara a **forma de avaliação**:
 - `OBJETIVA`: gabarito ou leitora, sem avaliador;
 - `HUMANA`: pessoas da banca da etapa lançam as notas.
 
-Na forma `HUMANA`, a etapa declara a **regra de consolidação**. Ela é uma regra do catálogo (`rol_de_regras`), de tipo próprio, referenciada por código, versão e hash, como as regras da classificação. As primeiras são:
+Na forma `HUMANA`, a etapa declara a **regra de consolidação**. Ela é uma regra do catálogo (`regras_do_catalogo`), de tipo próprio, referenciada por código, versão e hash, como as regras da classificação. As primeiras são:
 
 - a avaliação única;
 - a correção independente da UNI-REQ-0097.

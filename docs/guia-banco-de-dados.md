@@ -45,7 +45,7 @@ Uni+ usa um **banco único `uniplus`** com **schema por módulo** ([ADR-0097](ad
 Extensões habilitadas:
 
 - `uuid-ossp`, `pg_trgm` — em todos os bancos de aplicação.
-- `btree_gist` — pré-requisito das exclusion constraints GIST sobre intervalos temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)) e sobre a ordem dos nós da árvore de exigências. Existe **uma vez só**, no script compartilhado `Infrastructure.Core/Persistence/Scripts/Pre/001_extensao_btree_gist.sql` (idempotente, `CREATE EXTENSION IF NOT EXISTS`), que roda antes de tudo e antes dos scripts dos módulos. Os containers efêmeros dos testes de integração não executam o `init-db`, então esse script é a única fonte. A aplicação viva é a constraint `ex_tipo_ato_publicado_codigo_vigencia`, no schema `publicacoes`, que impede duas versões vivas do mesmo tipo de ato de valerem no mesmo dia. Como a constraint vive em script SQL e não no modelo do EF, `TipoAtoPublicadoPersistenceTests` consulta o `pg_constraint` para garantir que ela existe.
+- `btree_gist` — pré-requisito das exclusion constraints GIST sobre intervalos temporais ([ADR-0060](adrs/0060-junction-tables-por-entidade-com-view-unificada.md)) e sobre a ordem dos nós da árvore de exigências. Existe **uma vez só**, no script compartilhado `Infrastructure.Core/Persistence/Scripts/Pre/001_extensao_btree_gist.sql` (idempotente, `CREATE EXTENSION IF NOT EXISTS`), que roda antes de tudo e antes dos scripts dos módulos. Os containers efêmeros dos testes de integração não executam o `init-db`, então esse script é a única fonte. A aplicação viva é a constraint `ex_tipos_de_ato_publicado_codigo_vigencia`, no schema `publicacoes`, que impede duas versões vivas do mesmo tipo de ato de valerem no mesmo dia. Como a constraint vive em script SQL e não no modelo do EF, `TipoAtoPublicadoPersistenceTests` consulta o `pg_constraint` para garantir que ela existe.
 - `unaccent` e `pg_trgm` — busca sem acento e por proximidade; a primeira vive no script `Pre` da Organização, a segunda é declarada no modelo (`HasPostgresExtension`).
 
 Há **uma migration**, `Inicial`, do `MonolitoDbContext`, e **um histórico** (`plataforma.__EFMigrationsHistory`). O que o EF não representa vive em scripts SQL idempotentes dentro de cada módulo, e a subida roda: trava consultiva do banco → scripts `Pre` → `MigrateAsync` → scripts pós → etapa posterior de cada módulo (§ 7). A subida roda antes do runtime Wolverine (invariante travada por `MigrationBeforeWolverineRuntimeOrderTests`).
@@ -56,7 +56,7 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 
 | Elemento | Regra | Exemplo |
 |---|---|---|
-| Tabela | `snake_case` plural pt-BR (definido via `ToTable("...")`) | `editais`, `inscricoes`, `processos_seletivos` |
+| Tabela | `snake_case`, núcleo no plural pt-BR, até 30 caracteres (definido via `ToTable("...")`) | `editais`, `inscricoes`, `processos_seletivos`, `aceites_do_termo` |
 | Coluna | `snake_case` automático (sem `HasColumnName`) | `created_at`, `numero_edital`, `nome_civil` |
 | PK | `pk_<tabela>` | `pk_editais` |
 | FK | `fk_<tabela>_<referenciada>_<coluna>` | `fk_etapas_editais_edital_id` |
@@ -66,7 +66,11 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 **Regras práticas**:
 
 - ✅ **Não usar `HasColumnName`** para mapear `CreatedAt` → `created_at`. A convention faz.
-- ✅ Tabelas em `ToTable("editais")` (plural pt-BR) — a convention **não pluraliza**, então é manual.
+- ✅ Tabelas em `ToTable("editais")` — a convention **não pluraliza**, então é manual.
+- ✅ **O núcleo da tabela é o primeiro termo, o substantivo que nomeia a linha, e fica no plural**; o complemento fica como a língua o pede: `aceites_do_termo`, `decisoes_do_pedido`, `tipos_processo`. Singular como núcleo (`ato_normativo`, `tipo_banca`) está fora do padrão, mesmo com o complemento no plural.
+- ✅ **Até 30 caracteres, sem abreviação**: o nome se explica sozinho, e o mesmo conceito tem o mesmo nome em todos os módulos. Passou de 30, o nome muda; abreviar não resolve.
+- ✅ Os nomes de PK, FK, índice, unique e check são derivados do nome da tabela, inclusive os escritos à mão (`HasDatabaseName`, `HasCheckConstraint`) e os literais que traduzem uma violação em erro nomeado: renomear a tabela renomeia todos, no mesmo commit. O nome usado para traduzir a violação vem de `RestricoesDoBanco` (em `Application/Persistence` do módulo), a mesma constante que a `Configuration` passa a `HasDatabaseName`.
+- ✅ **Trava**: `RegraDeNomeDeTabela` (`tests/Shared`) decide o nome, sem lista de exceções por tabela. `NomesDeTabelaDoModeloTests` (ArchTests, roda no CI) confere o modelo de cada `DbContext`; `NomesDeTabelaDoCatalogoIntegrationTests` (`Infrastructure.Core.IntegrationTests`, roda localmente) confere o catálogo do banco subido, com uma tabela canária no singular que prova a recusa. A regra só decide o que é decidível sem dicionário: o núcleo termina em `s`; abreviação e concordância ficam para a revisão.
 - ❌ **Não criar identificadores `PascalCase` quoted** (`"CreatedAt"`) — quebra padrão e gera fricção em scripts manuais.
 
 ## 3. Tipos PostgreSQL preferidos

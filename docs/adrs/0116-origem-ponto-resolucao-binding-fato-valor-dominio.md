@@ -83,7 +83,7 @@ estabelecia para o eixo `Natureza`); o efeito é só descritivo/de binding.
 
 **Ponto de resolução:** `FatoCandidato.PontoResolucao: string`, validado
 contra `FaseCanonicaCatalogo.EhCanonico(...)` (o conjunto fechado de catorze
-códigos, sem depender de linha viva em `fase_canonica` — decopla do fato de a
+códigos, sem depender de linha viva em `fases_canonicas` — decopla do fato de a
 tabela ser povoada operacionalmente pós-deploy). Todos os fatos desta colheita
 (os nove existentes + `NACIONALIDADE`/`TIPO_DEFICIENCIA`) resolvem em
 `INSCRICAO`. O *gate* que recusa uma condição citando fato de fase posterior
@@ -246,7 +246,7 @@ ou `Integracao` é recusado como sempre foi. O que muda é que a coerência pass
 um **conjunto** de prefixos aceitos por origem, e a mensagem de erro deixa de anunciar um prefixo único
 como o esperado.
 
-Não há restrição declarativa de banco a ajustar: os CHECKs de `rol_de_fatos_candidato` cobrem
+Não há restrição declarativa de banco a ajustar: os CHECKs de `fatos_do_candidato` cobrem
 cardinalidade, domínio, origem e coerência de valores de domínio — o binding é validado no agregado.
 
 ### 1.3 — `AC_PCD` é a identidade da modalidade de pessoa com deficiência fora da reserva federal

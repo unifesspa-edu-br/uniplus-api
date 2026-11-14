@@ -18,7 +18,7 @@ informed:
 
 O cadastro de tipos de ato marca alguns deles como **únicos por objeto**: um processo seletivo tem um edital de abertura, e não dois; uma chamada tem uma convocação, e não duas. Avisos e comunicados, ao contrário, repetem-se à vontade.
 
-A ADR-0103 registrou a consequência sem resolvê-la: "a unicidade da raiz de cadeia deixa de ser um índice filtrado por literal e passa a depender de um atributo do cadastro de tipos". Faltava dizer **onde** essa unicidade é imposta — e a resposta não é óbvia, porque o predicado atravessa duas tabelas: o atributo `unico_por_objeto` e a linhagem estão no ato (`publicacoes.ato_normativo`); o objeto, no vínculo (`publicacoes.vinculo_ato_entidade`, ADR-0105). O Postgres não impõe unicidade entre tabelas.
+A ADR-0103 registrou a consequência sem resolvê-la: "a unicidade da raiz de cadeia deixa de ser um índice filtrado por literal e passa a depender de um atributo do cadastro de tipos". Faltava dizer **onde** essa unicidade é imposta — e a resposta não é óbvia, porque o predicado atravessa duas tabelas: o atributo `unico_por_objeto` e a linhagem estão no ato (`publicacoes.atos_normativos`); o objeto, no vínculo (`publicacoes.vinculos_do_ato_com_entidade`, ADR-0105). O Postgres não impõe unicidade entre tabelas.
 
 O que se quer garantir é uma frase só:
 
@@ -56,7 +56,7 @@ A recusa é **409**, e não 422: o payload está coerente; o que não cabe é o 
 
 Quatro triggers sustentam a estrutura contra o `INSERT` cru, no espírito dos CHECKs que o ato já tem:
 
-- **Append-only** em `vinculo_ato_entidade` e em `vagas_de_linhagem`: mutar um vínculo reescreveria de que objeto o ato tratava; mutar uma vaga transferiria o objeto de uma linhagem a outra sem que ato algum o dissesse.
+- **Append-only** em `vinculos_do_ato_com_entidade` e em `vagas_de_linhagem`: mutar um vínculo reescreveria de que objeto o ato tratava; mutar uma vaga transferiria o objeto de uma linhagem a outra sem que ato algum o dissesse.
 - **Coerência da vaga com o ato** (deferred): o tipo tem de ser o do ato, a raiz tem de ser a raiz verdadeira da sua cadeia, o ato tem de estar vinculado ao objeto, e o tipo tem de ser único por objeto.
 - **Correspondência reversa** (deferred): todo vínculo de um ato único por objeto exige a vaga daquele objeto reservada em nome da sua linhagem. É ela que faz o índice único valer alguma coisa — sem ela, gravar o vínculo e omitir a vaga (um importador, um seed, uma regressão) deixaria o objeto livre para uma segunda linhagem, e o índice, que só vê as vagas que existem, nada acusaria.
 
