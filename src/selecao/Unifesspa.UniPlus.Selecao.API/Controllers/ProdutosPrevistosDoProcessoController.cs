@@ -113,7 +113,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
             .ConfigureAwait(false);
 
         return resultado.IsSuccess
-            ? CreatedAtAction(nameof(AtosDoProcessoController.Listar), "AtosDoProcesso", new { processoSeletivoId }, resultado.Value)
+            ? CreatedAtAction(nameof(AtosDoProcessoController.Obter), "AtosDoProcesso", new { processoSeletivoId, atoId = resultado.Value!.AtoId }, resultado.Value)
             : resultado.ToActionResult(_mapper);
     }
 }
