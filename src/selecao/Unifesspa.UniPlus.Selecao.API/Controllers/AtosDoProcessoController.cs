@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Formatting;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -32,6 +33,13 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
     Justification = "ASP.NET Core ControllerFeatureProvider só descobre controllers public; sem isso o MVC ignora a classe e nenhum endpoint é registrado.")]
 public sealed class AtosDoProcessoController : ControllerBase
 {
+    /// <summary>
+    /// O que o <c>Location</c> do 201 de publicação endereça. A Seleção não tem leitura de um ato só, e o ato
+    /// criado consta na lista do processo, onde o <c>atoId</c> do corpo o identifica.
+    /// </summary>
+    internal const string DescricaoDoLocationDoAtoPublicado =
+        "Endereço da lista de atos do processo, onde o ato publicado consta; o atoId do corpo o identifica nela.";
+
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -58,6 +66,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     [HttpPost]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status201Created)]
+    [EmiteHeader("Location", DescricaoDoLocationDoAtoPublicado, Status = "201")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
