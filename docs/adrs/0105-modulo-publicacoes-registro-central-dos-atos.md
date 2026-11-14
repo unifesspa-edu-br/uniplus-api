@@ -12,6 +12,8 @@ informed:
 
 # ADR-0105: O ato publicado pertence a um módulo `Publicacoes` que não conhece os domínios
 
+> **Emendada pela [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)** nos trechos: a emenda 1, que descreve o registro no `Publicacoes` como auditoria posterior e efeito da divulgação, passa a valer como registro na transação da divulgação; e a referência à ADR-0108 como mecanismo do registro. A decisão sobre onde vive o ato, a trava de que o módulo não conhece os domínios e o vínculo genérico continuam valendo.
+
 ## Contexto e enunciado do problema
 
 Reitoria, CEPS e CRCA publicam atos normativos — editais, avisos, comunicados — hoje espalhados por portais distintos, sem registro comum, sem cadeia de linhagem e sem prova do que foi efetivamente publicado. Com a implantação do Uni+, essas publicações passam a ser concentradas no sistema, e cada setor referencia uma publicação nas suas páginas.

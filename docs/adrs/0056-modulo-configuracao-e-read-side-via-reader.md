@@ -236,3 +236,11 @@ Admin endpoints de `Endereco` são restritos: apenas `plataforma-admin` pode cri
 - [ADR-0057](0057-areas-rbac-snapshot-historia-invariantes.md) — Áreas-based RBAC com snapshot, histórico e invariantes.
 - [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) — Referência cross-módulo via snapshot copy.
 - Esclarecimento do sponsor (2026-05-13): `LocalProva` é domínio Selecao; `Endereco` é cross-cutting.
+
+## Emenda (2026-11-13) — a escrita entre módulos passa pela porta, e o leitor lê na transação
+
+- "Mutações write-side permanecem Kafka-only" leem-se assim: a mutação entre módulos que o negócio exige atômica usa a porta de escrita no `Contracts` do módulo dono, chamada na transação de quem grava ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)).
+- O leitor do `Contracts` lê na transação do chamador, sem rastrear e sem gravar, e sem `[NonTransactional]` imposto por um segundo contexto.
+- A fronteira de módulo continua sendo a R8, agora garantida também pelo catálogo do banco, e não pelo contexto.
+
+Nenhum outro trecho desta ADR muda.

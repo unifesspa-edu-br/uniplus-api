@@ -201,3 +201,7 @@ O reader **não** materializa o valor continuamente na entidade consumidora. Nã
 - RN08 de `docs/visao-do-projeto.md` — Congelamento de parâmetros no `Publicar()` do edital.
 - [ADR-0054](0054-naming-convention-e-strategy-migrations.md) — Política de isolation de bancos.
 - [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) — Snapshot-on-bind no motor de classificação.
+
+## Emenda (2026-11-13) — um contexto só, e a fronteira continua sendo o módulo
+
+A premissa de bancos isolados por módulo já não vale, e "mesmo DbContext → FK normal" não autoriza chave estrangeira entre módulos: os módulos internos compartilham um contexto ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)), e a referência entre módulos continua por valor, sem chave estrangeira entre esquemas de módulos, travada pelo catálogo do banco. Nenhum outro trecho desta ADR muda.

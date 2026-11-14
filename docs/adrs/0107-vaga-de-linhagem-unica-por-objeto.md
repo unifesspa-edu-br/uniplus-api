@@ -12,6 +12,8 @@ informed:
 
 # ADR-0107: A unicidade de ato por objeto é uma vaga que a linhagem reserva, não um índice sobre o ato
 
+> **Emendada pela [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)** no trecho da pré-validação da vaga por leitura antes de publicar: a própria inserção recusa, com 409 nomeado e nada gravado. A estrutura da vaga, os triggers, a monotonicidade e o código imutável do tipo continuam valendo.
+
 ## Contexto e enunciado do problema
 
 O cadastro de tipos de ato marca alguns deles como **únicos por objeto**: um processo seletivo tem um edital de abertura, e não dois; uma chamada tem uma convocação, e não duas. Avisos e comunicados, ao contrário, repetem-se à vontade.

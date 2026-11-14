@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0170"
 date: "2026-07-12"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -10,6 +10,8 @@ informed:
 ---
 
 # ADR-0108: O domínio registra o ato por mensagem durável, não por chamada síncrona
+
+> **Substituída pela [ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md).** Os módulos internos passam a compartilhar um contexto de persistência, e o registro do ato, a divulgação e a vaga de linhagem são gravados na mesma transação, sem mensagem.
 
 > **Supersede a [ADR-0106](0106-orquestracao-sincrona-selecao-publicacoes-ato-primeiro.md)** no ponto do
 > mecanismo (chamada síncrona in-process, "ato primeiro"). O que a ADR-0106 decidiu sobre *ownership* —
