@@ -15715,6 +15715,7 @@
           },
           "urlDownload": {
             "type": "string",
+            "description": "Endere\u00E7o permanente e de leitura an\u00F4nima. Nunca \u00E9 nulo: o documento do ato s\u00F3 entra na lista de documentos depois da c\u00F3pia ao acervo, e por isso o endere\u00E7o dele j\u00E1 existe.",
             "format": "uri"
           }
         }
@@ -16047,7 +16048,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDoAtoCertameDto"
-            }
+            },
+            "description": "O edital como documento principal e os anexos em seguida. O documento do ato s\u00F3 entra na lista depois da c\u00F3pia ao acervo; antes disso a lista \u00E9 vazia e urlDownload do edital \u00E9 nulo."
           }
         }
       },

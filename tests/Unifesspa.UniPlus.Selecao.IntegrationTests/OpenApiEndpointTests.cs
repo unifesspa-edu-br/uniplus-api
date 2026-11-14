@@ -100,6 +100,18 @@ public sealed class OpenApiEndpointTests
         headers.GetProperty("Location").GetProperty("description").GetString().Should().NotBeNullOrWhiteSpace();
     }
 
+    [Fact(DisplayName = "O documento do ato no certame explica que só entra na lista depois da cópia ao acervo")]
+    public async Task DocumentoDoAtoDoCertame_ExplicaPorQueOEnderecoNuncaENulo()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement schemas = spec.RootElement.GetProperty("components").GetProperty("schemas");
+        schemas.GetProperty("DocumentoDoAtoCertameDto").GetProperty("properties").GetProperty("urlDownload")
+            .GetProperty("description").GetString().Should().Contain("Nunca é nulo");
+        schemas.GetProperty("EditalPublicadoCertameDto").GetProperty("properties").GetProperty("documentos")
+            .GetProperty("description").GetString().Should().Contain("depois da cópia ao acervo");
+    }
+
     private async Task<JsonDocument> LerSpecAsync()
     {
         using HttpClient client = _fixture.Factory.CreateClient();

@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 using Domain.Interfaces;
@@ -50,13 +51,17 @@ public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string Ha
 /// <param name="TipoDeMidia">Tipo de mídia do arquivo.</param>
 /// <param name="TamanhoBytes">Tamanho do arquivo, em bytes.</param>
 /// <param name="HashSha256">Hash SHA-256 do arquivo em hexadecimal minúsculo, o que o ato atestou.</param>
-/// <param name="UrlDownload">Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>.</param>
+/// <param name="UrlDownload">
+/// Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>. Nunca é nulo: o documento do ato
+/// só entra na lista de documentos depois da cópia ao acervo.
+/// </param>
 public sealed record DocumentoDoAtoCertameDto(
     string Papel,
     string Nome,
     string TipoDeMidia,
     long TamanhoBytes,
     string HashSha256,
+    [property: Description("Endereço permanente e de leitura anônima. Nunca é nulo: o documento do ato só entra na lista de documentos depois da cópia ao acervo, e por isso o endereço dele já existe.")]
     Uri UrlDownload);
 
 /// <summary>
@@ -72,7 +77,11 @@ public sealed record DocumentoDoAtoCertameDto(
 /// O edital como documento principal e os anexos em seguida, na ordem em que o edital os apresenta.
 /// Vazia enquanto a cópia ao acervo não terminou.
 /// </param>
-public sealed record EditalPublicadoCertameDto(Guid AtoId, Uri? UrlDownload, IReadOnlyList<DocumentoDoAtoCertameDto> Documentos);
+public sealed record EditalPublicadoCertameDto(
+    Guid AtoId,
+    Uri? UrlDownload,
+    [property: Description("O edital como documento principal e os anexos em seguida. O documento do ato só entra na lista depois da cópia ao acervo; antes disso a lista é vazia e urlDownload do edital é nulo.")]
+    IReadOnlyList<DocumentoDoAtoCertameDto> Documentos);
 
 /// <summary>
 /// Presente só quando o edital foi emendado: informa ao candidato que houve retificação e por quê.
