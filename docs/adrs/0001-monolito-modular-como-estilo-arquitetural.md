@@ -93,3 +93,7 @@ Regras invariantes:
 - ADR-0014 define Kafka como bus assíncrono inter-módulos.
 - ADR-0012 define ArchUnitNET como ferramenta de fitness tests.
 - **Origem:** revisão da ADR interna Uni+ ADR-001 (não publicada).
+
+## Emenda (2026-11-13) — a comunicação entre módulos admite a porta na mesma transação
+
+Onde esta ADR diz que a comunicação entre módulos é exclusivamente por eventos, leia-se: fato que o negócio exige atômico entre módulos é gravado na mesma transação, por porta de escrita no `Contracts` do módulo dono; evento fica para efeito em sistema externo ou posterior ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). Nenhum outro trecho desta ADR muda.

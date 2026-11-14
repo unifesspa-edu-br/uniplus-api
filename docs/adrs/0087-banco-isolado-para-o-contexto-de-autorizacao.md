@@ -83,3 +83,7 @@ A versão anterior desta ADR propunha um banco isolado para a autorização. Dep
 - **Reescrita em 2026-10-28:** a versão proposta em 2026-06-02 escolhia o banco isolado, antes da ADR-0097.
 - **Pendente:** role própria para o schema `autorizacao`, com privilégios separados da role do monólito. Hoje as migrations rodam na subida com a mesma role da aplicação; separar privilégios pede rodar as migrations fora da subida, com uma role proprietária do schema.
 - **Pendente:** a fronteira da trilha forense, a decidir com o Encarregado de dados.
+
+## Emenda (2026-11-13) — o esquema `autorizacao` é contribuição ao contexto único
+
+O esquema `autorizacao` deixa de ter contexto e migrations próprios: passa a ser contribuição do módulo ao contexto único ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). A pendência de role própria para o esquema deixa de existir, porque há uma só conexão e um só usuário do banco. Continua pendente a fronteira da trilha forense. Nenhum outro trecho desta ADR muda.

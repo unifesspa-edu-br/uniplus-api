@@ -133,3 +133,7 @@ Spike `spike/monolito-modular`, validado end-to-end:
 - **Depende de** ADR-0004 (outbox transacional), ADR-0005 (cascading messages),
   ADR-0056 (fitness tests de isolamento cross-módulo), #419 (ordem migrations→Wolverine).
 - **Não altera** Geo (ADR-0090/0091) nem Portal, que seguem deployables autônomos.
+
+## Emenda (2026-11-13) — contexto, conexão e migration únicos
+
+Onde esta ADR descreve um contexto e uma connection string por módulo, leia-se: os módulos internos do host compartilham um contexto, uma connection string, uma migration inicial e o esquema `plataforma` para a idempotência e o histórico de migrations ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). O portal, a API GEO e o verificador continuam à parte. Nenhum outro trecho desta ADR muda.

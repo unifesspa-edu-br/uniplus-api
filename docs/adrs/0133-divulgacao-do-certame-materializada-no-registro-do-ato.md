@@ -123,3 +123,7 @@ A projeção pública continua derivada, reconstruível e sem acoplar a leitura 
 - **Recusado por versão defasada.** A divulgação é recusada quando a versão preparada já não é a vigente ([ADR-0104](0104-versao-configuracao-como-agregado-proprio.md)). O ato recusado por versão defasada é **estado terminal**: libera o item para novo preparo, não é visto pelo candidato e seu documento permanece privado ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md), emenda 2).
 
 Nenhum outro trecho desta ADR muda.
+
+## Emenda 3 (2026-11-13) — só a cópia ao acervo continua posterior
+
+A divulgação é gravada na mesma transação da versão e do ato, e o registro do ato no `Publicacoes` é feito nessa transação ([ADR-0170](0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md)). Da "saga de efeitos" sobra apenas a cópia ao acervo ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md)), que registra o endereço do edital por efeito durável com reentrega. Nenhum outro trecho desta ADR muda.
