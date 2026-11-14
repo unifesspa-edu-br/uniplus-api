@@ -1,0 +1,63 @@
+namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.TiposConceito;
+
+using System.Text.Json;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposConceito;
+
+/// <summary>
+/// Se o valor conta como aprovação não pode ser omitido no JSON: um bool ausente viraria <c>false</c> e o valor
+/// nasceria sem aprovar sem que ninguém tivesse dito isso.
+/// </summary>
+public sealed class TipoConceitoCommandJsonRequiredTests
+{
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    [Fact(DisplayName = "Omitir contaComoAprovacao de um valor no JSON é rejeitado")]
+    public void Valor_SemContaComoAprovacao_LancaJsonException()
+    {
+        const string json = """{ "codigo": "A", "rotulo": "Alfa" }""";
+
+        Action act = () => JsonSerializer.Deserialize<ValorCategoricoCommand>(json, Options);
+
+        act.Should().Throw<JsonException>();
+    }
+
+    [Fact(DisplayName = "JSON completo do tipo categórico desserializa na ordem dos valores")]
+    public void Criar_Completo_Desserializa()
+    {
+        const string json = """
+        {
+          "codigo": "PARECER", "nome": "Parecer", "natureza": "categorico", "numerico": null,
+          "valores": [
+            { "codigo": "B", "rotulo": "Beta", "contaComoAprovacao": false },
+            { "codigo": "A", "rotulo": "Alfa", "contaComoAprovacao": true }
+          ]
+        }
+        """;
+
+        CriarTipoConceitoCommand? comando = JsonSerializer.Deserialize<CriarTipoConceitoCommand>(json, Options);
+
+        comando!.Valores!.Select(v => v.Codigo).Should().Equal("B", "A");
+        comando.Valores![1].ContaComoAprovacao.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "JSON do tipo numérico desserializa a escala e deixa os valores nulos")]
+    public void Criar_Numerico_Desserializa()
+    {
+        const string json = """
+        { "codigo": "NOTA", "nome": "Nota", "natureza": "numerico",
+          "numerico": { "escalaMinima": 0, "escalaMaxima": 10, "casasDecimais": 2 }, "valores": null }
+        """;
+
+        CriarTipoConceitoCommand? comando = JsonSerializer.Deserialize<CriarTipoConceitoCommand>(json, Options);
+
+        comando!.Numerico.Should().Be(new EscalaNumericaCommand(0m, 10m, 2));
+        comando.Valores.Should().BeNull();
+    }
+}

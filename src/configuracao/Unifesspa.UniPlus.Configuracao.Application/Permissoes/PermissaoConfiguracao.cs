@@ -243,4 +243,12 @@ public enum PermissaoConfiguracao
         ClassificacaoDeProtecao.Interno,
         ReservadaAGovernanca = true)]
     ProtecaoDoCatalogoManifestar = 28,
+
+    /// <summary>Manter cadastro dos tipos de conceito da avaliação.</summary>
+    [Permissao(
+        "configuracao:tipos-conceito:manter",
+        "Manter cadastro dos tipos de conceito da avaliação",
+        "Cria, altera e remove os tipos de conceito da avaliação, numéricos ou categóricos.",
+        ClassificacaoDeProtecao.Interno)]
+    TiposConceitoManter = 29,
 }

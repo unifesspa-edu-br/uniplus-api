@@ -67,6 +67,9 @@ public static class ResourceTiposConfiguracao
     /// <summary>Tipo <c>tipo-etapa</c>.</summary>
     public const string TipoEtapa = "tipo-etapa";
 
+    /// <summary>Tipo <c>tipo-conceito</c>.</summary>
+    public const string TipoConceito = "tipo-conceito";
+
     /// <summary>Tipo <c>local-oferta</c>.</summary>
     public const string LocalOferta = "local-oferta";
 
