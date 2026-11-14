@@ -179,6 +179,7 @@ dotnet_diagnostic.MA0051.severity = none
 # defensive coding, perf de array literal ou estilo C# moderno não se aplicam:
 # - CA1062: tool não emite ArgumentNullException no migrationBuilder
 # - CA1861: tool emite arrays inline (`new[] { ... }`) em CreateIndex
+# - CA1825: tool emite `new string[0]` no InsertData das sementes com coluna de array vazia
 # - IDE0161: tool emite namespace-block clássico, não file-scoped
 # - MA0051, S104, S3776, S1541, S107: tamanho e complexidade vêm do modelo, não de quem escreve
 #
@@ -196,4 +197,5 @@ charset = utf-8-bom
 dotnet_separate_import_directive_groups = false
 dotnet_diagnostic.CA1062.severity = none
 dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1825.severity = none
 dotnet_diagnostic.IDE0161.severity = none

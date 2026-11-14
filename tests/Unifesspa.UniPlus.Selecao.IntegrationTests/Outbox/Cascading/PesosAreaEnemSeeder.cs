@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Semeia no cadastro da Configuração uma resolução de Pesos por Área, para a classificação
@@ -24,7 +25,7 @@ internal static class PesosAreaEnemSeeder
 
         string resolucao = $"{prefixo} {Guid.NewGuid().ToString("N")[..12]}";
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IEnumerable<PesoAreaEnem> linhas = (grupos ?? TodosOsGrupos).Select(grupo => PesoAreaEnem.Criar(
             resolucao,
             grupo,

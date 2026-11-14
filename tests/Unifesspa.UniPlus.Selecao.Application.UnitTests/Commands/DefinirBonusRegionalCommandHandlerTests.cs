@@ -7,12 +7,10 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
-using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -43,7 +41,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         IProcessoSeletivoRepository Repository,
         IRegraCatalogoReader RegraCatalogoReader,
         IBaseLegalBonusRegionalReader BaseLegalBonusRegionalReader,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
@@ -51,7 +49,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
         IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader = Substitute.For<IBaseLegalBonusRegionalReader>();
         baseLegalBonusRegionalReader.ObterPorIdAsync(BaseLegalId, Arg.Any<CancellationToken>()).Returns(BaseLegalValida());
-        return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), baseLegalBonusRegionalReader, Substitute.For<ISelecaoUnitOfWork>());
+        return new Mocks(repository, Substitute.For<IRegraCatalogoReader>(), baseLegalBonusRegionalReader, Substitute.For<IUnitOfWork>());
     }
 
     private static Task<Result<MutacaoAceita>> Handle(DefinirBonusRegionalCommand command, Mocks mocks) =>
@@ -263,7 +261,6 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     private static ProcessoSeletivo NovoProcessoPublicado()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Publicado", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
 
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

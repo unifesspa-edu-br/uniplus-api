@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Intercepta <c>SavingChanges</c> do <see cref="SelecaoDbContext"/> para
+/// Intercepta <c>SavingChanges</c> do <see cref="UniPlusDbContext"/> para
 /// gravar uma linha em <c>obrigatoriedade_legal_historico</c> a cada mutação
 /// de <see cref="ObrigatoriedadeLegal"/> (CA-06 da Story #460). Roda dentro
 /// da mesma transação do save da regra — invariante atômica do histórico.

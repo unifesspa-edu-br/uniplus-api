@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 public sealed class OrdemDaTrilhaDeContencaoInterceptor : SaveChangesInterceptor
 {
     private const string ProximoNumero =
-        $"SELECT nextval('{AutorizacaoDbContext.Schema}.{AutorizacaoDbContext.SequenciaDaOrdemDaTrilha}') AS \"Value\"";
+        $"SELECT nextval('{AutorizacaoContribuicao.NomeDoEsquema}.{AutorizacaoContribuicao.SequenciaDaOrdemDaTrilha}') AS \"Value\"";
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {

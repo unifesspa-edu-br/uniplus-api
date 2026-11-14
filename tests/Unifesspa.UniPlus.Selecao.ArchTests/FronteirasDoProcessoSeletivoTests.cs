@@ -13,7 +13,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
-
 /// <summary>
 /// Verifica as dependências entre as políticas e as camadas, o formato estático das políticas
 /// e a localização das partes do agregado <see cref="ProcessoSeletivo"/>.
@@ -28,7 +27,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(
         typeof(ProcessoSeletivo).Assembly,
         typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-        typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly).Build();
+        typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly).Build();
 
     [Fact(DisplayName = "A1: nenhuma política depende da raiz, salvo a fábrica da vista")]
     public void A1_PoliticasNaoDependemDaRaiz()

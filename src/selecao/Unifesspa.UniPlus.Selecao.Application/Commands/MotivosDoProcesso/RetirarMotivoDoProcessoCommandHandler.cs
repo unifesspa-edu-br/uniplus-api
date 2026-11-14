@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -15,7 +15,7 @@ public static class RetirarMotivoDoProcessoCommandHandler
         RetirarMotivoDoProcessoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IMotivoDoProcessoRepository motivoDoProcessoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -41,7 +41,7 @@ public static class RetirarMotivoDoProcessoCommandHandler
         MotivoDoProcesso escolhido,
         RetirarMotivoDoProcessoCommand command,
         IMotivoDoProcessoRepository repository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         Result retirada = EscolhaDosMotivos.Retirar(processo, escolhido, command.Precondicao);

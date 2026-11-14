@@ -1,13 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Lê e confere o conteúdo contra o catálogo, e só então cria o modelo, com as recusas do catálogo
@@ -22,7 +21,7 @@ public static class CriarModeloFormularioCommandHandler
         IFatoCandidatoRepository fatoRepository,
         ITermoConsentimentoReader termoReader,
         ITipoProcessoReader tipoProcessoReader,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -67,7 +66,7 @@ public static class AtualizarModeloFormularioCommandHandler
         IFatoCandidatoRepository fatoRepository,
         ITermoConsentimentoReader termoReader,
         ITipoProcessoReader tipoProcessoReader,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -111,7 +110,7 @@ public static class AtivarModeloFormularioCommandHandler
     public static Task<Result> Handle(
         AtivarModeloFormularioCommand command,
         IModeloFormularioRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -126,7 +125,7 @@ public static class DesativarModeloFormularioCommandHandler
     public static Task<Result> Handle(
         DesativarModeloFormularioCommand command,
         IModeloFormularioRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

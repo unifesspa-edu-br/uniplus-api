@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 /// <summary>
 /// Mapeia codes de domínio do filter de idempotência para HTTP status +
 /// type URL (ADR-0027 §"Lookup, replay e validação"). Auto-registrado via
-/// <c>AddIdempotency&lt;TDbContext&gt;</c>.
+/// <c>AddIdempotency</c>.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via IServiceProvider em AddIdempotency().")]

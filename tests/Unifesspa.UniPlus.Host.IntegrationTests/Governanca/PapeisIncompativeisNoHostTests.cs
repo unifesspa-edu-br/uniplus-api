@@ -9,10 +9,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A mesma pessoa não tem, ao mesmo tempo, concessões vigentes de Representante do controlador e de Encarregado de dados,
@@ -85,7 +85,7 @@ public sealed class PapeisIncompativeisNoHostTests : PedidosDeConcessaoTestBase
         Task<HttpResponseMessage>[] aprovacoes;
         await using (TransacaoRetidaDeTeste retida = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services))
         {
-            await retida.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(TravaDaGravacaoDeConcessoes);
+            await retida.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(TravaDaGravacaoDeConcessoes);
             aprovacoes = [EnviarAsync(Cliente(Marlene), HttpMethod.Post, $"{Rota}/{pedidos[0]}/aprovacoes"), EnviarAsync(Cliente(Isabella), HttpMethod.Post, $"{Rota}/{pedidos[1]}/aprovacoes")];
             await retida.AguardarBloqueioAsync(pedidos.Length);
             await retida.ConfirmarAsync();

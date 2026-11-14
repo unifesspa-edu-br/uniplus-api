@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Discentes.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Enums;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
@@ -87,6 +87,6 @@ internal sealed class RegistroDeExecucoes : IRegistroDeExecucoes
     private static ISyncRunRepository Repositorio(AsyncServiceScope escopo) =>
         escopo.ServiceProvider.GetRequiredService<ISyncRunRepository>();
 
-    private static IDiscentesUnitOfWork UnidadeDeTrabalho(AsyncServiceScope escopo) =>
-        escopo.ServiceProvider.GetRequiredService<IDiscentesUnitOfWork>();
+    private static IUnitOfWork UnidadeDeTrabalho(AsyncServiceScope escopo) =>
+        escopo.ServiceProvider.GetRequiredService<IUnitOfWork>();
 }

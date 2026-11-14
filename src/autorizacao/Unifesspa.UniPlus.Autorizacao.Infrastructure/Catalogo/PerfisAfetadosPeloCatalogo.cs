@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A parte da conciliação que cabe aos perfis comuns, já travados: para cada permissão em uso cujo valor no catálogo novo
@@ -17,11 +18,11 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 /// </summary>
 internal sealed partial class PerfisAfetadosPeloCatalogo
 {
-    private readonly AutorizacaoDbContext _db;
+    private readonly UniPlusDbContext _db;
     private readonly ICatalogoDePermissoesConsultavel _consultavel;
     private readonly ILogger _logger;
 
-    public PerfisAfetadosPeloCatalogo(AutorizacaoDbContext db, ICatalogoDePermissoesConsultavel consultavel, ILogger logger)
+    public PerfisAfetadosPeloCatalogo(UniPlusDbContext db, ICatalogoDePermissoesConsultavel consultavel, ILogger logger)
     {
         _db = db;
         _consultavel = consultavel;
@@ -117,7 +118,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
         List<CodigoDaConcessao> codigos = await _db.CodigosDasConcessoesDoPerfil(perfil.Id, instante)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         Dictionary<(Guid, string), BaseViva> vivas = (await _db.BasesVivas()
-            .Where(b => _db.Concessoes.Any(c => c.Id == b.ConcessaoId && c.PerfilId == perfil.Id))
+            .Where(b => _db.Set<Concessao>().Any(c => c.Id == b.ConcessaoId && c.PerfilId == perfil.Id))
             .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => (b.ConcessaoId, b.Codigo));
 
         return [.. codigos.Select(k => new BaseEmVigor(k.ConcessaoId, k.Codigo, vivas.GetValueOrDefault((k.ConcessaoId, k.Codigo)) is { } viva

@@ -85,36 +85,28 @@ public static class SementeIsencaoDaTaxa
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal), Instante, NomeDaSemente),
     ];
 
-    /// <summary>Os comandos que apagam o que a semente grava, para o <c>Down</c> da migration.</summary>
-    public static IReadOnlyList<string> ComandosDeRemocao() =>
+    private const string Renda = "RENDA_FAMILIAR";
+
+    private static ConteudoDoModelo Conteudo() => new(
+        "Solicitação de isenção da taxa de inscrição",
+        Etapas(),
+        [PerguntaDeRenda()],
+        [.. Termos.Select(static (t, i) => new TermoDoModelo(t.Codigo, i + 1, t.TermoId, t.VersaoId, null, Obrigatoriedade.Sempre))],
+        IsencaoPorCarenciaSocioeconomica.FatosDaInscricao,
+        []);
+
+    private static EtapaDoModelo[] Etapas() =>
     [
-        $"DELETE FROM configuracao.modelos_formulario WHERE id::text LIKE '15e0{TabelaModelo:D4}-%';",
-        $"DELETE FROM configuracao.termo_consentimento_versao WHERE id::text LIKE '15e0{TabelaVersaoDoTermo:D4}-%';",
-        $"DELETE FROM configuracao.termo_consentimento WHERE id::text LIKE '15e0{TabelaTermo:D4}-%';",
+        new(Renda, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda familiar",
+            "A isenção pela Lei nº 12.799/2013 é de quem tem renda familiar per capita de até um salário mínimo e meio e cursou o ensino médio completo em escola pública ou como bolsista integral em escola privada. A origem escolar é a que você informou na inscrição.",
+            null, null),
+        new("DOCUMENTOS", 2, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
+        new("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
     ];
 
-    private static ConteudoDoModelo Conteudo()
-    {
-        const string renda = "RENDA_FAMILIAR";
-
-        return new(
-            "Solicitação de isenção da taxa de inscrição",
-            [
-                new EtapaDoModelo(renda, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Renda familiar",
-                    "A isenção pela Lei nº 12.799/2013 é de quem tem renda familiar per capita de até um salário mínimo e meio e cursou o ensino médio completo em escola pública ou como bolsista integral em escola privada. A origem escolar é a que você informou na inscrição.",
-                    null, null),
-                new EtapaDoModelo("DOCUMENTOS", 2, TipoEtapaFormulario.Bloco, BlocoSistema.ComprovacaoDocumental, "Documentos", null, null, null),
-                new EtapaDoModelo("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null, null),
-            ],
-            [
-                new ItemDoModelo(
-                    IsencaoPorCarenciaSocioeconomica.FatoRenda, 1, renda,
-                    "A renda da sua família é de até um salário mínimo e meio por pessoa?", TipoRenderizacao.Booleano, null,
-                    "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. Exatamente um salário mínimo e meio também dá direito.",
-                    Obrigatoriedade.Sempre, null, [], PedirConfirmacao: false),
-            ],
-            [.. Termos.Select(static (t, i) => new TermoDoModelo(t.Codigo, i + 1, t.TermoId, t.VersaoId, null, Obrigatoriedade.Sempre))],
-            IsencaoPorCarenciaSocioeconomica.FatosDaInscricao,
-            []);
-    }
+    private static ItemDoModelo PerguntaDeRenda() =>
+        new(IsencaoPorCarenciaSocioeconomica.FatoRenda, 1, Renda,
+            "A renda da sua família é de até um salário mínimo e meio por pessoa?", TipoRenderizacao.Booleano, null,
+            "Some a renda bruta mensal de todos da família e divida pelo número de pessoas. Exatamente um salário mínimo e meio também dá direito.",
+            Obrigatoriedade.Sempre, null, [], PedirConfirmacao: false);
 }

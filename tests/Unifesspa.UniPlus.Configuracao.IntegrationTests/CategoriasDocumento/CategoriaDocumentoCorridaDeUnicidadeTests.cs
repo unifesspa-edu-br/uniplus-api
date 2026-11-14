@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -49,7 +50,7 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
         string codigo = CodigoUnico();
         await SemearAsync(codigo);
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         var repositorio = new RepositorioComUnicidadeCega(ctx);
 
         Result<Guid> resultado = await CriarCategoriaDocumentoCommandHandler.Handle(
@@ -71,7 +72,7 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
         await SemearAsync(codigoOcupado);
         Guid alvoId = await SemearAsync(CodigoUnico());
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         var repositorio = new RepositorioComUnicidadeCega(ctx);
 
         Result resultado = await AtualizarCategoriaDocumentoCommandHandler.Handle(
@@ -90,14 +91,14 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
     {
         CategoriaDocumento categoria = CategoriaDocumento.Criar(codigo, "Categoria semeada", null, 0).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         ctx.CategoriasDocumento.Add(categoria);
         await ctx.SaveChangesAsync();
 
         return categoria.Id;
     }
 
-    private static Func<Task> SaveChangesPosterior(ConfiguracaoDbContext ctx) =>
+    private static Func<Task> SaveChangesPosterior(UniPlusDbContext ctx) =>
         async () => await ctx.SaveChangesAsync();
 
     private static string CodigoUnico() => $"CAT_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
@@ -111,7 +112,7 @@ public sealed class CategoriaDocumentoCorridaDeUnicidadeTests
     {
         private readonly CategoriaDocumentoRepository _interno;
 
-        public RepositorioComUnicidadeCega(ConfiguracaoDbContext dbContext)
+        public RepositorioComUnicidadeCega(UniPlusDbContext dbContext)
         {
             _interno = new CategoriaDocumentoRepository(dbContext);
         }

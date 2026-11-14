@@ -6,14 +6,15 @@ using Microsoft.EntityFrameworkCore;
 
 using Testcontainers.PostgreSql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Interceptors;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="SelecaoDbContext"/> aplicado via <c>MigrateAsync</c>,
-/// e expõe uma factory de <see cref="SelecaoDbContext"/> com os MESMOS
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>,
+/// e expõe uma factory de <see cref="UniPlusDbContext"/> com os MESMOS
 /// interceptors da produção (Soft Delete + Auditable + Histórico de
 /// <c>ObrigatoriedadeLegal</c>).
 /// </summary>
@@ -59,13 +60,8 @@ public sealed class ObrigatoriedadeLegalDbFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        // Pre-cria a extensão btree_gist exigida pelo EXCLUDE GIST constraint
-        // da junction (ADR-0060). Em dev local o docker/init-db.sql faz isso;
-        // aqui é setup explícito da fixture.
-        await ExecuteSqlAsync("CREATE EXTENSION IF NOT EXISTS btree_gist;").ConfigureAwait(false);
-
-        await using SelecaoDbContext context = CreateDbContext(userId: null);
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        await using UniPlusDbContext context = CreateDbContext(userId: null);
+        await context.SubirOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -74,16 +70,16 @@ public sealed class ObrigatoriedadeLegalDbFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Constrói um <see cref="SelecaoDbContext"/> com os 3 interceptors da
+    /// Constrói um <see cref="UniPlusDbContext"/> com os 3 interceptors da
     /// produção. Quando <paramref name="userId"/> é informado, simula um
     /// <c>IUserContext</c> autenticado para o teste — caso contrário, os
     /// interceptors caem para o fallback <c>"system"</c>.
     /// </summary>
-    public SelecaoDbContext CreateDbContext(string? userId)
+    public UniPlusDbContext CreateDbContext(string? userId)
     {
         StubUserContext? userContext = userId is null ? null : new StubUserContext(userId);
 
-        DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
+        DbContextOptions<MonolitoDbContext> options = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql(ConnectionString)
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(
@@ -92,20 +88,6 @@ public sealed class ObrigatoriedadeLegalDbFixture : IAsyncLifetime
                 new ObrigatoriedadeLegalHistoricoInterceptor(TimeProvider.System, userContext))
             .Options;
 
-        return new SelecaoDbContext(options);
-    }
-
-    private async Task ExecuteSqlAsync(string sql)
-    {
-        await using SelecaoDbContext context = CreateDbContext(userId: null);
-        await context.Database.OpenConnectionAsync().ConfigureAwait(false);
-        try
-        {
-            await context.Database.ExecuteSqlRawAsync(sql).ConfigureAwait(false);
-        }
-        finally
-        {
-            await context.Database.CloseConnectionAsync().ConfigureAwait(false);
-        }
+        return new MonolitoDbContext(options);
     }
 }

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Composição da persistência do monólito: o contexto único, a fábrica de design-time, a migration e o registro no DI.
+    Referencia a Infrastructure de cada módulo interno e é, com elas, o único projeto que depende do contexto concreto.
+    Fica ao lado do Host, fora do roster de módulos do fitness R8.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
+    <ProjectReference Include="..\..\selecao\Unifesspa.UniPlus.Selecao.Infrastructure\Unifesspa.UniPlus.Selecao.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\ingresso\Unifesspa.UniPlus.Ingresso.Infrastructure\Unifesspa.UniPlus.Ingresso.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\publicacoes\Unifesspa.UniPlus.Publicacoes.Infrastructure\Unifesspa.UniPlus.Publicacoes.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\configuracao\Unifesspa.UniPlus.Configuracao.Infrastructure\Unifesspa.UniPlus.Configuracao.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\organizacao-institucional\Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure\Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\autorizacao\Unifesspa.UniPlus.Autorizacao.Infrastructure\Unifesspa.UniPlus.Autorizacao.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\discentes\Unifesspa.UniPlus.Discentes.Infrastructure\Unifesspa.UniPlus.Discentes.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

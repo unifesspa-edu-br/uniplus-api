@@ -16,6 +16,7 @@ using Domain.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -67,7 +68,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         evento!.ProcessoSeletivoId.Should().Be(processoId);
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo? persistido = await db.ProcessosSeletivos.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == processoId);
         persistido.Should().NotBeNull();
@@ -174,7 +175,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         using HttpClient client = api.CreateClient();
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) =
             await ProcessoSeletivoPendenciasSeeder.SemearComCronogramaNaoConformeAsync(
                 db, $"{nameof(Publicar_Recusado_PendenciasCasamComOChecklistDoPreview)} {Guid.CreateVersion7()}");
@@ -232,7 +233,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     /// sem nada ter regredido.
     /// </remarks>
     private async Task AssertGateEstruturalNaoConformeAsync(
-        Func<SelecaoDbContext, string, Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)>> semear,
+        Func<UniPlusDbContext, string, Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)>> semear,
         string codigoEsperado,
         string codigoDoItemVermelho,
         string nomeDoCenario)
@@ -244,7 +245,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         using HttpClient client = api.CreateClient();
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await semear(db, $"{nomeDoCenario} {Guid.CreateVersion7()}");
 
         HttpResponseMessage response = await PostPublicarAsync(client, processo.Id, documento.Id, MakeIdempotencyKey());
@@ -267,7 +268,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         using HttpClient client = api.CreateClient();
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid regraId = await ProcessoSeletivoPendenciasSeeder.SemearObrigatoriedadeNaoAtendidaAsync(
             db, $"TEST_GATE_{Guid.CreateVersion7():N}");
         try
@@ -304,7 +305,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
         using HttpClient client = api.CreateClient();
 
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPendenciasSeeder
             .SemearComCadastroProprioNaoConformeAsync(
                 db,
@@ -504,7 +505,7 @@ public sealed class PublicarProcessoSeletivoEndpointTests
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api, string nome)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");

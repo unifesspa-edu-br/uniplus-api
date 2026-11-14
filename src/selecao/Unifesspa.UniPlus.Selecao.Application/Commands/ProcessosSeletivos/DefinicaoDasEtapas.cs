@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Define as etapas do processo em duas passadas (ADR-0125). A primeira confere o payload inteiro —
@@ -18,7 +18,7 @@ internal sealed class DefinicaoDasEtapas(
     ProcessoSeletivo processo,
     CadastrosDasEtapas cadastros,
     AtosConsultadosNaEdicao atos,
-    ISelecaoUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result> DefinirAsync(CancellationToken cancellationToken)
     {

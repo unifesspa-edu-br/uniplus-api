@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta da FaseCanonica contra Postgres real (UNI-REQ-0064):
@@ -46,13 +47,13 @@ public sealed class FaseCanonicaPersistenceTests
         await LiberarSlotDoSeedAsync("INSCRICAO");
         FaseCanonica fase = Fase("INSCRICAO", "Inscrição");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(fase);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         FaseCanonica persistida = await readCtx.FasesCanonicas.SingleAsync(f => f.Id == fase.Id);
 
         persistida.Codigo.Valor.Should().Be("INSCRICAO");
@@ -70,13 +71,13 @@ public sealed class FaseCanonicaPersistenceTests
     {
         await LiberarSlotDoSeedAsync("ENSALAMENTO");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento"));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.FasesCanonicas.Add(Fase("ENSALAMENTO", "Ensalamento"));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -92,20 +93,20 @@ public sealed class FaseCanonicaPersistenceTests
     {
         await LiberarSlotDoSeedAsync("CLASSIFICACAO");
         FaseCanonica fase = Fase("CLASSIFICACAO", "Classificação");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(fase);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             FaseCanonica tracked = await ctx.FasesCanonicas.SingleAsync(f => f.Id == fase.Id);
             ctx.FasesCanonicas.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             FaseCanonica excluida = await ctx.FasesCanonicas
                 .IgnoreQueryFilters().SingleAsync(f => f.Id == fase.Id);
@@ -113,7 +114,7 @@ public sealed class FaseCanonicaPersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.FasesCanonicas.Add(Fase("CLASSIFICACAO", "Classificação"));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -128,7 +129,7 @@ public sealed class FaseCanonicaPersistenceTests
         FaseCanonica fase = Fase(
             FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, "Solicitação de isenção");
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.FasesCanonicas.Add(fase);
 
         Func<Task> act = async () => await ctx.SaveChangesAsync();
@@ -140,7 +141,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do conjunto canônico via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoCanonicoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
@@ -152,7 +153,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do formato via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoFormatoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lista-espera"}, {"Fase"}, {false}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
@@ -164,7 +165,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita agrupar etapas fora da avaliação via SQL cru")]
     public async Task Check_RejeitaAgrupaEtapasForaDaAvaliacaoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"HABILITACAO"}, {"Habilitação"}, {true}, {false}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
@@ -176,7 +177,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita complementação em fase vedada via SQL cru")]
     public async Task Check_RejeitaComplementacaoFaseVedadaViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"RESULTADO_FINAL"}, {"Resultado final"}, {false}, {true}, {"NO_EDITAL"}, {DateTimeOffset.UtcNow}, {false})");
@@ -188,7 +189,7 @@ public sealed class FaseCanonicaPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita origem da data fora do domínio via SQL cru")]
     public async Task Check_RejeitaOrigemDataForaDoDominioViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.fase_canonica (id, codigo, nome, agrupa_etapas, permite_complementacao, origem_data, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"MATRICULA"}, {"Matrícula"}, {false}, {false}, {"EXTERNA"}, {DateTimeOffset.UtcNow}, {false})");
@@ -202,7 +203,7 @@ public sealed class FaseCanonicaPersistenceTests
     {
         await LiberarSlotDoSeedAsync("MATRICULA", "HETEROIDENTIFICACAO", "CHAMADA");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.FasesCanonicas.Add(Fase("MATRICULA", "Matrícula"));
             ctx.FasesCanonicas.Add(Fase("HETEROIDENTIFICACAO", "Heteroidentificação"));
@@ -210,7 +211,7 @@ public sealed class FaseCanonicaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoFase voExcluido = CodigoFase.Criar("CHAMADA").Value!;
             FaseCanonica aExcluir = await ctx.FasesCanonicas.SingleAsync(f => f.Codigo == voExcluido);
@@ -218,7 +219,7 @@ public sealed class FaseCanonicaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new FaseCanonicaReader(readCtx);
         IReadOnlyList<FaseCanonicaView> todos = await reader.ListarVivosAsync();
 
@@ -249,7 +250,7 @@ public sealed class FaseCanonicaPersistenceTests
     /// </remarks>
     private async Task LiberarSlotDoSeedAsync(params string[] codigos)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // SQL direto em vez de LINQ: `Codigo` e value object com converter, e um
         // `Contains` sobre ele nao traduz para SQL. O filtro pelo prefixo do id

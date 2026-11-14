@@ -29,6 +29,18 @@ public sealed class UniPlusDbContextTests
         EsquemaDe<IdempotencyEntry>(contexto).Should().Be(UniPlusDbContext.EsquemaDaPlataforma);
     }
 
+    [Fact(DisplayName = "O modelo guarda a função de normalização para comparação no esquema plataforma")]
+    public void Modelo_GuardaANormalizacaoParaComparacaoNoEsquemaDaPlataforma()
+    {
+        using ContextoDeTeste contexto = ContextoDeTeste.Criar(new ModuloDeTeste<EntidadeDoModuloA>("modulo_a"));
+
+        IDbFunction funcao = contexto.GetService<IDesignTimeModel>().Model
+            .FindDbFunction(typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)!;
+
+        funcao.Schema.Should().Be(UniPlusDbContext.EsquemaDaPlataforma);
+        funcao.Name.Should().Be("normalizar_para_comparacao");
+    }
+
     [Fact(DisplayName = "Dois módulos com o mesmo esquema são recusados")]
     public void Modelo_RecusaEsquemaRepetido()
     {

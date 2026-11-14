@@ -7,9 +7,9 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A chave de idempotência reservada pelo filtro, com o TTL configurado com um resto de ticks e o relógio com a 7ª casa
@@ -45,7 +45,7 @@ public sealed class TtlDaChaveComResiduoEndpointTests
     private async Task<DateTimeOffset> ExpiracaoGravadaAsync(string chave)
     {
         await using AsyncServiceScope escopo = Fabrica.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.Set<IdempotencyEntry>().AsNoTracking()
             .Where(e => e.IdempotencyKey == chave)
             .Select(e => e.ExpiresAt)

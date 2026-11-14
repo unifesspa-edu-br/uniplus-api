@@ -4,7 +4,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
 
 using AwesomeAssertions;
 
@@ -14,8 +13,8 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// O endpoint <c>PUT /processos-seletivos/{id}/taxa-inscricao</c>, fim a fim pelo HTTP —
@@ -70,7 +69,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         bool existe = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
             .AnyAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
         existe.Should().BeFalse("cobra:null explícito remove deliberadamente a declaração existente");
@@ -86,7 +85,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoTaxaInscricao taxa = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
             .SingleAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
         taxa.Cobra.Should().BeFalse();
@@ -110,7 +109,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         corpo.Should().Contain("uniplus.selecao.configuracao_taxa_inscricao.fundamento_obrigatorio_quando_cobra");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoTaxaInscricao taxa = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
             .SingleAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
         taxa.Cobra.Should().BeFalse(
@@ -128,7 +127,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ConfiguracaoTaxaInscricao taxa = await db.Set<ConfiguracaoTaxaInscricao>().AsNoTracking()
             .SingleAsync(t => t.ProcessoSeletivoId == ctx.ProcessoId);
         taxa.Cobra.Should().BeTrue();
@@ -179,7 +178,7 @@ public sealed class DefinirTaxaInscricaoEndpointTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;

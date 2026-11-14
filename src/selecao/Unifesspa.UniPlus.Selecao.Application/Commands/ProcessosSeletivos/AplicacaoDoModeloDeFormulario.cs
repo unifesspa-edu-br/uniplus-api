@@ -1,12 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
@@ -19,7 +18,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
     ModeloFormularioView modelo,
     PrecondicaoIfMatch precondicao,
     CadastrosDaAplicacaoDoModelo cadastros,
-    ISelecaoUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result<AplicacaoDeModeloDto>> AplicarAsync(CancellationToken cancellationToken)
     {

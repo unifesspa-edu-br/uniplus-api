@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -50,7 +51,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
             original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
 
-        await using (SelecaoDbContext escrita = fixture.CreateDbContext())
+        await using (UniPlusDbContext escrita = fixture.CreateDbContext())
         {
             escrita.ProcessosSeletivos.Add(original);
             escrita.Add(versao);
@@ -59,14 +60,14 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
 
         // A "sessão editorial": a configuração viva é substituída por outra, e PERSISTIDA.
         // É o estado real de que o descarte parte — não um agregado em memória.
-        await using (SelecaoDbContext sessao = fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             tracked.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre(Variante)).IsSuccess.Should().BeTrue();
             await sessao.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext leitura = fixture.CreateDbContext())
+        await using (UniPlusDbContext leitura = fixture.CreateDbContext())
         {
             ProcessoSeletivo sujo = await CarregarAsync(leitura, processoId);
             sujo.Etapas.Should().ContainSingle("pré-condição: a sessão editorial trocou as 4 etapas por 1");
@@ -74,7 +75,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         }
 
         // O DESCARTE — com a prova de round-trip, exatamente como em produção.
-        await using (SelecaoDbContext descarte = fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
 
@@ -92,7 +93,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         }
 
         // A verificação: tracker LIMPO, tudo relido do banco.
-        await using SelecaoDbContext verificacao = fixture.CreateDbContext();
+        await using UniPlusDbContext verificacao = fixture.CreateDbContext();
         ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
 
         // (a) As FKs foram reconstruídas — o encoder não as serializa, então o round-trip
@@ -159,7 +160,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
             original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
 
-        await using (SelecaoDbContext escrita = fixture.CreateDbContext())
+        await using (UniPlusDbContext escrita = fixture.CreateDbContext())
         {
             escrita.ProcessosSeletivos.Add(original);
             escrita.Add(versao);
@@ -167,7 +168,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         }
 
         DateTimeOffset criadoEm;
-        await using (SelecaoDbContext leitura = fixture.CreateDbContext())
+        await using (UniPlusDbContext leitura = fixture.CreateDbContext())
         {
             criadoEm = (await CarregarAsync(leitura, processoId)).Etapas.Single(e => e.Id == etapaId).CreatedAt;
         }
@@ -179,7 +180,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         // Restaurar sobre uma configuração já idêntica passaria até com uma implementação
         // que não fizesse NADA: o CreatedAt estaria preservado por inércia, e os dados
         // "voltariam" porque nunca saíram.
-        await using (SelecaoDbContext sessao = fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             tracked.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoComEtapaAlterada(Variante))
@@ -187,7 +188,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             await sessao.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext conferencia = fixture.CreateDbContext())
+        await using (UniPlusDbContext conferencia = fixture.CreateDbContext())
         {
             EtapaProcesso alterada = (await CarregarAsync(conferencia, processoId)).Etapas.Single(e => e.Id == etapaId);
             alterada.Nome.Should().Be("Etapa Descaracterizada", "pré-condição: a sessão editorial mudou os dados");
@@ -196,7 +197,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
 
         // O DESCARTE — reconcilia por Id na instância tracked. Substituí-la por uma instância
         // nova com o mesmo Id colidiria com o identity map, e o CreatedAt seria recarimbado.
-        await using (SelecaoDbContext descarte = fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
 
@@ -212,7 +213,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             await descarte.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext verificacao = fixture.CreateDbContext();
+        await using UniPlusDbContext verificacao = fixture.CreateDbContext();
         EtapaProcesso reconciliada = (await CarregarAsync(verificacao, processoId)).Etapas.Single(e => e.Id == etapaId);
         EtapaProcesso congeladaOriginal = CorpusEnvelope.ProcessoRico(Variante).Etapas.Single(e => e.Id == etapaId);
 
@@ -266,7 +267,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
             original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
 
-        await using (SelecaoDbContext escrita = fixture.CreateDbContext())
+        await using (UniPlusDbContext escrita = fixture.CreateDbContext())
         {
             escrita.ProcessosSeletivos.Add(original);
             escrita.Add(versao);
@@ -277,7 +278,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         // não por um grafo. É a diferença que faz o teste dizer algo: aplicar um grafo cuja
         // etapa nasce vazia passaria por inércia se a reposição não mexesse nas coleções, já
         // que elas nunca teriam saído.
-        await using (SelecaoDbContext sessao = fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
             EtapaProcesso objetiva = tracked.Etapas.Single(e => e.Id == objetivaId);
@@ -304,7 +305,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             await sessao.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext leitura = fixture.CreateDbContext())
+        await using (UniPlusDbContext leitura = fixture.CreateDbContext())
         {
             EtapaProcesso suja = (await CarregarAsync(leitura, processoId)).Etapas.Single(e => e.Id == objetivaId);
             suja.ItensDeAvaliacao.Select(i => i.Rotulo).Should().BeEquivalentTo("Bloco de Exatas", "Bloco de Humanidades");
@@ -313,7 +314,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             suja.EmiteParecerIndividual.Should().BeFalse("pré-condição: a sessão editorial retirou a promessa de parecer");
         }
 
-        await using (SelecaoDbContext descarte = fixture.CreateDbContext())
+        await using (UniPlusDbContext descarte = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
 
@@ -327,7 +328,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             await descarte.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext verificacao = fixture.CreateDbContext();
+        await using UniPlusDbContext verificacao = fixture.CreateDbContext();
         ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
         EtapaProcesso objetivaReposta = reposto.Etapas.Single(e => e.Id == objetivaId);
         EtapaProcesso congeladaOriginal = CorpusEnvelope.ProcessoRico(Variante).Etapas.Single(e => e.Id == objetivaId);
@@ -374,7 +375,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             "bancas e janelas recursais inclusive");
     }
 
-    internal static async Task<ProcessoSeletivo> CarregarAsync(SelecaoDbContext context, Guid id) =>
+    internal static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext context, Guid id) =>
         await context.ProcessosSeletivos
             // As filhas da etapa vêm explícitas, como no repositório de produção: sem elas a
             // coleção tracked nasce vazia e o agregado relido recanonicaliza com produtos,

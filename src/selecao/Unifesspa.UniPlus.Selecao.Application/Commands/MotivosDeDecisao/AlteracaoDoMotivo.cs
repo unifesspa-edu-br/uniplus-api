@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
@@ -15,7 +15,7 @@ internal static class AlteracaoDoMotivo
         Guid id,
         Func<MotivoDeDecisao, Result> operacao,
         IMotivoDeDecisaoRepository repository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         MotivoDeDecisao? motivo = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);
@@ -35,7 +35,7 @@ internal static class AlteracaoDoMotivo
         return await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> GravarAsync(ISelecaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    private static async Task<Result> GravarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

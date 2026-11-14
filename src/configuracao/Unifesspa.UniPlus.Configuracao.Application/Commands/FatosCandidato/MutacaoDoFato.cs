@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -20,7 +20,7 @@ internal static class MutacaoDoFato
         Guid id,
         Func<FatoCandidato, Result> mutacao,
         IFatoCandidatoRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken) =>
         AplicarAsync(id, fato => Task.FromResult(mutacao(fato)), repository, unitOfWork, cancellationToken);
 
@@ -29,7 +29,7 @@ internal static class MutacaoDoFato
         Guid id,
         Func<FatoCandidato, Task<Result>> mutacao,
         IFatoCandidatoRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         FatoCandidato? fato = await repository.ObterPorIdAsync(id, cancellationToken).ConfigureAwait(false);

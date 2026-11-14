@@ -5,11 +5,13 @@ using Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public AtoDoProcessoRepository(SelecaoDbContext context)
+    public AtoDoProcessoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

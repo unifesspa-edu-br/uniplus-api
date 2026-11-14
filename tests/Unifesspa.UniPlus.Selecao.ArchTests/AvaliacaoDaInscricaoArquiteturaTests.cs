@@ -9,8 +9,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
-using ReflectionAssembly = System.Reflection.Assembly;
-
 /// <summary>
 /// A avaliação da inscrição (ADR-0143): a árvore de exigências é resolvida sobre a avaliação do
 /// formulário num lugar só, a <see cref="AvaliacaoDaInscricao"/> — outra composição do avaliador com
@@ -24,7 +22,7 @@ public sealed class AvaliacaoDaInscricaoArquiteturaTests
         [
             typeof(AvaliacaoDaInscricao).Assembly,
             typeof(Application.Services.PreparacaoDaAvaliacaoDaInscricao).Assembly,
-            typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly,
+            typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly,
             typeof(API.Controllers.InscricoesController).Assembly,
         ])
         .Build();

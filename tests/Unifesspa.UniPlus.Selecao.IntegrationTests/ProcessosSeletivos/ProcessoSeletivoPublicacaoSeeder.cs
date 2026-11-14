@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -13,7 +13,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -291,7 +290,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     private static async Task PersistirAsync(
         ProcessoSeletivoDbFixture fixture, ProcessoSeletivo processo, DocumentoAPublicar documento, VersaoConfiguracao versao)
     {
-        await using SelecaoDbContext context = fixture.CreateDbContext();
+        await using UniPlusDbContext context = fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await context.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);

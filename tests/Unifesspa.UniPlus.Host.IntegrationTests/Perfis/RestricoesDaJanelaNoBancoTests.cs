@@ -9,8 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O que o banco barra por conta própria na trilha da janela de migração, nos lotes, nas linhas e na revogação pela
@@ -154,7 +154,7 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
     private async Task<string> CopiarLinhaAsync(string tabela, Guid modelo, string alteracoes)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        List<string> colunas = await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        List<string> colunas = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<string>($"SELECT column_name AS \"Value\" FROM information_schema.columns WHERE table_schema = 'autorizacao' AND table_name = {tabela} AND is_identity = 'NO' ORDER BY ordinal_position")
             .ToListAsync();
         Dictionary<string, string> trocas = alteracoes.Split(", ").Select(t => t.Split(" = ", 2)).ToDictionary(t => t[0], t => t[1]);
@@ -184,14 +184,14 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQueryRaw<Guid>(sql).SingleAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQueryRaw<Guid>(sql).SingleAsync();
     }
 
     private async Task<int> ExecutarAsync(string sql)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql);
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql);
     }
 
     private async Task<PostgresException> FalharAsync(string sql)

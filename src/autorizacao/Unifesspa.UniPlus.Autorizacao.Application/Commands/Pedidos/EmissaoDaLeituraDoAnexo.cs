@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -18,13 +19,13 @@ public sealed class EmissaoDaLeituraDoAnexo
 
     private readonly IPedidoDeConcessaoRepository _pedidos;
     private readonly IArmazenamentoDosDocumentosDaAutorizacao _armazenamento;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
 
     public EmissaoDaLeituraDoAnexo(
         IPedidoDeConcessaoRepository pedidos,
         IArmazenamentoDosDocumentosDaAutorizacao armazenamento,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock)
     {
         _pedidos = pedidos ?? throw new ArgumentNullException(nameof(pedidos));

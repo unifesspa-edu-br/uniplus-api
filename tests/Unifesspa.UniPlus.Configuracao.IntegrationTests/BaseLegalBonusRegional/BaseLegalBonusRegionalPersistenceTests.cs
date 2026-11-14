@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta de <c>BaseLegalBonusRegional</c> contra Postgres real: prova, no
@@ -38,13 +39,13 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
             "Institui inclusão regional",
             [("1504208", "Marabá", "PA"), ("1501402", "Belém", "PA")]).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
             ctx.BaseLegaisBonus.Add(baseLegal);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
             Domain.Entities.BaseLegalBonusRegional tracked = await ctx.BaseLegaisBonus
                 .Include(b => b.Municipios)
@@ -53,7 +54,7 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Domain.Entities.BaseLegalBonusRegional excluido = await readCtx.BaseLegaisBonus
             .IgnoreQueryFilters()
             .Include(b => b.Municipios)
@@ -71,13 +72,13 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
         Domain.Entities.BaseLegalBonusRegional baseLegal = Domain.Entities.BaseLegalBonusRegional.Criar(
             "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
             ctx.BaseLegaisBonus.Add(baseLegal);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-b"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-b"))
         {
             Domain.Entities.BaseLegalBonusRegional tracked = await ctx.BaseLegaisBonus
                 .Include(b => b.Municipios)
@@ -88,7 +89,7 @@ public sealed class BaseLegalBonusRegionalPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Domain.Entities.BaseLegalBonusRegional persistida = await readCtx.BaseLegaisBonus.SingleAsync(b => b.Id == baseLegal.Id);
         persistida.UpdatedBy.Should().Be("admin-b", "mudar só os municípios também é edição da base legal");
         persistida.UpdatedAt.Should().NotBeNull();

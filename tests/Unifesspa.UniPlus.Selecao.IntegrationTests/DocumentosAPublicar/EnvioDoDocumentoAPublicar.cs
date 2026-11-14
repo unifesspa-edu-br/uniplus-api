@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
@@ -12,7 +13,6 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.DocumentosAPublicar;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -26,7 +26,7 @@ internal sealed class EnvioDoDocumentoAPublicar : IAsyncDisposable
     private readonly ProcessoSeletivoRepository _processos;
     private readonly IArquivoArmazenadoStorage _storage;
 
-    private EnvioDoDocumentoAPublicar(SelecaoDbContext context, ProcessoSeletivo processo, IArquivoArmazenadoStorage storage)
+    private EnvioDoDocumentoAPublicar(UniPlusDbContext context, ProcessoSeletivo processo, IArquivoArmazenadoStorage storage)
     {
         Context = context;
         Processo = processo;
@@ -35,7 +35,7 @@ internal sealed class EnvioDoDocumentoAPublicar : IAsyncDisposable
         _storage = storage;
     }
 
-    public SelecaoDbContext Context { get; }
+    public UniPlusDbContext Context { get; }
 
     public ProcessoSeletivo Processo { get; }
 
@@ -44,7 +44,7 @@ internal sealed class EnvioDoDocumentoAPublicar : IAsyncDisposable
     public static async Task<EnvioDoDocumentoAPublicar> NovoAsync(ProcessoSeletivoDbFixture db, IArquivoArmazenadoStorage storage)
     {
         ArgumentNullException.ThrowIfNull(db);
-        SelecaoDbContext context = db.CreateDbContext();
+        UniPlusDbContext context = db.CreateDbContext();
         ProcessoSeletivo processo = await ProcessoSeletivoDeTeste.GravarAsync(context, "PS 2026 — SiSU");
         return new EnvioDoDocumentoAPublicar(context, processo, storage);
     }

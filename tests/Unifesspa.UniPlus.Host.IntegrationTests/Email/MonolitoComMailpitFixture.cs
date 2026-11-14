@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Host.IntegrationTests.Email;
 
 using System.Data.Common;
 
-using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
 
 using Microsoft.AspNetCore.Hosting;
@@ -14,9 +13,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Monólito com Postgres e um Mailpit efêmeros: o relay de e-mail do host aponta para o contêiner de
@@ -65,7 +64,7 @@ public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
         set => Volatile.Write(ref _falhas, value);
     }
 
-    /// <summary>Falha no commit da transação do <c>ConfiguracaoDbContext</c> que alterou uma entidade, depois do outbox.</summary>
+    /// <summary>Falha no commit da transação do <c>UniPlusDbContext</c> que alterou uma entidade, depois do outbox.</summary>
     public FalhaNoCommitDaSolicitacao FalhaNoCommit { get; } = new();
 
     protected override IEnumerable<KeyValuePair<string, string?>> OverridesAdicionais() =>
@@ -84,7 +83,7 @@ public sealed class MonolitoComMailpitApiFactory : MonolitoApiFactory
 
         builder.ConfigureTestServices(services =>
         {
-            services.ConfigureDbContext<ConfiguracaoDbContext>(opcoes => opcoes.AddInterceptors(FalhaNoCommit));
+            services.ConfigureDbContext<MonolitoDbContext>(opcoes => opcoes.AddInterceptors(FalhaNoCommit));
             services.RemoveAll<ITransporteDeEmail>();
             services.AddSingleton<ITransporteDeEmail>(sp => new TransporteQueFalhaAntes(
                 new SmtpTransporteDeEmail(

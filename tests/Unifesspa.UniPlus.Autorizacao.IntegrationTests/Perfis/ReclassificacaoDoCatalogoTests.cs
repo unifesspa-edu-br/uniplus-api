@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -277,7 +278,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     private async Task GravarBaseRebaixadaAsync(Guid perfil, Guid concessao, ClassificacaoDeProtecao classificacao)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid implantacao = await db.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).FirstAsync();
         db.BasesDasPermissoes.Add(BaseDaPermissaoNaConcessao.Registrar(
             perfil, concessao, Codigo, new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
@@ -288,7 +289,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
             .Where(c => c.PerfilId == perfil).Select(c => c.Id).SingleAsync();
     }
 
@@ -296,7 +297,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Reclassificacoes
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Reclassificacoes
             .Where(r => r.PerfilId == perfil).Select(r => r.Id).SingleAsync();
     }
 
@@ -382,7 +383,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     private async Task<long> Consultar(string sql, object[] parametros)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database.SqlQueryRaw<long>(sql, parametros).SingleAsync();
     }
@@ -417,7 +418,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     private async Task<string> ImpressaoAtualAsync()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return (await db.ImplantacoesDasPermissoes.AsNoTracking().OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync()).Trim();
     }

@@ -11,9 +11,9 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -46,13 +46,13 @@ public sealed class TipoDocumentoPersistenceTests
         string codigo = CodigoUnico();
         TipoDocumento tipo = Novo(codigo, categoria: "SAUDE");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDocumento.Add(tipo);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDocumento persistido = await readCtx.TiposDocumento.SingleAsync(t => t.Id == tipo.Id);
 
         persistido.Codigo.Valor.Should().Be(codigo);
@@ -72,13 +72,13 @@ public sealed class TipoDocumentoPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDocumento.Add(Novo(codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.TiposDocumento.Add(Novo(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -95,7 +95,7 @@ public sealed class TipoDocumentoPersistenceTests
     [Fact(DisplayName = "Código distinto é aceito")]
     public async Task CodigoDistinto_Aceita()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.TiposDocumento.Add(Novo(CodigoUnico()));
         ctx.TiposDocumento.Add(Novo(CodigoUnico()));
 
@@ -108,20 +108,20 @@ public sealed class TipoDocumentoPersistenceTests
     {
         string codigo = CodigoUnico();
         TipoDocumento tipo = Novo(codigo);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDocumento.Add(tipo);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             TipoDocumento tracked = await ctx.TiposDocumento.SingleAsync(t => t.Id == tipo.Id);
             ctx.TiposDocumento.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             TipoDocumento excluido = await ctx.TiposDocumento
                 .IgnoreQueryFilters().SingleAsync(t => t.Id == tipo.Id);
@@ -129,7 +129,7 @@ public sealed class TipoDocumentoPersistenceTests
             excluido.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.TiposDocumento.Add(Novo(codigo));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -142,7 +142,7 @@ public sealed class TipoDocumentoPersistenceTests
         string codigoCin = CodigoUnico();
         string codigoRg = CodigoUnico();
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             // CIN existe; RG aponta CIN como equivalente (rótulo classificatório, sem FK).
             ctx.TiposDocumento.Add(Novo(codigoCin, categoria: "IDENTIFICACAO"));
@@ -150,7 +150,7 @@ public sealed class TipoDocumentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoTipoDocumento cinVo = Vo(codigoCin);
             TipoDocumento cin = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == cinVo);
@@ -159,7 +159,7 @@ public sealed class TipoDocumentoPersistenceTests
             await act.Should().NotThrowAsync("tipo_equivalente é rótulo, não FK — a remoção não é bloqueada");
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CodigoTipoDocumento rgVo = Vo(codigoRg);
         TipoDocumento rg = await readCtx.TiposDocumento.SingleAsync(t => t.Codigo == rgVo);
         rg.TipoEquivalente.Should().Be(codigoCin, "o rótulo permanece, agora apontando para um código sem alvo vivo");
@@ -169,16 +169,16 @@ public sealed class TipoDocumentoPersistenceTests
     public async Task Banco_AceitaCategoriaForaDoRosterAntigo()
     {
         Guid id = Guid.CreateVersion7();
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({id}, {CodigoUnico()}, {"X"}, {"DOCUMENTO_MILITAR"}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false}, 'PENDENTE', 1, false, 0)");
 
         await act.Should().NotThrowAsync(
             "a categoria virou código de cadastro: um CHECK preso aos sete tokens do enum recusaria "
             + "qualquer categoria que o CEPS criasse");
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDocumento persistido = await readCtx.TiposDocumento.SingleAsync(t => t.Id == id);
         persistido.Categoria.Should().Be("DOCUMENTO_MILITAR",
             "a reidratação não passa mais por conversor de enum, que falharia rápido neste valor");
@@ -187,10 +187,10 @@ public sealed class TipoDocumentoPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita categoria fora do formato de código via SQL cru")]
     public async Task Check_RejeitaCategoriaForaDoFormatoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"renda familiar"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"renda familiar"}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o domínio fechado saiu, mas a forma continua protegida: sem conversor de enum, "
@@ -206,10 +206,10 @@ public sealed class TipoDocumentoPersistenceTests
         string categoriaLonga = "A" + new string('X', 49);
         Guid id = Guid.CreateVersion7();
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, classificacao_protecao, finalidade_tratamento, hipotese_legal, created_at, is_deleted, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({id}, {CodigoUnico()}, {"X"}, {categoriaLonga}, {"PESSOAL"}, {"Comprovação documental do candidato."}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {DateTimeOffset.UtcNow}, {false}, 'PENDENTE', 1, false, 0)");
 
         await act.Should().NotThrowAsync();
     }
@@ -218,10 +218,10 @@ public sealed class TipoDocumentoPersistenceTests
     public async Task Check_RejeitaEquivalenteIgualCodigoViaSqlCru()
     {
         string codigo = CodigoUnico();
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, tipo_equivalente, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {codigo}, {"X"}, {"OUTROS"}, {codigo}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, tipo_equivalente, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {codigo}, {"X"}, {"OUTROS"}, {codigo}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK tipo_equivalente <> codigo impede o INSERT direto");
@@ -230,10 +230,10 @@ public sealed class TipoDocumentoPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita tamanho_maximo_mb não-positivo via SQL cru")]
     public async Task Check_RejeitaTamanhoMaximoNaoPositivoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, tamanho_maximo_mb, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTROS"}, {0}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.tipo_documento (id, codigo, nome, categoria, tamanho_maximo_mb, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTROS"}, {0}, {DateTimeOffset.UtcNow}, {false}, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK tamanho_maximo_mb > 0 impede o INSERT direto");
@@ -247,7 +247,7 @@ public sealed class TipoDocumentoPersistenceTests
         string codB = $"{prefixo}_B";
         string codExcluido = $"{prefixo}_D";
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDocumento.Add(Novo(codB));
             ctx.TiposDocumento.Add(Novo(codA));
@@ -255,7 +255,7 @@ public sealed class TipoDocumentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoTipoDocumento excluidoVo = Vo(codExcluido);
             TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == excluidoVo);
@@ -263,7 +263,7 @@ public sealed class TipoDocumentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new TipoDocumentoReader(readCtx);
         IReadOnlyList<TipoDocumentoView> todos = await reader.ListarVivosAsync();
 
@@ -286,14 +286,14 @@ public sealed class TipoDocumentoPersistenceTests
         string codigoVivo = CodigoUnico();
         string codigoRemovido = CodigoUnico();
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDocumento.Add(Novo(codigoVivo));
             ctx.TiposDocumento.Add(Novo(codigoRemovido));
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoTipoDocumento removidoVo = Vo(codigoRemovido);
             TipoDocumento aExcluir = await ctx.TiposDocumento.SingleAsync(t => t.Codigo == removidoVo);
@@ -301,7 +301,7 @@ public sealed class TipoDocumentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new TipoDocumentoReader(readCtx);
 
         TipoDocumentoView? vivo = await reader.ObterVivoPorCodigoAsync(codigoVivo);
@@ -318,7 +318,7 @@ public sealed class TipoDocumentoPersistenceTests
     [Fact(DisplayName = "CHECK de formato do código rejeita insert cru fora do padrão canônico")]
     public async Task CheckConstraint_Codigo_RejeitaFormatoInvalido()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
 
         // Bypassa o value object de propósito: o CHECK é defesa em profundidade
         // contra escrita fora do fluxo da aplicação. Sem ele, uma única linha com
@@ -326,8 +326,8 @@ public sealed class TipoDocumentoPersistenceTests
         Func<Task> act = async () => await ctx.Database.ExecuteSqlRawAsync(
             """
             INSERT INTO configuracao.tipo_documento
-                (id, codigo, nome, categoria, created_at, is_deleted)
-            VALUES ({0}, '01', 'Certificado', 'ESCOLARIDADE', now(), false)
+                (id, codigo, nome, categoria, created_at, is_deleted, classificacao_protecao, finalidade_tratamento, hipotese_legal, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
+            VALUES ({0}, '01', 'Certificado', 'ESCOLARIDADE', now(), false, 'PESSOAL', 'Comprovação documental, no processo seletivo, dos requisitos e das condições de participação do candidato.', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'PENDENTE', 1, false, 0)
             """,
             Guid.CreateVersion7());
 
@@ -342,7 +342,7 @@ public sealed class TipoDocumentoPersistenceTests
         string codigo = CodigoUnico();
         Guid id;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             TipoDocumento tipo = Novo(codigo);
             id = tipo.Id;
@@ -350,7 +350,7 @@ public sealed class TipoDocumentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDocumento lido = await readCtx.TiposDocumento.AsNoTracking().SingleAsync(t => t.Id == id);
 
         lido.Codigo.Should().Be(CodigoTipoDocumento.Criar(codigo).Value!,
@@ -361,7 +361,7 @@ public sealed class TipoDocumentoPersistenceTests
     [Fact(DisplayName = "Ordenação por código é traduzida para SQL, sem avaliação no cliente")]
     public async Task OrdenacaoPorCodigo_TraduzParaSql()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // A tradução do OrderBy sobre a propriedade convertida é o que sustenta a
         // listagem do leitor cross-módulo; se o EF não traduzisse, o provider
@@ -381,7 +381,7 @@ public sealed class TipoDocumentoPersistenceTests
     [InlineData("LAUDO-MEDICO")]
     public async Task ObterVivoPorCodigo_ForaDoFormato_DevolveNulo(string codigoInvalido)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         TipoDocumentoReader reader = new(ctx);
 
         TipoDocumentoView? encontrado = await reader.ObterVivoPorCodigoAsync(codigoInvalido);

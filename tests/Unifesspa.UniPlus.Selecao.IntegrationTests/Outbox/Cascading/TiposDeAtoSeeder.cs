@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
 /// <summary>
 /// Semeia no banco de teste os tipos de ato que a publicação, a retificação, o aviso e o resultado usam.
@@ -22,7 +22,7 @@ internal static class TiposDeAtoSeeder
         ArgumentNullException.ThrowIfNull(services);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
-        PublicacoesDbContext db = scope.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoAbertura, "Edital de abertura", unicoPorObjeto: true);
         await GarantirAsync(db, DadosDoAtoDeTeste.TipoRetificacao, "Edital de retificação", unicoPorObjeto: false);
@@ -35,7 +35,7 @@ internal static class TiposDeAtoSeeder
         await db.SaveChangesAsync();
     }
 
-    private static async Task GarantirAsync(PublicacoesDbContext db, string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao = true, bool publicavelComoAvulso = false, bool ehResultado = false)
+    private static async Task GarantirAsync(UniPlusDbContext db, string codigo, string nome, bool unicoPorObjeto, bool congelaConfiguracao = true, bool publicavelComoAvulso = false, bool ehResultado = false)
     {
         if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
         {

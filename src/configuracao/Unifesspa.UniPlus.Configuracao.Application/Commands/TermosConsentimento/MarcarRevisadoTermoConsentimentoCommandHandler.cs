@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -13,7 +13,7 @@ public static class MarcarRevisadoTermoConsentimentoCommandHandler
     public static async Task<Result> Handle(
         MarcarRevisadoTermoConsentimentoCommand command,
         ITermoConsentimentoRepository repository,
-        IConfiguracaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

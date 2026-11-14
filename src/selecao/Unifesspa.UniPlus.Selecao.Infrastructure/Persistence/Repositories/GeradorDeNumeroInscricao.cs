@@ -4,10 +4,11 @@ using System.Globalization;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 
 /// <summary>
-/// Lê o próximo valor da sequência nativa <see cref="SelecaoDbContext.SequenciaDeNumeroDeInscricao"/>
+/// Lê o próximo valor da sequência nativa <see cref="SelecaoContribuicao.SequenciaDeNumeroDeInscricao"/>
 /// (ADR-0121 não se aplica aqui: número de inscrição não é dado pessoal) e formata em 8 dígitos —
 /// decisão de apresentação, não de domínio; o valor numérico cru nunca vaza sem o preenchimento.
 /// </summary>
@@ -17,9 +18,9 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
     Justification = "Instanciada via DI em SelecaoInfrastructureRegistration.")]
 public sealed class GeradorDeNumeroInscricao : IGeradorDeNumeroInscricao
 {
-    private readonly SelecaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public GeradorDeNumeroInscricao(SelecaoDbContext dbContext)
+    public GeradorDeNumeroInscricao(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
@@ -30,7 +31,7 @@ public sealed class GeradorDeNumeroInscricao : IGeradorDeNumeroInscricao
     // parametrizar um buraco de interpolação que está DENTRO de aspas simples do SQL: o texto
     // resultante vira a string literal "@p0" em vez do valor, e nextval('@p0') nunca resolve.
     private static readonly string ComandoProximoValor =
-        $"SELECT nextval('{SelecaoDbContext.Schema}.{SelecaoDbContext.SequenciaDeNumeroDeInscricao}') AS \"Value\"";
+        $"SELECT nextval('{SelecaoContribuicao.NomeDoEsquema}.{SelecaoContribuicao.SequenciaDeNumeroDeInscricao}') AS \"Value\"";
 
     public async Task<string> ProximoAsync(CancellationToken cancellationToken = default)
     {

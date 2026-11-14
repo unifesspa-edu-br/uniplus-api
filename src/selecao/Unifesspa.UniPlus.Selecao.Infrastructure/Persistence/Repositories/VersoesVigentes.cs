@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
@@ -9,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// </summary>
 internal static class VersoesVigentes
 {
-    internal static IQueryable<VersaoConfiguracao> Vigentes(this SelecaoDbContext context, Guid processoId, DateTimeOffset instante)
+    internal static IQueryable<VersaoConfiguracao> Vigentes(this UniPlusDbContext context, Guid processoId, DateTimeOffset instante)
     {
         DateTimeOffset instanteUtc = instante.ToUniversalTime();
         return context.Publicadas(processoId, instanteUtc).Where(v => v.VigenteAPartirDe <= instanteUtc);
@@ -18,12 +19,12 @@ internal static class VersoesVigentes
     // Todas as versões, as já vigentes primeiro: a unidade e o início das fases se leem do histórico inteiro, e a
     // versão que ainda não vige só entra depois da que vale. O EXISTS através de ProcessosSeletivos herda o filtro de
     // exclusão lógica do processo: a configuração congelada de um processo excluído não vaza.
-    internal static IQueryable<VersaoConfiguracao> Publicadas(this SelecaoDbContext context, Guid processoId, DateTimeOffset instante)
+    internal static IQueryable<VersaoConfiguracao> Publicadas(this UniPlusDbContext context, Guid processoId, DateTimeOffset instante)
     {
         DateTimeOffset instanteUtc = instante.ToUniversalTime();
         return context.VersoesConfiguracao
             .Where(v => v.ProcessoSeletivoId == processoId
-                && context.ProcessosSeletivos.Any(p => p.Id == processoId))
+                && context.Set<ProcessoSeletivo>().Any(p => p.Id == processoId))
             .OrderBy(v => v.VigenteAPartirDe > instanteUtc)
             .ThenByDescending(v => v.VigenteAPartirDe)
             .ThenByDescending(v => v.NumeroVersao);

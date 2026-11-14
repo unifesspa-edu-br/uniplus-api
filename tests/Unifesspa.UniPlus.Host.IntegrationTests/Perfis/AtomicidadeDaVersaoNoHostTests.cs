@@ -9,8 +9,8 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
@@ -70,7 +70,7 @@ public sealed class AtomicidadeDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTest
         await InjetarResultadoAsync(versao.DocumentoId, VeredictoDaVerificacao.Verificado);
         await AguardarAsync(async () => await SituacaoDoDocumentoAsync(diogo, vigente.PerfilId) == "verificado", "o documento não foi verificado");
         await using TransacaoRetidaDeTeste outra = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await outra.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+        await outra.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "INSERT INTO autorizacao.perfis (id, nome, descricao, ativo, created_at) VALUES ({0}, {1}, 'Perfil que toma o nome.', true, now())",
             Guid.CreateVersion7(), nomeNovo);
 
@@ -116,7 +116,7 @@ public sealed class AtomicidadeDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTest
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.avisos_emitidos")
             .SingleAsync();
     }
@@ -125,7 +125,7 @@ public sealed class AtomicidadeDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTest
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM wolverine.wolverine_outgoing_envelopes WHERE message_type ILIKE '%email%'")
             .SingleAsync();
     }

@@ -4,12 +4,12 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
@@ -48,7 +48,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
 
     public async Task InitializeAsync()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE selecao.certames_divulgados");
 
         // Três abertos com prazos distintos e dois encerrados: dá página de continuação e dois
@@ -121,7 +121,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
         // exatamente o caso que a contagem mais o instante máximo não alcançavam.
         string antes = (await ListarAsync(new RecorteDaVitrine(), Agora)).Revisao;
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             CertameDivulgado ultimo = await context.CertamesDivulgados.SingleAsync(c => c.Id == _semeados[2].Id);
             ultimo.TentarAvancar(
@@ -141,7 +141,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
 
     private async Task<PaginaDaVitrine> ListarAsync(RecorteDaVitrine recorte, DateTimeOffset instante, int limite = 50)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         return await repository.ListarVitrineAsync(
@@ -153,7 +153,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
     {
         (string sortKey, Guid id) = anterior.Proximo!.Value;
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         CertameDivulgadoRepository repository = new(context);
 
         // O instante da primeira página viaja na âncora; o que se passa aqui é ignorado na
@@ -165,7 +165,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
 
     private async Task AdicionarAsync(CertameDivulgado divulgado)
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         context.CertamesDivulgados.Add(divulgado);
         await context.SaveChangesAsync();
     }

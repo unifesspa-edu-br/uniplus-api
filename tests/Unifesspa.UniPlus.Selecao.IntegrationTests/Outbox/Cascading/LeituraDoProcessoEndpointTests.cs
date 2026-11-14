@@ -12,15 +12,14 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -208,7 +207,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         for (int tentativa = 0; tentativa < 100; tentativa++)
         {
             await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-            if (await scope.ServiceProvider.GetRequiredService<SelecaoDbContext>().CertamesDivulgados.AsNoTracking()
+            if (await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().CertamesDivulgados.AsNoTracking()
                 .AnyAsync(c => c.Id == processoId))
             {
                 return;
@@ -224,7 +223,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     private async Task<string> SemearVersaoNaoDivulgadaAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         VersaoConfiguracao v1 = await db.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.ProcessoSeletivoId == processoId);
         JsonObject configuracao = JsonNode.Parse(v1.ConfiguracaoCongelada)!.AsObject();
         configuracao["retificacaoNaoDivulgada"] = true;
@@ -348,7 +347,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     private async Task<Guid> SemearRascunhoAsync(string nome)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return processo.Id;
     }
@@ -360,7 +359,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         Guid documentoId;
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;
@@ -390,7 +389,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     private async Task<Guid> UnidadeDoProcessoAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<SelecaoDbContext>().ProcessosSeletivos.AsNoTracking()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ProcessosSeletivos.AsNoTracking()
             .Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
     }
 

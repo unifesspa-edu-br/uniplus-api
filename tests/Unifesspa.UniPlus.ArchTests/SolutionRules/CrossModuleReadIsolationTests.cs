@@ -7,10 +7,11 @@ using ArchUnitNET.xUnit;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 using ReflectionAssembly = System.Reflection.Assembly;
-using ReflectionType = System.Type;
 
 /// <summary>
 /// Fitness test <strong>R8</strong> da ADR-0056 — isolamento de leitura cross-módulo:
@@ -295,12 +296,12 @@ public sealed class CrossModuleReadIsolationTests
             // Selecao
             typeof(global::Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo).Assembly,
             typeof(global::Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-            typeof(global::Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.SelecaoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.SelecaoContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.Selecao.API.Controllers.ProcessoSeletivoController).Assembly,
 
             // Ingresso
             typeof(global::Unifesspa.UniPlus.Ingresso.Domain.Entities.Chamada).Assembly,
-            typeof(global::Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.IngressoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence.IngressoContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.Ingresso.API.IngressoApiAssemblyMarker).Assembly,
 
             // Portal
@@ -312,32 +313,32 @@ public sealed class CrossModuleReadIsolationTests
             // OrganizacaoInstitucional
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities.Unidade).Assembly,
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades.CriarUnidadeCommand).Assembly,
-            typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.OrganizacaoInstitucionalContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.OrganizacaoInstitucional.API.OrganizacaoApiAssemblyMarker).Assembly,
 
             // Configuracao
             typeof(global::Unifesspa.UniPlus.Configuracao.Domain.ConfiguracaoDomainAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.Application.ConfiguracaoApplicationAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.Contracts.ConfiguracaoContractsAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.Configuracao.API.ConfiguracaoApiAssemblyMarker).Assembly,
 
             // Publicacoes
             typeof(global::Unifesspa.UniPlus.Publicacoes.Domain.PublicacoesDomainAssemblyMarker).Assembly,
             typeof(global::Unifesspa.UniPlus.Publicacoes.Application.PublicacoesApplicationAssemblyMarker).Assembly,
-            typeof(global::Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.PublicacoesContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.Publicacoes.API.PublicacoesApiAssemblyMarker).Assembly,
 
             // Discentes
             typeof(global::Unifesspa.UniPlus.Discentes.Domain.Entities.VinculoDiscente).Assembly,
-            typeof(global::Unifesspa.UniPlus.Discentes.Application.Abstractions.IDiscentesUnitOfWork).Assembly,
-            typeof(global::Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.DiscentesDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Discentes.Application.DiscentesApplicationAssemblyMarker).Assembly,
+            typeof(global::Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.DiscentesContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.Discentes.API.DiscentesModuleRegistration).Assembly,
 
             // Autorizacao
             typeof(global::Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil).Assembly,
-            typeof(global::Unifesspa.UniPlus.Autorizacao.Application.Abstractions.IAutorizacaoUnitOfWork).Assembly,
-            typeof(global::Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.AutorizacaoDbContext).Assembly,
+            typeof(global::Unifesspa.UniPlus.Autorizacao.Application.AutorizacaoApplicationServiceRegistration).Assembly,
+            typeof(global::Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.AutorizacaoContribuicao).Assembly,
             typeof(global::Unifesspa.UniPlus.Autorizacao.API.AutorizacaoApiAssemblyMarker).Assembly,
         ];
 

@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 /// <summary>
 /// Nenhuma chave estrangeira atravessa a fronteira de um módulo (ADR-0061).
@@ -73,8 +73,8 @@ public sealed class IsolamentoCrossSchemaTests
     public async Task Canario_ChaveEstrangeiraCrossSchemaEDetectada()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         try
         {
@@ -111,8 +111,8 @@ public sealed class IsolamentoCrossSchemaTests
     public async Task Modelo_NaoTemChaveEstrangeiraCrossSchema()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         IReadOnlyCollection<string> violacoes = await ListarViolacoesAsync(dbContext);
 

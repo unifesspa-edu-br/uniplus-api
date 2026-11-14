@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta do TipoDeficiencia contra Postgres real (UNI-REQ-0012,
@@ -41,13 +42,13 @@ public sealed class TipoDeficienciaPersistenceTests
         string nome = NomeUnico();
         TipoDeficiencia tipo = Novo(codigo, nome);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDeficiencia.Add(tipo);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TipoDeficiencia persistido = await readCtx.TiposDeficiencia.SingleAsync(t => t.Id == tipo.Id);
 
         persistido.Codigo.Valor.Should().Be(codigo);
@@ -66,13 +67,13 @@ public sealed class TipoDeficienciaPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDeficiencia.Add(Novo(codigo, NomeUnico()));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.TiposDeficiencia.Add(Novo(codigo, NomeUnico()));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -90,13 +91,13 @@ public sealed class TipoDeficienciaPersistenceTests
     public async Task UniquePartial_Nome_RejeitaDuplicataAtiva()
     {
         string nome = NomeUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), nome));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.TiposDeficiencia.Add(Novo(CodigoUnico(), nome));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -113,7 +114,7 @@ public sealed class TipoDeficienciaPersistenceTests
     [Fact(DisplayName = "Código e nome distintos são aceitos")]
     public async Task CodigoENomeDistintos_Aceita()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), NomeUnico()));
         ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), NomeUnico()));
 
@@ -124,7 +125,7 @@ public sealed class TipoDeficienciaPersistenceTests
     [Fact(DisplayName = "CHECK de formato do código rejeita insert cru fora do padrão canônico")]
     public async Task CheckConstraint_Codigo_RejeitaFormatoInvalido()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
 
         // Bypassa o value object de propósito: o CHECK é defesa em profundidade
         // contra escrita fora do fluxo da aplicação.
@@ -148,20 +149,20 @@ public sealed class TipoDeficienciaPersistenceTests
         string codigo = CodigoUnico();
         string nome = NomeUnico();
         TipoDeficiencia tipo = Novo(codigo, nome);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDeficiencia.Add(tipo);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             TipoDeficiencia tracked = await ctx.TiposDeficiencia.SingleAsync(t => t.Id == tipo.Id);
             ctx.TiposDeficiencia.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             TipoDeficiencia excluido = await ctx.TiposDeficiencia
                 .IgnoreQueryFilters().SingleAsync(t => t.Id == tipo.Id);
@@ -170,7 +171,7 @@ public sealed class TipoDeficienciaPersistenceTests
             excluido.Codigo.Valor.Should().Be(codigo, "a trilha preserva o código do tipo removido");
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.TiposDeficiencia.Add(Novo(codigo, nome));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -186,7 +187,7 @@ public sealed class TipoDeficienciaPersistenceTests
         string nomeExcluido = $"{prefixo}_D";
         string codigoA = CodigoUnico();
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TiposDeficiencia.Add(Novo(CodigoUnico(), nomeB));
             ctx.TiposDeficiencia.Add(Novo(codigoA, nomeA));
@@ -194,14 +195,14 @@ public sealed class TipoDeficienciaPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             TipoDeficiencia aExcluir = await ctx.TiposDeficiencia.SingleAsync(t => t.Nome == nomeExcluido);
             ctx.TiposDeficiencia.Remove(aExcluir);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new TipoDeficienciaReader(readCtx);
         IReadOnlyList<TipoDeficienciaView> todos = await reader.ListarVivosAsync();
 

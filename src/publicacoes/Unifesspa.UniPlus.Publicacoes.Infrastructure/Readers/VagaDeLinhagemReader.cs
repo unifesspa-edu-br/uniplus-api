@@ -4,9 +4,9 @@ using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
 /// <summary>
 /// Implementação do <see cref="IVagaDeLinhagemReader"/> (ADR-0056/0107).
@@ -14,15 +14,15 @@ using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 /// <remarks>
 /// <b>internal</b> pelo mesmo motivo do <see cref="TipoAtoPublicadoReader"/>: público, o
 /// codegen do Wolverine tentaria construí-lo inline nos handlers de Seleção e enxergaria o
-/// <c>PublicacoesDbContext</c> na árvore — <i>"multiple DbContext types detected"</i>.
+/// <c>UniPlusDbContext</c> na árvore — <i>"multiple DbContext types detected"</i>.
 /// </remarks>
 [SuppressMessage(
     "Performance",
     "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via DI em PublicacoesInfrastructureRegistration.")]
-internal sealed class VagaDeLinhagemReader(PublicacoesDbContext db) : IVagaDeLinhagemReader
+internal sealed class VagaDeLinhagemReader(UniPlusDbContext db) : IVagaDeLinhagemReader
 {
-    private readonly PublicacoesDbContext _db = db ?? throw new ArgumentNullException(nameof(db));
+    private readonly UniPlusDbContext _db = db ?? throw new ArgumentNullException(nameof(db));
 
     public async Task<bool> ObjetoJaTemAtoDeOutraLinhagemAsync(
         string entidadeTipo,

@@ -5,15 +5,16 @@ using System.Linq;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>Repositório dos motivos escolhidos pelos processos.</summary>
 public sealed class MotivoDoProcessoRepository : IMotivoDoProcessoRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public MotivoDoProcessoRepository(SelecaoDbContext context)
+    public MotivoDoProcessoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

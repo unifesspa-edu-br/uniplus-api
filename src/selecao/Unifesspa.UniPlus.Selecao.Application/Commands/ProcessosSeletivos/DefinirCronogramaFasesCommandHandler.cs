@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="DefinirCronogramaFasesCommand"/>: trava o processo para edição, delega a definição do
@@ -19,7 +19,7 @@ public static class DefinirCronogramaFasesCommandHandler
         DefinirCronogramaFasesCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDoCronogramaDeFases definicao,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -56,7 +56,7 @@ public static class DefinirCronogramaFasesCommandHandler
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
         DefinicaoDoCronogramaDeFases definicao,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         DateTimeOffset agora,
         CancellationToken cancellationToken)
     {

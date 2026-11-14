@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Integração ponta-a-ponta do catálogo de termos de consentimento (UNI-REQ-0086,
@@ -43,13 +44,13 @@ public sealed class TermoConsentimentoPersistenceTests
         TermoConsentimento termo = TermoConsentimento.Criar(
             "Termo LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.Add(termo);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimento persistido = await readCtx.TermosConsentimento
             .SingleAsync(t => t.Id == termo.Id);
 
@@ -75,13 +76,13 @@ public sealed class TermoConsentimentoPersistenceTests
             "Termo LGPD", "Texto do termo", "Lei 13.709/2018", "REGISTRO_DIGITAL_SEM_LOG_IP").Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.Add(termo);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             TermoConsentimentoRepository repository = new(ctx);
             TermoConsentimento reloaded = (await repository.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
@@ -91,7 +92,7 @@ public sealed class TermoConsentimentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimento persistido = await readCtx.TermosConsentimento
             .Include(t => t.Versoes)
             .SingleAsync(t => t.Id == termo.Id);
@@ -122,18 +123,18 @@ public sealed class TermoConsentimentoPersistenceTests
             "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.Add(termo);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctxA = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctxA = _fixture.CreateDbContext(AdminA);
         TermoConsentimentoRepository repositoryA = new(ctxA);
         TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
         TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
 
-        await using (ConfiguracaoDbContext ctxB = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctxB = _fixture.CreateDbContext(AdminA))
         {
             TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
             termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
@@ -161,18 +162,18 @@ public sealed class TermoConsentimentoPersistenceTests
             "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.Add(termo);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctxA = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctxA = _fixture.CreateDbContext(AdminA);
         TermoConsentimentoRepository repositoryA = new(ctxA);
         TermoConsentimento termoA = (await repositoryA.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
         TermoConsentimentoVersao versaoA = termoA.Promover("usuario.revisor", Agora).Value!;
 
-        await using (ConfiguracaoDbContext ctxB = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctxB = _fixture.CreateDbContext(AdminA))
         {
             TermoConsentimento termoB = await ctxB.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
             termoB.EditarRascunho("Texto ajustado por outra requisição", "Lei 13.709/2018", null);
@@ -183,7 +184,7 @@ public sealed class TermoConsentimentoPersistenceTests
 
         // Simula exatamente o que o handler faz: tenta salvar, captura a
         // concorrência, descarta o rastreamento (equivalente a
-        // IConfiguracaoUnitOfWork.DescartarAlteracoesNaoSalvas).
+        // IUnitOfWork.DescartarAlteracoesNaoSalvas).
         Func<Task> primeiroSave = async () => await ctxA.SaveChangesAsync();
         await primeiroSave.Should().ThrowAsync<DbUpdateConcurrencyException>();
         ctxA.ChangeTracker.Clear();
@@ -200,20 +201,20 @@ public sealed class TermoConsentimentoPersistenceTests
     {
         TermoConsentimento termo = TermoConsentimento.Criar("Termo LGPD", null, null, null).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.Add(termo);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             TermoConsentimento tracked = await ctx.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
             ctx.TermosConsentimento.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimento excluido = await readCtx.TermosConsentimento
             .IgnoreQueryFilters()
             .SingleAsync(t => t.Id == termo.Id);
@@ -229,13 +230,13 @@ public sealed class TermoConsentimentoPersistenceTests
             "Termo LGPD", "Texto do termo", "Lei 13.709/2018", null).Value!;
         termo.MarcarRevisado("usuario.revisor", Agora);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.TermosConsentimento.Add(termo);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             TermoConsentimentoRepository repository = new(ctx);
             TermoConsentimento reloaded = (await repository.ObterPorIdAsync(termo.Id, CancellationToken.None))!;
@@ -247,14 +248,14 @@ public sealed class TermoConsentimentoPersistenceTests
         // Cenário direto de infraestrutura — o gate de negócio (RemocaoBloqueadaComVersaoPromovida)
         // vive no handler da Application; aqui se prova que, SE a linha chegar a ser
         // marcada como Removed, o mapeamento EF Core não quebra a versão filha.
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             TermoConsentimento tracked = await ctx.TermosConsentimento.SingleAsync(t => t.Id == termo.Id);
             ctx.TermosConsentimento.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         TermoConsentimento excluido = await readCtx.TermosConsentimento
             .IgnoreQueryFilters()
             .Include(t => t.Versoes)

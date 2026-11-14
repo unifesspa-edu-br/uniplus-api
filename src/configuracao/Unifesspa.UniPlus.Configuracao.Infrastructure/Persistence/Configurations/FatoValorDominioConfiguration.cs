@@ -61,7 +61,7 @@ internal sealed class FatoValorDominioConfiguration : IEntityTypeConfiguration<F
 
     /// <summary>
     /// Projeta o seed (<see cref="FatoValorDominioSeed.Itens"/>) para linhas que o
-    /// <c>HasData</c> congela como literais na migration — mesmo padrão de
+    /// <c>HasData</c> congela como literais na migration inicial — mesmo padrão de
     /// <c>FatoCandidatoConfiguration.MaterializarSeed</c>.
     /// </summary>
     private static IEnumerable<object> MaterializarSeed()

@@ -8,20 +8,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 
 /// <summary>
 /// Prova de boot do monólito modular (P4 em runtime): o composition root sobe
-/// como um processo único e, no <c>StartAsync</c>, as migrations on startup dos
-/// 5 módulos criam seus schemas no banco <c>uniplus</c> e o Wolverine provisiona
-/// o outbox no schema <c>wolverine</c> — tudo sobre a MESMA connection.
+/// como um processo único e, no <c>StartAsync</c>, a subida do banco (scripts, a
+/// migration única e as etapas dos módulos) cria os schemas no banco <c>uniplus</c> e
+/// o Wolverine provisiona o outbox no schema <c>wolverine</c> — tudo sobre a MESMA connection.
 /// </summary>
 /// <remarks>
 /// O fato de a fixture conseguir resolver serviços do host (boot bem-sucedido) já
-/// prova que os 5 <c>MigrationHostedService</c> e o runtime Wolverine iniciaram
-/// sem conflito (o conflito de 5 <c>Program</c> executáveis NÃO ocorre — o entry
-/// point é único). Este teste fecha o ciclo afirmando que os schemas esperados
+/// prova que o <c>MigrationHostedService</c> e o runtime Wolverine iniciaram
+/// sem conflito (o entry point é único). Este teste fecha o ciclo afirmando que os schemas esperados
 /// materializaram.
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
@@ -51,7 +50,7 @@ public sealed class BootDoMonolitoTests
 
         schemas.Should().Contain(
             schema,
-            "as migrations on startup (módulos) e o AutoBuildMessageStorageOnStartup (Wolverine) "
+            "a subida do banco (módulos) e o AutoBuildMessageStorageOnStartup (Wolverine) "
             + "devem materializar o schema no boot do processo único");
     }
 
@@ -67,8 +66,8 @@ public sealed class BootDoMonolitoTests
     private async Task<IReadOnlyCollection<string>> ListarSchemasAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await dbContext.Database
             .SqlQueryRaw<string>("SELECT schema_name AS \"Value\" FROM information_schema.schemata")

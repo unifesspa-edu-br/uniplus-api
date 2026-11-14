@@ -12,6 +12,7 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -264,7 +265,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
     {
         string item = (await IdentidadeDoItemNoBanco.DoItemAsync(api.Services, processoId, produtoId)).Chave;
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().AtosDoProcesso.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().AtosDoProcesso.AsNoTracking()
             .CountAsync(a => a.ProcessoSeletivoId == processoId && a.ItemDoEdital == item && a.AtoCorrigidoId == null);
     }
 

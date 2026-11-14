@@ -1,10 +1,8 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -18,14 +16,12 @@ using Microsoft.Extensions.Options;
 using Minio;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Verificador.Antivirus;
@@ -151,7 +147,7 @@ public sealed class AcessoEIsolamentoDaInstalacaoTests : InstalacaoTestBase
     private async Task ConferirPdfPromovidoAsync(Guid id, byte[] pdf)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        Instalacao gravada = await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Instalacoes
+        Instalacao gravada = await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Instalacoes
             .AsNoTracking().SingleAsync(i => i.Id == id);
         gravada.DocumentoSha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(pdf)));
         IStorageService storage = scope.ServiceProvider.GetRequiredService<IStorageService>();

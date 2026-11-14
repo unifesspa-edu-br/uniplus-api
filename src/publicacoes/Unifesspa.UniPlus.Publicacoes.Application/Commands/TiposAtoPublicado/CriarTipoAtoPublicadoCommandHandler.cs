@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -23,7 +23,7 @@ public static class CriarTipoAtoPublicadoCommandHandler
     public static async Task<Result<Guid>> Handle(
         CriarTipoAtoPublicadoCommand command,
         ITipoAtoPublicadoRepository repository,
-        IPublicacoesUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -14,7 +15,6 @@ using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -39,7 +39,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public ISnapshotPublicacaoCanonicalizer Canonicalizer { get; private set; } = CanonicalizerSubstituto();
 
-    public ISelecaoUnitOfWork UnitOfWork { get; private set; } = Substitute.For<ISelecaoUnitOfWork>();
+    public IUnitOfWork UnitOfWork { get; private set; } = Substitute.For<IUnitOfWork>();
 
     public IUserContext Usuario { get; private set; } = UsuarioAutenticado();
 
@@ -113,7 +113,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public ServicosDoCongelamentoDeTeste ComUnitOfWork(ISelecaoUnitOfWork unitOfWork)
+    public ServicosDoCongelamentoDeTeste ComUnitOfWork(IUnitOfWork unitOfWork)
     {
         UnitOfWork = unitOfWork;
 

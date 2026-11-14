@@ -11,32 +11,13 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.ExternalServices;
 using Wolverine;
 
 /// <summary>
-/// Opt-ins de codegen Wolverine do módulo Seleção (ADR-0098). Declara que
-/// <see cref="ISelecaoUnitOfWork"/> usa service location <em>intencionalmente</em>
-/// sob a política <c>ServiceLocationPolicy.NotAllowed</c> (forward-compat com o
-/// default do Wolverine 6.0).
+/// Opt-ins de codegen Wolverine do módulo Seleção (ADR-0098): portas cujo concreto é interno, ou nasce de
+/// fábrica, e que por isso o código gerado resolve do contêiner em vez de construir, sob
+/// <c>ServiceLocationPolicy.NotAllowed</c>. A unidade de trabalho é declarada uma vez, em
+/// <c>MonolitoCodegenRegistration</c>. Composto pelo host no <c>configureRouting</c> de
+/// <c>UseWolverineOutboxCascading</c>, para que <c>WolverineOutboxConfiguration</c> permaneça agnóstico
+/// dos tipos de cada módulo.
 /// </summary>
-/// <remarks>
-/// <para>A UoW encaminha (forwarding) para a MESMA instância do
-/// <c>SelecaoDbContext</c> — registrada como <c>AddScoped&lt;ISelecaoUnitOfWork&gt;(sp =&gt;
-/// sp.GetRequiredService&lt;SelecaoDbContext&gt;())</c>, uma lambda Scoped opaca ao
-/// codegen do Wolverine. O root fix preferido (<c>AddScoped&lt;ISelecaoUnitOfWork,
-/// SelecaoDbContext&gt;()</c>) é PROIBIDO aqui: criaria uma 2ª instância de
-/// <c>SelecaoDbContext</c> por escopo, fazendo o repositório escrever num contexto
-/// e o <c>SaveChanges</c> da UoW commitar outro — quebrando a atomicidade
-/// write+evento do outbox transacional (ADR-0004,
-/// <c>UseEntityFrameworkCoreTransactions</c> + <c>AutoApplyTransactions</c> enrolam
-/// o MESMO DbContext).</para>
-/// <para>Por isso usa-se <c>AlwaysUseServiceLocationFor&lt;T&gt;()</c> — o mecanismo
-/// sancionado pela doc do Wolverine (<see href="https://wolverinefx.net/guide/codegen.html"/>)
-/// justamente para registros opacos/forwarding e EF Core DbContext, em vez de
-/// afrouxar a política globalmente.</para>
-/// <para>Composto pelo host (composition root) no <c>configureRouting</c> de
-/// <c>UseWolverineOutboxCascading</c> — o helper compartilhado
-/// <c>WolverineOutboxConfiguration</c> permanece agnóstico dos tipos de cada
-/// módulo (Clean Arch: <c>Infrastructure.Core</c> não referencia a Application dos
-/// módulos).</para>
-/// </remarks>
 [SuppressMessage(
     "Design",
     "CA1515:Consider making public types internal",
@@ -49,8 +30,6 @@ public static class SelecaoCodegenRegistration
     public static void ConfigurarCodegenWolverine(WolverineOptions opts)
     {
         ArgumentNullException.ThrowIfNull(opts);
-
-        opts.CodeGeneration.AlwaysUseServiceLocationFor<ISelecaoUnitOfWork>();
 
         // O acervo público é registrado por fábrica, que adia a resolução do storage para o uso:
         // a divulgação de certame sem modelo não toca o armazenamento. A fábrica é opaca ao
@@ -100,11 +79,8 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IFatoCandidatoReader>();
 
         // Calendário de dias úteis vigente (issue #1140, UNI-REQ-0116) — consumido pelas três
-        // transições que geram versão e pela consulta de conformidade. Sob este opt-in o
-        // Wolverine resolve o reader por service location, e o ConfiguracaoDbContext deixa de
-        // ser alcançável na análise de AutoApplyTransactions: sem ambiguidade de DbContext, os
-        // handlers de escrita dispensam [NonTransactional] e preservam o enrolamento
-        // transacional write+evento do outbox (ADR-0004), que Publicar precisa.
+        // transições que geram versão e pela consulta de conformidade. O concreto é internal a
+        // Configuracao.Infrastructure, mesmo motivo dos demais readers cross-módulo acima.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ICalendarioVigenteReader>();
 
         OptInDasLeiturasDoCronograma(opts);
@@ -178,9 +154,7 @@ public static class SelecaoCodegenRegistration
     private static void OptInDasLeiturasDaFase(WolverineOptions opts)
     {
         // Unidade responsável por fase: o cronograma a congela por snapshot-copy a partir do cadastro
-        // da Organização Institucional (ADR-0056). O resolvedor interno à infraestrutura impede que o
-        // detector de transação enxergue o DbContext da Organização no handler, que segue
-        // transacional por causa do lock pessimista do processo.
+        // da Organização Institucional (ADR-0056). O resolvedor é interno à infraestrutura.
         opts.CodeGeneration.AlwaysUseServiceLocationFor<IResolvedorDaUnidadeResponsavel>();
 
         // Recorte de competência da banca requerida: a categoria de documento que cada

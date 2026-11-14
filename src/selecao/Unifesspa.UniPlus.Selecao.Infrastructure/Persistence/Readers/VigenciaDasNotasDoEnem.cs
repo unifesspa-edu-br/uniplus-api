@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -17,8 +18,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 internal static class VigenciaDasNotasDoEnem
 {
     /// <summary>Os lotes que nenhum lote posterior do mesmo processo, etapa e edição substituiu.</summary>
-    public static IQueryable<LoteDeNotasDoEnem> LotesVigentes(SelecaoDbContext context) =>
-        context.LotesDeNotasDoEnem.Where(lote => !context.LotesDeNotasDoEnem.Any(mais =>
+    public static IQueryable<LoteDeNotasDoEnem> LotesVigentes(UniPlusDbContext context) =>
+        context.LotesDeNotasDoEnem.Where(lote => !context.Set<LoteDeNotasDoEnem>().Any(mais =>
             mais.ProcessoSeletivoId == lote.ProcessoSeletivoId
             && mais.EtapaProcessoId == lote.EtapaProcessoId
             && mais.EdicaoCodigo == lote.EdicaoCodigo
@@ -26,6 +27,6 @@ internal static class VigenciaDasNotasDoEnem
                 || (mais.ImportadoEm == lote.ImportadoEm && EF.Property<long>(mais, LoteDeNotasDoEnemConfiguration.OrdemDeRegistro) > EF.Property<long>(lote, LoteDeNotasDoEnemConfiguration.OrdemDeRegistro)))));
 
     /// <summary>A edição do ENEM que cada inscrição escolheu, como a resposta do fato da edição a guarda.</summary>
-    public static IQueryable<RespostaDaInscricaoRecord> EdicoesEscolhidas(SelecaoDbContext context) =>
+    public static IQueryable<RespostaDaInscricaoRecord> EdicoesEscolhidas(UniPlusDbContext context) =>
         context.RespostasDaInscricao.Where(r => r.OcorrenciaId == null && r.FatoCodigo == EdicaoDoEnem.Fato);
 }

@@ -8,6 +8,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>
 /// Descarta a sessão editorial (Story #861, ADR-0110): <b>repõe a configuração congelada</b>
 /// e encerra a sessão — na mesma transação.
@@ -39,7 +41,7 @@ public static class DescartarRetificacaoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRestauradorDeConfiguracao restaurador,
         IRascunhoDePublicacaoRepository rascunhoDePublicacaoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

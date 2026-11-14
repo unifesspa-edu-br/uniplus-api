@@ -23,10 +23,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </remarks>
 public sealed class ObrigatoriedadeLegalRepository : IObrigatoriedadeLegalRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
 
-    public ObrigatoriedadeLegalRepository(SelecaoDbContext context, TimeProvider timeProvider)
+    public ObrigatoriedadeLegalRepository(UniPlusDbContext context, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(timeProvider);

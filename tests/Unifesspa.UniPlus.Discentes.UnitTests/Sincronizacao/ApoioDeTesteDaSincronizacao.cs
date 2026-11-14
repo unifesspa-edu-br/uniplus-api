@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Discentes.UnitTests.Sincronizacao;
 
 using System.Runtime.CompilerServices;
 
-using Unifesspa.UniPlus.Discentes.Application.Abstractions;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Enums;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;

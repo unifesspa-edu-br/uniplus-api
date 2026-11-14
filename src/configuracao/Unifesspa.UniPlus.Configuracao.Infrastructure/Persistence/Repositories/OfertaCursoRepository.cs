@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
@@ -23,9 +24,9 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
     /// </summary>
     private const string EscapeDoLike = @"\";
 
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public OfertaCursoRepository(ConfiguracaoDbContext dbContext)
+    public OfertaCursoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

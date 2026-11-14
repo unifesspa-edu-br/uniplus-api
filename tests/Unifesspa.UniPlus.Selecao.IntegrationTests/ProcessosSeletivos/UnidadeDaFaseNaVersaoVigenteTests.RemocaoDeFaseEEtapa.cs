@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -189,7 +190,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
 
     private async Task SemearEnvioAoInepAsync(Guid processoId, Guid etapaId)
     {
-        await using SelecaoDbContext semeadura = _fixture.CreateDbContext();
+        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
         semeadura.GeracoesDeEnvioAoInep.Add(GeracaoDeEnvioAoInep.Registrar(
             processoId, etapaId, "2026", "INEP_ENEM_ENVIO", "v1", new string('d', 64), "sub-admin", DateTimeOffset.UtcNow, 0));
         await semeadura.SaveChangesAsync();

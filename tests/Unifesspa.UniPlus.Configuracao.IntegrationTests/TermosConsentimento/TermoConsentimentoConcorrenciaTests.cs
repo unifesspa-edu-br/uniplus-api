@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -57,7 +58,7 @@ public sealed class TermoConsentimentoConcorrenciaTests
         Guid id;
         await using (AsyncServiceScope setupScope = api.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext db = setupScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext db = setupScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             TermoConsentimento criado = TermoConsentimento.Criar("Termo LGPD", null, null, null).Value!;
             db.TermosConsentimento.Add(criado);
             await db.SaveChangesAsync();
@@ -65,7 +66,7 @@ public sealed class TermoConsentimentoConcorrenciaTests
         }
 
         await using AsyncServiceScope scopeB = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext dbB = scopeB.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext dbB = scopeB.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction txB = await dbB.Database.BeginTransactionAsync();
 
         // Trava a linha (lock de escrita do Postgres) sem commitar ainda —
@@ -94,7 +95,7 @@ public sealed class TermoConsentimentoConcorrenciaTests
             "o xmin lido pelo handler ficou obsoleto assim que txB commitou a própria escrita na mesma linha");
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         TermoConsentimento persistido = await readDb.TermosConsentimento.SingleAsync(t => t.Id == id);
         persistido.IsDeleted.Should().BeFalse(
             "o handler perdeu a corrida e não deve ter removido nada — nenhuma segunda tentativa do outbox deve ter reaplicado a remoção");

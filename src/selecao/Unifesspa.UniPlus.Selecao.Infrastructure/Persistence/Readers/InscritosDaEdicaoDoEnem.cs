@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -15,10 +16,10 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 /// </summary>
 public sealed class InscritosDaEdicaoDoEnem : IInscritosDaEdicaoDoEnem
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly IUniPlusEncryptionService _encryption;
 
-    public InscritosDaEdicaoDoEnem(SelecaoDbContext context, IUniPlusEncryptionService encryption)
+    public InscritosDaEdicaoDoEnem(UniPlusDbContext context, IUniPlusEncryptionService encryption)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(encryption);

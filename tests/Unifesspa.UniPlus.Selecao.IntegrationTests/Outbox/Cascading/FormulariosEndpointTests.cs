@@ -13,6 +13,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -54,7 +55,7 @@ public sealed class FormulariosEndpointTests
         resposta.Headers.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = await db.Set<ProcessoSeletivo>().AsNoTracking().Include(static p => p.Formularios)
             .SingleAsync(p => p.Id == ctx.ProcessoId);
         processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo.Should().Be("Formulário de Inscrição");
@@ -246,7 +247,7 @@ public sealed class FormulariosEndpointTests
             {
                 await using (AsyncServiceScope scope = Api.Services.CreateAsyncScope())
                 {
-                    SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+                    UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
                     if (await db.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == ProcessoId))
                     {
                         return;
@@ -263,7 +264,7 @@ public sealed class FormulariosEndpointTests
         public async Task<Guid> FaseDeInscricaoAsync()
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking().Include(static p => p.CronogramaFases)
                 .SingleAsync(p => p.Id == ProcessoId).ConfigureAwait(false);
             return processo.CronogramaFases.Single(static f => f.ColetaInscricao).Id;
@@ -359,7 +360,7 @@ public sealed class FormulariosEndpointTests
         Guid documentoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;

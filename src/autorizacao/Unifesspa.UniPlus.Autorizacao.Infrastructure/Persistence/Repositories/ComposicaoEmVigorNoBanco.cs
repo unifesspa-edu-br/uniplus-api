@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -26,14 +27,14 @@ internal static class ComposicaoEmVigorNoBanco
     /// permissão aparece uma vez, com o código nulo. Não olha a suspensão: é o que a janela de migração compara.
     /// </summary>
     public static IQueryable<LinhaDaConcessao> ComCodigosEmVigor(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         context.ComCodigos(concessoes, context.CodigosDasConcessoes(concessoes, agora));
 
     /// <summary>
     /// A mesma listagem pela decisão de acesso: a concessão do perfil suspenso continua listada, sem código algum.
     /// </summary>
     public static IQueryable<LinhaDaConcessao> ComCodigosDeAcesso(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         context.ComCodigos(concessoes, context.CodigosDeAcesso(concessoes, agora));
 
     /// <summary>
@@ -43,7 +44,7 @@ internal static class ComposicaoEmVigorNoBanco
     /// e as suspensões saem do mesmo retrato.
     /// </summary>
     public static IQueryable<LinhaDoAcesso> LinhasDeAcessoComImpressao(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora)
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora)
     {
         IQueryable<LinhaPlana> linhas = context.LinhasPlanas(concessoes, context.CodigosDeAcesso(concessoes, agora));
         IQueryable<string> impressao = context.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Impressao);
@@ -60,14 +61,14 @@ internal static class ComposicaoEmVigorNoBanco
     }
 
     private static IQueryable<LinhaDaConcessao> ComCodigos(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, IQueryable<CodigoDaConcessao> codigos) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, IQueryable<CodigoDaConcessao> codigos) =>
         from l in context.LinhasPlanas(concessoes, codigos)
         orderby l.Concessao.ConcedidaEm, l.Concessao.Id
         select new LinhaDaConcessao(
             new ConcessaoLida(l.Concessao.Id, l.Concessao.PerfilId, l.PerfilNome, l.Concessao.UnidadeId, l.Concessao.EscopoTipo, l.Concessao.ValidaAte, l.Concessao.VersaoId), l.Codigo);
 
     private static IQueryable<LinhaPlana> LinhasPlanas(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, IQueryable<CodigoDaConcessao> codigos) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, IQueryable<CodigoDaConcessao> codigos) =>
         from c in concessoes
         join p in context.Perfis on c.PerfilId equals p.Id
         join k in codigos on c.Id equals k.ConcessaoId into doCodigo
@@ -76,7 +77,7 @@ internal static class ComposicaoEmVigorNoBanco
 
     /// <summary>As concessões, entre todas, que dão o código.</summary>
     public static IQueryable<Guid> ConcessoesComPermissaoEmVigor(
-        this AutorizacaoDbContext context, string codigo, DateTimeOffset agora) =>
+        this UniPlusDbContext context, string codigo, DateTimeOffset agora) =>
         context.CodigosDeAcesso(context.Concessoes, agora)
             .Where(k => k.Codigo == codigo)
             .Select(k => k.ConcessaoId);
@@ -86,14 +87,14 @@ internal static class ComposicaoEmVigorNoBanco
     /// instante pela composição, com a classificação de cada um, sem olhar suspensão.
     /// </summary>
     public static IQueryable<CodigoDaConcessao> CodigosDasConcessoesDoPerfil(
-        this AutorizacaoDbContext context, Guid perfilId, DateTimeOffset agora) =>
+        this UniPlusDbContext context, Guid perfilId, DateTimeOffset agora) =>
         context.CodigosDasConcessoes(
             context.Concessoes.Where(c => c.PerfilId == perfilId && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)),
             agora);
 
     /// <summary>Os códigos que o catálogo atual suspendeu nas concessões não revogadas: a reclassificação ainda sem a liberação das etapas.</summary>
     public static IQueryable<CodigoDaConcessao> CodigosSuspensosPorReclassificacao(
-        this AutorizacaoDbContext context, DateTimeOffset agora)
+        this UniPlusDbContext context, DateTimeOffset agora)
     {
         IQueryable<CodigoDaConcessao> codigos = context.CodigosDasConcessoes(context.Concessoes.Where(c => c.RevogadaEm == null), agora);
 
@@ -104,22 +105,22 @@ internal static class ComposicaoEmVigorNoBanco
 
     /// <summary>Os códigos que a concessão dá no instante pela composição, sem olhar a suspensão do perfil.</summary>
     public static IQueryable<string> CodigosEmVigorDaConcessao(
-        this AutorizacaoDbContext context, Guid concessaoId, DateTimeOffset agora) =>
+        this UniPlusDbContext context, Guid concessaoId, DateTimeOffset agora) =>
         context.CodigosDasConcessoes(context.Concessoes.Where(c => c.Id == concessaoId), agora).Select(k => k.Codigo);
 
     // O acesso é a composição das concessões cujo perfil não está suspenso, sem a permissão que a reclassificação do
     // catálogo suspendeu na concessão.
     private static IQueryable<CodigoDaConcessao> CodigosDeAcesso(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         context.SemSuspensasPorReclassificacao(context.CodigosDasConcessoes(
-            concessoes.Where(c => !context.SuspensoesDosPerfis.Any(s => s.PerfilId == c.PerfilId && s.RetomadaEm == null)), agora));
+            concessoes.Where(c => !context.Set<SuspensaoDoPerfil>().Any(s => s.PerfilId == c.PerfilId && s.RetomadaEm == null)), agora));
 
     private static IQueryable<CodigoDaConcessao> CodigosDasConcessoes(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         context.CodigosDasVersoes(concessoes, agora).Concat(context.CodigosDaGovernanca(concessoes));
 
     private static IQueryable<CodigoDaConcessao> CodigosDaGovernanca(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes) =>
         from c in concessoes
         join p in context.Perfis on c.PerfilId equals p.Id
         where p.Governanca != null
@@ -138,12 +139,12 @@ internal static class ComposicaoEmVigorNoBanco
     // a janela de migração do perfil deixou para trás, por prazo vencido ou encerramento, não dá código algum, sem
     // depender de a rotina já ter revogado.
     private static IQueryable<CodigoDaConcessao> CodigosDasVersoes(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
         from c in context.ComVersaoEmVigor(concessoes, agora)
         join v in context.VersoesDosPerfis on c.VersaoId equals v.Id
         from x in v.Permissoes
-        where !(from g in context.VigenciasDosPerfis
-                join w in context.VersoesDosPerfis on g.VersaoId equals w.Id
+        where !(from g in context.Set<VigenciaDoPerfil>()
+                join w in context.Set<VersaoDoPerfil>() on g.VersaoId equals w.Id
                 where g.PerfilId == c.PerfilId && w.Numero > v.Numero && !w.Permissoes.Any(y => y.Codigo == x.Codigo)
                 select g.Id).Any()
         select new CodigoDaConcessao
@@ -158,10 +159,10 @@ internal static class ComposicaoEmVigorNoBanco
     // A concessão cujo perfil tem vigência aberta e que a janela de migração do perfil não deixou para trás, por prazo
     // vencido ou encerramento, sem depender de a rotina já ter revogado.
     private static IQueryable<Concessao> ComVersaoEmVigor(
-        this AutorizacaoDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
-        concessoes.Where(c => context.VigenciasDosPerfis.Any(g => g.PerfilId == c.PerfilId && g.Ate == null)
-            && !context.JanelasDeMigracao.Any(j => j.PerfilId == c.PerfilId && (j.EncerradaEm != null || j.Prazo <= agora)
-                && context.VersoesDosPerfis.Any(v => v.Id == c.VersaoId && v.Numero < j.NumeroDaVersaoNova)));
+        this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora) =>
+        concessoes.Where(c => context.Set<VigenciaDoPerfil>().Any(g => g.PerfilId == c.PerfilId && g.Ate == null)
+            && !context.Set<JanelaDeMigracao>().Any(j => j.PerfilId == c.PerfilId && (j.EncerradaEm != null || j.Prazo <= agora)
+                && context.Set<VersaoDoPerfil>().Any(v => v.Id == c.VersaoId && v.Numero < j.NumeroDaVersaoNova)));
 }
 
 /// <summary>A concessão como a decisão de acesso a lê.</summary>

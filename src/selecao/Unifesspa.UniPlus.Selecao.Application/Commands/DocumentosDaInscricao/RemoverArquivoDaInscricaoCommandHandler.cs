@@ -11,6 +11,7 @@ using Kernel.Results;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler de <see cref="RemoverArquivoDaInscricaoCommand"/>. Só o rascunho remove: depois do envio da
@@ -28,7 +29,7 @@ public static class RemoverArquivoDaInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IDocumentoDaInscricaoRepository documentoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

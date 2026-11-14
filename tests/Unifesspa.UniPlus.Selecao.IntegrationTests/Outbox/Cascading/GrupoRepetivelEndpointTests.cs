@@ -10,17 +10,15 @@ using AwesomeAssertions;
 
 using Domain.Entities;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Services;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
@@ -232,7 +230,7 @@ public sealed class GrupoRepetivelEndpointTests
             codigoDoDocumento, nomeDoDocumento, descricao: null, categoria: "IDENTIFICACAO",
             formatosAceitos: null, tamanhoMaximoMb: null, tipoEquivalente: null, classificacaoProtecao: ClassificacaoDeProtecao.Pessoal, finalidadeTratamento: "Comprovação documental do candidato.", hipoteseLegal: HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.AddRange([fato, .. outros]);
         db.Add(tipoDocumento);
         await db.SaveChangesAsync();
@@ -255,7 +253,7 @@ public sealed class GrupoRepetivelEndpointTests
     private async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearProcessoPublicavelAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Agregado do grupo {Guid.CreateVersion7()}");
     }
 
@@ -281,7 +279,7 @@ public sealed class GrupoRepetivelEndpointTests
             "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Add(fato);
         await db.SaveChangesAsync();
         await db.AprovarCatalogoAsync();
@@ -291,7 +289,7 @@ public sealed class GrupoRepetivelEndpointTests
     private async Task<Guid> SemearProcessoAsync()
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"Grupo repetível {Guid.CreateVersion7()}");
         return processo.Id;
     }

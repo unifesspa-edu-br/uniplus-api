@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -25,7 +25,7 @@ public sealed class ConcessaoDosGestores
     private readonly IConcessaoRepository _concessoes;
     private readonly ICatalogoDePermissoesConsultavel _catalogo;
     private readonly IIncompatibilidadeDosPapeis _papeis;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ITermoDeResponsabilidadeRepository _termos;
 
     public ConcessaoDosGestores(
@@ -33,7 +33,7 @@ public sealed class ConcessaoDosGestores
         IConcessaoRepository concessoes,
         ICatalogoDePermissoesConsultavel catalogo,
         IIncompatibilidadeDosPapeis papeis,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         ITermoDeResponsabilidadeRepository termos)
     {
         ArgumentNullException.ThrowIfNull(instalacoes);

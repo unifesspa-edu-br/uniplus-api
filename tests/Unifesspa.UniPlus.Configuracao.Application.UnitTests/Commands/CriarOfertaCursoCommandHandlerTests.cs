@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -22,7 +22,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
     private readonly ICursoRepository _cursoRepository = Substitute.For<ICursoRepository>();
     private readonly ILocalOfertaRepository _localOfertaRepository = Substitute.For<ILocalOfertaRepository>();
     private readonly IUnidadeReader _unidadeReader = Substitute.For<IUnidadeReader>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static Curso CursoVivo() =>
         Curso.Criar("ENG_CIVIL", "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;

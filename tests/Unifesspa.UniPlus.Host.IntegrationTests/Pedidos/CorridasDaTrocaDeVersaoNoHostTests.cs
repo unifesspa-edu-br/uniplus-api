@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -185,14 +186,14 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     {
         Concessao concessao = (await servicos.GetRequiredService<IConcessaoRepository>().ObterParaAlterarAsync(concessaoId))!;
         concessao.Revogar(new AtoDoAgente(IdentidadeDe(Diogo), DateTimeOffset.UtcNow), MotivoDaRevogacao).IsSuccess.Should().BeTrue();
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     private async Task<Concessao> LerConcessaoAsync(Guid concessaoId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
             .AsNoTracking().SingleAsync(c => c.Id == concessaoId);
     }
 
@@ -200,7 +201,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().VersoesDosPerfis
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().VersoesDosPerfis
             .Where(v => v.PerfilId == perfilId && v.Numero == numero).Select(v => v.Id).SingleAsync();
     }
 }

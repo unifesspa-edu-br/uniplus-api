@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -209,7 +210,7 @@ public sealed class TermoConsentimentoFiltroListagemTests
     {
         TermoConsentimento termo = TermoConsentimento.Criar(nome, null, null, null).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-1105");
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin-1105");
         ctx.TermosConsentimento.Add(termo);
         await ctx.SaveChangesAsync();
         return termo.Id;
@@ -221,7 +222,7 @@ public sealed class TermoConsentimentoFiltroListagemTests
         Guid? afterId,
         PaginationDirection direction = PaginationDirection.Next)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         TermoConsentimentoRepository repository = new(ctx);
         return await repository.ListarPaginadoAsync(afterId, take, direction, searchTerm, CancellationToken.None);
     }

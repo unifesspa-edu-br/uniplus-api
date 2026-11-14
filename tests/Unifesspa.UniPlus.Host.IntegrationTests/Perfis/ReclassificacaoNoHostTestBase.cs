@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.Commands.Reclassificacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
-using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -89,7 +89,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Reclassificacoes.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Reclassificacoes.AsNoTracking()
             .Where(r => r.PerfilId == perfil && r.Codigo == codigo).OrderByDescending(r => r.OrdemNaTrilha).Select(r => r.Id).FirstAsync();
     }
 
@@ -97,14 +97,14 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQueryRaw<long>(sql, parametros).SingleAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQueryRaw<long>(sql, parametros).SingleAsync();
     }
 
     private protected async Task<string?> ConsultarTextoAsync(string sql, params object[] parametros)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQueryRaw<string>(sql, parametros).FirstOrDefaultAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQueryRaw<string>(sql, parametros).FirstOrDefaultAsync();
     }
 
     private protected async Task<string> FilaDaProtecaoAsync()
@@ -131,7 +131,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.SqlQuery<string>(
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQuery<string>(
             $"""SELECT origem AS "Value" FROM autorizacao.bases_da_permissao_na_concessao WHERE concessao_id = {concessao} AND codigo = {codigo} ORDER BY ordem_na_trilha DESC LIMIT 1""")
             .FirstOrDefaultAsync();
     }
@@ -210,7 +210,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     private async Task<TransacaoRetidaDeTeste> TravarAsync(string sql, Guid id)
     {
         TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, id);
+        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql, id);
 
         return trava;
     }

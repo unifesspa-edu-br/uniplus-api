@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -19,7 +19,7 @@ public static class IncluirMotivoNoProcessoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IMotivoDeDecisaoRepository motivoDeDecisaoRepository,
         IMotivoDoProcessoRepository motivoDoProcessoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
@@ -45,7 +45,7 @@ public static class IncluirMotivoNoProcessoCommandHandler
     private static async Task<Result<MutacaoAceita>> IncluirAsync(
         InclusaoPedida pedido,
         IMotivoDoProcessoRepository repository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<MotivoDoProcesso> escolhidos = await repository.ListarDoProcessoAsync(pedido.Processo.Id, cancellationToken).ConfigureAwait(false);

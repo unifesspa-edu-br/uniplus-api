@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -52,7 +53,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public IFasesIniciadasDoProcesso FasesIniciadas { get; } = Substitute.For<IFasesIniciadasDoProcesso>();
 
-    public ISelecaoUnitOfWork UnitOfWork { get; } = Substitute.For<ISelecaoUnitOfWork>();
+    public IUnitOfWork UnitOfWork { get; } = Substitute.For<IUnitOfWork>();
 
     public static CenarioDoCronogramaDeFases EmRascunho() => Para(NovoProcessoEmRascunho());
 

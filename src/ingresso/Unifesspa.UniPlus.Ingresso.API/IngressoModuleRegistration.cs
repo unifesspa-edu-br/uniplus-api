@@ -5,15 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Ingresso.API.Errors;
 using Unifesspa.UniPlus.Ingresso.Infrastructure;
-using Unifesspa.UniPlus.Ingresso.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo Ingresso para o composition root do
 /// monólito modular. Reúne tudo que é específico do módulo — OpenAPI
-/// doc, registro de erros de domínio, Infrastructure e migrations on startup.
+/// doc, registro de erros de domínio e Infrastructure.
 ///
 /// Ingresso é um módulo esqueleto (3 camadas, sem Application separada — os
 /// handlers e a registração vivem em Infrastructure), então tem menos
@@ -45,14 +43,7 @@ public static class IngressoModuleRegistration
         // uma vez no host via IEnumerable<IDomainErrorRegistration>).
         services.AddSingleton<IDomainErrorRegistration, IngressoDomainErrorRegistration>();
 
-        // AddIngressoInfrastructure resolve a connection string via IConfiguration
-        // injetada no factory do AddDbContext (issue #204) — simetria com
-        // UseWolverineOutboxCascading e com Selecao.
         services.AddIngressoInfrastructure();
-
-        // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES
-        // do runtime Wolverine (invariante #419 — MigrationBeforeWolverineRuntimeOrder).
-        services.AddDbContextMigrationsOnStartup<IngressoDbContext>();
 
         return services;
     }

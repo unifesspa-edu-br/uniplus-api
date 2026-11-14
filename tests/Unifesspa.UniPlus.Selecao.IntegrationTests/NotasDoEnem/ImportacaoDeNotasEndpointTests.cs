@@ -16,12 +16,12 @@ using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem.ProcessoDoEnemPublicadoDeTeste;
@@ -53,7 +53,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         Publicado publicado = await SemearEPublicarAsync(_fixture, fimDasInscricoes);
         Dictionary<int, Guid> inscricoes = [];
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid versaoId = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == publicado.ProcessoId)
             .Select(v => v.Id)
@@ -285,7 +285,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         total.GetProperty("areas").EnumerateArray().Select(a => a.GetString()).Should().HaveCount(5);
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string[] linhasGravadas = await db.Database
             .SqlQuery<string>($"""
                 SELECT o::text AS "Value" FROM selecao.ocorrencias_do_lote_de_notas o WHERE o.lote_id = {loteId}
@@ -426,7 +426,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     private async Task<IReadOnlyList<AvaliacaoDaEtapa>> AvaliacoesDoLoteAsync(Guid loteId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.AvaliacoesDaEtapa.AsNoTracking().Where(a => a.LoteId == loteId).ToListAsync();
     }
 
@@ -474,7 +474,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         Guid lote = await IdDoLoteAsync(resposta);
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.RespostasDaInscricao
             .Where(r => r.InscricaoId == cenario.Inscricoes[2] && r.FatoCodigo == Unifesspa.UniPlus.Regras.Services.EdicaoDoEnem.Fato)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.ValorCodigo, "2024"));
@@ -535,7 +535,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         Guid versaoDivulgada;
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             VersaoConfiguracao divulgada = await db.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.ProcessoSeletivoId == cenario.Processo.ProcessoId);
             versaoDivulgada = divulgada.Id;
             VersaoConfiguracao outra = VersaoConfiguracao.Suceder(
@@ -557,7 +557,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         sobAMesma.StatusCode.Should().Be(HttpStatusCode.OK);
         (await IdDoLoteAsync(sobAMesma)).Should().Be(novo);
         await using AsyncServiceScope leitura = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext contexto = leitura.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext contexto = leitura.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await contexto.LotesDeNotasDoEnem.AsNoTracking().SingleAsync(l => l.Id == novo)).VersaoConfiguracaoId.Should().Be(versaoDivulgada);
     }
 
@@ -568,7 +568,7 @@ public sealed class ImportacaoDeNotasEndpointTests
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
             await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
-                scope.ServiceProvider.GetRequiredService<SelecaoDbContext>(),
+                scope.ServiceProvider.GetRequiredService<UniPlusDbContext>(),
                 scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
                 scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
                 cenario.Processo.ProcessoId, Pessoas[1], SituacaoInscricao.Submetida, Edicao,

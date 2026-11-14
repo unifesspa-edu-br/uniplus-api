@@ -16,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Grava o arquivo como em verificação e devolve o pedido como mensagem de saída, que o Wolverine instala no
@@ -31,7 +32,7 @@ public static class ConfirmarEnvioDeDocumentoDaInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IDocumentoDaInscricaoRepository documentoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IOptions<ReconciliacaoDaVerificacaoOptions> reconciliacao,
         IUserContext userContext,
         TimeProvider timeProvider,

@@ -98,11 +98,15 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
             "o DbContext sem IDesignTimeDbContextFactory ficaria fora da conferência de classificação: " + string.Join(", ", semFactory));
     }
 
+    // Os DbContexts vivem na infraestrutura de cada módulo e no projeto de persistência que compõe o contexto único.
+    private static readonly string[] PadroesDeProjetoComContexto = ["Unifesspa.UniPlus.*.Infrastructure", "Unifesspa.UniPlus.*.Persistencia"];
+
     private static string[] ProjetosDeInfraestrutura() =>
-        [.. Directory.EnumerateFiles(Path.Join(SolutionRootLocator.Locate(), "src"), "Unifesspa.UniPlus.*.Infrastructure.csproj", SearchOption.AllDirectories)];
+        [.. PadroesDeProjetoComContexto.SelectMany(padrao =>
+            Directory.EnumerateFiles(Path.Join(SolutionRootLocator.Locate(), "src"), padrao + ".csproj", SearchOption.AllDirectories))];
 
     private static IEnumerable<Assembly> AssembliesDeInfraestrutura() =>
-        Directory.GetFiles(AppContext.BaseDirectory, "Unifesspa.UniPlus.*.Infrastructure.dll").Select(Assembly.LoadFrom);
+        PadroesDeProjetoComContexto.SelectMany(padrao => Directory.GetFiles(AppContext.BaseDirectory, padrao + ".dll")).Select(Assembly.LoadFrom);
 
     private static IEnumerable<(Type Fabrica, Type Contexto, MethodInfo Metodo)> FabricasDeContexto() =>
         AssembliesDeInfraestrutura()

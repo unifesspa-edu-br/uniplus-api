@@ -9,14 +9,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using Testcontainers.PostgreSql;
 
-using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o schema do
-/// <see cref="DiscentesDbContext"/> aplicado via <c>MigrateAsync</c>, e expõe uma
+/// <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>, e expõe uma
 /// factory de DbContext com os MESMOS interceptors da produção, mais um
 /// <see cref="LocalAesEncryptionService"/> real (chave determinística de teste) para
 /// provar o caminho de cifragem real (ADR-0121), sem depender de Vault.
@@ -67,8 +68,8 @@ public sealed class VinculoDiscenteDbFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        await using DiscentesDbContext context = CreateDbContext();
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        await using UniPlusDbContext context = CreateDbContext();
+        await context.SubirOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -76,10 +77,10 @@ public sealed class VinculoDiscenteDbFixture : IAsyncLifetime
         await _postgres.DisposeAsync().ConfigureAwait(false);
     }
 
-    public DiscentesDbContext CreateDbContext()
+    public UniPlusDbContext CreateDbContext()
     {
-        DbContextOptions<DiscentesDbContext> options =
-            new DbContextOptionsBuilder<DiscentesDbContext>()
+        DbContextOptions<MonolitoDbContext> options =
+            new DbContextOptionsBuilder<MonolitoDbContext>()
                 .UseNpgsql(ConnectionString)
                 .UseSnakeCaseNamingConvention()
                 .AddInterceptors(
@@ -87,6 +88,6 @@ public sealed class VinculoDiscenteDbFixture : IAsyncLifetime
                     new AuditableInterceptor(TimeProvider.System))
                 .Options;
 
-        return new DiscentesDbContext(options);
+        return new MonolitoDbContext(options);
     }
 }

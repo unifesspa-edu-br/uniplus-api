@@ -59,8 +59,8 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.Carater).HasConversion<int>().IsRequired();
 
         builder.Ignore(e => e.TipoEtapaOrigemId);
-        // Sem produção em nenhum ambiente: o vínculo nasce obrigatório desde a primeira
-        // migration, sem coluna nullable transitória (issue #1071).
+        // Sem produção em nenhum ambiente: o vínculo nasce obrigatório, sem coluna nullable
+        // transitória (issue #1071).
         builder.OwnsOne(e => e.TipoEtapa, tipo =>
         {
             tipo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);

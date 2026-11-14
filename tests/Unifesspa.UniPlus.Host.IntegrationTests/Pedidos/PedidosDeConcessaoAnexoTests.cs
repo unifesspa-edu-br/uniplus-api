@@ -8,12 +8,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -174,7 +173,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
 
         lido.NovoAnexo(1024).IsSuccess.Should().BeTrue("o pedido lido ainda aguardava o gestor");
         repositorio.Atualizar(lido);
-        Func<Task> gravar = () => escopoDoAnexo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        Func<Task> gravar = () => escopoDoAnexo.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
 
         await gravar.Should().ThrowAsync<DbUpdateConcurrencyException>();
     }
@@ -214,7 +213,7 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
     private async Task ConferirQueOResultadoFoiAoAnexoAsync(Guid anexo)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        (await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Instalacoes.AnyAsync(i => i.Id == anexo))
+        (await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Instalacoes.AnyAsync(i => i.Id == anexo))
             .Should().BeFalse("o resultado do anexo é despachado ao anexo, e não à instalação");
     }
 

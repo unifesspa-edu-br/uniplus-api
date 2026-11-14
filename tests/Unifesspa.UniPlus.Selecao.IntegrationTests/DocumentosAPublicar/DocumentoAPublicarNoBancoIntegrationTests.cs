@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -32,7 +33,7 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
     [Fact(DisplayName = "TentarReivindicarConfirmacaoAsync é atômico: só a primeira chamada ganha (Postgres real)")]
     public async Task TentarReivindicarConfirmacaoAsync_SoAPrimeiraChamadaGanha()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         ProcessoSeletivo processo = await ProcessoSeletivoDeTeste.GravarAsync(context, NomeDoProcesso);
         DocumentoAPublicar documento = await GravarPendenteAsync(context, processo.Id);
         DocumentoAPublicarRepository repositorio = new(context);
@@ -47,10 +48,10 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
     [Fact(DisplayName = "A finalidade fica gravada e a listagem filtra por ela, sem misturar o anexo PDF com o edital")]
     public async Task Listar_FiltraPelaFinalidadeGravada()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         ProcessoSeletivo processo = await ProcessoSeletivoDeTeste.GravarAsync(context, NomeDoProcesso);
         (DocumentoAPublicar edital, DocumentoAPublicar anexoPdf, DocumentoAPublicar anexoDocx) = await GravarEditalEDoisAnexosAsync(context, processo.Id);
-        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         DocumentoAPublicarRepository repositorio = new(leitura);
 
         IReadOnlyList<DocumentoAPublicar> editais = await repositorio.ListarPorProcessoAsync(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital);
@@ -65,12 +66,12 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
     [Fact(DisplayName = "ListarDoProcessoAsync só devolve documento do processo pedido, mesmo com o id de outro processo")]
     public async Task ListarDoProcesso_NaoDevolveDocumentoDeOutroProcesso()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         ProcessoSeletivo processoA = await ProcessoSeletivoDeTeste.GravarAsync(context, NomeDoProcesso);
         ProcessoSeletivo processoB = await ProcessoSeletivoDeTeste.GravarAsync(context, NomeDoProcesso);
         DocumentoAPublicar doA = await GravarPendenteAsync(context, processoA.Id, FinalidadeDoDocumento.AnexoDoEdital, "a.pdf");
         DocumentoAPublicar doB = await GravarPendenteAsync(context, processoB.Id, FinalidadeDoDocumento.AnexoDoEdital, "b.pdf");
-        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         DocumentoAPublicarRepository repositorio = new(leitura);
 
         (await repositorio.ListarDoProcessoAsync(processoA.Id, [doB.Id])).Should().BeEmpty(
@@ -86,7 +87,7 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
     [Fact(DisplayName = "TentarReivindicarConfirmacaoAsync participa da transação ambiente: reverte em rollback")]
     public async Task TentarReivindicarConfirmacaoAsync_RevertNoRollbackDaTransacaoAmbiente()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         ProcessoSeletivo processo = await ProcessoSeletivoDeTeste.GravarAsync(context, NomeDoProcesso);
         DocumentoAPublicar documento = await GravarPendenteAsync(context, processo.Id);
         DocumentoAPublicarRepository repositorio = new(context);
@@ -97,12 +98,12 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
             await transacao.RollbackAsync();
         }
 
-        await using SelecaoDbContext independente = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext independente = _dbFixture.CreateDbContext();
         (await independente.DocumentosAPublicar.FirstAsync(d => d.Id == documento.Id)).Status.Should().Be(StatusArquivoEnviado.Pendente);
     }
 
     private static async Task<DocumentoAPublicar> GravarPendenteAsync(
-        SelecaoDbContext context,
+        UniPlusDbContext context,
         Guid processoId,
         FinalidadeDoDocumento finalidade = FinalidadeDoDocumento.DocumentoDoEdital,
         string nomeArquivo = "edital.pdf",
@@ -115,7 +116,7 @@ public sealed class DocumentoAPublicarNoBancoIntegrationTests : IClassFixture<Pr
     }
 
     private static async Task<(DocumentoAPublicar Edital, DocumentoAPublicar AnexoPdf, DocumentoAPublicar AnexoDocx)> GravarEditalEDoisAnexosAsync(
-        SelecaoDbContext context, Guid processoId) =>
+        UniPlusDbContext context, Guid processoId) =>
         (await GravarPendenteAsync(context, processoId),
          await GravarPendenteAsync(context, processoId, FinalidadeDoDocumento.AnexoDoEdital, "quadro.pdf"),
          await GravarPendenteAsync(context, processoId, FinalidadeDoDocumento.AnexoDoEdital, "formulario.docx", TiposDeMidiaDeDocumento.Docx));

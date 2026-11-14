@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Os atos e as manifestações do mesmo item gravados no mesmo microssegundo saem na ordem em que foram registrados, mesmo
@@ -84,9 +84,9 @@ public sealed class OrdemDosRegistrosDaProtecaoEndpointTests : ManifestacaoDaPro
     private Task<int> ExecutarAsync(string sql, Guid itemId) =>
         RecarregarAsync(db => db.Database.ExecuteSqlRawAsync(sql, itemId, MesmoInstante));
 
-    private async Task<T> RecarregarAsync<T>(Func<ConfiguracaoDbContext, Task<T>> leitura)
+    private async Task<T> RecarregarAsync<T>(Func<UniPlusDbContext, Task<T>> leitura)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        return await leitura(escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>());
+        return await leitura(escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>());
     }
 }

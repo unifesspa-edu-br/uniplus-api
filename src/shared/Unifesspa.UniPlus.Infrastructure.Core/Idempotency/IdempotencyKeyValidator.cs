@@ -7,10 +7,8 @@ using System.Text.RegularExpressions;
 /// draft-ietf-httpapi-idempotency-key-header-07 (ADR-0027).
 /// </summary>
 /// <remarks>
-/// Vive fora do <see cref="IdempotencyFilter{TDbContext}"/> porque o source
-/// generator de <see cref="GeneratedRegexAttribute"/> não suporta métodos em
-/// tipos genéricos — manter a regex aqui, numa classe estática não-genérica,
-/// preserva a geração em tempo de compilação.
+/// Vive fora do <see cref="IdempotencyFilter"/> para isolar a regra de formato da
+/// chave do fluxo do protocolo, e mantém a regex gerada em tempo de compilação.
 /// </remarks>
 internal static partial class IdempotencyKeyValidator
 {

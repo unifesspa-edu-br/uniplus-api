@@ -9,12 +9,11 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -37,7 +36,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// cenário Gherkin da issue #1096.
     /// </summary>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCronogramaNaoConformeAsync(
-        SelecaoDbContext db, string nome)
+        UniPlusDbContext db, string nome)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
 
@@ -52,7 +51,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// <c>ProcessoSeletivo.FaseSemUnidadeResponsavel</c>.
     /// </summary>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComFaseSemUnidadeResponsavelAsync(
-        SelecaoDbContext db, string nome)
+        UniPlusDbContext db, string nome)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out _);
 
@@ -79,7 +78,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// <c>ProcessoSeletivo.CascataForaDoRegimeFederal</c>.
     /// </summary>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCascataNaoConformeAsync(
-        SelecaoDbContext db, string nome)
+        UniPlusDbContext db, string nome)
     {
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: "Ampla concorrência",
@@ -115,7 +114,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// <c>DocumentoExigido.CondicionalVaziaDeterminaResultado</c>.
     /// </summary>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComPreCanonicalizacaoNaoConformeAsync(
-        SelecaoDbContext db, string nome)
+        UniPlusDbContext db, string nome)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder);
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
@@ -149,7 +148,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// tem nada a ver com o item vermelho (CA-06).
     /// </param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCadastroProprioNaoConformeAsync(
-        SelecaoDbContext db, string nome, bool documentoConfirmado = true)
+        UniPlusDbContext db, string nome, bool documentoConfirmado = true)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, definirOfertaAtendimento: false);
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
@@ -175,7 +174,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// regra referencia código inexistente, e a recusa seria por outro motivo — a regra
     /// ficaria inavaliável em vez de reprovada.
     /// </remarks>
-    public static async Task<Guid> SemearObrigatoriedadeNaoAtendidaAsync(SelecaoDbContext db, string regraCodigo)
+    public static async Task<Guid> SemearObrigatoriedadeNaoAtendidaAsync(UniPlusDbContext db, string regraCodigo)
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
             tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
@@ -202,7 +201,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     /// <c>Publicar</c> recusa com <c>ProcessoSeletivo.ConformidadeInsuficiente</c>.
     /// </summary>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearEnemComCalculoLocalAsync(
-        SelecaoDbContext db, string nome, bool ofertaComGrupo)
+        UniPlusDbContext db, string nome, bool ofertaComGrupo)
     {
         ProcessoSeletivo processo = ProcessoBaseConforme(
             nome, out FaseCronogramaBuilder faseBuilder,
@@ -320,7 +319,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     }
 
     private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoConfirmadoAsync(
-        SelecaoDbContext db, ProcessoSeletivo processo)
+        UniPlusDbContext db, ProcessoSeletivo processo)
     {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
@@ -337,7 +336,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     }
 
     private static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> PersistirComDocumentoPendenteAsync(
-        SelecaoDbContext db, ProcessoSeletivo processo)
+        UniPlusDbContext db, ProcessoSeletivo processo)
     {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);

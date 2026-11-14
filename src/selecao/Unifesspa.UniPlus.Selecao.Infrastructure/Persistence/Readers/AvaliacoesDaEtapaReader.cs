@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
 
 /// <summary>
 /// Lê as avaliações vigentes. Vale o lote mais recente do escopo, e a avaliação só vale enquanto a
@@ -11,9 +13,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 public sealed class AvaliacoesDaEtapaReader : IAvaliacoesDaEtapaReader
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public AvaliacoesDaEtapaReader(SelecaoDbContext context)
+    public AvaliacoesDaEtapaReader(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -33,7 +35,7 @@ public sealed class AvaliacoesDaEtapaReader : IAvaliacoesDaEtapaReader
                 && ids.Contains(avaliacao.InscricaoId)
                 && VigenciaDasNotasDoEnem.EdicoesEscolhidas(_context).Any(r => r.InscricaoId == avaliacao.InscricaoId
                     && r.ValorCodigo == lote.EdicaoCodigo)
-                && _context.Inscricoes.Any(i => i.Id == avaliacao.InscricaoId
+                && _context.Set<InscricaoRecord>().Any(i => i.Id == avaliacao.InscricaoId
                     && (i.OfertaCursoId == avaliacao.OfertaCursoId || i.OfertaCursoSegundaOpcaoId == avaliacao.OfertaCursoId))
             select new AvaliacaoVigente(
                 avaliacao.InscricaoId,

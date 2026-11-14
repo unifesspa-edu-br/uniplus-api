@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -89,7 +90,7 @@ public sealed class PrecedenciaFaseConcorrenciaTests
         perdedor.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.CicloDetectado);
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<PrecedenciaFase> arestasEnvolvidas = await readDb.PrecedenciasFase
             .AsNoTracking()
             .Where(a =>
@@ -109,12 +110,12 @@ public sealed class PrecedenciaFaseConcorrenciaTests
 
         await using AsyncServiceScope primeiraScope = api.Services.CreateAsyncScope();
         await using AsyncServiceScope segundaScope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext primeiraDb = primeiraScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext primeiraDb = primeiraScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IPrecedenciaFaseRepository primeiroRepositorio =
             primeiraScope.ServiceProvider.GetRequiredService<IPrecedenciaFaseRepository>();
         IPrecedenciaFaseRepository segundoRepositorio =
             segundaScope.ServiceProvider.GetRequiredService<IPrecedenciaFaseRepository>();
-        ConfiguracaoDbContext segundaDb = segundaScope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext segundaDb = segundaScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         await using IDbContextTransaction primeiraTx =
             await primeiraDb.Database.BeginTransactionAsync();

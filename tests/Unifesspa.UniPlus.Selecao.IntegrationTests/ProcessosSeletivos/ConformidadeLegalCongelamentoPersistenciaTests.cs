@@ -6,18 +6,16 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -52,7 +50,6 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     private static ProcessoSeletivo NovoProcessoConforme(string nome)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
 
         processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -132,7 +129,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             baseLegal: "Lei de teste",
             vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         ObrigatoriedadeLegalRepository repository = new(context, TimeProvider.System);
         await repository.AdicionarAsync(regra, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
@@ -157,7 +154,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         // Mesma dupla de chamadas do gate real (ConferenciaDeConformidadeLegal): repositório
         // real + AvaliadorConformidadeLegal.Avaliar — a Application injeta isto no handler;
         // aqui, como as demais integrações desta suíte, a orquestração é feita inline.
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = new(readContext, TimeProvider.System);
         IReadOnlyList<ObrigatoriedadeLegal> vigentes = await obrigatoriedadeLegalRepository
             .ObterVigentesParaTipoProcessoAsync(processo.TipoProcesso.ToString(), DataDeCorte, CancellationToken.None);
@@ -177,7 +174,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
@@ -197,7 +194,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         Guid regraId2 = await SemearRegraVigenteAsync(UniqueRegraCodigo());
         (Guid processoId, Guid snapshotId) = await PublicarComConformidadeLegalAsync(nameof(Congelamento_BateComRecomputoDoCadastroVivo));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao versao = await readContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
 
@@ -214,7 +211,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         // avaliador), a partir do cadastro vivo, na MESMA data de corte — não um lookup por
         // id, o conjunto inteiro — produz exatamente o mesmo (RegraId, Hash). Nenhuma
         // entrada órfã no congelado; nenhuma regra vigente de fora do congelado.
-        await using SelecaoDbContext freshReadContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext freshReadContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository processoRepository = new(freshReadContext, TimeProvider.System);
         ObrigatoriedadeLegalRepository freshRepository = new(freshReadContext, TimeProvider.System);
 
@@ -240,7 +237,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         await SemearRegraVigenteAsync(UniqueRegraCodigo());
         (_, Guid snapshotId) = await PublicarComConformidadeLegalAsync(nameof(DesativarRegraAposPublicacao_NaoAlteraOCongeladoNemOHash));
 
-        await using SelecaoDbContext antesContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext antesContext = _fixture.CreateDbContext();
         VersaoConfiguracao versaoAntes = await antesContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
         string configuracaoAntes = versaoAntes.ConfiguracaoCongelada;
@@ -248,20 +245,20 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
 
         // O CEPS desativa a obrigatoriedade no cadastro — a mesma operação de sempre, sem
         // saber (nem precisar saber) que já existe um congelamento que a usou.
-        await using SelecaoDbContext escritaContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext escritaContext = _fixture.CreateDbContext();
         await escritaContext.Database.ExecuteSqlAsync(
             $"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE regra_codigo LIKE 'TEST\\_%' ESCAPE '\\'");
 
         // Uma reavaliação AO VIVO, na MESMA data de corte, já não veria a regra — prova que a
         // desativação teve efeito real no cadastro, e não que o teste está inerte.
-        await using SelecaoDbContext posContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext posContext = _fixture.CreateDbContext();
         ObrigatoriedadeLegalRepository posRepository = new(posContext, TimeProvider.System);
         IReadOnlyList<ObrigatoriedadeLegal> vigentesDepoisDaDesativacao = await posRepository
             .ObterVigentesParaTipoProcessoAsync(TipoProcesso.SiSU.ToString(), DataDeCorte, CancellationToken.None);
         vigentesDepoisDaDesativacao.Should().BeEmpty(
             "pré-condição do teste — a desativação precisa ter efeito real no cadastro vivo");
 
-        await using SelecaoDbContext depoisContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext depoisContext = _fixture.CreateDbContext();
         VersaoConfiguracao versaoDepois = await depoisContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == snapshotId, CancellationToken.None);
 

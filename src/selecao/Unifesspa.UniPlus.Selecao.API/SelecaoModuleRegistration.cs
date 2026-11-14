@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
-using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 using Unifesspa.UniPlus.Selecao.API.Errors;
 using Unifesspa.UniPlus.Selecao.API.Hateoas;
 using Unifesspa.UniPlus.Selecao.API.Rotinas;
@@ -18,13 +17,12 @@ using Unifesspa.UniPlus.Selecao.Application.Mappings;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Application.Queries.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Infrastructure;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// Registro self-describing do módulo Selecao para o composition root do
 /// monólito modular. Reúne tudo que é específico do módulo — OpenAPI
-/// doc, registro de erros de domínio, builders HATEOAS, idempotência sobre o
-/// DbContext do módulo, Application + Infrastructure e migrations on startup.
+/// doc, registro de erros de domínio, builders HATEOAS, permissões, Application
+/// e Infrastructure.
 ///
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, health
@@ -43,9 +41,8 @@ public static class SelecaoModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         RegistrarContratoHttp(services, configuration);
-        services.AddIdempotency<SelecaoDbContext, SelecaoApiAssemblyMarker>(configuration);
         RegistrarPermissoesEConferenciaDoDto(services);
-        RegistrarAplicacaoEPersistencia(services);
+        RegistrarAplicacaoEInfraestrutura(services);
         RegistrarRemocaoDeArquivosPendentes(services, configuration);
         RegistrarReconciliacaoDaVerificacao(services, configuration);
         RegistrarAtosDoProcesso(services, configuration);
@@ -81,25 +78,10 @@ public static class SelecaoModuleRegistration
         services.TryAddEnumerable(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService, ConferenciaDoDtoAdministrativoNaSubida>());
     }
 
-    /// <summary>
-    /// O <c>AddSelecaoInfrastructure</c> resolve a connection string pelo <c>IConfiguration</c> injetado no factory do
-    /// <c>AddDbContext</c>, simétrico ao <c>UseWolverineOutboxCascading</c>, que também lê tarde: test hosts podem
-    /// sobrescrever por env var ou <c>InMemoryCollection</c> sem re-registrar o DbContext. As migrations EF Core do
-    /// módulo rodam no <c>StartAsync</c> do host por <c>IHostedService</c>, filtrável pelas test factories que sobem o
-    /// pipeline HTTP sem Postgres real (ver <c>ApiFactoryBase</c>).
-    /// </summary>
-    /// <remarks>
-    /// Invariante: este registro precede <c>UseWolverineOutboxCascading</c> e <c>AddWolverineMessaging</c> no
-    /// Program.cs. Com <c>HostOptions.ServicesStartConcurrently = false</c> (padrão), os hosted services iniciam em
-    /// sequência na ordem de registro, e o <c>MigrationHostedService</c> aplica o schema EF do domínio ANTES de o
-    /// <c>WolverineRuntime</c> aceitar o primeiro envelope cascading, evitando 42P01 em handlers que tocam tabelas do
-    /// módulo. O <c>MigrationBeforeWolverineRuntimeOrderTests</c> trava a ordem nos três entry points.
-    /// </remarks>
-    private static void RegistrarAplicacaoEPersistencia(IServiceCollection services)
+    private static void RegistrarAplicacaoEInfraestrutura(IServiceCollection services)
     {
         services.AddSelecaoApplication();
         services.AddSelecaoInfrastructure();
-        services.AddDbContextMigrationsOnStartup<SelecaoDbContext>();
     }
 
     /// <summary>

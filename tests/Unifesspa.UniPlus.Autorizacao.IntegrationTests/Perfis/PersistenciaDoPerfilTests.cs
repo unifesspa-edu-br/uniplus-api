@@ -7,9 +7,8 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>O que o banco garante sozinho: schema sem chave estrangeira para fora, unicidade de vigente, pendente, vigência aberta e documento vivo.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -28,7 +27,7 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
     public async Task Migration_NaoCriaFkEntreSchemas()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         int fkParaFora = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value"
@@ -144,7 +143,7 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
     private async Task<Guid> VersaoPendenteAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.Database
             .SqlQuery<Guid>($"SELECT id AS \"Value\" FROM autorizacao.versoes_do_perfil WHERE perfil_id = {perfilId} AND situacao = 'pendente'")

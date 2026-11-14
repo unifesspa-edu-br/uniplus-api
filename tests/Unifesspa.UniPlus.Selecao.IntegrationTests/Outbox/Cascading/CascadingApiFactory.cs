@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-using Unifesspa.UniPlus.Authorization.Abstractions;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 /// Selecao é uma library exercitada por ele.
 /// </summary>
 /// <remarks>
-/// O re-registro manual do <c>SelecaoDbContext</c> que existia aqui tornou-se
+/// O re-registro manual do <c>UniPlusDbContext</c> que existia aqui tornou-se
 /// redundante: o host registra o DbContext via
 /// <c>AddSelecaoInfrastructure</c> com todos os interceptors
 /// (SoftDelete + Auditable + ObrigatoriedadeLegalHistorico) e snake_case por

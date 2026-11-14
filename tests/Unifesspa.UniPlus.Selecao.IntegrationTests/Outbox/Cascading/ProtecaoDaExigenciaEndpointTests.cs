@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -182,7 +183,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             $"{prefixo}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}", prefixo, null, "SAUDE", null, null, null,
             classificacao, "Comprovação documental do candidato.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Add(tipo);
         await db.SaveChangesAsync();
         await db.AprovarCatalogoAsync();
@@ -192,7 +193,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
     private async Task ReclassificarAsync(Guid tipoId, ClassificacaoDeProtecao classificacao)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         TipoDocumento tipo = await db.TiposDocumento.SingleAsync(t => t.Id == tipoId);
         tipo.Atualizar(
             tipo.Codigo.Valor, tipo.Nome, tipo.Descricao, tipo.Categoria, tipo.FormatosAceitos, tipo.TamanhoMaximoMb, tipo.TipoEquivalente,
@@ -212,7 +213,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         Guid faseId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;
@@ -329,7 +330,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         private async Task<Guid> SemearDocumentoConfirmadoAsync()
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(ProcessoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             documento.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
             await db.DocumentosAPublicar.AddAsync(documento);

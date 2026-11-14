@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -193,7 +194,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> HandleAsync(
         Mocks mocks, ProcessoSeletivo processo, DocumentoAPublicar documento,
         ICalendarioVigenteReader? calendarioReader = null,
-        ISelecaoUnitOfWork? unitOfWork = null,
+        IUnitOfWork? unitOfWork = null,
         IResolvedorDaUnidadeResponsavel? unidades = null,
         ITipoDocumentoReader? tipos = null) =>
         ServicosDoHandler(mocks, calendarioReader, unitOfWork, unidades, tipos)
@@ -202,11 +203,11 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     private static ServicosDoCongelamentoDeTeste ServicosDoHandler(
         Mocks mocks,
         ICalendarioVigenteReader? calendarioReader,
-        ISelecaoUnitOfWork? unitOfWork,
+        IUnitOfWork? unitOfWork,
         IResolvedorDaUnidadeResponsavel? unidades,
         ITipoDocumentoReader? tipos) =>
         ServicosDosMocks(mocks)
-            .ComUnitOfWork(unitOfWork ?? Substitute.For<ISelecaoUnitOfWork>())
+            .ComUnitOfWork(unitOfWork ?? Substitute.For<IUnitOfWork>())
             .ComTiposDocumento(tipos ?? CadastrosVivos.TiposDocumento())
             .ComCalendario(calendarioReader ?? CalendarioVigenteReaderDeTeste.SemVigente())
             .ComUnidades(unidades ?? ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste());
@@ -284,7 +285,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoConforme(out _);
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         CatalogoComCorRacaDoProcesso(mocks);
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         (Result resposta, IEnumerable<object> _) = await HandleAsync(mocks, processo, documento, unitOfWork: unitOfWork);
 

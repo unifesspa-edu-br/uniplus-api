@@ -13,6 +13,7 @@ using Kernel.Results;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler de <see cref="IniciarEnvioDeDocumentoDaInscricaoCommand"/>: confere o dono, o período e a
@@ -30,7 +31,7 @@ public static class IniciarEnvioDeDocumentoDaInscricaoCommandHandler
         IResolvedorFusoInstitucional resolvedorFuso,
         IDocumentoDaInscricaoRepository documentoRepository,
         IArquivoDoCandidatoStorage storage,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

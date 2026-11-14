@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Concessões gravadas de uma pessoa, lidas para a decisão de acesso. O módulo Autorização é o
@@ -23,14 +24,14 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// </remarks>
 public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
     private readonly TimeProvider _relogio;
     private readonly CatalogoDaAplicacao _catalogo;
 
     private UsuarioRef? _pessoaLida;
     private IReadOnlyList<ConcessaoAtiva>? _concessoesLidas;
 
-    public ConcessoesAtivasDoSujeito(AutorizacaoDbContext context, TimeProvider relogio, CatalogoDaAplicacao catalogo)
+    public ConcessoesAtivasDoSujeito(UniPlusDbContext context, TimeProvider relogio, CatalogoDaAplicacao catalogo)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(relogio);

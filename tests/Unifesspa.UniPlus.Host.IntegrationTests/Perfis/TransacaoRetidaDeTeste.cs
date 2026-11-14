@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Transação do módulo Autorização mantida aberta pelo teste, com o escopo de serviços que a usa. Dá a ordem das
@@ -34,7 +34,7 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
     public static async Task<TransacaoRetidaDeTeste> AbrirAsync(IServiceProvider servicos)
     {
         AsyncServiceScope escopo = servicos.CreateAsyncScope();
-        AutorizacaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
         int pid = await contexto.Database.SqlQuery<int>($"SELECT pg_backend_pid() AS \"Value\"").SingleAsync();
         string inicio = await contexto.Database
@@ -67,7 +67,7 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
     {
         await using AsyncServiceScope escopo = _escopo.ServiceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"""
                 WITH RECURSIVE bloqueadas(pid) AS (
                     SELECT a.pid FROM pg_stat_activity a
@@ -88,7 +88,7 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
     {
         await using AsyncServiceScope escopo = _escopo.ServiceProvider.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<string>($"""
                 SELECT 'Transação retida (pid ' || {_pid} || '): '
                     || coalesce((SELECT 'estado=' || state || ', xact_start=' || coalesce(xact_start::text, 'nenhuma')
@@ -113,7 +113,7 @@ internal sealed class TransacaoRetidaDeTeste : IAsyncDisposable
         string estado = _transacao.GetDbTransaction().Connection?.State.ToString() ?? "sem conexão";
         try
         {
-            await _escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync("SELECT 1");
+            await _escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync("SELECT 1");
 
             return $"Conexão da transação retida: estado={estado}, SELECT 1 respondeu.";
         }

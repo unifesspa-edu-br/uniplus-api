@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Errors;
 using Domain.Interfaces;
@@ -11,6 +9,7 @@ using DTOs;
 
 using ProcessosSeletivos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
@@ -98,7 +97,7 @@ internal static class EnvioDoAtoDoProcesso
     public static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> EnviarAsync(
         AtoAEnviar ato,
         IAtoDoProcessoRepository atoDoProcessoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

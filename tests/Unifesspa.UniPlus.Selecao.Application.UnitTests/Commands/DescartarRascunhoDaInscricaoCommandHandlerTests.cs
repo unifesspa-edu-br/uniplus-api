@@ -7,13 +7,13 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
-using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -46,7 +46,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     }
 
     /// <summary>A divulgação aponta para <paramref name="divulgada"/>; o rascunho nasce na versão <paramref name="fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
-    private static async Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> Descartar(
+    private static async Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> Descartar(
         Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1", DateTimeOffset? agora = null,
         IDocumentoDaInscricaoRepository? documentos = null)
     {
@@ -58,7 +58,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
             processoRepository, registroCodecs, grafo,
             fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo),
             divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo));
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
             new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
@@ -67,7 +67,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         return (resultado, repositorio, unitOfWork);
     }
 
-    private static Task<(Result Resultado, IInscricaoRepository Repositorio, ISelecaoUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
+    private static Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
         Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1", DateTimeOffset? agora = null,
         IDocumentoDaInscricaoRepository? documentos = null)
     {
@@ -78,7 +78,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
     public async Task Handle_RascunhoDoDono_Remove()
     {
-        (Result resultado, IInscricaoRepository repositorio, ISelecaoUnitOfWork unitOfWork) = await DescartarNaVersaoDivulgada(static r => r.ETag);
+        (Result resultado, IInscricaoRepository repositorio, IUnitOfWork unitOfWork) = await DescartarNaVersaoDivulgada(static r => r.ETag);
 
         resultado.IsSuccess.Should().BeTrue();
         await repositorio.Received(1).RemoverAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
@@ -125,7 +125,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     [Fact(DisplayName = "Inscrição enviada não é descartada: recusa orientando a cancelar")]
     public async Task Handle_InscricaoEnviada_Recusa()
     {
-        (Result resultado, IInscricaoRepository repositorio, ISelecaoUnitOfWork unitOfWork) = await DescartarNaVersaoDivulgada(
+        (Result resultado, IInscricaoRepository repositorio, IUnitOfWork unitOfWork) = await DescartarNaVersaoDivulgada(
             static r => r.ETag, rascunho: Enviada);
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.DescarteSoDeRascunho);

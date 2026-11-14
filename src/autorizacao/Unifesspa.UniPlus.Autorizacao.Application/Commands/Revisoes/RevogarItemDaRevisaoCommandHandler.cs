@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -19,7 +19,7 @@ public static class RevogarItemDaRevisaoCommandHandler
         PreparoDaDecisaoDoItem preparo,
         RevogacaoDaConcessao revogacao,
         IVerificadorDeAcesso verificador,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
@@ -39,7 +39,7 @@ public static class RevogarItemDaRevisaoCommandHandler
     }
 
     private static async Task<Result> RevogarAsync(
-        DecisaoDoItem d, string? motivo, RevogacaoDaConcessao revogacao, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        DecisaoDoItem d, string? motivo, RevogacaoDaConcessao revogacao, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         Result revogada = await revogacao
             .AplicarAsync(d.Concessao, d.Agora, () => d.Revisao.Revogar(d.Item.Id, d.Concessao, d.Decisor, motivo, d.Agora), cancellationToken)

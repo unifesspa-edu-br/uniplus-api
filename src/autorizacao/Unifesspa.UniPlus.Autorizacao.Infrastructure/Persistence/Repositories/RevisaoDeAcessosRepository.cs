@@ -7,14 +7,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Repositório das revisões periódicas dos acessos.</summary>
 public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public RevisaoDeAcessosRepository(AutorizacaoDbContext context)
+    public RevisaoDeAcessosRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -101,7 +102,7 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
         await _context.Perfis
             .AsNoTracking()
             .ComComposicao()
-            .Where(p => _context.Concessoes.Any(c => c.PerfilId == p.Id
+            .Where(p => _context.Set<Concessao>().Any(c => c.PerfilId == p.Id
                 && c.RevogadaEm == null
                 && (c.ValidaAte == null || c.ValidaAte > agora)))
             .ToListAsync(cancellationToken)

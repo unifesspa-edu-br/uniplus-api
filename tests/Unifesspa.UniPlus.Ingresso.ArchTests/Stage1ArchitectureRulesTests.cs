@@ -78,11 +78,11 @@ public sealed class Stage1ArchitectureRulesTests
         ReflectionAssembly[] assemblies =
         [
             typeof(Domain.Entities.Chamada).Assembly,
-            typeof(Infrastructure.Persistence.IngressoDbContext).Assembly,
+            typeof(Infrastructure.Persistence.IngressoContribuicao).Assembly,
             typeof(API.IngressoApiAssemblyMarker).Assembly,
             typeof(Selecao.Domain.Entities.ProcessoSeletivo).Assembly,
             typeof(Selecao.Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-            typeof(Selecao.Infrastructure.Persistence.SelecaoDbContext).Assembly,
+            typeof(Selecao.Infrastructure.Persistence.SelecaoContribuicao).Assembly,
             typeof(Selecao.API.Controllers.ProcessoSeletivoController).Assembly,
         ];
 

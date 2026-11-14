@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class CriarTermoConsentimentoCommandHandlerTests
 {
     private readonly ITermoConsentimentoRepository _repository = Substitute.For<ITermoConsentimentoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     [Fact(DisplayName = "Cria o termo com rascunho vazio, persiste e retorna o Id")]
     public async Task Handle_RascunhoVazio_CriaEPersiste()

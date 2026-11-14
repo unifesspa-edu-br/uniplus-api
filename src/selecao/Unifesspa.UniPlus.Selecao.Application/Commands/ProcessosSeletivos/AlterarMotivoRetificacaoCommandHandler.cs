@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
 using Kernel.Results;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Altera o motivo da sessão editorial em curso (Story #860, ADR-0110 D5). Como toda
@@ -16,7 +16,7 @@ public static class AlterarMotivoRetificacaoCommandHandler
     public static async Task<Result<MutacaoAceita>> Handle(
         AlterarMotivoRetificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);

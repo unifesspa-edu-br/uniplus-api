@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -82,7 +83,7 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
         Func<Task<HttpResponseMessage>> primeira, Func<Task<HttpResponseMessage>> segunda)
     {
         await using TransacaoRetidaDeTeste retida = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await retida.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+        await retida.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT pg_advisory_xact_lock(hashtextextended('autorizacao.pessoa:' || {0} || chr(10) || {1}, 0))",
             TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString());
 
@@ -103,14 +104,14 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
             .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString(), gestor.Username), gestor.Email)
             .Construir();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     private async Task<Guid> ConcessaoDeGestorAsync(Persona gestor)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         string sub = gestor.Sub.ToString();
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes.AsNoTracking()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
             .Where(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioSub == sub && c.RevogadaEm == null)
             .Select(c => c.Id)
             .SingleAsync();

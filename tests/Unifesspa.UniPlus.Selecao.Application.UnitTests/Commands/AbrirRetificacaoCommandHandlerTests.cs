@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
@@ -134,7 +135,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             new AbrirRetificacaoCommand(Guid.CreateVersion7(), "Correção"),
             repositorio,
             registro,
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             UsuarioAutenticado(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -157,7 +158,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             new AbrirRetificacaoCommand(processo.Id, "Correção"),
             repositorio,
             Substitute.For<IRegistroCodecsEnvelope>(),
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             UsuarioAutenticado(),
             new RelogioFixo(Agora),
             CancellationToken.None);
@@ -226,7 +227,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
             new AbrirRetificacaoCommand(Processo.Id, "Correção do prazo"),
             Repositorio,
             Registro,
-            Substitute.For<ISelecaoUnitOfWork>(),
+            Substitute.For<IUnitOfWork>(),
             UsuarioAutenticado(),
             new RelogioFixo(Agora),
             CancellationToken.None);

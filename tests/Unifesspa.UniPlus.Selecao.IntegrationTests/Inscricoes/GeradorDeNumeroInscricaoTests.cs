@@ -2,8 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
 /// <summary>
@@ -21,7 +20,7 @@ public sealed class GeradorDeNumeroInscricaoTests : IClassFixture<InscricaoDbFix
     [Fact(DisplayName = "Cada chamada devolve um número diferente, formatado em 8 dígitos")]
     public async Task ProximoAsync_ChamadasSucessivas_DevolveNumerosDiferentesEFormatados()
     {
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         GeradorDeNumeroInscricao gerador = new(context);
 
         string primeiro = await gerador.ProximoAsync();
@@ -39,7 +38,7 @@ public sealed class GeradorDeNumeroInscricaoTests : IClassFixture<InscricaoDbFix
     {
         async Task<string> ProximoEmNovoContextoAsync()
         {
-            await using SelecaoDbContext context = _fixture.CreateDbContext();
+            await using UniPlusDbContext context = _fixture.CreateDbContext();
             GeradorDeNumeroInscricao gerador = new(context);
             return await gerador.ProximoAsync();
         }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -13,7 +12,6 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using Minio;
@@ -26,20 +24,16 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
-using Unifesspa.UniPlus.Infrastructure.Core.Storage;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Verificador.Antivirus;
 using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Configuracao;
 using Unifesspa.UniPlus.Verificador.Contratos;
-using Unifesspa.UniPlus.Verificador.Observabilidade;
 using Unifesspa.UniPlus.Verificador.Verificacao;
 
 using Wolverine;
-using Wolverine.Runtime.Handlers;
-
 
 /// <summary>
 /// O apoio dos testes da instalação dos primeiros gestores de acessos pelo host real: Postgres, RabbitMQ, MinIO e Mailpit
@@ -262,7 +256,7 @@ public abstract partial class InstalacaoTestBase
     private protected async Task<string[]> ListarGestoresAtivosAsync()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.Concessoes.AsNoTracking()
             .Where(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.RevogadaEm == null)
             .Select(c => c.BeneficiarioSub)
@@ -287,7 +281,7 @@ public abstract partial class InstalacaoTestBase
     private protected async Task ExecutarSqlAsync(string sql, params object[] parametros)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
     }
 
     private protected async Task SemearGestorAtivoAsync(Persona gestor)
@@ -295,7 +289,7 @@ public abstract partial class InstalacaoTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         Concessao concessao = (await ConcessaoDeGestorAsync(scope, gestor)).Construir();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     // Uma concessão revogada da mesma origem e do mesmo beneficiário é o que faz a segunda gravação da confirmação
@@ -309,7 +303,7 @@ public abstract partial class InstalacaoTestBase
         AtoDoAgente revogacao = new(new Identidade(TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString()), DateTimeOffset.UtcNow);
         concessao.Revogar(revogacao, "Semente do teste.").IsSuccess.Should().BeTrue();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     /// <summary>A concessão do perfil de gestor de acessos ao gestor, dada agora por Paulo, por um pedido.</summary>
@@ -343,7 +337,7 @@ public abstract partial class InstalacaoTestBase
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         string sub = beneficiario.Sub.ToString();
-        Guid concessao = await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes.AsNoTracking()
+        Guid concessao = await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
             .Where(c => c.OrigemId == instalacaoId && c.BeneficiarioSub == sub)
             .Select(c => c.Id)
             .SingleAsync();

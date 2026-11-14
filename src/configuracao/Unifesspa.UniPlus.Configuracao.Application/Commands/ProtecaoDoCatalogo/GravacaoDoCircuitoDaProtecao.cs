@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -27,7 +27,7 @@ internal static class GravacaoDoCircuitoDaProtecao
         ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia,
         "O tipo de documento ou fato do candidato foi alterado concorrentemente; releia o item e tente de novo.");
 
-    public static async Task<Result> SalvarAsync(IConfiguracaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    public static async Task<Result> SalvarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

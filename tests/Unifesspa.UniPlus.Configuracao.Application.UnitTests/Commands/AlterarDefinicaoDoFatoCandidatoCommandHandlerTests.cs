@@ -6,7 +6,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -36,7 +36,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
     private readonly IPrecedenciaFaseRepository _precedencias = Substitute.For<IPrecedenciaFaseRepository>();
     private readonly IModeloFormularioRepository _modelos = Substitute.For<IModeloFormularioRepository>();
     private readonly IModalidadeRepository _modalidades = Substitute.For<IModalidadeRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     public AlterarDefinicaoDoFatoCandidatoCommandHandlerTests()
     {

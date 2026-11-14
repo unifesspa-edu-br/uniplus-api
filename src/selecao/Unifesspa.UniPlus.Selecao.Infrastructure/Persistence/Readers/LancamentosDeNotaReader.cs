@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
@@ -11,9 +12,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 /// </summary>
 public sealed class LancamentosDeNotaReader : ILancamentosDeNotaReader
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public LancamentosDeNotaReader(SelecaoDbContext context)
+    public LancamentosDeNotaReader(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

@@ -6,11 +6,11 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -41,7 +41,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         Guid erick = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeErick, "sub-erick", FatosDoCenario.PassaporteDeErick);
         Guid servidora = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeHelena, PersonasDoAcesso.Caroline, null);
         Guid comGrupo = await AdicionarComGrupoAsync(inscricoes, processo);
-        await sp.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
+        await sp.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
 
         return new CenarioDeAcessoAosDados(processo, fernanda, arquivos, rascunho, erick, servidora, comGrupo);
     }

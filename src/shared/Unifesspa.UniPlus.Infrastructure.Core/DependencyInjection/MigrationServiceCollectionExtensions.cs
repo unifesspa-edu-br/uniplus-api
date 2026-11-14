@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
+using System.Reflection;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,7 +27,7 @@ public static partial class MigrationServiceCollectionExtensions
     /// lock interno do provider Npgsql sobre <c>__EFMigrationsHistory</c>, não por garantia geral
     /// de idempotência deste método.
     /// </summary>
-    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, SelecaoDbContext, IngressoDbContext).</typeparam>
+    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, UniPlusDbContext, UniPlusDbContext).</typeparam>
     /// <param name="services">
     /// <see cref="IServiceProvider"/> raiz (em <c>Program.cs</c>: <c>app.Services</c>).
     /// </param>
@@ -49,29 +51,29 @@ public static partial class MigrationServiceCollectionExtensions
             TContext context = scope.ServiceProvider.GetRequiredService<TContext>();
             ILogger<TContext> logger = scope.ServiceProvider.GetRequiredService<ILogger<TContext>>();
 
-            IEnumerable<string> pending = await context.Database
-                .GetPendingMigrationsAsync(cancellationToken)
-                .ConfigureAwait(false);
-            string[] pendingArray = [.. pending];
-            string contextName = typeof(TContext).Name;
-
-            if (pendingArray.Length == 0)
-            {
-                LogNoPendingMigrations(logger, contextName);
-                return;
-            }
-
-#pragma warning disable CA1873 // Avaliação cara protegida por IsEnabled — caminho de startup, baixíssima frequência.
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                LogApplyingMigrations(logger, pendingArray.Length, contextName, string.Join(", ", pendingArray));
-            }
-#pragma warning restore CA1873
-
-            await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
-
-            LogMigrationsApplied(logger, contextName);
+            await AplicarMigrationsPendentesAsync(context, logger, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Aplica as migrations pendentes do <paramref name="context"/>, registrando em log o que estava pendente.
+    /// </summary>
+    internal static async Task AplicarMigrationsPendentesAsync(
+        DbContext context,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        string contextName = context.GetType().Name;
+        string[] pendentes = [.. await context.Database.GetPendingMigrationsAsync(cancellationToken).ConfigureAwait(false)];
+        if (pendentes.Length == 0)
+        {
+            LogNoPendingMigrations(logger, contextName);
+            return;
+        }
+
+        LogApplyingMigrations(logger, pendentes.Length, contextName, pendentes);
+        await context.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+        LogMigrationsApplied(logger, contextName);
     }
 
     /// <summary>
@@ -82,7 +84,7 @@ public static partial class MigrationServiceCollectionExtensions
     /// pipeline sem Postgres real (alinhado com a filtragem do <c>WolverineRuntime</c> em
     /// <c>ApiFactoryBase</c>).
     /// </summary>
-    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, SelecaoDbContext, IngressoDbContext).</typeparam>
+    /// <typeparam name="TContext">DbContext do módulo (PortalDbContext, UniPlusDbContext, UniPlusDbContext).</typeparam>
     /// <param name="services">A coleção de serviços do host.</param>
     /// <returns>A própria <paramref name="services"/> para encadeamento fluente.</returns>
     public static IServiceCollection AddDbContextMigrationsOnStartup<TContext>(
@@ -115,21 +117,81 @@ public static partial class MigrationServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Aplica as migrations do contexto e, em seguida, a etapa posterior registrada para ele, se houver.
+    /// Igual a <see cref="AddDbContextMigrationsOnStartup{TContext}(IServiceCollection, Func{IServiceProvider, CancellationToken, Task})"/>,
+    /// com os scripts SQL que cada assembly embute em <c>Persistence/Scripts</c>. Sob uma trava por banco, os de <c>Pre</c>
+    /// rodam antes das migrations; os demais, depois delas e antes da etapa posterior. Cada script roda numa transação
+    /// própria, em ordem ordinal pelo nome do recurso dentro do assembly, e os assemblies na ordem recebida. Rodam na
+    /// subida padrão e no Job <c>ApplyAndExit</c>, nunca no modo <c>Skip</c>, e também sem migration pendente.
+    /// </summary>
+    /// <typeparam name="TContext">DbContext cujo banco os scripts preparam.</typeparam>
+    /// <param name="services">A coleção de serviços do host.</param>
+    /// <param name="assembliesDosScripts">Os assemblies que embutem os scripts, na ordem de aplicação.</param>
+    /// <param name="etapaPosterior">A etapa, que recebe o provider raiz e cria o próprio escopo.</param>
+    /// <returns>A própria <paramref name="services"/> para encadeamento fluente.</returns>
+    public static IServiceCollection AddDbContextMigrationsOnStartup<TContext>(
+        this IServiceCollection services,
+        IReadOnlyList<Assembly> assembliesDosScripts,
+        Func<IServiceProvider, CancellationToken, Task> etapaPosterior)
+        where TContext : DbContext
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(assembliesDosScripts);
+        ArgumentNullException.ThrowIfNull(etapaPosterior);
+
+        services.AddSingleton(new AssembliesDosScriptsDoContexto<TContext>(assembliesDosScripts));
+        services.AddSingleton(new EtapaPosteriorDaMigration<TContext>(etapaPosterior));
+        return AdicionarMigrations<TContext>(services);
+    }
+
+    /// <summary>
+    /// Sobe o banco do contexto: com scripts registrados, pela subida sob trava; sem eles, só as migrations. A etapa
+    /// posterior registrada roda por último.
     /// </summary>
     internal static async Task MigrarEExecutarEtapaAsync<TContext>(
         this IServiceProvider services,
         CancellationToken cancellationToken)
         where TContext : DbContext
     {
-        await services.ApplyMigrationsAsync<TContext>(cancellationToken).ConfigureAwait(false);
-
         EtapaPosteriorDaMigration<TContext>? etapa = services.GetService<EtapaPosteriorDaMigration<TContext>>();
-        if (etapa is not null)
+        AssembliesDosScriptsDoContexto<TContext>? scripts = services.GetService<AssembliesDosScriptsDoContexto<TContext>>();
+
+        if (scripts is null)
         {
-            await etapa.Executar(services, cancellationToken).ConfigureAwait(false);
+            await services.ApplyMigrationsAsync<TContext>(cancellationToken).ConfigureAwait(false);
+            await ExecutarEtapaAsync(etapa, services, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await SubirOBancoAsync(services, scripts, etapa, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task SubirOBancoAsync<TContext>(
+        IServiceProvider services,
+        AssembliesDosScriptsDoContexto<TContext> scripts,
+        EtapaPosteriorDaMigration<TContext>? etapa,
+        CancellationToken cancellationToken)
+        where TContext : DbContext
+    {
+        AsyncServiceScope escopo = services.CreateAsyncScope();
+        await using (escopo.ConfigureAwait(false))
+        {
+            await SubidaDoBanco
+                .ExecutarAsync(
+                    escopo.ServiceProvider.GetRequiredService<TContext>(),
+                    escopo.ServiceProvider.GetRequiredService<ILogger<TContext>>(),
+                    scripts.Assemblies,
+                    token => ExecutarEtapaAsync(etapa, services, token),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
     }
+
+    private static Task ExecutarEtapaAsync<TContext>(
+        EtapaPosteriorDaMigration<TContext>? etapa,
+        IServiceProvider services,
+        CancellationToken cancellationToken)
+        where TContext : DbContext =>
+        etapa is null ? Task.CompletedTask : etapa.Executar(services, cancellationToken);
 
     private static IServiceCollection AdicionarMigrations<TContext>(IServiceCollection services)
         where TContext : DbContext
@@ -171,7 +233,7 @@ public static partial class MigrationServiceCollectionExtensions
     private static partial void LogNoPendingMigrations(ILogger logger, string context);
 
     [LoggerMessage(EventId = 3002, Level = LogLevel.Information, Message = "Aplicando {Count} migration(s) EF Core para {Context}: {Migrations}")]
-    private static partial void LogApplyingMigrations(ILogger logger, int count, string context, string migrations);
+    private static partial void LogApplyingMigrations(ILogger logger, int count, string context, IReadOnlyList<string> migrations);
 
     [LoggerMessage(EventId = 3003, Level = LogLevel.Information, Message = "Migrations EF Core aplicadas com sucesso para {Context}.")]
     private static partial void LogMigrationsApplied(ILogger logger, string context);

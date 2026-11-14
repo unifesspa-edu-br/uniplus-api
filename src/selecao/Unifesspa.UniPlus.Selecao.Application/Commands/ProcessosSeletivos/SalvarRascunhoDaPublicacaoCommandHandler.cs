@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -11,6 +9,7 @@ using Kernel.Results;
 // reconhece a exceção do EF pelo nome do tipo para não trazer o ORM à camada Application.
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Handler de <see cref="SalvarRascunhoDaPublicacaoCommand"/>.
@@ -30,7 +29,7 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
         SalvarRascunhoDaPublicacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRascunhoDePublicacaoRepository rascunhoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

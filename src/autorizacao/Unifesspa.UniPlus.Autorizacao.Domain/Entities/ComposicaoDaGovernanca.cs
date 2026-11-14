@@ -8,7 +8,7 @@ public sealed record PermissaoDeGovernanca(Guid PerfilId, string Codigo);
 /// <summary>
 /// A composição esperada dos perfis de governança, a única que o código declara: a carga inicial a grava e a conferência
 /// da troca de catálogo a compara com a gravada. Os perfis de governança não têm versão, e a composição deles só muda por
-/// PR com migration.
+/// PR que altera o modelo e gera a migration inicial de novo.
 /// </summary>
 public static class ComposicaoDaGovernanca
 {

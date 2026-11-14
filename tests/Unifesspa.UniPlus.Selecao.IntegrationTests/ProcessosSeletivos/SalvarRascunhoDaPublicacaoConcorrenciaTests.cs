@@ -9,9 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -70,7 +69,7 @@ public sealed class SalvarRascunhoDaPublicacaoConcorrenciaTests
             .Returns(vencido, (RascunhoDePublicacao?)null);
 
         // O UPDATE não encontra a linha; a recriação passa.
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         bool primeiroFlush = true;
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
@@ -131,7 +130,7 @@ public sealed class SalvarRascunhoDaPublicacaoConcorrenciaTests
         rascunhoRepository.ObterDoOperadorAsync(processoId, Operador, Arg.Any<CancellationToken>())
             .Returns(vencido, daOutraAba);
 
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         bool primeiroFlush = true;
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>
@@ -187,7 +186,7 @@ public sealed class SalvarRascunhoDaPublicacaoConcorrenciaTests
             .Returns((RascunhoDePublicacao?)null, vencedor);
 
         // O primeiro flush colide; o segundo, já na linha do vencedor, passa.
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         bool primeiroFlush = true;
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ =>

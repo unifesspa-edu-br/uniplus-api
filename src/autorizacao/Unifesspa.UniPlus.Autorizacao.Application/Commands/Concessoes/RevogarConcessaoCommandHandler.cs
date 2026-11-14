@@ -1,9 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -20,7 +20,7 @@ public static class RevogarConcessaoCommandHandler
         RevogarConcessaoCommand command,
         RevogacaoDaConcessao revogacao,
         TravasDaRevogacao travas,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ public static class RevogarConcessaoCommandHandler
     }
 
     private static async Task<Result> TravarERevogarAsync(
-        Pedido pedido, RevogacaoDaConcessao revogacao, TravasDaRevogacao travas, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        Pedido pedido, RevogacaoDaConcessao revogacao, TravasDaRevogacao travas, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         Concessao? concessao = await travas.TravarAsync(pedido.Command.Id, cancellationToken).ConfigureAwait(false);
         return concessao is null
@@ -51,7 +51,7 @@ public static class RevogarConcessaoCommandHandler
     }
 
     private static async Task<Result> RevogarAsync(
-        Revogacao r, RevogacaoDaConcessao revogacao, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        Revogacao r, RevogacaoDaConcessao revogacao, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         // A concessão já revogada responde antes: confirmar a pessoa de algo encerrado não leva a nada.
         if (r.Concessao.RevogadaEm is null && r.Concessao.RecusaDaConfirmacao(r.Command.ConfirmacaoEmail) is { } recusa)
@@ -66,7 +66,7 @@ public static class RevogarConcessaoCommandHandler
         return revogada.IsFailure ? revogada : await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> GravarAsync(IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    private static async Task<Result> GravarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
@@ -119,7 +120,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
             context => new DocumentoAPublicarRepository(context).RemoverSePendenteVencidoAsync(documento.Id, TimeProvider.System.GetUtcNow()));
 
         removeu.Should().BeFalse();
-        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         (await leitura.DocumentosAPublicar.AsNoTracking().SingleAsync(d => d.Id == documento.Id))
             .Status.Should().Be(StatusArquivoEnviado.Confirmado);
     }
@@ -136,7 +137,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
             context => new ModeloDeDocumentoRepository(context).RemoverSePendenteVencidoAsync(modelo.Id, TimeProvider.System.GetUtcNow()));
 
         removeu.Should().BeFalse();
-        await using SelecaoDbContext leitura = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _dbFixture.CreateDbContext();
         (await leitura.ModelosDeDocumento.AsNoTracking().SingleAsync(m => m.Id == modelo.Id))
             .Status.Should().Be(StatusArquivoEnviado.Confirmado);
     }
@@ -146,13 +147,13 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     /// conexão, espera o bloqueio de linha e só reavalia a condição depois do commit.
     /// </summary>
     private async Task<bool> RemoverDuranteAConfirmacaoAsync(
-        Func<SelecaoDbContext, Task<bool>> reivindicar, Func<SelecaoDbContext, Task<bool>> remover)
+        Func<UniPlusDbContext, Task<bool>> reivindicar, Func<UniPlusDbContext, Task<bool>> remover)
     {
-        await using SelecaoDbContext confirmacao = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext confirmacao = _dbFixture.CreateDbContext();
         await using IDbContextTransaction transacao = await confirmacao.Database.BeginTransactionAsync();
         (await reivindicar(confirmacao)).Should().BeTrue();
 
-        await using SelecaoDbContext varredura = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext varredura = _dbFixture.CreateDbContext();
         Task<bool> remocao = remover(varredura);
         await Task.Delay(TimeSpan.FromMilliseconds(300));
         remocao.IsCompleted.Should().BeFalse("a remoção espera o bloqueio de linha da confirmação em curso");
@@ -163,7 +164,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
 
     private async Task ExecutarRemocaoAsync()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         RemocaoDeArquivosPendentesVencidos remocao = new(
             new DocumentoAPublicarRepository(context),
             new ModeloDeDocumentoRepository(context),
@@ -178,7 +179,7 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
     private async Task PersistirComObjetoAsync(
         DocumentoAPublicar documento, string chaveDoDocumento, ModeloDeDocumento modelo, string chaveDoModelo)
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         context.DocumentosAPublicar.Add(documento);
         context.ModelosDeDocumento.Add(modelo);
         await context.SaveChangesAsync();
@@ -188,33 +189,33 @@ public sealed class RemocaoDeArquivosPendentesVencidosIntegrationTests
 
     private async Task PersistirAsync(DocumentoAPublicar documento)
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
     }
 
     private async Task PersistirAsync(ModeloDeDocumento modelo)
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         context.ModelosDeDocumento.Add(modelo);
         await context.SaveChangesAsync();
     }
 
     private async Task<bool> ExisteDocumentoAsync(Guid id)
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         return await context.DocumentosAPublicar.AsNoTracking().AnyAsync(d => d.Id == id);
     }
 
     private async Task<bool> ExisteModeloAsync(Guid id)
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         return await context.ModelosDeDocumento.AsNoTracking().AnyAsync(m => m.Id == id);
     }
 
     private async Task<Guid> NovoProcessoAsync()
     {
-        await using SelecaoDbContext context = _dbFixture.CreateDbContext();
+        await using UniPlusDbContext context = _dbFixture.CreateDbContext();
         return (await ProcessoSeletivoDeTeste.GravarAsync(context, "PS 2027 — envios pendentes")).Id;
     }
 }

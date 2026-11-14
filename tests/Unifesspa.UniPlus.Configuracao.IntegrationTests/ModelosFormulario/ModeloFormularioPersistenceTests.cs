@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -74,13 +75,13 @@ public sealed class ModeloFormularioPersistenceTests
     public async Task Conteudo_IdaEVolta()
     {
         ModeloFormulario modelo = Novo($"HAB_{Guid.NewGuid():N}"[..30]);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
             ctx.ModelosFormulario.Add(modelo);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
         ModeloFormulario lido = await leitura.ModelosFormulario.SingleAsync(m => m.Id == modelo.Id);
 
         lido.Finalidade.Should().Be(FinalidadeFormulario.Habilitacao);
@@ -108,13 +109,13 @@ public sealed class ModeloFormularioPersistenceTests
                 [], [], []),
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal));
         criado.IsSuccess.Should().BeTrue(criado.Error?.Message);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
             ctx.ModelosFormulario.Add(criado.Value!);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
         ModeloFormulario lido = await leitura.ModelosFormulario.SingleAsync(m => m.Id == criado.Value!.Id);
 
         lido.Conteudo.Itens.Single().Impedimento.Should().BeEquivalentTo(impedimento, opcoes => opcoes.ComparingByMembers<JsonElement>()
@@ -125,13 +126,13 @@ public sealed class ModeloFormularioPersistenceTests
     public async Task CodigoRepetido_Recusado()
     {
         string codigo = $"HAB_{Guid.NewGuid():N}"[..30];
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext("admin-a"))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext("admin-a"))
         {
             ctx.ModelosFormulario.Add(Novo(codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext segundo = _fixture.CreateDbContext("admin-a");
+        await using UniPlusDbContext segundo = _fixture.CreateDbContext("admin-a");
         segundo.ModelosFormulario.Add(Novo(codigo));
         Func<Task> gravar = async () => await segundo.SaveChangesAsync();
 

@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -147,7 +148,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
     private async Task RevogarAsync(Guid concessaoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Concessao concessao = await db.Concessoes.SingleAsync(c => c.Id == concessaoId);
         concessao.Revogar(
             new AtoDoAgente(
@@ -159,7 +160,7 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
     private async Task DesativarAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Perfil perfil = await db.Perfis.SingleAsync(p => p.Id == perfilId);
         perfil.Desativar(
             new Identidade("https://idp.test/realms/unifesspa", "betina.neves", "Betina Neves"),

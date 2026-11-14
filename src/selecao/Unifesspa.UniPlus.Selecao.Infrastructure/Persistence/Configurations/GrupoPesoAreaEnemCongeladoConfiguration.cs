@@ -45,7 +45,7 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
 
         // Um grupo aparece uma vez por classificação. O índice único que garante isso no banco
         // (configuracao_classificacao_id, grupo_area_enem_codigo) combina a FK com uma coluna do
-        // tipo owned, o que o modelo do EF não expressa: vive na migration, em SQL.
+        // tipo owned, o que o modelo do EF não expressa: vive em script SQL (002_grupo_unico_no_quadro_de_pesos.sql).
         builder.OwnsOne(g => g.GrupoAreaEnem, grupo =>
         {
             grupo.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);

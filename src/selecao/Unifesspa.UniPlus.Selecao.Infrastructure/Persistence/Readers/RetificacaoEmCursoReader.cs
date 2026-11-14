@@ -2,15 +2,16 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 public sealed class RetificacaoEmCursoReader : IRetificacaoEmCursoReader
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public RetificacaoEmCursoReader(SelecaoDbContext context) => _context = context;
+    public RetificacaoEmCursoReader(UniPlusDbContext context) => _context = context;
 
     public async Task<RetificacaoEmCursoDto?> ObterAsync(
         Guid processoSeletivoId,
@@ -28,7 +29,7 @@ public sealed class RetificacaoEmCursoReader : IRetificacaoEmCursoReader
                 // O EXISTS através de ProcessosSeletivos herda o filtro global de
                 // soft-delete: um processo excluído logicamente não vaza a sua sessão
                 // editorial — cai no mesmo 404 que o resto da API.
-                && _context.ProcessosSeletivos.Any(p => p.Id == processoSeletivoId))
+                && _context.Set<ProcessoSeletivo>().Any(p => p.Id == processoSeletivoId))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 

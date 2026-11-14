@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -43,13 +44,13 @@ public sealed class CursoPersistenceTests
         string codigo = CodigoUnico();
         Curso curso = Novo(codigo, grupoAreaEnem: GrupoCurso.Tecnologica);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.Add(curso);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Curso persistido = await readCtx.Cursos.SingleAsync(c => c.Id == curso.Id);
 
         persistido.Codigo.Should().Be(codigo);
@@ -69,13 +70,13 @@ public sealed class CursoPersistenceTests
     {
         Curso curso = Novo(CodigoUnico(), grupoAreaEnem: null);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.Add(curso);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Curso persistido = await readCtx.Cursos.SingleAsync(c => c.Id == curso.Id);
 
         persistido.GrupoAreaEnem.Should().BeNull("nem todo curso classifica por área do ENEM");
@@ -85,13 +86,13 @@ public sealed class CursoPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.Add(Novo(codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Cursos.Add(Novo(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -108,7 +109,7 @@ public sealed class CursoPersistenceTests
     [Fact(DisplayName = "Código distinto é aceito")]
     public async Task CodigoDistinto_Aceita()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Cursos.Add(Novo(CodigoUnico()));
         ctx.Cursos.Add(Novo(CodigoUnico()));
 
@@ -121,20 +122,20 @@ public sealed class CursoPersistenceTests
     {
         string codigo = CodigoUnico();
         Curso curso = Novo(codigo);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.Add(curso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == curso.Id);
             ctx.Cursos.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             Curso excluido = await ctx.Cursos
                 .IgnoreQueryFilters().SingleAsync(c => c.Id == curso.Id);
@@ -142,7 +143,7 @@ public sealed class CursoPersistenceTests
             excluido.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.Cursos.Add(Novo(codigo));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -154,7 +155,7 @@ public sealed class CursoPersistenceTests
     [InlineData("Tecnológica")]
     public async Task Check_RejeitaGrupoForaDoDominioViaSqlCru(string grupo)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.curso (id, codigo, nome, grau, nivel_ensino, grupo_area_enem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"Bacharelado"}, {"Graduação"}, {grupo}, {DateTimeOffset.UtcNow}, {false})");
@@ -167,13 +168,13 @@ public sealed class CursoPersistenceTests
     public async Task Atualizar_SemGrupo_ZeraCodigoERotulo()
     {
         Curso curso = Novo(CodigoUnico(), grupoAreaEnem: GrupoCurso.SaudeEBiologicas);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.Add(curso);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             Curso tracked = await ctx.Cursos.SingleAsync(c => c.Id == curso.Id);
             tracked.Atualizar(tracked.Codigo, tracked.Nome, tracked.Grau, tracked.NivelEnsino, grupoAreaEnem: null)
@@ -181,14 +182,14 @@ public sealed class CursoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         (await GrupoGravadoAsync(readCtx, curso.Id)).Should().Be(new GrupoGravado(null, null));
     }
 
     [Fact(DisplayName = "CHECK de banco aceita grupo de área do ENEM nulo via SQL cru (null-safe)")]
     public async Task Check_AceitaGrupoNuloViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // A coluna grupo_area_enem é omitida de propósito: fica NULL e o CHECK
         // null-safe não pode rejeitar o INSERT.
@@ -218,7 +219,7 @@ public sealed class CursoPersistenceTests
 
         // Inseridos fora de ordem, para a ordem de leitura não poder vir da ordem
         // de gravação.
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.AddRange([cursos[3], cursos[0], cursos[4], cursos[1], cursos[2]]);
             await ctx.SaveChangesAsync();
@@ -288,7 +289,7 @@ public sealed class CursoPersistenceTests
     private async Task<(IReadOnlyList<Curso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         PaginarAsync((string SortKey, Guid Id)? ancora, PaginationDirection direction)
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new CursoRepository(ctx);
         return await repository.ListarPaginadoAsync(
             OrdenacaoPadraoDeCurso, busca: null, ancora?.SortKey, ancora?.Id, limit: 2, direction,
@@ -313,7 +314,7 @@ public sealed class CursoPersistenceTests
 
     private static string CodigoUnico() => $"CUR_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 
-    private static Task<GrupoGravado> GrupoGravadoAsync(ConfiguracaoDbContext ctx, Guid cursoId) =>
+    private static Task<GrupoGravado> GrupoGravadoAsync(UniPlusDbContext ctx, Guid cursoId) =>
         ctx.Database
             .SqlQuery<GrupoGravado>($"SELECT grupo_area_enem AS codigo, grupo_area_enem_rotulo AS rotulo FROM configuracao.curso WHERE id = {cursoId}")
             .SingleAsync();

@@ -1046,6 +1046,22 @@
       "unifesspa.uniplus.kernel": {
         "type": "Project"
       },
+      "unifesspa.uniplus.monolito.persistencia": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.14, )",
+          "Microsoft.EntityFrameworkCore.Relational": "[10.0.14, )",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
+          "Unifesspa.UniPlus.Autorizacao.Infrastructure": "[1.0.0, )",
+          "Unifesspa.UniPlus.Configuracao.Infrastructure": "[1.0.0, )",
+          "Unifesspa.UniPlus.Discentes.Infrastructure": "[1.0.0, )",
+          "Unifesspa.UniPlus.Infrastructure.Core": "[1.0.0, )",
+          "Unifesspa.UniPlus.Ingresso.Infrastructure": "[1.0.0, )",
+          "Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure": "[1.0.0, )",
+          "Unifesspa.UniPlus.Publicacoes.Infrastructure": "[1.0.0, )",
+          "Unifesspa.UniPlus.Selecao.Infrastructure": "[1.0.0, )"
+        }
+      },
       "unifesspa.uniplus.organizacaoinstitucional.api": {
         "type": "Project",
         "dependencies": {

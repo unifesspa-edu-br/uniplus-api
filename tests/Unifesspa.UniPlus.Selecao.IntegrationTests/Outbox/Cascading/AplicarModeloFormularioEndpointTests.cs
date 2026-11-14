@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -51,7 +52,7 @@ public sealed class AplicarModeloFormularioEndpointTests
 
         await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
         {
-            ConfiguracaoDbContext configuracao = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+            UniPlusDbContext configuracao = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             ModeloFormulario modelo = await configuracao.ModelosFormulario.SingleAsync(m => m.Id == modeloId);
             modelo.Atualizar("Editado", null, null, Conteudo("QUILOMBOLA", "PCD"), new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal))
                 .IsSuccess.Should().BeTrue();
@@ -105,7 +106,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     private async Task<Guid> SemearProcessoAsync(string nome)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return processo.Id;
     }
@@ -119,7 +120,7 @@ public sealed class AplicarModeloFormularioEndpointTests
             new Dictionary<string, IReadOnlyCollection<string>>(StringComparer.Ordinal)).Value!;
         modelo.Ativar().IsSuccess.Should().BeTrue();
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ConfiguracaoDbContext db = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.ModelosFormulario.Add(modelo);
         await db.SaveChangesAsync();
         await db.AprovarCatalogoAsync();
@@ -140,7 +141,7 @@ public sealed class AplicarModeloFormularioEndpointTests
     private async Task<ProcessoSeletivo> LerProcessoAsync(Guid processoId)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.ProcessosSeletivos.AsNoTracking()
             .Include(static p => p.Formularios)
             .Include(static p => p.Campos)

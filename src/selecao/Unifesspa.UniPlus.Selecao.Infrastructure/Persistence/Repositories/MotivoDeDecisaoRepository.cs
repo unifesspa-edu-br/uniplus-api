@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -16,9 +17,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>Repositório do cadastro único de motivos de decisão.</summary>
 public sealed class MotivoDeDecisaoRepository : IMotivoDeDecisaoRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public MotivoDeDecisaoRepository(SelecaoDbContext context)
+    public MotivoDeDecisaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

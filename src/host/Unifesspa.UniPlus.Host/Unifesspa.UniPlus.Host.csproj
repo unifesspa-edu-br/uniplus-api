@@ -6,8 +6,8 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="WolverineFx.Postgresql" />
     <!--
-      Startup project obrigatório do `dotnet ef` (os .Infrastructure dos módulos
-      internos são class libraries sem runtimeconfig). A referência direta faz a
+      Startup project obrigatório do `dotnet ef` (o projeto de persistência do monólito,
+      onde ficam o contexto e a migration, é uma class library sem runtimeconfig). A referência direta faz a
       versão central valer para o assembly de design-time; sem ela o pacote só
       chegava como transitiva do WolverineFx.EntityFrameworkCore, presa numa
       versão anterior à do runtime EF Core. PrivateAssets impede que ele
@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\organizacao-institucional\Unifesspa.UniPlus.OrganizacaoInstitucional.API\Unifesspa.UniPlus.OrganizacaoInstitucional.API.csproj" />
     <ProjectReference Include="..\..\autorizacao\Unifesspa.UniPlus.Autorizacao.API\Unifesspa.UniPlus.Autorizacao.API.csproj" />
     <ProjectReference Include="..\..\discentes\Unifesspa.UniPlus.Discentes.API\Unifesspa.UniPlus.Discentes.API.csproj" />
+    <ProjectReference Include="..\Unifesspa.UniPlus.Monolito.Persistencia\Unifesspa.UniPlus.Monolito.Persistencia.csproj" />
   </ItemGroup>
 
   <!--

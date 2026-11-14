@@ -4,8 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
-
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDeficiencia;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -13,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -53,7 +52,7 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
         string codigo = CodigoUnico();
         await SemearAsync(codigo, NomeUnico());
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         var repositorio = new RepositorioComUnicidadeCega(ctx);
 
         Result<Guid> resultado = await CriarTipoDeficienciaCommandHandler.Handle(
@@ -74,7 +73,7 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
         string nome = NomeUnico();
         await SemearAsync(CodigoUnico(), nome);
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         var repositorio = new RepositorioComUnicidadeCega(ctx);
 
         Result<Guid> resultado = await CriarTipoDeficienciaCommandHandler.Handle(
@@ -99,7 +98,7 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
         string nomeAlvo = NomeUnico();
         Guid alvoId = await SemearAsync(CodigoUnico(), nomeAlvo);
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         var repositorio = new RepositorioComUnicidadeCega(ctx);
 
         Result resultado = await AtualizarTipoDeficienciaCommandHandler.Handle(
@@ -117,14 +116,14 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
     {
         TipoDeficiencia tipo = TipoDeficiencia.Criar(codigo, nome, Descricao).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         ctx.TiposDeficiencia.Add(tipo);
         await ctx.SaveChangesAsync();
 
         return tipo.Id;
     }
 
-    private static Func<Task> SaveChangesPosterior(ConfiguracaoDbContext ctx) =>
+    private static Func<Task> SaveChangesPosterior(UniPlusDbContext ctx) =>
         async () => await ctx.SaveChangesAsync();
 
     private static string CodigoUnico() => $"DEF_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
@@ -140,7 +139,7 @@ public sealed class TipoDeficienciaCorridaDeUnicidadeTests
     {
         private readonly TipoDeficienciaRepository _interno;
 
-        public RepositorioComUnicidadeCega(ConfiguracaoDbContext dbContext)
+        public RepositorioComUnicidadeCega(UniPlusDbContext dbContext)
         {
             _interno = new TipoDeficienciaRepository(dbContext);
         }

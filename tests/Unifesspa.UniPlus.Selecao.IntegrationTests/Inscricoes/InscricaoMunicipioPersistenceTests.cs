@@ -6,10 +6,10 @@ using AwesomeAssertions;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -58,13 +58,13 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
 
     private async Task<Inscricao> GravarELerAsync(Inscricao inscricao)
     {
-        await using (SelecaoDbContext escrita = _fixture.CreateDbContext())
+        await using (UniPlusDbContext escrita = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(escrita, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(inscricao);
             await escrita.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         return (await new InscricaoRepository(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(inscricao.Id))!;
     }
@@ -196,7 +196,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
             new(StringComparer.Ordinal),
             new(StringComparer.Ordinal),
             Definicoes());
-        await using SelecaoDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         Func<Task> gravar = () => new InscricaoRepository(contexto, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(inscricao);
 
@@ -235,7 +235,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
                 new Dictionary<string, CidadeConferida>(StringComparer.Ordinal),
                 new Dictionary<string, string>(StringComparer.Ordinal) { ["MUNICIPIO_RESIDENCIA"] = "Salvador" })).Value!;
 
-        await using (SelecaoDbContext escrita = _fixture.CreateDbContext())
+        await using (UniPlusDbContext escrita = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(escrita, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             await repositorio.AdicionarAsync(inscricao);
@@ -243,7 +243,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
             await escrita.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         ComprovanteInscricao lido = (await new InscricaoRepository(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterComprovantesAsync([inscricao.Id])).Single();
 

@@ -14,6 +14,8 @@ using Mappings;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>Handler de <see cref="ConfirmarEnvioDoModeloDeDocumentoCommand"/>.</summary>
 public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
 {
@@ -29,7 +31,7 @@ public static class ConfirmarEnvioDoModeloDeDocumentoCommandHandler
         ConfirmarEnvioDoModeloDeDocumentoCommand command,
         IModeloDeDocumentoRepository modeloDeDocumentoRepository,
         IArquivoArmazenadoStorage storage,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         CancellationToken cancellationToken)
     {

@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
@@ -15,10 +16,10 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
     Justification = "Instanciada via DI em PublicacoesInfrastructureRegistration.")]
 public sealed class TipoAtoPublicadoRepository : ITipoAtoPublicadoRepository
 {
-    private readonly PublicacoesDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
     private readonly TimeProvider _timeProvider;
 
-    public TipoAtoPublicadoRepository(PublicacoesDbContext dbContext, TimeProvider timeProvider)
+    public TipoAtoPublicadoRepository(UniPlusDbContext dbContext, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(timeProvider);

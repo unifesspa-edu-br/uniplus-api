@@ -11,12 +11,13 @@ using Testcontainers.PostgreSql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o schema do
-/// <see cref="SelecaoDbContext"/> aplicado via <c>MigrateAsync</c>, e expõe uma factory de
+/// <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>, e expõe uma factory de
 /// DbContext com os interceptors da produção, mais um provedor local real (AES-GCM + HMAC) para
 /// provar o caminho de cifragem e índice cego (ADR-0121) da inscrição do candidato (issue #1858),
 /// sem depender de Vault — mesmo desenho de <c>VinculoDiscenteDbFixture</c> (Discentes).
@@ -62,8 +63,8 @@ public sealed class InscricaoDbFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        await using SelecaoDbContext context = CreateDbContext();
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        await using UniPlusDbContext context = CreateDbContext();
+        await context.SubirOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -71,9 +72,9 @@ public sealed class InscricaoDbFixture : IAsyncLifetime
         await _postgres.DisposeAsync().ConfigureAwait(false);
     }
 
-    public SelecaoDbContext CreateDbContext()
+    public UniPlusDbContext CreateDbContext()
     {
-        DbContextOptions<SelecaoDbContext> options = new DbContextOptionsBuilder<SelecaoDbContext>()
+        DbContextOptions<MonolitoDbContext> options = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql(ConnectionString)
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(
@@ -81,6 +82,6 @@ public sealed class InscricaoDbFixture : IAsyncLifetime
                 new AuditableInterceptor(TimeProvider.System))
             .Options;
 
-        return new SelecaoDbContext(options);
+        return new MonolitoDbContext(options);
     }
 }

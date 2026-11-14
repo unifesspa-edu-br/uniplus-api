@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 using Xunit;
@@ -37,12 +37,12 @@ internal sealed class TravaDaLinhaDoItem : IAsyncDisposable
     }
 
     /// <summary>A transação da trava, para o teste gravar junto dela o que quer ver confirmado na liberação.</summary>
-    public ConfiguracaoDbContext Contexto => _escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+    public UniPlusDbContext Contexto => _escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
     public static async Task<TravaDaLinhaDoItem> TravarAsync(MonolitoApiFactory api, string cadastro, Guid id)
     {
         AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext contexto = escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext contexto = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IDbContextTransaction transacao = await contexto.Database.BeginTransactionAsync();
         FormattableString trava = cadastro == "FATO"
             ? (FormattableString)$"SELECT 1 FROM configuracao.rol_de_fatos_candidato WHERE id = {id} FOR UPDATE"
@@ -83,7 +83,7 @@ internal sealed class TravaDaLinhaDoItem : IAsyncDisposable
     private async Task<int> NaFilaAsync()
     {
         await using AsyncServiceScope escopo = _api.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>().Database.SqlQuery<int>(
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQuery<int>(
             $"""
             WITH RECURSIVE fila(pid) AS (
                 SELECT psa.pid FROM pg_stat_activity psa WHERE psa.wait_event_type = 'Lock' AND {_pid} = ANY(pg_blocking_pids(psa.pid))

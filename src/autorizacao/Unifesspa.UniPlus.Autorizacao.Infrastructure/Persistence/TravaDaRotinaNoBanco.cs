@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A trava de instância única como trava de sessão do PostgreSQL, numa conexão dedicada e fora da transação de qualquer
@@ -12,9 +13,9 @@ using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 /// </summary>
 internal sealed class TravaDaRotinaNoBanco : ITravaDaRotina
 {
-    private readonly AutorizacaoDbContext _db;
+    private readonly UniPlusDbContext _db;
 
-    public TravaDaRotinaNoBanco(AutorizacaoDbContext db)
+    public TravaDaRotinaNoBanco(UniPlusDbContext db)
     {
         ArgumentNullException.ThrowIfNull(db);
 

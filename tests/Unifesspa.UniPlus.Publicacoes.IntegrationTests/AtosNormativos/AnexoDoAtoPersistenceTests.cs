@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
@@ -47,7 +48,7 @@ public sealed class AnexoDoAtoPersistenceTests
             ("Anexo I.pdf", "application/pdf", OutroHash));
         await Gravar(ato);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         AtoNormativo lido = await ctx.AtosNormativos.Include(a => a.Anexos).SingleAsync(a => a.Id == ato.Id);
 
         lido.Anexos.OrderBy(a => a.Ordem).Select(a => (a.Nome, a.TipoMidia, a.Hash))
@@ -127,7 +128,7 @@ public sealed class AnexoDoAtoPersistenceTests
         await comando.ExecuteNonQueryAsync();
         await transacao.CommitAsync();
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         (await ctx.AnexosDoAto.CountAsync(a => a.AtoId == ato.Id)).Should().Be(1);
     }
 
@@ -137,7 +138,7 @@ public sealed class AnexoDoAtoPersistenceTests
         AtoNormativo ato = Novo(("Anexo I.pdf", "application/pdf", HashValido));
         AnexoDoAto repetido = AnexoDoAto.Criar(ato, 1, "Anexo I.pdf", "application/pdf", OutroHash);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
         ctx.AnexosDoAto.Add(repetido);
 
@@ -159,7 +160,7 @@ public sealed class AnexoDoAtoPersistenceTests
 
     private async Task Gravar(AtoNormativo ato)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
         await ctx.SaveChangesAsync();
     }

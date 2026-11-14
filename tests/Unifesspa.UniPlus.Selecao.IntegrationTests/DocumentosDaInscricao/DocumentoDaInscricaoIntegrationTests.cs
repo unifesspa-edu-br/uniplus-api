@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -50,7 +51,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
 
     private async Task<ArquivoPendenteDaInscricao> PendenteAsync()
     {
-        SelecaoDbContext context = _db.CreateDbContext();
+        UniPlusDbContext context = _db.CreateDbContext();
         Inscricao inscricao = await GravarInscricaoAsync(context);
         DocumentoExigido laudo = ExigenciaDoLaudo();
         ApresentacaoDeDocumento apresentacao = ApresentacaoDeDocumento.Criar(inscricao.Id, laudo, null);
@@ -63,7 +64,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         return new ArquivoPendenteDaInscricao(context, repositorio, arquivo);
     }
 
-    private async Task<Inscricao> GravarInscricaoAsync(SelecaoDbContext context)
+    private async Task<Inscricao> GravarInscricaoAsync(UniPlusDbContext context)
     {
         InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
         Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
@@ -117,7 +118,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
     [Fact(DisplayName = "O banco recusa a apresentação sem nome do documento")]
     public async Task Apresentacao_NomeDoDocumentoVazio_BancoRecusa()
     {
-        await using SelecaoDbContext context = _db.CreateDbContext();
+        await using UniPlusDbContext context = _db.CreateDbContext();
 
         Func<Task> inserir = async () => await context.Database.ExecuteSqlRawAsync(
             "INSERT INTO selecao.apresentacoes_de_documento (id, inscricao_id, exigencia_id, nome_do_documento, created_at) " +
@@ -141,7 +142,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         (await pendente.Repositorio.RemoverSePendenteVencidoAsync(pendente.Arquivo.Id, depoisDoPrazo)).Should().BeTrue();
         (await emVerificacao.Repositorio.RemoverSePendenteVencidoAsync(emVerificacao.Arquivo.Id, depoisDoPrazo)).Should().BeFalse();
 
-        await using SelecaoDbContext leitura = _db.CreateDbContext();
+        await using UniPlusDbContext leitura = _db.CreateDbContext();
         (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == pendente.Arquivo.Id)).Should().BeFalse();
         (await leitura.ApresentacoesDeDocumento.AnyAsync(a => a.Id == pendente.Arquivo.ApresentacaoId)).Should().BeFalse();
         (await leitura.ArquivosDaApresentacao.AnyAsync(a => a.Id == emVerificacao.Arquivo.Id)).Should().BeTrue();
@@ -157,7 +158,7 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
         (await pendente.Repositorio.TentarConcluirVerificacaoAsync(arquivoId, SituacaoDoArquivoDoCandidato.Recusado)).Should().BeTrue();
         (await pendente.Repositorio.TentarConcluirVerificacaoAsync(arquivoId, SituacaoDoArquivoDoCandidato.ReenvioNecessario)).Should().BeFalse();
 
-        await using SelecaoDbContext leitura = _db.CreateDbContext();
+        await using UniPlusDbContext leitura = _db.CreateDbContext();
         (await leitura.ArquivosDaApresentacao.AsNoTracking().SingleAsync(a => a.Id == arquivoId)).Situacao
             .Should().Be(SituacaoDoArquivoDoCandidato.Recusado);
     }
@@ -172,15 +173,15 @@ public sealed class DocumentoDaInscricaoIntegrationTests : IClassFixture<Inscric
 
         (await _bucketes.ObterMetadadosAsync(BucketDefinitivo, arquivo.ChaveDefinitivaPrevista)).Should().BeNull();
         (await _bucketes.ObterMetadadosAsync(BucketDeEnvio, arquivo.ObjectKey)).Should().NotBeNull("a API não remove nada do bucket de envio");
-        await using SelecaoDbContext leitura = _db.CreateDbContext();
+        await using UniPlusDbContext leitura = _db.CreateDbContext();
         (await leitura.ChavesALimpar.AnyAsync(c => c.ObjectKey == arquivo.ChaveDefinitivaPrevista)).Should().BeFalse("a chave sai da agenda");
     }
 
     [Fact(DisplayName = "Duas réplicas na reconciliação: só a que obtém a exclusividade da transação executa, e a outra executa depois que a primeira termina")]
     public async Task Reconciliacao_ExclusividadePorTransacao()
     {
-        await using SelecaoDbContext primeira = _db.CreateDbContext();
-        await using SelecaoDbContext segunda = _db.CreateDbContext();
+        await using UniPlusDbContext primeira = _db.CreateDbContext();
+        await using UniPlusDbContext segunda = _db.CreateDbContext();
         DocumentoDaInscricaoRepository repoPrimeira = new(primeira), repoSegunda = new(segunda);
 
         await using (IDbContextTransaction transacao = await primeira.Database.BeginTransactionAsync())

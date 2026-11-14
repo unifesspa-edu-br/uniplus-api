@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A chave de ordenação alfabética como o banco a materializa: coluna gerada a
@@ -33,7 +34,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
     [Fact(DisplayName = "A chave de ordenação é coluna gerada pelo banco, e não escrita pela aplicação")]
     public async Task ChaveDeOrdenacao_EhColunaGerada()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // is_generated = 'ALWAYS' é o que garante que não existe caminho de escrita
         // capaz de dessincronizar a chave do nome.
@@ -52,7 +53,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
     [Fact(DisplayName = "A chave de ordenação é obrigatória — sem ela o seek do cursor não teria por onde continuar")]
     public async Task ChaveDeOrdenacao_EhObrigatoria()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         string? aceitaNulo = await ctx.Database
             .SqlQuery<string?>($@"
@@ -69,7 +70,7 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
     [Fact(DisplayName = "O índice da listagem cobre as três colunas da ordenação, restrito aos cursos vivos")]
     public async Task Indice_CobreAsColunasDaOrdenacao()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         string? definicao = await ctx.Database
             .SqlQuery<string?>($@"
@@ -95,14 +96,14 @@ public sealed class OrdenacaoAlfabeticaPersistenceTests
         // expressão da coluna normaliza antes de substituir.
         const string NomeDecomposto = "Cie\u0301ncias Conta\u0301beis";
 
-        await using (ConfiguracaoDbContext escrita = _fixture.CreateDbContext("admin"))
+        await using (UniPlusDbContext escrita = _fixture.CreateDbContext("admin"))
         {
             escrita.Cursos.Add(
                 Curso.Criar(codigo, NomeDecomposto, "Bacharelado", "Graduação", null).Value!);
             await escrita.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext leitura = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
         string? chave = await leitura.Database
             .SqlQuery<string?>($@"
                 SELECT nome_ordenacao AS ""Value""

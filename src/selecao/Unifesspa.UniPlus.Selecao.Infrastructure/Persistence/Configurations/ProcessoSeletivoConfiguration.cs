@@ -89,7 +89,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         });
         builder.Navigation(p => p.TipoProcesso).IsRequired();
         builder.Property(p => p.Status).HasConversion<int>().IsRequired();
-        // Story #851 §3.4: NOT NULL, exigido na criação — sem produção, migration direta.
+        // Story #851 §3.4: NOT NULL, exigido na criação.
         builder.Property(p => p.OrigemCandidatos).HasConversion<int>().IsRequired();
 
         // Issue #849 (CA-04 da Feature #40): quem responde pelo certame — NOT NULL, exigido

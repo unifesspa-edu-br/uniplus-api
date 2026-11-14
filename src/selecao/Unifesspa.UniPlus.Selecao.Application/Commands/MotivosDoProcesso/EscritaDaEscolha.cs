@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDoProcesso;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 internal static class EscritaDaEscolha
 {
     public static async Task<Result<MutacaoAceita>> GravarAsync(
-        ProcessoSeletivo processo, ISelecaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

@@ -9,14 +9,12 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>O que o banco garante sozinho na contenção do perfil: tabelas, unicidade do que está aberto, coerência de cada registro e ordem única da trilha.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -37,7 +35,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
     public async Task Migration_CriaTabelasESequencia()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         int tabelas = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.tables
@@ -170,7 +168,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
                 DateTimeOffset.UtcNow,
                 servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>());
 
-            servicos.GetRequiredService<AutorizacaoDbContext>().SaveChanges();
+            servicos.GetRequiredService<UniPlusDbContext>().SaveChanges();
         }
 
         (string Tipo, long Ordem)[] registros = await OrdemDosRegistrosAsync(perfilId);
@@ -212,7 +210,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
     private async Task<(string Tipo, long Ordem)[]> OrdemDosRegistrosAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<RegistroDaOrdem> linhas = await db.Database.SqlQuery<RegistroDaOrdem>($"""
             SELECT tipo AS "Tipo", ordem_na_trilha AS "Ordem" FROM autorizacao.eventos_da_contencao WHERE perfil_id = {perfilId}
             UNION ALL

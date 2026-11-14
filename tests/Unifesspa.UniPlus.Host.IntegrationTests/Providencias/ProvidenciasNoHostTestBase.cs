@@ -10,10 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Pedidos;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -95,7 +95,7 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<LinhaDaProvidencia> LinhaAsync(Guid providenciaId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<LinhaDaProvidencia>($"SELECT estado, xmin::text AS versao, updated_at AS alterada_em, motivo_do_desfecho AS motivo FROM autorizacao.providencias WHERE id = {providenciaId}")
             .SingleAsync();
     }
@@ -104,7 +104,7 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<int> AvisosEmitidosAsync(Guid providenciaId, string tipo)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM autorizacao.avisos_emitidos WHERE fato_id = {providenciaId} AND tipo = {tipo}")
             .SingleAsync();
     }
@@ -116,7 +116,7 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<HttpResponseMessage[]> EmFilaSobATravaDaLinhaAsync(string sqlDaTrava, Guid id, params Func<Task<HttpResponseMessage>>[] chamadas)
     {
         await using TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
-        await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sqlDaTrava, id);
+        await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sqlDaTrava, id);
 
         List<Task<HttpResponseMessage>> disparadas = [];
         foreach (Func<Task<HttpResponseMessage>> chamada in chamadas)

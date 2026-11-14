@@ -2,12 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -36,7 +36,7 @@ public sealed class VigenciaDosLotesDoEnemEmEmpateTests : IClassFixture<Inscrica
     {
         Cenario cenario = await RegistrarEmEmpateAsync();
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         LoteDeNotasDoEnemRepository repositorio = new(leitura, _fixture.Encryption);
         (await repositorio.ObterVigenteAsync(cenario.Escopo.ProcessoId, cenario.Escopo.EtapaId, Edicao))!.Id.Should().Be(cenario.RegistradoDepois.Id);
         (await repositorio.ListarAsync(cenario.Escopo.ProcessoId, cenario.Escopo.EtapaId, Edicao)).Select(l => l.Id)
@@ -48,7 +48,7 @@ public sealed class VigenciaDosLotesDoEnemEmEmpateTests : IClassFixture<Inscrica
     {
         Cenario cenario = await RegistrarEmEmpateAsync();
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         IReadOnlyList<LancamentoVigente> lancamentos = await new LancamentosDeNotaReader(leitura).ListarVigentesAsync(cenario.Escopo.EtapaId, [cenario.InscricaoId]);
         IReadOnlyList<AvaliacaoVigente> avaliacoes = await new AvaliacoesDaEtapaReader(leitura).ListarVigentesAsync(cenario.Escopo.EtapaId, [cenario.InscricaoId]);
 

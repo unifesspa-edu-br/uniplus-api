@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -24,7 +25,7 @@ internal static class TiposDeEtapaSeeder
         ArgumentNullException.ThrowIfNull(services);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
-        ConfiguracaoDbContext db = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         if (await db.TiposEtapa.AnyAsync(t => t.Codigo == codigo).ConfigureAwait(false))
         {

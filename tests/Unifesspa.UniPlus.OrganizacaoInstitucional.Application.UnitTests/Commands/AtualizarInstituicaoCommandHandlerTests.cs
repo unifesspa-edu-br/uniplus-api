@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
@@ -56,7 +57,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Instituicao?)null);
 
@@ -73,7 +74,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         AtualizarInstituicaoCommand comando = CommandValido(Guid.CreateVersion7()) with { Nome = "" };
 
@@ -91,7 +92,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         Instituicao existente = InstituicaoExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -109,7 +110,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         Instituicao existente = InstituicaoExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -128,7 +129,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         Instituicao existente = InstituicaoExistente();
         repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
@@ -148,7 +149,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         Instituicao existente = InstituicaoExistente(
             "1504208", "Marabá", "PA", ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm);
@@ -172,7 +173,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         Instituicao existente = InstituicaoExistente(
             "1504208", "Marabá", "PA", ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm);
@@ -196,7 +197,7 @@ public sealed class AtualizarInstituicaoCommandHandlerTests
     {
         IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
         IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IOrganizacaoInstitucionalUnitOfWork uow = Substitute.For<IOrganizacaoInstitucionalUnitOfWork>();
+        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
         IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
         Instituicao existente = InstituicaoExistente(
             "1504208", "Marabá", "PA", ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm);

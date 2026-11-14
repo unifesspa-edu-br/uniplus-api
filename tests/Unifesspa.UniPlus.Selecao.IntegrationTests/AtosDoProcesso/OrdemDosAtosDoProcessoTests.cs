@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -28,7 +29,7 @@ public sealed class OrdemDosAtosDoProcessoTests : IClassFixture<InscricaoDbFixtu
     [Fact(DisplayName = "Com o mesmo instante de gravação, a lista do processo traz primeiro o ato registrado por último")]
     public async Task MesmoInstante_ListaTrazPrimeiroOUltimoRegistrado()
     {
-        await using SelecaoDbContext db = _fixture.CreateDbContext();
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db, $"Ordem dos atos {Guid.CreateVersion7()}");
         (Guid idMenor, Guid idMaior) = PorIdentificador(Guid.CreateVersion7(), Guid.CreateVersion7());
@@ -37,7 +38,7 @@ public sealed class OrdemDosAtosDoProcessoTests : IClassFixture<InscricaoDbFixtu
         await db.AtosDoProcesso.Where(a => a.ProcessoSeletivoId == processo.Id)
             .ExecuteUpdateAsync(s => s.SetProperty(a => a.CreatedAt, MesmoInstante));
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         IReadOnlyList<AtoDoProcesso> atos = await new AtoDoProcessoRepository(leitura).ListarDoProcessoAsync(processo.Id);
 
         atos.Select(a => a.Id).Should().Equal(idMenor, idMaior);
@@ -55,7 +56,7 @@ public sealed class OrdemDosAtosDoProcessoTests : IClassFixture<InscricaoDbFixtu
         atoId, processoId, DadosDoAtoDeTeste.TipoAviso, "Aviso", "1/2027", new DateOnly(2027, 3, 10),
         "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, []);
 
-    private static async Task RegistrarAsync(SelecaoDbContext db, NovoAtoDoProcesso novo)
+    private static async Task RegistrarAsync(UniPlusDbContext db, NovoAtoDoProcesso novo)
     {
         db.AtosDoProcesso.Add(AtoDoProcesso.Registrar(novo, TimeProvider.System).Value!);
         await db.SaveChangesAsync();

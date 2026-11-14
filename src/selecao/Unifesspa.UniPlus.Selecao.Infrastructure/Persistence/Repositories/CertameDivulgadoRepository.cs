@@ -9,13 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Configurations;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories.Ordenacao;
 
-internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICertameDivulgadoRepository
+internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICertameDivulgadoRepository
 {
     /// <summary>
     /// Escape do <c>LIKE</c>. Explícito porque o padrão já chega com os curingas escapados por
@@ -29,7 +30,7 @@ internal sealed class CertameDivulgadoRepository(SelecaoDbContext context) : ICe
     /// <summary>Quantas colunas a ordem canônica por urgência tem, antes do identificador.</summary>
     private const int ColunasDaOrdemCanonica = 2;
 
-    private readonly SelecaoDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly UniPlusDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
     public Task<CertameDivulgado?> ObterParaMutacaoAsync(
         Guid processoSeletivoId,

@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.ResultadosDaVerific
 using Microsoft.Extensions.Logging;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -19,7 +19,7 @@ public sealed partial class ReceptorDoAnexoDoPedido : IReceptorDoResultadoDaVeri
     private readonly IPedidoDeConcessaoRepository _pedidos;
     private readonly IPerfilRepository _perfis;
     private readonly AvisosDoPedido _avisos;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly TimeProvider _clock;
     private readonly ILogger<ReceptorDoAnexoDoPedido> _logger;
 
@@ -27,7 +27,7 @@ public sealed partial class ReceptorDoAnexoDoPedido : IReceptorDoResultadoDaVeri
         IPedidoDeConcessaoRepository pedidos,
         IPerfilRepository perfis,
         AvisosDoPedido avisos,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         ILogger<ReceptorDoAnexoDoPedido> logger)
     {

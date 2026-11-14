@@ -5,16 +5,14 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
-using Unifesspa.UniPlus.Infrastructure.Core.Storage;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
@@ -210,6 +208,6 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
             .ConcedidaPor(IdentidadeDe(Diogo)).Em(DateTimeOffset.UtcNow).Construir();
         revogada.Revogar(new AtoDoAgente(IdentidadeDe(Diogo), DateTimeOffset.UtcNow), "Semente do teste.");
         await repositorio.AdicionarAsync(revogada);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 }

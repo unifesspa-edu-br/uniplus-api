@@ -5,6 +5,8 @@ using Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 /// <summary>
 /// Público de propósito, como <see cref="DocumentoAPublicarRepository"/>: o codegen do Wolverine
 /// não consegue instanciar um concreto <c>internal</c> sob <c>ServiceLocationPolicy.NotAllowed</c>
@@ -12,9 +14,9 @@ using Microsoft.EntityFrameworkCore;
 /// </summary>
 public sealed class RascunhoDePublicacaoRepository : IRascunhoDePublicacaoRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public RascunhoDePublicacaoRepository(SelecaoDbContext context)
+    public RascunhoDePublicacaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

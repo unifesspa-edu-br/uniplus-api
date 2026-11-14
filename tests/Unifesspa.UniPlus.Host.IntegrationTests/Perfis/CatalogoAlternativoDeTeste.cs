@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -30,7 +30,7 @@ internal static class CatalogoAlternativoDeTeste
     {
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
         ConciliacaoDoCatalogo conciliacao = new(
-            escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>(),
+            escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(),
             catalogo,
             new CatalogoDePermissoesDaAplicacao(catalogo),
             relogio ?? escopo.ServiceProvider.GetRequiredService<TimeProvider>(),

@@ -16,6 +16,7 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -60,7 +61,7 @@ public sealed class SessaoEditorialEndpointTests
             "só há uma sessão editorial por certame — e quem garante isso é ux_rascunhos_retificacao_processo, não a checagem em memória, que duas aberturas concorrentes atravessariam juntas");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int rascunhos = await db.RascunhosRetificacao.AsNoTracking()
             .CountAsync(r => r.ProcessoSeletivoId == ctx.ProcessoId);
         rascunhos.Should().Be(1);
@@ -350,7 +351,7 @@ public sealed class SessaoEditorialEndpointTests
         (await ctx.AbrirAsync("Correção do prazo")).StatusCode.Should().Be(HttpStatusCode.Created);
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ProcessoSeletivo processo = await db.ProcessosSeletivos.AsNoTracking()
             .SingleAsync(p => p.Id == ctx.ProcessoId);
 
@@ -777,7 +778,7 @@ public sealed class SessaoEditorialEndpointTests
         Guid documentoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
             processoId = processo.Id;
@@ -808,7 +809,7 @@ public sealed class SessaoEditorialEndpointTests
     private static async Task<int> ContarVersoesAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.VersoesConfiguracao.AsNoTracking()
             .CountAsync(v => v.ProcessoSeletivoId == ctx.ProcessoId);
     }
@@ -846,7 +847,7 @@ public sealed class SessaoEditorialEndpointTests
     private static async Task<CadeiaDeConfiguracao> LerCadeiaAsync(Contexto ctx)
     {
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         List<VersaoConfiguracao> versoes = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == ctx.ProcessoId)
@@ -870,7 +871,7 @@ public sealed class SessaoEditorialEndpointTests
     private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         string hashFixo = string.Concat(Enumerable.Repeat("cd45670189", 7))[..64];
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(2048, hashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();

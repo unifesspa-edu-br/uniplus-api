@@ -13,10 +13,10 @@ using Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine;
@@ -78,7 +78,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         await falhar.Should().ThrowAsync<InvalidOperationException>().WithMessage(RegistrarAtoDoProcessoDeTesteHandler.MensagemErro);
 
         await using AsyncServiceScope leitura = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = leitura.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = leitura.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (await db.AtosDoProcesso.AsNoTracking().AnyAsync(a => a.Id == atoId)).Should().BeFalse(
             "a transação inteira volta: o registro some junto da requisição que não chegou a sair");
     }
@@ -161,7 +161,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         (await client.SendAsync(pedido)).StatusCode.Should().Be(HttpStatusCode.NoContent, "o número em branco é ausência de número, não erro");
 
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid atoId = await db.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .Select(v => v.AtoCriadorId)
@@ -230,7 +230,7 @@ public sealed class RegistroDoAtoDoProcessoTests
         Guid atoId = Guid.CreateVersion7();
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             AtoDoProcesso ato = AtoDoProcesso.Registrar(
                 new NovoAtoDoProcesso(
                     atoId, processoId, tipoDoItem, "Resultado final", "7/2027", new DateOnly(2027, 1, 20),
@@ -253,7 +253,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     private static async Task SemearTipoDeResultadoAsync(CascadingApiFactory api, string codigo)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        PublicacoesDbContext db = escopo.ServiceProvider.GetRequiredService<PublicacoesDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         if (await db.Set<TipoAtoPublicado>().AnyAsync(t => t.Codigo == codigo))
         {
             return;
@@ -305,7 +305,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     private static async Task<Guid> SemearDocumentoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processoId, Domain.Enums.FinalidadeDoDocumento.DocumentoDeAto, "aviso.pdf", Domain.Services.TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, new string('d', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
@@ -322,7 +322,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     {
         (Guid processoId, Guid documentoId) = await SemearAsync(api);
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         DateTimeOffset agora = DateTimeOffset.UtcNow;
         db.CertamesDivulgados.Add(CertameDivulgado.Criar(
             processoId,
@@ -340,7 +340,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"Atos do processo {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);
@@ -349,7 +349,7 @@ public sealed class RegistroDoAtoDoProcessoTests
     private static async Task<AtoDoProcesso> LerAsync(CascadingApiFactory api, Guid atoId)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.AtosDoProcesso.AsNoTracking().SingleAsync(a => a.Id == atoId);
     }
 

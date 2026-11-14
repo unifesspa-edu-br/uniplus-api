@@ -60,8 +60,8 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // No máximo um dataset vivo é vigente: EXCLUDE constraint GiST DEFERRABLE
-        // INITIALLY DEFERRED (ex_calendario_dias_uteis_vigente_unico), criada via SQL
-        // cru na migration — de propósito AUSENTE daqui como HasIndex().IsUnique(),
+        // INITIALLY DEFERRED (ex_calendario_dias_uteis_vigente_unico), criada pelo
+        // script 001_vigencia_unica_do_calendario.sql — de propósito AUSENTE daqui como HasIndex().IsUnique(),
         // mesmo padrão de ex_nos_exigencia_irmaos_ordem (NoExigenciaConfiguration.cs) e
         // ex_tipo_ato_publicado_codigo_vigencia (TipoAtoPublicadoConfiguration.cs), que o
         // Fluent API do EF Core não modela. Um índice único comum é verificado

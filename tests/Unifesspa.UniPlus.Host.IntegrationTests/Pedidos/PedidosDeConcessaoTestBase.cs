@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
@@ -202,7 +203,7 @@ public abstract class PedidosDeConcessaoTestBase
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         string sub = beneficiario.Sub.ToString();
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes.AsNoTracking()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
             .Where(c => c.BeneficiarioSub == sub && c.PerfilId == perfilId)
             .ToArrayAsync();
     }
@@ -267,7 +268,7 @@ public abstract class PedidosDeConcessaoTestBase
     private protected async Task ExecutarSqlAsync(string sql, params object[] parametros)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
     }
 
     /// <summary>Semeia um perfil comum com a versão em vigor, conferido contra o catálogo do host.</summary>
@@ -279,7 +280,7 @@ public abstract class PedidosDeConcessaoTestBase
             "Perfil semeado pelo teste.",
             permissoes,
             scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Perfis.Add(perfil);
         await db.SaveChangesAsync();
         return perfil.Id;
@@ -293,7 +294,7 @@ public abstract class PedidosDeConcessaoTestBase
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         await using IDbContextTransaction transacao = await scope.ServiceProvider
-            .GetRequiredService<AutorizacaoDbContext>().Database.BeginTransactionAsync();
+            .GetRequiredService<UniPlusDbContext>().Database.BeginTransactionAsync();
         IReadOnlyList<EnviarEmail> avisos = await TrocarComposicaoNoEscopoAsync(scope.ServiceProvider, perfilId, permissoes);
         await transacao.CommitAsync();
 
@@ -313,7 +314,7 @@ public abstract class PedidosDeConcessaoTestBase
             avisos.AddRange(await efeitos.AplicarAsync(perfil, troca, new Identidade(TestAuthHandler.DefaultIssuer, "diogo.souza"), CancellationToken.None));
         }
 
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
 
         return avisos;
     }
@@ -338,7 +339,7 @@ public abstract class PedidosDeConcessaoTestBase
         Unidade unidade = NovaUnidade(Guid.NewGuid().ToString("N")[..8]);
 
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext db = scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Unidades.Add(unidade);
         await db.SaveChangesAsync();
         return unidade.Id;
@@ -366,7 +367,7 @@ public abstract class PedidosDeConcessaoTestBase
             .Em(DateTimeOffset.UtcNow)
             .Construir();
         await repositorio.AdicionarAsync(concessao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     /// <summary>Sobe o PDF pela URL de PUT assinada e devolve o ETag.</summary>

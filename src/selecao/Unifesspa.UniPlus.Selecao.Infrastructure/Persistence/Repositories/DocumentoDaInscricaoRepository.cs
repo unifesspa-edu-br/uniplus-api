@@ -8,11 +8,13 @@ using Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public DocumentoDaInscricaoRepository(SelecaoDbContext context)
+    public DocumentoDaInscricaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -162,7 +164,7 @@ public sealed class DocumentoDaInscricaoRepository : IDocumentoDaInscricaoReposi
             if (linhasAfetadas == 1)
             {
                 await _context.ApresentacoesDeDocumento
-                    .Where(p => p.Id == apresentacaoId && !_context.ArquivosDaApresentacao.Any(a => a.ApresentacaoId == p.Id))
+                    .Where(p => p.Id == apresentacaoId && !_context.Set<ArquivoDaApresentacao>().Any(a => a.ApresentacaoId == p.Id))
                     .ExecuteDeleteAsync(cancellationToken)
                     .ConfigureAwait(false);
             }

@@ -6,9 +6,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -31,14 +31,14 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         IProcessoSeletivoRepository Repository,
         IRegraCatalogoReader RegraCatalogoReader,
         IPesoAreaEnemReader PesoAreaEnemReader,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processoId, Arg.Any<CancellationToken>()).Returns(processo);
         return new Mocks(
-            repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<IPesoAreaEnemReader>(), Substitute.For<ISelecaoUnitOfWork>());
+            repository, Substitute.For<IRegraCatalogoReader>(), Substitute.For<IPesoAreaEnemReader>(), Substitute.For<IUnitOfWork>());
     }
 
     private static void MockRegrasBasicas(Mocks mocks)

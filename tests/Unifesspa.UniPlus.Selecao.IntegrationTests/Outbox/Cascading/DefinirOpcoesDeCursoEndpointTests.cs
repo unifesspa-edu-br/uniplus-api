@@ -11,8 +11,8 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 /// <summary>
 /// O endpoint <c>PUT /processos-seletivos/{id}/opcoes-de-curso</c>, fim a fim pelo HTTP: o número
@@ -108,7 +108,7 @@ public sealed class DefinirOpcoesDeCursoEndpointTests
     private static async Task<int?> LerNumeroGravadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.Set<ProcessoSeletivo>().AsNoTracking()
             .Where(p => p.Id == processoId)
             .Select(p => p.NumeroDeOpcoesDeCurso)
@@ -119,7 +119,7 @@ public sealed class DefinirOpcoesDeCursoEndpointTests
     {
         CascadingApiFactory api = _fixture.Factory;
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}");
         return (api, processo.Id);

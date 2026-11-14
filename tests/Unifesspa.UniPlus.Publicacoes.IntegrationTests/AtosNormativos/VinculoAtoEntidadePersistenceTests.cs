@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
@@ -52,7 +53,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
         await Gravar(ato);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         List<VinculoAtoEntidade> vinculos = await ctx.VinculosAtoEntidade
             .Where(v => v.AtoId == ato.Id)
             .ToListAsync();
@@ -68,7 +69,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
         await Gravar(ato);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         (await ctx.AtosNormativos.AnyAsync(a => a.Id == ato.Id)).Should().BeTrue();
         (await ctx.VinculosAtoEntidade.AnyAsync(v => v.AtoId == ato.Id)).Should().BeFalse();
     }
@@ -275,7 +276,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
         await Gravar(ato);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         (await ctx.VinculosAtoEntidade.CountAsync(v => v.AtoId == ato.Id)).Should().Be(1);
         (await ctx.LinhagensUnicasPorObjeto.AnyAsync(l => l.AtoId == ato.Id)).Should().BeFalse();
     }
@@ -286,7 +287,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
     {
         AtoNormativo ato = Novo(unicoPorObjeto: true, vinculos: [("PROCESSO_SELETIVO", processo)]);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
         ctx.LinhagensUnicasPorObjeto.Add(
             LinhagemUnicaPorObjeto.Criar(ato, ato.Vinculos.Single(), raizId: ato.Id));
@@ -297,7 +298,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
 
     private async Task Gravar(AtoNormativo ato)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         ctx.AtosNormativos.Add(ato);
         await ctx.SaveChangesAsync();
     }

@@ -13,7 +13,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Host;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -169,7 +171,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
         using HttpClient client = api.CreateClient();
         (Guid processoId, _) = await PublicarAtoAvulsoEndpointTests.PublicarEditalAsync(api, client, fimDasInscricoes: fimDasInscricoes);
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        Guid versaoId = await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().VersoesConfiguracao.AsNoTracking()
+        Guid versaoId = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).SingleAsync();
 
         return (processoId, versaoId);
@@ -200,7 +202,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
             },
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [], []));
-        await escopo.ServiceProvider.GetRequiredService<ISelecaoUnitOfWork>().SalvarAlteracoesAsync();
+        await escopo.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
 
         return inscricao.Id;
     }
@@ -208,7 +210,7 @@ public sealed class ComprovanteDaInscricaoPublicadaEndpointTests
     private async Task<string> NomeDaUnidadeCongeladaAsync(Guid processoId)
     {
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        ProcessoSeletivo processo = await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().ProcessosSeletivos
+        ProcessoSeletivo processo = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().ProcessosSeletivos
             .AsNoTracking().SingleAsync(p => p.Id == processoId);
         return processo.UnidadeAdministradora!.Nome;
     }

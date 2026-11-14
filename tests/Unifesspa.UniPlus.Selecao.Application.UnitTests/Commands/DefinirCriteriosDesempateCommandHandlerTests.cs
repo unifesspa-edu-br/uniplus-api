@@ -6,10 +6,9 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -32,7 +31,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         IProcessoSeletivoRepository Repository,
         IRegraCatalogoReader RegraCatalogoReader,
         IFatoCandidatoReader FatoCandidatoReader,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
@@ -61,7 +60,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
                 Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, TipoRegra.CriterioDesempate),
             ]);
 
-        return new Mocks(repository, regraCatalogoReader, fatoCandidatoReader, Substitute.For<ISelecaoUnitOfWork>());
+        return new Mocks(repository, regraCatalogoReader, fatoCandidatoReader, Substitute.For<IUnitOfWork>());
     }
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado")]

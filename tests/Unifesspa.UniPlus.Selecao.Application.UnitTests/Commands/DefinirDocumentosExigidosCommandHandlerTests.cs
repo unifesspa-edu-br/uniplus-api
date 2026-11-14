@@ -6,13 +6,12 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -37,7 +36,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ITipoDocumentoReader TipoDocumentoReader,
         IFatoCandidatoReader FatoCandidatoReader,
         IModeloDeDocumentoRepository Modelos,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
@@ -49,7 +48,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
             Substitute.For<ITipoDocumentoReader>(),
             Substitute.For<IFatoCandidatoReader>(),
             Substitute.For<IModeloDeDocumentoRepository>(),
-            Substitute.For<ISelecaoUnitOfWork>());
+            Substitute.For<IUnitOfWork>());
     }
 
     private static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, DefinirDocumentosExigidosCommand command) =>

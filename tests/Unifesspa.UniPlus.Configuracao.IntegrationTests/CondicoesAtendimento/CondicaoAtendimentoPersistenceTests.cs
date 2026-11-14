@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -46,13 +47,13 @@ public sealed class CondicaoAtendimentoPersistenceTests
         string codigo = CodigoUnico();
         CondicaoAtendimentoEspecializado condicao = Nova(codigo);
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CondicoesAtendimento.Add(condicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         CondicaoAtendimentoEspecializado persistida = await readCtx.CondicoesAtendimento.SingleAsync(c => c.Id == condicao.Id);
 
         persistida.Codigo.Valor.Should().Be(codigo);
@@ -70,13 +71,13 @@ public sealed class CondicaoAtendimentoPersistenceTests
     public async Task UniquePartial_Codigo_RejeitaDuplicataAtiva()
     {
         string codigo = CodigoUnico();
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CondicoesAtendimento.Add(Nova(codigo));
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.CondicoesAtendimento.Add(Nova(codigo));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -93,7 +94,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
     [Fact(DisplayName = "Código distinto é aceito")]
     public async Task CodigoDistinto_Aceita()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.CondicoesAtendimento.Add(Nova(CodigoUnico()));
         ctx.CondicoesAtendimento.Add(Nova(CodigoUnico()));
 
@@ -106,20 +107,20 @@ public sealed class CondicaoAtendimentoPersistenceTests
     {
         string codigo = CodigoUnico();
         CondicaoAtendimentoEspecializado condicao = Nova(codigo);
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CondicoesAtendimento.Add(condicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CondicaoAtendimentoEspecializado tracked = await ctx.CondicoesAtendimento.SingleAsync(c => c.Id == condicao.Id);
             ctx.CondicoesAtendimento.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             CondicaoAtendimentoEspecializado excluida = await ctx.CondicoesAtendimento
                 .IgnoreQueryFilters().SingleAsync(c => c.Id == condicao.Id);
@@ -127,7 +128,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
             excluida.DeletedBy.Should().Be(AdminB);
         }
 
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.CondicoesAtendimento.Add(Nova(codigo));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -137,7 +138,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
     [Fact(DisplayName = "CHECK de banco rejeita código fora do formato fechado via SQL cru")]
     public async Task Check_RejeitaCodigoForaDoFormatoViaSqlCru()
     {
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"INSERT INTO configuracao.condicao_atendimento_especializado (id, codigo, nome, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"pcd"}, {"X"}, {DateTimeOffset.UtcNow}, {false})");
@@ -150,13 +151,13 @@ public sealed class CondicaoAtendimentoPersistenceTests
     public async Task Remover_Pcd_ViaHandler_Bloqueia()
     {
         CondicaoAtendimentoEspecializado pcd = Nova(CodigoCondicao.Pcd, nome: "Pessoa com deficiência");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CondicoesAtendimento.Add(pcd);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
         {
             var repository = new CondicaoAtendimentoRepository(handlerCtx);
             Result resultado = await RemoverCondicaoAtendimentoCommandHandler.Handle(
@@ -166,7 +167,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
             resultado.Error!.Code.Should().Be(CondicaoAtendimentoErrorCodes.RemocaoBloqueadaCodigoProtegido);
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         bool aindaVivo = await readCtx.CondicoesAtendimento.AnyAsync(c => c.Id == pcd.Id);
         aindaVivo.Should().BeTrue("a condição reservada PCD não pode ser removida");
     }
@@ -179,7 +180,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
         string codB = $"{prefixo}_B";
         string codExcluido = $"{prefixo}_D";
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CondicoesAtendimento.Add(Nova(codB));
             ctx.CondicoesAtendimento.Add(Nova(codA));
@@ -187,7 +188,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             CodigoCondicao codigoExcluidoVo = CodigoCondicao.Criar(codExcluido).Value!;
             CondicaoAtendimentoEspecializado aExcluir = await ctx.CondicoesAtendimento.SingleAsync(c => c.Codigo == codigoExcluidoVo);
@@ -195,7 +196,7 @@ public sealed class CondicaoAtendimentoPersistenceTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new CondicaoAtendimentoReader(readCtx);
         IReadOnlyList<CondicaoAtendimentoView> todos = await reader.ListarVivosAsync();
 

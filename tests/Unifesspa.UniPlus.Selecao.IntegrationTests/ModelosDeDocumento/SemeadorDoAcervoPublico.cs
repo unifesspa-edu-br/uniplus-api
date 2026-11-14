@@ -5,6 +5,7 @@ using System.Text;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -26,7 +27,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
     public async Task<(ProcessoSeletivo Processo, ModeloDeDocumento Modelo)> ProcessoComModeloAsync(byte[]? conteudo = null)
     {
         ProcessoSeletivo processo;
-        await using (SelecaoDbContext context = acervo.Db.CreateDbContext())
+        await using (UniPlusDbContext context = acervo.Db.CreateDbContext())
         {
             processo = await ProcessoSeletivoDeTeste.GravarAsync(context, "PS 2027 — modelo no acervo");
         }
@@ -41,7 +42,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         modelo.Confirmar(conteudo.LongLength, HashDe(conteudo), TimeProvider.System).IsSuccess.Should().BeTrue();
         await acervo.Storage().SalvarConteudoSeladoAsync(modelo.ObjectKeyConfirmado!, conteudo, modelo.ContentType);
 
-        await using SelecaoDbContext context = acervo.Db.CreateDbContext();
+        await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.ModelosDeDocumento.Add(modelo);
         await context.SaveChangesAsync();
         return modelo;
@@ -135,7 +136,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
     {
         AtoDoProcesso registro = AtoDoProcesso.Registrar(
             DeclaracaoDoAtoAvulso(processoId, identificador, ato, principal, anexo), TimeProvider.System).Value!;
-        await using SelecaoDbContext context = acervo.Db.CreateDbContext();
+        await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.AtosDoProcesso.Add(registro);
         await context.SaveChangesAsync();
         return registro;
@@ -176,7 +177,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         documento.Confirmar(conteudo.LongLength, HashDe(conteudo), TimeProvider.System).IsSuccess.Should().BeTrue();
         await acervo.Storage().SalvarConteudoSeladoAsync(documento.ObjectKeyConfirmado!, conteudo, tipoDeMidia);
 
-        await using SelecaoDbContext context = acervo.Db.CreateDbContext();
+        await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
         return documento;
@@ -184,7 +185,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
 
     private async Task<VersaoConfiguracao> GravarAsync(VersaoConfiguracao versao)
     {
-        await using SelecaoDbContext context = acervo.Db.CreateDbContext();
+        await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.VersoesConfiguracao.Add(versao);
         await context.SaveChangesAsync();
         return versao;

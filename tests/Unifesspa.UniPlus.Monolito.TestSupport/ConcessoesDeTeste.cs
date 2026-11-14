@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -39,7 +40,7 @@ public static class ConcessoesDeTeste
             permissoes,
             scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
 
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         db.Perfis.Add(perfil);
         await db.SaveChangesAsync();
 
@@ -82,7 +83,7 @@ public static class ConcessoesDeTeste
     {
         Concessao concessao = await NovaAsync(servicos, beneficiario, perfilId, alcance, dados);
         await servicos.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
         return concessao.Id;
     }
 
@@ -111,7 +112,7 @@ public static class ConcessoesDeTeste
         ArgumentException.ThrowIfNullOrWhiteSpace(sub);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         IQueryable<Concessao> daPessoa = db.Concessoes.Where(c => c.BeneficiarioEmissor == TestAuthHandler.DefaultIssuer && c.BeneficiarioSub == sub);
         await db.Providencias.Where(p => daPessoa.Any(c => c.Id == p.ConcessaoId)).ExecuteDeleteAsync();
         await daPessoa.ExecuteDeleteAsync();

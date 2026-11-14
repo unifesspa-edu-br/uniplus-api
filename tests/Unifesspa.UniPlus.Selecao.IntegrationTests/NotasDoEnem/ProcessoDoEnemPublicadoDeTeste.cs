@@ -10,12 +10,11 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
@@ -52,7 +51,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
         DocumentoAPublicar documento;
         await using (AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             (processo, documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
                 db,
                 $"PS Medicina notas do ENEM {Guid.CreateVersion7()}",
@@ -68,7 +67,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
         await using (AsyncServiceScope scope = fixture.Factory.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             Guid atoId = await db.VersoesConfiguracao.AsNoTracking()
                 .Where(v => v.ProcessoSeletivoId == processo.Id)
                 .Select(v => v.AtoCriadorId)

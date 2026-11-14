@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -23,7 +23,7 @@ public sealed class AceiteDoPedido
     private readonly IPedidoDeConcessaoRepository _pedidos;
     private readonly IPerfilRepository _perfis;
     private readonly AvisosDoPedido _avisos;
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IIncompatibilidadeDosPapeis _papeis;
     private readonly TimeProvider _clock;
 
@@ -31,7 +31,7 @@ public sealed class AceiteDoPedido
         IPedidoDeConcessaoRepository pedidos,
         IPerfilRepository perfis,
         AvisosDoPedido avisos,
-        IAutorizacaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IIncompatibilidadeDosPapeis papeis,
         TimeProvider clock)
     {

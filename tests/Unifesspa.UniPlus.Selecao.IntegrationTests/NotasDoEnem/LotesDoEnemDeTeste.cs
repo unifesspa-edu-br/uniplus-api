@@ -1,11 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Inscricoes;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -22,7 +22,7 @@ internal static class LotesDoEnemDeTeste
 
     public static async Task<Escopo> NovoEscopoAsync(InscricaoDbFixture fixture)
     {
-        await using SelecaoDbContext semente = fixture.CreateDbContext();
+        await using UniPlusDbContext semente = fixture.CreateDbContext();
         ProcessoSeletivo processo = await InscricoesDoEnemDeTeste.NovoProcessoAsync(semente);
         Guid versao = await InscricoesDoEnemDeTeste.NovaVersaoAsync(fixture, processo.Id);
         return new Escopo(processo.Id, versao, Guid.CreateVersion7());
@@ -58,7 +58,7 @@ internal static class LotesDoEnemDeTeste
     {
         foreach (LoteDeNotasDoEnem lote in lotes)
         {
-            await using SelecaoDbContext context = fixture.CreateDbContext();
+            await using UniPlusDbContext context = fixture.CreateDbContext();
             await new LoteDeNotasDoEnemRepository(context, fixture.Encryption).AdicionarAsync(lote);
             await context.SaveChangesAsync();
         }

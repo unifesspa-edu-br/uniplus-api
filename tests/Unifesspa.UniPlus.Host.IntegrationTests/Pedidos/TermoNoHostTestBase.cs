@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Base das suítes do termo de responsabilidade pelo host real: a publicação pela rota, a leitura da versão fixada no
@@ -59,13 +60,13 @@ public abstract class TermoNoHostTestBase : PedidosDeConcessaoTestBase, IAsyncLi
     private protected async Task<int> ContarPedidosAsync()
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Pedidos.CountAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Pedidos.CountAsync();
     }
 
     private protected async Task<int> ContarVersoesAsync()
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().VersoesDoTermo.CountAsync();
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().VersoesDoTermo.CountAsync();
     }
 
     /// <summary>Um perfil sensível e uma unidade novos; a vigência do termo foi reiniciada com uma versão publicada.</summary>

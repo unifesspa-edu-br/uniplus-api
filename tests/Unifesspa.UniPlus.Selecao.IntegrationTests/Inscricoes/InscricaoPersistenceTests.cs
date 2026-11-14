@@ -12,10 +12,10 @@ using Npgsql;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -123,12 +123,12 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             Admitidas,
             PrecondicaoIfMatch.DeTags([original.ETag]));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await writeRepository.AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao? lida = await readRepository.ObterPorIdAsync(original.Id);
 
@@ -156,12 +156,12 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.KevinCarvalho, processo);
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await writeRepository.AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao? lida = await readRepository.ObterAtivaPorProcessoECpfAsync(processo, PersonasDeTeste.KevinCarvalho);
 
@@ -179,7 +179,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
         original.Salvar(null, null, Respostas(("RG_NUMERO", "12.868.927-4")), SemGrupos(), [], Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await writeRepository.AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
@@ -223,13 +223,13 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
             await writeContext.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao lida = (await leitura.ObterPorIdAsync(original.Id))!;
 
@@ -249,11 +249,11 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["RG_NUMERO"] = JsonSerializer.SerializeToElement("12.868.927-4") },
             SemGrupos(), [new AceiteDeTermo("TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc")], Admitidas,
             PrecondicaoIfMatch.DeTags([original.ETag]));
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         await new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         RespostaIdentificadora rg = (await leitura.LocalizarIdentificadorAsync(original.Id, "RG_NUMERO", null, null))!;
         RespostaDaInscricaoRecord linha = await readContext.RespostasDaInscricao.SingleAsync(r => r.Id == rg.RespostaId);
@@ -270,7 +270,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao comprovante = original.Submeter(
@@ -325,7 +325,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
         dono.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         dono.UserId.Returns("sub-1");
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
 
         ComprovanteInscricao lido = (await leitura.ObterComprovanteAsync(original.Id, 1))!.Comprovante;
@@ -345,7 +345,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao semEnvio = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
         DateTimeOffset primeiro = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao correcao = reenviada.Submeter(
@@ -361,7 +361,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository leitor = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
 
         IReadOnlyDictionary<Guid, DateTimeOffset> envios = await leitor.ObterPrimeirosEnviosAsync([reenviada.Id, semEnvio.Id]);
@@ -376,7 +376,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
         DateTimeOffset instante = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
@@ -391,7 +391,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext leituraLimpa = _fixture.CreateDbContext();
+        await using UniPlusDbContext leituraLimpa = _fixture.CreateDbContext();
         InscricaoRepository antes = new(leituraLimpa, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         (await antes.ObterComprovantesAsync([original.Id])).Select(static c => c.RespostasSensiveis["IDENTIDADE_GENERO"].GetString())
             .Should().Equal("PESSOA_CIS", "PESSOA_NAO_BINARIA");
@@ -411,7 +411,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             (await troca.ExecuteNonQueryAsync()).Should().Be(1);
         }
 
-        await using SelecaoDbContext depoisContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext depoisContext = _fixture.CreateDbContext();
         InscricaoRepository depois = new(depoisContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Func<Task> ler = async () => await depois.ObterComprovantesAsync([original.Id]);
 
@@ -427,7 +427,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Guid processo = Guid.CreateVersion7();
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, processo);
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
@@ -448,7 +448,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await apaga.ExecuteNonQueryAsync();
         }
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository repositorioDeLeitura = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         if (apagaOCifrado && apagaOHmac)
         {
@@ -484,13 +484,13 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             SemGrupos(), [], admitidasComNome, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("FAIXA_ETARIA", 25)), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow, []);
         envio.IsSuccess.Should().BeTrue(string.Join("; ", envio.Errors.Select(static e => e.Field + ":" + e.Error.Code)));
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
             await writeContext.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
 
         (IReadOnlyList<ResumoDaInscricaoDoProcesso> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId) comNome = await repositorio.ListarEnviadasDoProcessoAsync(processo, null, 10, PaginationDirection.Next, lerNome: true, lerCpf: false);
@@ -514,7 +514,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             "000321", OfertaDoProcesso, null, respostas, SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("FAIXA_ETARIA", 25), ("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow, []).IsSuccess.Should().BeTrue();
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await writeRepository.AdicionarAsync(original);
         await writeContext.SaveChangesAsync();
@@ -547,7 +547,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         linhas["UF_RESIDENCIA"].Single()[2].Should().Be((int)OrigemDaResposta.Derivada);
         linhas["DATA_NASCIMENTO"].Single()[2].Should().Be((int)OrigemDaResposta.Informada);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Inscricao lida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(original.Id))!;
         lida.Derivados.Should().ContainKey("UF_RESIDENCIA");
@@ -565,20 +565,20 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             [new AceiteDeTermo("TERMO_VERACIDADE", VersaoDoTermoVeracidade, "sha256-abc")],
             Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
             await context.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             await repositorio.RemoverAsync((await repositorio.ObterPorIdAsync(original.Id))!);
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         (await readContext.Inscricoes.AnyAsync(r => r.Id == original.Id)).Should().BeFalse();
         (await readContext.RespostasDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
         (await readContext.EnderecosDaInscricao.AnyAsync(r => r.InscricaoId == original.Id)).Should().BeFalse();
@@ -591,7 +591,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Inscricao original = NovaInscricao(PersonasDeTeste.FernandaDrumond, Guid.CreateVersion7());
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
 
         Func<Task> remover = () => repositorio.RemoverAsync(original);
@@ -607,13 +607,13 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             null, null, Respostas(("NOME_SOCIAL", "Ariel"), ("MODALIDADES", new[] { "AC", "LB_PPI" })), Familia("membro-1", "membro-2"), [],
             Admitidas, PrecondicaoIfMatch.DeTags([original.ETag]));
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
             await context.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
@@ -625,7 +625,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Inscricao relida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(original.Id))!;
         relida.Respostas.Should().NotContainKey("NOME_SOCIAL");
@@ -642,13 +642,13 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             "000654", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Kevin")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow, []).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(original);
             await context.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(original.Id))!;
@@ -657,7 +657,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Inscricao relida = (await new InscricaoRepository(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .ObterPorIdAsync(original.Id))!;
         relida.Derivados["UF_RESIDENCIA"].GetString().Should().Be("PA");
@@ -672,7 +672,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         DateTimeOffset primeira = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
         string hashDaCorrecao;
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
@@ -693,7 +693,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         dono.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         dono.UserId.Returns("sub-1");
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ComprovanteNaPosicao? segundo = await leitura.ObterComprovanteAsync(original.Id, 2);
         ComprovanteNaPosicao? primeiro = await leitura.ObterComprovanteAsync(original.Id, 1);
@@ -725,7 +725,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         ArquivoConfirmado arquivo = new(
             Guid.CreateVersion7(), Guid.CreateVersion7(), laudo.Id, null, FormatoPermitido.Pdf, 4096, new string('d', 64), DateTimeOffset.UtcNow);
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
@@ -736,7 +736,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ComprovanteInscricao relido = (await leitura.ObterComprovantesAsync([original.Id])).Should().ContainSingle().Subject;
 
@@ -756,7 +756,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             ["FAIXA_ETARIA"] = JsonDocument.Parse("1e3").RootElement.Clone(),
         };
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             ComprovanteInscricao envio = original.Submeter(
@@ -768,7 +768,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         IReadOnlyList<ComprovanteInscricao> gravados = await leitura.ObterComprovantesAsync([original.Id], CancellationToken.None);
 
@@ -792,7 +792,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             "000901", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], Admitidas, avaliacao,
             Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow, []).Value!;
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             await repositorio.AdicionarAsync(original);
@@ -821,7 +821,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             (0, (int)OrigemDaResposta.Derivada, (int)TipoDoValorDeResposta.Codigo, "AC"),
             (1, (int)OrigemDaResposta.Derivada, (int)TipoDoValorDeResposta.Codigo, "LI_EP"));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         ComprovanteInscricao relido = (await leitura.ObterComprovantesAsync([original.Id], CancellationToken.None)).Single();
         relido.Modalidades.Should().Equal(modalidades);
@@ -850,7 +850,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             "000902", OfertaDoProcesso, segundaOferta, Respostas(("NOME_SOCIAL", "Ariel")), SemGrupos(), [], admitidasComDuasOpcoes, avaliacao,
             Respostas(), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([original.ETag]), DateTimeOffset.UtcNow, []).Value!;
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             await repositorio.AdicionarAsync(original);
@@ -858,7 +858,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao? lida = await leitura.ObterAtivaPorProcessoECpfAsync(original.ProcessoSeletivoId, PersonasDeTeste.FernandaDrumond);
         lida!.OfertaCursoSegundaOpcaoId.Should().Be(segundaOferta);
@@ -900,14 +900,14 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         Inscricao naB = NovaInscricao(PersonasDeTeste.FernandaDrumond, processoB);
         Inscricao deOutroCpf = NovaInscricao(PersonasDeTeste.KevinCarvalho, Guid.CreateVersion7());
 
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         InscricaoRepository writeRepository = new(writeContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await writeRepository.AdicionarAsync(naA);
         await writeRepository.AdicionarAsync(naB);
         await writeRepository.AdicionarAsync(deOutroCpf);
         await writeContext.SaveChangesAsync();
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository readRepository = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         IReadOnlyList<Inscricao> lidas = await readRepository.ObterTodasPorCpfAsync(PersonasDeTeste.FernandaDrumond);
 
@@ -924,12 +924,12 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     {
         Guid processo = Guid.CreateVersion7();
 
-        await using SelecaoDbContext primeiroContexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext primeiroContexto = _fixture.CreateDbContext();
         InscricaoRepository primeiroRepositorio = new(primeiroContexto, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await primeiroRepositorio.AdicionarAsync(NovaInscricao(PersonasDeTeste.FernandaDrumond, processo));
         await primeiroContexto.SaveChangesAsync();
 
-        await using SelecaoDbContext segundoContexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext segundoContexto = _fixture.CreateDbContext();
         InscricaoRepository segundoRepositorio = new(segundoContexto, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         await segundoRepositorio.AdicionarAsync(NovaInscricao(PersonasDeTeste.FernandaDrumond, processo));
 
@@ -947,14 +947,14 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             "000777", OfertaDoProcesso, null, Respostas(("NOME_SOCIAL", "Fê")), SemGrupos(), [], Admitidas, FormularioDeTeste.AvaliacaoSemOcultos,
             Respostas(("UF_RESIDENCIA", "PA")), DefinicoesDosDerivados, PrecondicaoIfMatch.DeTags([primeira.ETag]), DateTimeOffset.UtcNow, []).IsSuccess.Should().BeTrue();
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(primeira);
             await context.SaveChangesAsync();
         }
 
         DateTimeOffset canceladaEm = DateTimeOffset.UtcNow;
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(primeira.Id))!;
@@ -963,7 +963,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao cancelada = (await repositorio.ObterPorIdAsync(primeira.Id))!;
@@ -981,7 +981,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             (await repositorio.ObterAtivaPorProcessoECpfAsync(processo, PersonasDeTeste.FernandaDrumond))!.Id.Should().Be(nova.Id);
         }
 
-        await using SelecaoDbContext terceiroContexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext terceiroContexto = _fixture.CreateDbContext();
         await new InscricaoRepository(terceiroContexto, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System)
             .AdicionarAsync(NovaInscricao(PersonasDeTeste.FernandaDrumond, processo));
         Func<Task> segundaAtiva = async () => await terceiroContexto.SaveChangesAsync();
@@ -1003,7 +1003,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         ArquivoDaApresentacao arquivo = ArquivoDaApresentacao.IniciarPendente(
             apresentacao.Id, inscricao.Id, laudo, "application/pdf", 1024, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
 
-        await using (SelecaoDbContext context = _fixture.CreateDbContext())
+        await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             await new InscricaoRepository(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System).AdicionarAsync(inscricao);
             DocumentoDaInscricaoRepository documentos = new(context);
@@ -1012,14 +1012,14 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             await context.SaveChangesAsync();
         }
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository inscricoes = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao lida = (await inscricoes.ObterPorIdAsync(inscricao.Id))!;
         lida.Cancelar(null, "sub-1", DateTimeOffset.UtcNow, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
         await inscricoes.AtualizarAsync(lida);
         await leitura.SaveChangesAsync();
 
-        await using SelecaoDbContext relida = _fixture.CreateDbContext();
+        await using UniPlusDbContext relida = _fixture.CreateDbContext();
         inscricoes = new(relida, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         DocumentoDaInscricaoRepository repositorioDeDocumentos = new(relida);
 

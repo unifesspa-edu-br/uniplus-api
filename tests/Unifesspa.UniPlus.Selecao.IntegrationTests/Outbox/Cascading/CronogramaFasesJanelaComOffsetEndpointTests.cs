@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -154,7 +155,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         public async Task<FaseCronograma> ObterFasePersistidaAsync()
         {
             await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             return await db.Set<FaseCronograma>().AsNoTracking()
                 .SingleAsync(f => f.ProcessoSeletivoId == ProcessoId)
                 .ConfigureAwait(false);
@@ -190,7 +191,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         Guid processoId;
         await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"PS janela com offset — {nome} {Guid.CreateVersion7()}",
                 Unifesspa.UniPlus.Selecao.Domain.Enums.TipoProcesso.SiSU,
@@ -214,7 +215,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     private static async Task<Guid> ObterOuCriarFaseCanonicaAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
-        ConfiguracaoDbContext config = scope.ServiceProvider.GetRequiredService<ConfiguracaoDbContext>();
+        UniPlusDbContext config = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         // O catálogo de fases vivas é pequeno — materializar é mais barato que
         // traduzir a comparação do value object Codigo para SQL.

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -18,6 +17,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -69,7 +69,7 @@ public abstract class PerfilEndpointTestBase
     internal async Task<Guid> VersaoVigenteAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         return await db.VersoesDosPerfis.Where(v => v.PerfilId == perfilId && v.Situacao == SituacaoDaVersao.Vigente).Select(v => v.Id).SingleAsync();
     }
@@ -77,23 +77,23 @@ public abstract class PerfilEndpointTestBase
     internal async Task<int> ContarLeiturasAsync(Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
-        return await db.LeiturasDosDocumentosDasVersoes.CountAsync(l => db.DocumentosDasVersoes.Any(d => d.Id == l.DocumentoId && d.PerfilId == perfilId));
+        return await db.LeiturasDosDocumentosDasVersoes.CountAsync(l => db.Set<DocumentoDaVersao>().Any(d => d.Id == l.DocumentoId && d.PerfilId == perfilId));
     }
 
     internal async Task ExecutarAsync(string sql, params object[] parametros)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
     }
 
     internal Task InserirVersaoAsync(Guid perfilId, int numero, string situacao) =>
         ExecutarAsync(
             """
             INSERT INTO autorizacao.versoes_do_perfil
-                (id, perfil_id, numero, nome, descricao, protocolo, situacao, origem, expira_em, criada_por_emissor, criada_por_sub, criada_em, created_at)
-            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'proposta', now() + interval '15 days', 'emissor', 'diogo.souza', now(), now())
+                (id, perfil_id, numero, nome, descricao, protocolo, situacao, origem, alcance, ciclo_de_aprovacao, criador_tem_concessao, exige_protecao_de_dados, expira_em, criada_por_emissor, criada_por_sub, criada_em, created_at)
+            VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'proposta', '', 0, false, false, now() + interval '15 days', 'emissor', 'diogo.souza', now(), now())
             """,
             Guid.CreateVersion7(), perfilId, numero, Nome(), situacao);
 
@@ -142,7 +142,7 @@ public abstract class PerfilEndpointTestBase
             .Em(DateTimeOffset.UtcNow)
             .Construir();
         await repositorio.AdicionarAsync(concessao);
-        await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     internal static async Task<Guid> CriarAsync(HttpClient client, string[]? permissoes = null)

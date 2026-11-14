@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
@@ -68,7 +69,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         await delete.Should().ThrowAsync<PostgresException>();
 
         // A prova de que o bloqueio é do banco, não do EF: a linha sobreviveu.
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         bool aindaExiste = await readContext.VersoesConfiguracao
             .AsNoTracking()
             .AnyAsync(v => v.Id == publicada.VersaoId, CancellationToken.None);
@@ -251,7 +252,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_MesmoInstanteDeVigencia_Aceito));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         DateTimeOffset instanteDaAbertura = await readContext.VersoesConfiguracao
             .AsNoTracking()
             .Where(v => v.Id == publicada.VersaoId)
@@ -281,7 +282,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         Publicacao publicada = await PublicarAsync(nameof(Insert_VigenciaRegressiva_Recusada));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         DateTimeOffset instanteDaAbertura = await readContext.VersoesConfiguracao
             .AsNoTracking()
             .Where(v => v.Id == publicada.VersaoId)
@@ -335,7 +336,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
     {
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
-        await using SelecaoDbContext context = _fixture.CreateDbContext();
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
         await context.ProcessosSeletivos.AddAsync(processo, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
 

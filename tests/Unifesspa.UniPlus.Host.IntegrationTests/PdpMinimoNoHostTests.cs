@@ -18,11 +18,11 @@ using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Authentication;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -178,7 +178,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, Leandro, perfil);
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
-            await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
                 "UPDATE autorizacao.perfis SET ativo = false WHERE id = {0}", perfil);
         }
 
@@ -213,7 +213,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         IReadOnlyList<ConcessaoAtiva> lidas = await scope.ServiceProvider
             .GetRequiredService<IConcessoesAtivasDoSujeito>()
             .ListarAsync(UsuarioRef.From(Emissor, Leandro).Value!, CancellationToken.None);
-        Guid[] esperada = [.. (await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes
+        Guid[] esperada = [.. (await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
             .Where(c => c.BeneficiarioSub == Leandro).ToListAsync())
             .OrderBy(c => c.ConcedidaEm).ThenBy(c => c.Id).Select(c => c.Id)];
 
@@ -315,7 +315,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     private async Task RevogarAsync(Guid concessaoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        AutorizacaoDbContext db = scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>();
+        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Concessao gravada = await db.Concessoes.SingleAsync(c => c.Id == concessaoId);
         AtoDoAgente revogacao = new(new Identidade(Emissor, Diogo), DateTimeOffset.UtcNow);
         gravada.Revogar(revogacao, "Mudou de função na unidade.").IsSuccess.Should().BeTrue();

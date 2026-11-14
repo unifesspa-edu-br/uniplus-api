@@ -54,7 +54,7 @@ public sealed class CatalogoDeOrdenacaoTests
     /// </summary>
     private static IReadOnlyList<string> CamposMapeados(string propriedade)
     {
-        Assembly infraestrutura = typeof(Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoDbContext).Assembly;
+        Assembly infraestrutura = typeof(Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.ConfiguracaoContribuicao).Assembly;
         Type ordenacao = infraestrutura
             .GetType("Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories.Ordenacao.OrdenacaoDeCursos")
             .Should().NotBeNull().And.Subject.As<Type>();

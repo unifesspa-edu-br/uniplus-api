@@ -298,7 +298,7 @@ public static class PublicarProcessoSeletivoCommandHandler
     public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
         PublicarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         // ... carrega o agregado, chama ProcessoSeletivo.Publicar, persiste ...
@@ -334,8 +334,8 @@ dotnet test --filter "FullyQualifiedName!~IntegrationTests"
 # Testes de integração (requer Docker)
 dotnet test --filter "FullyQualifiedName~IntegrationTests"
 
-# Formatação — as duas flags são OBRIGATÓRIAS (ver aviso abaixo)
-dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
+# Formatação — a flag é OBRIGATÓRIA (ver aviso abaixo)
+dotnet format --verify-no-changes --exclude-diagnostics CA1515
 ```
 
 O split acima é pelo **nome do projeto** (`tests/*.IntegrationTests` precisa de Docker; o resto,
@@ -576,7 +576,7 @@ public sealed record ContextoDoCriar(Perfil Perfil, IDominiosInstitucionais Domi
 O comando de formatação deste repositório é sempre:
 
 ```bash
-dotnet format --verify-no-changes --exclude-diagnostics CA1515 --exclude "**/Migrations/**"
+dotnet format --verify-no-changes --exclude-diagnostics CA1515
 ```
 
 É exatamente o que o job **`Formatação (dotnet format)`** executa no CI, e ele bloqueia o merge.
@@ -599,9 +599,9 @@ métodos de teste (helpers e fixtures). Os atributos `[SuppressMessage]` que ain
 (ver [§ Métricas de qualidade](#métricas-de-qualidade)). Por isso a regra é filtrada apenas no
 comando do `dotnet format`, e não silenciada no `.editorconfig`.
 
-A exclusão de `**/Migrations/**` também é necessária: o `dotnet ef` gera migrations com UTF-8 BOM
-enquanto o `.editorconfig` exige `charset = utf-8` sem BOM. Sem ela, todo PR que adicionasse uma
-migration nasceria vermelho no gate por um arquivo que a ferramenta regenera assim.
+A migration não é excluída do gate: o que o `dotnet ef` gera fora da política (UTF-8 BOM, usings sem
+separação de grupo) está declarado na seção `[src/**/Migrations/**.cs]` do `.editorconfig`, e a migration
+passa pelo `dotnet format` como qualquer outro arquivo.
 
 ### `git blame` e commits de formatação
 
@@ -635,17 +635,22 @@ que o blame precisa mostrar.
 Referências canônicas:
 
 - [`docs/guia-banco-de-dados.md`](docs/guia-banco-de-dados.md) — instruções operacionais (naming, tipos PG, soft delete, audit, workflow de migration, FAQ).
-- [ADR-0054](docs/adrs/0054-naming-convention-e-strategy-migrations.md) — decisões binding (snake_case via `EFCore.NamingConventions`, forward-only, migration por Story).
+- [ADR-0170](docs/adrs/0170-contexto-de-persistencia-unico-para-os-modulos-do-monolito.md) — o contexto único, a migration única e os scripts SQL por módulo.
+- [ADR-0054](docs/adrs/0054-naming-convention-e-strategy-migrations.md) — naming (`snake_case` via `EFCore.NamingConventions`).
 
 Regras essenciais (mais detalhes no guia):
 
 - **Configurações** via `IEntityTypeConfiguration<T>` (nunca data annotations).
 - **Naming convention global** (`snake_case`) aplicada automaticamente pelo helper `UseUniPlusNpgsqlConventions` — não usar `HasColumnName` para mapear `CreatedAt → created_at`.
-- **Migration por Story** que altera schema, com nomenclatura `{Verbo}{Objeto}` em pt-BR indicativo presente (`AdicionaCampoBonus`, `RemoveColunaObsoleta`). Sem squash inicial.
-- **Forward-only**: revert = nova migration `Reverte<X>`. `Down()` proibido em produção.
-- **Nunca editar migrations já aplicadas** — criar nova.
-- **Soft delete obrigatório** via `HasQueryFilter(e => !e.IsDeleted)` + `SoftDeleteInterceptor` (já no helper).
-- **Aplicação automática no startup** via `MigrationHostedService<TContext>` registrado antes do `WolverineRuntime` em cada Program.cs ([ADR-0039](docs/adrs/0039-provisioning-schema-wolverine-via-deploy.md) + [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)).
+- **Uma migration só: `Inicial`**, do `MonolitoDbContext`, no projeto `src/host/Unifesspa.UniPlus.Monolito.Persistencia` (pasta `Migrations`). Não há migration por módulo nem por story. Mudou o modelo: apague a migration e o snapshot e gere de novo (`dotnet ef migrations add Inicial --project src/host/Unifesspa.UniPlus.Monolito.Persistencia --startup-project src/host/Unifesspa.UniPlus.Host --context MonolitoDbContext --output-dir Migrations`).
+- **Ao rebasear, descarte a migration própria e gere outra** a partir do modelo já rebaseado: o snapshot único concentra os conflitos entre branches, e resolvê-los à mão é fonte de erro.
+- **`has-pending-model-changes` limpo**: o job de build do CI roda `dotnet ef migrations has-pending-model-changes` e falha quando o modelo mudou e a migration não foi gerada de novo. Rode antes do push, depois de recompilar (com `--no-build` ele lê o assembly sem a migration nova).
+- **O que o EF não representa vai em script SQL do módulo**, nunca em `migrationBuilder.Sql` à mão: extensões, funções, gatilhos, exclusion constraints, índices de expressão e sementes por SQL ficam em `Persistence/Scripts/Pre/*.sql` (antes da migration) e `Persistence/Scripts/*.sql` (depois dela), embutidos no assembly do módulo (`<EmbeddedResource Include="Persistence\Scripts\**\*.sql" />`), numerados (`001_...`) e **idempotentes** (`IF NOT EXISTS`, `CREATE OR REPLACE`, `DROP ... IF EXISTS` antes de `ADD`, `ON CONFLICT DO NOTHING`): cada um roda numa transação própria, e reaplicar é no-op.
+- **Objetos compartilhados existem uma vez só**, no `Infrastructure.Core` (`btree_gist` e `plataforma.normalizar_para_comparacao`), e rodam primeiro. Script de um módulo não referencia o esquema de outro.
+- **Sementes por código** (o que depende de regra da aplicação, não de SQL fixo) ficam na etapa posterior do módulo (`IContribuicaoDoModulo.ExecutarEtapaPosteriorDaMigrationAsync`), que roda depois dos scripts pós.
+- **Ordem da subida** (uma vez por banco, sob trava consultiva): scripts `Pre` (compartilhados, depois os dos módulos) → `MigrateAsync` → scripts pós (mesma ordem) → etapa posterior de cada módulo. Roda na subida padrão e no Job `ApplyAndExit`; as fixtures de teste usam `UniPlusDbContext.SubirOBancoAsync()`, que cobre as três primeiras fases.
+- **Soft delete opt-in** (`SoftDeletableEntity`): o filtro `!IsDeleted` e o `SoftDeleteInterceptor` vêm da convenção do modelo e do helper, sem `HasQueryFilter` manual.
+- **Aplicação automática no startup** pelo `MigrationHostedService<TContext>` registrado por `AddMonolitoPersistencia` antes do `WolverineRuntime` ([ADR-0039](docs/adrs/0039-provisioning-schema-wolverine-via-deploy.md) + [#419](https://github.com/unifesspa-edu-br/uniplus-api/issues/419)).
 
 ### Métricas de qualidade
 

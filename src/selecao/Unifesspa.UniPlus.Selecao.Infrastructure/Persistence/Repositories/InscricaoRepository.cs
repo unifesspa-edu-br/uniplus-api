@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -36,7 +36,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records;
     Justification = "Instanciada via DI em SelecaoInfrastructureRegistration.")]
 public sealed class InscricaoRepository : IInscricaoRepository
 {
-    private readonly SelecaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
     private readonly IUniPlusEncryptionService _encryption;
     private readonly IUniPlusBlindIndexService _blindIndex;
     private readonly CalculadorDoIndiceCegoDoCpf _indiceDoCpf;
@@ -44,7 +44,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
     private readonly SensiveisDoComprovante _sensiveis;
 
     public InscricaoRepository(
-        SelecaoDbContext dbContext,
+        UniPlusDbContext dbContext,
         IUniPlusEncryptionService encryption,
         IUniPlusBlindIndexService blindIndex,
         TimeProvider timeProvider)

@@ -11,6 +11,7 @@ using Kernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -92,7 +93,7 @@ public sealed class RetificacaoConcorrenciaTests
                 $"a publicação perdedora é recusada por transição ou pelo índice de numeração — veio '{perdedor.Error?.Code}'");
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<VersaoConfiguracao> versoes = await readDb.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .ToListAsync();
@@ -130,7 +131,7 @@ public sealed class RetificacaoConcorrenciaTests
         Guid documentoRetificacao;
         await using (AsyncServiceScope preparoScope = api.Services.CreateAsyncScope())
         {
-            SelecaoDbContext db = preparoScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+            UniPlusDbContext db = preparoScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             atoAberturaId = await db.VersoesConfiguracao.AsNoTracking()
                 .Where(v => v.ProcessoSeletivoId == processoId)
                 .Select(v => v.AtoCriadorId)
@@ -175,7 +176,7 @@ public sealed class RetificacaoConcorrenciaTests
         }
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext readDb = readScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext readDb = readScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         List<VersaoConfiguracao> versoes = await readDb.VersoesConfiguracao.AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processoId)
             .OrderBy(v => v.NumeroVersao)
@@ -200,13 +201,13 @@ public sealed class RetificacaoConcorrenciaTests
     private static async Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoPublicavelAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope seedScope = api.Services.CreateAsyncScope();
-        SelecaoDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder
             .SemearAsync(seedDb, $"Concorrência {Guid.CreateVersion7()}");
         return (processo.Id, documento.Id);
     }
 
-    private static async Task<Guid> SemearDocumentoConfirmadoAsync(SelecaoDbContext db, Guid processoId)
+    private static async Task<Guid> SemearDocumentoConfirmadoAsync(UniPlusDbContext db, Guid processoId)
     {
         string hashFixo = string.Concat(Enumerable.Repeat("ef67012345", 7))[..64];
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ModelosFormulario;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
@@ -39,7 +39,7 @@ public sealed class ModeloFormularioCommandHandlerTests
     private readonly IFatoCandidatoRepository _fatos = Substitute.For<IFatoCandidatoRepository>();
     private readonly ITermoConsentimentoReader _termos = Substitute.For<ITermoConsentimentoReader>();
     private readonly ITipoProcessoReader _tipos = Substitute.For<ITipoProcessoReader>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private readonly FatoCandidato _certificado = Declarado("CERTIFICADO");
     private readonly FatoCandidato _dataNascimento = Declarado("DATA_NASCIMENTO", DominioFato.Data);

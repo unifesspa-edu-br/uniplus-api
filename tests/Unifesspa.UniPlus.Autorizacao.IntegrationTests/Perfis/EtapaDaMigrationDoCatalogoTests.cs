@@ -12,6 +12,8 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// A conferência do catálogo roda no mesmo lugar das migrations: no Job <c>ApplyAndExit</c> e na subida padrão, inclusive
@@ -109,15 +111,15 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
     {
         IServiceScope escopo = Fixture.Factory.Services.CreateScope();
         _escopos.Add(escopo);
-        DbContextOptions<AutorizacaoDbContext> opcoes = escopo.ServiceProvider.GetRequiredService<DbContextOptions<AutorizacaoDbContext>>();
+        DbContextOptions<MonolitoDbContext> opcoes = escopo.ServiceProvider.GetRequiredService<DbContextOptions<MonolitoDbContext>>();
 
         return new HostBuilder()
             .ConfigureServices(services =>
             {
                 services.AddLogging();
                 services.AddSingleton(opcoes);
-                services.AddScoped<AutorizacaoDbContext>();
-                services.AddDbContextMigrationsOnStartup<AutorizacaoDbContext>(etapa);
+                services.AddScoped<MonolitoDbContext>();
+                services.AddDbContextMigrationsOnStartup<MonolitoDbContext>(etapa);
             })
             .Build();
     }
@@ -126,14 +128,14 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().ImplantacoesDasPermissoes.LongCountAsync();
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ImplantacoesDasPermissoes.LongCountAsync();
     }
 
     private async Task<string> ImpressaoAtualAsync()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return (await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().ImplantacoesDasPermissoes
+        return (await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ImplantacoesDasPermissoes
             .OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync()).Trim();
     }
 }

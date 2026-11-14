@@ -10,17 +10,15 @@ using Unifesspa.UniPlus.Configuracao.Application;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Application.Permissoes;
 using Unifesspa.UniPlus.Configuracao.Infrastructure;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Hateoas;
-using Unifesspa.UniPlus.Infrastructure.Core.Routing;
 
 /// <summary>
 /// Registro self-describing do módulo Configuracao para o composition root do
 /// monólito modular. Reúne tudo que é específico do módulo — OpenAPI
-/// doc, registro de erros de domínio, builders HATEOAS, idempotência sobre o
-/// DbContext do módulo, Application + Infrastructure e migrations on startup.
+/// doc, registro de erros de domínio, builders HATEOAS, permissões, Application
+/// e Infrastructure.
 ///
 /// O que é compartilhado entre módulos (Serilog, auth, CORS, cache, storage,
 /// observabilidade, middleware, AddControllers, AddDomainErrorMapper, health
@@ -72,19 +70,12 @@ public static class ConfiguracaoModuleRegistration
         services.AddSingleton<IResourceLinksBuilder<TermoConsentimentoResumoDto>, TermoConsentimentoResumoLinksBuilder>();
         services.AddSingleton<IResourceLinksBuilder<BaseLegalBonusRegionalDto>, BaseLegalBonusRegionalLinksBuilder>();
 
-        // Idempotency-Key (ADR-0027) sobre o DbContext do módulo.
-        services.AddIdempotency<ConfiguracaoDbContext, ConfiguracaoApiAssemblyMarker>(configuration);
-
         // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
         // conferido na subida.
         services.AddCatalogoDePermissoes<PermissaoConfiguracao>();
 
         services.AddConfiguracaoApplication();
         services.AddConfiguracaoInfrastructure();
-
-        // Migrations EF Core aplicadas no host StartAsync via IHostedService, ANTES
-        // do runtime Wolverine (invariante #419 — MigrationBeforeWolverineRuntimeOrder).
-        services.AddDbContextMigrationsOnStartup<ConfiguracaoDbContext>();
 
         return services;
     }

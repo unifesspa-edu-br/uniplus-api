@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -18,9 +19,9 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
     Justification = "Instanciada via DI em OrganizacaoInstitucionalInfrastructureRegistration.")]
 public sealed class UnidadeRepository : IUnidadeRepository
 {
-    private readonly OrganizacaoInstitucionalDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public UnidadeRepository(OrganizacaoInstitucionalDbContext dbContext)
+    public UnidadeRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;
@@ -71,11 +72,11 @@ public sealed class UnidadeRepository : IUnidadeRepository
             string pattern = "%" + termo + "%";
             const string escape = @"\";
             query = query.Where(u =>
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Nome), pattern, escape) ||
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Sigla), pattern, escape) ||
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Codigo), pattern, escape) ||
-                EF.Functions.ILike(PgFunctions.ImmutableUnaccent(EF.Property<string>(u, "Slug")), pattern, escape) ||
-                (u.Alias != null && EF.Functions.ILike(PgFunctions.ImmutableUnaccent(u.Alias), pattern, escape)));
+                EF.Functions.ILike(FuncoesDeTextoDaOrganizacao.ImmutableUnaccent(u.Nome), pattern, escape) ||
+                EF.Functions.ILike(FuncoesDeTextoDaOrganizacao.ImmutableUnaccent(u.Sigla), pattern, escape) ||
+                EF.Functions.ILike(FuncoesDeTextoDaOrganizacao.ImmutableUnaccent(u.Codigo), pattern, escape) ||
+                EF.Functions.ILike(FuncoesDeTextoDaOrganizacao.ImmutableUnaccent(EF.Property<string>(u, "Slug")), pattern, escape) ||
+                (u.Alias != null && EF.Functions.ILike(FuncoesDeTextoDaOrganizacao.ImmutableUnaccent(u.Alias), pattern, escape)));
         }
 
         if (filtro.TemTipos)

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O leitor cross-módulo de categoria de documento (ADR-0056), contra Postgres real.
@@ -39,13 +40,13 @@ public sealed class CategoriaDocumentoReaderTests
         string codigo = CodigoUnico();
         CategoriaDocumento categoria = CategoriaDocumento.Criar(codigo, "Comprovação de renda", "Bloco de renda", 30).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CategoriasDocumento.Add(categoria);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new CategoriaDocumentoReader(readCtx);
 
         CategoriaDocumentoView? view = await reader.ObterPorIdAsync(categoria.Id);
@@ -62,7 +63,7 @@ public sealed class CategoriaDocumentoReaderTests
     {
         CategoriaDocumento categoria = CategoriaDocumento.Criar(CodigoUnico(), "Identificação", null, 0).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.CategoriasDocumento.Add(categoria);
             await ctx.SaveChangesAsync();
@@ -71,7 +72,7 @@ public sealed class CategoriaDocumentoReaderTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new CategoriaDocumentoReader(readCtx);
 
         CategoriaDocumentoView? view = await reader.ObterPorIdAsync(categoria.Id);
@@ -89,7 +90,7 @@ public sealed class CategoriaDocumentoReaderTests
 
         CategoriaDocumento removida = CategoriaDocumento.Criar(codigoRemovido, "Removida", null, 0).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             // Inseridas fora de ordem alfabética, e com Ordem que contraria o alfabeto: o
             // leitor precisa ordenar pelo código, não pela ordem de inserção nem pela
@@ -103,7 +104,7 @@ public sealed class CategoriaDocumentoReaderTests
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         var reader = new CategoriaDocumentoReader(readCtx);
 
         IReadOnlyList<CategoriaDocumentoView> todas = await reader.ListarVivosAsync();

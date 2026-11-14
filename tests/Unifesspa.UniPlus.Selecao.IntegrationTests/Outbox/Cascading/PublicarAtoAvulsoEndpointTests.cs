@@ -14,6 +14,7 @@ using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -242,7 +243,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>(), $"Sem página {Guid.CreateVersion7()}");
+                escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), $"Sem página {Guid.CreateVersion7()}");
             processoId = processo.Id;
         }
 
@@ -271,7 +272,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
             (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-                escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}", produtosDaFase: produtosDaFase, fimDasInscricoes: fimDasInscricoes);
+                escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>(), $"Atos avulsos {Guid.CreateVersion7()}", produtosDaFase: produtosDaFase, fimDasInscricoes: fimDasInscricoes);
             processoId = processo.Id;
             documentoEdital = documento.Id;
         }
@@ -297,7 +298,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         Guid editalAtoId;
         await using (AsyncServiceScope escopo = api.Services.CreateAsyncScope())
         {
-            editalAtoId = await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().VersoesConfiguracao.AsNoTracking()
+            editalAtoId = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().VersoesConfiguracao.AsNoTracking()
                 .Where(v => v.ProcessoSeletivoId == processoId)
                 .Select(v => v.AtoCriadorId)
                 .SingleAsync();
@@ -418,7 +419,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         while (true)
         {
             await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-            if (await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().CertamesDivulgados.AsNoTracking()
+            if (await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().CertamesDivulgados.AsNoTracking()
                 .AnyAsync(c => c.Id == processoId))
             {
                 return;
@@ -432,7 +433,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
     private static async Task<int> ContarAtosAsync(CascadingApiFactory api, Guid processoId, string tipo)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().AtosDoProcesso.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().AtosDoProcesso.AsNoTracking()
             .CountAsync(a => a.ProcessoSeletivoId == processoId && a.TipoCodigo == tipo);
     }
 
@@ -442,7 +443,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         while (true)
         {
             await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-            AtoDoProcesso ato = await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().AtosDoProcesso.AsNoTracking()
+            AtoDoProcesso ato = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().AtosDoProcesso.AsNoTracking()
                 .SingleAsync(a => a.Id == atoId);
             if (ato.Situacao == esperada || DateTimeOffset.UtcNow >= limite)
             {
@@ -457,7 +458,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
     internal static async Task<Guid> SemearDocumentoAsync(CascadingApiFactory api, Guid processoId, string tipoDeMidia, string nome)
     {
         await using AsyncServiceScope escopo = api.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
             processoId, FinalidadeDoDocumento.DocumentoDeAto, nome, tipoDeMidia, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, new string('d', 64), TimeProvider.System).IsSuccess.Should().BeTrue();

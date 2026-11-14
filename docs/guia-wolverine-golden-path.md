@@ -113,9 +113,10 @@ Regra prática ao escrever infraestrutura consumida por handlers:
   A lambda é opaca ao codegen.
 - **Quando o forwarding/opacidade é obrigatório, declare opt-in explícito.** Dois casos
   legítimos no projeto:
-  - **Unit of Work** — `AddScoped<IXUnitOfWork>(sp => sp.GetRequiredService<XDbContext>())`
-    encaminha para a MESMA instância de DbContext (atomicidade write+evento, ADR-0004).
-    `AddScoped<IXUnitOfWork, XDbContext>()` criaria uma 2ª instância → proibido.
+  - **Unit of Work** — `AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<MonolitoDbContext>())`
+    encaminha para a MESMA instância do contexto único (atomicidade write+evento, ADR-0004).
+    `AddScoped<IUnitOfWork, MonolitoDbContext>()` criaria uma 2ª instância → proibido. O `IUnitOfWork`
+    é único para os módulos internos (ADR-0170) e tem uma só opção de codegen.
   - **`Lazy<T>`** (ex.: `Lazy<ICacheService>` do `CepResolver`, que difere o connect do
     Redis) — não há forma `AddScoped<Lazy<T>, TImpl>()`.
 
@@ -123,19 +124,19 @@ Regra prática ao escrever infraestrutura consumida por handlers:
   composição pode referenciar `Wolverine.*`), e o composition root o compõe:
 
   ```csharp
-  // src/selecao/Unifesspa.UniPlus.Selecao.API/SelecaoCodegenRegistration.cs
+  // src/host/Unifesspa.UniPlus.Monolito.Persistencia/MonolitoCodegenRegistration.cs
   public static void ConfigurarCodegenWolverine(WolverineOptions opts)
   {
       ArgumentNullException.ThrowIfNull(opts);
-      opts.CodeGeneration.AlwaysUseServiceLocationFor<ISelecaoUnitOfWork>();
+      opts.CodeGeneration.AlwaysUseServiceLocationFor<IUnitOfWork>();
   }
   ```
 
   ```csharp
   // host: dentro do configureRouting de UseWolverineOutboxCascading
+  MonolitoCodegenRegistration.ConfigurarCodegenWolverine(opts);
   SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
   ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
-  OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
   ```
 
   O helper compartilhado `WolverineOutboxConfiguration` permanece **agnóstico** dos tipos
@@ -229,7 +230,7 @@ public static class PublicarProcessoSeletivoCommandHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         IDocumentoAPublicarRepository documentoAPublicarRepository,
         ISnapshotPublicacaoCanonicalizer canonicalizer,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)

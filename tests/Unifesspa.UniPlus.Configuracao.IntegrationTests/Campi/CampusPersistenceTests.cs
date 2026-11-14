@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -46,13 +47,13 @@ public sealed class CampusPersistenceTests
     {
         Campus campus = NovoCampus("CAMar", "Campus Marabá", "1504208", "Marabá", "PA");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Campus persistido = await readCtx.Campi.SingleAsync(c => c.Id == campus.Id);
 
         persistido.Sigla.Should().Be("CAMAR");
@@ -69,14 +70,14 @@ public sealed class CampusPersistenceTests
     public async Task UniquePartial_Sigla_RejeitaDuplicataAtiva()
     {
         Campus primeiro = NovoCampus("DUPSIG", "Campus Um", "1504208", "Marabá", "PA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(primeiro);
             await ctx.SaveChangesAsync();
         }
 
         Campus segundo = NovoCampus("DUPSIG", "Campus Dois", "1501402", "Belém", "PA");
-        await using ConfiguracaoDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Campi.Add(segundo);
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -89,20 +90,20 @@ public sealed class CampusPersistenceTests
     public async Task SoftDelete_LibertaUniquePartialSigla()
     {
         Campus campus = NovoCampus("RECSIG", "Campus Reciclado", "1504208", "Marabá", "PA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             Campus tracked = await ctx.Campi.SingleAsync(c => c.Id == campus.Id);
             ctx.Campi.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             Campus excluido = await ctx.Campi.IgnoreQueryFilters().SingleAsync(c => c.Id == campus.Id);
             excluido.IsDeleted.Should().BeTrue();
@@ -110,7 +111,7 @@ public sealed class CampusPersistenceTests
         }
 
         Campus novo = NovoCampus("RECSIG", "Campus Novo", "1501402", "Belém", "PA");
-        await using ConfiguracaoDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.Campi.Add(novo);
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -122,7 +123,7 @@ public sealed class CampusPersistenceTests
     public async Task RemoverCampus_ComLocalOfertaVivo_Bloqueia()
     {
         Campus campus = NovoCampus("BLKCAM", "Campus Bloqueado", "1504208", "Marabá", "PA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
@@ -131,13 +132,13 @@ public sealed class CampusPersistenceTests
         LocalOferta local = LocalOferta.Criar(
             TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext handlerCtx = _fixture.CreateDbContext(AdminB);
+        await using UniPlusDbContext handlerCtx = _fixture.CreateDbContext(AdminB);
         var campusRepo = new CampusRepository(handlerCtx);
         var localRepo = new LocalOfertaRepository(handlerCtx);
 
@@ -152,7 +153,7 @@ public sealed class CampusPersistenceTests
     public async Task FkRestrict_BloqueiaDeleteFisicoDoCampus()
     {
         Campus campus = NovoCampus("FKCAM", "Campus FK", "1504208", "Marabá", "PA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
@@ -161,13 +162,13 @@ public sealed class CampusPersistenceTests
         LocalOferta local = LocalOferta.Criar(
             TipoLocalOferta.CursoForaDeSede, campus.Id, "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () =>
             await rawCtx.Database.ExecuteSqlAsync($"DELETE FROM configuracao.campus WHERE id = {campus.Id}");
 
@@ -180,13 +181,13 @@ public sealed class CampusPersistenceTests
     {
         Campus campus = NovoCampus("ENDCAM", "Campus Endereço", "1504208", "Marabá", "PA", EnderecoCoerente());
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Campus persistido = await readCtx.Campi.SingleAsync(c => c.Id == campus.Id);
 
         persistido.Endereco.Should().NotBeNull();
@@ -202,13 +203,13 @@ public sealed class CampusPersistenceTests
     {
         Campus campus = NovoCampus("NOENDR", "Campus Sem Endereço", "1504208", "Marabá", "PA");
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Campus persistido = await readCtx.Campi.SingleAsync(c => c.Id == campus.Id);
 
         persistido.Endereco.Should().BeNull("todas as colunas endereco_* nulas ⇒ owned type ausente");
@@ -218,14 +219,14 @@ public sealed class CampusPersistenceTests
     public async Task CheckCoerencia_RejeitaUpdateCruIncoerente()
     {
         Campus campus = NovoCampus("CKCOER", "Campus Coerência", "1504208", "Marabá", "PA", EnderecoCoerente());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
         }
 
         // Diverge o snapshot de cidade do endereço (Belém) da cidade do campus (Marabá).
-        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE configuracao.campus SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {campus.Id}");
 
@@ -237,7 +238,7 @@ public sealed class CampusPersistenceTests
     public async Task CheckCoerencia_RejeitaUfNulaComCodigoBatendo()
     {
         Campus campus = NovoCampus("CKUFNL", "Campus UF Nula", "1504208", "Marabá", "PA", EnderecoCoerente());
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
@@ -245,7 +246,7 @@ public sealed class CampusPersistenceTests
 
         // Código IBGE do endereço ainda bate, mas a UF vira nula — sem o ramo
         // IS NOT NULL no CHECK, a comparação viraria UNKNOWN e passaria.
-        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE configuracao.campus SET endereco_cidade_uf = NULL WHERE id = {campus.Id}");
 
@@ -257,7 +258,7 @@ public sealed class CampusPersistenceTests
     public async Task CheckCompletude_RejeitaCepSemRestante()
     {
         Campus campus = NovoCampus("CKCOMP", "Campus Completude", "1504208", "Marabá", "PA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
@@ -266,7 +267,7 @@ public sealed class CampusPersistenceTests
         // Define só o CEP — sem cidade/nível/origem do owned type. O sentinela de
         // presença (endereco_cep) ficaria não-nulo e o EF materializaria um endereço
         // parcial. O CHECK de completude (all-or-nothing) rejeita.
-        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE configuracao.campus SET endereco_cep = '68507590' WHERE id = {campus.Id}");
 
@@ -278,7 +279,7 @@ public sealed class CampusPersistenceTests
     public async Task CheckCompletude_RejeitaOpcionalSemObrigatorios()
     {
         Campus campus = NovoCampus("CKOPC", "Campus Opcional", "1504208", "Marabá", "PA");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
@@ -287,7 +288,7 @@ public sealed class CampusPersistenceTests
         // Preenche só um campo opcional (logradouro), sem CEP nem os obrigatórios —
         // fragmento que ficaria oculto (endereco_cep nulo ⇒ owned ausente). O CHECK
         // all-or-nothing (que inclui as colunas opcionais no ramo "ausente") rejeita.
-        await using ConfiguracaoDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE configuracao.campus SET endereco_logradouro = 'Rua Fantasma' WHERE id = {campus.Id}");
 

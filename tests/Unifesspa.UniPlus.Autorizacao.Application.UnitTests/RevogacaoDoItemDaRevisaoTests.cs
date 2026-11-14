@@ -4,8 +4,8 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -35,7 +35,7 @@ public sealed class RevogacaoDoItemDaRevisaoTests
     private readonly IRevisaoDeAcessosRepository _revisoes = Substitute.For<IRevisaoDeAcessosRepository>();
     private readonly IConcessaoRepository _concessoes = Substitute.For<IConcessaoRepository>();
     private readonly IPapelDoRepresentante _papel = Substitute.For<IPapelDoRepresentante>();
-    private readonly IAutorizacaoUnitOfWork _unidade = Substitute.For<IAutorizacaoUnitOfWork>();
+    private readonly IUnitOfWork _unidade = Substitute.For<IUnitOfWork>();
     private readonly Concessao _designacao = DesignacaoDoRepresentante.De(Isabella, null, Agora);
     private readonly RevisaoDeAcessos _revisao;
 

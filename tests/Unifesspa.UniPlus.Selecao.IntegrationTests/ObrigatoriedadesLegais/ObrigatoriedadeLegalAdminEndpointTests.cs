@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -71,7 +72,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        await using SelecaoDbContext db = ResolveDbContext(scope);
+        await using UniPlusDbContext db = ResolveDbContext(scope);
 
         await db.Database.ExecuteSqlAsync(
             $"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE regra_codigo LIKE 'TEST\\_%' ESCAPE '\\'");
@@ -103,7 +104,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.Created,
             $"esperava Created mas veio {response.StatusCode}. Body: {body}");
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
-        await using (SelecaoDbContext db = ResolveDbContext(scope))
+        await using (UniPlusDbContext db = ResolveDbContext(scope))
         {
             ObrigatoriedadeLegal? regra = await db.ObrigatoriedadesLegais
                 .FirstOrDefaultAsync(o => o.RegraCodigo == regraCodigo);
@@ -272,7 +273,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         put.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        await using SelecaoDbContext db = ResolveDbContext(scope);
+        await using UniPlusDbContext db = ResolveDbContext(scope);
         ObrigatoriedadeLegal regra = await db.ObrigatoriedadesLegais.SingleAsync(o => o.Id == id);
         regra.BaseLegal.Should().Be("Lei 14.723/2023 art.2º — nova");
 
@@ -331,7 +332,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
 
         // Histórico forensic mantém a regra com snapshot pós-soft-delete.
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        await using SelecaoDbContext db = ResolveDbContext(scope);
+        await using UniPlusDbContext db = ResolveDbContext(scope);
         int historico = await db.ObrigatoriedadeLegalHistorico
             .Where(h => h.RegraId == id)
             .CountAsync();
@@ -502,8 +503,8 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         return await client.SendAsync(request);
     }
 
-    private static SelecaoDbContext ResolveDbContext(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+    private static UniPlusDbContext ResolveDbContext(AsyncServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
     private static async Task<Guid> SeedRegraAsync(
         HttpClient client,

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
@@ -16,14 +17,14 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidadeRepository
 {
     private const string TravaCompartilhada =
-        $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.termos_de_responsabilidade WHERE id = {{0}} FOR SHARE";
+        $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.termos_de_responsabilidade WHERE id = {{0}} FOR SHARE";
 
     private const string TravaExclusiva =
-        $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.termos_de_responsabilidade WHERE id = {{0}} FOR UPDATE";
+        $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.termos_de_responsabilidade WHERE id = {{0}} FOR UPDATE";
 
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public TermoDeResponsabilidadeRepository(AutorizacaoDbContext context)
+    public TermoDeResponsabilidadeRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -53,7 +54,7 @@ public sealed class TermoDeResponsabilidadeRepository : ITermoDeResponsabilidade
     public async Task<VersaoDoTermo?> ObterVigenteAsync(CancellationToken cancellationToken = default) =>
         await _context.VersoesDoTermo
             .AsNoTracking()
-            .Where(v => _context.TermosDeResponsabilidade.Any(t => t.Id == TermoDeResponsabilidade.RegistroUnicoId && t.VersaoVigenteId == v.Id))
+            .Where(v => _context.Set<TermoDeResponsabilidade>().Any(t => t.Id == TermoDeResponsabilidade.RegistroUnicoId && t.VersaoVigenteId == v.Id))
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 

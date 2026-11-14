@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,7 +11,6 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using Minio;
@@ -20,19 +18,17 @@ using Minio;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
-using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 using Unifesspa.UniPlus.Verificador.Antivirus;
 using Unifesspa.UniPlus.Verificador.Armazenamento;
 using Unifesspa.UniPlus.Verificador.Configuracao;
 using Unifesspa.UniPlus.Verificador.Contratos;
-using Unifesspa.UniPlus.Verificador.Observabilidade;
 using Unifesspa.UniPlus.Verificador.Verificacao;
 
 using Wolverine;
@@ -82,7 +78,7 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
         (Guid id, string codigo) = await InstalarAsync();
 
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        Instalacao gravada = await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Instalacoes.AsNoTracking().SingleAsync(i => i.Id == id);
+        Instalacao gravada = await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Instalacoes.AsNoTracking().SingleAsync(i => i.Id == id);
         gravada.DocumentoSha256.Should().Be(new string('a', 64));
         gravada.CodigoResumo.Should().BeNull("o código vale uma vez");
         LerLog().Should().NotMatchRegex($"(?<!\\d){codigo}(?!\\d)");
@@ -189,7 +185,7 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
     private async Task<Concessao> ConcessaoDeGestorAsync(Persona gestor)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
             .AsNoTracking().SingleAsync(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioSub == gestor.Sub.ToString());
     }
 }

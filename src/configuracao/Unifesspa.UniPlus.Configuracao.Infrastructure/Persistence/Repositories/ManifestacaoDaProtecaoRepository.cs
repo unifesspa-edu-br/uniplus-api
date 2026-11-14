@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Registro só acrescentado das manifestações técnicas na proteção do catálogo de tipos de documento e de fatos do
@@ -14,9 +15,9 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configurations;
 /// </summary>
 public sealed class ManifestacaoDaProtecaoRepository : IManifestacaoDaProtecaoRepository
 {
-    private readonly ConfiguracaoDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public ManifestacaoDaProtecaoRepository(ConfiguracaoDbContext dbContext)
+    public ManifestacaoDaProtecaoRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

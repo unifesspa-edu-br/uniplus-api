@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using Unifesspa.UniPlus.Host;
-
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -107,7 +107,7 @@ public sealed class LimiarDePendenciaDosAtosComResiduoEndpointTests : IDisposabl
         await TiposDeAtoSeeder.SemearAsync(host.Services);
         Fabrica.Relogio.ParaNo(fonteEm);
         await using AsyncServiceScope escopo = host.Services.CreateAsyncScope();
-        SelecaoDbContext db = escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db, $"Limiar de pendência {Guid.CreateVersion7()}");
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
@@ -120,7 +120,7 @@ public sealed class LimiarDePendenciaDosAtosComResiduoEndpointTests : IDisposabl
     private async Task<DateTimeOffset> RelerAsync(Guid processoId)
     {
         await using AsyncServiceScope escopo = Fabrica.Services.CreateAsyncScope();
-        return await escopo.ServiceProvider.GetRequiredService<SelecaoDbContext>().AtosDoProcesso.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().AtosDoProcesso.AsNoTracking()
             .Where(a => a.ProcessoSeletivoId == processoId).Select(a => a.CreatedAt).SingleAsync();
     }
 

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Grava na base o estado anterior à regra que tirou o prazo da designação de Representante do controlador
@@ -50,7 +50,7 @@ public static class EstadoAnteriorAoRepresentanteSemPrazo
         ArgumentNullException.ThrowIfNull(services);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
-        int linhas = await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
+        int linhas = await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(sql, parametros);
         if (linhas != 1)
         {
             throw new InvalidOperationException($"O estado anterior à regra não foi gravado: {linhas} linhas alteradas.");

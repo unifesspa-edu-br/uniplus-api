@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// A trava por pessoa como trava consultiva da transação, uma por par emissor e <c>sub</c>, e a conferência dos papéis
@@ -16,9 +17,9 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// </remarks>
 public sealed class IncompatibilidadeDosPapeisNoBanco : IIncompatibilidadeDosPapeis
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public IncompatibilidadeDosPapeisNoBanco(AutorizacaoDbContext context)
+    public IncompatibilidadeDosPapeisNoBanco(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

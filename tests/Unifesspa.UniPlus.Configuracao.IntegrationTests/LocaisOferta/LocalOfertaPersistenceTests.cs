@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -43,7 +44,7 @@ public sealed class LocalOfertaPersistenceTests
         Campus campus = Campus.Criar(
             "LOFCAM", "Campus Local", "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Campi.Add(campus);
             await ctx.SaveChangesAsync();
@@ -53,13 +54,13 @@ public sealed class LocalOfertaPersistenceTests
             TipoLocalOferta.PoloEad, campus.Id, "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, "55555").Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         LocalOferta persistido = await readCtx.LocaisOferta.SingleAsync(l => l.Id == local.Id);
 
         persistido.Tipo.Should().Be(TipoLocalOferta.PoloEad);
@@ -77,13 +78,13 @@ public sealed class LocalOfertaPersistenceTests
             TipoLocalOferta.ConvenioInteriorizacao, null, "1501402", "Belém", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         LocalOferta persistido = await readCtx.LocaisOferta.SingleAsync(l => l.Id == local.Id);
 
         persistido.CampusResponsavelId.Should().BeNull();
@@ -101,13 +102,13 @@ public sealed class LocalOfertaPersistenceTests
             TipoLocalOferta.PoloEad, null, "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, endereco, null).Value!;
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.LocaisOferta.Add(local);
             await ctx.SaveChangesAsync();
         }
 
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         LocalOferta persistido = await readCtx.LocaisOferta.SingleAsync(l => l.Id == local.Id);
 
         persistido.Endereco.Should().NotBeNull();
@@ -122,7 +123,7 @@ public sealed class LocalOfertaPersistenceTests
             TipoLocalOferta.CursoForaDeSede, Guid.CreateVersion7(), "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.LocaisOferta.Add(local);
 
         Func<Task> act = async () => await ctx.SaveChangesAsync();
@@ -139,7 +140,7 @@ public sealed class LocalOfertaPersistenceTests
         LocalOferta local = LocalOferta.Criar(
             TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Cursos.Add(curso);
             ctx.LocaisOferta.Add(local);
@@ -151,14 +152,14 @@ public sealed class LocalOfertaPersistenceTests
         OfertaCurso oferta = OfertaCurso.Criar(
             curso.Id, local.Id, unidade, "REGULAR", "PRESENCIAL",
             "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.OfertasCurso.Add(oferta);
             await ctx.SaveChangesAsync();
         }
 
         // Oferta viva referenciando o local → RemoverLocalOfertaCommandHandler bloqueia.
-        await using (ConfiguracaoDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
         {
             var repository = new LocalOfertaRepository(handlerCtx);
 
@@ -169,21 +170,21 @@ public sealed class LocalOfertaPersistenceTests
             resultado.Error!.Code.Should().Be(LocalOfertaErrorCodes.RemocaoBloqueadaPorOfertaCurso);
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             (await ctx.LocaisOferta.AnyAsync(l => l.Id == local.Id)).Should().BeTrue(
                 "o local permanece vivo — a remoção foi bloqueada, não executada");
         }
 
         // Soft-delete da oferta: o local deixa de estar referenciado por oferta viva.
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             OfertaCurso ofertaTracked = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
             ctx.OfertasCurso.Remove(ofertaTracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext handlerCtx = _fixture.CreateDbContext(AdminB))
         {
             var repository = new LocalOfertaRepository(handlerCtx);
 

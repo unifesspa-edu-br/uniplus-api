@@ -10,9 +10,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
@@ -129,7 +129,7 @@ public sealed class ConcorrenciaDoTermoNoHostTests : TermoNoHostTestBase
         PedidoDeConcessao pedido = ParaSiMesmo(servicos, perfil, escopo);
         pedido.FixarTermo(new TermoNaCriacao(vigente, vigente!.Id, true), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         await servicos.GetRequiredService<IPedidoDeConcessaoRepository>().AdicionarAsync(pedido);
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
 
         return pedido;
     }
@@ -153,7 +153,7 @@ public sealed class ConcorrenciaDoTermoNoHostTests : TermoNoHostTestBase
             ConteudoDoTermo.Criar(TermoNoHostDeTeste.Texto("publicada na transação retida"), TermoNoHostDeTeste.Ato).Value!,
             new Identidade(TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString()), vigente, vigente?.Id, DateTimeOffset.UtcNow).Value!;
         await termos.AdicionarVersaoAsync(nova);
-        await servicos.GetRequiredService<AutorizacaoDbContext>().SaveChangesAsync();
+        await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     private static PessoaNoToken PessoaDe(Persona persona) =>

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Performance",
@@ -11,9 +12,9 @@ using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
     Justification = "Instanciada via DI em DiscentesInfrastructureRegistration.")]
 public sealed class SyncRunRepository : ISyncRunRepository
 {
-    private readonly DiscentesDbContext _dbContext;
+    private readonly UniPlusDbContext _dbContext;
 
-    public SyncRunRepository(DiscentesDbContext dbContext)
+    public SyncRunRepository(UniPlusDbContext dbContext)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         _dbContext = dbContext;

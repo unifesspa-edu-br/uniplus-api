@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class EditarRascunhoTermoConsentimentoCommandHandlerTests
 {
     private readonly ITermoConsentimentoRepository _repository = Substitute.For<ITermoConsentimentoRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TermoConsentimento TermoExistente() =>
         TermoConsentimento.Criar("Termo LGPD", "Texto", "Lei 13.709/2018", null).Value!;

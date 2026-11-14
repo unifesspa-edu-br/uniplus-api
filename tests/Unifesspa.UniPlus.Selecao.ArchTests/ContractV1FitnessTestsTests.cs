@@ -1,13 +1,9 @@
 namespace Unifesspa.UniPlus.Selecao.ArchTests;
 
-using System.Reflection;
-
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
-
-using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -90,7 +86,7 @@ public sealed class ContractV1FitnessTestsTests
             typeof(DomainError).Assembly,
             typeof(Domain.Entities.ProcessoSeletivo).Assembly,
             typeof(Application.Commands.ProcessosSeletivos.CriarProcessoSeletivoCommand).Assembly,
-            typeof(Infrastructure.Persistence.SelecaoDbContext).Assembly,
+            typeof(Infrastructure.Persistence.SelecaoContribuicao).Assembly,
             typeof(API.Controllers.ProcessoSeletivoController).Assembly,
         ];
 

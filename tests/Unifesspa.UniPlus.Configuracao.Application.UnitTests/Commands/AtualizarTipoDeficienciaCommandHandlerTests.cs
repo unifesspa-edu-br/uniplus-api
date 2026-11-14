@@ -4,7 +4,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Configuracao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposDeficiencia;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -17,7 +17,7 @@ public sealed class AtualizarTipoDeficienciaCommandHandlerTests
     private const string Descricao = "Deficiência relacionada à visão";
 
     private readonly ITipoDeficienciaRepository _repository = Substitute.For<ITipoDeficienciaRepository>();
-    private readonly IConfiguracaoUnitOfWork _unitOfWork = Substitute.For<IConfiguracaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static TipoDeficiencia TipoExistente(string codigo = Codigo, string nome = "Visual") =>
         TipoDeficiencia.Criar(codigo, nome, Descricao).Value!;

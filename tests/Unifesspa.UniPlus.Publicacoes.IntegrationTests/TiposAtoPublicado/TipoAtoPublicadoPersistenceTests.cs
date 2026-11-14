@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
@@ -51,7 +52,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
 
         await Gravar(tipo);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         TipoAtoPublicado persistido = await ctx.TiposAtoPublicado.SingleAsync(t => t.Id == tipo.Id);
 
         persistido.Codigo.Should().Be(codigo);
@@ -69,7 +70,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         // A constraint vive em SQL cru, fora do ModelSnapshot: um squash de migrations
         // a descartaria em silêncio, e todos os testes de sobreposição continuariam
         // passando pelo guard de aplicação. Esta asserção olha o catálogo do Postgres.
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
         await using var command = new NpgsqlCommand(
@@ -132,7 +133,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(antiga);
         await Gravar(nova);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         // Véspera: a antiga. Dia da fronteira: já a nova — o fim é exclusivo.
@@ -149,7 +150,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(antiga);
         await Gravar(Novo(codigo, Meio, vigenciaFim: null, congela: true));
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         TipoAtoPublicado? vigenteEmMarco = await repo.ObterVigenteAsync(codigo, new DateOnly(2026, 3, 15), default);
@@ -165,7 +166,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         string codigo = CodigoUnico();
         await Gravar(Novo(codigo, Inicio, vigenciaFim: null));
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         (await repo.ObterVigenteAsync(codigo, Inicio.AddDays(-1), default)).Should().BeNull();
@@ -179,7 +180,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await Gravar(original);
         await Excluir(original.Id);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         // Sem IgnoreQueryFilters a linha some — e sumir é indistinguível de ter sido
         // apagada. A afirmação de que o delete é lógico só se sustenta olhando a
@@ -207,7 +208,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         TipoAtoPublicado recriado = Novo(codigo, Inicio, vigenciaFim: null);
         await Gravar(recriado);
 
-        await using PublicacoesDbContext leitura = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
         var repo = new TipoAtoPublicadoRepository(leitura, TimeProvider.System);
 
         (await repo.ObterVigenteAsync(codigo, Inicio, default))!.Id.Should().Be(recriado.Id);
@@ -243,7 +244,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
         TipoAtoPublicado existente = Novo(codigo, Inicio, Fim);
         await Gravar(existente);
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repo = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         // Cruza.
@@ -269,14 +270,14 @@ public sealed class TipoAtoPublicadoPersistenceTests
 
     private async Task Gravar(TipoAtoPublicado tipo)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         ctx.TiposAtoPublicado.Add(tipo);
         await ctx.SaveChangesAsync();
     }
 
     private async Task Excluir(Guid id)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(Admin);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(Admin);
         TipoAtoPublicado alvo = await ctx.TiposAtoPublicado.SingleAsync(t => t.Id == id);
         ctx.TiposAtoPublicado.Remove(alvo);
         await ctx.SaveChangesAsync();
@@ -284,16 +285,18 @@ public sealed class TipoAtoPublicadoPersistenceTests
 
     private async Task InserirCru(string codigo, DateOnly inicio, DateOnly? fim)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.OpenConnectionAsync();
 
         await using var command = new NpgsqlCommand(
             """
             INSERT INTO publicacoes.tipo_ato_publicado
                 (id, codigo, nome, congela_configuracao, unico_por_objeto, efeito_irreversivel,
+                 eh_resultado, exige_ato_corrigido, publicavel_como_avulso,
                  vigencia_inicio, vigencia_fim, created_at, is_deleted)
             VALUES
                 (gen_random_uuid(), @codigo, 'Insert cru', false, false, false,
+                 false, false, false,
                  @inicio, @fim, now(), false)
             """,
             (NpgsqlConnection)ctx.Database.GetDbConnection());

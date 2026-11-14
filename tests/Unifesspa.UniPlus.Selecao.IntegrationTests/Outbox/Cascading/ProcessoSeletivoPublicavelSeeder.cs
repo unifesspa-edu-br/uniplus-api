@@ -8,10 +8,9 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -40,7 +39,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
     /// <param name="unidadeResponsavel">A unidade que responde pela fase única; sem ela, o CEPS de teste.</param>
     /// <param name="fimDasInscricoes">O fim do período de inscrição da fase única; sem ele, 31/01/2026.</param>
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(
-        SelecaoDbContext db,
+        UniPlusDbContext db,
         string nome,
         bool coletaSolicitacaoIsencao = false,
         Action<ProcessoSeletivo>? complementar = null,
@@ -53,7 +52,6 @@ internal static class ProcessoSeletivoPublicavelSeeder
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, tipo ?? TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
 
         Result ofertaResult = processo.DefinirOfertaAtendimento(
             OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);

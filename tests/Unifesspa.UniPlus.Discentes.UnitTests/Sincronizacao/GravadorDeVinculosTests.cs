@@ -9,7 +9,7 @@ using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Discentes.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.Interfaces;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao;
@@ -52,7 +52,7 @@ public sealed class GravadorDeVinculosTests
     {
         ServiceCollection servicos = new();
         servicos.AddScoped(_ => repositorio);
-        servicos.AddScoped<IDiscentesUnitOfWork>(_ => new UnidadeDeTrabalhoInerte());
+        servicos.AddScoped<IUnitOfWork>(_ => new UnidadeDeTrabalhoInerte());
 
         return new GravadorDeVinculos(
             servicos.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>());
@@ -91,9 +91,15 @@ public sealed class GravadorDeVinculosTests
             Task.CompletedTask;
     }
 
-    private sealed class UnidadeDeTrabalhoInerte : IDiscentesUnitOfWork
+    private sealed class UnidadeDeTrabalhoInerte : IUnitOfWork
     {
         public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(0);
+
+        public void DescartarAlteracoesNaoSalvas()
+        {
+        }
+
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

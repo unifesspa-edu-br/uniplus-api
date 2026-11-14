@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -14,7 +15,7 @@ internal static class ProcessoSeletivoDeTeste
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    public static async Task<ProcessoSeletivo> GravarAsync(SelecaoDbContext context, string nome)
+    public static async Task<ProcessoSeletivo> GravarAsync(UniPlusDbContext context, string nome)
     {
         ArgumentNullException.ThrowIfNull(context);
         ProcessoSeletivo processo = Novo(nome);

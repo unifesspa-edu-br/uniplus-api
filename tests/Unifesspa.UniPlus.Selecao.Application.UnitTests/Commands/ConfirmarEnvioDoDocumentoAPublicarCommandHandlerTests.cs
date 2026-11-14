@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosAPublicar;
@@ -33,7 +34,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
     {
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((DocumentoAPublicar?)null);
 
         Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
@@ -50,7 +51,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, _) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
 
         Result<DocumentoAPublicarDto> resultado = await ConfirmarEnvioDoDocumentoAPublicarCommandHandler.Handle(
@@ -67,7 +68,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>()).Returns((InfoObjetoArmazenado?)null);
 
@@ -85,7 +86,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(DocumentoAPublicar.TamanhoMaximoBytes + 1, "application/pdf"));
@@ -110,7 +111,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         byte[] conteudoFalso = [.. "não é um pdf de verdade"u8];
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(conteudoFalso.Length, "application/pdf"));
@@ -141,7 +142,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(true);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
@@ -178,7 +179,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         // Simula outra confirmação concorrente já tendo vencido a reivindicação.
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(false);
@@ -208,7 +209,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>())
             .Returns(_ =>
@@ -247,7 +248,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         // Stat relata um tamanho pequeno — simula o objeto de staging tendo
         // sido substituído por um maior entre o stat e a leitura (a chave
@@ -281,7 +282,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         byte[] docx = ArquivosDeModeloDeTeste.Docx();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         repository.TentarReivindicarConfirmacaoAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(true);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
@@ -307,7 +308,7 @@ public sealed class ConfirmarEnvioDoDocumentoAPublicarCommandHandlerTests
         (DocumentoAPublicar documento, Guid processoId) = NovoDocumentoPendente();
         IDocumentoAPublicarRepository repository = Substitute.For<IDocumentoAPublicarRepository>();
         IArquivoArmazenadoStorage storage = Substitute.For<IArquivoArmazenadoStorage>();
-        ISelecaoUnitOfWork unitOfWork = Substitute.For<ISelecaoUnitOfWork>();
+        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         repository.ObterPorIdAsync(documento.Id, Arg.Any<CancellationToken>()).Returns(documento);
         storage.ObterInfoAsync(documento.ObjectKey, Arg.Any<CancellationToken>())
             .Returns(new InfoObjetoArmazenado(0, "application/pdf"));

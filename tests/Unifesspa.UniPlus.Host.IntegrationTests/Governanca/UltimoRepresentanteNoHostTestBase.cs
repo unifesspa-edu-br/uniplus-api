@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
 using Unifesspa.UniPlus.Host.IntegrationTests.Providencias;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
@@ -43,7 +44,7 @@ public abstract class UltimoRepresentanteNoHostTestBase : ProvidenciasNoHostTest
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         DateTimeOffset agora = DateTimeOffset.UtcNow;
 
-        return await scope.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Concessoes.AsNoTracking()
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
             .Where(c => c.PerfilId == Representante && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora))
             .Select(c => c.BeneficiarioSub)
             .ToArrayAsync();

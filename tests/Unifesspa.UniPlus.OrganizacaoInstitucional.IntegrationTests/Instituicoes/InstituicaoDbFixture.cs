@@ -6,14 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Testcontainers.PostgreSql;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="OrganizacaoInstitucionalDbContext"/> aplicado via
-/// <c>MigrateAsync</c>, e expõe uma factory de DbContext com os MESMOS
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>, e expõe uma factory de DbContext com os MESMOS
 /// interceptors da produção (SoftDelete + Auditable).
 /// </summary>
 /// <remarks>
@@ -44,8 +44,8 @@ public sealed class InstituicaoDbFixture : IAsyncLifetime
     {
         await _postgres.StartAsync().ConfigureAwait(false);
 
-        await using OrganizacaoInstitucionalDbContext context = CreateDbContext(userId: null);
-        await context.Database.MigrateAsync().ConfigureAwait(false);
+        await using UniPlusDbContext context = CreateDbContext(userId: null);
+        await context.SubirOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()
@@ -54,17 +54,17 @@ public sealed class InstituicaoDbFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Constrói um <see cref="OrganizacaoInstitucionalDbContext"/> com os
+    /// Constrói um <see cref="UniPlusDbContext"/> com os
     /// interceptors de produção. Quando <paramref name="userId"/> é informado,
     /// simula um <c>IUserContext</c> autenticado; caso contrário, os interceptors
     /// usam o fallback <c>"system"</c>.
     /// </summary>
-    public OrganizacaoInstitucionalDbContext CreateDbContext(string? userId)
+    public UniPlusDbContext CreateDbContext(string? userId)
     {
         StubUserContext? userContext = userId is null ? null : new StubUserContext(userId);
 
-        DbContextOptions<OrganizacaoInstitucionalDbContext> options =
-            new DbContextOptionsBuilder<OrganizacaoInstitucionalDbContext>()
+        DbContextOptions<MonolitoDbContext> options =
+            new DbContextOptionsBuilder<MonolitoDbContext>()
                 .UseNpgsql(ConnectionString)
                 .UseSnakeCaseNamingConvention()
                 .AddInterceptors(
@@ -72,6 +72,6 @@ public sealed class InstituicaoDbFixture : IAsyncLifetime
                     new AuditableInterceptor(TimeProvider.System, userContext))
                 .Options;
 
-        return new OrganizacaoInstitucionalDbContext(options);
+        return new MonolitoDbContext(options);
     }
 }

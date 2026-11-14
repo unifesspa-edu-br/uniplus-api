@@ -3,8 +3,8 @@ namespace Unifesspa.UniPlus.Host.IntegrationTests.Perfis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
-using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Provoca o conflito de concorrência otimista na gravação de uma linha: logo antes de a gravação do host sob teste
@@ -32,9 +32,9 @@ internal sealed class ConflitoNaGravacaoDoHost
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        ServiceDescriptor original = services.Single(static d => d.ServiceType == typeof(IAutorizacaoUnitOfWork));
+        ServiceDescriptor original = services.Single(static d => d.ServiceType == typeof(IUnitOfWork));
         services.Remove(original);
-        services.AddScoped<IAutorizacaoUnitOfWork>(sp => new UnidadeComConflito((IAutorizacaoUnitOfWork)original.ImplementationFactory!(sp), this, sp));
+        services.AddScoped<IUnitOfWork>(sp => new UnidadeComConflito((IUnitOfWork)original.ImplementationFactory!(sp), this, sp));
     }
 
     private async Task ProvocarAsync(IServiceProvider servicos, CancellationToken cancellationToken)
@@ -52,13 +52,13 @@ internal sealed class ConflitoNaGravacaoDoHost
         }
 
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
-        await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database
+        await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
             .ExecuteSqlRawAsync(regravacao.Sql, regravacao.Parametros, cancellationToken)
             .ConfigureAwait(false);
     }
 
-    private sealed class UnidadeComConflito(IAutorizacaoUnitOfWork interna, ConflitoNaGravacaoDoHost conflito, IServiceProvider servicos)
-        : IAutorizacaoUnitOfWork
+    private sealed class UnidadeComConflito(IUnitOfWork interna, ConflitoNaGravacaoDoHost conflito, IServiceProvider servicos)
+        : IUnitOfWork
     {
         public async Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
         {
@@ -68,5 +68,8 @@ internal sealed class ConflitoNaGravacaoDoHost
         }
 
         public void DescartarAlteracoesNaoSalvas() => interna.DescartarAlteracoesNaoSalvas();
+
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) =>
+            interna.ForcarChecagemImediataDeConstraintsAsync(cancellationToken);
     }
 }

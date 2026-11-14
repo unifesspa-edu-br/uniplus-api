@@ -5,11 +5,13 @@ using Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+
 public sealed class GeracaoDeEnvioAoInepRepository : IGeracaoDeEnvioAoInepRepository
 {
-    private readonly SelecaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public GeracaoDeEnvioAoInepRepository(SelecaoDbContext context)
+    public GeracaoDeEnvioAoInepRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;

@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
@@ -107,7 +108,7 @@ internal static class DoublesDaInstalacao
     }
 
     /// <summary>A unidade de trabalho que conta as gravações e, opcionalmente, falha com a exceção dada.</summary>
-    internal sealed class UnidadeDeTrabalho(Exception? falha = null) : IAutorizacaoUnitOfWork
+    internal sealed class UnidadeDeTrabalho(Exception? falha = null) : IUnitOfWork
     {
         public int Gravacoes { get; private set; }
 
@@ -121,17 +122,21 @@ internal static class DoublesDaInstalacao
 
         public void DescartarAlteracoesNaoSalvas() => Descartou = true;
 
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
         public static UnidadeDeTrabalho ComConflito() => new(new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException());
 
         public static UnidadeDeTrabalho ComConcessaoDuplicada() =>
             new(new Microsoft.EntityFrameworkCore.DbUpdateException("duplicada", new ViolacaoDeIndiceUnico("ux_concessoes_ativa_unica")));
     }
 
-    internal sealed class UnidadeDeTrabalhoIntocavel : IAutorizacaoUnitOfWork
+    internal sealed class UnidadeDeTrabalhoIntocavel : IUnitOfWork
     {
         public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
 
         public void DescartarAlteracoesNaoSalvas() => throw new InvalidOperationException();
+
+        public Task ForcarChecagemImediataDeConstraintsAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     internal sealed class ViolacaoDeIndiceUnico(string constraintName) : Exception

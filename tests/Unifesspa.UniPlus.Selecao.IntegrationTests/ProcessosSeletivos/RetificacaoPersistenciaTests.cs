@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -23,7 +24,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -120,7 +120,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             docAbertura.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
 
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -134,7 +134,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         // Recarrega o agregado tracked — como o handler faz.
         DocumentoAPublicar docRetificacao = DocumentoConfirmado(processo.Id);
         VersaoConfiguracao versaoRetificacao;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
@@ -166,7 +166,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         (ProcessoSeletivo processo, VersaoConfiguracao abertura, VersaoConfiguracao retificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_PersisteVersaoQueEmendaAAnterior));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         List<VersaoConfiguracao> versoes = await readContext.VersoesConfiguracao
             .AsNoTracking()
             .Where(v => v.ProcessoSeletivoId == processo.Id)
@@ -194,7 +194,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         (_, VersaoConfiguracao versaoAbertura, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_SnapshotComBlocoRetificacao_AnteriorImutavel));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
 
         VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
@@ -228,7 +228,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         (_, _, VersaoConfiguracao versaoRetificacao) =
             await PublicarERetificarAsync(nameof(Retificacao_HashConfereAppEBanco));
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao lida = await readContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == versaoRetificacao.Id, CancellationToken.None);
 
@@ -285,7 +285,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
         Guid processoId = processo.Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -295,7 +295,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         }
 
         VersaoConfiguracao versaoRetificacao;
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
@@ -326,7 +326,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
         VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao
@@ -364,7 +364,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
         Guid processoId = processo.Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -373,7 +373,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
@@ -400,7 +400,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
         ProcessoSeletivo relido = (await leitura.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
@@ -438,7 +438,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
         Guid processoId = processo.Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -447,7 +447,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
@@ -476,7 +476,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
         ProcessoSeletivo relido = (await leitura.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 
@@ -505,7 +505,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
         Guid processoId = processo.Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -514,7 +514,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext sessao = _fixture.CreateDbContext();
+        await using UniPlusDbContext sessao = _fixture.CreateDbContext();
         ProcessoSeletivoRepository processos = new(sessao, TimeProvider.System);
         ProcessoSeletivo tracked = (await processos.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
         // A versão publicada é a de antes dos três dados: os fatos vigentes não os incluem.
@@ -577,7 +577,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             RegrasDeNomeAbreviado.Vigente, "publicar com nome_abreviado no conjunto congela o identificador da regra vigente");
 
         Guid processoId = processo.Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -587,7 +587,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         }
 
         VersaoConfiguracao versaoRetificacao;
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
@@ -618,7 +618,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao
             .AsNoTracking().FirstAsync(v => v.Id == versaoAbertura.Id, CancellationToken.None);
         VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao
@@ -655,7 +655,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
         VersaoConfiguracao versaoAbertura = publicar.Value!;
 
         Guid processoId = processo.Id;
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             await repository.AdicionarAsync(processo, CancellationToken.None);
@@ -664,7 +664,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using (SelecaoDbContext sessao = _fixture.CreateDbContext())
+        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
             ProcessoSeletivo tracked = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
@@ -694,7 +694,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
         ProcessoSeletivo relido = (await leitura.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
 

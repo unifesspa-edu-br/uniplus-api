@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Records;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
@@ -40,7 +41,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
     [Fact]
     public async Task Lote_confirmado_permanece_apos_falha_em_lote_posterior()
     {
-        await using DiscentesDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         await GravarEConfirmarAsync(contexto, [Sincronizavel(9_001), Sincronizavel(9_002)]);
 
@@ -53,7 +54,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
 
         contexto.ChangeTracker.Clear();
 
-        await using DiscentesDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         int gravados = await leitura.VinculosDiscentes
             .CountAsync(v => v.IdDiscenteSigaa == 9_001 || v.IdDiscenteSigaa == 9_002);
 
@@ -63,7 +64,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
     [Fact]
     public async Task Falha_ao_cifrar_preserva_o_que_ja_fora_reconhecido_como_igual()
     {
-        await using DiscentesDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         // O primeiro vínculo já está na réplica com o mesmo conteúdo, então não é recifrado.
         // O segundo é novo, e cifrar o CPF dele falha.
@@ -85,12 +86,12 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
     [Fact]
     public async Task Vinculo_ausente_do_lote_permanece_intacto()
     {
-        await using DiscentesDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         await GravarEConfirmarAsync(contexto, [Sincronizavel(9_101), Sincronizavel(9_102)]);
         await GravarEConfirmarAsync(contexto, [Sincronizavel(9_101, nome: "NOME CORRIGIDO")]);
 
-        await using DiscentesDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         VinculoDiscenteRecord? ausenteDoSegundoLote = await leitura.VinculosDiscentes
             .SingleOrDefaultAsync(v => v.IdDiscenteSigaa == 9_102);
 
@@ -101,7 +102,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
     [Fact]
     public async Task Conteudo_igual_nao_reescreve_a_linha()
     {
-        await using DiscentesDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         VinculoSincronizavel vinculo = Sincronizavel(9_201);
         await GravarEConfirmarAsync(contexto, [vinculo]);
@@ -116,7 +117,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
     [Fact]
     public async Task Conteudo_diferente_atualiza_a_linha_existente()
     {
-        await using DiscentesDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         await GravarEConfirmarAsync(contexto, [Sincronizavel(9_301)]);
         contexto.ChangeTracker.Clear();
@@ -126,7 +127,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
 
         segunda.Atualizados.Should().Be(1);
 
-        await using DiscentesDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         VinculoDiscenteRecord atualizado = await leitura.VinculosDiscentes
             .SingleAsync(v => v.IdDiscenteSigaa == 9_301);
 
@@ -139,7 +140,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
         // Sem invalidar, a sincronização seguinte compararia o resumo antigo com o da
         // origem, concluiria que nada mudou, e a alteração feita aqui permaneceria
         // indefinidamente — divergindo da origem sem nada apontar a divergência.
-        await using DiscentesDbContext contexto = _fixture.CreateDbContext();
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
 
         VinculoSincronizavel original = Sincronizavel(9_401);
         await GravarEConfirmarAsync(contexto, [original]);
@@ -150,7 +151,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
         await repositorio.AtualizarAsync(doBanco);
         await contexto.SaveChangesAsync();
 
-        await using DiscentesDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         VinculoDiscenteRecord depois = await leitura.VinculosDiscentes
             .SingleAsync(v => v.IdDiscenteSigaa == 9_401);
 
@@ -159,7 +160,7 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
     }
 
     private async Task<ResultadoDaGravacao> GravarEConfirmarAsync(
-        DiscentesDbContext contexto,
+        UniPlusDbContext contexto,
         IReadOnlyList<VinculoSincronizavel> lote)
     {
         ResultadoDaGravacao resultado = await new VinculoDiscenteRepository(contexto, _fixture.Encryption).GravarLoteAsync(lote);

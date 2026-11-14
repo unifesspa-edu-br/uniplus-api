@@ -4,16 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Monitoramento;
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>A leitura do estado da governança de perfis para as métricas: consultas sem rastreamento e sem trava.</summary>
 internal sealed class LeituraDoMonitoramento : ILeituraDoMonitoramento
 {
     private static readonly TimeSpan HorizonteDoVencimento = TimeSpan.FromHours(48);
 
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public LeituraDoMonitoramento(AutorizacaoDbContext context)
+    public LeituraDoMonitoramento(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -42,10 +44,10 @@ internal sealed class LeituraDoMonitoramento : ILeituraDoMonitoramento
         IQueryable<CodigoDaConcessao> suspensos = _context.CodigosSuspensosPorReclassificacao(agora);
 
         return await _context.Reclassificacoes.AsNoTracking()
-            .Where(r => !_context.Reclassificacoes.Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha))
+            .Where(r => !_context.Set<ReclassificacaoDaPermissao>().Any(o => o.PerfilId == r.PerfilId && o.Codigo == r.Codigo && o.OrdemNaTrilha > r.OrdemNaTrilha))
             .LongCountAsync(
                 r => suspensos.Any(k => k.Codigo == r.Codigo
-                    && _context.Concessoes.Any(c => c.Id == k.ConcessaoId && c.PerfilId == r.PerfilId)),
+                    && _context.Set<Concessao>().Any(c => c.Id == k.ConcessaoId && c.PerfilId == r.PerfilId)),
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -53,7 +55,7 @@ internal sealed class LeituraDoMonitoramento : ILeituraDoMonitoramento
     private async Task<long> DivergenciasDaImplantacaoAtualAsync(CancellationToken cancellationToken) =>
         await _context.DivergenciasDaGovernanca.AsNoTracking()
             .LongCountAsync(
-                d => d.ImplantacaoId == _context.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).First(),
+                d => d.ImplantacaoId == _context.Set<ImplantacaoDasPermissoes>().OrderByDescending(c => c.Sequencia).Select(c => c.Id).First(),
                 cancellationToken)
             .ConfigureAwait(false);
 }

@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// CA-01 (#587): a <c>Cidade</c> é dado do módulo <c>Geo</c> (ADR-0090) — o
@@ -24,10 +25,10 @@ public sealed class ConfiguracaoSemEntidadeCidadeTests : IClassFixture<Configura
         _factory = factory;
     }
 
-    [Fact(DisplayName = "ConfiguracaoDbContext.Model não declara nenhuma entidade/tabela 'Cidade'")]
+    [Fact(DisplayName = "UniPlusDbContext.Model não declara nenhuma entidade/tabela 'Cidade'")]
     public void Model_NaoTemEntidadeCidade()
     {
-        using ConfiguracaoDbContext context = CriarContextoInMemory();
+        using UniPlusDbContext context = CriarContextoInMemory();
 
         IEnumerable<Microsoft.EntityFrameworkCore.Metadata.IEntityType> tipos = context.Model.GetEntityTypes();
 
@@ -59,12 +60,12 @@ public sealed class ConfiguracaoSemEntidadeCidadeTests : IClassFixture<Configura
             "Cidade não é cadastro de Configuração (ADR-0090)");
     }
 
-    private static ConfiguracaoDbContext CriarContextoInMemory()
+    private static MonolitoDbContext CriarContextoInMemory()
     {
-        DbContextOptions<ConfiguracaoDbContext> options = new DbContextOptionsBuilder<ConfiguracaoDbContext>()
+        DbContextOptions<MonolitoDbContext> options = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseInMemoryDatabase(nameof(ConfiguracaoSemEntidadeCidadeTests))
             .Options;
 
-        return new ConfiguracaoDbContext(options);
+        return new MonolitoDbContext(options);
     }
 }

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -49,7 +50,7 @@ using Xunit;
 /// <b>Decisão de escopo — o que esta suíte NÃO faz</b>: o desenho original desta prova (o
 /// plano da issue) previa inativar de fato um valor no catálogo do módulo Configuração e reler
 /// o formulário. Reproduzir isso literalmente exigiria uma segunda infraestrutura de banco
-/// (<c>ConfiguracaoDbContext</c>, que este projeto de testes não provisiona) e um leitor de
+/// (<c>UniPlusDbContext</c>, que este projeto de testes não provisiona) e um leitor de
 /// catálogo real — escopo maior que esta rodada, e redundante com a garantia estrutural: se o
 /// handler não tem PARÂMETRO de leitor de catálogo, inativar um valor no catálogo não tem como
 /// alcançar esta leitura, qualquer que seja o valor. Fica registrado como lacuna de cobertura
@@ -185,7 +186,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         // estático, ordem de execução — as duas leituras poderiam divergir entre si.
         async Task<FormularioRenderizavelDto> LerAsync()
         {
-            await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+            await using UniPlusDbContext readContext = _fixture.CreateDbContext();
             ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
                 new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), repository,
@@ -226,7 +227,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         await PersistirDivulgadoAsync(processo, publicar.Value!, entrada.Dados);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
             new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
@@ -303,7 +304,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         renomeado.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoComOMunicipio("Cidade onde mora"));
         IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
         fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
-        await using SelecaoDbContext rascunhoContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
             new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Inscricao),
             new ProcessoSeletivoRepository(rascunhoContext, TimeProvider.System), renomeado, fuso, CancellationToken.None);
@@ -363,7 +364,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         catalogoVivo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoComCorRaca([.. CorRacaCorrigida()]));
         IResolvedorFusoInstitucional fuso = Substitute.For<IResolvedorFusoInstitucional>();
         fuso.Resolver().Returns(Result<TimeZoneInfo>.Success(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)));
-        await using SelecaoDbContext rascunhoContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
             new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Inscricao),
             new ProcessoSeletivoRepository(rascunhoContext, TimeProvider.System), catalogoVivo, fuso, CancellationToken.None);
@@ -390,7 +391,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         VersaoConfiguracao retificacao;
         DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
         documento.Confirmar(1024, string.Concat(Enumerable.Repeat("ab01234567", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
-        await using (SelecaoDbContext writeContext = _fixture.CreateDbContext())
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
             ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
@@ -416,7 +417,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         VersaoConfiguracao aberturaLida = await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == abertura.Id, CancellationToken.None);
         VersaoConfiguracao retificacaoLida = await readContext.VersoesConfiguracao.AsNoTracking().SingleAsync(v => v.Id == retificacao.Id, CancellationToken.None);
 
@@ -433,7 +434,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
     private async Task<FormularioRenderizavelDto> LerPublicadoAsync(Guid processoId)
     {
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
             new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
@@ -488,7 +489,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         await PersistirDivulgadoAsync(processo, publicar.Value!, entrada.Dados);
 
-        await using SelecaoDbContext readContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Habilitacao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
             new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
@@ -540,7 +541,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     /// </summary>
     private async Task PersistirDivulgadoAsync(ProcessoSeletivo processo, VersaoConfiguracao versao, DadosEdital dados)
     {
-        await using SelecaoDbContext writeContext = _fixture.CreateDbContext();
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);

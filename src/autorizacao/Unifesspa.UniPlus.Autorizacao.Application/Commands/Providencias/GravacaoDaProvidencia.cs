@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Mappings;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
@@ -22,10 +22,10 @@ public sealed class GravacaoDaProvidencia
 {
     private const string AbertaUnicaPorConcessao = "ux_providencias_concessao_aberta";
 
-    private readonly IAutorizacaoUnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly AvisosDaProvidencia _avisos;
 
-    public GravacaoDaProvidencia(IAutorizacaoUnitOfWork unitOfWork, AvisosDaProvidencia avisos)
+    public GravacaoDaProvidencia(IUnitOfWork unitOfWork, AvisosDaProvidencia avisos)
     {
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(avisos);

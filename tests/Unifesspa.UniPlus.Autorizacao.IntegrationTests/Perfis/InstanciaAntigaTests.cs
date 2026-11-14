@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
@@ -84,8 +85,8 @@ public sealed class InstanciaAntigaTests : PerfilEndpointTestBase, IAsyncLifetim
         string impressao = Fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>().Impressao;
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction aberta = await escopo.ServiceProvider
-            .GetRequiredService<AutorizacaoDbContext>().Database.BeginTransactionAsync();
-        await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            .GetRequiredService<UniPlusDbContext>().Database.BeginTransactionAsync();
+        await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now())", Guid.CreateVersion7(), impressao);
 
         await FluentActions.Awaiting(() => PermissoesAsync(pessoa)).Should().ThrowAsync<CatalogoDesatualizadoException>();
@@ -102,7 +103,7 @@ public sealed class InstanciaAntigaTests : PerfilEndpointTestBase, IAsyncLifetim
         await ConciliarAsync();
 
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        (await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().Reclassificacoes.CountAsync()).Should().Be(0);
+        (await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Reclassificacoes.CountAsync()).Should().Be(0);
     }
 
     private async Task ConciliarAsync()

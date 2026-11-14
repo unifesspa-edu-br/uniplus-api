@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -24,7 +25,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 internal static class InscricoesDoEnemDeTeste
 {
-    public static async Task<ProcessoSeletivo> NovoProcessoAsync(SelecaoDbContext context)
+    public static async Task<ProcessoSeletivo> NovoProcessoAsync(UniPlusDbContext context)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2027 — notas do ENEM", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
@@ -41,7 +42,7 @@ internal static class InscricoesDoEnemDeTeste
     /// </summary>
     public static async Task<Guid> NovaVersaoAsync(InscricaoDbFixture fixture, Guid processoId)
     {
-        await using SelecaoDbContext context = fixture.CreateDbContext();
+        await using UniPlusDbContext context = fixture.CreateDbContext();
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processoId, Encoding.UTF8.GetBytes("{}"), "1", "sha256@v1", Guid.CreateVersion7(),
             new string('a', 64), "integration-test-user", DateTimeOffset.UtcNow);
@@ -61,13 +62,13 @@ internal static class InscricoesDoEnemDeTeste
         Guid? ofertaCursoId = null,
         Guid? ofertaCursoSegundaOpcaoId = null)
     {
-        await using SelecaoDbContext context = fixture.CreateDbContext();
+        await using UniPlusDbContext context = fixture.CreateDbContext();
         return await NovaInscricaoAsync(
             context, fixture.Encryption, fixture.BlindIndex, processoId, pessoa, situacao, edicao, numeroDeInscricao, ofertaCursoId, ofertaCursoSegundaOpcaoId);
     }
 
     public static async Task<Guid> NovaInscricaoAsync(
-        SelecaoDbContext context,
+        UniPlusDbContext context,
         IUniPlusEncryptionService encryption,
         IUniPlusBlindIndexService blindIndex,
         Guid processoId,
@@ -133,7 +134,7 @@ internal static class InscricoesDoEnemDeTeste
 
     public static async Task TrocarEdicaoAsync(InscricaoDbFixture fixture, Guid inscricaoId, string novaEdicao)
     {
-        await using SelecaoDbContext context = fixture.CreateDbContext();
+        await using UniPlusDbContext context = fixture.CreateDbContext();
         await context.RespostasDaInscricao
             .Where(r => r.InscricaoId == inscricaoId && r.FatoCodigo == EdicaoDoEnem.Fato)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.ValorCodigo, novaEdicao));

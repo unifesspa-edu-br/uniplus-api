@@ -4,11 +4,11 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -34,7 +34,7 @@ public sealed class DefinirFormularioCommandHandlerTests
                 processo.Id, FinalidadeFormulario.Inscricao, null, null,
                 [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)],
                 PrecondicaoIfMatch.Ausente),
-            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
             "o gate de estado e concorrência sai antes da validação das etapas");
@@ -52,7 +52,7 @@ public sealed class DefinirFormularioCommandHandlerTests
                 processo.Id, FinalidadeFormulario.Habilitacao, faseDeInscricao, new string('a', 301),
                 [new EtapaFormularioInput("DADOS", 0, "SECAO", null, "", null, null)],
                 PrecondicaoIfMatch.Ausente),
-            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+            repository, Substitute.For<IFatoCandidatoReader>(), Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.Errors.Select(static e => e.Field).Should().BeEquivalentTo(["etapas[0].titulo", "titulo", "faseId"]);
     }
@@ -74,7 +74,7 @@ public sealed class DefinirFormularioCommandHandlerTests
                         [[new CondicaoPrecondicaoInput("FATO_INEXISTENTE", "IGUAL", System.Text.Json.JsonSerializer.SerializeToElement(true))]]),
                 ],
                 PrecondicaoIfMatch.Ausente),
-            repository, reader, Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+            repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -102,7 +102,7 @@ public sealed class DefinirFormularioCommandHandlerTests
                     new EtapaFormularioInput("REVISAO", 1, "BLOCO", "REVISAO_E_ACEITE", "Revisão e aceite", null, null),
                 ],
                 PrecondicaoIfMatch.Ausente),
-            repository, reader, Substitute.For<ISelecaoUnitOfWork>(), CancellationToken.None);
+            repository, reader, Substitute.For<IUnitOfWork>(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Etapas.OrderBy(static e => e.Ordem).Select(static e => e.Codigo)

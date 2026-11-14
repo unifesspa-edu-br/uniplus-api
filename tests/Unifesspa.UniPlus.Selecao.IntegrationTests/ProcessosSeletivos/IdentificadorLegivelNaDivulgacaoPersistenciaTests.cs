@@ -4,11 +4,11 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
-using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -30,7 +30,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         CertameDivulgado divulgado = Divulgado(identificador);
         await PersistirAsync(divulgado);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         CertameDivulgadoRepository repositorio = new(ctx);
 
         (await repositorio.ObterParaLeituraPorIdentificadorAsync(identificador))!.Id.Should().Be(divulgado.Id);
@@ -45,7 +45,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         await PersistirAsync(Divulgado(identificador));
 
         CertameDivulgado disputante = Divulgado(identificador);
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         await ctx.CertamesDivulgados.AddAsync(disputante);
 
         Func<Task> gravar = () => ctx.SaveChangesAsync();
@@ -53,7 +53,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
 
         IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha).Should().BeTrue();
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         CertameDivulgadoRepository repositorio = new(leitura);
         CertameDivulgado? dono = await repositorio.ObterParaLeituraPorIdentificadorAsync(identificador);
 
@@ -76,7 +76,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
             Guid.CreateVersion7(), 1, primeiro.AtoCriadorId, new string('a', 64), "2",
             Facetas(IdentificadoresDeTeste.Novo().Valor), """{"nome":"documento"}""", Agora);
 
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         await ctx.CertamesDivulgados.AddAsync(mesmoAto);
 
         Func<Task> gravar = () => ctx.SaveChangesAsync();
@@ -92,7 +92,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         CertameDivulgado existente = Divulgado(identificador);
         await PersistirAsync(existente);
 
-        await using SelecaoDbContext leitura = _fixture.CreateDbContext();
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         CertameDivulgadoRepository repositorio = new(leitura);
         CertameDivulgado? dono = await repositorio.ObterParaLeituraPorIdentificadorAsync(identificador);
 
@@ -116,7 +116,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
 
     private async Task PersistirAsync(CertameDivulgado divulgado)
     {
-        await using SelecaoDbContext ctx = _fixture.CreateDbContext();
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         await ctx.CertamesDivulgados.AddAsync(divulgado);
         await ctx.SaveChangesAsync();
     }

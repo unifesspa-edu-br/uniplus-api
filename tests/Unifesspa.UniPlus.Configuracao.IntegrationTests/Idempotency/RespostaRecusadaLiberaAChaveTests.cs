@@ -9,7 +9,6 @@ using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
@@ -21,7 +20,6 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.API.Controllers;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
-using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
@@ -52,7 +50,6 @@ public sealed class RespostaRecusadaLiberaAChaveTests
     private const string Endpoint = "POST " + Rota;
 
     private const string CorpoSemADeclaracao = """{"status":409,"code":"uniplus.qualquer"}""";
-
 
     private readonly ConfiguracaoEndpointFixture _fixture;
 
@@ -163,14 +160,14 @@ public sealed class RespostaRecusadaLiberaAChaveTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         IServiceProvider services = scope.ServiceProvider;
 
-        EfCoreIdempotencyStore<ConfiguracaoDbContext> store = ActivatorUtilities
-            .CreateInstance<EfCoreIdempotencyStore<ConfiguracaoDbContext>>(services);
+        EfCoreIdempotencyStore store = ActivatorUtilities
+            .CreateInstance<EfCoreIdempotencyStore>(services);
 
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.IsAuthenticated.Returns(true);
         userContext.UserId.Returns("conflito-retentavel-test-user");
 
-        IdempotencyFilter<ConfiguracaoDbContext> filter = new(
+        IdempotencyFilter filter = new(
             store,
             services.GetRequiredService<IUniPlusEncryptionService>(),
             services.GetRequiredService<IDomainErrorMapper>(),

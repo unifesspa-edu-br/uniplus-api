@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
 
-using Abstractions;
-
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -10,6 +8,7 @@ using Microsoft.Extensions.Logging;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
 /// <summary>
@@ -22,7 +21,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoArquivoHandler
     public static async Task Handle(
         ResultadoDaVerificacaoDeArquivo resultado,
         IDocumentoDaInscricaoRepository documentoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         ILogger logger,
         CancellationToken cancellationToken)
@@ -47,7 +46,7 @@ public static partial class RegistrarResultadoDaVerificacaoDoArquivoHandler
     private static async Task<bool> TentarRegistrarAsync(
         ResultadoDaVerificacaoDeArquivo resultado,
         IDocumentoDaInscricaoRepository documentoRepository,
-        ISelecaoUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider clock,
         ILogger logger,
         CancellationToken cancellationToken)

@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -92,8 +93,8 @@ public sealed class LeituraInProcessTests
         // Semeia pelo DbContext do MÓDULO resolvido do container do host — o
         // schema `organizacao` já foi criado pelas migrations on startup no boot.
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        OrganizacaoInstitucionalDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<OrganizacaoInstitucionalDbContext>();
+        UniPlusDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
         dbContext.Unidades.Add(unidade);
         await dbContext.SaveChangesAsync(CancellationToken.None);

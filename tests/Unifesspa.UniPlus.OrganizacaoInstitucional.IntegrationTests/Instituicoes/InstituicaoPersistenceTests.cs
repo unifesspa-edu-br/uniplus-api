@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
@@ -42,18 +43,18 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     {
         // Estado compartilhado pela IClassFixture + singleton: limpa antes de
         // inserir para que a suíte não dependa da ordem de execução dos testes.
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao("9001", "INS-A");
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
 
         persistida.CodigoEmec.Should().Be("9001");
@@ -65,7 +66,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "Insert persiste a referência de cidade do Geo e faz round-trip do trio + display cache (#686)")]
     public async Task Insert_ComReferenciaDeCidade_RoundTrip()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         DateTimeOffset carimbo = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -74,13 +75,13 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
             cidadeOrigem: "geo-api", cidadeDisplayAtualizadoEm: carimbo);
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
 
         persistida.CidadeCodigoIbge.Should().Be("1504208");
@@ -93,16 +94,16 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "Índice único parcial rejeita uma segunda Instituição viva (singleton)")]
     public async Task Singleton_SegundaInstituicaoVivaRejeitada()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(NovaInstituicao("9100", "INS-1"));
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext ctx2 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext(AdminA);
         ctx2.Instituicoes.Add(NovaInstituicao("9101", "INS-2"));
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
@@ -119,17 +120,17 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "CHECK constraint impede gravar a sentinela como false (singleton constante no banco)")]
     public async Task CheckConstraint_ImpedeSentinelaFalse()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao("9500", "INS-CK");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE organizacao.instituicao SET registro_vivo_sentinela = false WHERE id = {instituicao.Id}");
@@ -141,17 +142,17 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "Soft-delete liberta o slot singleton — nova Instituição é aceita após exclusão")]
     public async Task Singleton_AposSoftDeleteNovaAceita()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao primeira = NovaInstituicao("9200", "INS-DEL");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(primeira);
             await ctx.SaveChangesAsync();
         }
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminB))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
         {
             Instituicao tracked = await ctx.Instituicoes.SingleAsync(i => i.Id == primeira.Id);
             ctx.Instituicoes.Remove(tracked);
@@ -159,7 +160,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         }
 
         // O registro removido permanece na trilha (IgnoreQueryFilters) com a auditoria preenchida.
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             Instituicao removida = await ctx.Instituicoes
                 .IgnoreQueryFilters()
@@ -170,7 +171,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
         }
 
         // Nova Instituição viva é aceita — o índice único parcial só vê registros vivos.
-        await using OrganizacaoInstitucionalDbContext ctx3 = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext ctx3 = _fixture.CreateDbContext(AdminA);
         ctx3.Instituicoes.Add(NovaInstituicao("9201", "INS-NOVA"));
 
         Func<Task> act = async () => await ctx3.SaveChangesAsync();
@@ -181,36 +182,36 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "ExisteAlgumaVivaAsync reflete registros vivos e ignora os soft-deleted")]
     public async Task ExisteAlgumaVivaAsync_RefleteRegistrosVivos()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             var repoVazio = new InstituicaoRepository(ctx);
             (await repoVazio.ExisteAlgumaVivaAsync(CancellationToken.None)).Should().BeFalse();
         }
 
         Instituicao instituicao = NovaInstituicao("9300", "INS-EX");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             var repoComUma = new InstituicaoRepository(ctx);
             (await repoComUma.ExisteAlgumaVivaAsync(CancellationToken.None)).Should().BeTrue();
         }
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             Instituicao tracked = await ctx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
             ctx.Instituicoes.Remove(tracked);
             await ctx.SaveChangesAsync();
         }
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(userId: null))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
         {
             var repoPosRemocao = new InstituicaoRepository(ctx);
             (await repoPosRemocao.ExisteAlgumaVivaAsync(CancellationToken.None))
@@ -221,24 +222,24 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "FK unidade_raiz_id aceita vínculo com Unidade do tipo reitoria")]
     public async Task Fk_UnidadeRaizReitoria_Aceita()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Unidade reitoria = NovaReitoria("reitoria-fk", "RFK", "RFK001");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Unidades.Add(reitoria);
             await ctx.SaveChangesAsync();
         }
 
         Instituicao instituicao = NovaInstituicao("9400", "INS-FK", reitoria.Id);
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
         persistida.UnidadeRaizId.Should().Be(reitoria.Id);
 
@@ -252,7 +253,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "Insert com endereço estruturado faz round-trip das colunas owned")]
     public async Task Insert_ComEndereco_RoundTrip()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao(
@@ -260,13 +261,13 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
             cidadeOrigem: "geo-api", endereco: EnderecoCoerente());
 
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
 
         persistida.Endereco.Should().NotBeNull();
@@ -277,17 +278,17 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "Owned type opcional: Instituição sem endereço materializa Endereco nulo")]
     public async Task Insert_SemEndereco_MaterializaNulo()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao("9601", "INS-SEM-END");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         Instituicao persistida = await readCtx.Instituicoes.SingleAsync(i => i.Id == instituicao.Id);
 
         persistida.Endereco.Should().BeNull();
@@ -296,20 +297,20 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "CHECK de coerência rejeita UPDATE cru com cidade do endereço divergente")]
     public async Task CheckCoerencia_RejeitaUpdateCruIncoerente()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao(
             "9602", "INS-CK",
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
             cidadeOrigem: "geo-api", endereco: EnderecoCoerente());
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
         }
 
-        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE organizacao.instituicao SET endereco_cidade_codigo_ibge = '1501402' WHERE id = {instituicao.Id}");
 
@@ -320,14 +321,14 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "CHECK rejeita UPDATE cru que zera a cidade da sede mantendo o endereço")]
     public async Task CheckCidadeObrigatoria_RejeitaEnderecoSemCidade()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao(
             "9603", "INS-OBR",
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
             cidadeOrigem: "geo-api", endereco: EnderecoCoerente());
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
@@ -335,7 +336,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
 
         // Zera a cidade da sede mantendo o endereço (endereco_cep não-nulo) — o
         // domínio recusa (CidadeObrigatoriaComEndereco); o CHECK protege escrita crua.
-        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE organizacao.instituicao SET cidade_codigo_ibge = NULL, cidade_nome = NULL, cidade_uf = NULL WHERE id = {instituicao.Id}");
 
@@ -346,13 +347,13 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
     [Fact(DisplayName = "Completude: CHECK rejeita UPDATE cru que deixa o trio de cidade da sede parcial")]
     public async Task CheckCidadeCompleta_RejeitaTrioParcial()
     {
-        await using OrganizacaoInstitucionalDbContext fresh = _fixture.CreateDbContext(AdminA);
+        await using UniPlusDbContext fresh = _fixture.CreateDbContext(AdminA);
         await LimparInstituicoesAsync(fresh);
 
         Instituicao instituicao = NovaInstituicao(
             "9604", "INS-TRIO",
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA", cidadeOrigem: "geo-api");
-        await using (OrganizacaoInstitucionalDbContext ctx = _fixture.CreateDbContext(AdminA))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
             ctx.Instituicoes.Add(instituicao);
             await ctx.SaveChangesAsync();
@@ -360,7 +361,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
 
         // Zera só o nome da cidade, deixando código/UF — trio parcial. O domínio
         // trata a cidade como all-or-nothing; o CHECK protege a escrita crua.
-        await using OrganizacaoInstitucionalDbContext rawCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext rawCtx = _fixture.CreateDbContext(userId: null);
         Func<Task> act = async () => await rawCtx.Database.ExecuteSqlAsync(
             $"UPDATE organizacao.instituicao SET cidade_nome = NULL WHERE id = {instituicao.Id}");
 
@@ -370,7 +371,7 @@ public sealed class InstituicaoPersistenceTests : IClassFixture<InstituicaoDbFix
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
-    private static async Task LimparInstituicoesAsync(OrganizacaoInstitucionalDbContext ctx)
+    private static async Task LimparInstituicoesAsync(UniPlusDbContext ctx)
     {
         // Cada teste precisa de um ponto de partida sem Instituição viva — o
         // singleton compartilha o slot único entre todos os testes da fixture.

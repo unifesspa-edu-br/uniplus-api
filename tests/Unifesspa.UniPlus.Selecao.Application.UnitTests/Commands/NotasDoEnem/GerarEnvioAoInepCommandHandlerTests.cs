@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.NotasDoEnem;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.NotasDoEnem;
@@ -28,7 +29,7 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
     private readonly CenarioDoEnemDeTeste _cenario = new(Edicao);
     private readonly IInscritosDaEdicaoDoEnem _inscritos = Substitute.For<IInscritosDaEdicaoDoEnem>();
     private readonly IGeracaoDeEnvioAoInepRepository _geracoes = Substitute.For<IGeracaoDeEnvioAoInepRepository>();
-    private readonly Selecao.Application.Abstractions.ISelecaoUnitOfWork _unitOfWork = Substitute.For<Selecao.Application.Abstractions.ISelecaoUnitOfWork>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IUserContext _usuario = Substitute.For<IUserContext>();
 
     public GerarEnvioAoInepCommandHandlerTests()

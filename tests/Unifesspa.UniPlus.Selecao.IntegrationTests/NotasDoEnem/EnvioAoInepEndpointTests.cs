@@ -12,9 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem.ProcessoDoEnemPublicadoDeTeste;
@@ -70,7 +70,7 @@ public sealed class EnvioAoInepEndpointTests
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
-            scope.ServiceProvider.GetRequiredService<SelecaoDbContext>(),
+            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>(),
             scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
             scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
             p.ProcessoId, pessoa, situacao, edicao);

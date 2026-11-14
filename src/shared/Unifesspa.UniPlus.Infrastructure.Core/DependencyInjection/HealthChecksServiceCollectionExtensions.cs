@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
@@ -31,7 +30,7 @@ public static class HealthChecksServiceCollectionExtensions
     /// <param name="services">A coleção de serviços.</param>
     /// <param name="configuration">Configuração da aplicação.</param>
     /// <param name="connectionStringName">Nome da connection string Postgres (PortalDb,
-    /// SelecaoDb, IngressoDb).</param>
+    /// UniPlusDb).</param>
     /// <returns>A própria <paramref name="services"/> para encadeamento fluente.</returns>
     /// <remarks>
     /// <para>

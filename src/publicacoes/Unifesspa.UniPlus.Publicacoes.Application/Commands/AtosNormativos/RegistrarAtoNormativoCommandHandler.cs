@@ -2,8 +2,8 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
 using System.Globalization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Avisos;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -24,7 +24,7 @@ public static class RegistrarAtoNormativoCommandHandler
         RegistrarAtoNormativoCommand command,
         ITipoAtoPublicadoRepository tiposRepository,
         IAtoNormativoRepository atosRepository,
-        IPublicacoesUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {

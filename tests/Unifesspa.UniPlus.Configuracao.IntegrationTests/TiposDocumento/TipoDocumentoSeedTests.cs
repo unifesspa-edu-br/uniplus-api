@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// Confere o catálogo semeado por <c>HasData</c> contra
@@ -38,7 +39,7 @@ public sealed class TipoDocumentoSeedTests
     {
         Guid[] idsDoSeed = [.. TipoDocumentoSeed.Itens.Select(item => item.Id)];
 
-        await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         Dictionary<Guid, TipoDocumento> persistidos = await ctx.TiposDocumento
             .AsNoTracking()
             .Where(t => idsDoSeed.Contains(t.Id))

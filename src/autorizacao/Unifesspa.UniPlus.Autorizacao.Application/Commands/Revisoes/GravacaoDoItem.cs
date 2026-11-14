@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Revisoes;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -11,7 +11,7 @@ internal static class GravacaoDoItem
     /// Grava a decisão que o agregado aceitou; na recusa, descarta o rastreamento. Com Idempotency-Key o conflito de
     /// concorrência se captura e descarta o rastreamento (ADR-0119).
     /// </summary>
-    public static async Task<Result> GravarAsync(Result decisao, IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    public static async Task<Result> GravarAsync(Result decisao, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         if (decisao.IsFailure)
         {
@@ -22,7 +22,7 @@ internal static class GravacaoDoItem
         return await SalvarAsync(unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result> SalvarAsync(IAutorizacaoUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    private static async Task<Result> SalvarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {

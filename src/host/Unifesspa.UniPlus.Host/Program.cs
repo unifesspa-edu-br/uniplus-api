@@ -12,7 +12,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
 using Unifesspa.UniPlus.Infrastructure.Core.Cors;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Email;
-using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 using Unifesspa.UniPlus.Infrastructure.Core.Logging;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
@@ -22,6 +21,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Profile;
 using Unifesspa.UniPlus.Infrastructure.Core.ReverseProxy;
 using Unifesspa.UniPlus.Ingresso.API;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.API;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application;
 using Unifesspa.UniPlus.Publicacoes.API;
@@ -91,8 +91,14 @@ builder.Services.AddUniPlusAcervoPublico(builder.Configuration, builder.Environm
 builder.Services.AddUniPlusCache(builder.Configuration, builder.Environment);
 builder.Services.AddEnvioDeEmail(builder.Configuration);
 
+// Contexto único dos módulos e migration única na subida. Registrado antes dos módulos e do
+// Wolverine: os hosted services iniciam na ordem de registro, e o schema precisa estar aplicado
+// antes de o runtime do Wolverine aceitar o primeiro envelope (invariante #419).
+builder.Services.AddMonolitoPersistencia();
+builder.Services.AddIdempotency(builder.Configuration);
+
 // --- Módulos do monólito (self-describing; cada um traz seu OpenAPI doc, erros,
-// HATEOAS, idempotência, Application+Infrastructure e migrations on startup) ---
+// HATEOAS, Application e Infrastructure) ---
 builder.Services.AddConfiguracaoModule(builder.Configuration);
 builder.Services.AddOrganizacaoInstitucionalModule(builder.Configuration);
 builder.Services.AddAutorizacaoModule(builder.Configuration);
@@ -101,8 +107,7 @@ builder.Services.AddIngressoModule(builder.Configuration);
 builder.Services.AddPublicacoesModule(builder.Configuration);
 
 // Discentes ainda é só réplica de dados (sem endpoints públicos) — traz apenas
-// Infrastructure + migrations on startup; OpenAPI/HATEOAS/idempotência/Application
-// entram quando o módulo ganhar endpoints/handlers.
+// Infrastructure; OpenAPI/HATEOAS/Application entram quando o módulo ganhar endpoints/handlers.
 builder.Services.AddDiscentesModule(builder.Configuration);
 
 // Health checks: os 7 módulos compartilham o banco `uniplus`, então um
@@ -110,9 +115,8 @@ builder.Services.AddDiscentesModule(builder.Configuration);
 builder.Services.AddUniPlusHealthChecks(builder.Configuration, connectionStringName: "UniPlusDb");
 
 // --- Wolverine consolidado: UMA instância, outbox no banco `uniplus`
-// (schema `wolverine`), compondo o discovery de handlers dos módulos. As
-// migrations on startup (registradas acima nos Add*Module) precedem o runtime
-// Wolverine (invariante #419). ---
+// (schema `wolverine`), compondo o discovery de handlers dos módulos. A migration
+// on startup (AddMonolitoPersistencia) precede o runtime Wolverine (invariante #419). ---
 
 // Mensageria do Selecao (Kafka/Schema Registry — ADR-0051 — + routing): o módulo
 // é dono do seu wiring (SelecaoMessagingRegistration); o host registra o Schema
@@ -145,16 +149,14 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(
             typeof(Unifesspa.UniPlus.Discentes.Infrastructure.Sincronizacao.SincronizarVinculosDiscentesHandler).Assembly);
 
-        // Opt-ins de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, cada
-        // módulo declara as UoW que usam service location intencionalmente (forwarding
-        // para a MESMA instância de DbContext — ADR-0004). Cada módulo é dono do seu
-        // opt-in (OCP/SRP); o host apenas compõe — WolverineOutboxConfiguration
-        // permanece agnóstico dos tipos de módulo (Clean Arch).
+        // Opt-ins de codegen (ADR-0098): sob ServiceLocationPolicy.NotAllowed, o contexto único
+        // declara a UoW que usa service location intencionalmente (forwarding para a MESMA
+        // instância de DbContext — ADR-0004). Cada módulo declara os seus próprios opt-ins;
+        // WolverineOutboxConfiguration permanece agnóstico dos tipos de módulo (Clean Arch).
+        MonolitoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         SelecaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
         ConfiguracaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
-        OrganizacaoInstitucionalCodegenRegistration.ConfigurarCodegenWolverine(opts);
         AutorizacaoCodegenRegistration.ConfigurarCodegenWolverine(opts);
-        PublicacoesCodegenRegistration.ConfigurarCodegenWolverine(opts);
         DiscentesCodegenRegistration.ConfigurarCodegenWolverine(opts);
 
         // Routing do Selecao (PG queue domain-events + Kafka processo_seletivo_events) —

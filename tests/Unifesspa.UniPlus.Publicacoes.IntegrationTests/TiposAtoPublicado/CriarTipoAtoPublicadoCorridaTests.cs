@@ -5,13 +5,13 @@ using System.Globalization;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
@@ -48,7 +48,7 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
     {
         string codigo = CodigoUnico();
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin");
         var real = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         // Primeira versão, gravada normalmente.
@@ -57,7 +57,7 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         primeira.IsSuccess.Should().BeTrue();
 
         // Segunda versão, com a consulta prévia cega — o estado do banco mudou sob ela.
-        await using PublicacoesDbContext ctx2 = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext("admin");
         var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2, TimeProvider.System));
 
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
@@ -81,12 +81,12 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
         // handler — 500 em vez do DomainError já traduzido.
         string codigo = CodigoUnico();
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin");
         var real = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
         (await CriarTipoAtoPublicadoCommandHandler.Handle(Comando(codigo), real, ctx, CancellationToken.None))
             .IsSuccess.Should().BeTrue();
 
-        await using PublicacoesDbContext ctx2 = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext("admin");
         var cego = new RepositorioComConsultaObsoleta(new TipoAtoPublicadoRepository(ctx2, TimeProvider.System));
 
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
@@ -106,13 +106,13 @@ public sealed class CriarTipoAtoPublicadoCorridaTests
     {
         string codigo = CodigoUnico();
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin");
         var repositorio = new TipoAtoPublicadoRepository(ctx, TimeProvider.System);
 
         (await CriarTipoAtoPublicadoCommandHandler.Handle(Comando(codigo), repositorio, ctx, CancellationToken.None))
             .IsSuccess.Should().BeTrue();
 
-        await using PublicacoesDbContext ctx2 = _fixture.CreateDbContext("admin");
+        await using UniPlusDbContext ctx2 = _fixture.CreateDbContext("admin");
         Result<Guid> segunda = await CriarTipoAtoPublicadoCommandHandler.Handle(
             Comando(codigo), new TipoAtoPublicadoRepository(ctx2, TimeProvider.System), ctx2, CancellationToken.None);
 

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Host.IntegrationTests.Instalacao;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
 /// <summary>
@@ -40,7 +41,7 @@ public sealed class InstanteDaConciliacaoNoHostTests : JanelaDeMigracaoNoHostTes
 
         await using (TransacaoRetidaDeTeste trava = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services))
         {
-            await trava.Servicos.GetRequiredService<AutorizacaoDbContext>().Database.ExecuteSqlRawAsync(
+            await trava.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
                 "SELECT 1 FROM autorizacao.perfis WHERE id = {0} FOR UPDATE", vigente.PerfilId);
             Task conciliacao = CatalogoAlternativoDeTeste.ImplantarAsync(Fixture.Factory.Services, real, Relogio);
             await trava.AguardarBloqueioAsync();
@@ -56,7 +57,7 @@ public sealed class InstanteDaConciliacaoNoHostTests : JanelaDeMigracaoNoHostTes
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
-        return await escopo.ServiceProvider.GetRequiredService<AutorizacaoDbContext>().ImplantacoesDasPermissoes.AsNoTracking()
+        return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().ImplantacoesDasPermissoes.AsNoTracking()
             .OrderByDescending(c => c.Sequencia).Select(c => c.ImplantadaEm).FirstAsync();
     }
 }

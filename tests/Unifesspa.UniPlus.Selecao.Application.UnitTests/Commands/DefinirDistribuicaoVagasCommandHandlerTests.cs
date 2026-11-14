@@ -6,10 +6,10 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -37,7 +37,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         IOfertaCursoReader OfertaCursoReader,
         IModalidadeReader ModalidadeReader,
         IReferenciaReservaDemograficaReader ReferenciaReservaDemograficaReader,
-        ISelecaoUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork);
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
@@ -49,7 +49,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             Substitute.For<IOfertaCursoReader>(),
             Substitute.For<IModalidadeReader>(),
             Substitute.For<IReferenciaReservaDemograficaReader>(),
-            Substitute.For<ISelecaoUnitOfWork>());
+            Substitute.For<IUnitOfWork>());
     }
 
     private static OfertaCursoView NovaOferta(Guid id, GrupoAreaEnemView? grupoAreaEnem = null) => new(

@@ -7,14 +7,15 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Repositório das instalações dos primeiros gestores e das tentativas de confirmá-las.</summary>
 public sealed class InstalacaoRepository : IInstalacaoRepository
 {
-    private readonly AutorizacaoDbContext _context;
+    private readonly UniPlusDbContext _context;
 
-    public InstalacaoRepository(AutorizacaoDbContext context)
+    public InstalacaoRepository(UniPlusDbContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         _context = context;
@@ -77,7 +78,7 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
         // perde o conflito de concorrência descartaria o registro da própria tentativa. A trava dura até o fim da
         // transação do handler, e a releitura depois dela enxerga o que a anterior confirmou.
         await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoDbContext.Schema}.instalacoes WHERE id = {{0}} FOR UPDATE",
+            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.instalacoes WHERE id = {{0}} FOR UPDATE",
             [id.Value],
             cancellationToken).ConfigureAwait(false);
 

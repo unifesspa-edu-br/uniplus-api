@@ -5,10 +5,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
-using Unifesspa.UniPlus.Authorization.Contracts;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Providencias;
@@ -33,7 +32,7 @@ internal sealed class CenarioDaProvidencia
 
     public IConcessaoRepository Concessoes { get; } = Substitute.For<IConcessaoRepository>();
 
-    public IAutorizacaoUnitOfWork Unidade { get; } = Substitute.For<IAutorizacaoUnitOfWork>();
+    public IUnitOfWork Unidade { get; } = Substitute.For<IUnitOfWork>();
 
     public IPapelDoRepresentante Papel { get; } = Substitute.For<IPapelDoRepresentante>();
 

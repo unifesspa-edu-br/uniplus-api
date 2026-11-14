@@ -5,6 +5,7 @@ using System.Globalization;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
@@ -46,7 +47,7 @@ public sealed class TipoAtoPublicadoReaderTests
             Novo(expirado, Inicio, Meio, unicoPorObjeto: false),
             Novo(foraDoPedido, Inicio, null, unicoPorObjeto: false));
 
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var reader = new TipoAtoPublicadoReader(ctx);
 
         IReadOnlyList<TipoAtoPublicadoView> emJaneiro = await reader
@@ -65,7 +66,7 @@ public sealed class TipoAtoPublicadoReaderTests
 
     private async Task Gravar(params TipoAtoPublicado[] tipos)
     {
-        await using PublicacoesDbContext ctx = _fixture.CreateDbContext("admin-publicacoes");
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin-publicacoes");
         ctx.TiposAtoPublicado.AddRange(tipos);
         await ctx.SaveChangesAsync();
     }

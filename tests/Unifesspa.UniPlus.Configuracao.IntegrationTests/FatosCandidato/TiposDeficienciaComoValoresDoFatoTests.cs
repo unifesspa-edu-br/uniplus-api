@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O tipo de deficiência da reserva de vagas oferece os tipos do cadastro de tipos de deficiência, em
@@ -41,20 +42,20 @@ public sealed class TiposDeficienciaComoValoresDoFatoTests
         TipoDeficiencia removido = Novo($"{prefixo}_B", $"{prefixo} removido");
         TipoDeficiencia substituido = Novo($"{prefixo}_C", $"{prefixo} substituído");
         TipoDeficiencia recriado = Novo($"{prefixo}_C", $"{prefixo} recriado");
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(Admin))
         {
             ctx.TiposDeficiencia.AddRange(vivo, removido, substituido);
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(Admin))
         {
             ctx.TiposDeficiencia.RemoveRange(
                 await ctx.TiposDeficiencia.Where(t => t.Id == removido.Id || t.Id == substituido.Id).ToListAsync());
             await ctx.SaveChangesAsync();
         }
 
-        await using (ConfiguracaoDbContext ctx = _fixture.CreateDbContext(Admin))
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(Admin))
         {
             ctx.TiposDeficiencia.Add(recriado);
             await ctx.SaveChangesAsync();
@@ -67,7 +68,7 @@ public sealed class TiposDeficienciaComoValoresDoFatoTests
         finally
         {
             // O banco é compartilhado pela coleção: os tipos do teste não ficam no cadastro dos outros.
-            await using ConfiguracaoDbContext ctx = _fixture.CreateDbContext(userId: null);
+            await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
             await ctx.TiposDeficiencia.IgnoreQueryFilters()
                 .Where(t => t.Id == vivo.Id || t.Id == removido.Id || t.Id == substituido.Id || t.Id == recriado.Id)
                 .ExecuteDeleteAsync();
@@ -76,7 +77,7 @@ public sealed class TiposDeficienciaComoValoresDoFatoTests
 
     private async Task ConferirOsValoresDoFatoAsync(string prefixo)
     {
-        await using ConfiguracaoDbContext readCtx = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         FatoCandidatoReader reader = new(readCtx);
         FatoCandidatoView? porCodigo = await reader.ObterPorCodigoAsync("TIPO_DEFICIENCIA");
         FatoCandidatoView daLista = (await reader.ListarAsync()).Single(static f => f.Codigo == "TIPO_DEFICIENCIA");

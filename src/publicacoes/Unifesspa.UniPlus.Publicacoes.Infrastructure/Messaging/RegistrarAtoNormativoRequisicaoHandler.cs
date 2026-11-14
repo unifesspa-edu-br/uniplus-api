@@ -4,14 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Publicacoes.Application.Abstractions;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 
 using Wolverine.Attributes;
 using Wolverine.ErrorHandling;
@@ -86,10 +86,10 @@ public static class RegistrarAtoNormativoRequisicaoHandler
     [Transactional]
     public static async Task<AtoNormativoRegistrado> Handle(
         RegistrarAtoNormativoRequisicao requisicao,
-        PublicacoesDbContext db,
+        UniPlusDbContext db,
         ITipoAtoPublicadoRepository tiposRepository,
         IAtoNormativoRepository atosRepository,
-        IPublicacoesUnitOfWork unitOfWork,
+        IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
