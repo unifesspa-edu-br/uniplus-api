@@ -299,17 +299,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      # As 6 connection strings apontam para o MESMO banco `uniplus`; cada
-      # DbContext usa seu schema (HasDefaultSchema). UniPlusDb é o outbox
-      # Wolverine (schema `wolverine`) + health checks agregados. Role única.
+      # Uma só connection string: UniPlusDb serve ao contexto único dos módulos, ao outbox
+      # Wolverine (schema `wolverine`) e aos health checks; cada módulo usa o seu schema.
       ConnectionStrings__UniPlusDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__ConfiguracaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__AutorizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
-      ConnectionStrings__DiscentesDb: "Host=postgres;Port=5432;Database=uniplus;Username=${POSTGRES_USER:?defina POSTGRES_USER no docker/.env};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}"
       # E-mail: o appsettings.Development aponta para localhost; dentro da rede Docker o Mailpit é o serviço mailpit.
       Email__Smtp__Host: "mailpit"
       Redis__ConnectionString: "redis:6379"

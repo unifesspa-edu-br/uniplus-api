@@ -89,17 +89,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      # As 6 connection strings apontam para o MESMO banco `uniplus`; cada
-      # DbContext usa seu schema (HasDefaultSchema). UniPlusDb é o outbox
-      # Wolverine (schema `wolverine`) + health checks. Role única.
+      # Uma só connection string: UniPlusDb serve ao contexto único dos módulos, ao outbox
+      # Wolverine (schema `wolverine`) e aos health checks; cada módulo usa o seu schema.
       ConnectionStrings__UniPlusDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__ConfiguracaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__OrganizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__SelecaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__IngressoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__PublicacoesDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__AutorizacaoDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
-      ConnectionStrings__DiscentesDb: "Host=postgres;Port=5432;Database=uniplus;Username=uniplus;Password=uniplus_dev"
       Redis__ConnectionString: "redis:6379"
       # Stack mínima sem broker: limpa o Kafka:BootstrapServers do
       # appsettings.Development.json (localhost:9092) para o
