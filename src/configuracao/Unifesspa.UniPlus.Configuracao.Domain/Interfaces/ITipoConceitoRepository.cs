@@ -10,5 +10,6 @@ public interface ITipoConceitoRepository
     Task<(IReadOnlyList<TipoConceito> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken);
     Task AdicionarAsync(TipoConceito tipo, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TipoConceito>> ListarPorCodigosAsync(IReadOnlyCollection<string> codigos, CancellationToken cancellationToken);
     Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken);
 }

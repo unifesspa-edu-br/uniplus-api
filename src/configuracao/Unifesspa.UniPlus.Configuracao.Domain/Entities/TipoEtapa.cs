@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using System.Text;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -21,6 +22,8 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
     private const char CaractereNulo = (char)0;
+
+    private readonly List<TipoConceito> _conceitosAdmitidos = [];
 
     public string Codigo { get; private set; } = string.Empty;
     public string Nome { get; private set; } = string.Empty;
@@ -54,6 +57,10 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     // código-fonte. Faz parte da identidade do tipo, como o código: vem só da carga do
     // cadastro, e nenhuma escrita da API o altera.
     public bool NotaDeOrigemNoEnem { get; private set; }
+
+    /// <summary>Os tipos de conceito com que as etapas deste tipo podem ser avaliadas, ordenados pelo código.</summary>
+    public IReadOnlyList<TipoConceito> ConceitosAdmitidos =>
+        [.. _conceitosAdmitidos.OrderBy(static conceito => conceito.Codigo, StringComparer.Ordinal)];
 
     public string? CreatedBy { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -254,6 +261,17 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         AdmitePontuacao = campos.Value.AdmitePontuacao;
         AdmiteEliminacao = campos.Value.AdmiteEliminacao;
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Troca o conjunto de conceitos admitidos pelo informado. Os conceitos chegam já conferidos
+    /// contra o catálogo (<see cref="ConceitosPedidos"/>): existem, estão ativos e não se repetem.
+    /// </summary>
+    public void SubstituirConceitosAdmitidos(IReadOnlyCollection<TipoConceito> conceitos)
+    {
+        ArgumentNullException.ThrowIfNull(conceitos);
+        _conceitosAdmitidos.Clear();
+        _conceitosAdmitidos.AddRange(conceitos);
     }
 
     public Result Desativar()

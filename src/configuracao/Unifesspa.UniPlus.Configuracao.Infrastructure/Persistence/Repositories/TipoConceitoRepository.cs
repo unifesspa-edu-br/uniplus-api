@@ -39,6 +39,14 @@ public sealed class TipoConceitoRepository : ITipoConceitoRepository
         await _dbContext.TiposConceito.AddAsync(tipo, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<TipoConceito>> ListarPorCodigosAsync(
+        IReadOnlyCollection<string> codigos, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+        return await _dbContext.TiposConceito.Where(tipo => codigos.Contains(tipo.Codigo))
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(codigo);

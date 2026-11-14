@@ -6,6 +6,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposEtapa;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -15,7 +16,15 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class AtualizarTipoEtapaCommandHandlerTests
 {
     private readonly ITipoEtapaRepository _repository = Substitute.For<ITipoEtapaRepository>();
+    private readonly ITipoConceitoRepository _conceitos = Substitute.For<ITipoConceitoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+
+    private Task<Result> Atualizar(AtualizarTipoEtapaCommand comando) =>
+        AtualizarTipoEtapaCommandHandler.Handle(comando, _repository, _conceitos, _unitOfWork, CancellationToken.None);
+
+    private void CatalogoTem(params TipoConceito[] tipos) =>
+        _conceitos.ListarPorCodigosAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
+            .Returns(tipos);
 
     private static TipoEtapa Existente(string codigo = "CODIGO_EXISTENTE") =>
         TipoEtapa.Criar(codigo, "Nome original", null, true, true).Value!;
@@ -26,8 +35,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         Guid id = Guid.CreateVersion7();
         _repository.ObterPorIdAsync(id, Arg.Any<CancellationToken>()).Returns((TipoEtapa?)null);
 
-        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(id, "Nome novo", true, true), _repository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(id, "Nome novo", true, true, []));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoEtapaErrorCodes.NaoEncontrado);
@@ -40,9 +48,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         TipoEtapa existente = Existente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(existente.Id, "Nome atualizado", true, true, "Descrição nova"),
-            _repository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(existente.Id, "Nome atualizado", true, true, [], "Descrição nova"));
 
         resultado.IsSuccess.Should().BeTrue();
         existente.Codigo.Should().Be("CODIGO_EXISTENTE", "o código é imutável — não há campo para alterá-lo");
@@ -57,8 +63,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
     [Fact(DisplayName = "Id inexistente com Nome vazio devolve a violação de campo, não NaoEncontrado, sem consultar o repositório")]
     public async Task Handle_IdInexistenteComNomeVazio_RetornaViolacaoDeCampoSemConsultarRepositorio()
     {
-        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true), _repository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true, []));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(TipoEtapaErrorCodes.NomeObrigatorio);
@@ -68,9 +73,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
     [Fact(DisplayName = "Nome vazio e descrição longa no mesmo payload acumulam as duas violações")]
     public async Task Handle_NomeVazioEDescricaoLonga_AcumulaAsDuasViolacoes()
     {
-        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true, new string('a', 1001)),
-            _repository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true, [], new string('a', 1001)));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -84,8 +87,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         TipoEtapa existente = TipoEtapaDeTeste.NotaDoEnem();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(existente.Id, "Nome novo", false, true), _repository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(existente.Id, "Nome novo", false, true, []));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(TipoEtapaErrorCodes.NotaDeOrigemNoEnemExigePontuacao);
@@ -103,8 +105,7 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         TipoEtapa existente = TipoEtapaDeTeste.NotaDoEnem();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        Result resultado = await AtualizarTipoEtapaCommandHandler.Handle(
-            new AtualizarTipoEtapaCommand(existente.Id, "", false, true), _repository, _unitOfWork, CancellationToken.None);
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(existente.Id, "", false, true, []));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(("nome", TipoEtapaErrorCodes.NomeObrigatorio));
@@ -112,5 +113,59 @@ public sealed class AtualizarTipoEtapaCommandHandlerTests
         existente.AdmitePontuacao.Should().BeTrue();
         await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Atualização substitui os conceitos admitidos pelo conjunto informado")]
+    public async Task Handle_ConceitosInformados_SubstituiOConjunto()
+    {
+        TipoEtapa existente = Existente();
+        existente.SubstituirConceitosAdmitidos([TiposConceitoDeTeste.Categorico()]);
+        TipoConceito nota = TiposConceitoDeTeste.Numerico();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        CatalogoTem(nota);
+
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(existente.Id, "Nome", true, true, [nota.Codigo]));
+
+        resultado.IsSuccess.Should().BeTrue();
+        existente.ConceitosAdmitidos.Should().ContainSingle().Which.Should().BeSameAs(nota);
+    }
+
+    [Fact(DisplayName = "Lista ausente é recusada como campo obrigatório, sem buscar o tipo nem consultar o catálogo")]
+    public async Task Handle_ListaAusente_RecusaSemBuscarOTipo()
+    {
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "Nome", true, true, null));
+
+        resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("conceitosAdmitidos", TipoEtapaErrorCodes.ConceitosAdmitidosObrigatorio));
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _conceitos.DidNotReceive().ListarPorCodigosAsync(
+            Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Conceito inexistente acumula com a violação de campo, não busca o tipo e preserva o conjunto")]
+    public async Task Handle_ConceitoInexistenteENomeAusente_AcumulaSemBuscarOTipo()
+    {
+        CatalogoTem();
+
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(Guid.CreateVersion7(), "", true, true, ["FANTASMA"]));
+
+        resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("nome", TipoEtapaErrorCodes.NomeObrigatorio),
+            ("conceitosAdmitidos", TipoEtapaErrorCodes.ConceitoInexistente));
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Recusa do tipo de nota do ENEM não altera os conceitos admitidos")]
+    public async Task Handle_RecusaDoTipo_NaoSubstituiOsConceitos()
+    {
+        TipoEtapa existente = TipoEtapaDeTeste.NotaDoEnem();
+        TipoConceito nota = TiposConceitoDeTeste.Numerico();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        CatalogoTem(nota);
+
+        Result resultado = await Atualizar(new AtualizarTipoEtapaCommand(existente.Id, "Nome", false, true, [nota.Codigo]));
+
+        resultado.IsFailure.Should().BeTrue();
+        existente.ConceitosAdmitidos.Should().BeEmpty();
     }
 }

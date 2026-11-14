@@ -7,37 +7,55 @@ using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Valida o agregado por inteiro primeiro (sem I/O) — código, nome e descrição
-/// acumulam no mesmo lote — só então confere a unicidade do código entre vivos,
-/// com o código já normalizado.
+/// Valida o agregado por inteiro primeiro — código, nome, descrição e conceitos admitidos acumulam no mesmo
+/// lote — e só então confere a unicidade do código entre vivos, com o código já normalizado.
 /// </summary>
 public static class CriarTipoEtapaCommandHandler
 {
     public static async Task<Result<Guid>> Handle(
         CriarTipoEtapaCommand command,
         ITipoEtapaRepository repository,
+        ITipoConceitoRepository conceitos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(conceitos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
+        Result<TipoEtapa> montado = await Montar(command, conceitos, cancellationToken).ConfigureAwait(false);
+        return montado.IsFailure
+            ? Result<Guid>.ValidationFailure(montado.Errors)
+            : await RegistrarSeInedito(montado.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<TipoEtapa>> Montar(
+        CriarTipoEtapaCommand command, ITipoConceitoRepository conceitos, CancellationToken cancellationToken)
+    {
         Result<TipoEtapa> criar = TipoEtapa.Criar(
-            command.Codigo, command.Nome, command.Descricao,
-            command.AdmitePontuacao, command.AdmiteEliminacao);
-        if (criar.IsFailure)
+            command.Codigo, command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
+        Result<IReadOnlyList<TipoConceito>> admitidos = await ResolucaoDosConceitosAdmitidos
+            .Resolver(command.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
+        FieldError[] erros = [.. criar.Errors, .. admitidos.Errors];
+        if (erros.Length > 0)
         {
-            return Result<Guid>.ValidationFailure(criar.Errors);
+            return Result<TipoEtapa>.ValidationFailure(erros);
         }
 
-        TipoEtapa tipo = criar.Value!;
+        criar.Value!.SubstituirConceitosAdmitidos(admitidos.Value!);
+        return criar;
+    }
 
-        if (await repository.CodigoExisteAsync(tipo.Codigo, cancellationToken).ConfigureAwait(false))
-        {
-            return Result<Guid>.Failure(CodigoJaExiste());
-        }
+    private static async Task<Result<Guid>> RegistrarSeInedito(
+        TipoEtapa tipo, ITipoEtapaRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken) =>
+        await repository.CodigoExisteAsync(tipo.Codigo, cancellationToken).ConfigureAwait(false)
+            ? Result<Guid>.Failure(CodigoJaExiste())
+            : await Persistir(tipo, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
 
+    private static async Task<Result<Guid>> Persistir(
+        TipoEtapa tipo, ITipoEtapaRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         await repository.AdicionarAsync(tipo, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -45,10 +63,8 @@ public static class CriarTipoEtapaCommandHandler
         }
         catch (Exception exception) when (UniqueConstraintViolation.EhConflitoDeCodigo(exception))
         {
-            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync
-            // automático do Wolverine (AutoApplyTransactions) tenta a mesma inserção de
-            // novo FORA deste catch — a mesma violação estoura sem tradução, e o 409
-            // pretendido vira 500.
+            // Sem descartar, a entidade Added continua rastreada e o SaveChangesAsync automático do
+            // Wolverine repete a inserção fora deste catch: o 409 pretendido vira 500.
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result<Guid>.Failure(CodigoJaExiste());
         }

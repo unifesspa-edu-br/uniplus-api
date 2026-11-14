@@ -13,10 +13,15 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// agravante: <c>bool</c> não-anulável faria campo ausente virar <c>false</c> em silêncio, e
 /// o tipo nasceria declarando que não compõe a nota final sem ninguém ter dito isso.
 /// </para>
+/// <para>
+/// <c>ConceitosAdmitidos</c> traz os códigos dos tipos de conceito que o tipo admite. A lista é obrigatória,
+/// ainda que vazia: ausente é recusada, e não lida como "nenhum conceito".
+/// </para>
 /// </remarks>
 public sealed record CriarTipoEtapaCommand(
     string? Codigo,
     string? Nome,
     bool? AdmitePontuacao,
     bool? AdmiteEliminacao,
+    IReadOnlyList<string>? ConceitosAdmitidos,
     string? Descricao = null) : ICommand<Result<Guid>>;

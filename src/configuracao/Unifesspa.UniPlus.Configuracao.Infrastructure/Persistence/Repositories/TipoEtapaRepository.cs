@@ -19,16 +19,18 @@ public sealed class TipoEtapaRepository : ITipoEtapaRepository
     }
 
     public Task<TipoEtapa?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken) =>
-        _dbContext.TiposEtapa.FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
+        _dbContext.TiposEtapa.Include(tipo => tipo.ConceitosAdmitidos).FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
 
     public Task<TipoEtapa?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken) =>
-        _dbContext.TiposEtapa.AsNoTracking().FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
+        _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos)
+            .FirstOrDefaultAsync(tipo => tipo.Id == id, cancellationToken);
 
     public async Task<(IReadOnlyList<TipoEtapa> Itens, Guid? AnteriorAfterId, Guid? ProximoAfterId)> ListarPaginadoAsync(
         Guid? afterId, int limit, PaginationDirection direction, CancellationToken cancellationToken)
     {
         CursorKeysetPage<TipoEtapa> page = await CursorKeyset
-            .ApplyAsync(_dbContext.TiposEtapa.AsNoTracking().Where(tipo => tipo.Ativo), afterId, limit, direction, cancellationToken)
+            .ApplyAsync(
+                _dbContext.TiposEtapa.AsNoTracking().Include(tipo => tipo.ConceitosAdmitidos).Where(tipo => tipo.Ativo), afterId, limit, direction, cancellationToken)
             .ConfigureAwait(false);
         return (page.Items, page.PrevAfterId, page.NextAfterId);
     }
