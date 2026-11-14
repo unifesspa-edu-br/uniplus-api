@@ -89,19 +89,28 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
             .WithInnerException<DbUpdateException, PostgresException>();
     }
 
-    [Fact(DisplayName = "Apagar do processo leva os rascunhos de todos os operadores")]
-    public async Task ApagarDoProcessoLevaTodos()
+    [Fact(DisplayName = "Remover do processo só apaga na gravação e leva os rascunhos de todos os operadores")]
+    public async Task RemoverDoProcessoLevaTodosNaGravacao()
     {
         Guid processoId = await NovoProcessoAsync();
         await GravarAsync(processoId, Operador, """{"a":1}""");
         await GravarAsync(processoId, Colega, """{"a":2}""");
 
         await using UniPlusDbContext contexto = _fixture.CreateDbContext();
-        int apagados = await new RascunhoDePublicacaoRepository(contexto).ApagarDoProcessoAsync(processoId);
+        await new RascunhoDePublicacaoRepository(contexto).RemoverDoProcessoAsync(processoId);
 
-        apagados.Should().Be(2);
-        (await contexto.RascunhosDePublicacao.CountAsync(r => r.ProcessoSeletivoId == processoId))
-            .Should().Be(0);
+        (await ContarDoProcessoAsync(processoId)).Should().Be(2, "a remoção só está no rastreador");
+
+        await contexto.SaveChangesAsync();
+
+        (await ContarDoProcessoAsync(processoId)).Should().Be(0);
+    }
+
+    private async Task<int> ContarDoProcessoAsync(Guid processoId)
+    {
+        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
+
+        return await leitura.RascunhosDePublicacao.CountAsync(r => r.ProcessoSeletivoId == processoId);
     }
 
     [Fact(DisplayName = "Descartar apaga só o do operador, e não o do colega")]

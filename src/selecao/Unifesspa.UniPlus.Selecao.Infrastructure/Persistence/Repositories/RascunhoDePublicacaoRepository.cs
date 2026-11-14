@@ -51,12 +51,14 @@ public sealed class RascunhoDePublicacaoRepository : IRascunhoDePublicacaoReposi
             .ConfigureAwait(false);
     }
 
-    public async Task<int> ApagarDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
+    public async Task RemoverDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default)
     {
-        return await _context.RascunhosDePublicacao
+        List<RascunhoDePublicacao> rascunhos = await _context.RascunhosDePublicacao
             .Where(r => r.ProcessoSeletivoId == processoSeletivoId)
-            .ExecuteDeleteAsync(cancellationToken)
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        _context.RascunhosDePublicacao.RemoveRange(rascunhos);
     }
 
     public async Task<int> ApagarVencidosAsync(

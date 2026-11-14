@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Transacao;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -28,10 +26,6 @@ using Wolverine.Tracking;
 /// do commit, para a fila durável do evento, e o que o liga à transação é não existir nos casos em que ela não confirma.
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class AtomicidadeEntreDoisModulosNoHostTests : IClassFixture<HostComHandlersDeTransacao>
 {
     private readonly IServiceProvider _servicos;

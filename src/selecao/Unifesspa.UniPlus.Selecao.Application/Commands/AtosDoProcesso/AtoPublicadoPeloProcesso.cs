@@ -16,7 +16,7 @@ internal static class AtoPublicadoPeloProcesso
 {
     /// <summary>
     /// O ato que cria uma versão de configuração: a abertura e a retificação do edital. O instante da divulgação é o
-    /// da vigência da versão, e a versão de configuração é a que nasce com ele.
+    /// da vigência da versão, e a versão invocada é a que nasce com ele.
     /// </summary>
     public static AtoNormativoPublicado DaVersao(
         ProcessoSeletivo processo,
@@ -32,7 +32,7 @@ internal static class AtoPublicadoPeloProcesso
 
         return Montar(ato, tipoConferido, processo.Id, versao.AtoCriadorId, versao.VigenteAPartirDe, numeroDeclarado, documentoHash) with
         {
-            VersaoDeConfiguracao = new VersaoDeConfiguracaoDoAto(versao.Id, versao.HashConfiguracao),
+            VersaoInvocada = new VersaoInvocadaDoAto(versao.Id, versao.HashConfiguracao),
             Retificacao = retificacao is null ? null : new RetificacaoDoAto(retificacao.EditalRetificadoId, retificacao.Motivo),
         };
     }

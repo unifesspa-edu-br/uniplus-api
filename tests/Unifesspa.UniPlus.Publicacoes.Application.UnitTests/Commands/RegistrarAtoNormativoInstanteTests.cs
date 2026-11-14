@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Commands;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -18,10 +16,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 /// por mensagem traz o que a operação de origem decidiu. A data do ato, que o documento declara,
 /// é outra grandeza e nunca o substitui.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class RegistrarAtoNormativoInstanteTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

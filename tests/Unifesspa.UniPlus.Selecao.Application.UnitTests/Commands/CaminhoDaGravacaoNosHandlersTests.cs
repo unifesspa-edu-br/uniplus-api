@@ -24,9 +24,9 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
     public static TheoryData<OperacaoQueCongela> Atos() =>
         [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar, OperacaoQueCongela.FecharRetificacao];
 
-    [Theory(DisplayName = "No sucesso o handler salva e só então apaga o rascunho do processo")]
+    [Theory(DisplayName = "No sucesso o handler remove o rascunho do processo no rastreador, antes do flush que o apaga com o ato")]
     [MemberData(nameof(Atos))]
-    public async Task Sucesso_ApagaORascunhoDepoisDoFlush(OperacaoQueCongela operacao)
+    public async Task Sucesso_RemoveORascunhoNaMesmaGravacao(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
 
@@ -35,8 +35,8 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         Received.InOrder(() =>
         {
+            _ = cenario.Servicos.Rascunhos.RemoverDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
             _ = cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-            _ = cenario.Servicos.Rascunhos.ApagarDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
         });
     }
 
@@ -56,9 +56,9 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         eventos.Where(static e => e is not CopiarDocumentosDoAtoAoAcervo).Should().OnlyContain(static e => e is IDomainEvent);
     }
 
-    [Theory(DisplayName = "O flush que viola a unicidade do número da versão recusa e não apaga o rascunho")]
+    [Theory(DisplayName = "O flush que viola a unicidade do número da versão recusa e descarta o rastreamento, com a remoção do rascunho")]
     [MemberData(nameof(Atos))]
-    public async Task UnicidadeNoFlush_NaoApagaORascunho(OperacaoQueCongela operacao)
+    public async Task UnicidadeNoFlush_DescartaARemocaoDoRascunho(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
@@ -68,12 +68,12 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
 
         resposta.Error!.Code.Should().Be("VersaoConfiguracao.NumeroDuplicado");
         eventos.Should().BeEmpty();
-        await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
-    [Theory(DisplayName = "A falha do flush propaga ao Wolverine e não apaga o rascunho")]
+    [Theory(DisplayName = "A falha do flush propaga ao Wolverine, que desfaz a transação com a remoção do rascunho")]
     [MemberData(nameof(Atos))]
-    public async Task FalhaNoFlush_NaoApagaORascunho(OperacaoQueCongela operacao)
+    public async Task FalhaNoFlush_Propaga(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao);
         cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Conexão perdida."));
@@ -81,6 +81,5 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         Func<Task> executar = cenario.ExecutarAsync;
 
         await executar.Should().ThrowAsync<InvalidOperationException>();
-        await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

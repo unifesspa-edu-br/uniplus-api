@@ -9,10 +9,10 @@ public static class AtoNormativoErrorCodes
     public const string TipoSemVersaoVigente = "AtoNormativo.TipoSemVersaoVigente";
 
     /// <summary>
-    /// O par <c>{versao_de_configuracao_id, versao_de_configuracao_hash}</c> veio pela metade —
+    /// O par <c>{versao_invocada_id, versao_invocada_hash}</c> veio pela metade —
     /// um identificador sem hash, ou um hash sem identificador. É completo ou ausente.
     /// </summary>
-    public const string VersaoDeConfiguracaoIncompleta = "AtoNormativo.VersaoDeConfiguracaoIncompleta";
+    public const string VersaoInvocadaIncompleta = "AtoNormativo.VersaoInvocadaIncompleta";
 
     /// <summary>O identificador da URL não corresponde a nenhum ato registrado.</summary>
     public const string NaoEncontrado = "AtoNormativo.NaoEncontrado";

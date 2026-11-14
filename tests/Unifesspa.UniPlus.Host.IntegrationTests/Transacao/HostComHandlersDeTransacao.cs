@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Transacao;
 
-using System.Diagnostics.CodeAnalysis;
-
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 
@@ -16,10 +14,6 @@ using Wolverine.Postgresql;
 /// envelope fica na fila, e o teste o encontra. Um por classe de teste, como o host do conflito na gravação: o handler e a
 /// fila existem só neste host, e mantê-lo vivo depois da classe faria o runtime dele disputar as filas dos demais.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige que a fixture de classe seja pública.")]
 public sealed class HostComHandlersDeTransacao : IDisposable
 {
     /// <summary>A fila durável do evento de teste, no schema das filas do Wolverine.</summary>

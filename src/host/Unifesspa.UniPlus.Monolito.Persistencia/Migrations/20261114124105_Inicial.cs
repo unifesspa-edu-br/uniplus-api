@@ -68,8 +68,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     documento_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    versao_de_configuracao_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    versao_de_configuracao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
+                    versao_invocada_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    versao_invocada_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
                     ato_retificado_id = table.Column<Guid>(type: "uuid", nullable: true),
                     motivo_retificacao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
                 },
@@ -80,9 +80,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_ato_normativo_documento_hash", "documento_hash ~ '^[0-9a-f]{64}$'");
                     table.CheckConstraint("ck_ato_normativo_nao_autorretifica", "ato_retificado_id IS NULL OR ato_retificado_id <> id");
                     table.CheckConstraint("ck_ato_normativo_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
-                    table.CheckConstraint("ck_ato_normativo_versao_de_configuracao_completa", "(versao_de_configuracao_id IS NULL AND versao_de_configuracao_hash IS NULL) OR (versao_de_configuracao_id IS NOT NULL AND versao_de_configuracao_hash IS NOT NULL)");
-                    table.CheckConstraint("ck_ato_normativo_versao_de_configuracao_hash", "versao_de_configuracao_hash IS NULL OR versao_de_configuracao_hash ~ '^[0-9a-f]{64}$'");
-                    table.CheckConstraint("ck_ato_normativo_versao_de_configuracao_id_nao_zero", "versao_de_configuracao_id IS NULL OR versao_de_configuracao_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.CheckConstraint("ck_ato_normativo_versao_completa", "(versao_invocada_id IS NULL AND versao_invocada_hash IS NULL) OR (versao_invocada_id IS NOT NULL AND versao_invocada_hash IS NOT NULL)");
+                    table.CheckConstraint("ck_ato_normativo_versao_hash", "versao_invocada_hash IS NULL OR versao_invocada_hash ~ '^[0-9a-f]{64}$'");
+                    table.CheckConstraint("ck_ato_normativo_versao_id_nao_zero", "versao_invocada_id IS NULL OR versao_invocada_id <> '00000000-0000-0000-0000-000000000000'");
                     table.ForeignKey(
                         name: "fk_ato_normativo_ato_retificado",
                         column: x => x.ato_retificado_id,

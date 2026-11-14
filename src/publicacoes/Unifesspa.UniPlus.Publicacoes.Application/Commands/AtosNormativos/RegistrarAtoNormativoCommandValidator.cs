@@ -45,20 +45,20 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .MaximumLength(AtoNormativoRegras.AssinanteMaxLength).WithMessage(AtoNormativoRegras.AssinanteTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.Assinante));
 
-        // O par {id, hash} é completo ou ausente: um lado só não identifica a versão de configuração.
+        // O par {id, hash} é completo ou ausente: um lado só não identifica a versão invocada.
         RuleFor(x => x)
-            .Must(x => x.VersaoDeConfiguracaoId.HasValue == (x.VersaoDeConfiguracaoHash is not null))
-            .WithMessage(AtoNormativoRegras.VersaoDeConfiguracaoIncompleta)
-            .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.VersaoDeConfiguracaoHash));
+            .Must(x => x.VersaoInvocadaId.HasValue == (x.VersaoInvocadaHash is not null))
+            .WithMessage(AtoNormativoRegras.VersaoInvocadaIncompleta)
+            .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.VersaoInvocadaHash));
 
         // Id zerado não é referência: um Guid.Empty não aponta versão alguma.
-        RuleFor(x => x.VersaoDeConfiguracaoId)
-            .Must(id => id != Guid.Empty).WithMessage(AtoNormativoRegras.VersaoDeConfiguracaoIdObrigatorio)
-            .When(x => x.VersaoDeConfiguracaoId.HasValue);
+        RuleFor(x => x.VersaoInvocadaId)
+            .Must(id => id != Guid.Empty).WithMessage(AtoNormativoRegras.VersaoInvocadaIdObrigatorio)
+            .When(x => x.VersaoInvocadaId.HasValue);
 
-        RuleFor(x => x.VersaoDeConfiguracaoHash)
-            .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.VersaoDeConfiguracaoHashFormato)
-            .When(x => x.VersaoDeConfiguracaoHash is not null);
+        RuleFor(x => x.VersaoInvocadaHash)
+            .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.VersaoInvocadaHashFormato)
+            .When(x => x.VersaoInvocadaHash is not null);
 
         // A retificação é o par (ato retificado, motivo), completo ou ausente (ADR-0103).
         RuleFor(x => x)

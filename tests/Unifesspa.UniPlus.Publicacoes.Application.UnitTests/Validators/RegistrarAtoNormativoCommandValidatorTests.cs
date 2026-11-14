@@ -60,35 +60,35 @@ public sealed class RegistrarAtoNormativoCommandValidatorTests
     }
 
     [Fact(DisplayName = "Par de versão incompleto (só id) é recusado")]
-    public void VersaoDeConfiguracaoSoId()
+    public void VersaoInvocadaSoId()
     {
         ValidationResult resultado = _validator.Validate(
-            Comando() with { VersaoDeConfiguracaoId = Guid.CreateVersion7(), VersaoDeConfiguracaoHash = null });
+            Comando() with { VersaoInvocadaId = Guid.CreateVersion7(), VersaoInvocadaHash = null });
 
         resultado.IsValid.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Par de versão incompleto (só hash) é recusado")]
-    public void VersaoDeConfiguracaoSoHash()
+    public void VersaoInvocadaSoHash()
     {
         _validator.Validate(
-            Comando() with { VersaoDeConfiguracaoId = null, VersaoDeConfiguracaoHash = HashValido })
+            Comando() with { VersaoInvocadaId = null, VersaoInvocadaHash = HashValido })
             .IsValid.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Par de versão completo e válido passa")]
-    public void VersaoDeConfiguracaoCompleta()
+    public void VersaoInvocadaCompleta()
     {
         _validator.Validate(
-            Comando() with { VersaoDeConfiguracaoId = Guid.CreateVersion7(), VersaoDeConfiguracaoHash = HashValido })
+            Comando() with { VersaoInvocadaId = Guid.CreateVersion7(), VersaoInvocadaHash = HashValido })
             .IsValid.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Par de versão com id vazio (Guid.Empty) é recusado")]
-    public void VersaoDeConfiguracaoIdVazio()
+    public void VersaoInvocadaIdVazio()
     {
         _validator.Validate(
-            Comando() with { VersaoDeConfiguracaoId = Guid.Empty, VersaoDeConfiguracaoHash = HashValido })
+            Comando() with { VersaoInvocadaId = Guid.Empty, VersaoInvocadaHash = HashValido })
             .IsValid.Should().BeFalse();
     }
 

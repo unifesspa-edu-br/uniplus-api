@@ -39,8 +39,8 @@ public sealed record AtoNormativoDto(
     string DocumentoHash,
     string Assinante,
     DateTimeOffset PublicadoEm,
-    Guid? VersaoDeConfiguracaoId,
-    string? VersaoDeConfiguracaoHash,
+    Guid? VersaoInvocadaId,
+    string? VersaoInvocadaHash,
     Guid? AtoRetificadoId,
     string? MotivoRetificacao,
     IReadOnlyList<AnexoDoAtoDto> Anexos)

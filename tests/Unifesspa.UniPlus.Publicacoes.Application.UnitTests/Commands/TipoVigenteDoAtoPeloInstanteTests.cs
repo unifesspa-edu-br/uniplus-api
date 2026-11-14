@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Commands;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -17,10 +15,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// O tipo de ato vigente é o do dia civil em que o sistema divulga o ato, no fuso institucional: a data que o
 /// documento declara não participa da escolha.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class TipoVigenteDoAtoPeloInstanteTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

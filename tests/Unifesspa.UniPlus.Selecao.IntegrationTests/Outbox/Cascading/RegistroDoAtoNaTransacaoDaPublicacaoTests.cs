@@ -112,8 +112,8 @@ public sealed class RegistroDoAtoNaTransacaoDaPublicacaoTests
         evento.HashEdital.Should().Be(versao.AtoCriadorHash);
         evento.HashConfiguracao.Should().Be(versao.HashConfiguracao);
         ato.Id.Should().Be(versao.AtoCriadorId, "versão e ato registrado");
-        ato.VersaoDeConfiguracao!.Id.Should().Be(versao.Id);
-        ato.VersaoDeConfiguracao.Hash.Should().Be(versao.HashConfiguracao);
+        ato.VersaoInvocada!.Id.Should().Be(versao.Id);
+        ato.VersaoInvocada.Hash.Should().Be(versao.HashConfiguracao);
     }
 
     private static async Task ConferirGravadoNaTransacaoDaPublicacaoAsync(CascadingApiFactory api, Guid processoId, AtoNormativo ato)
