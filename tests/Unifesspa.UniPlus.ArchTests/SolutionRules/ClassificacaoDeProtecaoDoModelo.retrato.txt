@@ -822,6 +822,7 @@ configuracao.tipos_conceito.natureza: Interno
 configuracao.tipos_conceito.nome: Interno
 configuracao.tipos_conceito.updated_at: Interno
 configuracao.tipos_conceito.updated_by: Pessoal
+configuracao.tipos_conceito.xmin: Interno
 configuracao.tipos_de_banca.codigo: Interno
 configuracao.tipos_de_banca.created_at: Interno
 configuracao.tipos_de_banca.created_by: Pessoal

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -53,6 +54,18 @@ public sealed class TipoConceitoPersistenceTests
 
         await using UniPlusDbContext leitura = _fixture.CreateDbContext(userId: null);
         (await CodigosPorPosicaoAsync(leitura, tipo.Id)).Should().Equal("PLENO", "PARCIAL");
+    }
+
+    [Fact(DisplayName = "Duas edições dos valores do mesmo tipo a partir da mesma leitura: a segunda colide pelo índice de posição, o que o tradutor reconhece")]
+    public async Task EdicaoConcorrente_ASegundaColidePeloIndiceDePosicao()
+    {
+        TipoConceito tipo = Novo(Categorico("REPROVADO", "APROVADO"));
+        await Gravar(tipo);
+
+        Exception? recusa = await EditarEmDuasLeiturasAsync(tipo.Id, Categorico("PLENO", "PARCIAL"), Categorico("ALTO", "BAIXO"));
+
+        PostgresException violacao = recusa.Should().BeOfType<DbUpdateException>().Which.InnerException.Should().BeOfType<PostgresException>().Which;
+        (violacao.SqlState, violacao.ConstraintName).Should().Be((PostgresErrorCodes.UniqueViolation, RestricoesDoBanco.TipoDeConceitoValorPosicaoUnica));
     }
 
     [Fact(DisplayName = "O tipo numérico grava a escala e não grava valor categórico")]
@@ -104,6 +117,20 @@ public sealed class TipoConceitoPersistenceTests
 
         PostgresException erro = (await act.Should().ThrowAsync<PostgresException>()).Which;
         (erro.SqlState, erro.ConstraintName).Should().Be(("23514", "ck_tipos_conceito_parametros_da_natureza"));
+    }
+
+    // As duas leituras acontecem antes de qualquer gravação; devolve o que a segunda gravação lançou, se lançou.
+    private async Task<Exception?> EditarEmDuasLeiturasAsync(Guid tipoId, DefinicaoInformada primeira, DefinicaoInformada segunda)
+    {
+        await using UniPlusDbContext contextoA = _fixture.CreateDbContext(userId: null);
+        await using UniPlusDbContext contextoB = _fixture.CreateDbContext(userId: null);
+        TipoConceito lidoA = await contextoA.Set<TipoConceito>().SingleAsync(t => t.Id == tipoId);
+        TipoConceito lidoB = await contextoB.Set<TipoConceito>().SingleAsync(t => t.Id == tipoId);
+
+        lidoA.Atualizar(primeira.Validar().Value!);
+        await contextoA.SaveChangesAsync();
+        lidoB.Atualizar(segunda.Validar().Value!);
+        return await Record.ExceptionAsync(() => contextoB.SaveChangesAsync());
     }
 
     private static string Codigo() => TiposConceitoHttpDeTeste.CodigoUnico();

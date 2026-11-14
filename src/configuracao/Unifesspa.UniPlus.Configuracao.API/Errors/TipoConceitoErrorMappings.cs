@@ -84,5 +84,9 @@ internal static class TipoConceitoErrorMappings
         new(TipoConceitoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(StatusCodes.Status404NotFound,
                 "uniplus.configuracao.tipo_conceito.nao_encontrado", "Tipo de conceito não encontrado")),
+        new(TipoConceitoErrorCodes.ConflitoDeConcorrencia,
+            new DomainErrorMapping(StatusCodes.Status409Conflict,
+                "uniplus.configuracao.tipo_conceito.conflito_de_concorrencia",
+                "Tipo de conceito alterado concorrentemente", RetryableConflict: true)),
     ];
 }

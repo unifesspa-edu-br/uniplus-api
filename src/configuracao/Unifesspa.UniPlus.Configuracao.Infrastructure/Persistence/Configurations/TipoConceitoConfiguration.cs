@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
@@ -58,6 +60,12 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
             .HasComment("Descrição livre do tipo, em NFC. Nula quando não informada.");
         builder.Property(tipo => tipo.Ativo).IsRequired()
             .HasComment("Falso quando o tipo foi desativado: deixa de ser oferecido, e o código continua reservado.");
+
+        // Token de concorrência otimista na coluna de sistema `xmin` do Postgres (shadow property
+        // `uint` + IsRowVersion, sem coluna nem migration própria). O PUT substitui os valores
+        // categóricos; sem o token, duas edições concorrentes do mesmo tipo gravariam sem saber uma
+        // da outra. Quem confirma por último recebe DbUpdateConcurrencyException (ADR-0119).
+        builder.Property<uint>("Version").IsRowVersion();
     }
 
     private static void ConfigurarNaturezaEEscala(EntityTypeBuilder<TipoConceito> builder)
@@ -103,9 +111,9 @@ internal sealed class TipoConceitoConfiguration : IEntityTypeConfiguration<TipoC
                 .HasComment("Verdadeiro quando escolher este valor conta como aprovação. Um tipo pode não ter nenhum valor assim.");
             valor.Property(v => v.Posicao).IsRequired()
                 .HasComment("Lugar do valor na lista do tipo, a partir de 1; é a única expressão da ordem.");
-            valor.HasIndex("TipoConceitoId", nameof(ValorCategorico.Codigo)).IsUnique().HasDatabaseName("ix_valores_tipo_conceito_codigo");
-            valor.HasIndex("TipoConceitoId", nameof(ValorCategorico.Rotulo)).IsUnique().HasDatabaseName("ix_valores_tipo_conceito_rotulo");
-            valor.HasIndex("TipoConceitoId", nameof(ValorCategorico.Posicao)).IsUnique().HasDatabaseName("ix_valores_tipo_conceito_posicao");
+            valor.HasIndex("TipoConceitoId", nameof(ValorCategorico.Codigo)).IsUnique().HasDatabaseName(RestricoesDoBanco.TipoDeConceitoValorCodigoUnico);
+            valor.HasIndex("TipoConceitoId", nameof(ValorCategorico.Rotulo)).IsUnique().HasDatabaseName(RestricoesDoBanco.TipoDeConceitoValorRotuloUnico);
+            valor.HasIndex("TipoConceitoId", nameof(ValorCategorico.Posicao)).IsUnique().HasDatabaseName(RestricoesDoBanco.TipoDeConceitoValorPosicaoUnica);
         });
 
         builder.Navigation(tipo => tipo.Valores).HasField("_valores").UsePropertyAccessMode(PropertyAccessMode.Field);
