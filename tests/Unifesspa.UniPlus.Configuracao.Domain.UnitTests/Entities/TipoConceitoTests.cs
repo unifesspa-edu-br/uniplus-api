@@ -1,0 +1,149 @@
+namespace Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities;
+
+using System.Text;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
+
+public sealed class TipoConceitoTests
+{
+    private const string Nulo = "valor\0invalido";
+
+    [Fact(DisplayName = "Cria tipo numérico ativo, com a escala e sem valores categóricos")]
+    public void Criar_Numerico_GuardaAEscala()
+    {
+        Result<TipoConceito> resultado = TipoConceito.Criar("NOTA_ENTREVISTA", DefinicoesDeTipoConceito.Numerica());
+
+        TipoConceito tipo = resultado.Value!;
+        resultado.IsSuccess.Should().BeTrue();
+        (tipo.Ativo, tipo.Natureza, tipo.Codigo).Should().Be((true, NaturezaConceito.Numerico, "NOTA_ENTREVISTA"));
+        tipo.EscalaMinima.Should().Be(0m);
+        tipo.EscalaMaxima.Should().Be(10m);
+        tipo.CasasDecimais.Should().Be(2);
+        tipo.Valores.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Cria tipo categórico com os valores na ordem informada e sem escala")]
+    public void Criar_Categorico_GuardaOsValoresEmOrdem()
+    {
+        TipoConceito tipo = TipoConceito.Criar("PARECER_ANALISE", DefinicoesDeTipoConceito.Categorica()).Value!;
+
+        tipo.Natureza.Should().Be(NaturezaConceito.Categorico);
+        tipo.Valores.Select(v => (v.Posicao, v.Codigo, v.Rotulo, v.ContaComoAprovacao))
+            .Should().Equal((1, "DEFERIDO", "Deferido", true), (2, "INDEFERIDO", "Indeferido", false));
+        tipo.EscalaMinima.Should().BeNull();
+        tipo.EscalaMaxima.Should().BeNull();
+        tipo.CasasDecimais.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "Normaliza código, nome e descrição para NFC e remove os espaços das pontas")]
+    public void Criar_ComFormaDecomposta_NormalizaParaNfc()
+    {
+        const string composto = "Avaliação";
+        string decomposto = composto.Normalize(NormalizationForm.FormD);
+        decomposto.Should().NotBe(composto, "pré-condição: as duas formas têm bytes diferentes");
+        DefinicaoInformada definicao = DefinicoesDeTipoConceito.Numerica() with { Nome = $" {decomposto} ", Descricao = $" {decomposto} " };
+
+        TipoConceito tipo = TipoConceito.Criar($" AVALIAÇÃO ".Normalize(NormalizationForm.FormD), definicao).Value!;
+
+        (tipo.Codigo, tipo.Nome, tipo.Descricao).Should().Be(("AVALIAÇÃO", composto, composto));
+    }
+
+    [Fact(DisplayName = "Descrição em branco vira ausência de descrição")]
+    public void Criar_DescricaoEmBranco_ViraNula()
+    {
+        TipoConceito tipo = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = "   " }).Value!;
+
+        tipo.Descricao.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Recusa código ausente")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Criar_CodigoAusente_Recusa(string? codigo) =>
+        TipoConceito.Criar(codigo, DefinicoesDeTipoConceito.Numerica())
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoObrigatorio, "codigo");
+
+    [Fact(DisplayName = "Aceita código de 64 caracteres e recusa o de 65")]
+    public void Criar_CodigoNoLimiteDeTamanho()
+    {
+        TipoConceito.Criar(new string('A', 64), DefinicoesDeTipoConceito.Numerica()).IsSuccess.Should().BeTrue();
+
+        TipoConceito.Criar(new string('A', 65), DefinicoesDeTipoConceito.Numerica())
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoTamanho, "codigo");
+    }
+
+    [Fact(DisplayName = "Recusa código com o caractere nulo")]
+    public void Criar_CodigoComCaractereNulo_Recusa() =>
+        TipoConceito.Criar(Nulo, DefinicoesDeTipoConceito.Numerica())
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoComCaractereNulo, "codigo");
+
+    [Theory(DisplayName = "Recusa nome ausente")]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void Criar_NomeAusente_Recusa(string? nome) =>
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = nome })
+            .DeveRecusarComo(TipoConceitoErrorCodes.NomeObrigatorio, "nome");
+
+    [Fact(DisplayName = "Aceita nome de 200 caracteres e recusa o de 201")]
+    public void Criar_NomeNoLimiteDeTamanho()
+    {
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = new string('N', 200) }).IsSuccess.Should().BeTrue();
+
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = new string('N', 201) })
+            .DeveRecusarComo(TipoConceitoErrorCodes.NomeTamanho, "nome");
+    }
+
+    [Fact(DisplayName = "Recusa nome com o caractere nulo")]
+    public void Criar_NomeComCaractereNulo_Recusa() =>
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = Nulo })
+            .DeveRecusarComo(TipoConceitoErrorCodes.NomeComCaractereNulo, "nome");
+
+    [Fact(DisplayName = "Aceita descrição de 1000 caracteres e recusa a de 1001")]
+    public void Criar_DescricaoNoLimiteDeTamanho()
+    {
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = new string('D', 1000) }).IsSuccess.Should().BeTrue();
+
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = new string('D', 1001) })
+            .DeveRecusarComo(TipoConceitoErrorCodes.DescricaoTamanho, "descricao");
+    }
+
+    [Fact(DisplayName = "Recusa descrição com o caractere nulo")]
+    public void Criar_DescricaoComCaractereNulo_Recusa() =>
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = Nulo })
+            .DeveRecusarComo(TipoConceitoErrorCodes.DescricaoComCaractereNulo, "descricao");
+
+    [Theory(DisplayName = "Recusa natureza ausente ou que não seja o nome exato de uma natureza")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("NUMERICO")]
+    [InlineData("ordinal")]
+    public void Criar_NaturezaInvalida_Recusa(string? natureza) =>
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Natureza = natureza })
+            .DeveRecusarComo(TipoConceitoErrorCodes.NaturezaInvalida, "natureza");
+
+    [Fact(DisplayName = "Natureza inválida não vira também erro de parâmetros incompatíveis")]
+    public void Criar_NaturezaInvalida_NaoAcusaIncompatibilidade()
+    {
+        Result<TipoConceito> resultado = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Natureza = "x" });
+
+        resultado.Errors.Select(e => e.Error.Code).Should().Equal(TipoConceitoErrorCodes.NaturezaInvalida);
+    }
+
+    [Fact(DisplayName = "Acumula as violações de código, nome e escala no mesmo lote")]
+    public void Criar_VariasViolacoes_Acumula()
+    {
+        DefinicaoInformada definicao = DefinicoesDeTipoConceito.Numerica() with { Nome = "", Numerico = new EscalaInformada(5m, 5m, 9) };
+
+        Result<TipoConceito> resultado = TipoConceito.Criar("", definicao);
+
+        resultado.Errors.Select(e => e.Field).Should().Equal("codigo", "nome", "numerico", "numerico.casasDecimais");
+    }
+}
